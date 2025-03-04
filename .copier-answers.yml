@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 2025.01.22-19-g23b2b69
+_src_path: gh:scientific-python/cookie
+backend: hatch
+email: TBD
+full_name: scikit-agent Team
+license: MIT
+org: scikit-agent
+project_name: scikit-agent
+project_short_description: A great package.
+url: https://github.com/scikit-agent/scikit-agent
+vcs: true
