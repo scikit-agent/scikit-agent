@@ -2,7 +2,7 @@
 _commit: 2025.01.22-19-g23b2b69
 _src_path: gh:scientific-python/cookie
 backend: hatch
-email: TBD
+email: spb413@nyu.edu
 full_name: scikit-agent Team
 license: MIT
 org: scikit-agent

@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 [project]
 name = "scikit-agent"
 authors = [
-  { name = "scikit-agent Team", email = "TBD" },
+  { name = "scikit-agent Team", email = "spb413@nyu.edu" },
 ]
 description = "A great package."
 readme = "README.md"
