@@ -30,6 +30,8 @@ jobs:
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --hook-stage manual --all-files
+      - name: Install package
+        run: python -m pip install .
       - name: Run PyLint
         run: pipx run nox -s pylint -- --output-format=github
 
