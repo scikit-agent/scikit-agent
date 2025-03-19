@@ -1,0 +1,13 @@
+from __future__ import annotations
+
+import importlib.metadata
+
+import skagent as m
+
+
+def test_version():
+<<<<<<< HEAD
+    assert importlib.metadata.version("skagent") == m.__version__
+=======
+    assert importlib.metadata.version("scikit-agent") == m.__version__
+>>>>>>> 56a617b (metadata test on scikit-agent package)
