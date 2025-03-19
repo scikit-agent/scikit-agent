@@ -6,4 +6,4 @@ import skagent as m
 
 
 def test_version():
-    assert importlib.metadata.version("skagent") == m.__version__
+    assert importlib.metadata.version("scikit-agent") == m.__version__
