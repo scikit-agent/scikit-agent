@@ -31,6 +31,23 @@ classifiers = [
 dynamic = ["version"]
 dependencies = []
 
+[project.optional-dependencies]
+test = [
+  "pytest >=6",
+  "pytest-cov >=3",
+]
+dev = [
+  "pytest >=6",
+  "pytest-cov >=3",
+]
+docs = [
+  "sphinx>=7.0",
+  "myst_parser>=0.13",
+  "sphinx_copybutton",
+  "sphinx_autodoc_typehints",
+  "furo>=2023.08.17",
+]
+
 [tool.hatch]
 version.source = "vcs"
 build.hooks.vcs.version-file = "src/skagent/_version.py"
