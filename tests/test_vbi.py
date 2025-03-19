@@ -59,7 +59,7 @@ class test_vbi(unittest.TestCase):
     def test_solve_consumption_problem(self):
         state_grid = {"m": np.linspace(0, 5, 10)}
 
-        print(cons.consumption_block_normalized.dynamics['c'])
+        print(cons.consumption_block_normalized.dynamics["c"])
 
         dr, dec_vf, arr_vf = vbi.solve(
             cons.consumption_block_normalized,

@@ -172,7 +172,7 @@ def solve(
             raise Exception(
                 f"Value backup iteration is not yet implemented for stages with {len(controls)} > 1 control variables."
             )
-        
+
     print(policy_data)
 
     # use the xarray interpolator to create a decision rule.
