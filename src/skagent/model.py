@@ -29,7 +29,7 @@ class Aggregate:
 
 class Control:
     """
-    Used to designate a variabel that is a control variable.
+    Used to designate a variable that is a control variable.
 
     Parameters
     ----------
@@ -161,18 +161,18 @@ def simulate_dynamics(
     """
     vals = pre.copy()
 
-    for varn in dynamics:
+    for sym in dynamics:
         # Using the fact that Python dictionaries are ordered
 
-        feq = dynamics[varn]
+        feq = dynamics[sym]
 
         if isinstance(feq, Control):
             # This tests if the decision rule is age varying.
             # If it is, this will be a vector with the decision rule for each agent.
-            if isinstance(dr[varn], np.ndarray):
+            if isinstance(dr[sym], np.ndarray):
                 ## Now we have to loop through each agent, and apply the decision rule.
                 ## This is quite slow.
-                for i in range(dr[varn].size):
+                for i in range(dr[sym].size):
                     vals_i = {
                         var: (
                             vals[var][i]
@@ -181,15 +181,15 @@ def simulate_dynamics(
                         )
                         for var in vals
                     }
-                    vals[varn][i] = dr[varn][i](
-                        *[vals_i[var] for var in signature(dr[varn][i]).parameters]
+                    vals[sym][i] = dr[sym][i](
+                        *[vals_i[var] for var in signature(dr[sym][i]).parameters]
                     )
             else:
-                vals[varn] = dr[varn](
-                    *[vals[var] for var in signature(dr[varn]).parameters]
+                vals[sym] = dr[sym](
+                    *[vals[var] for var in signature(dr[sym]).parameters]
                 )  # TODO: test for signature match with Control
         else:
-            vals[varn] = feq(*[vals[var] for var in signature(feq).parameters])
+            vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
     return vals
 
@@ -287,7 +287,7 @@ class DBlock(Block):
         """
         dyn = self.get_dynamics()
 
-        return [varn for varn in dyn if isinstance(dyn[varn], Control)]
+        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
     def transition(self, pre, dr, screen=False):
         """
@@ -309,13 +309,13 @@ class DBlock(Block):
             # don't simulate any states that are logically prior
             # to those that have already been given.
             met_pre = False  # this is a hack; really should use dependency graph
-            for varn in list(dyn.keys()):
+            for sym in list(dyn.keys()):
                 if not met_pre:
-                    if varn in pre:
+                    if sym in pre:
                         met_pre = True
-                        del dyn[varn]
-                    elif varn not in pre and varn not in dr:
-                        del dyn[varn]
+                        del dyn[sym]
+                    elif sym not in pre and sym not in dr:
+                        del dyn[sym]
 
             # this will break if there's a directly recursive label,
             # i.e. if dynamics at time t for variable 'a'
@@ -330,9 +330,9 @@ class DBlock(Block):
         """
         rvals = {}
 
-        for varn in self.reward:
-            feq = self.reward[varn]
-            rvals[varn] = feq(*[vals[var] for var in signature(feq).parameters])
+        for sym in self.reward:
+            feq = self.reward[sym]
+            rvals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
         return rvals
 
@@ -388,8 +388,6 @@ class DBlock(Block):
             dvf = self.get_decision_value_function(dr, continuation)
 
             ds = discretized_shock_dstn(self.shocks, disc_params)
-
-            arvs_args = [arvs[avn] for avn in arvs]
 
             def mod_dvf(shock_value_array):
                 shockvs = {
@@ -460,7 +458,7 @@ class RBlock(Block):
     def get_controls(self):
         dyn = self.get_dynamics()
 
-        return [varn for varn in dyn if isinstance(dyn[varn], Control)]
+        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
     def get_dynamics(self):
         super_dyn = {}  # uses set to avoid duplicates

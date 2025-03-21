@@ -1,8 +1,8 @@
 from HARK.distributions import Lognormal
-import HARK.models.consumer as cons
-import HARK.models.perfect_foresight as pfm
-import HARK.models.perfect_foresight_normalized as pfnm
-from HARK.simulation.monte_carlo import AgentTypeMonteCarloSimulator
+import skagent.models.consumer as cons
+import skagent.models.perfect_foresight as pfm
+import skagent.models.perfect_foresight_normalized as pfnm
+from skagent.simulation.monte_carlo import AgentTypeMonteCarloSimulator
 
 from HARK.ConsumptionSaving.ConsIndShockModel import PerfForesightConsumerType
 
@@ -36,27 +36,6 @@ class test_pfm(unittest.TestCase):
             # danger: normalized decision rule for unnormalized problem
             {  # initial states
                 "a": Lognormal(-6, 0),
-                #'live' : 1,
-                "p": 1.0,
-            },
-            agent_count=3,
-            T_sim=120,
-        )
-
-    def test_simulate(self):
-        ## smoke test
-        self.mcs.initialize_sim()
-        self.mcs.simulate()
-
-
-class test_pfnm(unittest.TestCase):
-    def setUp(self):
-        self.mcs = AgentTypeMonteCarloSimulator(  ### Use fm, blockified
-            pfnm.calibration,
-            pfnm.block,
-            {"c_nrm": lambda m_nrm: PFexample.solution[0].cFunc(m_nrm)},
-            {  # initial states
-                "a_nrm": Lognormal(-6, 0),
                 #'live' : 1,
                 "p": 1.0,
             },

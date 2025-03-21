@@ -5,7 +5,7 @@
 calibration:
   DiscFac: 0.96
   CRRA: 2.0
-  R: 1.03 # can be overriden by portfolio dynamics
+  R: 1.03 # can be overridden by portfolio dynamics
   Rfree: 1.03
   EqP: 0.02
   LivPrb: 0.98

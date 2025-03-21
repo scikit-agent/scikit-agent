@@ -30,7 +30,9 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-  "econ-ark @ git+https://github.com/econ-ark/HARK.git@d69fb642d29267fabc9fc58aa54ac4e23a251473"
+  "econ-ark @ git+https://github.com/econ-ark/HARK.git@d69fb642d29267fabc9fc58aa54ac4e23a251473",
+  "numpy",
+  "sympy"
 ]
 
 [project.optional-dependencies]

@@ -1,9 +1,9 @@
 import unittest
 
 from HARK.distributions import Bernoulli, DiscreteDistribution
-import HARK.model as model
-from HARK.model import Control
-import HARK.models.consumer as cons
+import skagent.model as model
+from skagent.model import Control
+import skagent.models.consumer as cons
 
 # TODO: let the shock constructor reference this parameter.
 LivPrb = 0.98

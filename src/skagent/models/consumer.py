@@ -10,7 +10,7 @@ Microeconomic Dynamic Stochastic Optimization Problems"
 calibration = {
     "DiscFac": 0.96,
     "CRRA": 2.0,
-    "R": 1.03,  # note: this can be overriden by the portfolio dynamics
+    "R": 1.03,  # note: this can be overridden by the portfolio dynamics
     "Rfree": 1.03,
     "EqP": 0.02,
     "LivPrb": 0.98,

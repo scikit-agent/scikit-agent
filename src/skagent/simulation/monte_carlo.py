@@ -12,11 +12,11 @@ from HARK.distributions import (
     IndexDistribution,
     TimeVaryingDiscreteDistribution,
 )
-from HARK.model import Aggregate
-from HARK.model import DBlock
-from HARK.model import construct_shocks, simulate_dynamics
+from skagent.model import Aggregate
+from skagent.model import DBlock
+from skagent.model import construct_shocks, simulate_dynamics
 
-from HARK.utilities import apply_fun_to_vals
+from skagent.utils import apply_fun_to_vals
 
 
 def draw_shocks(shocks: Mapping[str, Distribution], conditions: Sequence[int]):
@@ -336,11 +336,11 @@ class AgentTypeMonteCarloSimulator(Simulator):
             initial_vals = draw_shocks(self.initial, np.zeros(which_agents.sum()))
 
         if np.sum(which_agents) > 0:
-            for varn in initial_vals:
-                self.vars_now[varn][which_agents] = initial_vals[varn]
-                self.newborn_init_history[varn][self.t_sim, which_agents] = (
-                    initial_vals[varn]
-                )
+            for sym in initial_vals:
+                self.vars_now[sym][which_agents] = initial_vals[sym]
+                self.newborn_init_history[sym][self.t_sim, which_agents] = initial_vals[
+                    sym
+                ]
 
         self.t_age[which_agents] = 0
         self.t_cycle[which_agents] = 0
@@ -350,7 +350,7 @@ class AgentTypeMonteCarloSimulator(Simulator):
         Simulates this agent type for a given number of periods. Defaults to
         self.T_sim if no input.
         Records histories of attributes named in self.track_vars in
-        self.history[varname].
+        self.history[sym].
 
         Parameters
         ----------
@@ -373,7 +373,7 @@ class AgentTypeMonteCarloSimulator(Simulator):
                 + "and call the initialize_sim() method again, or set sim_periods <= T_sim."
             )
 
-        # Ignore floating point "errors". Numpy calls it "errors", but really it's excep-
+        # ignore floating point "errors". numpy calls it "errors", but really it's excep-
         # tions with well-defined answers such as 1.0/0.0 that is np.inf, -1.0/0.0 that is
         # -np.inf, np.inf/np.inf is np.nan and so on.
         with np.errstate(
@@ -574,11 +574,11 @@ class MonteCarloSimulator(Simulator):
         initial_vals = draw_shocks(self.initial, np.zeros(which_agents.sum()))
 
         if np.sum(which_agents) > 0:
-            for varn in initial_vals:
-                self.vars_now[varn][which_agents] = initial_vals[varn]
-                self.newborn_init_history[varn][self.t_sim, which_agents] = (
-                    initial_vals[varn]
-                )
+            for sym in initial_vals:
+                self.vars_now[sym][which_agents] = initial_vals[sym]
+                self.newborn_init_history[sym][self.t_sim, which_agents] = initial_vals[
+                    sym
+                ]
 
     def simulate(self, sim_periods=None):
         """
@@ -586,7 +586,7 @@ class MonteCarloSimulator(Simulator):
         self.T_sim if no input.
 
         Records histories of attributes named in self.track_vars in
-        self.history[varname].
+        self.history[symame].
 
         Parameters
         ----------
@@ -610,7 +610,7 @@ class MonteCarloSimulator(Simulator):
                 + "and call the initialize_sim() method again, or set sim_periods <= T_sim."
             )
 
-        # Ignore floating point "errors". Numpy calls it "errors", but really it's excep-
+        # ignore floating point "errors". numpy calls it "errors", but really it's excep-
         # tions with well-defined answers such as 1.0/0.0 that is np.inf, -1.0/0.0 that is
         # -np.inf, np.inf/np.inf is np.nan and so on.
         with np.errstate(

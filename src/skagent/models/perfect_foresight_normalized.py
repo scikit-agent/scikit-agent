@@ -1,5 +1,5 @@
 from HARK.distributions import Bernoulli
-from HARK.model import Control, DBlock
+from skagent.model import Control, DBlock
 
 calibration = {
     "DiscFac": 0.96,
