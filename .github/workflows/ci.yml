@@ -63,9 +63,10 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get install -y libopenblas-dev
 
-      - name: Install LLVM on Ubuntu
+      - name: Install LLVM 14
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y llvm
+        run: sudo apt-get install llvm-14 llvm-14-dev
+        run: echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
 
       - name: Install package
         run: python -m pip install .[test]
