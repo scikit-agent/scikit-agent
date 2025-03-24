@@ -65,7 +65,11 @@ jobs:
 
       - name: Install LLVM 14
         if: runner.os == 'Linux'
-        run: sudo apt-get install llvm-14 llvm-14-dev && echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
+        run: sudo apt-get install llvm-14 llvm-14-dev
+
+      - name: Configure LLVM 14
+        if: runner.os == 'Linux'
+        run: echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
 
       - name: Install package
         run: python -m pip install .[test]
