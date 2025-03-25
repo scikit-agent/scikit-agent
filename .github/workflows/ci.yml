@@ -71,8 +71,10 @@ jobs:
         if: runner.os == 'Linux'
         run: echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
 
-      - name: Install package
-        run: python -m pip install .[test]
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[test]"
 
       - name: Test package
         run: >-
