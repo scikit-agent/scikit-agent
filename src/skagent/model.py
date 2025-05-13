@@ -304,6 +304,31 @@ class DBlock(Block):
 
         return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
+    def get_attributions(self):
+        """
+        Return the agent assignments of variables as a dict of
+        the form {"agent1" : ["var1", "var2", ... ], "agent2" : ["var3", "var4", ...]}
+        """
+        attributions = {}
+        dyn = self.get_dynamics()
+
+        for sym in self.get_controls():
+            if dyn[sym].agent is not None:
+                agent_name = dyn[sym].agent
+
+                agent_attr = attributions.get(agent_name, [])
+                agent_attr.append(sym)
+                attributions[agent_name] = agent_attr
+
+        for sym in self.reward:
+            agent_name = self.reward[sym]
+
+            agent_attr = attributions.get(agent_name, [])
+            agent_attr.append(sym)
+            attributions[agent_name] = agent_attr
+
+        return attributions
+
     def transition(self, pre, dr, screen=False):
         """
         Computes the state variables following pre-given states,

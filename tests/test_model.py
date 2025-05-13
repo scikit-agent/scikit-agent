@@ -89,6 +89,15 @@ class test_DBlock(unittest.TestCase):
 
         av({"k": 1, "R": 1.05, "PermGroFac": 1.1, "theta": 1, "CRRA": 2})
 
+    def test_attributions(self):
+        block_a_attributions = self.test_block_A.get_attributions()
+
+        self.assertEqual(block_a_attributions["consumer"], ["c", "u"])
+
+        cblock_attribtuions = self.cblock.get_attributions()
+
+        self.assertEqual(cblock_attribtuions["consumer"], ["c", "u"])
+
 
 class test_RBlock(unittest.TestCase):
     def setUp(self):
