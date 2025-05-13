@@ -30,6 +30,16 @@ test_block_C_data = {"name": "test block B", "shocks": {"SC": Bernoulli(p=0.2)}}
 test_block_D_data = {"name": "test block D", "shocks": {"SD": Bernoulli(p=0.3)}}
 
 
+class test_Control(unittest.TestCase):
+    def setUp(self):
+        self.test_control_A = model.Control(
+            ["a"], upper_bound=lambda a: a, lower_bound=lambda a: 0, agent="myagent"
+        )
+
+    def test_attributes(self):
+        self.assertEqual(self.test_control_A.agent, "myagent")
+
+
 class test_DBlock(unittest.TestCase):
     def setUp(self):
         self.test_block_A = model.DBlock(**test_block_A_data)

@@ -36,14 +36,21 @@ class Control:
     iset : list of str
         The labels of the variables that are in the information set of this control.
 
+    lower_bound : function
+        An 'equation function' which evaluates to the lower bound of the control variable.
+
     upper_bound : function
         An 'equation function' which evaluates to the upper bound of the control variable.
+
+    agent : str
+        A label identifying the agent role to which this control is attributed.
     """
 
-    def __init__(self, iset, lower_bound=None, upper_bound=None):
+    def __init__(self, iset, lower_bound=None, upper_bound=None, agent=None):
         self.iset = iset
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+        self.agent = agent
 
 
 def discretized_shock_dstn(shocks, disc_params):
