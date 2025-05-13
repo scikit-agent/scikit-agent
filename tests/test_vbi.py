@@ -16,8 +16,9 @@ block_1 = DBlock(
             "m": lambda y, coin: y + coin,
             "c": Control(["m"], lower_bound=lambda m: 0, upper_bound=lambda m: m),
             "a": lambda m, c: m - c,
+            "u": lambda c: 1 - (c - 1) ** 2,
         },
-        "reward": {"u": lambda c: 1 - (c - 1) ** 2},
+        "reward": {"u": "agent"},
     }
 )
 
@@ -30,8 +31,9 @@ block_2 = DBlock(  # has no control variable
         "dynamics": {
             "m": lambda y, coin: y + coin,
             "a": lambda m: m - 1,
+            "u": lambda m: 0,
         },
-        "reward": {"u": lambda m: 0},
+        "reward": {"u": "agent"},
     }
 )
 

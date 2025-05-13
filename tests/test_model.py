@@ -16,11 +16,12 @@ test_block_A_data = {
     "dynamics": {
         "y": lambda p: p,
         "m": lambda Rfree, a, y: Rfree * a + y,
-        "c": Control(["m"]),
+        "c": Control(["m"], agent="consumer"),
         "p": lambda PermGroFac, p: PermGroFac * p,
         "a": lambda m, c: m - c,
+        "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
     },
-    "reward": {"u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA)},
+    "reward": {"u": "consumer"},
 }
 
 test_block_B_data = {"name": "test block B", "shocks": {"SB": Bernoulli(p=0.1)}}

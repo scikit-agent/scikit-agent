@@ -231,6 +231,12 @@ class DBlock(Block):
         argument names should match the variable inputs.
         Or these can be strings, which are parsed into functions.
 
+    reward: Mapping(str, str)
+        A dictionary mapping variable names to agent role labels.
+        The variable name will almost always appear in 'dynamics'.
+        The agent role indicates which agent views the variable as a reward
+        to optimize.
+
     """
 
     name: str = ""
@@ -271,9 +277,10 @@ class DBlock(Block):
             if isinstance(self.dynamics[v], str):
                 self.dynamics[v] = math_text_to_lambda(self.dynamics[v])
 
-        for r in self.reward:
-            if isinstance(self.reward[r], str):
-                self.reward[r] = math_text_to_lambda(self.reward[r])
+        # --- this now has agent assignments.
+        # for r in self.reward:
+        #    if isinstance(self.reward[r], str):
+        #        self.reward[r] = math_text_to_lambda(self.reward[r])
 
     def get_shocks(self):
         return self.shocks
@@ -282,11 +289,12 @@ class DBlock(Block):
         return self.dynamics
 
     def get_vars(self):
-        return (
-            list(self.shocks.keys())
-            + list(self.dynamics.keys())
-            + list(self.reward.keys())
-        )
+        """
+        Returns the variables that are created/modified by the Block.
+        Does *not* include variables that are only used as arguments to
+        the dynamics. TODO: Get a way to find these.
+        """
+        return list(self.shocks.keys()) + list(self.dynamics.keys())
 
     def get_controls(self):
         """
@@ -338,7 +346,7 @@ class DBlock(Block):
         rvals = {}
 
         for sym in self.reward:
-            feq = self.reward[sym]
+            feq = self.dynamics[sym]
             rvals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
         return rvals
