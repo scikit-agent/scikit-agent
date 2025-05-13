@@ -1,0 +1,59 @@
+# Model Visualization Style Configuration
+
+# Graph title and general configuration
+graph_config:
+  title: "ModelStructure"
+  graph_type: "digraph"
+
+# Variable shape configuration
+variable_shapes:
+  shock_vars: "triangle"
+  state_vars: "ellipse"
+  control_vars: "box" 
+  reward_vars: "diamond"
+  param_vars: "hexagon"
+  default: "ellipse"  # Default shape if type not specified
+
+# Node style configuration
+node_styles:
+  default:
+    style: "filled"
+    fontcolor: "#000000"
+    fontname: "Arial"
+  
+  previous_period:
+    style: "filled,dashed"
+    tooltip_prefix: "Previous period "
+
+# Edge style configuration
+edge_styles:
+  default:
+    arrowhead: "normal"
+    arrowsize: 0.8
+    style: "solid"
+  
+  previous_period:
+    style: "dashed"
+  
+  current_period:
+    style: "solid"
+
+# Color configuration
+color_config:
+  default_other_color: "#708090"  # Slate gray for 'other' variables
+
+# Color generation parameters
+color_generation:
+  algorithm: "golden_ratio"  # Algorithm to use for color generation
+  golden_ratio_factor: 0.618033988749895  # Golden ratio for hue distribution
+  saturation_range: [0.5, 0.7]  # Range for color saturation
+  lightness_range: [0.4, 0.6]   # Range for color lightness
+  color_seed: 42  # Default seed for random color generation
+
+# Graph layout configuration
+graph_layout:
+  rankdir: "LR"               # Left to right layout
+  node_padding: 0.3           # Padding between nodes
+  cluster_style: "filled"     # Style for agent subgraphs
+  cluster_fillcolor: "#FFFFFF" # Background color for clusters
+  cluster_label_capitalize: true # Whether to capitalize agent names in cluster labels
