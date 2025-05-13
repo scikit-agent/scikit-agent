@@ -3,7 +3,7 @@ test.py - Test module for the model_viz visualization module
 """
 
 from skagent.model import DBlock, Control
-from model_viz import DBlockVisualizer
+from src.skagent.model_viz import DBlockVisualizer
 import inspect
 
 
