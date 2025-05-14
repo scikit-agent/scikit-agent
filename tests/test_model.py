@@ -24,11 +24,20 @@ test_block_A_data = {
     "reward": {"u": "consumer"},
 }
 
-test_block_B_data = {"name": "test block B", "shocks": {"SB": Bernoulli(p=0.1)}}
+test_block_B_data = {
+    "name": "test block B",
+    "shocks": {"SB": Bernoulli(p=0.1)},
+    "dynamics": {"pi": lambda a, Rfree: (Rfree - 1) * a},
+    "reward": {"pi": "lender"},
+}
 
 test_block_C_data = {"name": "test block B", "shocks": {"SC": Bernoulli(p=0.2)}}
 
-test_block_D_data = {"name": "test block D", "shocks": {"SD": Bernoulli(p=0.3)}}
+test_block_D_data = {
+    "name": "test block D",
+    "shocks": {"SD": Bernoulli(p=0.3)},
+    "dynamics": {"z": Control(["y"], agent="foo-agent")},
+}
 
 
 class test_Control(unittest.TestCase):
@@ -128,3 +137,12 @@ class test_RBlock(unittest.TestCase):
         self.assertFalse(
             isinstance(self.cpp.get_shocks()["theta"], DiscreteDistribution)
         )
+
+    def test_get_attributions(self):
+        r_block_tree = model.RBlock(
+            blocks=[self.test_block_B, self.test_block_C, self.test_block_D]
+        )
+
+        attrs = r_block_tree.get_attributions()
+
+        self.assertEqual({"foo-agent": ["z"], "lender": ["pi"]}, attrs)

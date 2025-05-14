@@ -202,7 +202,35 @@ def simulate_dynamics(
 
 
 class Block:
-    pass
+    def get_attributions(self):
+        """
+        Return the agent assignments of variables as a dict of
+        the form {"agent1" : ["var1", "var2", ... ], "agent2" : ["var3", "var4", ...]}
+        """
+        attributions = {}
+        dyn = self.get_dynamics()
+
+        for sym in self.get_controls():
+            if dyn[sym].agent is not None:
+                agent_name = dyn[sym].agent
+
+                agent_attr = attributions.get(agent_name, [])
+                agent_attr.append(sym)
+                attributions[agent_name] = agent_attr
+
+        for sym in self.reward:
+            agent_name = self.reward[sym]
+
+            agent_attr = attributions.get(agent_name, [])
+            agent_attr.append(sym)
+            attributions[agent_name] = agent_attr
+
+        return attributions
+
+    def get_controls(self):
+        dyn = self.get_dynamics()
+
+        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
 
 @dataclass
@@ -295,39 +323,6 @@ class DBlock(Block):
         the dynamics. TODO: Get a way to find these.
         """
         return list(self.shocks.keys()) + list(self.dynamics.keys())
-
-    def get_controls(self):
-        """
-        TODO: Repeated in RBlock. Move to higher order class.
-        """
-        dyn = self.get_dynamics()
-
-        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
-
-    def get_attributions(self):
-        """
-        Return the agent assignments of variables as a dict of
-        the form {"agent1" : ["var1", "var2", ... ], "agent2" : ["var3", "var4", ...]}
-        """
-        attributions = {}
-        dyn = self.get_dynamics()
-
-        for sym in self.get_controls():
-            if dyn[sym].agent is not None:
-                agent_name = dyn[sym].agent
-
-                agent_attr = attributions.get(agent_name, [])
-                agent_attr.append(sym)
-                attributions[agent_name] = agent_attr
-
-        for sym in self.reward:
-            agent_name = self.reward[sym]
-
-            agent_attr = attributions.get(agent_name, [])
-            agent_attr.append(sym)
-            attributions[agent_name] = agent_attr
-
-        return attributions
 
     def transition(self, pre, dr, screen=False):
         """
@@ -511,3 +506,16 @@ class RBlock(Block):
 
     def get_vars(self):
         return list(self.get_shocks().keys()) + list(self.get_dynamics().keys())
+
+    @property
+    def reward(self):
+        """
+        The reward attributions for all subblocks.
+        """
+        super_rew = {}  # uses set to avoid duplicates
+
+        for b in self.blocks:
+            for k, v in b.reward.items():  # use d.iteritems() in python 2
+                super_rew[k] = v
+
+        return super_rew
