@@ -33,7 +33,8 @@ dependencies = [
   "econ-ark @ git+https://github.com/econ-ark/HARK.git@d69fb642d29267fabc9fc58aa54ac4e23a251473",
   "numpy",
   "sympy",
-  "numba<0.60.0" # debugging HARK install issue
+  "numba<0.60.0", # debugging HARK install issue
+  "pydot"
 ]
 
 [project.optional-dependencies]
