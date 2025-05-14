@@ -67,6 +67,18 @@ jobs:
         if: runner.os == 'Linux'
         run: echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
 
+      - name: Graphviz install (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install graphviz graphviz-dev
+
+      - name: Graphviz install (macOS)
+        if: runner.os == 'macOS'
+        run: brew install graphviz
+
+      - name: Graphviz install (Windows)
+        if: runner.os == 'Windows'
+        run: choco install graphviz
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
