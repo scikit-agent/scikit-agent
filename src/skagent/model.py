@@ -36,14 +36,21 @@ class Control:
     iset : list of str
         The labels of the variables that are in the information set of this control.
 
+    lower_bound : function
+        An 'equation function' which evaluates to the lower bound of the control variable.
+
     upper_bound : function
         An 'equation function' which evaluates to the upper bound of the control variable.
+
+    agent : str
+        A label identifying the agent role to which this control is attributed.
     """
 
-    def __init__(self, iset, lower_bound=None, upper_bound=None):
+    def __init__(self, iset, lower_bound=None, upper_bound=None, agent=None):
         self.iset = iset
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+        self.agent = agent
 
 
 def discretized_shock_dstn(shocks, disc_params):
@@ -195,7 +202,35 @@ def simulate_dynamics(
 
 
 class Block:
-    pass
+    def get_attributions(self):
+        """
+        Return the agent assignments of variables as a dict of
+        the form {"agent1" : ["var1", "var2", ... ], "agent2" : ["var3", "var4", ...]}
+        """
+        attributions = {}
+        dyn = self.get_dynamics()
+
+        for sym in self.get_controls():
+            if dyn[sym].agent is not None:
+                agent_name = dyn[sym].agent
+
+                agent_attr = attributions.get(agent_name, [])
+                agent_attr.append(sym)
+                attributions[agent_name] = agent_attr
+
+        for sym in self.reward:
+            agent_name = self.reward[sym]
+
+            agent_attr = attributions.get(agent_name, [])
+            agent_attr.append(sym)
+            attributions[agent_name] = agent_attr
+
+        return attributions
+
+    def get_controls(self):
+        dyn = self.get_dynamics()
+
+        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
 
 @dataclass
@@ -223,6 +258,12 @@ class DBlock(Block):
         These expressions can be simple functions, in which case the
         argument names should match the variable inputs.
         Or these can be strings, which are parsed into functions.
+
+    reward: Mapping(str, str)
+        A dictionary mapping variable names to agent role labels.
+        The variable name will almost always appear in 'dynamics'.
+        The agent role indicates which agent views the variable as a reward
+        to optimize.
 
     """
 
@@ -264,9 +305,10 @@ class DBlock(Block):
             if isinstance(self.dynamics[v], str):
                 self.dynamics[v] = math_text_to_lambda(self.dynamics[v])
 
-        for r in self.reward:
-            if isinstance(self.reward[r], str):
-                self.reward[r] = math_text_to_lambda(self.reward[r])
+        # --- this now has agent assignments.
+        # for r in self.reward:
+        #    if isinstance(self.reward[r], str):
+        #        self.reward[r] = math_text_to_lambda(self.reward[r])
 
     def get_shocks(self):
         return self.shocks
@@ -275,19 +317,12 @@ class DBlock(Block):
         return self.dynamics
 
     def get_vars(self):
-        return (
-            list(self.shocks.keys())
-            + list(self.dynamics.keys())
-            + list(self.reward.keys())
-        )
-
-    def get_controls(self):
         """
-        TODO: Repeated in RBlock. Move to higher order class.
+        Returns the variables that are created/modified by the Block.
+        Does *not* include variables that are only used as arguments to
+        the dynamics. TODO: Get a way to find these.
         """
-        dyn = self.get_dynamics()
-
-        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
+        return list(self.shocks.keys()) + list(self.dynamics.keys())
 
     def transition(self, pre, dr, screen=False):
         """
@@ -331,7 +366,7 @@ class DBlock(Block):
         rvals = {}
 
         for sym in self.reward:
-            feq = self.reward[sym]
+            feq = self.dynamics[sym]
             rvals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
         return rvals
@@ -471,3 +506,16 @@ class RBlock(Block):
 
     def get_vars(self):
         return list(self.get_shocks().keys()) + list(self.get_dynamics().keys())
+
+    @property
+    def reward(self):
+        """
+        The reward attributions for all subblocks.
+        """
+        super_rew = {}  # uses set to avoid duplicates
+
+        for b in self.blocks:
+            for k, v in b.reward.items():  # use d.iteritems() in python 2
+                super_rew[k] = v
+
+        return super_rew
