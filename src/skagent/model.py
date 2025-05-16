@@ -170,7 +170,6 @@ def simulate_dynamics(
 
     for sym in dynamics:
         # Using the fact that Python dictionaries are ordered
-
         feq = dynamics[sym]
 
         if isinstance(feq, Control):
