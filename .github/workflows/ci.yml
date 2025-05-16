@@ -45,10 +45,6 @@ jobs:
         python-version: ["3.10", "3.12"]
         runs-on: [ubuntu-latest, windows-latest, macos-14]
 
-        include:
-          - python-version: "pypy-3.10"
-            runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,6 +66,18 @@ jobs:
       - name: Configure LLVM 14
         if: runner.os == 'Linux'
         run: echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
+
+      - name: Graphviz install (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install graphviz graphviz-dev
+
+      - name: Graphviz install (macOS)
+        if: runner.os == 'macOS'
+        run: brew install graphviz
+
+      - name: Graphviz install (Windows)
+        if: runner.os == 'Windows'
+        run: choco install graphviz
 
       - name: Install dependencies
         run: |

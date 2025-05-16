@@ -34,7 +34,8 @@ dependencies = [
   "numpy",
   "sympy",
   "numba<0.60.0", # debugging HARK install issue
-  "torch"
+  "torch",
+  "pydot"
 ]
 
 [project.optional-dependencies]

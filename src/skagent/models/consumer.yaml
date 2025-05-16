@@ -27,10 +27,12 @@ blocks:
       m: b + theta
       c: !Control
         info: m
+        agent: consumer
       a: m - c
-
-    reward:
       u: c ** (1 - CRRA) / (1 - CRRA)
+    reward:
+      u: consumer
+
   - &portfolio_choice
     name: portfolio choice
     shocks:
