@@ -41,11 +41,20 @@ def create_decision_function(block, decision_rules):
     return decision_function
 
 
-def create_reward_function(block):
+def create_reward_function(block, agent=None):
+    """
+    block
+    agent : optional, str
+    """
+
     def reward_function(states_t, controls_t, parameters={}):
         vals_t = parameters | states_t | controls_t
         post = block.transition(vals_t, {}, screen=True)
-        return {sym: post[sym] for sym in block.reward}
+        return {
+            sym: post[sym]
+            for sym in block.reward
+            if agent is None or block.reward[sym] == agent
+        }
 
     return reward_function
 
@@ -66,23 +75,14 @@ def estimate_discounted_lifetime_reward(
     total_discounted_reward = 0
 
     tf = create_transition_function(block, list(states_0.keys()))
-
-    # preparing decision function
     df = create_decision_function(block, dr)
+    rf = create_reward_function(block, agent)
 
-    # preparing reward function
-    # TODO: Can move this up to the function above.
-    if agent is None:
-        # assumes only one reward per block, not fully general
-        # TODO: fix this to use all reward variables
-        rsym = list(block.reward.keys())[0]
-    else:
-        # get the rsym corresponding to the given agent
-        # again, assumes only one reward symbol.
-        # TODO: make more general
-        rsym = [rsym for rsym in block.reward if block.reward[rsym] == agent][0]
-
-    rf = create_reward_function(block)
+    # this assumes only one reward is given.
+    # can be generalized in the future.
+    rsym = list(
+        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+    )[0]
 
     if callable(discount_factor):
         raise Exception(
@@ -102,11 +102,8 @@ def estimate_discounted_lifetime_reward(
             raise Exception(f"Calculated reward {[rsym]} is NaN: {reward_t}")
 
         total_discounted_reward += reward_t[rsym] * discount_factor**t
-        # t + 1
 
-        ###
-        ### TODO: get these transition functions from the DBlock.
-        ###
+        # t + 1
         states_t = tf(states_t, controls_t, parameters=parameters)
 
     return total_discounted_reward
