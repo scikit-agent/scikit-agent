@@ -19,10 +19,11 @@ block = DBlock(
         "dynamics": {
             "y": lambda p: p,
             "m": lambda Rfree, a, y: Rfree * a + y,
-            "c": Control(["m"], upper_bound=lambda m: m),
+            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "p": lambda PermGroFac, p: PermGroFac * p,
             "a": lambda m, c: m - c,
+            "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
         },
-        "reward": {"u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA)},
+        "reward": {"u": "consumer"},
     }
 )

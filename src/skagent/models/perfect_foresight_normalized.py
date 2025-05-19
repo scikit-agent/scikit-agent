@@ -22,7 +22,8 @@ block = DBlock(
             "m_nrm": lambda b_nrm: b_nrm + 1,
             "c_nrm": Control(["m_nrm"], upper_bound=lambda m_nrm: m_nrm),
             "a_nrm": lambda m_nrm, c_nrm: m_nrm - c_nrm,
+            "u": lambda c_nrm, CRRA: c_nrm ** (1 - CRRA) / (1 - CRRA),
         },
-        "reward": {"u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA)},
+        "reward": {"u": "consumer"},
     }
 )

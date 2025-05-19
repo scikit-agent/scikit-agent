@@ -20,7 +20,8 @@ block = DBlock(
             "m": lambda Rfree, a, y: Rfree * a + y,
             "c": Control(["m"]),
             "a": lambda m, c: m - c,
+            "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
         },
-        "reward": {"u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA)},
+        "reward": {"u": "consumer"},
     }
 )

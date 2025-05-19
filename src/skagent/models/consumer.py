@@ -31,11 +31,12 @@ consumption_block = DBlock(
             "b": lambda k, R: k * R,
             "y": lambda p, theta: p * theta,
             "m": lambda b, y: b + y,
-            "c": Control(["m"], upper_bound=lambda m: m),
+            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "p": lambda PermGroFac, p: PermGroFac * p,
             "a": lambda m, c: m - c,
+            "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
         },
-        "reward": {"u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA)},
+        "reward": {"u": "consumer"},
     }
 )
 
@@ -49,10 +50,11 @@ consumption_block_normalized = DBlock(
         "dynamics": {
             "b": lambda k, R, PermGroFac: k * R / PermGroFac,
             "m": lambda b, theta: b + theta,
-            "c": Control(["m"], upper_bound=lambda m: m),
+            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": "m - c",
+            "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
         },
-        "reward": {"u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA)},
+        "reward": {"u": "consumer"},
     }
 )
 
