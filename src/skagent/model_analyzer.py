@@ -2,14 +2,14 @@
 ModelAnalyzer: Extracts structured metadata from scikit-agent DBlock/RBlock models,
 preparing JSON-ready info for downstream visualization (e.g., plate-notation drawing).
 """
+
 import re
 import inspect
 from collections import defaultdict
-from typing import Dict, List, Set, Any, Optional, Tuple, Union, Callable
 from skagent.model import Control, DBlock, RBlock
-from HARK.distributions import Bernoulli, Lognormal, MeanOneLogNormal, Normal
 
 _TOKEN_RE = re.compile(r"\b[A-Za-z_]\w*\b")
+
 
 class ModelAnalyzer:
     """
@@ -19,23 +19,24 @@ class ModelAnalyzer:
       - formulas: human-readable equations for each variable
       - plates: loop‐notation plates inferred from agents
     """
+
     def __init__(self, model, calibration, observables=None):
-        self.model       = model
+        self.model = model
         self.calibration = calibration.copy()
         self.observables = set(observables or [])
 
         # Flatten RBlock → list of DBlock(s)
-        self._blocks     = []
+        self._blocks = []
         self._walk_blocks()
 
         # Storage
-        self.node_meta   = {}
-        self._raw_deps   = defaultdict(list)   # target → [sources…]
-        self._param_deps = defaultdict(set)    # param → {targets}
-        self._prev_deps  = set()               # {(target, source), …}
-        self.edges       = {"instant": [], "lag": [], "param": [], "shock": []}
-        self.formulas    = {}
-        self.plates      = {}
+        self.node_meta = {}
+        self._raw_deps = defaultdict(list)  # target → [sources…]
+        self._param_deps = defaultdict(set)  # param → {targets}
+        self._prev_deps = set()  # {(target, source), …}
+        self.edges = {"instant": [], "lag": [], "param": [], "shock": []}
+        self.formulas = {}
+        self.plates = {}
 
     def _walk_blocks(self):
         """Flatten RBlock into list of DBlock(s)."""
@@ -60,10 +61,10 @@ class ModelAnalyzer:
             for src in deps:
                 if src not in self.node_meta:
                     self.node_meta[src] = {
-                        "kind":     "state",
-                        "agent":    "global",
-                        "plate":    None,
-                        "observed": False
+                        "kind": "state",
+                        "agent": "global",
+                        "plate": None,
+                        "observed": False,
                     }
 
         self._identify_time_dependencies()
@@ -85,43 +86,46 @@ class ModelAnalyzer:
             for var, shock_def in blk.shocks.items():
                 agent = getattr(shock_def, "agent", "global") or "global"
                 self.node_meta[var] = {
-                    "kind":     "shock",
-                    "agent":    agent,
-                    "plate":    agent if agent != "global" else None,
-                    "observed": False
+                    "kind": "shock",
+                    "agent": agent,
+                    "plate": agent if agent != "global" else None,
+                    "observed": False,
                 }
 
         # 3) dynamics
         for blk in self._blocks:
             for var, rule in blk.dynamics.items():
-                kind  = "control" if isinstance(rule, Control) else "state"
+                kind = "control" if isinstance(rule, Control) else "state"
                 agent = getattr(rule, "agent", "global") or "global"
                 self.node_meta[var] = {
-                    "kind":     kind,
-                    "agent":    agent,
-                    "plate":    agent if agent != "global" else None,
-                    "observed": (kind in ("control", "reward")) or (var in self.observables)
+                    "kind": kind,
+                    "agent": agent,
+                    "plate": agent if agent != "global" else None,
+                    "observed": (kind in ("control", "reward"))
+                    or (var in self.observables),
                 }
 
         # 4) reward
         for blk in self._blocks:
             for var, rd in blk.reward.items():
-                agent = rd if isinstance(rd, str) else getattr(rd, "agent", "global") or "global"
+                agent = (
+                    rd
+                    if isinstance(rd, str)
+                    else getattr(rd, "agent", "global") or "global"
+                )
                 self.node_meta[var] = {
-                    "kind":     "reward",
-                    "agent":    agent,
-                    "plate":    agent if agent != "global" else None,
-                    "observed": True
+                    "kind": "reward",
+                    "agent": agent,
+                    "plate": agent if agent != "global" else None,
+                    "observed": True,
                 }
 
         # 5) params: only keys in calibration not appearing on any LHS
         for p in set(self.calibration) - lhs:
-            self.node_meta.setdefault(p, {
-                "kind":     "param",
-                "agent":    "global",
-                "plate":    None,
-                "observed": False
-            })
+            self.node_meta.setdefault(
+                p,
+                {"kind": "param", "agent": "global", "plate": None, "observed": False},
+            )
 
     def _rhs_symbols(self, rule):
         """Extract variable names from RHS rule (callable or string)."""
@@ -130,7 +134,7 @@ class ModelAnalyzer:
         if callable(rule):
             try:
                 return list(inspect.signature(rule).parameters.keys())
-            except:
+            except Exception:
                 src = inspect.getsource(rule)
                 return _TOKEN_RE.findall(src)
         return []
@@ -150,7 +154,11 @@ class ModelAnalyzer:
 
             # dynamics
             for var, rule in blk.dynamics.items():
-                deps = list(rule.iset) if isinstance(rule, Control) else self._rhs_symbols(rule)
+                deps = (
+                    list(rule.iset)
+                    if isinstance(rule, Control)
+                    else self._rhs_symbols(rule)
+                )
                 for d in deps:
                     self._raw_deps[var].append(d)
                     if d in self.calibration:
@@ -172,7 +180,7 @@ class ModelAnalyzer:
         """Mark (tgt, src) pairs for lag edges via insertion-order heuristic."""
         for blk in self._blocks:
             order = list(blk.dynamics.keys())
-            seen  = set()
+            seen = set()
             for tgt in order:
                 deps = [d for d in self._raw_deps.get(tgt, []) if d in order]
                 for src in deps:
@@ -222,11 +230,11 @@ class ModelAnalyzer:
                     try:
                         src = inspect.getsource(rule).strip()
                         if "lambda" in src:
-                            body = src.split(":",1)[1].strip().rstrip(",")
+                            body = src.split(":", 1)[1].strip().rstrip(",")
                             self.formulas[var] = f"{var} = {body}"
                         else:
                             self.formulas[var] = f"{var} = [Function]"
-                    except:
+                    except Exception:
                         self.formulas[var] = f"{var} = [Unknown]"
 
             # reward
@@ -235,11 +243,11 @@ class ModelAnalyzer:
                     try:
                         src = inspect.getsource(rd).strip()
                         if "lambda" in src:
-                            body = src.split(":",1)[1].strip().rstrip(",")
+                            body = src.split(":", 1)[1].strip().rstrip(",")
                         else:
                             body = "[Function]"
                         self.formulas[var] = f"{var} = {body}"
-                    except:
+                    except Exception:
                         self.formulas[var] = f"{var} = [Unknown]"
 
         # params
@@ -252,16 +260,15 @@ class ModelAnalyzer:
         for var, meta in self.node_meta.items():
             agent = meta["agent"]
             if agent != "global":
-                self.plates.setdefault(agent, {
-                    "label": agent.capitalize(),
-                    "size":  f"N_{agent}"
-                })
+                self.plates.setdefault(
+                    agent, {"label": agent.capitalize(), "size": f"N_{agent}"}
+                )
 
     def to_dict(self):
         """Return a JSON-serializable dict of the analysis."""
         return {
             "node_meta": self.node_meta,
-            "edges":      self.edges,
-            "formulas":   self.formulas,
-            "plates":     self.plates
+            "edges": self.edges,
+            "formulas": self.formulas,
+            "plates": self.plates,
         }
