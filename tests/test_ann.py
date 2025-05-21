@@ -1,12 +1,11 @@
-import numpy as np
 import skagent.ann as ann
+import skagent.grid as grid
 import skagent.models.perfect_foresight as pfm
 import torch
 
 import unittest
 
 ## CUDA handling
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.is_available())
 
@@ -34,12 +33,14 @@ class test_ann(unittest.TestCase):
 
         ### Setting up the training
 
-        training_N = 10
-        states_0_N = torch.FloatTensor(
-            np.random.random((training_N, len(state_variables))) * np.array([3, 1])
+        states_0_N = grid.torched(
+            grid.make_grid(
+                {
+                    "a": {"min": 0, "max": 3, "count": 10},
+                    "p": {"min": 0, "max": 1, "count": 4},
+                }
+            )
         )
-        states_0_N = states_0_N.to(device)
-        ## TODO: make the training states reflect the right ranges on the state space.
         ## TODO: include big_t shocks in this -- for lifetime reward
 
         net = ann.PolicyNet(state_variables, pfblock.get_controls(), width=8)
