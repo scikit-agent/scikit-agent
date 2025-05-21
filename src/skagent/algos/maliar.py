@@ -19,7 +19,7 @@ def create_transition_function(block, state_syms):
 
     def transition_function(states_t, controls_t, parameters={}):
         vals = parameters | states_t | controls_t
-        post = block.transition(vals, {}, screen=True)
+        post = block.transition(vals, {}, fix=list(controls_t.keys()))
 
         return {sym: post[sym] for sym in state_syms}
 
@@ -49,7 +49,7 @@ def create_reward_function(block, agent=None):
 
     def reward_function(states_t, controls_t, parameters={}):
         vals_t = parameters | states_t | controls_t
-        post = block.transition(vals_t, {}, screen=True)
+        post = block.transition(vals_t, {}, fix=list(controls_t.keys()))
         return {
             sym: post[sym]
             for sym in block.reward
@@ -65,7 +65,7 @@ def estimate_discounted_lifetime_reward(
     """
     block
     discount_factor - can be a number or a function of state variables
-    dr - decision rule
+    dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
     states_0 - initial states
     big_t - integer. Number of time steps to simulate forward
     parameters - optional - calibration parameters
@@ -75,7 +75,12 @@ def estimate_discounted_lifetime_reward(
     total_discounted_reward = 0
 
     tf = create_transition_function(block, list(states_0.keys()))
-    df = create_decision_function(block, dr)
+    if callable(dr):
+        # assume a full decision function has been passed in
+        df = dr
+    else:
+        # create a decision function from the decision rule
+        df = create_decision_function(block, dr)
     rf = create_reward_function(block, agent)
 
     # this assumes only one reward is given.
