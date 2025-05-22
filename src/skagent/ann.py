@@ -43,9 +43,9 @@ def net_to_decision_function(net, state_variables, control_variables):
     def decision_function(states_t, parameters={}):
         # could do more to sort the values of states_t by states_variables
         # because they might be unaligned
-        input = torch.FloatTensor(list(states_t.values()))
-        input = input.to(device)
-        output = net(input)
+        input_tensor = torch.FloatTensor(list(states_t.values()))
+        input_tensor = input_tensor.to(device)
+        output = net(input_tensor)
         decisions = dict(zip(control_variables, output))
         return decisions
 
