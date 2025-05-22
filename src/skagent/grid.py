@@ -36,8 +36,10 @@ def cartesian_product(*arrays):
     *arrays: Variable length arrays to compute product
 
     Returns:
-    Array of shape (len(arrays), len(arrays[0]) * len(arrays[1]) * ... * len(arrays[-1]))
-    where each row contains the Cartesian product.
+    Array of shape (product_of_lengths, num_arrays)
+    where `product_of_lengths` is the product of the lengths of the input arrays,
+    and `num_arrays` is the number of input arrays. Each row contains one element
+    of the Cartesian product.
     """
     # Create meshgrid
     meshes = np.meshgrid(*arrays, indexing="ij")
