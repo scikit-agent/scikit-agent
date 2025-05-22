@@ -323,7 +323,9 @@ class DBlock(Block):
         """
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
-    def transition(self, pre, dr, screen=False, fix=[]):
+    def transition(self, pre, dr, screen=False, fix=None):
+        if fix is None:
+            fix = []
         """
         Computes the state variables following pre-given states,
         given a decision rule for all controls.
