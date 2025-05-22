@@ -17,12 +17,9 @@ class Net(torch.nn.Module):
     def __init__(self, n_inputs, n_outputs, width):
         super(Net, self).__init__()
 
-        self.hidden1 = torch.nn.Linear(
-            n_inputs, width
-        )  # 1 neuron in input layer, 64 neurons in 1st hidden layer 1
-        # arbitrary numbers here.
-        self.hidden2 = torch.nn.Linear(width, width)  # 128 neurons in 2nd hidden layer
-        self.output = torch.nn.Linear(width, n_outputs)  # 1 neuron in output layer
+        self.hidden1 = torch.nn.Linear(n_inputs, width)
+        self.hidden2 = torch.nn.Linear(width, width)
+        self.output = torch.nn.Linear(width, n_outputs)
         self.to(device)
 
     def forward(self, x):
