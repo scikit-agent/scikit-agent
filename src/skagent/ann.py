@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Net(torch.nn.Module):
     @property
     def device(self):
-        return super(Net, self).device
+        return next(self.parameters()).device
 
     def __init__(self, n_inputs, n_outputs, width):
         super(Net, self).__init__()
