@@ -75,6 +75,7 @@ def estimate_discounted_lifetime_reward(
     total_discounted_reward = 0
 
     tf = create_transition_function(block, list(states_0.keys()))
+
     if callable(dr):
         # assume a full decision function has been passed in
         df = dr
