@@ -31,8 +31,8 @@ class Net(torch.nn.Module):
 
 
 class PolicyNet(Net):
-    def __init__(self, state_vars, control_vars, width=32):
-        super().__init__(len(state_vars), len(control_vars), width)
+    def __init__(self, state_vars, shock_vars, control_vars, width=32):
+        super().__init__(len(state_vars) + len(shock_vars), len(control_vars), width)
 
 
 ################
@@ -40,7 +40,7 @@ class PolicyNet(Net):
 
 
 def net_to_decision_function(net, state_variables, control_variables):
-    def decision_function(states_t, parameters={}):
+    def decision_function(states_t, shocks_t, parameters):
         # could do more to sort the values of states_t by states_variables
         # because they might be unaligned
         input_tensor = torch.FloatTensor(list(states_t.values()))
@@ -55,9 +55,13 @@ def net_to_decision_function(net, state_variables, control_variables):
 def get_estimated_discounted_lifetime_reward_loss(
     state_variables, block, discount_factor, big_t, parameters
 ):
+    shock_vars = block.get_shocks()
+
+    given_syms = state_variables + list(shock_vars.keys())
+
     def estimated_discounted_lifetime_reward_loss(net, input_vector):
-        ### need to zip the state variables and the output vector
-        states_0 = dict(zip(state_variables, input_vector))
+        ## includes the values of state_0 variables, and shocks.
+        given_vals = dict(zip(given_syms, input_vector))
 
         ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = solver.estimate_discounted_lifetime_reward(
@@ -66,7 +70,7 @@ def get_estimated_discounted_lifetime_reward_loss(
             net_to_decision_function(
                 net, state_variables, block.get_controls()
             ),  # TODO: Get controls by agent?
-            states_0,
+            given_vals,
             big_t,
             parameters=parameters,
             agent=None,  ## TODO: Pass through the agent?

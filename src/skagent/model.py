@@ -367,7 +367,7 @@ class DBlock(Block):
                 del dyn[sym]
             else:
                 raise Exception(
-                    f"Attempting to fix variable {sym} but it is not in either dyn ({sym in dyn}) or pre({sym in pre})"
+                    f"Attempting to fix variable ({sym}) but it is not in either dyn ({sym in dyn}) or pre ({sym in pre})"
                 )
 
         return simulate_dynamics(dyn, pre, dr)
