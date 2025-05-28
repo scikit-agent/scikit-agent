@@ -1,9 +1,9 @@
 # test_model_analyzer.py
 
-import inspect
 import pytest
 
 from skagent.model import DBlock, Control
+
 try:
     from HARK.distributions import Bernoulli, MeanOneLogNormal
 except ImportError:
@@ -21,7 +21,7 @@ def make_dummy_block():
       - one reward that depends on the control
     """
     shocks = {
-        "shock_1": (Bernoulli,        {"p": "param_1"}),
+        "shock_1": (Bernoulli, {"p": "param_1"}),
         "shock_2": (MeanOneLogNormal, {"sigma": "param_2"}),
     }
 
@@ -39,10 +39,10 @@ def make_dummy_block():
         "control_1": Control(
             iset=["state_1", "state_2"],
             lower_bound=lambda s1, s2: 0,
-            upper_bound=lambda s1, s2: s1 + s2
+            upper_bound=lambda s1, s2: s1 + s2,
         ),
         # reward_var is included in dynamics to test dynamic parsing
-        "reward_var": lambda control_1: control_1
+        "reward_var": lambda control_1: control_1,
     }
 
     # reward mapping uses a non-global agent name
@@ -82,7 +82,7 @@ def test_walk_and_collect_nodes(analysis):
     and that reward variables are correctly labeled.
     """
     meta = analysis.node_meta
-    blk  = analysis.model
+    blk = analysis.model
 
     # shocks and dynamics (except reward) and calibration keys should be subsets of node_meta
     assert set(blk.shocks.keys()).issubset(meta)
@@ -120,7 +120,7 @@ def test_collect_dependencies_and_param_deps(analysis):
     - reward_var ← control_1
     """
     raw = analysis._raw_deps
-    pd  = analysis._param_deps
+    pd = analysis._param_deps
 
     # shock↔param
     assert "param_1" in pd and "shock_1" in pd["param_1"]
