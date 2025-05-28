@@ -9,7 +9,7 @@ try:
 except ImportError:
     from econ_ark.HARK.distributions import Bernoulli, MeanOneLogNormal
 
-from model_analyzer import ModelAnalyzer
+from skagent.model_analyzer import ModelAnalyzer
 
 
 def make_dummy_block():
