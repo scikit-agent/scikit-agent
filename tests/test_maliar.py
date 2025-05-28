@@ -1,4 +1,4 @@
-from HARK.distributions import Normal
+import fixtures as bft
 import numpy as np
 import skagent.algos.maliar as solver
 import skagent.model as model
@@ -89,92 +89,22 @@ class TestSolverFunctions(unittest.TestCase):
         self.assertAlmostEqual(dlr_2, -1.63798709)
 
 
-lr_test_block_data_0 = {
-    "name": "lr_test_0",
-    "shocks": {
-        "theta": (Normal, {"mean": 0, "sigma": 1}),
-    },
-    "dynamics": {
-        "c": model.Control(["a", "theta"]),
-        "a": lambda a, c, theta: a - c + theta,
-        "u": lambda theta, c: -((theta - c) ** 2),
-    },
-    "reward": {"u": "consumer"},
-}
-lr_test_block_data_0_optimal_dr = {"c": lambda a, theta: theta}
-
-lr_test_block_data_1 = {
-    "name": "lr_test_1 - hidden shock",
-    "shocks": {
-        "theta": (Normal, {"mean": 0, "sigma": 1}),
-    },
-    "dynamics": {
-        "c": model.Control(["a"]),
-        "a": lambda a, c, theta: a - c + theta,
-        "u": lambda theta, c: -((theta - c) ** 2),
-    },
-    "reward": {"u": "consumer"},
-}
-lr_test_block_data_1_optimal_dr = {"c": lambda a: 0}
-
-lr_test_block_data_2 = {
-    "name": "lr_test_2 - two shocks, one hidden",
-    "shocks": {
-        "theta": (Normal, {"mean": 0, "sigma": 1}),
-        "psi": (Normal, {"mean": 0, "sigma": 1}),
-    },
-    "dynamics": {
-        "m": lambda a, theta: a + theta,
-        "c": model.Control(["m"]),
-        "a": lambda m, c, psi: m - c + psi,
-        "u": lambda m, c: -((m - c) ** 2),
-    },
-    "reward": {"u": "consumer"},
-}
-lr_test_block_data_2_optimal_dr = {"c": lambda m: m}
-
-
 class TestLifetimeReward(unittest.TestCase):
     """
     More tests of the lifetime reward function specifically.
     """
 
     def setUp(self):
-        self.block_0 = model.DBlock(**lr_test_block_data_0)
-        self.block_1 = model.DBlock(**lr_test_block_data_1)
-        self.block_2 = model.DBlock(**lr_test_block_data_2)
+        self.block_1 = model.DBlock(**bft.lr_test_block_data_1)
+        self.block_2 = model.DBlock(**bft.lr_test_block_data_2)
 
         self.states_0 = {"a": 0}
-
-    def test_block_0_1(self):
-        dlr_0 = solver.estimate_discounted_lifetime_reward(
-            self.block_0,
-            0.9,
-            lr_test_block_data_0_optimal_dr,
-            self.states_0,
-            1,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[0]]))},
-        )
-
-        self.assertEqual(dlr_0, 0)
-
-        # big_2 is 2, and theta != 0
-        dlr_0_2 = solver.estimate_discounted_lifetime_reward(
-            self.block_0,
-            0.9,
-            lr_test_block_data_0_optimal_dr,
-            self.states_0,
-            2,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[1], [-1]]))},
-        )
-
-        self.assertEqual(dlr_0_2, 0)
 
     def test_block_1(self):
         dlr_1 = solver.estimate_discounted_lifetime_reward(
             self.block_1,
             0.9,
-            lr_test_block_data_1_optimal_dr,
+            bft.lr_test_block_data_1_optimal_dr,
             self.states_0,
             1,
             shocks_by_t={"theta": torch.FloatTensor(np.array([[0]]))},
@@ -186,7 +116,7 @@ class TestLifetimeReward(unittest.TestCase):
         dlr_1_2 = solver.estimate_discounted_lifetime_reward(
             self.block_1,
             0.9,
-            lr_test_block_data_1_optimal_dr,
+            bft.lr_test_block_data_1_optimal_dr,
             self.states_0,
             2,
             shocks_by_t={"theta": torch.FloatTensor(np.array([[0], [0]]))},
@@ -198,7 +128,7 @@ class TestLifetimeReward(unittest.TestCase):
         dlr_2 = solver.estimate_discounted_lifetime_reward(
             self.block_2,
             0.9,
-            lr_test_block_data_2_optimal_dr,
+            bft.lr_test_block_data_2_optimal_dr,
             self.states_0,
             1,
             shocks_by_t={

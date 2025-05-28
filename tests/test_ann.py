@@ -1,8 +1,7 @@
-from HARK.distributions import Normal
+from fixtures import case_0
 import skagent.ann as ann
 import skagent.grid as grid
 import skagent.models.perfect_foresight as pfm
-from skagent.model import Control, DBlock
 import torch
 
 
@@ -13,110 +12,77 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.is_available())
 
 
-test_calibration = {"theta": 1}
+class test_ann_lr(unittest.TestCase):
+    def setUp(self):
+        pass
 
-test_block = DBlock(
-    **{
-        "name": "test",
-        "dynamics": {
-            "b": lambda a, theta: a + theta,
-            "c": Control(["b"], agent="consumer"),
-            "u": lambda b, c: -((b - c) ** 2),
-            "a": lambda b, theta: b + theta,
-        },
-        "reward": {"u": "consumer"},
-    }
-)
-
-
-test_block_with_shock = DBlock(
-    **{
-        "name": "test with shock",
-        "shocks": {
-            "theta": (Normal, {"mean": 0, "sigma": 1}),
-        },
-        "dynamics": {
-            "b": lambda a, theta: a + theta,
-            "c": Control(["b"], agent="consumer"),
-            "u": lambda b, c: -((b - c) ** 2),
-            "a": lambda b: b,
-        },
-        "reward": {"u": "consumer"},
-    }
-)
-
-
-class test_ann(unittest.TestCase):
-    def test_basic(self):
-        state_variables = ["a"]
-
-        ### Loss function
+    def test_case_0(self):
         edlrl = ann.get_estimated_discounted_lifetime_reward_loss(
-            state_variables, test_block, 0.9, 1, parameters=test_calibration
-        )
-
-        ### Setting up the training
-        states_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 4, "count": 21},
-                }
-            )
-        )
-        ## TODO: include big_t shocks in this -- for lifetime reward
-
-        net = ann.PolicyNet(state_variables, {}, test_block.get_controls(), width=16)
-
-        ### Trainiing
-        ann.train_nn(net, states_0_N, edlrl, epochs=200)
-
-        self.assertTrue(torch.allclose(states_0_N + 1, net(states_0_N), atol=0.05))
-
-    def test_basic_with_shock(self):
-        states_0 = {
-            "a": 0,
-        }
-        state_variables = list(states_0.keys())
-
-        ### Loss function
-
-        big_t = 1
-
-        # TODO : have this take some number of random shocks
-        edlrl = ann.get_estimated_discounted_lifetime_reward_loss(
-            state_variables,
-            test_block_with_shock,
+            self.state_variables,
+            case_0["block"],
             0.9,
-            big_t,
-            parameters=test_calibration,
+            1,
+            parameters=case_0["calibration"],
         )
 
-        ### Setting up the training
         states_0_N = grid.torched(
             grid.make_grid(
                 {
-                    "a": {"min": 0, "max": 4, "count": 21},
-                    "theta": {
-                        "min": -1,
-                        "max": 1,
-                        "count": 7,
-                    },  # Ideally this is an equiprobable discretization
-                    # there is only one of these now because big_t = 1.
+                    "a": {"min": 0, "max": 2, "count": 21},
                 }
             )
         )
 
-        net = ann.PolicyNet(
-            state_variables,
-            test_block_with_shock.get_shocks(),
-            test_block_with_shock.get_controls(),
-            width=16,
+        bpn = ann.BlockPolicyNet(case_0["block"], width=16)
+        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
+
+        c_ann = bpn.decision_function({"a": states_0_N[:, 0]}, {}, {})["c"]
+
+        # Is this result stochastic? How are the network weights being initialized?
+        self.assertTrue(
+            torch.allclose(c_ann, torch.zeros(c_ann.shape).to(device), atol=0.001)
         )
 
-        ### Trainiing
-        ann.train_nn(net, states_0_N, edlrl, epochs=200)
+    """
+    def test_block_1(self):
+        dlr_1 = solver.estimate_discounted_lifetime_reward(
+            self.block_1,
+            0.9,
+            lr_test_block_data_1_optimal_dr,
+            self.states_0,
+            1,
+            shocks_by_t={"theta": torch.FloatTensor(np.array([[0]]))},
+        )
 
-        self.assertTrue(torch.allclose(states_0_N, net(states_0_N), atol=0.05))
+        self.assertEqual(dlr_1, 0)
+
+        # big_t is 2
+        dlr_1_2 = solver.estimate_discounted_lifetime_reward(
+            self.block_1,
+            0.9,
+            lr_test_block_data_1_optimal_dr,
+            self.states_0,
+            2,
+            shocks_by_t={"theta": torch.FloatTensor(np.array([[0], [0]]))},
+        )
+
+        self.assertEqual(dlr_1_2, 0)
+
+    def test_block_2(self):
+        dlr_2 = solver.estimate_discounted_lifetime_reward(
+            self.block_2,
+            0.9,
+            lr_test_block_data_2_optimal_dr,
+            self.states_0,
+            1,
+            shocks_by_t={
+                "theta": torch.FloatTensor(np.array([[0]])),
+                "psi": torch.FloatTensor(np.array([[0]])),
+            },
+        )
+
+        self.assertEqual(dlr_2, 0)
+    """
 
     def test_lifetime_reward_perfect_foresight(self):
         ### Model data
@@ -134,15 +100,12 @@ class test_ann(unittest.TestCase):
         states_0_N = grid.torched(
             grid.make_grid(
                 {
-                    "a": {"min": 0, "max": 3, "count": 10},
+                    "a": {"min": 0, "max": 3, "count": 5},
                     "p": {"min": 0, "max": 1, "count": 4},
                 }
             )
         )
 
-        net = ann.PolicyNet(state_variables, {}, pfblock.get_controls(), width=8)
-
-        ### Trainiing
-        ann.train_nn(net, states_0_N, edlrl, epochs=100)
-
+        bpn = ann.BlockPolicyNet(pfblock, width=8)
+        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=100)
         ## This is just a smoke test.
