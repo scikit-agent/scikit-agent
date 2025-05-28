@@ -1,4 +1,4 @@
-from fixtures import case_0
+from conftest import case_0
 import skagent.ann as ann
 import skagent.grid as grid
 import skagent.models.perfect_foresight as pfm
@@ -18,7 +18,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_0(self):
         edlrl = ann.get_estimated_discounted_lifetime_reward_loss(
-            self.state_variables,
+            ["a"],
             case_0["block"],
             0.9,
             1,

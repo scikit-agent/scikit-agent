@@ -1,4 +1,4 @@
-import fixtures as bft
+import conftest as bft
 import numpy as np
 import skagent.algos.maliar as solver
 import skagent.model as model
