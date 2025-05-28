@@ -187,4 +187,4 @@ def test_collect_formulas(analysis):
 
     # reward body comes from lambda
     # reward_var formula is not introspectable -> [Function]
-    assert f["reward_var"] == "reward_var = [Function]"
+    assert f["reward_var"] == "reward_var = lambda control_1: control_1"
