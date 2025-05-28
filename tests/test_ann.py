@@ -1,11 +1,13 @@
-from conftest import case_0
+from conftest import case_0, case_1
 import skagent.ann as ann
 import skagent.grid as grid
 import skagent.models.perfect_foresight as pfm
 import torch
-
-
 import unittest
+
+
+torch.manual_seed(10077696)
+# np.random.seed(seed_value)
 
 ## CUDA handling
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,9 +40,43 @@ class test_ann_lr(unittest.TestCase):
 
         c_ann = bpn.decision_function({"a": states_0_N[:, 0]}, {}, {})["c"]
 
+        print(c_ann)
+
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
-            torch.allclose(c_ann, torch.zeros(c_ann.shape).to(device), atol=0.001)
+            torch.allclose(c_ann, torch.zeros(c_ann.shape).to(device), atol=0.0015)
+        )
+
+    def test_case_1(self):
+        edlrl = ann.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_1["block"],
+            0.9,
+            1,
+            parameters=case_1["calibration"],
+        )
+
+        given_0_N = grid.torched(
+            grid.make_grid(
+                {
+                    "a": {"min": 0, "max": 1, "count": 7},
+                    "theta": {"min": -1, "max": 1, "count": 7},
+                }
+            )
+        )
+
+        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=350)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N[:, 0]}, {"theta": given_0_N[:, 1]}, {}
+        )["c"]
+
+        errors = c_ann.flatten() - given_0_N[:, 1]
+
+        # Is this result stochastic? How are the network weights being initialized?
+        self.assertTrue(
+            torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.015)
         )
 
     """

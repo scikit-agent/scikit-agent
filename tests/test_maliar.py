@@ -1,3 +1,4 @@
+from conftest import case_1
 import conftest as bft
 import numpy as np
 import skagent.algos.maliar as solver
@@ -95,16 +96,15 @@ class TestLifetimeReward(unittest.TestCase):
     """
 
     def setUp(self):
-        self.block_1 = model.DBlock(**bft.lr_test_block_data_1)
         self.block_2 = model.DBlock(**bft.lr_test_block_data_2)
 
         self.states_0 = {"a": 0}
 
     def test_block_1(self):
         dlr_1 = solver.estimate_discounted_lifetime_reward(
-            self.block_1,
+            case_1["block"],
             0.9,
-            bft.lr_test_block_data_1_optimal_dr,
+            case_1["optimal_dr"],
             self.states_0,
             1,
             shocks_by_t={"theta": torch.FloatTensor(np.array([[0]]))},
@@ -114,9 +114,9 @@ class TestLifetimeReward(unittest.TestCase):
 
         # big_t is 2
         dlr_1_2 = solver.estimate_discounted_lifetime_reward(
-            self.block_1,
+            case_1["block"],
             0.9,
-            bft.lr_test_block_data_1_optimal_dr,
+            case_1["optimal_dr"],
             self.states_0,
             2,
             shocks_by_t={"theta": torch.FloatTensor(np.array([[0], [0]]))},
