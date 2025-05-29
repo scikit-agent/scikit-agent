@@ -11,7 +11,8 @@ and models using the framework.
 
 Examples include consumption-savings models, portfolio choice problems, and other
 standard economic models that can be solved using reinforcement learning and
-other computational methods. 
+other computational methods.
+
 
 
 .. raw:: html

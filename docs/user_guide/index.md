@@ -1,6 +1,7 @@
 # User Guide
 
-This guide provides comprehensive documentation for using scikit-agent in your research and applications.
+This guide provides comprehensive documentation for using scikit-agent in your
+research and applications.
 
 ```{toctree}
 :maxdepth: 2
@@ -14,7 +15,8 @@ simulation
 
 ## Getting Started
 
-If you're new to scikit-agent, we recommend starting with the {doc}`installation` guide, followed by the {doc}`quickstart` tutorial.
+If you're new to scikit-agent, we recommend starting with the
+{doc}`installation` guide, followed by the {doc}`quickstart` tutorial.
 
 ## Core Concepts
 
@@ -24,4 +26,5 @@ If you're new to scikit-agent, we recommend starting with the {doc}`installation
 
 ## Advanced Topics
 
-For more advanced usage patterns and customization options, see the individual sections in this guide. 
+For more advanced usage patterns and customization options, see the individual
+sections in this guide.

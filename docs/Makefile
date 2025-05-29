@@ -27,4 +27,4 @@ html:
 	$(SPHINXBUILD) -b html $(SOURCEDIR) $(BUILDDIR) $(SPHINXOPTS)
 
 livehtml:
-	sphinx-autobuild $(SOURCEDIR) $(BUILDDIR) $(SPHINXOPTS) 
+	sphinx-autobuild $(SOURCEDIR) $(BUILDDIR) $(SPHINXOPTS)

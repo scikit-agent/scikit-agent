@@ -9,7 +9,8 @@ and classes in practical scenarios.
 
 Each example is designed to be self-contained and can be run independently.
 The examples demonstrate real-world usage patterns and best practices for
-using scikit-agent in your research and applications. 
+using scikit-agent in your research and applications.
+
 
 
 .. raw:: html
@@ -32,7 +33,8 @@ These examples demonstrate how to use various solution methods, optimization
 algorithms, and numerical techniques.
 
 Examples include value function iteration, policy iteration, neural network
-training, and other computational approaches to solving economic models. 
+training, and other computational approaches to solving economic models.
+
 
 
 .. raw:: html
@@ -56,7 +58,8 @@ and models using the framework.
 
 Examples include consumption-savings models, portfolio choice problems, and other
 standard economic models that can be solved using reinforcement learning and
-other computational methods. 
+other computational methods.
+
 
 
 .. raw:: html
@@ -96,7 +99,8 @@ These examples show how to generate synthetic data, run Monte Carlo simulations,
 and analyze the results.
 
 Examples include life-cycle simulations, policy experiments, and sensitivity
-analyses that help understand model behavior under different conditions. 
+analyses that help understand model behavior under different conditions.
+
 
 
 .. raw:: html

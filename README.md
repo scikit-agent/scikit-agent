@@ -11,14 +11,21 @@
 
 <!-- SPHINX-START -->
 
-**scikit-agent** is a scikit-learn compatible toolkit for agent-based economic modeling. It provides a unified interface for creating, solving, and simulating economic models using modern computational methods including reinforcement learning, neural networks, and traditional numerical techniques.
+**scikit-agent** is a scikit-learn compatible toolkit for agent-based economic
+modeling. It provides a unified interface for creating, solving, and simulating
+economic models using modern computational methods including reinforcement
+learning, neural networks, and traditional numerical techniques.
 
 ## Key Features
 
-- **Scikit-learn compatible API** for easy integration with the Python scientific ecosystem
-- **Economic model classes** for consumption-savings, portfolio choice, and other standard models
-- **Multiple solution algorithms** including value function iteration, policy iteration, and neural network approaches
-- **Simulation tools** for generating synthetic data and running policy experiments
+- **Scikit-learn compatible API** for easy integration with the Python
+  scientific ecosystem
+- **Economic model classes** for consumption-savings, portfolio choice, and
+  other standard models
+- **Multiple solution algorithms** including value function iteration, policy
+  iteration, and neural network approaches
+- **Simulation tools** for generating synthetic data and running policy
+  experiments
 - **Comprehensive documentation** with examples and tutorials
 
 ## Quick Start
@@ -28,9 +35,7 @@ import skagent
 
 # Create a basic consumption-savings model
 model = skagent.models.ConsumptionSavingsModel(
-    periods=50,
-    discount_factor=0.95,
-    risk_aversion=2.0
+    periods=50, discount_factor=0.95, risk_aversion=2.0
 )
 
 # Solve the model

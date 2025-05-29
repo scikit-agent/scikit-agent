@@ -16,10 +16,11 @@ utils
 The scikit-agent API is organized into several main modules:
 
 - {doc}`models` - Economic model classes and utilities
-- {doc}`algorithms` - Solution algorithms and optimization methods  
+- {doc}`algorithms` - Solution algorithms and optimization methods
 - {doc}`simulation` - Simulation tools and analysis functions
 - {doc}`utils` - Utility functions and helpers
 
 ## Quick Reference
 
-For a quick overview of the most commonly used classes and functions, see the examples in our {doc}`../auto_examples/index`. 
+For a quick overview of the most commonly used classes and functions, see the
+examples in our {doc}`../auto_examples/index`.

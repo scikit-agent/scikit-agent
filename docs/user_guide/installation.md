@@ -6,7 +6,7 @@ scikit-agent requires:
 
 - Python 3.9 or higher
 - NumPy
-- SciPy  
+- SciPy
 - Matplotlib
 - PyTorch
 - HARK (Econ-ARK)
@@ -43,5 +43,6 @@ To verify your installation:
 
 ```python
 import skagent
+
 print(skagent.__version__)
-``` 
+```
