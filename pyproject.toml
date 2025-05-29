@@ -53,6 +53,9 @@ docs = [
   "sphinx_copybutton",
   "sphinx_autodoc_typehints",
   "furo>=2023.08.17",
+  "sphinx-gallery",
+  "matplotlib>=3.0",
+  "pillow",
 ]
 
 [tool.hatch]

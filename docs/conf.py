@@ -16,7 +16,30 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
+    "sphinx_gallery.gen_gallery",
 ]
+
+# Sphinx-Gallery configuration
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",  # path to example scripts
+    "gallery_dirs": "auto_examples",  # path to gallery generated output
+    "filename_pattern": "/plot_",  # pattern to match example files
+    "ignore_pattern": r"__init__\.py",  # patterns to ignore
+    "plot_gallery": "True",  # create a gallery
+    "download_all_examples": False,  # don't create zip downloads by default
+    "remove_config_comments": True,  # remove config comments from examples
+    "expected_failing_examples": [],  # list of examples expected to fail
+    "image_scrapers": ("matplotlib",),  # image scrapers
+    "first_notebook_cell": "%matplotlib inline",  # first cell for notebooks
+    "show_memory": False,  # don't show memory usage
+    "show_signature": True,  # show function signatures
+    "min_reported_time": 0,  # minimum time to report
+    "reference_url": {
+        "scikit_agent": None,  # link to your docs
+        "matplotlib": "https://matplotlib.org/stable",
+        "numpy": "https://numpy.org/doc/stable",
+    },
+}
 
 source_suffix = [".rst", ".md"]
 exclude_patterns = [
@@ -46,14 +69,23 @@ html_theme_options: dict[str, Any] = {
     "source_repository": "https://github.com/scikit-agent/scikit-agent",
     "source_branch": "main",
     "source_directory": "docs/",
+    "sidebar_hide_name": True,
+    "navigation_with_keys": True,
 }
 
 myst_enable_extensions = [
     "colon_fence",
+    "deflist",
+    "tasklist",
 ]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
+    "matplotlib": ("https://matplotlib.org/stable", None),
+    "sklearn": ("https://scikit-learn.org/stable", None),
+    "torch": ("https://pytorch.org/docs/stable", None),
 }
 
 nitpick_ignore = [
@@ -62,3 +94,13 @@ nitpick_ignore = [
 ]
 
 always_document_param_types = True
+
+# HTML settings
+html_title = f"{project} {version}"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+
+# Auto-generated API docs
+autosummary_generate = True
+autodoc_typehints = "description"
+autodoc_typehints_description_target = "documented"
