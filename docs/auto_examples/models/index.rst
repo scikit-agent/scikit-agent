@@ -49,3 +49,4 @@ other computational methods.
    :hidden:
 
    /auto_examples/models/plot_basic_consumption_model
+

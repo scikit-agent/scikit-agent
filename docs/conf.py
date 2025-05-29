@@ -16,7 +16,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
-    "sphinx_gallery.gen_gallery",
+    # "sphinx_gallery.gen_gallery",  # Temporarily disabled due to extension error
     "sphinx_design",
 ]
 
