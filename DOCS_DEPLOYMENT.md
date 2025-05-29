@@ -1,15 +1,18 @@
 # Documentation Deployment Guide
 
-This repository automatically deploys documentation to GitHub Pages with support for both main branch documentation and PR preview deployments.
+This repository automatically deploys documentation to GitHub Pages with support
+for both main branch documentation and PR preview deployments.
 
 ## 🚀 Deployment Overview
 
 ### Main Branch Documentation
+
 - **URL**: `https://scikit-agent.github.io/scikit-agent/`
 - **Trigger**: Pushes to `main` branch or `documentation-*` branches
 - **Target**: Root of GitHub Pages site
 
-### PR Preview Documentation  
+### PR Preview Documentation
+
 - **URL Pattern**: `https://scikit-agent.github.io/scikit-agent/pr-{number}/`
 - **Trigger**: Opening, updating, or reopening pull requests
 - **Target**: Subdirectory based on PR number
@@ -22,7 +25,7 @@ This repository automatically deploys documentation to GitHub Pages with support
 The deployment workflow consists of several jobs:
 
 1. **`build-docs`**: Builds Sphinx documentation
-2. **`deploy-main`**: Deploys to main GitHub Pages (main branch only)  
+2. **`deploy-main`**: Deploys to main GitHub Pages (main branch only)
 3. **`deploy-pr`**: Deploys PR previews to subdirectories
 4. **`cleanup-pr`**: Removes PR previews when PRs are closed
 
@@ -39,6 +42,7 @@ The deployment workflow consists of several jobs:
 ### Repository Settings
 
 1. **Enable GitHub Pages**:
+
    - Go to Settings → Pages
    - Source: "GitHub Actions"
    - No need to select a branch
@@ -50,22 +54,26 @@ The deployment workflow consists of several jobs:
 
 ### Branch Protection
 
-The workflow automatically creates and manages the `gh-pages` branch. No manual setup required.
+The workflow automatically creates and manages the `gh-pages` branch. No manual
+setup required.
 
 ## 📱 User Experience
 
 ### For PR Authors
+
 1. Open a pull request with documentation changes
-2. Wait ~2-3 minutes for deployment  
+2. Wait ~2-3 minutes for deployment
 3. Check PR comments for preview link
 4. Preview updates automatically on new commits
 
 ### For Reviewers
+
 1. Click preview link in PR comments
 2. Review documentation changes live
 3. Compare with main documentation if needed
 
 ### For Maintainers
+
 - Main documentation deploys automatically on merge
 - No manual intervention required
 - All previews cleaned up automatically
@@ -73,16 +81,19 @@ The workflow automatically creates and manages the `gh-pages` branch. No manual 
 ## 🔗 Available URLs
 
 ### Primary Documentation
+
 - **GitHub Pages**: https://scikit-agent.github.io/scikit-agent/
 - **Read the Docs**: https://scikit-agent.readthedocs.io/
 
 ### Development
+
 - **PR Previews**: https://scikit-agent.github.io/scikit-agent/pr-{number}/
 - **Branch Docs**: Available for `documentation-*` branches
 
 ## 🛠️ Manual Deployment
 
 ### Trigger Deployment
+
 ```bash
 # Manual workflow dispatch
 gh workflow run "Deploy Documentation"
@@ -92,6 +103,7 @@ git push origin main
 ```
 
 ### Local Testing
+
 ```bash
 # Build docs locally
 cd docs
@@ -107,10 +119,12 @@ python -m http.server 8000 -d _build
 ### Common Issues
 
 1. **Deployment Fails**:
+
    - Check workflow permissions in repository settings
    - Ensure GitHub Pages is enabled with "GitHub Actions" source
 
 2. **PR Comment Not Created**:
+
    - Verify workflow has "pull-requests: write" permission
    - Check if bot has proper access rights
 
@@ -129,11 +143,13 @@ python -m http.server 8000 -d _build
 ## 📊 Monitoring
 
 ### GitHub Actions
+
 - All deployments logged in Actions tab
 - Build artifacts available for 30 days
 - Deployment status visible in commit checks
 
 ### Branch Management
+
 - `gh-pages` branch managed automatically
 - PR directories added/removed automatically
 - No manual branch management needed
@@ -151,4 +167,4 @@ If migrating from existing documentation setup:
 
 - [GitHub Pages Documentation](https://docs.github.com/en/pages)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Sphinx Documentation](https://www.sphinx-doc.org/) 
+- [Sphinx Documentation](https://www.sphinx-doc.org/)
