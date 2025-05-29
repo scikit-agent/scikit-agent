@@ -1,0 +1,65 @@
+{
+  "__doc__": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "str"
+    }
+  ],
+  "np.mean": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "mean"
+    }
+  ],
+  "np.sum": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "sum"
+    }
+  ],
+  "np.zeros": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "zeros"
+    }
+  ],
+  "plt.show": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "show"
+    }
+  ],
+  "plt.subplots": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "subplots"
+    }
+  ],
+  "plt.tight_layout": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "tight_layout"
+    }
+  ]
+}

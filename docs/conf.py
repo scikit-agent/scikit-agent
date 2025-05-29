@@ -16,7 +16,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
-    # "sphinx_gallery.gen_gallery",  # Temporarily disabled due to extension error
+    "sphinx_gallery.gen_gallery",
     "sphinx_design",
 ]
 
@@ -35,11 +35,8 @@ sphinx_gallery_conf = {
     "show_memory": False,  # don't show memory usage
     "show_signature": True,  # show function signatures
     "min_reported_time": 0,  # minimum time to report
-    "reference_url": {
-        "scikit_agent": None,  # link to your docs
-        "matplotlib": "https://matplotlib.org/stable",
-        "numpy": "https://numpy.org/doc/stable",
-    },
+    # Note: reference_url was removed to fix "Ran out of input" error during hyperlink embedding
+    "backreferences_dir": None,  # disable backreferences to avoid embedding issues
 }
 
 source_suffix = [".rst", ".md"]
