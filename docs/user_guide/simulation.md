@@ -8,7 +8,7 @@ Learn how to execute model simulations:
 
 - **Monte Carlo Simulations**: Statistical analysis with random sampling
 - **Deterministic Simulations**: Controlled scenario analysis
-- **Comparative Statics**: Parameter sensitivity analysis
+- **Comparative Statistics**: Parameter sensitivity analysis
 
 ## Simulation Configuration
 
