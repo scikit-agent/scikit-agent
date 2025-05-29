@@ -17,29 +17,20 @@ api/index
 
 ## Quick Links
 
-::::{grid} 1 1 2 3
-:gutter: 3
+::::{grid} 1 1 2 3 :gutter: 3
 
-:::{grid-item-card} 📖 User Guide
-:link: user_guide/index
-:link-type: doc
+:::{grid-item-card} 📖 User Guide :link: user_guide/index :link-type: doc
 
-Learn how to use scikit-agent with tutorials and guides
-:::
+Learn how to use scikit-agent with tutorials and guides :::
 
-:::{grid-item-card} 🔬 Examples Gallery
-:link: auto_examples/index
-:link-type: doc
+:::{grid-item-card} 🔬 Examples Gallery :link: auto_examples/index :link-type:
+doc
 
-Browse our gallery of examples showcasing scikit-agent capabilities
-:::
+Browse our gallery of examples showcasing scikit-agent capabilities :::
 
-:::{grid-item-card} 📚 API Reference
-:link: api/index
-:link-type: doc
+:::{grid-item-card} 📚 API Reference :link: api/index :link-type: doc
 
-Detailed documentation of all classes and functions
-:::
+Detailed documentation of all classes and functions :::
 
 ::::
 
