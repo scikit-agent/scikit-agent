@@ -1,6 +1,7 @@
 # Simulation
 
-This section contains the API documentation for simulation tools and analysis functions.
+This section contains the API documentation for simulation tools and analysis
+functions.
 
 ## Simulation Classes
 
@@ -12,4 +13,4 @@ Documentation for analysis functions will be added here.
 
 ---
 
-*This page is under construction. Content will be added as the API develops.* 
+_This page is under construction. Content will be added as the API develops._

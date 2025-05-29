@@ -1,6 +1,7 @@
 # Working with Models
 
-This guide covers how to create, configure, and work with economic models in scikit-agent.
+This guide covers how to create, configure, and work with economic models in
+scikit-agent.
 
 ## Model Types
 
@@ -24,4 +25,5 @@ Documentation for model solution will be added here.
 
 ---
 
-*This page is under construction. Content will be added as model classes are developed.* 
+_This page is under construction. Content will be added as model classes are
+developed._

@@ -26,9 +26,9 @@ print("Welcome to scikit-agent!")
 After completing this quickstart:
 
 - Explore the {doc}`models` guide to understand different model types
-- Learn about {doc}`algorithms` for solving your models  
+- Learn about {doc}`algorithms` for solving your models
 - Check out {doc}`simulation` for running analyses
 
 ---
 
-*This page is under construction. More detailed examples will be added.* 
+_This page is under construction. More detailed examples will be added._

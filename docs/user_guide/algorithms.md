@@ -1,6 +1,7 @@
 # Algorithms Guide
 
-This guide covers the solution algorithms and optimization methods available in scikit-agent.
+This guide covers the solution algorithms and optimization methods available in
+scikit-agent.
 
 ## Solution Methods
 
@@ -24,4 +25,5 @@ Documentation for optimization and performance tuning will be added here.
 
 ---
 
-*This page is under construction. Content will be added as algorithms are implemented.* 
+_This page is under construction. Content will be added as algorithms are
+implemented._

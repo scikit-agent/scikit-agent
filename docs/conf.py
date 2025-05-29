@@ -17,6 +17,7 @@ extensions = [
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
     "sphinx_gallery.gen_gallery",
+    "sphinx_design",
 ]
 
 # Sphinx-Gallery configuration

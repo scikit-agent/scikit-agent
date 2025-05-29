@@ -12,4 +12,4 @@ Documentation for model utility functions will be added here.
 
 ---
 
-*This page is under construction. Content will be added as the API develops.* 
+_This page is under construction. Content will be added as the API develops._
