@@ -79,6 +79,43 @@ class test_ann_lr(unittest.TestCase):
             torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.015)
         )
 
+    def test_case_1_2(self):
+        """
+        Running case 1 with big_t == 2
+        """
+        edlrl = ann.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_1["block"],
+            0.9,
+            2,
+            parameters=case_1["calibration"],
+        )
+
+        given_0_N = grid.torched(
+            grid.make_grid(
+                {
+                    "a": {"min": 0, "max": 1, "count": 7},
+                    "theta_0": {"min": -1, "max": 1, "count": 7},
+                    "theta_1": {"min": -1, "max": 1, "count": 7},
+                }
+            )
+        )
+
+        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N[:, 0]}, {"theta": given_0_N[:, 1]}, {}
+        )["c"]
+
+        errors = c_ann.flatten() - given_0_N[:, 1]
+
+        print(errors)
+        # Is this result stochastic? How are the network weights being initialized?
+        self.assertTrue(
+            torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.015)
+        )
+
     """
     def test_block_1(self):
         dlr_1 = solver.estimate_discounted_lifetime_reward(

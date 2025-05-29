@@ -78,7 +78,10 @@ class BlockPolicyNet(Net):
 
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
-        input_tensor = torch.stack([post[isym] for isym in control.iset]).T
+
+        iset_vals = [post[isym].flatten() for isym in control.iset]
+
+        input_tensor = torch.stack(iset_vals).T
 
         input_tensor = input_tensor.to(device)
         output = self(input_tensor)  # application of network
@@ -106,24 +109,35 @@ def get_estimated_discounted_lifetime_reward_loss(
     # Maybe with ZP's analysis modules
 
     # convoluted
+    # TODO: codify this encoding and decoding of the grid into a separate object
     shock_vars = block.get_shocks()
+    big_t_shock_syms = sum(
+        [[f"{sym}_{t}" for sym in list(shock_vars.keys())] for t in range(big_t)], []
+    )
 
     # will work for big_t = 1 only.
-    given_syms = state_variables + list(shock_vars.keys())
+    given_syms = state_variables + big_t_shock_syms
 
     def estimated_discounted_lifetime_reward_loss(df, input_vector):
         ## includes the values of state_0 variables, and shocks.
         given_vals = dict(zip(given_syms, input_vector))
+
+        shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
+        shocks_by_t = {
+            sym: torch.stack([shock_vals[f"{sym}_{t}"] for t in range(big_t)])
+            for sym in shock_vars
+        }
 
         ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = solver.estimate_discounted_lifetime_reward(
             block,
             discount_factor,
             df,
-            given_vals,
+            {sym: given_vals[sym] for sym in state_variables},
             big_t,
             parameters=parameters,
             agent=None,  ## TODO: Pass through the agent?
+            shocks_by_t=shocks_by_t,
             ## Handle multiple decision rules?
         )
         return -edlr

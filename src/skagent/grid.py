@@ -10,6 +10,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def torched(grid):
     tens = torch.FloatTensor(grid).to(device)
+
+    # patching, this should be codified as a new type
+    # tens.labels = grid.labels
+
     return tens
 
 
@@ -36,6 +40,9 @@ def make_grid(config):
         arrays.append(g)
 
     all_g = cartesian_product(*arrays)
+
+    # patching, this should be codified as a new type
+    # all_g.labels = list(config.keys())
 
     return all_g
 

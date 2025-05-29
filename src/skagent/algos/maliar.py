@@ -76,7 +76,7 @@ def estimate_discounted_lifetime_reward(
     discount_factor - can be a number or a function of state variables
     dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
     states_0 - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
-    shocks_by_t - n_shocks x big_t vector of shock values at each time period
+    shocks_by_t - dict - sym : big_t vector of shock values at each time period
     big_t - integer. Number of time steps to simulate forward
     parameters - optional - calibration parameters
     agent - optional - name of reference agent for rewards
@@ -92,6 +92,7 @@ def estimate_discounted_lifetime_reward(
     else:
         # create a decision function from the decision rule
         df = create_decision_function(block, dr)
+
     rf = create_reward_function(block, agent)
 
     # this assumes only one reward is given.
@@ -106,8 +107,9 @@ def estimate_discounted_lifetime_reward(
         )
 
     for t in range(big_t):
+        # TODO
         if shocks_by_t is not None:
-            shocks_t = {sym: shocks_by_t[sym][t, :] for sym in shocks_by_t}
+            shocks_t = {sym: shocks_by_t[sym][t] for sym in shocks_by_t}
         else:
             shocks_t = {}
 
