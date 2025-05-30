@@ -1,5 +1,4 @@
-from conftest import case_1
-import conftest as bft
+from conftest import case_1, case_2
 import numpy as np
 import skagent.algos.maliar as solver
 import skagent.model as model
@@ -96,8 +95,6 @@ class TestLifetimeReward(unittest.TestCase):
     """
 
     def setUp(self):
-        self.block_2 = model.DBlock(**bft.lr_test_block_data_2)
-
         self.states_0 = {"a": 0}
 
     def test_block_1(self):
@@ -126,9 +123,9 @@ class TestLifetimeReward(unittest.TestCase):
 
     def test_block_2(self):
         dlr_2 = solver.estimate_discounted_lifetime_reward(
-            self.block_2,
+            case_2["block"],
             0.9,
-            bft.lr_test_block_data_2_optimal_dr,
+            case_2["optimal_dr"],
             self.states_0,
             1,
             shocks_by_t={

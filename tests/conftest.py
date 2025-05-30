@@ -35,32 +35,42 @@ case_1 = {
     "optimal_dr": {"c": lambda a, theta: theta},
 }
 
-lr_test_block_data_2 = {
-    "name": "lr_test_2 - hidden shock",
-    "shocks": {
-        "theta": (Normal, {"mean": 0, "sigma": 1}),
-    },
-    "dynamics": {
-        "c": Control(["a"]),
-        "a": lambda a, c, theta: a - c + theta,
-        "u": lambda theta, c: -((theta - c) ** 2),
-    },
-    "reward": {"u": "consumer"},
+case_2 = {
+    "block": DBlock(
+        **{
+            "name": "lr_test_2 - hidden shock",
+            "shocks": {
+                "theta": (Normal, {"mean": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "c": Control(["a"]),
+                "a": lambda a, c, theta: a - c + theta,
+                "u": lambda theta, c: -((theta - c) ** 2),
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "calibration": {},
+    "optimal_dr": {"c": lambda a: 0},
 }
-lr_test_block_data_2_optimal_dr = {"c": lambda a: 0}
 
-lr_test_block_data_3 = {
-    "name": "lr_test_3 - two shocks, one hidden",
-    "shocks": {
-        "theta": (Normal, {"mean": 0, "sigma": 1}),
-        "psi": (Normal, {"mean": 0, "sigma": 1}),
-    },
-    "dynamics": {
-        "m": lambda a, theta: a + theta,
-        "c": Control(["m"]),
-        "a": lambda m, c, psi: m - c + psi,
-        "u": lambda m, c: -((m - c) ** 2),
-    },
-    "reward": {"u": "consumer"},
+case_3 = {
+    "block": DBlock(
+        **{
+            "name": "lr_test_3 - two shocks, one hidden",
+            "shocks": {
+                "theta": (Normal, {"mean": 0, "sigma": 1}),
+                "psi": (Normal, {"mean": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "m": lambda a, theta: a + theta,
+                "c": Control(["m"]),
+                "a": lambda m, c, psi: m - c + psi,
+                "u": lambda m, c: -((m - c) ** 2),
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "optimal_dr": {"c": lambda m: m},
+    "calibration": {},
 }
-lr_test_block_data_3_optimal_dr = {"c": lambda m: m}
