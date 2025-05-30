@@ -323,7 +323,9 @@ class DBlock(Block):
         """
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
-    def transition(self, pre, dr, screen=False):
+    def transition(self, pre, dr, screen=False, fix=None):
+        if fix is None:
+            fix = []
         """
         Computes the state variables following pre-given states,
         given a decision rule for all controls.
@@ -336,6 +338,10 @@ class DBlock(Block):
         screen: Boolean
             If True, the remove any dynamics that are prior to the first given state.
             Defaults to False.
+
+        fix: list of string
+            A list of symbols to make static, rather than dynamic.
+            The symbol must appear in both dynamics and pre.
         """
         dyn = self.dynamics.copy()
 
@@ -355,6 +361,14 @@ class DBlock(Block):
             # i.e. if dynamics at time t for variable 'a'
             # depend on state of 'a' at time t-1
             # This is a forbidden case in CDC's design.
+
+        for sym in fix:
+            if sym in dyn and sym in pre:
+                del dyn[sym]
+            else:
+                raise Exception(
+                    f"Attempting to fix variable ({sym}) but it is not in either dyn ({sym in dyn}) or pre ({sym in pre})"
+                )
 
         return simulate_dynamics(dyn, pre, dr)
 
