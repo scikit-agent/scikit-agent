@@ -42,7 +42,7 @@ class ModelAnalyzer:
             Agent assignment at the block level. This is different from variable-level
             agent assignments. When a block is assigned to an agent/plate, all variables
             in that block (unless specifically assigned otherwise) belong to that plate.
-            
+
             For example, in a consumption-savings model with block_agent="consumer",
             all dynamic variables (y, p, m, a, c, u) would be on the consumer plate.
         """
@@ -102,11 +102,11 @@ class ModelAnalyzer:
 
     def _collect_nodes(self):
         """Classify every variable and record its metadata."""
-        
+
         for blk in self._blocks:
             # Use block_agent if specified, otherwise check if block has agent attribute
-            block_plate = self.block_agent or getattr(blk, 'agent', None)
-            
+            block_plate = self.block_agent or getattr(blk, "agent", None)
+
             # 1) Collect shocks - typically global/exogenous, not in any plate
             for var, shock_def in blk.shocks.items():
                 self.node_meta[var] = {
@@ -121,11 +121,11 @@ class ModelAnalyzer:
                 if isinstance(rule, Control):
                     kind = "control"
                     # Control might specify its own agent for other purposes
-                    agent = getattr(rule, 'agent', None) or block_plate or "global"
+                    agent = getattr(rule, "agent", None) or block_plate or "global"
                 else:
                     kind = "state"
                     agent = block_plate or "global"
-                
+
                 self.node_meta[var] = {
                     "kind": kind,
                     "agent": agent,
@@ -156,21 +156,21 @@ class ModelAnalyzer:
     def _extract_dependencies(self, rule, var_name=None):
         """
         Extract variable dependencies from different rule types.
-        
+
         Parameters
         ----------
         rule : various
             Can be Control, Distribution, callable, or string
         var_name : str, optional
             Name of the variable (for error messages)
-        
+
         Returns
         -------
         list
             List of dependency variable names
         """
         deps = []
-        
+
         if isinstance(rule, Control):
             # Control has explicit information set
             deps = list(rule.iset)
@@ -201,7 +201,7 @@ class ModelAnalyzer:
                     deps = _TOKEN_RE.findall(src)
                 except Exception:
                     pass
-        
+
         return deps
 
     def _collect_dependencies(self):
@@ -238,27 +238,27 @@ class ModelAnalyzer:
     def _identify_time_dependencies(self):
         """
         Identify lag dependencies based on forward references in variable definitions.
-        
+
         Key principle: If variable A depends on variable B, but B is defined AFTER A
         in the dynamics order, then A must depend on B from the previous period (B*).
-        
+
         Example:
             dynamics = {
                 "m": lambda a: a + 1,  # 'a' not yet defined, so this is a_prev
                 "a": lambda m: m - 1,  # 'm' already defined, so this is m_current
             }
-        
+
         This creates: a* -> m (lag edge) and m -> a (instant edge)
         """
         for blk in self._blocks:
             # Get ordered list of dynamic variables (order matters!)
             dynamics_vars = list(blk.dynamics.keys())
             defined_vars = set()  # Variables defined so far
-            
+
             for var in dynamics_vars:
                 # Get dependencies for this variable
                 deps = self._raw_deps.get(var, [])
-                
+
                 for dep in deps:
                     # Self-dependency is always lag (e.g., p depends on p)
                     if dep == var:
@@ -267,10 +267,10 @@ class ModelAnalyzer:
                     elif dep in dynamics_vars and dep not in defined_vars:
                         self._time_deps.add((var, dep))
                     # Otherwise it's an instant dependency (already handled in _assemble_edges)
-                
+
                 # Mark this variable as defined
                 defined_vars.add(var)
-            
+
             # Process rewards (they come after all dynamics)
             for var in blk.reward.keys():
                 deps = self._raw_deps.get(var, [])
@@ -288,7 +288,7 @@ class ModelAnalyzer:
                 # Skip if source is the same as target AND it's not a lag dependency
                 if src == tgt and (tgt, src) not in self._time_deps:
                     continue
-                
+
                 # 1) Lag edges (including self-lag)
                 if (tgt, src) in self._time_deps:
                     self.edges["lag"].append((src, tgt))
@@ -319,7 +319,9 @@ class ModelAnalyzer:
                     if rule.upper_bound:
                         bounds_info.append("upper_bound")
                     bounds_str = f", {', '.join(bounds_info)}" if bounds_info else ""
-                    self.formulas[var] = f"{var} = Control({', '.join(deps)}{bounds_str})"
+                    self.formulas[var] = (
+                        f"{var} = Control({', '.join(deps)}{bounds_str})"
+                    )
                 elif isinstance(rule, str):
                     self.formulas[var] = f"{var} = {rule}"
                 else:
@@ -356,12 +358,12 @@ class ModelAnalyzer:
         for meta in self.node_meta.values():
             if meta["plate"]:
                 plates_set.add(meta["plate"])
-        
+
         # Create plate information
         for plate_name in plates_set:
             self.plates[plate_name] = {
                 "label": plate_name.capitalize(),
-                "size": f"N_{plate_name}"
+                "size": f"N_{plate_name}",
             }
 
     def to_dict(self):

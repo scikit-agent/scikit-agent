@@ -6,10 +6,9 @@ import random
 
 # 1) Load config
 _CONFIG_FILE = os.path.join(
-    os.path.dirname(__file__),
-    "model_visualization_config.yaml"
+    os.path.dirname(__file__), "model_visualization_config.yaml"
 )
-with open(_CONFIG_FILE, 'r') as f:
+with open(_CONFIG_FILE, "r") as f:
     _CFG = yaml.safe_load(f)
 
 
@@ -20,18 +19,18 @@ class ModelVisualizer:
           node_meta, edges, plates, formulas
         }
         """
-        self.meta    = analysis["node_meta"]
-        self.edges   = analysis["edges"]
-        self.plates  = analysis["plates"]
-        self.nodes   = {}
+        self.meta = analysis["node_meta"]
+        self.edges = analysis["edges"]
+        self.plates = analysis["plates"]
+        self.nodes = {}
         # aliases for convenience
-        self.vs      = _CFG["variable_shapes"]
-        self.ns      = _CFG["node_styles"]
-        self.es      = _CFG["edge_styles"]
-        self.cc      = _CFG["color_config"]
-        self.cg      = _CFG["color_generation"]
-        self.gl      = _CFG["graph_layout"]
-        self.gc      = _CFG["graph_config"]
+        self.vs = _CFG["variable_shapes"]
+        self.ns = _CFG["node_styles"]
+        self.es = _CFG["edge_styles"]
+        self.cc = _CFG["color_config"]
+        self.cg = _CFG["color_generation"]
+        self.gl = _CFG["graph_layout"]
+        self.gc = _CFG["graph_config"]
 
         # prepare agent→color mapping
         self.agent_colors = self._build_agent_colors()
@@ -59,11 +58,11 @@ class ModelVisualizer:
             else:
                 h = (h0 + idx * phi) % 1.0
                 s = (sat_lo + sat_hi) / 2
-                l = (light_lo + light_hi) / 2
+                lightness = (light_lo + light_hi) / 2
                 # HSL → RGB → hex
-                r, g, b = colorsys.hls_to_rgb(h, l, s)
+                r, g, b = colorsys.hls_to_rgb(h, lightness, s)
                 mapping[agent] = "#{:02x}{:02x}{:02x}".format(
-                    int(r*255), int(g*255), int(b*255)
+                    int(r * 255), int(g * 255), int(b * 255)
                 )
                 idx += 1
         return mapping
@@ -71,11 +70,11 @@ class ModelVisualizer:
     def _node_shape(self, kind):
         """Pick shape by variable kind."""
         key = {
-            "shock":   "shock_vars",
-            "state":   "state_vars",
+            "shock": "shock_vars",
+            "state": "state_vars",
             "control": "control_vars",
-            "reward":  "reward_vars",
-            "param":   "param_vars"
+            "reward": "reward_vars",
+            "param": "param_vars",
         }.get(kind, None) or "default"
         return self.vs.get(key, self.vs["default"])
 
@@ -84,8 +83,8 @@ class ModelVisualizer:
         if name in self.nodes:
             return self.nodes[name]
         m = self.meta.get(name, {})
-        kind     = m.get("kind", "state")
-        agent    = m.get("agent", "other")
+        kind = m.get("kind", "state")
+        agent = m.get("agent", "other")
         observed = m.get("observed", False)
 
         style = dict(self.ns["default"])  # base
@@ -93,8 +92,8 @@ class ModelVisualizer:
         style["shape"] = self._node_shape(kind)
         # fill by agent color
         fill = self.agent_colors.get(agent, self.cc["default_other_color"])
-        style["style"]   = style.get("style","") + ",filled"
-        style["fillcolor"]= fill
+        style["style"] = style.get("style", "") + ",filled"
+        style["fillcolor"] = fill
         # observed override
         if observed:
             style.update(self.ns.get("previous_period", {}))
@@ -118,7 +117,7 @@ class ModelVisualizer:
         # 2) pre-create nodes (incl. ALL prev-period nodes for lag edges)
         for var in self.meta:
             self._make_node(var)
-        
+
         # Create previous period nodes for ALL lag edges
         for src, tgt in self.edges.get("lag", []):
             prev = f"{src}*"
@@ -130,21 +129,25 @@ class ModelVisualizer:
                     "kind": src_meta.get("kind", "state"),
                     "agent": src_meta.get("agent", "other"),
                     "observed": False,
-                    "plate": None  # Previous period nodes are NOT in any plate
+                    "plate": None,  # Previous period nodes are NOT in any plate
                 }
             self._make_node(prev)
 
         # 3) plates = subgraphs
         plate_subs = {}
         for agent, info in self.plates.items():
-            lbl = info["label"].capitalize() if self.gl["cluster_label_capitalize"] else info["label"]
+            lbl = (
+                info["label"].capitalize()
+                if self.gl["cluster_label_capitalize"]
+                else info["label"]
+            )
             sg = pydot.Cluster(
                 graph_name=f"cluster_{agent}",
                 label=f"{info['size']} {lbl}",
                 labeljust="r",
                 style=self.gl["cluster_style"],
                 fillcolor=self.gl["cluster_fillcolor"],
-                fontsize=str(self.gl["plate_fontsize"])
+                fontsize=str(self.gl["plate_fontsize"]),
             )
             graph.add_subgraph(sg)
             plate_subs[agent] = sg
@@ -152,16 +155,16 @@ class ModelVisualizer:
         # 4) add nodes to plates or root
         for name, m in self.meta.items():
             # Skip nodes that are already added as part of lag handling
-            if name.endswith('*'):
+            if name.endswith("*"):
                 continue
-                
+
             node = self.nodes[name]
             pl = m.get("plate")
             if pl and pl in plate_subs:
                 plate_subs[pl].add_node(node)
             else:
                 graph.add_node(node)
-        
+
         # Add ALL previous period nodes to root graph (outside any plate)
         for src, tgt in self.edges.get("lag", []):
             prev = f"{src}*"
@@ -175,7 +178,7 @@ class ModelVisualizer:
             graph.add_edge(e)
 
         # instant & param & shock as "current_period"
-        for et in ("instant","param","shock"):
+        for et in ("instant", "param", "shock"):
             for src, tgt in self.edges.get(et, []):
                 add_edge(src, tgt, "current_period")
 
