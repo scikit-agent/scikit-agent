@@ -27,13 +27,7 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_0["calibration"],
         )
 
-        states_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 2, "count": 21},
-                }
-            )
-        )
+        states_0_N = case_0["givens"]
 
         bpn = ann.BlockPolicyNet(case_0["block"], width=16)
         ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
@@ -56,14 +50,7 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_1["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 7},
-                    "theta": {"min": -1, "max": 1, "count": 7},
-                }
-            )
-        )
+        given_0_N = case_1["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=350)
@@ -91,15 +78,7 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_1["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 7},
-                    "theta_0": {"min": -1, "max": 1, "count": 7},
-                    "theta_1": {"min": -1, "max": 1, "count": 7},
-                }
-            )
-        )
+        given_0_N = case_1["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
@@ -125,14 +104,7 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_2["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta": {"min": -1, "max": 1, "count": 5},
-                }
-            )
-        )
+        given_0_N = case_2["givens"]
 
         bpn = ann.BlockPolicyNet(case_2["block"], width=8)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=100)
@@ -151,15 +123,7 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_3["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta": {"min": -1, "max": 1, "count": 5},
-                    "psi": {"min": -1, "max": 1, "count": 5},
-                }
-            )
-        )
+        given_0_N = case_3["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
@@ -182,17 +146,7 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_3["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta_0": {"min": -1, "max": 1, "count": 5},
-                    "psi_0": {"min": -1, "max": 1, "count": 3},
-                    "theta_1": {"min": -1, "max": 1, "count": 5},
-                    "psi_1": {"min": -1, "max": 1, "count": 3},
-                }
-            )
-        )
+        given_0_N = case_3["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
