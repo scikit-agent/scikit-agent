@@ -186,8 +186,8 @@ class test_ann_lr(unittest.TestCase):
             grid.make_grid(
                 {
                     "a": {"min": 0, "max": 1, "count": 5},
-                    "theta_0": {"min": -1, "max": 1, "count": 5},
-                    "psi_0": {"min": -1, "max": 1, "count": 3},
+                    "theta_0": {"min": -1, "max": 1, "count": 6},
+                    "psi_0": {"min": -1, "max": 1, "count": 4},
                     "theta_1": {"min": -1, "max": 1, "count": 5},
                     "psi_1": {"min": -1, "max": 1, "count": 3},
                 }
@@ -195,7 +195,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N[:, 0]},

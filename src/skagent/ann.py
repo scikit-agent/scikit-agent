@@ -88,7 +88,8 @@ class BlockPolicyNet(Net):
 
         # again, assuming only one for now...
         # decisions = dict(zip([csym], output))
-        decisions = {csym: output}
+        # ... when using multiple csyms, note the orientation of the output tensor
+        decisions = {csym: output.flatten()}
         return decisions
 
     def get_decision_function(self):
@@ -120,7 +121,7 @@ def get_estimated_discounted_lifetime_reward_loss(
 
     def estimated_discounted_lifetime_reward_loss(df, input_vector):
         ## includes the values of state_0 variables, and shocks.
-        given_vals = dict(zip(given_syms, input_vector))
+        given_vals = dict(zip(given_syms, input_vector.T))
 
         shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
         shocks_by_t = {
@@ -154,15 +155,11 @@ def aggregate_net_loss(inputs, df, loss_function):
     """
     Compute a loss function over a tensor of inputs, given a decision function df.
     Return the mean.
-
-    TODO: This is probably very inefficient.
-          It's MUCH better if the loss function is 'vectorized'.
     """
     # we include the network as a potential input to the loss function
-    losses = torch.stack(
-        [loss_function(df, inputs[i, :]) for i in range(inputs.shape[0])]
-    )
-    losses = losses.to(device)
+    losses = loss_function(df, inputs)
+    if hasattr(losses, "to"):  # slow, clumsy
+        losses = losses.to(device)
     return losses.mean()
 
 
