@@ -107,7 +107,6 @@ def estimate_discounted_lifetime_reward(
         )
 
     for t in range(big_t):
-        # TODO
         if shocks_by_t is not None:
             shocks_t = {sym: shocks_by_t[sym][t] for sym in shocks_by_t}
         else:
