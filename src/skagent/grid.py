@@ -8,13 +8,37 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def torched(grid):
-    tens = torch.FloatTensor(grid).to(device)
+class Grid:
+    """
+    Parameters:
+    config (dict): A dictionary where each key represents a variable, and the value is another
+        dictionary with the following keys:
+        - "min" (float): The minimum value for the variable.
+        - "max" (float): The maximum value for the variable.
+        - "count" (int): The number of points to generate for the variable.
 
-    # patching, this should be codified as a new type
-    # tens.labels = grid.labels
+    """
 
-    return tens
+    def __init__(self, config, torch=True):
+        self.labels = list(config.keys())
+        self.values = make_grid(config)
+
+        if torch:
+            self.torch()
+
+    def torch(self):
+        self.values = torch.FloatTensor(self.values).to(device)
+        return self
+
+    def to_dict(self):
+        """
+        Returns a data structure, key: column,
+        similar to tensordict or structured array.
+        """
+        return dict(zip(self.labels, self.values.T))
+
+    ## TODO: Implement __getitem__ so Grid can be treated like a dict
+    ## directly https://stackoverflow.com/questions/1957780/how-to-override-the-operator-in-python
 
 
 def make_grid(config):
@@ -68,3 +92,12 @@ def cartesian_product(*arrays):
 
     # Reshape to get the desired output
     return cartesian.reshape(-1, len(arrays))
+
+
+def torched(grid):
+    tens = torch.FloatTensor(grid).to(device)
+
+    # patching, this should be codified as a new type
+    # tens.labels = grid.labels
+
+    return tens

@@ -15,12 +15,10 @@ case_0 = {
     ),
     "calibration": {},
     "optimal_dr": {"c": lambda a: 0},
-    "givens": grid.torched(
-        grid.make_grid(
-            {
-                "a": {"min": 0, "max": 2, "count": 21},
-            }
-        )
+    "givens": grid.Grid(
+        {
+            "a": {"min": 0, "max": 2, "count": 21},
+        }
     ),
 }
 
@@ -42,22 +40,18 @@ case_1 = {
     "calibration": {},
     "optimal_dr": {"c": lambda a, theta: theta},
     "givens": {
-        1: grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 7},
-                    "theta": {"min": -1, "max": 1, "count": 7},
-                }
-            )
+        1: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 7},
+                "theta_0": {"min": -1, "max": 1, "count": 7},
+            }
         ),
-        2: grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 7},
-                    "theta_0": {"min": -1, "max": 1, "count": 7},
-                    "theta_1": {"min": -1, "max": 1, "count": 7},
-                }
-            )
+        2: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 7},
+                "theta_0": {"min": -1, "max": 1, "count": 7},
+                "theta_1": {"min": -1, "max": 1, "count": 7},
+            }
         ),
     },
 }
@@ -79,13 +73,11 @@ case_2 = {
     ),
     "calibration": {},
     "optimal_dr": {"c": lambda a: 0},
-    "givens": grid.torched(
-        grid.make_grid(
-            {
-                "a": {"min": 0, "max": 1, "count": 5},
-                "theta": {"min": -1, "max": 1, "count": 5},
-            }
-        )
+    "givens": grid.Grid(
+        {
+            "a": {"min": 0, "max": 1, "count": 5},
+            "theta_0": {"min": -1, "max": 1, "count": 5},
+        }
     ),
 }
 
@@ -109,25 +101,21 @@ case_3 = {
     "optimal_dr": {"c": lambda m: m},
     "calibration": {},
     "givens": {
-        1: grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta": {"min": -1, "max": 1, "count": 5},
-                    "psi": {"min": -1, "max": 1, "count": 5},
-                }
-            )
+        1: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 5},
+                "theta_0": {"min": -1, "max": 1, "count": 5},
+                "psi_0": {"min": -1, "max": 1, "count": 5},
+            }
         ),
-        2: grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta_0": {"min": -1, "max": 1, "count": 5},
-                    "psi_0": {"min": -1, "max": 1, "count": 3},
-                    "theta_1": {"min": -1, "max": 1, "count": 5},
-                    "psi_1": {"min": -1, "max": 1, "count": 3},
-                }
-            )
+        2: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 5},
+                "theta_0": {"min": -1, "max": 1, "count": 5},
+                "psi_0": {"min": -1, "max": 1, "count": 3},
+                "theta_1": {"min": -1, "max": 1, "count": 5},
+                "psi_1": {"min": -1, "max": 1, "count": 3},
+            }
         ),
     },
 }

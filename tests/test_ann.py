@@ -32,7 +32,7 @@ class test_ann_lr(unittest.TestCase):
         bpn = ann.BlockPolicyNet(case_0["block"], width=16)
         ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
 
-        c_ann = bpn.decision_function({"a": states_0_N[:, 0]}, {}, {})["c"]
+        c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
 
         print(c_ann)
 
@@ -56,10 +56,13 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=350)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]}, {"theta": given_0_N[:, 1]}, {}
+            # TODO -- make this from the Grid
+            {"a": given_0_N.to_dict()["a"]},
+            {"theta": given_0_N.to_dict()["theta_0"]},
+            {},
         )["c"]
 
-        errors = c_ann.flatten() - given_0_N[:, 1]
+        errors = c_ann.flatten() - given_0_N.to_dict()["theta_0"]
 
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
@@ -84,10 +87,12 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]}, {"theta": given_0_N[:, 1]}, {}
+            {"a": given_0_N.to_dict()["a"]},
+            {"theta": given_0_N.to_dict()["theta_0"]},
+            {},
         )["c"]
 
-        errors = c_ann.flatten() - given_0_N[:, 1]
+        errors = c_ann.flatten() - given_0_N.to_dict()["theta_0"]
 
         print(errors)
         # Is this result stochastic? How are the network weights being initialized?
@@ -129,11 +134,14 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]},
-            {"theta": given_0_N[:, 1], "psi": given_0_N[:, 2]},
+            {"a": given_0_N.to_dict()["a"]},
+            {
+                "theta": given_0_N.to_dict()["theta_0"],
+                "psi": given_0_N.to_dict()["psi_0"],
+            },
             {},
         )["c"]
-        given_m = given_0_N[:, 0] + given_0_N[:, 1]
+        given_m = given_0_N.to_dict()["a"] + given_0_N.to_dict()["theta_0"]
 
         torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03)
 
@@ -152,11 +160,14 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]},
-            {"theta": given_0_N[:, 1], "psi": given_0_N[:, 2]},
+            {"a": given_0_N.to_dict()["a"]},
+            {
+                "theta": given_0_N.to_dict()["theta_0"],
+                "psi": given_0_N.to_dict()["psi_0"],
+            },
             {},
         )["c"]
-        given_m = given_0_N[:, 0] + given_0_N[:, 1]
+        given_m = given_0_N.to_dict()["a"] + given_0_N.to_dict()["theta_0"]
 
         torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04)
 
@@ -214,13 +225,11 @@ class test_ann_lr(unittest.TestCase):
 
         ### Setting up the training
 
-        states_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 3, "count": 5},
-                    "p": {"min": 0, "max": 1, "count": 4},
-                }
-            )
+        states_0_N = grid.Grid(
+            {
+                "a": {"min": 0, "max": 3, "count": 5},
+                "p": {"min": 0, "max": 1, "count": 4},
+            }
         )
 
         bpn = ann.BlockPolicyNet(pfblock, width=8)
