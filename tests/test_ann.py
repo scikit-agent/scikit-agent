@@ -157,7 +157,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N.to_dict()["a"]},
