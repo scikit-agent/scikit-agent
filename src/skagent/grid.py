@@ -37,8 +37,9 @@ class Grid:
         """
         return dict(zip(self.labels, self.values.T))
 
-    ## TODO: Implement __getitem__ so Grid can be treated like a dict
-    ## directly https://stackoverflow.com/questions/1957780/how-to-override-the-operator-in-python
+    def __getitem__(self, sym):
+        # TODO: fix the dict creation step to improve performance
+        return self.to_dict()[sym]
 
 
 def make_grid(config):

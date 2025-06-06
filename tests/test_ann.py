@@ -57,8 +57,8 @@ class test_ann_lr(unittest.TestCase):
 
         c_ann = bpn.decision_function(
             # TODO -- make this from the Grid
-            {"a": given_0_N.to_dict()["a"]},
-            {"theta": given_0_N.to_dict()["theta_0"]},
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
             {},
         )["c"]
 
@@ -87,12 +87,12 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N.to_dict()["a"]},
-            {"theta": given_0_N.to_dict()["theta_0"]},
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
             {},
         )["c"]
 
-        errors = c_ann.flatten() - given_0_N.to_dict()["theta_0"]
+        errors = c_ann.flatten() - given_0_N["theta_0"]
 
         print(errors)
         # Is this result stochastic? How are the network weights being initialized?
@@ -134,14 +134,14 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N.to_dict()["a"]},
+            {"a": given_0_N["a"]},
             {
-                "theta": given_0_N.to_dict()["theta_0"],
-                "psi": given_0_N.to_dict()["psi_0"],
+                "theta": given_0_N["theta_0"],
+                "psi": given_0_N["psi_0"],
             },
             {},
         )["c"]
-        given_m = given_0_N.to_dict()["a"] + given_0_N.to_dict()["theta_0"]
+        given_m = given_0_N["a"] + given_0_N["theta_0"]
 
         torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03)
 
@@ -160,57 +160,16 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N.to_dict()["a"]},
+            {"a": given_0_N["a"]},
             {
-                "theta": given_0_N.to_dict()["theta_0"],
-                "psi": given_0_N.to_dict()["psi_0"],
+                "theta": given_0_N["theta_0"],
+                "psi": given_0_N["psi_0"],
             },
             {},
         )["c"]
-        given_m = given_0_N.to_dict()["a"] + given_0_N.to_dict()["theta_0"]
+        given_m = given_0_N["a"] + given_0_N["theta_0"]
 
         torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04)
-
-    """
-    def test_block_1(self):
-        dlr_1 = solver.estimate_discounted_lifetime_reward(
-            self.block_1,
-            0.9,
-            lr_test_block_data_1_optimal_dr,
-            self.states_0,
-            1,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[0]]))},
-        )
-
-        self.assertEqual(dlr_1, 0)
-
-        # big_t is 2
-        dlr_1_2 = solver.estimate_discounted_lifetime_reward(
-            self.block_1,
-            0.9,
-            lr_test_block_data_1_optimal_dr,
-            self.states_0,
-            2,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[0], [0]]))},
-        )
-
-        self.assertEqual(dlr_1_2, 0)
-
-    def test_block_2(self):
-        dlr_2 = solver.estimate_discounted_lifetime_reward(
-            self.block_2,
-            0.9,
-            lr_test_block_data_2_optimal_dr,
-            self.states_0,
-            1,
-            shocks_by_t={
-                "theta": torch.FloatTensor(np.array([[0]])),
-                "psi": torch.FloatTensor(np.array([[0]])),
-            },
-        )
-
-        self.assertEqual(dlr_2, 0)
-    """
 
     def test_lifetime_reward_perfect_foresight(self):
         ### Model data
