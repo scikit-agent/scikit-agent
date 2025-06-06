@@ -27,18 +27,12 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_0["calibration"],
         )
 
-        states_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 2, "count": 21},
-                }
-            )
-        )
+        states_0_N = case_0["givens"]
 
         bpn = ann.BlockPolicyNet(case_0["block"], width=16)
         ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
 
-        c_ann = bpn.decision_function({"a": states_0_N[:, 0]}, {}, {})["c"]
+        c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
 
         print(c_ann)
 
@@ -56,23 +50,19 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_1["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 7},
-                    "theta": {"min": -1, "max": 1, "count": 7},
-                }
-            )
-        )
+        given_0_N = case_1["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=350)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]}, {"theta": given_0_N[:, 1]}, {}
+            # TODO -- make this from the Grid
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
+            {},
         )["c"]
 
-        errors = c_ann.flatten() - given_0_N[:, 1]
+        errors = c_ann.flatten() - given_0_N.to_dict()["theta_0"]
 
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
@@ -91,24 +81,18 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_1["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 7},
-                    "theta_0": {"min": -1, "max": 1, "count": 7},
-                    "theta_1": {"min": -1, "max": 1, "count": 7},
-                }
-            )
-        )
+        given_0_N = case_1["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=200)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]}, {"theta": given_0_N[:, 1]}, {}
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
+            {},
         )["c"]
 
-        errors = c_ann.flatten() - given_0_N[:, 1]
+        errors = c_ann.flatten() - given_0_N["theta_0"]
 
         print(errors)
         # Is this result stochastic? How are the network weights being initialized?
@@ -125,14 +109,7 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_2["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta": {"min": -1, "max": 1, "count": 5},
-                }
-            )
-        )
+        given_0_N = case_2["givens"]
 
         bpn = ann.BlockPolicyNet(case_2["block"], width=8)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=100)
@@ -151,25 +128,20 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_3["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta": {"min": -1, "max": 1, "count": 5},
-                    "psi": {"min": -1, "max": 1, "count": 5},
-                }
-            )
-        )
+        given_0_N = case_3["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]},
-            {"theta": given_0_N[:, 1], "psi": given_0_N[:, 2]},
+            {"a": given_0_N["a"]},
+            {
+                "theta": given_0_N["theta_0"],
+                "psi": given_0_N["psi_0"],
+            },
             {},
         )["c"]
-        given_m = given_0_N[:, 0] + given_0_N[:, 1]
+        given_m = given_0_N["a"] + given_0_N["theta_0"]
 
         torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03)
 
@@ -182,70 +154,22 @@ class test_ann_lr(unittest.TestCase):
             parameters=case_3["calibration"],
         )
 
-        given_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 1, "count": 5},
-                    "theta_0": {"min": -1, "max": 1, "count": 6},
-                    "psi_0": {"min": -1, "max": 1, "count": 4},
-                    "theta_1": {"min": -1, "max": 1, "count": 5},
-                    "psi_1": {"min": -1, "max": 1, "count": 3},
-                }
-            )
-        )
+        given_0_N = case_3["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
         ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
-            {"a": given_0_N[:, 0]},
-            {"theta": given_0_N[:, 1], "psi": given_0_N[:, 2]},
+            {"a": given_0_N["a"]},
+            {
+                "theta": given_0_N["theta_0"],
+                "psi": given_0_N["psi_0"],
+            },
             {},
         )["c"]
-        given_m = given_0_N[:, 0] + given_0_N[:, 1]
+        given_m = given_0_N["a"] + given_0_N["theta_0"]
 
         torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04)
-
-    """
-    def test_block_1(self):
-        dlr_1 = solver.estimate_discounted_lifetime_reward(
-            self.block_1,
-            0.9,
-            lr_test_block_data_1_optimal_dr,
-            self.states_0,
-            1,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[0]]))},
-        )
-
-        self.assertEqual(dlr_1, 0)
-
-        # big_t is 2
-        dlr_1_2 = solver.estimate_discounted_lifetime_reward(
-            self.block_1,
-            0.9,
-            lr_test_block_data_1_optimal_dr,
-            self.states_0,
-            2,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[0], [0]]))},
-        )
-
-        self.assertEqual(dlr_1_2, 0)
-
-    def test_block_2(self):
-        dlr_2 = solver.estimate_discounted_lifetime_reward(
-            self.block_2,
-            0.9,
-            lr_test_block_data_2_optimal_dr,
-            self.states_0,
-            1,
-            shocks_by_t={
-                "theta": torch.FloatTensor(np.array([[0]])),
-                "psi": torch.FloatTensor(np.array([[0]])),
-            },
-        )
-
-        self.assertEqual(dlr_2, 0)
-    """
 
     def test_lifetime_reward_perfect_foresight(self):
         ### Model data
@@ -260,13 +184,11 @@ class test_ann_lr(unittest.TestCase):
 
         ### Setting up the training
 
-        states_0_N = grid.torched(
-            grid.make_grid(
-                {
-                    "a": {"min": 0, "max": 3, "count": 5},
-                    "p": {"min": 0, "max": 1, "count": 4},
-                }
-            )
+        states_0_N = grid.Grid(
+            {
+                "a": {"min": 0, "max": 3, "count": 5},
+                "p": {"min": 0, "max": 1, "count": 4},
+            }
         )
 
         bpn = ann.BlockPolicyNet(pfblock, width=8)

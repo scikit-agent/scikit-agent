@@ -1,4 +1,5 @@
 from HARK.distributions import Normal
+import skagent.grid as grid
 from skagent.model import Control, DBlock
 
 case_0 = {
@@ -14,6 +15,11 @@ case_0 = {
     ),
     "calibration": {},
     "optimal_dr": {"c": lambda a: 0},
+    "givens": grid.Grid(
+        {
+            "a": {"min": 0, "max": 2, "count": 21},
+        }
+    ),
 }
 
 case_1 = {
@@ -33,6 +39,21 @@ case_1 = {
     ),
     "calibration": {},
     "optimal_dr": {"c": lambda a, theta: theta},
+    "givens": {
+        1: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 7},
+                "theta_0": {"min": -1, "max": 1, "count": 7},
+            }
+        ),
+        2: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 7},
+                "theta_0": {"min": -1, "max": 1, "count": 7},
+                "theta_1": {"min": -1, "max": 1, "count": 7},
+            }
+        ),
+    },
 }
 
 case_2 = {
@@ -52,6 +73,12 @@ case_2 = {
     ),
     "calibration": {},
     "optimal_dr": {"c": lambda a: 0},
+    "givens": grid.Grid(
+        {
+            "a": {"min": 0, "max": 1, "count": 5},
+            "theta_0": {"min": -1, "max": 1, "count": 5},
+        }
+    ),
 }
 
 case_3 = {
@@ -73,4 +100,22 @@ case_3 = {
     ),
     "optimal_dr": {"c": lambda m: m},
     "calibration": {},
+    "givens": {
+        1: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 5},
+                "theta_0": {"min": -1, "max": 1, "count": 5},
+                "psi_0": {"min": -1, "max": 1, "count": 5},
+            }
+        ),
+        2: grid.Grid(
+            {
+                "a": {"min": 0, "max": 1, "count": 5},
+                "theta_0": {"min": -1, "max": 1, "count": 5},
+                "psi_0": {"min": -1, "max": 1, "count": 3},
+                "theta_1": {"min": -1, "max": 1, "count": 5},
+                "psi_1": {"min": -1, "max": 1, "count": 3},
+            }
+        ),
+    },
 }
