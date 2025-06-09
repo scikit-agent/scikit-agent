@@ -1,5 +1,6 @@
 import numpy as np
 import skagent.ann as ann
+from skagent.grid import Grid
 import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
 import torch
@@ -150,12 +151,9 @@ def get_estimated_discounted_lifetime_reward_loss(
         [[f"{sym}_{t}" for sym in list(shock_vars.keys())] for t in range(big_t)], []
     )
 
-    # will work for big_t = 1 only.
-    given_syms = state_variables + big_t_shock_syms
-
-    def estimated_discounted_lifetime_reward_loss(df, input_vector):
+    def estimated_discounted_lifetime_reward_loss(df: callable, input_grid: Grid):
         ## includes the values of state_0 variables, and shocks.
-        given_vals = dict(zip(given_syms, input_vector))
+        given_vals = input_grid.to_dict()
 
         shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
         shocks_by_t = {
