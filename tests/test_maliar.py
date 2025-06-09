@@ -1,6 +1,7 @@
 from conftest import case_1, case_2
 import numpy as np
-import skagent.algos.maliar as solver
+import skagent.algos.maliar as maliar
+import skagent.grid as grid
 import skagent.model as model
 import torch
 import unittest
@@ -33,7 +34,7 @@ class TestSolverFunctions(unittest.TestCase):
         self.block = model.DBlock(**block_data)
 
     def test_create_transition_function(self):
-        transition_function = solver.create_transition_function(self.block, ["a", "e"])
+        transition_function = maliar.create_transition_function(self.block, ["a", "e"])
 
         states_1 = transition_function(states_0, {}, decisions, parameters=parameters)
 
@@ -41,21 +42,21 @@ class TestSolverFunctions(unittest.TestCase):
         self.assertEqual(states_1["e"], 0.1)
 
     def test_create_decision_function(self):
-        decision_function = solver.create_decision_function(self.block, decision_rules)
+        decision_function = maliar.create_decision_function(self.block, decision_rules)
 
         decisions_0 = decision_function(states_0, {}, parameters=parameters)
 
         self.assertEqual(decisions_0["c"], 0.5)
 
     def test_create_reward_function(self):
-        reward_function = solver.create_reward_function(self.block)
+        reward_function = maliar.create_reward_function(self.block)
 
         reward_0 = reward_function(states_0, {}, decisions, parameters=parameters)
 
         self.assertAlmostEqual(reward_0["u"], -0.69314718)
 
     def test_estimate_discounted_lifetime_reward(self):
-        dlr_0 = solver.estimate_discounted_lifetime_reward(
+        dlr_0 = maliar.estimate_discounted_lifetime_reward(
             self.block,
             0.9,
             decision_rules,
@@ -66,7 +67,7 @@ class TestSolverFunctions(unittest.TestCase):
 
         self.assertEqual(dlr_0, 0)
 
-        dlr_1 = solver.estimate_discounted_lifetime_reward(
+        dlr_1 = maliar.estimate_discounted_lifetime_reward(
             self.block,
             0.9,
             decision_rules,
@@ -77,7 +78,7 @@ class TestSolverFunctions(unittest.TestCase):
 
         self.assertAlmostEqual(dlr_1, -0.69314718)
 
-        dlr_2 = solver.estimate_discounted_lifetime_reward(
+        dlr_2 = maliar.estimate_discounted_lifetime_reward(
             self.block,
             0.9,
             decision_rules,
@@ -98,7 +99,7 @@ class TestLifetimeReward(unittest.TestCase):
         self.states_0 = {"a": 0}
 
     def test_block_1(self):
-        dlr_1 = solver.estimate_discounted_lifetime_reward(
+        dlr_1 = maliar.estimate_discounted_lifetime_reward(
             case_1["block"],
             0.9,
             case_1["optimal_dr"],
@@ -110,7 +111,7 @@ class TestLifetimeReward(unittest.TestCase):
         self.assertEqual(dlr_1, 0)
 
         # big_t is 2
-        dlr_1_2 = solver.estimate_discounted_lifetime_reward(
+        dlr_1_2 = maliar.estimate_discounted_lifetime_reward(
             case_1["block"],
             0.9,
             case_1["optimal_dr"],
@@ -122,7 +123,7 @@ class TestLifetimeReward(unittest.TestCase):
         self.assertEqual(dlr_1_2, 0)
 
     def test_block_2(self):
-        dlr_2 = solver.estimate_discounted_lifetime_reward(
+        dlr_2 = maliar.estimate_discounted_lifetime_reward(
             case_2["block"],
             0.9,
             case_2["optimal_dr"],
@@ -135,3 +136,31 @@ class TestLifetimeReward(unittest.TestCase):
         )
 
         self.assertEqual(dlr_2, 0)
+
+
+class TestTrainingLoop(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_loop_case_1(self):
+        big_t = 3
+
+        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_1["block"],
+            0.9,
+            big_t,
+            parameters=case_1["calibration"],
+        )
+
+        states_0_n = grid.torched(
+            grid.make_grid({"a": {"min": 0, "max": 1, "count": 7}})
+        )
+
+        ann, states = maliar.maliar_training_loop(
+            case_1["block"],
+            edlrl,
+            states_0_n,
+            case_1["calibration"],
+            shock_copies=big_t,
+        )
