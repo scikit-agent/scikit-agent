@@ -15,7 +15,7 @@ case_0 = {
     ),
     "calibration": {},
     "optimal_dr": {"c": lambda a: 0},
-    "givens": grid.Grid(
+    "givens": grid.Grid.from_config(
         {
             "a": {"min": 0, "max": 2, "count": 21},
         }
@@ -27,7 +27,7 @@ case_1 = {
         **{
             "name": "lr_test_1 - shock",
             "shocks": {
-                "theta": (Normal, {"mean": 0, "sigma": 1}),
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
             },
             "dynamics": {
                 "c": Control(["a", "theta"]),
@@ -40,13 +40,13 @@ case_1 = {
     "calibration": {},
     "optimal_dr": {"c": lambda a, theta: theta},
     "givens": {
-        1: grid.Grid(
+        1: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 7},
                 "theta_0": {"min": -1, "max": 1, "count": 7},
             }
         ),
-        2: grid.Grid(
+        2: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 7},
                 "theta_0": {"min": -1, "max": 1, "count": 7},
@@ -61,7 +61,7 @@ case_2 = {
         **{
             "name": "lr_test_2 - hidden shock",
             "shocks": {
-                "theta": (Normal, {"mean": 0, "sigma": 1}),
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
             },
             "dynamics": {
                 "c": Control(["a"]),
@@ -73,7 +73,7 @@ case_2 = {
     ),
     "calibration": {},
     "optimal_dr": {"c": lambda a: 0},
-    "givens": grid.Grid(
+    "givens": grid.Grid.from_config(
         {
             "a": {"min": 0, "max": 1, "count": 5},
             "theta_0": {"min": -1, "max": 1, "count": 5},
@@ -86,8 +86,8 @@ case_3 = {
         **{
             "name": "lr_test_3 - two shocks, one hidden",
             "shocks": {
-                "theta": (Normal, {"mean": 0, "sigma": 1}),
-                "psi": (Normal, {"mean": 0, "sigma": 1}),
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+                "psi": (Normal, {"mu": 0, "sigma": 1}),
             },
             "dynamics": {
                 "m": lambda a, theta: a + theta,
@@ -101,14 +101,14 @@ case_3 = {
     "optimal_dr": {"c": lambda m: m},
     "calibration": {},
     "givens": {
-        1: grid.Grid(
+        1: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 5},
                 "theta_0": {"min": -1, "max": 1, "count": 5},
                 "psi_0": {"min": -1, "max": 1, "count": 5},
             }
         ),
-        2: grid.Grid(
+        2: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 5},
                 "theta_0": {"min": -1, "max": 1, "count": 5},

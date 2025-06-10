@@ -185,7 +185,7 @@ class test_ann_lr(unittest.TestCase):
 
         ### Setting up the training
 
-        states_0_N = grid.Grid(
+        states_0_N = grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 3, "count": 5},
                 "p": {"min": 0, "max": 1, "count": 4},

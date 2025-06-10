@@ -19,15 +19,53 @@ class Grid:
 
     """
 
-    def __init__(self, config, torch=True):
-        self.labels = list(config.keys())
-        self.values = make_grid(config)
+    def __init__(self, labels, values, torched=True):
+        self.labels = labels
+        self.values = values
 
-        if torch:
+        if torched:
             self.torch()
 
+    @classmethod
+    def from_config(cls, config={}, torched=True):
+        return cls(list(config.keys()), make_grid(config), torched=torch)
+
+    @classmethod
+    def from_dict(cls, kv={}, torched=False):
+        vals = [reconcile(list(kv.values())[0], val) for val in list(kv.values())]
+
+        if isinstance(vals[0], np.ndarray):
+            vals_stacked = np.stack(vals).T
+        elif isinstance(vals[0], torch.Tensor):
+            vals_stacked = torch.stack(vals).T
+        else:
+            raise Exception(f"First value is over unexpected type {type(vals[0])}")
+
+        return cls(list(kv.keys()), vals_stacked, torched=torched)
+
+    def shape(self):
+        """
+        Returns the shape of the grid values.
+        """
+        return self.values.shape
+
+    def len(self):
+        """
+        Returns the number of columns, similar to a dict.
+        """
+        return self.values.shape[1]
+
+    def n(self):
+        """
+        Returns the number of values for each symbol
+        """
+        return self.values.shape[0]
+
     def torch(self):
-        self.values = torch.FloatTensor(self.values).to(device)
+        if not isinstance(self.values, torch.Tensor):
+            self.values = torch.FloatTensor(self.values).to(device)
+        else:
+            self.values = self.values.to(device)
         return self
 
     def to_dict(self):
@@ -37,9 +75,45 @@ class Grid:
         """
         return dict(zip(self.labels, self.values.T))
 
+    def update_from_dict(self, kv):
+        my_dict = self.to_dict()
+
+        my_dict.update(kv)
+
+        return Grid.from_dict(my_dict)
+
     def __getitem__(self, sym):
         # TODO: fix the dict creation step to improve performance
         return self.to_dict()[sym]
+
+
+def reconcile(vec_a, vec_b):
+    """
+    Returns a new vector with the values of vec_b but with
+    the object type and shape of vec_a.
+    """
+    target_shape = vec_a.shape
+
+    if isinstance(vec_a, np.ndarray):
+        if isinstance(vec_b, torch.Tensor):
+            vec_b_np = vec_b.cpu().numpy()
+        else:
+            vec_b_np = vec_b
+
+        if vec_b_np.shape == target_shape:
+            return vec_b_np
+        else:
+            return vec_b_np.reshape(target_shape)
+    if isinstance(vec_a, torch.Tensor):
+        if isinstance(vec_b, np.ndarray):
+            vec_b_torch = torch.FloatTensor(vec_b).to(vec_a.device)
+        else:
+            vec_b_torch = vec_b.to(vec_a.device)
+
+        if vec_b_torch.shape == target_shape:
+            return vec_b_torch
+        else:
+            return vec_b_torch.reshape(target_shape)
 
 
 def make_grid(config):

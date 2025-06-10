@@ -1,4 +1,4 @@
-from conftest import case_1, case_2
+from conftest import case_1, case_2, case_3
 import numpy as np
 import skagent.algos.maliar as maliar
 import skagent.grid as grid
@@ -138,6 +138,43 @@ class TestLifetimeReward(unittest.TestCase):
         self.assertEqual(dlr_2, 0)
 
 
+class TestGridManipulations(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_givens_case_1(self):
+        # TODO: we're going to need to build the blocks in the test, because of this mutation,
+        #       or else make this return a copy.
+        block = case_1["block"]
+        block.construct_shocks(case_1["calibration"])
+
+        state_grid = grid.Grid.from_config(
+            {
+                "a": {"min": 0, "max": 1, "count": 7},
+            }
+        )
+
+        full_grid = maliar.generate_givens_from_states(state_grid, block, 1)
+
+        self.assertTrue("theta_0" in full_grid)
+        self.assertEqual(len(full_grid["theta_0"]), 7)
+
+    def test_givens_case_3(self):
+        block = case_3["block"]
+        block.construct_shocks(case_1["calibration"])
+
+        state_grid = grid.Grid.from_config(
+            {
+                "a": {"min": 0, "max": 1, "count": 7},
+            }
+        )
+
+        full_grid = maliar.generate_givens_from_states(state_grid, block, 2)
+
+        self.assertTrue("psi_0" in full_grid)
+        self.assertEqual(len(full_grid["psi_0"]), 7)
+
+
 class TestTrainingLoop(unittest.TestCase):
     def setUp(self):
         pass
@@ -164,3 +201,5 @@ class TestTrainingLoop(unittest.TestCase):
             case_1["calibration"],
             shock_copies=big_t,
         )
+
+        # Currently just a smoke test.

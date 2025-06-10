@@ -195,7 +195,7 @@ def generate_givens_from_state_config(state_config, block, shock_copies: int):
     pass
 
 
-def generate_givens_from_states(states, block, shock_copies: int):
+def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: int):
     """
     Generates omega_i values of the MMW JME '21 method.
 
@@ -204,12 +204,21 @@ def generate_givens_from_states(states, block, shock_copies: int):
     shock_copies : int - number of copies of the shocks to be included.
     """
 
-    # TODO: create a grid with the states, and shock_copies copies of the shocks.
-    #       - how are these values to be set?
-    #       - by sampling?
-    raise Exception("generate_givens_from_states not implemented")
+    # get the length of the states vectors -- N
+    n = states.len()
+    new_shock_values = {}
 
-    pass
+    for i in range(shock_copies):
+        # relies on constructed shocks
+        # required
+        shock_values = draw_shocks(block.shocks, n=n)
+        new_shock_values.update(
+            {f"{sym}_{i}": shock_values[sym] for sym in shock_values}
+        )
+
+    givens = states.add_columns(new_shock_values)
+
+    return givens
 
 
 def simulate_forward(
@@ -237,7 +246,7 @@ def simulate_forward(
 def maliar_training_loop(
     block,
     loss_function,
-    states_0_n,
+    states_0_n: Grid,
     parameters,
     shock_copies=2,
     max_iterations=None,
@@ -246,7 +255,7 @@ def maliar_training_loop(
     """
     block - a model definition
     loss_function : callable((df, input_vector) -> loss vector
-    states_0_n : a panel of starting states
+    states_0_n : Grid a panel of starting states
     parameters : dict : given parameters for the model
 
     shock_copies: int : number of copies of shocks to include in the training set omega
@@ -283,7 +292,8 @@ def maliar_training_loop(
         ann.train_block_policy_nn(bpn, givens, loss_function, epochs=250)
 
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
-        # TODO using SHOCKS (maybe new shocks), and ANN.DF, _transition the agents forward...
+
+        # TODO This will be a tensor, not a Grid, and that throws off type consistency.
         states = simulate_forward(
             states, block, bpn.get_decision_function(), parameters
         )
