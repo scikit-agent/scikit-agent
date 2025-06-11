@@ -34,7 +34,7 @@ class TestBellmanLoss(unittest.TestCase):
         case_0["block"].construct_shocks(case_0["calibration"])
         
         training_grid = maliar.generate_bellman_training_grid(
-            state_config, case_0["block"], n_samples=5
+            state_config, case_0["block"], n_samples=5, parameters=case_0["calibration"]
         )
         
         # Should have state variable 'a' and any shock variables with _0 and _1 suffixes
@@ -63,7 +63,7 @@ class TestBellmanLoss(unittest.TestCase):
         state_config = {"a": {"min": 0, "max": 2, "count": 5}}
         case_0["block"].construct_shocks(case_0["calibration"])
         training_grid = maliar.generate_bellman_training_grid(
-            state_config, case_0["block"], n_samples=5
+            state_config, case_0["block"], n_samples=5, parameters=case_0["calibration"]
         )
         
         # Compute loss
@@ -97,7 +97,7 @@ class TestBellmanLoss(unittest.TestCase):
         state_config = {"a": {"min": 0, "max": 2, "count": 5}}
         case_0["block"].construct_shocks(case_0["calibration"])
         training_grid = maliar.generate_bellman_training_grid(
-            state_config, case_0["block"], n_samples=5
+            state_config, case_0["block"], n_samples=5, parameters=case_0["calibration"]
         )
         
         # Train for a few epochs (smoke test)
@@ -132,7 +132,7 @@ class TestBellmanLoss(unittest.TestCase):
         }
         
         training_grid = maliar.generate_bellman_training_grid(
-            state_config, block, n_samples=9  # 3x3 grid
+            state_config, block, n_samples=9, parameters=parameters  # 3x3 grid
         )
         
         # Compute loss
@@ -168,7 +168,7 @@ class TestBellmanLoss(unittest.TestCase):
         # Create training grid
         state_config = {"a": {"min": 0, "max": 1, "count": 3}}
         training_grid = maliar.generate_bellman_training_grid(
-            state_config, case_1["block"], n_samples=3
+            state_config, case_1["block"], n_samples=3, parameters=parameters
         )
         
         # Check that we have shock variables in the grid
