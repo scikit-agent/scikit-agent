@@ -156,8 +156,7 @@ class TestGridManipulations(unittest.TestCase):
 
         full_grid = maliar.generate_givens_from_states(state_grid, block, 1)
 
-        self.assertTrue("theta_0" in full_grid)
-        self.assertEqual(len(full_grid["theta_0"]), 7)
+        self.assertEqual(full_grid["theta_0"].shape.numel(), 7)
 
     def test_givens_case_3(self):
         block = case_3["block"]
@@ -171,7 +170,6 @@ class TestGridManipulations(unittest.TestCase):
 
         full_grid = maliar.generate_givens_from_states(state_grid, block, 2)
 
-        self.assertTrue("psi_0" in full_grid)
         self.assertEqual(len(full_grid["psi_0"]), 7)
 
 
@@ -190,9 +188,7 @@ class TestTrainingLoop(unittest.TestCase):
             parameters=case_1["calibration"],
         )
 
-        states_0_n = grid.torched(
-            grid.make_grid({"a": {"min": 0, "max": 1, "count": 7}})
-        )
+        states_0_n = grid.Grid.from_config({"a": {"min": 0, "max": 1, "count": 7}})
 
         ann, states = maliar.maliar_training_loop(
             case_1["block"],
@@ -200,6 +196,7 @@ class TestTrainingLoop(unittest.TestCase):
             states_0_n,
             case_1["calibration"],
             shock_copies=big_t,
+            simulation_steps=5,
         )
 
         # Currently just a smoke test.

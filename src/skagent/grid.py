@@ -4,6 +4,7 @@ Tools for building state and shock space grids.
 
 import numpy as np
 import torch
+import skagent.utils as utils
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,7 +33,7 @@ class Grid:
 
     @classmethod
     def from_dict(cls, kv={}, torched=False):
-        vals = [reconcile(list(kv.values())[0], val) for val in list(kv.values())]
+        vals = [utils.reconcile(list(kv.values())[0], val) for val in list(kv.values())]
 
         if isinstance(vals[0], np.ndarray):
             vals_stacked = np.stack(vals).T
@@ -86,34 +87,11 @@ class Grid:
         # TODO: fix the dict creation step to improve performance
         return self.to_dict()[sym]
 
+    # TODO: To imitate dict-like properties, may need to implement __contains__ and __iter__
+    #       or alternatively rewrite to use a Mappable base class.
 
-def reconcile(vec_a, vec_b):
-    """
-    Returns a new vector with the values of vec_b but with
-    the object type and shape of vec_a.
-    """
-    target_shape = vec_a.shape
-
-    if isinstance(vec_a, np.ndarray):
-        if isinstance(vec_b, torch.Tensor):
-            vec_b_np = vec_b.cpu().numpy()
-        else:
-            vec_b_np = vec_b
-
-        if vec_b_np.shape == target_shape:
-            return vec_b_np
-        else:
-            return vec_b_np.reshape(target_shape)
-    if isinstance(vec_a, torch.Tensor):
-        if isinstance(vec_b, np.ndarray):
-            vec_b_torch = torch.FloatTensor(vec_b).to(vec_a.device)
-        else:
-            vec_b_torch = vec_b.to(vec_a.device)
-
-        if vec_b_torch.shape == target_shape:
-            return vec_b_torch
-        else:
-            return vec_b_torch.reshape(target_shape)
+    def __str__(self):
+        return f"<skagent.grid.Grid: {self.to_dict()}"
 
 
 def make_grid(config):

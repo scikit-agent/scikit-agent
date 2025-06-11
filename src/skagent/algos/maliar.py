@@ -4,6 +4,7 @@ from skagent.grid import Grid
 import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
 import torch
+import skagent.utils as utils
 
 """
 Tools for the implementation of the Maliar, Maliar, and Winant (JME '21) method.
@@ -205,7 +206,7 @@ def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: 
     """
 
     # get the length of the states vectors -- N
-    n = states.len()
+    n = states.n()
     new_shock_values = {}
 
     for i in range(shock_copies):
@@ -216,7 +217,7 @@ def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: 
             {f"{sym}_{i}": shock_values[sym] for sym in shock_values}
         )
 
-    givens = states.add_columns(new_shock_values)
+    givens = states.update_from_dict(new_shock_values)
 
     return givens
 
@@ -227,17 +228,33 @@ def simulate_forward(
     decision_function: callable,
     parameters,
     big_t,
-    state_syms,
+    # state_syms,
 ):
+    if isinstance(states_t, Grid):
+        n = states_t.n()
+        states_t = states_t.to_dict()
+    else:
+        # kludge
+        n = len(states_t[next(iter(states_t.keys()))])
+
+    state_syms = list(states_t.keys())
     tf = create_transition_function(block, state_syms)
 
     for t in range(big_t):
         # TODO: make sure block shocks are 'constructed'
         # TODO: allow option for 'structured' draws, e.g. from exact discretization.
-        shocks_t = draw_shocks(block.shocks)
-        decision_function(states_t, shocks_t, parameters)
+        shocks_t = draw_shocks(block.shocks, n=n)
 
-        states_t_plus_1 = tf(...)
+        # this is cumbersome; probably can be solved deeper on the data structure level
+        # note similarity to Grid.from_dict() reconciliation logic.
+        states_template = states_t[next(iter(states_t.keys()))]
+        shocks_t = {
+            sym: utils.reconcile(states_template, shocks_t[sym]) for sym in shocks_t
+        }
+
+        controls_t = decision_function(states_t, shocks_t, parameters)
+
+        states_t_plus_1 = tf(states_t, shocks_t, controls_t, parameters)
         states_t = states_t_plus_1
 
     return states_t_plus_1
@@ -249,8 +266,9 @@ def maliar_training_loop(
     states_0_n: Grid,
     parameters,
     shock_copies=2,
-    max_iterations=None,
+    max_iterations=5,
     random_seed=None,
+    simulation_steps=1,
 ):
     """
     block - a model definition
@@ -263,6 +281,11 @@ def maliar_training_loop(
                         TODO: make this better, less ad hoc
 
     loss_function is the "empirical risk Xi^n" in MMW JME'21.
+
+    max_iterations: int
+        Number of times to perform the training loop, if there is no convergence.
+    simulation_steps : int
+        The number of time steps to simulate forward when determining the next omega set for training
     """
 
     # Step 1. Initialize the algorithm:
@@ -282,7 +305,7 @@ def maliar_training_loop(
     states = states_0_n  # V) Create initial panel of agents/starting states.
 
     # Step 2. Train the machine, i.e., ﬁnd θ that minimizes theempirical risk Xi^n (θ ):
-    for i in range(100):
+    for i in range(max_iterations):
         # i). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         givens = generate_givens_from_states(states_0_n, block, shock_copies)
 
@@ -292,11 +315,11 @@ def maliar_training_loop(
         ann.train_block_policy_nn(bpn, givens, loss_function, epochs=250)
 
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
-
-        # TODO This will be a tensor, not a Grid, and that throws off type consistency.
-        states = simulate_forward(
-            states, block, bpn.get_decision_function(), parameters
+        next_states = simulate_forward(
+            states, block, bpn.get_decision_function(), parameters, simulation_steps
         )
+
+        states = Grid.from_dict(next_states)
 
         # End Step 2 if the convergence criterion || θ_hat − θ ||  < ε is satisﬁed.
         # TODO: test for difference.. how? This effects the FOR (/while) loop above.
