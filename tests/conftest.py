@@ -27,7 +27,7 @@ case_1 = {
         **{
             "name": "lr_test_1 - shock",
             "shocks": {
-                "theta": (Normal, {"mean": 0, "sigma": 1}),
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
             },
             "dynamics": {
                 "c": Control(["a", "theta"]),
@@ -61,7 +61,7 @@ case_2 = {
         **{
             "name": "lr_test_2 - hidden shock",
             "shocks": {
-                "theta": (Normal, {"mean": 0, "sigma": 1}),
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
             },
             "dynamics": {
                 "c": Control(["a"]),
@@ -86,8 +86,8 @@ case_3 = {
         **{
             "name": "lr_test_3 - two shocks, one hidden",
             "shocks": {
-                "theta": (Normal, {"mean": 0, "sigma": 1}),
-                "psi": (Normal, {"mean": 0, "sigma": 1}),
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+                "psi": (Normal, {"mu": 0, "sigma": 1}),
             },
             "dynamics": {
                 "m": lambda a, theta: a + theta,
