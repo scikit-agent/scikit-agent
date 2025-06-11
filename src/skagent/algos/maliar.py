@@ -6,15 +6,15 @@ from skagent.simulation.monte_carlo import draw_shocks
 """
 Implementation of Maliar, Maliar, and Winant (Journal of Monetary Economics, 2021) Methods.
 
-This module implements the complete MMW JME '21 framework for solving dynamic economic 
-models using neural networks and all-in-one (AiO) loss functions. The MMW approach 
-provides three fundamental loss function formulations for training neural network 
+This module implements the complete MMW JME '21 framework for solving dynamic economic
+models using neural networks and all-in-one (AiO) loss functions. The MMW approach
+provides three fundamental loss function formulations for training neural network
 approximations of policy and value functions.
 
 MMW JME '21 All-in-One Loss Functions
 ====================================
 
-The MMW JME '21 paper "Deep learning for solving dynamic economic models" introduces 
+The MMW JME '21 paper "Deep learning for solving dynamic economic models" introduces
 three fundamental all-in-one (AiO) loss functions for solving dynamic economic models:
 
 1. **Expected Discounted Lifetime Reward (EDLR)** - Primary Method
@@ -26,7 +26,7 @@ three fundamental all-in-one (AiO) loss functions for solving dynamic economic m
      and decision function approximation
    - Implemented in: get_expected_discounted_lifetime_reward_loss()
 
-2. **Bellman Residual Minimization** - Alternative Method  
+2. **Bellman Residual Minimization** - Alternative Method
    - Mathematical foundation (MMW Section 2.4):
      Loss = |V(s_t) - [u(s_t,c_t) + β * E[V(s_{t+1}) | s_t,c_t]]|²
    - Joint training of policy and value functions via Bellman equation violations
@@ -44,7 +44,7 @@ three fundamental all-in-one (AiO) loss functions for solving dynamic economic m
 Constraint Handling with Fischer-Burmeister Function
 ===================================================
 
-The MMW JME '21 framework uses the Fischer-Burmeister (FB) function to handle 
+The MMW JME '21 framework uses the Fischer-Burmeister (FB) function to handle
 inequality constraints in a differentiable manner. This is crucial for economic
 models with occasionally binding constraints like borrowing limits.
 
@@ -98,7 +98,7 @@ Loss Function Factories:
 Helper Functions:
 - create_transition_function(): State transition dynamics T(s_t, ε_t, c_t)
 - create_decision_function(): Policy function wrappers
-- create_reward_function(): Reward function wrappers  
+- create_reward_function(): Reward function wrappers
 - estimate_discounted_lifetime_reward(): Forward simulation engine
 
 Usage Examples
@@ -113,18 +113,16 @@ from skagent.ann import BlockPolicyNet, train_block_policy_nn
 
 # Create EDLR loss function (main MMW method)
 edlr_loss = get_expected_discounted_lifetime_reward_loss(
-    state_variables=['m', 'a'], 
+    state_variables=["m", "a"],
     block=consumption_block,
     discount_factor=0.96,
     big_t=100,
-    parameters=calibration
+    parameters=calibration,
 )
 
 # Train policy network
 policy_net = BlockPolicyNet(consumption_block)
-trained_net = train_block_policy_nn(
-    policy_net, training_grid, edlr_loss, epochs=1000
-)
+trained_net = train_block_policy_nn(policy_net, training_grid, edlr_loss, epochs=1000)
 ```
 
 Alternative Bellman Method with Constraints
@@ -136,16 +134,16 @@ from skagent.ann import BlockPolicyNet, BlockValueNet, train_bellman_nets
 
 # Create Bellman loss function with Fischer-Burmeister constraints
 bellman_loss = get_bellman_residual_loss(
-    state_variables=['m', 'a'],
-    block=consumption_block, 
+    state_variables=["m", "a"],
+    block=consumption_block,
     discount_factor=0.96,
     parameters=calibration,
-    use_fischer_burmeister=True  # Enable constraint handling
+    use_fischer_burmeister=True,  # Enable constraint handling
 )
 
 # Train both policy and value networks
 policy_net = BlockPolicyNet(consumption_block)
-value_net = BlockValueNet(consumption_block, ['m', 'a'])
+value_net = BlockValueNet(consumption_block, ["m", "a"])
 trained_policy, trained_value = train_bellman_nets(
     policy_net, value_net, training_grid, bellman_loss, epochs=1000
 )
@@ -167,7 +165,7 @@ Run tests with: pytest tests/test_bellman_loss.py
 References
 ==========
 
-Maliar, L., Maliar, S., & Winant, P. (2021). Deep learning for solving dynamic 
+Maliar, L., Maliar, S., & Winant, P. (2021). Deep learning for solving dynamic
 economic models. Journal of Monetary Economics, 122, 76-101.
 Original paper: https://web.stanford.edu/~maliars/Files/JME2021.pdf
 
@@ -176,15 +174,15 @@ Fischer, A. (1992). A special Newton-type optimization method. Optimization, 24(
 Implementation Notes
 ===================
 
-This implementation uses a simpler problem representation than the full skagent 
+This implementation uses a simpler problem representation than the full skagent
 Block system to maintain compatibility with the original MMW formulations while
 leveraging the skagent infrastructure for model definition and simulation.
 
-The implementation provides both the **primary MMW EDLR method** and the 
-**alternative Bellman method**, enabling researchers to use the complete MMW JME '21 
+The implementation provides both the **primary MMW EDLR method** and the
+**alternative Bellman method**, enabling researchers to use the complete MMW JME '21
 methodology for solving dynamic economic models with neural networks.
 
-Fischer-Burmeister constraint handling ensures proper treatment of inequality 
+Fischer-Burmeister constraint handling ensures proper treatment of inequality
 constraints and complementarity conditions as specified in the original MMW paper.
 """
 
@@ -192,43 +190,43 @@ constraints and complementarity conditions as specified in the original MMW pape
 def fischer_burmeister(a, b):
     """
     Fischer-Burmeister function for handling complementarity constraints.
-    
+
     The Fischer-Burmeister function provides a smooth, differentiable way to
     handle complementarity conditions a ≥ 0, b ≥ 0, a·b = 0. This is essential
     for economic models with occasionally binding constraints like borrowing limits.
-    
+
     Mathematical Definition:
     FB(a,b) = a + b - sqrt(a² + b²)
-    
+
     Properties:
     - FB(a,b) = 0 when complementarity conditions are satisfied
     - Smooth and differentiable everywhere (unlike min(a,b))
     - FB(a,b) < 0 when constraints are violated
     - FB(a,b) = 0 when constraints are exactly satisfied
-    
+
     Applications in Economic Models:
     - Borrowing constraints: FB(c - c_max, λ) = 0
     - Non-negativity: FB(c, λ_c) = 0 where λ_c is multiplier on c ≥ 0
     - Asset constraints: FB(a - a_min, λ_a) = 0
-    
+
     Parameters
     -----------
     a : torch.Tensor or float
         First argument (often constraint violation: constraint - bound)
-    b : torch.Tensor or float  
+    b : torch.Tensor or float
         Second argument (often Lagrange multiplier)
-        
+
     Returns
     --------
     torch.Tensor or float
         Fischer-Burmeister function value. Zero when complementarity satisfied.
-        
+
     References
     ----------
-    Fischer, A. (1992). A special Newton-type optimization method. 
+    Fischer, A. (1992). A special Newton-type optimization method.
     Optimization, 24(3-4), 269-284.
-    
-    Maliar, L., Maliar, S., & Winant, P. (2021). Deep learning for solving 
+
+    Maliar, L., Maliar, S., & Winant, P. (2021). Deep learning for solving
     dynamic economic models. Journal of Monetary Economics, 122, 76-101.
     """
     # Ensure inputs are tensors for proper gradient computation
@@ -236,8 +234,8 @@ def fischer_burmeister(a, b):
         a = torch.tensor(a, dtype=torch.float32)
     if not isinstance(b, torch.Tensor):
         b = torch.tensor(b, dtype=torch.float32)
-    
-    # FB(a,b) = a + b - sqrt(a² + b²) 
+
+    # FB(a,b) = a + b - sqrt(a² + b²)
     # Note: This equals 0 when complementarity satisfied, negative when violated
     return a + b - torch.sqrt(a**2 + b**2)
 
@@ -245,16 +243,16 @@ def fischer_burmeister(a, b):
 def get_constraint_violations(block, states, controls, parameters):
     """
     Extract constraint violations for Fischer-Burmeister function application.
-    
+
     Analyzes the economic model block to identify constraint violations that
     should be penalized using Fischer-Burmeister complementarity conditions.
     This enables proper handling of occasionally binding constraints.
-    
+
     Common Economic Constraints:
     - Borrowing limit: consumption ≤ cash-on-hand
-    - Non-negativity: consumption ≥ 0, assets ≥ 0  
+    - Non-negativity: consumption ≥ 0, assets ≥ 0
     - Resource constraints: income ≥ consumption + savings
-    
+
     Parameters
     -----------
     block : DBlock
@@ -262,10 +260,10 @@ def get_constraint_violations(block, states, controls, parameters):
     states : dict
         Current state variables {symbol: values}
     controls : dict
-        Current control variables {symbol: values}  
+        Current control variables {symbol: values}
     parameters : dict
         Model calibration parameters
-        
+
     Returns
     --------
     dict
@@ -274,16 +272,16 @@ def get_constraint_violations(block, states, controls, parameters):
         Negative violations indicate constraint is violated
     """
     violations = {}
-    
+
     # Check upper bound constraints from DBlock Control specifications
     dynamics = block.get_dynamics()
     for control_name in block.get_controls():
         control = dynamics[control_name]
-        
-        if hasattr(control, 'upper_bound') and control.upper_bound is not None:
+
+        if hasattr(control, "upper_bound") and control.upper_bound is not None:
             # Handle upper bound constraint
             upper_bound = control.upper_bound
-            
+
             if isinstance(upper_bound, str):
                 # Upper bound is a symbol name (e.g., 'c <= m')
                 if upper_bound in states:
@@ -297,49 +295,50 @@ def get_constraint_violations(block, states, controls, parameters):
             elif callable(upper_bound):
                 # Upper bound is a function
                 from inspect import signature
+
                 bound_args = signature(upper_bound).parameters
                 bound_vals = {}
                 all_vals = {**parameters, **states, **controls}
                 for arg_name in bound_args:
                     if arg_name in all_vals:
                         bound_vals[arg_name] = all_vals[arg_name]
-                
+
                 if not bound_vals:
                     continue
-                    
+
                 try:
                     upper_bound_value = upper_bound(**bound_vals)
-                except Exception as e:
+                except Exception:
                     continue
             else:
                 # Upper bound is a constant
                 upper_bound_value = upper_bound
-            
+
             control_value = controls[control_name]
-            
+
             # Constraint violation: upper_bound - control_value
             # Positive when constraint satisfied, negative when violated
             violations[f"{control_name}_upper"] = upper_bound_value - control_value
-        
+
         # Add lower bound constraint (non-negativity)
         if control_name in controls:
             control_value = controls[control_name]
             violations[f"{control_name}_lower"] = control_value  # c ≥ 0
-    
+
     return violations
 
 
 def create_transition_function(block, state_syms):
     """
     Create a transition function from a block.
-    
+
     Parameters
     -----------
     block : DBlock
         The economic model block
     state_syms : list of str
         A list of symbols for 'state variables at time t', aka arrival states.
-        
+
     Returns
     --------
     callable
@@ -358,14 +357,14 @@ def create_transition_function(block, state_syms):
 def create_decision_function(block, decision_rules):
     """
     Create a decision function from decision rules.
-    
+
     Parameters
     -----------
     block : DBlock
         The economic model block
     decision_rules : dict
         Dictionary mapping control variable names to decision rules
-        
+
     Returns
     --------
     callable
@@ -386,14 +385,14 @@ def create_decision_function(block, decision_rules):
 def create_reward_function(block, agent=None):
     """
     Create a reward function from a block.
-    
+
     Parameters
     -----------
     block : DBlock
         The economic model block
     agent : str, optional
         Name of reference agent for rewards. If None, uses all rewards.
-        
+
     Returns
     --------
     callable
@@ -424,7 +423,7 @@ def estimate_discounted_lifetime_reward(
 ):
     """
     Estimate discounted lifetime reward by forward simulation.
-    
+
     Parameters
     -----------
     block : DBlock
@@ -432,7 +431,7 @@ def estimate_discounted_lifetime_reward(
     discount_factor : float
         Discount factor (currently only numerical values supported)
     dr : dict or callable
-        Decision rules (dict of functions), or a decision function 
+        Decision rules (dict of functions), or a decision function
     states_0 : dict
         Initial states, mapping symbols to values
     big_t : int
@@ -443,7 +442,7 @@ def estimate_discounted_lifetime_reward(
         Calibration parameters
     agent : str, optional
         Name of reference agent for rewards
-        
+
     Returns
     --------
     float or torch.Tensor
@@ -502,20 +501,20 @@ def estimate_discounted_lifetime_reward(
 def generate_bellman_training_grid(state_config, block, n_samples=100, parameters=None):
     """
     Generate training grid for Bellman residual loss function.
-    
-    Creates a Cartesian product grid of state variables combined with 2 copies 
-    of shock realizations (for periods t and t+1) as required by the Bellman 
-    equation approach. This grid structure enables proper computation of 
+
+    Creates a Cartesian product grid of state variables combined with 2 copies
+    of shock realizations (for periods t and t+1) as required by the Bellman
+    equation approach. This grid structure enables proper computation of
     expectations E[V(s_{t+1}) | s_t, c_t] in the Bellman residual loss.
-    
+
     Grid Structure:
     - State variables: Cartesian product over specified ranges
     - Shock variables: Independent draws with suffixes "_0" (period t) and "_1" (period t+1)
     - Total grid points: product of state counts
-    
+
     The 2-shock structure is computationally efficient compared to the EDLR
     approach which requires big_t shock copies for forward simulation.
-    
+
     Parameters
     -----------
     state_config : dict
@@ -532,7 +531,7 @@ def generate_bellman_training_grid(state_config, block, n_samples=100, parameter
         Model calibration parameters required for constructing shock distributions
         when block contains shock specifications as tuples. If None and block
         requires parameters, will raise an error.
-        
+
     Returns
     --------
     Grid
@@ -542,18 +541,23 @@ def generate_bellman_training_grid(state_config, block, n_samples=100, parameter
     """
     # Create base state grid
     states_grid = Grid(state_config)
-    
+
     # Get number of state points
     n_states = len(states_grid.values)
-    
+
     # Get device from states_grid
-    device = states_grid.values.device if hasattr(states_grid.values, 'device') else torch.device('cpu')
-    
+    device = (
+        states_grid.values.device
+        if hasattr(states_grid.values, "device")
+        else torch.device("cpu")
+    )
+
     # Draw shocks for t and t+1
     from skagent.model import construct_shocks
+
     shock_vars = block.get_shocks()
     new_shock_values = {}
-    
+
     # Only add shocks if the block has any
     if shock_vars:
         # Construct actual distributions if needed (handle tuples)
@@ -568,56 +572,67 @@ def generate_bellman_training_grid(state_config, block, n_samples=100, parameter
             constructed_shocks = construct_shocks(shock_vars, parameters)
         else:
             constructed_shocks = shock_vars
-            
+
         for period in [0, 1]:  # t and t+1
-            shocks = draw_shocks(constructed_shocks, np.zeros(n_states))  # conditions not used for most shocks
+            shocks = draw_shocks(
+                constructed_shocks, np.zeros(n_states)
+            )  # conditions not used for most shocks
             for shock_name, shock_values in shocks.items():
-                new_shock_values[f"{shock_name}_{period}"] = torch.tensor(shock_values, dtype=torch.float32, device=device)
-    
+                new_shock_values[f"{shock_name}_{period}"] = torch.tensor(
+                    shock_values, dtype=torch.float32, device=device
+                )
+
     # Combine state grid with shock values
     states_dict = states_grid.to_dict()
     combined_dict = {**states_dict, **new_shock_values}
-    
+
     # Create new grid with combined data
     combined_labels = list(combined_dict.keys())
     combined_values = torch.stack([combined_dict[label] for label in combined_labels]).T
-    
-    # Create a new Grid-like structure  
+
+    # Create a new Grid-like structure
     result_grid = Grid(state_config)  # Start with state config
     result_grid.labels = combined_labels
     result_grid.values = combined_values
-    
+
     return result_grid
 
 
-def get_bellman_residual_loss(state_variables, block, discount_factor, parameters, disc_params=None, use_fischer_burmeister=False):
+def get_bellman_residual_loss(
+    state_variables,
+    block,
+    discount_factor,
+    parameters,
+    disc_params=None,
+    use_fischer_burmeister=False,
+):
     """
     Creates a Bellman equation all-in-one loss function for the Maliar method.
-    
-    This implements the alternative MMW JME '21 approach (Section 2.4) using 
+
+    This implements the alternative MMW JME '21 approach (Section 2.4) using
     Bellman equation residuals instead of the primary EDLR method. This approach
     jointly trains policy and value functions by minimizing violations of the
     Bellman equation.
-    
+
     Mathematical Foundation (MMW JME '21, Section 2.4):
     The Bellman equation for dynamic programming is:
     V(s_t) = u(s_t, c_t) + β * E[V(s_{t+1}) | s_t, c_t]
-    
+
     This function creates a loss that minimizes Bellman residuals:
     Loss = |V(s_t) - [u(s_t,c_t) + β * E[V(s_{t+1}) | s_t,c_t]]|²
-    
+
     Where:
     - V(s_t) is the value function approximation at state s_t
     - u(s_t, c_t) is the period utility function
     - c_t = φ(s_t, ε_t; θ) is the policy function output
     - β is the discount factor
     - E[·] is the expectation over next period shocks
-    
+
     Key Advantages vs EDLR:
     - Computationally efficient: Uses only 2 shock copies (t and t+1) vs big_t
     - Theoretically grounded: Direct implementation of Bellman optimality
     - Joint optimization: Trains both policy and value functions simultaneously
-    
+
     Parameters
     -----------
     state_variables : list of str
@@ -635,124 +650,134 @@ def get_bellman_residual_loss(state_variables, block, discount_factor, parameter
         If None, uses Monte Carlo integration with provided shock realizations.
     use_fischer_burmeister : bool, optional
         Whether to use Fischer-Burmeister function for constraint handling
-        
+
     Returns
     --------
     callable
         Bellman residual loss function with signature:
         (policy_function, value_function, input_grid) -> loss_tensor
-        
+
         The returned function computes squared Bellman residuals for each point
         in the input grid, enabling batch training of neural networks.
     """
     from skagent.model import discretized_shock_dstn
     from HARK.distributions import expected
-    
+
     # Set up shock handling - use 2 copies of shocks (t and t+1)
     shock_vars = block.get_shocks()
     shock_syms_t = [f"{sym}_0" for sym in shock_vars.keys()]
     shock_syms_t1 = [f"{sym}_1" for sym in shock_vars.keys()]
-    
+
     # Create helper functions
     tf = create_transition_function(block, state_variables)
     rf = create_reward_function(block)
-    
+
     # Get the reward symbol (assumes single reward for now)
     rsym = list(block.reward.keys())[0]
-    
+
     def bellman_residual_loss(policy_function, value_function, input_grid):
         """
         Compute Bellman equation residuals for given policy and value functions.
-        
+
         Parameters
         ----------
         policy_function : callable
-            Current policy function c*(s,ε) 
+            Current policy function c*(s,ε)
         value_function : callable
             Current value function approximation V(s)
         input_grid : Grid
             Training data with states and shock realizations
-            
+
         Returns
         -------
         torch.Tensor
             Bellman residuals for each point in the input grid
         """
         given_vals = input_grid.to_dict()
-        
+
         # Extract current period states and shocks
         states_t = {var: given_vals[var] for var in state_variables}
-        shocks_t = {sym.replace('_0', ''): given_vals[sym] for sym in shock_syms_t if sym in given_vals}
-        
+        shocks_t = {
+            sym.replace("_0", ""): given_vals[sym]
+            for sym in shock_syms_t
+            if sym in given_vals
+        }
+
         # Get policy decision for current period
         controls_t = policy_function(states_t, shocks_t, parameters)
-        
+
         # Compute current period reward u(s_t, c_t)
         reward_vals = rf(states_t, shocks_t, controls_t, parameters)
         current_reward = reward_vals[rsym]
-        
+
         # Compute current value function V(s_t)
         current_value = value_function(states_t, parameters)
-        
+
         # Compute next period states s_{t+1} = T(s_t, ε_t, c_t)
         states_t1 = tf(states_t, shocks_t, controls_t, parameters)
-        
+
         # Compute continuation value β * E[V(s_{t+1}) | s_t, c_t]
         if disc_params is not None:
             # Use discretized expectation if discretization parameters provided
             ds = discretized_shock_dstn(shock_vars, disc_params)
-            
+
             def continuation_integrand(shock_array):
                 # Convert shock array to shock dictionary
                 shock_dict = {var: shock_array[var] for var in ds.variables.keys()}
-                
+
                 # Compute next period states with these shocks
                 next_states = tf(states_t, shock_dict, controls_t, parameters)
-                
+
                 # Evaluate value function at next period states
                 return value_function(next_states, parameters)
-            
+
             continuation_value = expected(func=continuation_integrand, dist=ds)
         else:
             # Use next period shocks from input grid for Monte Carlo integration
-            shocks_t1 = {sym.replace('_1', ''): given_vals[sym] for sym in shock_syms_t1 if sym in given_vals}
-            
+            shocks_t1 = {
+                sym.replace("_1", ""): given_vals[sym]
+                for sym in shock_syms_t1
+                if sym in given_vals
+            }
+
             if shocks_t1:
                 # Use provided next period shocks
                 next_states = tf(states_t, shocks_t1, controls_t, parameters)
             else:
                 # If no next period shocks provided, use current period shocks as approximation
                 next_states = states_t1
-                
+
             continuation_value = value_function(next_states, parameters)
-        
+
         # Compute Bellman residual: |V(s_t) - [u(s_t,c_t) + β * E[V(s_{t+1})]]|²
         bellman_target = current_reward + discount_factor * continuation_value
         bellman_residual = (current_value - bellman_target) ** 2
-        
+
         # Add Fischer-Burmeister constraint penalties if enabled
         if use_fischer_burmeister:
             # Get constraint violations
-            violations = get_constraint_violations(block, states_t, controls_t, parameters)
-            
+            violations = get_constraint_violations(
+                block, states_t, controls_t, parameters
+            )
+
             # Add Fischer-Burmeister penalty terms for each constraint
             fb_penalty = 0
             for constraint_name, violation in violations.items():
                 # Create dummy multiplier (in practice, could be learned)
                 # For now, use small positive value to penalize violations
                 multiplier = torch.ones_like(violation) * 0.1
-                
+
                 # Add squared Fischer-Burmeister residual
                 fb_residual = fischer_burmeister(violation, multiplier)
-                fb_penalty += fb_residual ** 2
-            
+                fb_penalty += fb_residual**2
+
             # Combine Bellman residual with constraint penalties
             # Use weight to balance Bellman accuracy vs constraint satisfaction
             constraint_weight = 1.0  # Could be made configurable
             bellman_residual = bellman_residual + constraint_weight * fb_penalty
-        
+
         return bellman_residual
-    
+
     return bellman_residual_loss
 
 
@@ -761,24 +786,24 @@ def get_expected_discounted_lifetime_reward_loss(
 ):
     """
     Creates an Expected Discounted Lifetime Reward (EDLR) loss function.
-    
+
     This implements the primary MMW JME '21 all-in-one loss function approach
     that maximizes expected discounted lifetime utility through forward simulation.
     This is the main method described in MMW Definition 2.4.
-    
+
     Mathematical Foundation (MMW JME '21):
     Ξ(θ) = E_ω[∑_{t=0}^{T} β^t r(m_t, s_t, φ(m_t, s_t; θ))]
-    
+
     Where:
     - θ are neural network parameters
-    - φ(·; θ) is the policy function approximation  
+    - φ(·; θ) is the policy function approximation
     - r(·) is the period reward function
     - β is the discount factor
     - The expectation is over initial conditions and all future shocks
-    
+
     Uses big_t copies of shocks for multi-period simulation, enabling proper
     integration over the full shock sequence as required by the MMW approach.
-    
+
     Parameters
     -----------
     state_variables : list of str
@@ -795,7 +820,7 @@ def get_expected_discounted_lifetime_reward_loss(
         Whether to add Fischer-Burmeister constraint penalties to the loss.
         When True, adds penalty terms for constraint violations to ensure
         economic feasibility of solutions. Default is False for backward compatibility.
-        
+
     Returns
     --------
     callable
@@ -817,20 +842,20 @@ def get_expected_discounted_lifetime_reward_loss(
     def expected_discounted_lifetime_reward_loss(df: callable, input_grid: Grid):
         """
         Compute Expected Discounted Lifetime Reward loss for given policy function.
-        
+
         This implements the core MMW JME '21 computation by:
         1. Extracting state variables and big_t shock sequences from input grid
-        2. Forward simulating the policy for big_t periods  
+        2. Forward simulating the policy for big_t periods
         3. Computing discounted sum of rewards over the trajectory
         4. Returning negative reward (for minimization by optimizers)
-        
+
         Parameters
         -----------
         df : callable
             Policy function that maps (states, shocks, parameters) -> controls
         input_grid : Grid
             Training grid containing initial states and shock sequences
-            
+
         Returns
         --------
         torch.Tensor
@@ -858,33 +883,35 @@ def get_expected_discounted_lifetime_reward_loss(
             shocks_by_t=shocks_by_t,
             # Handle multiple decision rules?
         )
-        
+
         # Add constraint penalties if requested
         if use_constraints:
             # Compute constraint violations for each point and time period
             constraint_penalty = 0
-            
+
             # Extract initial states for constraint checking
             initial_states = {sym: given_vals[sym] for sym in state_variables}
             initial_shocks = {sym: given_vals[f"{sym}_0"] for sym in block.get_shocks()}
-            
+
             # Get initial policy decision
             initial_controls = df(initial_states, initial_shocks, parameters)
-            
+
             # Check constraint violations
-            violations = get_constraint_violations(block, initial_states, initial_controls, parameters)
-            
+            violations = get_constraint_violations(
+                block, initial_states, initial_controls, parameters
+            )
+
             # Add Fischer-Burmeister penalties
             for constraint_name, violation in violations.items():
                 # Use small multiplier as in Bellman case
                 multiplier = torch.ones_like(violation) * 0.1
                 fb_residual = fischer_burmeister(violation, multiplier)
-                constraint_penalty += torch.mean(fb_residual ** 2)
-            
+                constraint_penalty += torch.mean(fb_residual**2)
+
             # Weight constraint penalty appropriately
             constraint_weight = 10.0  # Higher weight for EDLR to ensure feasibility
             total_loss = -edlr + constraint_weight * constraint_penalty
-            
+
             return total_loss
         else:
             # Return negative for minimization (optimizers minimize, but we want to maximize reward)
