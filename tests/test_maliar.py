@@ -258,6 +258,8 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             case_4["calibration"],
         )
 
+        states_0_n = grid.Grid.from_config({"a": {"min": 0, "max": 1, "count": 7}})
+
         ann, states = maliar.maliar_training_loop(
             case_4["block"],
             edlrl,
