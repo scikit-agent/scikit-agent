@@ -144,7 +144,7 @@ class test_ann_lr(unittest.TestCase):
         )["c"]
         given_m = given_0_N["a"] + given_0_N["theta_0"]
 
-        torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03)
+        self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03))
 
     def test_case_3_2(self):
         edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
@@ -170,7 +170,7 @@ class test_ann_lr(unittest.TestCase):
         )["c"]
         given_m = given_0_N["a"] + given_0_N["theta_0"]
 
-        torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04)
+        self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04))
 
     def test_lifetime_reward_perfect_foresight(self):
         ### Model data

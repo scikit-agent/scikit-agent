@@ -119,3 +119,37 @@ case_3 = {
         ),
     },
 }
+
+case_4 = {
+    "block": DBlock(
+        **{
+            "name": "maliar test - non-trivial ergodic states",
+            "shocks": {
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+                "psi": (Normal, {"mu": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "c": Control(["g", "m"]),
+                "a": lambda m, c: m - c,
+                "u": lambda a, g: -((a - g) ** 2),
+                "m": lambda a, theta: a + theta,
+                "g": lambda g, psi: g + psi,
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "optimal_dr": {"c": lambda g, m: g - m},
+    "calibration": {},
+    "givens": {
+        2: grid.Grid.from_config(
+            {
+                "m": {"min": -100, "max": 100, "count": 7},
+                "g": {"min": -100, "max": 100, "count": 7},
+                "theta_0": {"min": -1, "max": 1, "count": 7},
+                "psi_0": {"min": -1, "max": 1, "count": 7},
+                "theta_1": {"min": -1, "max": 1, "count": 5},
+                "psi_1": {"min": -1, "max": 1, "count": 5},
+            }
+        ),
+    },
+}

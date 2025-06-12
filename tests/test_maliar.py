@@ -1,4 +1,4 @@
-from conftest import case_1, case_2, case_3
+from conftest import case_1, case_2, case_3, case_4
 import numpy as np
 import skagent.algos.maliar as maliar
 import skagent.grid as grid
@@ -177,26 +177,38 @@ class TestTrainingLoop(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_loop_case_1(self):
-        big_t = 3
+    def test_loop_case_4(self):
+        big_t = 2
+
+        case_4["block"].construct_shocks(case_4["calibration"])
+
+        states_0_n = grid.Grid.from_config(
+            {
+                "m": {"min": -2, "max": 2, "count": 7},
+                "g": {"min": -2, "max": 2, "count": 7},
+            }
+        )
 
         edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
-            case_1["block"],
+            states_0_n.labels,
+            case_4["block"],
             0.9,
             big_t,
-            parameters=case_1["calibration"],
+            parameters=case_4["calibration"],
         )
-
-        states_0_n = grid.Grid.from_config({"a": {"min": 0, "max": 1, "count": 7}})
 
         ann, states = maliar.maliar_training_loop(
-            case_1["block"],
+            case_4["block"],
             edlrl,
             states_0_n,
-            case_1["calibration"],
+            case_4["calibration"],
             shock_copies=big_t,
-            simulation_steps=5,
+            simulation_steps=2,
         )
 
-        # Currently just a smoke test.
+        sd = states.to_dict()
+
+        # testing for the states converged on the ergodic distribution
+        print(states.values)
+
+        self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=0.1))
