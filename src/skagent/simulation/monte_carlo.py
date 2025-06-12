@@ -20,7 +20,7 @@ from skagent.utils import apply_fun_to_vals
 
 
 def draw_shocks(
-    shocks: Mapping[str, Distribution], conditions: Sequence[int] = (), n=1
+    shocks: Mapping[str, Distribution], conditions: Sequence[int] = (), n=None
 ):
     """
     Draw from each shock distribution values, subject to given conditions.
