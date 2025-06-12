@@ -98,7 +98,7 @@ class ModelAnalyzer:
         self._assemble_edges()
         self._collect_formulas()
         self._collect_plates()
-        self._add_lag_variable_metadata() 
+        self._add_lag_variable_metadata()
         return self
 
     def _collect_nodes(self):
@@ -377,18 +377,17 @@ class ModelAnalyzer:
         lag_sources = set()
         for target, source in self._time_deps:
             lag_sources.add(source)
-        
+
         # Create lag variable metadata for all identified sources
         for source in lag_sources:
             lag_var_name = f"{source}*"  # Create lag variable name: p -> p*, a -> a*
-            
+
             if source in self.node_meta and lag_var_name not in self.node_meta:
                 # Completely copy the original variable's metadata
                 self.node_meta[lag_var_name] = self.node_meta[source].copy()
                 # Lag variables are typically not directly observed
                 self.node_meta[lag_var_name]["observed"] = False
 
-    
     def to_dict(self):
         """Return a JSON-serializable dict of the analysis."""
         return {
