@@ -71,9 +71,7 @@ class TestBenchmarksCatalogue:
 
         # Should either pass validation or have a specific error message
         if "success" in result:
-            assert result["success"], (
-                f"Model {model_id} failed validation: {result}"
-            )
+            assert result["success"], f"Model {model_id} failed validation: {result}"
         else:
             # If there's an error, it should be a meaningful one
             assert "error" in result, (
