@@ -29,7 +29,7 @@ class Grid:
 
     @classmethod
     def from_config(cls, config={}, torched=True):
-        return cls(list(config.keys()), make_grid(config), torched=torch)
+        return cls(list(config.keys()), make_grid(config), torched=torched)
 
     @classmethod
     def from_dict(cls, kv={}, torched=False):

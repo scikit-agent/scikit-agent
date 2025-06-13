@@ -209,6 +209,4 @@ class TestTrainingLoop(unittest.TestCase):
         sd = states.to_dict()
 
         # testing for the states converged on the ergodic distribution
-        print(states.values)
-
         self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=0.1))

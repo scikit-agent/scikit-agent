@@ -179,23 +179,6 @@ def get_estimated_discounted_lifetime_reward_loss(
     return estimated_discounted_lifetime_reward_loss
 
 
-def generate_givens_from_state_config(state_config, block, shock_copies: int):
-    """
-    Generates omega_i values of the MMW JME '21 method.
-
-    state_config : a grid configuration for the starting state values (exogenous and endogenous)
-    block: block information (used to get the shock names)
-    shock_copies : int - number of copies of the shocks to be included.
-    """
-
-    # TODO: create a grid with the states, and shock_copies copies of the shocks.
-    #       - how are these values to be set?
-    #       - by sampling?
-    raise Exception("generate_givens_from_states not implemented")
-
-    pass
-
-
 def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: int):
     """
     Generates omega_i values of the MMW JME '21 method.
