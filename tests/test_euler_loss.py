@@ -1,6 +1,5 @@
 import unittest
 import torch
-import numpy as np
 
 from conftest import case_0, case_1
 import skagent.algos.maliar as maliar
@@ -322,4 +321,4 @@ class TestEulerLoss(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

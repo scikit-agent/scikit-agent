@@ -1,7 +1,6 @@
 from conftest import case_0, case_1, case_2, case_3
 import skagent.algos.maliar as maliar
 import skagent.ann as ann
-import skagent.algos.maliar as maliar
 import skagent.grid as grid
 import skagent.models.perfect_foresight as pfm
 import torch

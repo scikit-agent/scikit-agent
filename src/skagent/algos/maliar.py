@@ -4,8 +4,6 @@ from skagent.grid import Grid
 import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
 import torch
-from skagent.grid import Grid
-from skagent.simulation.monte_carlo import draw_shocks
 import skagent.utils as utils
 
 """
@@ -375,7 +373,7 @@ def create_transition_function(block, state_syms):
     Returns
     --------
     callable
-        Transition function that computes state variables at t+1  
+        Transition function that computes state variables at t+1
     """
 
     def transition_function(states_t, shocks_t, controls_t, parameters):
@@ -1125,10 +1123,10 @@ def get_euler_residual_loss(
         # Compute marginal utility u'(c_t) using automatic differentiation
         if current_reward.requires_grad:
             current_reward_grad = torch.autograd.grad(
-                outputs=current_reward.sum(), 
-                inputs=control_value_t, 
-                create_graph=True, 
-                retain_graph=True
+                outputs=current_reward.sum(),
+                inputs=control_value_t,
+                create_graph=True,
+                retain_graph=True,
             )[0]
             marginal_utility_t = current_reward_grad
         else:
@@ -1168,7 +1166,7 @@ def get_euler_residual_loss(
                         outputs=next_reward.sum(),
                         inputs=control_value_t1,
                         create_graph=True,
-                        retain_graph=True
+                        retain_graph=True,
                     )[0]
                     marginal_utility_t1 = next_reward_grad
                 else:
@@ -1210,7 +1208,7 @@ def get_euler_residual_loss(
                         outputs=next_reward.sum(),
                         inputs=control_value_t1,
                         create_graph=True,
-                        retain_graph=True
+                        retain_graph=True,
                     )[0]
                     marginal_utility_t1 = next_reward_grad
                 else:
@@ -1257,6 +1255,7 @@ def get_euler_residual_loss(
         return euler_residual
 
     return euler_residual_loss
+
 
 def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: int):
     """
