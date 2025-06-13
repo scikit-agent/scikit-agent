@@ -1,7 +1,12 @@
 import numpy as np
+import skagent.ann as ann
+from skagent.grid import Grid
+import skagent.model as model
+from skagent.simulation.monte_carlo import draw_shocks
 import torch
 from skagent.grid import Grid
 from skagent.simulation.monte_carlo import draw_shocks
+import skagent.utils as utils
 
 """
 Implementation of Maliar, Maliar, and Winant (Journal of Monetary Economics, 2021) Methods.
@@ -358,6 +363,8 @@ def create_transition_function(block, state_syms):
     """
     Create a transition function from a block.
 
+    # TODO: state variables should be derived from the block analysis.
+
     Parameters
     -----------
     block : DBlock
@@ -368,7 +375,7 @@ def create_transition_function(block, state_syms):
     Returns
     --------
     callable
-        Transition function that computes state variables at t+1
+        Transition function that computes state variables at t+1  
     """
 
     def transition_function(states_t, shocks_t, controls_t, parameters):
@@ -943,6 +950,7 @@ def get_expected_discounted_lifetime_reward_loss(
         }
 
         # Compute expected discounted lifetime reward via forward simulation
+        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = estimate_discounted_lifetime_reward(
             block,
             discount_factor,

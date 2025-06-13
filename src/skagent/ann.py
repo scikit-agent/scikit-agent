@@ -1,3 +1,4 @@
+from skagent.grid import Grid
 import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -193,7 +194,7 @@ class BlockValueNet(Net):
 
 
 # General loss function that operates on tensor and averages over samples
-def aggregate_net_loss(inputs, df, loss_function):
+def aggregate_net_loss(inputs: Grid, df, loss_function):
     """
     Compute a loss function over a tensor of inputs, given a decision function df.
     Return the mean.
@@ -205,8 +206,10 @@ def aggregate_net_loss(inputs, df, loss_function):
     return losses.mean()
 
 
-def train_block_policy_nn(block_policy_nn, inputs, loss_function, epochs=50):
-    # to change
+def train_block_policy_nn(
+    block_policy_nn, inputs: Grid, loss_function: callable, epochs=50
+):
+    ## to change
     # criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=0.01)  # Using Adam
 
