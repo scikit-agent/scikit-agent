@@ -20,7 +20,7 @@ class test_ann_lr(unittest.TestCase):
         pass
 
     def test_case_0(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.get_expected_discounted_lifetime_reward_loss(
             ["a"],
             case_0["block"],
             0.9,
@@ -43,7 +43,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_1(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.get_expected_discounted_lifetime_reward_loss(
             ["a"],
             case_1["block"],
             0.9,
@@ -74,7 +74,7 @@ class test_ann_lr(unittest.TestCase):
         """
         Running case 1 with big_t == 2
         """
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.get_expected_discounted_lifetime_reward_loss(
             ["a"],
             case_1["block"],
             0.9,
@@ -102,7 +102,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_2(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.get_expected_discounted_lifetime_reward_loss(
             ["a"],
             case_2["block"],
             0.9,
@@ -121,7 +121,7 @@ class test_ann_lr(unittest.TestCase):
         # actually gives no information, training isn't effective...
 
     def test_case_3(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.get_expected_discounted_lifetime_reward_loss(
             ["a"],
             case_3["block"],
             0.9,
@@ -147,7 +147,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03))
 
     def test_case_3_2(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.get_expected_discounted_lifetime_reward_loss(
             ["a"],
             case_3["block"],
             0.9,
@@ -179,7 +179,7 @@ class test_ann_lr(unittest.TestCase):
         state_variables = ["a", "p"]
 
         ### Loss function
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.get_expected_discounted_lifetime_reward_loss(
             state_variables, pfblock, 0.9, 1, parameters=pfm.calibration
         )
 
