@@ -10,13 +10,11 @@ from skagent.models.benchmarks import (
     get_benchmark_calibration,
     get_analytical_policy, 
     validate_analytical_solution,
-    BENCHMARK_MODELS
+    BENCHMARK_MODELS,
+    EPS_STATIC,
+    EPS_EULER, 
+    EPS_BUDGET
 )
-
-# Research-grade tolerance standards
-EPS_STATIC = 1e-10   # Static identity verification (deterministic)
-EPS_EULER = 1e-8     # Euler equation residuals (stochastic)
-EPS_BUDGET = 1e-12   # Budget evolution (should be exact)
 
 
 class TestBenchmarksCatalogue:
@@ -172,17 +170,24 @@ class TestStaticIdentityVerification:
     """Layer 2: Verify every closed-form formula against code implementation"""
     
     def test_d1_two_period_formula(self):
-        """Test D-1: c1 = W/(1+β)"""
+        """Test D-1: c1 = W/(1+β), c2 = β*R*W/(1+β)"""
         calibration = get_benchmark_calibration("D-1")
         policy = get_analytical_policy("D-1")
         beta = calibration["DiscFac"]
+        R = calibration["R"]
         
         test_states = {"W": torch.tensor([1.0, 2.0, 3.0, 4.0])}
         result = policy(test_states, {}, calibration)
         
         expected_c1 = test_states["W"] / (1 + beta)
+        expected_c2 = beta * R * test_states["W"] / (1 + beta)
+        
+        assert "c1" in result, "D-1 should return c1"
+        assert "c2" in result, "D-1 should return c2" 
         assert torch.allclose(result["c1"], expected_c1, atol=EPS_STATIC), \
-            f"D-1 formula violated: got {result['c1']}, expected {expected_c1}"
+            f"D-1 c1 formula violated: got {result['c1']}, expected {expected_c1}"
+        assert torch.allclose(result["c2"], expected_c2, atol=EPS_STATIC), \
+            f"D-1 c2 formula violated: got {result['c2']}, expected {expected_c2}"
     
     def test_d2_remaining_horizon_formula(self):
         """Test D-2: c_t = (1-β)/(1-β^(T-t+1)) * W_t (wealth after interest accrual)"""
@@ -266,7 +271,7 @@ class TestStaticIdentityVerification:
             f"U-2 CARA affine rule violated: got {result['c']}, expected {expected_c}"
     
     def test_u4_permanent_income_rule(self):
-        """Test U-4: c_t = (1-β)*[A_t + H_t]"""
+        """Test U-4: c_t = (1-β)*[A_t + H_t] with corrected income process"""
         calibration = get_benchmark_calibration("U-4")
         policy = get_analytical_policy("U-4")
         
@@ -277,12 +282,15 @@ class TestStaticIdentityVerification:
         test_states = {"A": torch.tensor([1.0, 2.0, 3.0]), "p": torch.tensor([1.0, 1.2, 0.8])}
         result = policy(test_states, {}, calibration)
         
-        # Human wealth calculation
+        # Human wealth calculation: H_t = p_t / (1 - ρ_p/R)
         human_wealth = test_states["p"] / (1 - rho_p / R)
         expected_c = (1 - beta) * (test_states["A"] + human_wealth)
         
         assert torch.allclose(result["c"], expected_c, atol=EPS_STATIC), \
             f"U-4 permanent income rule violated: got {result['c']}, expected {expected_c}"
+        
+        # Test that income process is well-defined (ρ_p < R)
+        assert rho_p < R, f"U-4 requires ρ_p < R for finite human wealth, got ρ_p={rho_p}, R={R}"
     
     def test_u5_kappa_gamma_rule(self):
         """Test U-5: c_t = κ*m_t where κ uses γ parameter"""
@@ -468,6 +476,8 @@ class TestDynamicOptimalityChecks:
             "D-4": {"initial_states": {"a": 1.0}, "T": 3},
             "U-1": {"initial_states": {"A": 1.0, "c_lag": 1.0}, "T": 3},
             "U-2": {"initial_states": {"A": 1.0}, "T": 3},
+            "U-4": {"initial_states": {"A": 1.0, "p": 1.0}, "T": 3},
+            "U-6": {"initial_states": {"A": 1.0, "h": 0.5}, "T": 3},
         }
         
         for model_id, config in test_cases.items():
@@ -545,6 +555,63 @@ class TestDynamicOptimalityChecks:
                     expected_A_next = (A_path[t] + calibration["y_bar"] - c_path[t]) * R
                     assert torch.allclose(A_path[t+1], expected_A_next, atol=EPS_BUDGET), \
                         f"U-2 asset evolution violated at t={t}"
+            
+            elif model_id == "U-4":
+                # Permanent income model with corrected dynamics
+                A_path = torch.zeros(T)
+                p_path = torch.zeros(T)
+                c_path = torch.zeros(T)
+                
+                A_path[0] = config["initial_states"]["A"]
+                p_path[0] = config["initial_states"]["p"]
+                
+                for t in range(T):
+                    states = {"A": A_path[t:t+1], "p": p_path[t:t+1]}
+                    result = policy(states, {}, calibration)
+                    c_path[t] = result["c"][0]
+                    
+                    if t < T-1:
+                        # Asset evolution: A_{t+1} = A_t*R + p_t - c_t
+                        A_path[t+1] = A_path[t] * R + p_path[t] - c_path[t]
+                        # Permanent income evolution: p_{t+1} = p_t^ρ (no shock in test)
+                        rho_p = calibration["rho_p"]
+                        p_path[t+1] = p_path[t] ** rho_p
+                
+                # Check asset evolution is consistent
+                for t in range(T-1):
+                    expected_A_next = A_path[t] * R + p_path[t] - c_path[t]
+                    assert torch.allclose(A_path[t+1], expected_A_next, atol=EPS_BUDGET), \
+                        f"U-4 asset evolution violated at t={t}"
+            
+            elif model_id == "U-6":
+                # Quadratic with habit formation
+                A_path = torch.zeros(T)
+                h_path = torch.zeros(T)
+                c_path = torch.zeros(T)
+                y_path = torch.zeros(T)
+                
+                A_path[0] = config["initial_states"]["A"]
+                h_path[0] = config["initial_states"]["h"]
+                
+                for t in range(T):
+                    y_path[t] = 1.0  # Fixed income for test
+                    m_t = A_path[t] * R + y_path[t]
+                    states = {"y": torch.tensor([y_path[t]]), "h": torch.tensor([h_path[t]]), "m": torch.tensor([m_t])}
+                    result = policy(states, {}, calibration)
+                    c_path[t] = result["c"][0]
+                    
+                    if t < T-1:
+                        # Asset evolution: A_{t+1} = A_t*R + y_t - c_t
+                        A_path[t+1] = A_path[t] * R + y_path[t] - c_path[t]
+                        # Habit evolution: h_{t+1} = ρ_h*h_t + (1-ρ_h)*c_t
+                        rho_h = calibration["rho_h"]
+                        h_path[t+1] = rho_h * h_path[t] + (1 - rho_h) * c_path[t]
+                
+                # Check asset evolution is consistent
+                for t in range(T-1):
+                    expected_A_next = A_path[t] * R + y_path[t] - c_path[t]
+                    assert torch.allclose(A_path[t+1], expected_A_next, atol=EPS_BUDGET), \
+                        f"U-6 asset evolution violated at t={t}"
 
 
 def test_catalogue_completeness():

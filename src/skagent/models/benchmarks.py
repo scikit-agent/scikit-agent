@@ -4,8 +4,8 @@ Complete Catalogue of Analytically Solvable Consumption-Savings Models
 
 This module implements the exhaustive collection of discrete-time consumption-savings 
 dynamic programming problems for which the literature has succeeded in writing down 
-true closed-form policies. The catalogue is complete as of June 13, 2025: no other 
-analytically solvable DP variants are currently known.
+true closed-form policies. The catalogue is complete as of June 13, 2025, to the best 
+of our knowledge: no other analytically solvable DP variants are currently known.
 
 THEORETICAL FOUNDATION
 ======================
@@ -26,11 +26,18 @@ u(c)                : period utility
 TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0
 """
 
-from HARK.distributions import Bernoulli, Normal, MeanOneLogNormal
+from HARK.distributions import Normal, MeanOneLogNormal
 from skagent.model import Control, DBlock
 import torch
 import numpy as np
 from typing import Dict, Any, Callable
+
+# NUMERICAL TOLERANCE CONSTANTS
+# =============================
+EPS_STATIC = 1e-10      # Static identity verification (deterministic)
+EPS_EULER = 1e-8        # Euler equation residuals (stochastic)
+EPS_BUDGET = 1e-12      # Budget evolution (should be exact)
+EPS_VALIDATION = 1e-8   # General validation tolerance
 
 # DETERMINISTIC (PERFECT-FORESIGHT) BENCHMARKS
 # ============================================
@@ -82,11 +89,13 @@ d1_block = DBlock(
 def d1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     """D-1: c1 = W/(1+β), c2 = β*R*W/(1+β)"""
     beta = calibration["DiscFac"]
+    R = calibration["R"]
     
     def policy(states, shocks, parameters):
         W = states["W"]
         c1_optimal = W / (1 + beta)
-        return {"c1": c1_optimal}
+        c2_optimal = beta * R * W / (1 + beta)
+        return {"c1": c1_optimal, "c2": c2_optimal}
     
     return policy
 
@@ -102,7 +111,7 @@ def d1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 #   V_t(W_t) = max_c ln c + β V_{t+1}((W_t - c)R)  for t < T
 #
 # The value function takes the form V_t(W_t) = A_t + ln W_t, leading to:
-#   c_t = [(1-β)β^t / (1-β^{T+1})] R^t W₀
+#   c_t = (1-β)/(1-β^{T-t+1}) * W_t  (remaining horizon consumption rule)
 #
 # This shows how finite horizon creates time-varying consumption rates that
 # approach the infinite-horizon limit as T → ∞.
@@ -199,7 +208,7 @@ d3_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: c**(1-CRRA) / (1-CRRA) if CRRA != 1 else torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "u": lambda c, CRRA: torch.as_tensor(c, dtype=torch.float32)**(1-CRRA) / (1-CRRA) if CRRA != 1 else torch.log(torch.as_tensor(c, dtype=torch.float32)),
         },
         "reward": {"u": "consumer"},
     }
@@ -262,7 +271,7 @@ d4_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: c**(1-CRRA) / (1-CRRA) if CRRA != 1 else torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "u": lambda c, CRRA: torch.as_tensor(c, dtype=torch.float32)**(1-CRRA) / (1-CRRA) if CRRA != 1 else torch.log(torch.as_tensor(c, dtype=torch.float32)),
         },
         "reward": {"u": "consumer"},
     }
@@ -409,7 +418,7 @@ u2_block = DBlock(
             "y": lambda y_bar, eta: y_bar + eta,  # Normal income
             "c": Control(["A", "y"], upper_bound=lambda A, y, R=u2_calibration["R"]: A * R + y, agent="consumer"),
             "A": lambda A, y, c, R=u2_calibration["R"]: (A + y - c) * R,  # Fixed asset evolution: A_{t+1} = (A_t + y_t - c_t)*R
-            "u": lambda c, CARA: -torch.exp(-CARA * c),  # CARA utility
+            "u": lambda c, CARA: -torch.exp(-CARA * torch.as_tensor(c, dtype=torch.float32)),  # CARA utility
         },
         "reward": {"u": "consumer"},
     }
@@ -540,8 +549,8 @@ u4_block = DBlock(
             "psi": (MeanOneLogNormal, {"sigma": "sigma_p"}),  # Permanent income shock
         },
         "dynamics": {
-            "p": lambda p, psi, rho_p: p * (rho_p**1 * psi**(1-rho_p)),  # AR(1) in logs: p_t = p_{t-1}^ρ * ψ_t^(1-ρ)
-            "A": lambda A, c, R=u4_calibration["R"]: A * R - c,  # Financial assets evolution
+            "p": lambda p, psi, rho_p: p ** rho_p * psi,  # AR(1) in logs: p_t = p_{t-1}^ρ * ψ_t
+            "A": lambda A, p, c, R=u4_calibration["R"]: (A * R + p - c),  # Financial assets evolution: A_{t+1} = A_t*R + p_t - c_t
             "c": Control(["A", "p"], upper_bound=lambda A, p, R=u4_calibration["R"]: A * R + p, agent="consumer"),
             "u": lambda c: torch.log(torch.as_tensor(c, dtype=torch.float32)),
         },
@@ -616,7 +625,7 @@ u5_block = DBlock(
             "m": lambda A, R, y: A * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "A": lambda m, c: m - c,
-            "u": lambda c, gamma: c**(1-gamma) / (1-gamma),  # Collapses to CRRA
+            "u": lambda c, gamma: torch.as_tensor(c, dtype=torch.float32)**(1-gamma) / (1-gamma),  # Collapses to CRRA
         },
         "reward": {"u": "consumer"},
     }
@@ -706,6 +715,10 @@ class U6HabitSolver:
         beta, R, rho_h = self.beta, self.R, self.rho_h
         quad_a, quad_b = self.quad_a, self.quad_b
         
+        # Assert that we're using the standard calibration for which the exact solution applies
+        if abs(quad_a - 1.0) > 1e-10 or abs(quad_b - 0.5) > 1e-10:
+            raise ValueError(f"Exact Riccati solution only valid for quad_a=1.0, quad_b=0.5, got quad_a={quad_a}, quad_b={quad_b}")
+        
         # State vector: [y_t, h_t]'
         # Control: c_t = φ1*y_t + φ2*h_t
         
@@ -745,7 +758,15 @@ def u6_analytical_policy(calibration: Dict[str, Any]) -> Callable:
         h = states.get("h", 0.0)
         
         # Optimal linear policy from exact Riccati solution
-        c_optimal = solver.phi1 * y + solver.phi2 * h
+        c_unconstrained = solver.phi1 * y + solver.phi2 * h
+        
+        # Only enforce budget constraint if m (cash-on-hand) is explicitly provided
+        if "m" in states:
+            m = states["m"]
+            c_optimal = torch.min(c_unconstrained, m)
+        else:
+            c_optimal = c_unconstrained
+            
         return {"c": c_optimal}
     
     return policy
@@ -809,7 +830,7 @@ def list_benchmark_models() -> Dict[str, str]:
 
 def validate_analytical_solution(model_id: str, 
                                test_points: int = 10,
-                               tolerance: float = 1e-8) -> Dict[str, Any]:
+                               tolerance: float = EPS_VALIDATION) -> Dict[str, Any]:
     """Validate analytical solution satisfies optimality conditions and budget constraints"""
     
     if model_id not in BENCHMARK_MODELS:
@@ -881,6 +902,7 @@ def validate_analytical_solution(model_id: str,
         
         return {
             "success": True,
+            "validation": "PASSED",
             "model_id": model_id,
             "test_points": test_points,
             "max_consumption": torch.max(analytical_controls[list(analytical_controls.keys())[0]]).item(),
