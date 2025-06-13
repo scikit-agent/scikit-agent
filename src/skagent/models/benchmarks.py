@@ -600,7 +600,7 @@ def u4_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     beta = calibration["DiscFac"]
     R = calibration["R"]
     rho_p = calibration["rho_p"]
-    r = R - 1
+    R - 1
 
     def policy(states, shocks, parameters):
         A_t = states["A"]  # Financial assets (state variable)
@@ -752,7 +752,7 @@ class U6HabitSolver:
         calibration. For general parameters, the full matrix Riccati equation
         would need to be solved numerically.
         """
-        beta, R, rho_h = self.beta, self.R, self.rho_h
+        beta, _R, rho_h = self.beta, self.R, self.rho_h
         quad_a, quad_b = self.quad_a, self.quad_b
 
         # Assert that we're using the standard calibration for which the exact solution applies

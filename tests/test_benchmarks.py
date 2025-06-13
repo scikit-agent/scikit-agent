@@ -71,7 +71,7 @@ class TestBenchmarksCatalogue:
 
         # Should either pass validation or have a specific error message
         if "success" in result:
-            assert result["success"] == True, (
+            assert result["success"], (
                 f"Model {model_id} failed validation: {result}"
             )
         else:
@@ -308,7 +308,7 @@ class TestStaticIdentityVerification:
         R = calibration["R"]
         gamma = calibration["CARA"]
         sigma_eta = calibration["sigma_eta"]
-        y_bar = calibration["y_bar"]
+        calibration["y_bar"]
         r = R - 1
 
         precautionary_term = (1 / r) * (
