@@ -4,6 +4,7 @@ Tools for building state and shock space grids.
 
 import numpy as np
 import torch
+import skagent.utils as utils
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -19,15 +20,53 @@ class Grid:
 
     """
 
-    def __init__(self, config, torch=True):
-        self.labels = list(config.keys())
-        self.values = make_grid(config)
+    def __init__(self, labels, values, torched=True):
+        self.labels = labels
+        self.values = values
 
-        if torch:
+        if torched:
             self.torch()
 
+    @classmethod
+    def from_config(cls, config={}, torched=True):
+        return cls(list(config.keys()), make_grid(config), torched=torched)
+
+    @classmethod
+    def from_dict(cls, kv={}, torched=False):
+        vals = [utils.reconcile(list(kv.values())[0], val) for val in list(kv.values())]
+
+        if isinstance(vals[0], np.ndarray):
+            vals_stacked = np.stack(vals).T
+        elif isinstance(vals[0], torch.Tensor):
+            vals_stacked = torch.stack(vals).T
+        else:
+            raise Exception(f"First value is over unexpected type {type(vals[0])}")
+
+        return cls(list(kv.keys()), vals_stacked, torched=torched)
+
+    def shape(self):
+        """
+        Returns the shape of the grid values.
+        """
+        return self.values.shape
+
+    def len(self):
+        """
+        Returns the number of columns, similar to a dict.
+        """
+        return self.values.shape[1]
+
+    def n(self):
+        """
+        Returns the number of values for each symbol
+        """
+        return self.values.shape[0]
+
     def torch(self):
-        self.values = torch.FloatTensor(self.values).to(device)
+        if not isinstance(self.values, torch.Tensor):
+            self.values = torch.FloatTensor(self.values).to(device)
+        else:
+            self.values = self.values.to(device)
         return self
 
     def to_dict(self):
@@ -37,9 +76,22 @@ class Grid:
         """
         return dict(zip(self.labels, self.values.T))
 
+    def update_from_dict(self, kv):
+        my_dict = self.to_dict()
+
+        my_dict.update(kv)
+
+        return Grid.from_dict(my_dict)
+
     def __getitem__(self, sym):
         # TODO: fix the dict creation step to improve performance
         return self.to_dict()[sym]
+
+    # TODO: To imitate dict-like properties, may need to implement __contains__ and __iter__
+    #       or alternatively rewrite to use a Mappable base class.
+
+    def __str__(self):
+        return f"<skagent.grid.Grid: {self.to_dict()}"
 
 
 def make_grid(config):
