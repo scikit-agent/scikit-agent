@@ -6,6 +6,8 @@ import skagent.model as model
 import torch
 import unittest
 
+torch.manual_seed(10077693)
+
 parameters = {"q": 1.1}
 
 block_data = {

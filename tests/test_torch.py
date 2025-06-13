@@ -5,6 +5,8 @@ import skagent.model as model
 from skagent.model import Control
 import torch
 
+torch.manual_seed(10077691)
+
 sf = torch.nn.Sigmoid()
 
 test_block_data = {
