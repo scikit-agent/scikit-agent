@@ -1,15 +1,22 @@
 """
 ModelAnalyzer: Extracts structured metadata from scikit-agent DBlock/RBlock models,
 preparing JSON-ready info for downstream visualization (e.g., plate-notation drawing).
+
+Key concepts:
+- instant edge: dependency within the same time period
+- lag edge: dependency from previous time period (including self-lag like p_{t-1} → p_t)
+- param edge: dependency from a calibration parameter
+- shock edge: dependency from an exogenous shock
 """
+
 import re
 import inspect
 from collections import defaultdict
-from typing import Dict, List, Set, Any, Optional, Tuple, Union, Callable
 from skagent.model import Control, DBlock, RBlock
-from HARK.distributions import Bernoulli, Lognormal, MeanOneLogNormal, Normal
+from HARK.distributions import Distribution
 
 _TOKEN_RE = re.compile(r"\b[A-Za-z_]\w*\b")
+
 
 class ModelAnalyzer:
     """
@@ -18,24 +25,45 @@ class ModelAnalyzer:
       - edges: instant / lag / param / shock dependencies (keeps self-lag)
       - formulas: human-readable equations for each variable
       - plates: loop‐notation plates inferred from agents
+      - block_plates: plates assigned at the block level
     """
-    def __init__(self, model, calibration, observables=None):
-        self.model       = model
+
+    def __init__(self, model, calibration, observables=None, block_agent=None):
+        """
+        Parameters
+        ----------
+        model : DBlock or RBlock
+            The model to analyze
+        calibration : dict
+            Calibration parameters
+        observables : list, optional
+            Additional variables to mark as observed (for Pearl d-separation analysis)
+        block_agent : str, optional
+            Agent assignment at the block level. This is different from variable-level
+            agent assignments. When a block is assigned to an agent/plate, all variables
+            in that block (unless specifically assigned otherwise) belong to that plate.
+
+            For example, in a consumption-savings model with block_agent="consumer",
+            all dynamic variables (y, p, m, a, c, u) would be on the consumer plate.
+        """
+        self.model = model
         self.calibration = calibration.copy()
         self.observables = set(observables or [])
+        self.block_agent = block_agent  # Block-level agent assignment
 
         # Flatten RBlock → list of DBlock(s)
-        self._blocks     = []
+        self._blocks = []
         self._walk_blocks()
 
         # Storage
-        self.node_meta   = {}
-        self._raw_deps   = defaultdict(list)   # target → [sources…]
-        self._param_deps = defaultdict(set)    # param → {targets}
-        self._prev_deps  = set()               # {(target, source), …}
-        self.edges       = {"instant": [], "lag": [], "param": [], "shock": []}
-        self.formulas    = {}
-        self.plates      = {}
+        self.node_meta = {}
+        self._raw_deps = defaultdict(list)  # target → [sources…]
+        self._param_deps = defaultdict(set)  # param → {targets}
+        self._time_deps = set()  # {(target, source), …} for lag edges
+        self.edges = {"instant": [], "lag": [], "param": [], "shock": []}
+        self.formulas = {}
+        self.plates = {}
+        self.block_plates = {}  # Separate tracking for block-level plates
 
     def _walk_blocks(self):
         """Flatten RBlock into list of DBlock(s)."""
@@ -60,208 +88,311 @@ class ModelAnalyzer:
             for src in deps:
                 if src not in self.node_meta:
                     self.node_meta[src] = {
-                        "kind":     "state",
-                        "agent":    "global",
-                        "plate":    None,
-                        "observed": False
+                        "kind": "state",
+                        "agent": self.block_agent or "global",
+                        "plate": self.block_agent,
+                        "observed": False,
                     }
 
         self._identify_time_dependencies()
         self._assemble_edges()
         self._collect_formulas()
         self._collect_plates()
+        self._add_lag_variable_metadata()
         return self
 
     def _collect_nodes(self):
         """Classify every variable and record its metadata."""
-        # 1) all LHS names in dynamics & reward
-        lhs = set()
-        for blk in self._blocks:
-            lhs |= set(blk.dynamics.keys())
-            lhs |= set(blk.reward.keys())
 
-        # 2) shocks
         for blk in self._blocks:
+            # Use block_agent if specified, otherwise check if block has agent attribute
+            block_plate = self.block_agent or getattr(blk, "agent", None)
+
+            # 1) Collect shocks - typically global/exogenous, not in any plate
             for var, shock_def in blk.shocks.items():
-                agent = getattr(shock_def, "agent", "global") or "global"
                 self.node_meta[var] = {
-                    "kind":     "shock",
-                    "agent":    agent,
-                    "plate":    agent if agent != "global" else None,
-                    "observed": False
+                    "kind": "shock",
+                    "agent": "global",
+                    "plate": None,  # Shocks are not in any plate
+                    "observed": False,
                 }
 
-        # 3) dynamics
-        for blk in self._blocks:
+            # 2) Collect dynamics - all belong to the block's plate
             for var, rule in blk.dynamics.items():
-                kind  = "control" if isinstance(rule, Control) else "state"
-                agent = getattr(rule, "agent", "global") or "global"
+                if isinstance(rule, Control):
+                    kind = "control"
+                    # Control might specify its own agent for other purposes
+                    agent = getattr(rule, "agent", None) or block_plate or "global"
+                else:
+                    kind = "state"
+                    agent = block_plate or "global"
+
                 self.node_meta[var] = {
-                    "kind":     kind,
-                    "agent":    agent,
-                    "plate":    agent if agent != "global" else None,
-                    "observed": (kind in ("control", "reward")) or (var in self.observables)
+                    "kind": kind,
+                    "agent": agent,
+                    "plate": block_plate,  # All dynamics belong to the block's plate
+                    "observed": (kind == "control") or (var in self.observables),
                 }
 
-        # 4) reward
-        for blk in self._blocks:
-            for var, rd in blk.reward.items():
-                agent = rd if isinstance(rd, str) else getattr(rd, "agent", "global") or "global"
+            # 3) Collect rewards - belong to the block's plate
+            for var, rule in blk.reward.items():
                 self.node_meta[var] = {
-                    "kind":     "reward",
-                    "agent":    agent,
-                    "plate":    agent if agent != "global" else None,
-                    "observed": True
+                    "kind": "reward",
+                    "agent": block_plate or "global",
+                    "plate": block_plate,  # Rewards belong to the block's plate
+                    "observed": True,  # Rewards are always observed
                 }
 
-        # 5) params: only keys in calibration not appearing on any LHS
-        for p in set(self.calibration) - lhs:
-            self.node_meta.setdefault(p, {
-                "kind":     "param",
-                "agent":    "global",
-                "plate":    None,
-                "observed": False
-            })
+        # 4) Collect parameters - global, not in any plate
+        defined_vars = set(self.node_meta.keys())
+        for p in self.calibration:
+            if p not in defined_vars:
+                self.node_meta[p] = {
+                    "kind": "param",
+                    "agent": "global",
+                    "plate": None,  # Parameters are not in any plate
+                    "observed": False,
+                }
 
-    def _rhs_symbols(self, rule):
-        """Extract variable names from RHS rule (callable or string)."""
-        if isinstance(rule, str):
-            return _TOKEN_RE.findall(rule)
-        if callable(rule):
+    def _extract_dependencies(self, rule, var_name=None):
+        """
+        Extract variable dependencies from different rule types.
+
+        Parameters
+        ----------
+        rule : various
+            Can be Control, Distribution, callable, or string
+        var_name : str, optional
+            Name of the variable (for error messages)
+
+        Returns
+        -------
+        list
+            List of dependency variable names
+        """
+        deps = []
+
+        if isinstance(rule, Control):
+            # Control has explicit information set
+            deps = list(rule.iset)
+        elif isinstance(rule, Distribution):
+            # Distribution might depend on calibration parameters
+            # This would require inspecting the distribution parameters
+            # For now, we'll need to handle this case-by-case
+            pass
+        elif isinstance(rule, tuple) and len(rule) == 2:
+            # Shock definition with (Distribution, params)
+            dist_class, params = rule
+            if isinstance(params, dict):
+                for param_expr in params.values():
+                    if isinstance(param_expr, str):
+                        # Extract variables from string expressions
+                        deps.extend(_TOKEN_RE.findall(param_expr))
+        elif isinstance(rule, str):
+            # String expression
+            deps = _TOKEN_RE.findall(rule)
+        elif callable(rule):
+            # Callable function
             try:
-                return list(inspect.signature(rule).parameters.keys())
-            except:
-                src = inspect.getsource(rule)
-                return _TOKEN_RE.findall(src)
-        return []
+                deps = list(inspect.signature(rule).parameters.keys())
+            except Exception:
+                # Fallback: parse source code
+                try:
+                    src = inspect.getsource(rule)
+                    deps = _TOKEN_RE.findall(src)
+                except Exception:
+                    pass
+
+        return deps
 
     def _collect_dependencies(self):
         """Collect raw dependencies and build interim param_deps."""
         for blk in self._blocks:
-            # shock parameters → shock var
-            for var, sd in blk.shocks.items():
-                if isinstance(sd, tuple) and len(sd) == 2:
-                    _, params = sd
-                    if isinstance(params, dict):
-                        for v in params.values():
-                            if isinstance(v, str):
-                                self._raw_deps[var].append(v)
-                                self._param_deps[v].add(var)
+            # Process shocks
+            for var, shock_def in blk.shocks.items():
+                deps = self._extract_dependencies(shock_def, var)
+                for d in deps:
+                    self._raw_deps[var].append(d)
+                    if d in self.calibration:
+                        self._param_deps[d].add(var)
 
-            # dynamics
+            # Process dynamics
             for var, rule in blk.dynamics.items():
-                deps = list(rule.iset) if isinstance(rule, Control) else self._rhs_symbols(rule)
+                deps = self._extract_dependencies(rule, var)
                 for d in deps:
                     self._raw_deps[var].append(d)
                     if d in self.calibration:
                         self._param_deps[d].add(var)
 
-            # reward
-            for var, rd in blk.reward.items():
-                deps = self._rhs_symbols(rd) if callable(rd) else []
+            # Process rewards
+            for var, rule in blk.reward.items():
+                deps = self._extract_dependencies(rule, var)
                 for d in deps:
                     self._raw_deps[var].append(d)
                     if d in self.calibration:
                         self._param_deps[d].add(var)
 
-        # dedupe
+        # Deduplicate dependencies
         for tgt in list(self._raw_deps):
             self._raw_deps[tgt] = sorted(set(self._raw_deps[tgt]))
 
     def _identify_time_dependencies(self):
-        """Mark (tgt, src) pairs for lag edges via insertion-order heuristic."""
+        """
+        Identify lag dependencies based on forward references in variable definitions.
+
+        Key principle: If variable A depends on variable B, but B is defined AFTER A
+        in the dynamics order, then A must depend on B from the previous period (B*).
+
+        Example:
+            dynamics = {
+                "m": lambda a: a + 1,  # 'a' not yet defined, so this is a_prev
+                "a": lambda m: m - 1,  # 'm' already defined, so this is m_current
+            }
+
+        This creates: a* -> m (lag edge) and m -> a (instant edge)
+        """
         for blk in self._blocks:
-            order = list(blk.dynamics.keys())
-            seen  = set()
-            for tgt in order:
-                deps = [d for d in self._raw_deps.get(tgt, []) if d in order]
-                for src in deps:
-                    if src == tgt or src not in seen:
-                        self._prev_deps.add((tgt, src))
-                seen.add(tgt)
+            # Get ordered list of dynamic variables (order matters!)
+            dynamics_vars = list(blk.dynamics.keys())
+            defined_vars = set()  # Variables defined so far
+
+            for var in dynamics_vars:
+                # Get dependencies for this variable
+                deps = self._raw_deps.get(var, [])
+
+                for dep in deps:
+                    # Self-dependency is always lag (e.g., p depends on p)
+                    if dep == var:
+                        self._time_deps.add((var, dep))
+                    # If dependency is not yet defined, it's a forward reference (lag)
+                    elif dep in dynamics_vars and dep not in defined_vars:
+                        self._time_deps.add((var, dep))
+                    # Otherwise it's an instant dependency (already handled in _assemble_edges)
+
+                # Mark this variable as defined
+                defined_vars.add(var)
+
+            # Process rewards (they come after all dynamics)
+            for var in blk.reward.keys():
+                deps = self._raw_deps.get(var, [])
+                for dep in deps:
+                    # Rewards can only have instant dependencies since all dynamics are defined
+                    pass  # No time dependencies for rewards
 
     def _assemble_edges(self):
         """
-        Convert raw_deps + prev_deps + param_deps into four classified edge lists.
-        Preserve self-lag edges (p→p) for visualization splitting.
+        Convert raw_deps + time_deps + param_deps into four classified edge lists.
+        Preserves self-lag edges (p→p) for visualization splitting.
         """
         for tgt, deps in self._raw_deps.items():
             for src in deps:
-                # 1) lag edges, including self-lag
-                if (tgt, src) in self._prev_deps:
+                # Skip if source is the same as target AND it's not a lag dependency
+                if src == tgt and (tgt, src) not in self._time_deps:
+                    continue
+
+                # 1) Lag edges (including self-lag)
+                if (tgt, src) in self._time_deps:
                     self.edges["lag"].append((src, tgt))
-                    continue
-                # 2) drop any remaining self-loop
-                if src == tgt:
-                    continue
-                # 3) param edges
-                if src in self._param_deps:
+                # 2) Parameter edges
+                elif src in self._param_deps:
                     self.edges["param"].append((src, tgt))
-                # 4) shock edges
+                # 3) Shock edges
                 elif src in self.node_meta and self.node_meta[src]["kind"] == "shock":
                     self.edges["shock"].append((src, tgt))
-                # 5) instant edges
+                # 4) Instant edges
                 else:
                     self.edges["instant"].append((src, tgt))
 
-        # dedupe & sort
-        for et in self.edges:
-            self.edges[et] = sorted(set(self.edges[et]))
+        # Deduplicate and sort
+        for edge_type in self.edges:
+            self.edges[edge_type] = sorted(set(self.edges[edge_type]))
 
     def _collect_formulas(self):
         """Generate human-readable formulas for each variable."""
         for blk in self._blocks:
-            # dynamics
+            # Process dynamics
             for var, rule in blk.dynamics.items():
                 if isinstance(rule, Control):
                     deps = sorted(rule.iset)
-                    self.formulas[var] = f"{var} = Control({', '.join(deps)})"
+                    bounds_info = []
+                    if rule.lower_bound:
+                        bounds_info.append("lower_bound")
+                    if rule.upper_bound:
+                        bounds_info.append("upper_bound")
+                    bounds_str = f", {', '.join(bounds_info)}" if bounds_info else ""
+                    self.formulas[var] = (
+                        f"{var} = Control({', '.join(deps)}{bounds_str})"
+                    )
                 elif isinstance(rule, str):
                     self.formulas[var] = f"{var} = {rule}"
                 else:
-                    try:
-                        src = inspect.getsource(rule).strip()
-                        if "lambda" in src:
-                            body = src.split(":",1)[1].strip().rstrip(",")
-                            self.formulas[var] = f"{var} = {body}"
-                        else:
-                            self.formulas[var] = f"{var} = [Function]"
-                    except:
-                        self.formulas[var] = f"{var} = [Unknown]"
+                    self._format_callable_formula(var, rule)
 
-            # reward
-            for var, rd in blk.reward.items():
-                if callable(rd):
-                    try:
-                        src = inspect.getsource(rd).strip()
-                        if "lambda" in src:
-                            body = src.split(":",1)[1].strip().rstrip(",")
-                        else:
-                            body = "[Function]"
-                        self.formulas[var] = f"{var} = {body}"
-                    except:
-                        self.formulas[var] = f"{var} = [Unknown]"
+            # Process rewards
+            for var, rule in blk.reward.items():
+                self._format_callable_formula(var, rule)
 
-        # params
+        # Process parameters
         for p, val in self.calibration.items():
             if p in self.node_meta and self.node_meta[p]["kind"] == "param":
                 self.formulas[p] = f"{p} = {val}"
 
+    def _format_callable_formula(self, var, rule):
+        """Helper to format callable rules into formulas."""
+        try:
+            src = inspect.getsource(rule).strip()
+            if "lambda" in src:
+                # Extract lambda body
+                body = src.split(":", 1)[1].strip()
+                # Remove trailing comma or parenthesis
+                body = body.rstrip(",)")
+                self.formulas[var] = f"{var} = {body}"
+            else:
+                self.formulas[var] = f"{var} = [Function]"
+        except Exception:
+            self.formulas[var] = f"{var} = [Unknown]"
+
     def _collect_plates(self):
-        """Build plates mapping from non-global agents."""
-        for var, meta in self.node_meta.items():
-            agent = meta["agent"]
-            if agent != "global":
-                self.plates.setdefault(agent, {
-                    "label": agent.capitalize(),
-                    "size":  f"N_{agent}"
-                })
+        """Build plates mapping from blocks that have agents."""
+        # Collect all unique plates from node metadata
+        plates_set = set()
+        for meta in self.node_meta.values():
+            if meta["plate"]:
+                plates_set.add(meta["plate"])
+
+        # Create plate information
+        for plate_name in plates_set:
+            self.plates[plate_name] = {
+                "label": plate_name.capitalize(),
+                "size": "",
+            }
+
+    def _add_lag_variable_metadata(self):
+        """
+        After all analysis is complete, add metadata for lag variables that have time dependencies.
+        Lag variables (like p*, a*) directly inherit all metadata from their current-period counterparts,
+        including plate information.
+        """
+        # Collect all source variables in time dependencies that need lag versions
+        lag_sources = set()
+        for target, source in self._time_deps:
+            lag_sources.add(source)
+
+        # Create lag variable metadata for all identified sources
+        for source in lag_sources:
+            lag_var_name = f"{source}*"  # Create lag variable name: p -> p*, a -> a*
+
+            if source in self.node_meta and lag_var_name not in self.node_meta:
+                # Completely copy the original variable's metadata
+                self.node_meta[lag_var_name] = self.node_meta[source].copy()
+                # Lag variables are typically not directly observed
+                self.node_meta[lag_var_name]["observed"] = False
 
     def to_dict(self):
         """Return a JSON-serializable dict of the analysis."""
         return {
             "node_meta": self.node_meta,
-            "edges":      self.edges,
-            "formulas":   self.formulas,
-            "plates":     self.plates
+            "edges": self.edges,
+            "formulas": self.formulas,
+            "plates": self.plates,
         }
