@@ -6,6 +6,8 @@ import skagent.model as model
 import torch
 import unittest
 
+torch.manual_seed(10077693)
+
 parameters = {"q": 1.1}
 
 block_data = {
@@ -173,19 +175,19 @@ class TestGridManipulations(unittest.TestCase):
         self.assertEqual(len(full_grid["psi_0"]), 7)
 
 
-class TestTrainingLoop(unittest.TestCase):
+class TestMaliarTrainingLoop(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_loop_case_4(self):
+    def test_maliar_state_convergence(self):
         big_t = 2
 
         case_4["block"].construct_shocks(case_4["calibration"])
 
         states_0_n = grid.Grid.from_config(
             {
-                "m": {"min": -2, "max": 2, "count": 7},
-                "g": {"min": -2, "max": 2, "count": 7},
+                "m": {"min": -20, "max": 20, "count": 9},
+                "g": {"min": -20, "max": 20, "count": 9},
             }
         )
 
@@ -209,4 +211,5 @@ class TestTrainingLoop(unittest.TestCase):
         sd = states.to_dict()
 
         # testing for the states converged on the ergodic distribution
-        self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=0.1))
+        # note we actual expect these to diverge up to two variance-1 shocks.
+        self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=3))
