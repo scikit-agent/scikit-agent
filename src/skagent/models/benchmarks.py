@@ -63,7 +63,6 @@ EPS_VALIDATION = 1e-8  # General validation tolerance
 #   c₁ = W/(1+β)
 #   c₂ = βRW/(1+β)
 
-# This is the foundation for all intertemporal choice theory.
 
 d1_calibration = {
     "DiscFac": 0.96,
@@ -821,56 +820,169 @@ def u6_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 # Model Registry
 # =============================================================================
 
+
+def _generate_d1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-1 model: W (wealth)"""
+    return {"W": torch.linspace(1.0, 5.0, test_points)}
+
+
+def _generate_d2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-2 model: W (wealth), t (time)"""
+    return {
+        "W": torch.linspace(1.0, 5.0, test_points),
+        "t": torch.zeros(test_points),
+    }
+
+
+def _generate_d34_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-3 and D-4 models: m (cash-on-hand)"""
+    return {"m": torch.linspace(1.0, 5.0, test_points)}
+
+
+def _generate_u13_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-1 and U-3 models: c_lag (lagged consumption)"""
+    return {"c_lag": torch.ones(test_points)}
+
+
+def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-2 model: A (assets), y (income)"""
+    return {
+        "A": torch.linspace(0.5, 3.0, test_points),
+        "y": torch.ones(test_points),
+    }
+
+
+def _generate_u4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-4 model: A (assets), p (price)"""
+    return {
+        "A": torch.linspace(0.5, 3.0, test_points),
+        "p": torch.ones(test_points),
+    }
+
+
+def _generate_u5_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-5 model: m (cash-on-hand)"""
+    return {"m": torch.linspace(1.0, 5.0, test_points)}
+
+
+def _generate_u6_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-6 model: y (income), h (habit)"""
+    return {
+        "y": torch.ones(test_points),
+        "h": torch.ones(test_points) * 0.5,
+    }
+
+
+def _validate_d3_d4_solution(
+    model_id: str,
+    test_states: Dict[str, torch.Tensor],
+    analytical_controls: Dict[str, torch.Tensor],
+    calibration: Dict[str, Any],
+    tolerance: float,
+) -> Dict[str, Any]:
+    """Validate D-3 and D-4 perfect foresight optimality conditions"""
+    beta = calibration["DiscFac"]
+    R = calibration["R"]
+    sigma = calibration["CRRA"]
+
+    # For D-4, use effective discount factor
+    if model_id == "D-4":
+        s = calibration["SurvivalProb"]
+        beta_eff = s * beta
+    else:
+        beta_eff = beta
+
+    kappa = (R - (beta_eff * R) ** (1 / sigma)) / R
+
+    m = test_states["m"]
+    c = analytical_controls["c"]
+
+    # Check that c_t = κ*m_t
+    expected_c = kappa * m
+    consumption_errors = torch.abs(c - expected_c)
+    max_consumption_error = torch.max(consumption_errors).item()
+
+    if max_consumption_error > tolerance:
+        return {
+            "success": False,
+            "validation": "FAILED",
+            "error": f"Consumption rule violated: max error = {max_consumption_error}",
+        }
+
+    # Check budget constraint feasibility: c_t < m_t
+    if torch.any(c >= m):
+        return {
+            "success": False,
+            "validation": "FAILED",
+            "error": "Budget constraint violated: consumption >= cash-on-hand",
+        }
+
+    # If we get here, validation passed
+    return {"success": True, "validation": "PASSED"}
+
+
 BENCHMARK_MODELS = {
     "D-1": {
         "block": d1_block,
         "calibration": d1_calibration,
         "analytical_policy": d1_analytical_policy,
+        "test_states": _generate_d1_test_states,
     },
     "D-2": {
         "block": d2_block,
         "calibration": d2_calibration,
         "analytical_policy": d2_analytical_policy,
+        "test_states": _generate_d2_test_states,
     },
     "D-3": {
         "block": d3_block,
         "calibration": d3_calibration,
         "analytical_policy": d3_analytical_policy,
+        "test_states": _generate_d34_test_states,
+        "custom_validation": _validate_d3_d4_solution,
     },
     "D-4": {
         "block": d4_block,
         "calibration": d4_calibration,
         "analytical_policy": d4_analytical_policy,
+        "test_states": _generate_d34_test_states,
+        "custom_validation": _validate_d3_d4_solution,
     },
     "U-1": {
         "block": u1_block,
         "calibration": u1_calibration,
         "analytical_policy": u1_analytical_policy,
+        "test_states": _generate_u13_test_states,
     },
     "U-2": {
         "block": u2_block,
         "calibration": u2_calibration,
         "analytical_policy": u2_analytical_policy,
+        "test_states": _generate_u2_test_states,
     },
     "U-3": {
         "block": u3_block,
         "calibration": u3_calibration,
         "analytical_policy": u3_analytical_policy,
+        "test_states": _generate_u13_test_states,
     },
     "U-4": {
         "block": u4_block,
         "calibration": u4_calibration,
         "analytical_policy": u4_analytical_policy,
+        "test_states": _generate_u4_test_states,
     },
     "U-5": {
         "block": u5_block,
         "calibration": u5_calibration,
         "analytical_policy": u5_analytical_policy,
+        "test_states": _generate_u5_test_states,
     },
     "U-6": {
         "block": u6_block,
         "calibration": u6_calibration,
         "analytical_policy": u6_analytical_policy,
+        "test_states": _generate_u6_test_states,
     },
 }
 
@@ -905,6 +1017,25 @@ def get_analytical_policy(model_id: str) -> Callable:
     return policy_func(calibration)
 
 
+def get_test_states(model_id: str, test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Get test states for model validation by model ID"""
+    if model_id not in BENCHMARK_MODELS:
+        available = list(BENCHMARK_MODELS.keys())
+        raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    test_states_func = BENCHMARK_MODELS[model_id]["test_states"]
+    return test_states_func(test_points)
+
+
+def get_custom_validation(model_id: str) -> Callable | None:
+    """Get custom validation function for model (if it has one)"""
+    if model_id not in BENCHMARK_MODELS:
+        available = list(BENCHMARK_MODELS.keys())
+        raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    return BENCHMARK_MODELS[model_id].get("custom_validation", None)
+
+
 def list_benchmark_models() -> Dict[str, str]:
     """List all 10 analytically solvable discrete-time models from the catalogue"""
     return {
@@ -919,43 +1050,19 @@ def validate_analytical_solution(
     """Validate analytical solution satisfies optimality conditions and budget constraints"""
 
     if model_id not in BENCHMARK_MODELS:
-        return {"error": f"Unknown model: {model_id}"}
+        return {
+            "success": False,
+            "validation": "FAILED",
+            "model_id": model_id,
+            "error": f"Unknown model: {model_id}",
+        }
 
     try:
         calibration = get_benchmark_calibration(model_id)
         analytical_policy = get_analytical_policy(model_id)
 
-        # Generate appropriate test states for each model
-        if model_id == "D-1":
-            test_states = {"W": torch.linspace(1.0, 5.0, test_points)}
-        elif model_id == "D-2":
-            test_states = {
-                "W": torch.linspace(1.0, 5.0, test_points),
-                "t": torch.zeros(test_points),
-            }
-        elif model_id in ["D-3", "D-4"]:
-            test_states = {"m": torch.linspace(1.0, 5.0, test_points)}
-        elif model_id in ["U-1", "U-3"]:
-            test_states = {"c_lag": torch.ones(test_points)}
-        elif model_id == "U-2":
-            test_states = {
-                "A": torch.linspace(0.5, 3.0, test_points),
-                "y": torch.ones(test_points),
-            }
-        elif model_id == "U-4":
-            test_states = {
-                "A": torch.linspace(0.5, 3.0, test_points),
-                "p": torch.ones(test_points),
-            }
-        elif model_id == "U-5":
-            test_states = {"m": torch.linspace(1.0, 5.0, test_points)}
-        elif model_id == "U-6":
-            test_states = {
-                "y": torch.ones(test_points),
-                "h": torch.ones(test_points) * 0.5,
-            }
-        else:
-            return {"error": f"Unknown state structure for {model_id}"}
+        # Generate appropriate test states using the extensible approach
+        test_states = get_test_states(model_id, test_points)
 
         # Test analytical policy
         analytical_controls = analytical_policy(test_states, {}, calibration)
@@ -963,42 +1070,35 @@ def validate_analytical_solution(
         # Basic feasibility checks
         for control_name, control_values in analytical_controls.items():
             if torch.any(control_values <= 0):
-                return {"error": f"Negative {control_name} in analytical solution"}
-            if torch.any(~torch.isfinite(control_values)):
-                return {"error": f"Non-finite {control_name} in analytical solution"}
-
-        # Perfect foresight optimality check for D-3 and D-4
-        if model_id in ["D-3", "D-4"]:
-            beta = calibration["DiscFac"]
-            R = calibration["R"]
-            sigma = calibration["CRRA"]
-
-            # For D-4, use effective discount factor
-            if model_id == "D-4":
-                s = calibration["SurvivalProb"]
-                beta_eff = s * beta
-            else:
-                beta_eff = beta
-
-            kappa = (R - (beta_eff * R) ** (1 / sigma)) / R
-
-            m = test_states["m"]
-            c = analytical_controls["c"]
-
-            # Check that c_t = κ*m_t
-            expected_c = kappa * m
-            consumption_errors = torch.abs(c - expected_c)
-            max_consumption_error = torch.max(consumption_errors).item()
-
-            if max_consumption_error > tolerance:
                 return {
-                    "error": f"Consumption rule violated: max error = {max_consumption_error}"
+                    "success": False,
+                    "validation": "FAILED",
+                    "model_id": model_id,
+                    "test_points": test_points,
+                    "error": f"Negative {control_name} in analytical solution",
+                }
+            if torch.any(~torch.isfinite(control_values)):
+                return {
+                    "success": False,
+                    "validation": "FAILED",
+                    "model_id": model_id,
+                    "test_points": test_points,
+                    "error": f"Non-finite {control_name} in analytical solution",
                 }
 
-            # Check budget constraint feasibility: c_t < m_t
-            if torch.any(c >= m):
+        # Run custom validation if the model has one
+        custom_validation = get_custom_validation(model_id)
+        if custom_validation is not None:
+            validation_result = custom_validation(
+                model_id, test_states, analytical_controls, calibration, tolerance
+            )
+            if not validation_result["success"]:
                 return {
-                    "error": "Budget constraint violated: consumption >= cash-on-hand"
+                    "success": False,
+                    "validation": "FAILED",
+                    "model_id": model_id,
+                    "test_points": test_points,
+                    "error": validation_result["error"],
                 }
 
         return {
@@ -1015,19 +1115,33 @@ def validate_analytical_solution(
         }
 
     except Exception as e:
-        return {"error": f"Validation failed: {str(e)}"}
+        return {
+            "success": False,
+            "validation": "FAILED",
+            "model_id": model_id,
+            "test_points": test_points,
+            "error": f"Validation failed: {str(e)}",
+        }
 
 
-def euler_equation_test(model_id: str, test_points: int = 100) -> Dict[str, float]:
+def euler_equation_test(model_id: str, test_points: int = 100) -> Dict[str, Any]:
     """Test Euler equation satisfaction for stochastic analytical solutions"""
 
     if model_id == "D-3":
         return {
-            "error": "D-3 is a perfect foresight model - Euler equation test not applicable"
+            "success": False,
+            "test": "SKIPPED",
+            "model_id": model_id,
+            "error": "D-3 is a perfect foresight model - Euler equation test not applicable",
         }
 
     # Add tests for stochastic models here when needed
-    return {"error": f"Euler test not implemented for {model_id}"}
+    return {
+        "success": False,
+        "test": "NOT_IMPLEMENTED",
+        "model_id": model_id,
+        "error": f"Euler test not implemented for {model_id}",
+    }
 
 
 if __name__ == "__main__":
