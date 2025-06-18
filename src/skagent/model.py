@@ -452,6 +452,11 @@ class DBlock(Block):
             return expected(func=mod_dvf, dist=ds)
 
         return arrival_value_function
+    # On DBlock class:
+    def iter_dblocks(self):
+        """A DBlock is its own leaf."""
+        yield self
+
 
 
 @dataclass
@@ -532,3 +537,13 @@ class RBlock(Block):
                 super_rew[k] = v
 
         return super_rew
+    def iter_dblocks(self):
+        """Iterate over all DBlock leaves in this RBlock tree."""
+        for block in self.blocks:
+            if isinstance(block, DBlock):
+                yield block
+            elif isinstance(block, RBlock):
+                # Recursively yield from nested RBlocks
+                yield from block.iter_dblocks()
+            else:
+                raise ValueError(f"Unexpected block type: {type(block)}")
