@@ -164,7 +164,7 @@ class test_RBlock(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertIs(result[0], self.test_block_B)
         self.assertIsInstance(result[0], model.DBlock)
-        
+
     def test_iter_dblocks_complex_nested_structure(self):
         """Test RBlock.iter_dblocks() with a complex nested RBlock structure."""
         # Create the exact structure requested in the comment
@@ -174,21 +174,21 @@ class test_RBlock(unittest.TestCase):
                 model.RBlock(blocks=[self.test_block_C, self.test_block_D]),
             ]
         )
-        
+
         result = list(r_block_tree.iter_dblocks())
-        
+
         # Should get all 3 DBlocks from the nested structure
         self.assertEqual(len(result), 3)
-        
+
         # Verify all expected blocks are present
         self.assertIn(self.test_block_B, result)
         self.assertIn(self.test_block_C, result)
         self.assertIn(self.test_block_D, result)
-        
+
         # Check that all results are DBlock instances
         for block in result:
             self.assertIsInstance(block, model.DBlock)
-        
+
         # Verify the order follows depth-first traversal
         # Expected order: test_block_B, then test_block_C, then test_block_D
         expected_blocks = [self.test_block_B, self.test_block_C, self.test_block_D]
