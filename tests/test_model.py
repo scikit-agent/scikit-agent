@@ -146,12 +146,12 @@ class test_RBlock(unittest.TestCase):
         attrs = r_block_tree.get_attributions()
 
         self.assertEqual({"foo-agent": ["z"], "lender": ["pi"]}, attrs)
-    
+
     def test_iter_dblocks(self):
         """Test that DBlock.iter_dblocks() yields itself."""
         # A DBlock should yield only itself
         result = list(self.test_block_A.iter_dblocks())
-        
+
         self.assertEqual(len(result), 1)
         self.assertIs(result[0], self.test_block_A)
         self.assertIsInstance(result[0], model.DBlock)
