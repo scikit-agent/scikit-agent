@@ -107,6 +107,14 @@ class test_DBlock(unittest.TestCase):
 
         self.assertEqual(cblock_attribtuions["consumer"], ["c", "u"])
 
+    def test_iter_dblocks(self):
+        """Test that DBlock.iter_dblocks() yields itself."""
+        result = list(self.test_block_A.iter_dblocks())
+
+        self.assertEqual(len(result), 1)
+        self.assertIs(result[0], self.test_block_A)
+        self.assertIsInstance(result[0], model.DBlock)
+
 
 class test_RBlock(unittest.TestCase):
     def setUp(self):
@@ -147,11 +155,12 @@ class test_RBlock(unittest.TestCase):
 
         self.assertEqual({"foo-agent": ["z"], "lender": ["pi"]}, attrs)
 
-    def test_iter_dblocks(self):
-        """Test that DBlock.iter_dblocks() yields itself."""
-        # A DBlock should yield only itself
-        result = list(self.test_block_A.iter_dblocks())
+    def test_iter_dblocks_single_block(self):
+        """Test RBlock.iter_dblocks() with a single DBlock."""
+        rblock = model.RBlock(name="test_rblock_single", blocks=[self.test_block_B])
+
+        result = list(rblock.iter_dblocks())
 
         self.assertEqual(len(result), 1)
-        self.assertIs(result[0], self.test_block_A)
+        self.assertIs(result[0], self.test_block_B)
         self.assertIsInstance(result[0], model.DBlock)
