@@ -187,7 +187,7 @@ class TestMathematicalConsistency:
 
     def _create_edlr_grid(self, state_config, big_t):
         """Helper to create EDLR training grid."""
-        grid = Grid(state_config)
+        grid = Grid.from_config(state_config)
         shock_vars = self.block.get_shocks()
         constructed_shocks = construct_shocks(shock_vars, self.test_calibration)
 
@@ -419,7 +419,7 @@ class TestTrainingProperties:
 
     def _create_edlr_grid(self, state_config, big_t):
         """Helper to create EDLR training grid."""
-        grid = Grid(state_config)
+        grid = Grid.from_config(state_config)
         shock_vars = self.block.get_shocks()
         constructed_shocks = construct_shocks(shock_vars, self.test_calibration)
 
@@ -554,7 +554,7 @@ class TestMethodAgreement:
         bellman_policy, _ = self._train_bellman_extensively(test_config)
 
         # Compare on test grid
-        test_grid = Grid(
+        test_grid = Grid.from_config(
             {
                 "m": {"min": 2.0, "max": 2.0, "count": 1},
                 "a": {"min": 1.0, "max": 1.0, "count": 1},
@@ -624,7 +624,7 @@ class TestMethodAgreement:
 
     def _create_edlr_grid(self, state_config, big_t):
         """Helper to create EDLR training grid."""
-        grid = Grid(state_config)
+        grid = Grid.from_config(state_config)
         shock_vars = self.block.get_shocks()
         constructed_shocks = construct_shocks(shock_vars, self.test_calibration)
 

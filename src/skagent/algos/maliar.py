@@ -1,10 +1,8 @@
 import numpy as np
-import skagent.ann as ann
 from skagent.grid import Grid
-import skagent.model as model
-from skagent.simulation.monte_carlo import draw_shocks
 import torch
-import skagent.utils as utils
+from skagent.algos.constraints import fischer_burmeister, get_constraint_violations
+from typing import Optional, Callable
 
 """
 Implementation of Maliar, Maliar, and Winant (Journal of Monetary Economics, 2021) Methods.
@@ -54,6 +52,10 @@ The MMW JME '21 framework uses the Fischer-Burmeister (FB) function to handle
 inequality constraints in a differentiable manner. This is crucial for economic
 models with occasionally binding constraints like borrowing limits.
 
+**Note**: Constraint handling functions are now in `skagent.algos.constraints`:
+- `fischer_burmeister()`: Differentiable complementarity function
+- `get_constraint_violations()`: Extract constraint violation terms
+
 Mathematical Foundation:
 For complementarity conditions a ≥ 0, b ≥ 0, a·b = 0, the FB function is:
 FB(a,b) = a + b - √(a² + b²)
@@ -90,13 +92,11 @@ Key Features
 Core Functions
 ==============
 
-Constraint Handling:
-- fischer_burmeister(): Differentiable complementarity function
-- get_constraint_violations(): Extract constraint violation terms
-
-Training Grid Generation:
-- generate_bellman_training_grid(): Creates 2-shock grids for Bellman training
-- generate_euler_training_grid(): Creates 2-shock grids for Euler training (alias)
+**Note**: Training grid generation functions are now in `skagent.algos.training`:
+- `generate_bellman_training_grid()`: Creates 2-shock grids for Bellman training
+- `generate_euler_training_grid()`: Creates 2-shock grids for Euler training (alias)
+- `generate_ergodic_training_grid()`: Automatic ergodic sampling for AR(1) processes
+- `maliar_training_loop()`: Complete MMW training loop implementation
 
 Loss Function Factories:
 - get_expected_discounted_lifetime_reward_loss(): Primary EDLR method (MMW main approach)
@@ -117,7 +117,13 @@ Primary EDLR Method (MMW Main Approach)
 
 ```python
 from skagent.algos.maliar import get_expected_discounted_lifetime_reward_loss
+from skagent.algos.training import generate_ergodic_training_grid
 from skagent.ann import BlockPolicyNet, train_block_policy_nn
+
+# Generate training grid
+training_grid = generate_ergodic_training_grid(
+    block=consumption_block, calibration=calibration, n_samples=1000
+)
 
 # Create EDLR loss function (main MMW method)
 edlr_loss = get_expected_discounted_lifetime_reward_loss(
@@ -138,7 +144,18 @@ Alternative Bellman Method with Constraints
 
 ```python
 from skagent.algos.maliar import get_bellman_residual_loss
+from skagent.algos.constraints import fischer_burmeister, get_constraint_violations
+from skagent.algos.training import generate_bellman_training_grid
 from skagent.ann import BlockPolicyNet, BlockValueNet, train_bellman_nets
+
+# Generate training grid
+state_config = {
+    "m": {"min": 0.1, "max": 10.0, "count": 50},
+    "a": {"min": 0.0, "max": 5.0, "count": 50},
+}
+training_grid = generate_bellman_training_grid(
+    state_config, consumption_block, parameters=calibration
+)
 
 # Create Bellman loss function with Fischer-Burmeister constraints
 bellman_loss = get_bellman_residual_loss(
@@ -162,7 +179,18 @@ Alternative Euler Method with Constraints
 
 ```python
 from skagent.algos.maliar import get_euler_residual_loss
+from skagent.algos.constraints import fischer_burmeister, get_constraint_violations
+from skagent.algos.training import generate_euler_training_grid
 from skagent.ann import BlockPolicyNet, train_block_policy_nn
+
+# Generate training grid
+state_config = {
+    "m": {"min": 0.1, "max": 10.0, "count": 50},
+    "a": {"min": 0.0, "max": 5.0, "count": 50},
+}
+training_grid = generate_euler_training_grid(
+    state_config, consumption_block, parameters=calibration
+)
 
 # Create Euler loss function with Fischer-Burmeister constraints
 euler_loss = get_euler_residual_loss(
@@ -214,147 +242,6 @@ models with neural networks.
 Fischer-Burmeister constraint handling ensures proper treatment of inequality
 constraints and complementarity conditions as specified in the original MMW paper.
 """
-
-
-def fischer_burmeister(a, b):
-    """
-    Fischer-Burmeister function for handling complementarity constraints.
-
-    The Fischer-Burmeister function provides a smooth, differentiable way to
-    handle complementarity conditions a ≥ 0, b ≥ 0, a·b = 0. This is essential
-    for economic models with occasionally binding constraints like borrowing limits.
-
-    Mathematical Definition:
-    FB(a,b) = a + b - sqrt(a² + b²)
-
-    Properties:
-    - FB(a,b) = 0 when complementarity conditions are satisfied
-    - Smooth and differentiable everywhere (unlike min(a,b))
-    - FB(a,b) < 0 when constraints are violated
-    - FB(a,b) = 0 when constraints are exactly satisfied
-
-    Applications in Economic Models:
-    - Borrowing constraints: FB(c - c_max, λ) = 0
-    - Non-negativity: FB(c, λ_c) = 0 where λ_c is multiplier on c ≥ 0
-    - Asset constraints: FB(a - a_min, λ_a) = 0
-
-    Parameters
-    -----------
-    a : torch.Tensor or float
-        First argument (often constraint violation: constraint - bound)
-    b : torch.Tensor or float
-        Second argument (often Lagrange multiplier)
-
-    Returns
-    --------
-    torch.Tensor or float
-        Fischer-Burmeister function value. Zero when complementarity satisfied.
-
-    References
-    ----------
-    Fischer, A. (1992). A special Newton-type optimization method.
-    Optimization, 24(3-4), 269-284.
-
-    Maliar, L., Maliar, S., & Winant, P. (2021). Deep learning for solving
-    dynamic economic models. Journal of Monetary Economics, 122, 76-101.
-    """
-    # Ensure inputs are tensors for proper gradient computation
-    if not isinstance(a, torch.Tensor):
-        a = torch.tensor(a, dtype=torch.float32)
-    if not isinstance(b, torch.Tensor):
-        b = torch.tensor(b, dtype=torch.float32)
-
-    # FB(a,b) = a + b - sqrt(a² + b²)
-    # Note: This equals 0 when complementarity satisfied, negative when violated
-    return a + b - torch.sqrt(a**2 + b**2)
-
-
-def get_constraint_violations(block, states, controls, parameters):
-    """
-    Extract constraint violations for Fischer-Burmeister function application.
-
-    Analyzes the economic model block to identify constraint violations that
-    should be penalized using Fischer-Burmeister complementarity conditions.
-    This enables proper handling of occasionally binding constraints.
-
-    Common Economic Constraints:
-    - Borrowing limit: consumption ≤ cash-on-hand
-    - Non-negativity: consumption ≥ 0, assets ≥ 0
-    - Resource constraints: income ≥ consumption + savings
-
-    Parameters
-    -----------
-    block : DBlock
-        Economic model block containing constraint specifications
-    states : dict
-        Current state variables {symbol: values}
-    controls : dict
-        Current control variables {symbol: values}
-    parameters : dict
-        Model calibration parameters
-
-    Returns
-    --------
-    dict
-        Dictionary of constraint violations {constraint_name: violation_amount}
-        Positive violations indicate constraint is satisfied
-        Negative violations indicate constraint is violated
-    """
-    violations = {}
-
-    # Check upper bound constraints from DBlock Control specifications
-    dynamics = block.get_dynamics()
-    for control_name in block.get_controls():
-        control = dynamics[control_name]
-
-        if hasattr(control, "upper_bound") and control.upper_bound is not None:
-            # Handle upper bound constraint
-            upper_bound = control.upper_bound
-
-            if isinstance(upper_bound, str):
-                # Upper bound is a symbol name (e.g., 'c <= m')
-                if upper_bound in states:
-                    upper_bound_value = states[upper_bound]
-                elif upper_bound in controls:
-                    upper_bound_value = controls[upper_bound]
-                elif upper_bound in parameters:
-                    upper_bound_value = parameters[upper_bound]
-                else:
-                    continue  # Skip if symbol not found
-            elif callable(upper_bound):
-                # Upper bound is a function
-                from inspect import signature
-
-                bound_args = signature(upper_bound).parameters
-                bound_vals = {}
-                all_vals = {**parameters, **states, **controls}
-                for arg_name in bound_args:
-                    if arg_name in all_vals:
-                        bound_vals[arg_name] = all_vals[arg_name]
-
-                if not bound_vals:
-                    continue
-
-                try:
-                    upper_bound_value = upper_bound(**bound_vals)
-                except Exception:
-                    continue
-            else:
-                # Upper bound is a constant
-                upper_bound_value = upper_bound
-
-            control_value = controls[control_name]
-
-            # Constraint violation: upper_bound - control_value
-            # Positive when constraint satisfied, negative when violated
-            violations[f"{control_name}_upper"] = upper_bound_value - control_value
-
-        # Add lower bound constraint (non-negativity)
-        if control_name in controls:
-            control_value = controls[control_name]
-            violations[f"{control_name}_lower"] = control_value  # c ≥ 0
-
-    return violations
 
 
 def create_transition_function(block, state_syms):
@@ -529,149 +416,144 @@ def estimate_discounted_lifetime_reward(
     return total_discounted_reward
 
 
-def generate_bellman_training_grid(state_config, block, n_samples=100, parameters=None):
+def get_expected_discounted_lifetime_reward_loss(
+    state_variables, block, discount_factor, big_t, parameters, use_constraints=False
+):
     """
-    Generate training grid for Bellman residual loss function.
+    Creates an Expected Discounted Lifetime Reward (EDLR) loss function.
 
-    Creates a Cartesian product grid of state variables combined with 2 copies
-    of shock realizations (for periods t and t+1) as required by the Bellman
-    equation approach. This grid structure enables proper computation of
-    expectations E[V(s_{t+1}) | s_t, c_t] in the Bellman residual loss.
+    This implements the primary MMW JME '21 all-in-one loss function approach
+    that maximizes expected discounted lifetime utility through forward simulation.
+    This is the main method described in MMW Definition 2.4.
 
-    Grid Structure:
-    - State variables: Cartesian product over specified ranges
-    - Shock variables: Independent draws with suffixes "_0" (period t) and "_1" (period t+1)
-    - Total grid points: product of state counts
+    Mathematical Foundation (MMW JME '21):
+    Ξ(θ) = E_ω[∑_{t=0}^{T} β^t r(m_t, s_t, φ(m_t, s_t; θ))]
 
-    The 2-shock structure is computationally efficient compared to the EDLR
-    approach which requires big_t shock copies for forward simulation.
+    Where:
+    - θ are neural network parameters
+    - φ(·; θ) is the policy function approximation
+    - r(·) is the period reward function
+    - β is the discount factor
+    - The expectation is over initial conditions and all future shocks
+
+    Uses big_t copies of shocks for multi-period simulation, enabling proper
+    integration over the full shock sequence as required by the MMW approach.
 
     Parameters
     -----------
-    state_config : dict
-        Grid configuration for state variables. Each key is a variable name,
-        each value is a dict with "min", "max", "count" specifying the grid range.
-        Example: {"assets": {"min": 0.1, "max": 10.0, "count": 50}}
+    state_variables : list of str
+        Names of state variables that define the problem state space
     block : DBlock
-        Model block containing shock distribution information via get_shocks().
-        Shock distributions will be used to draw realizations for periods t and t+1.
-    n_samples : int, optional
-        Number of shock samples to draw for each state point. Default is 100.
-        Note: Currently not used as we draw one shock per state point.
-    parameters : dict, optional
-        Model calibration parameters required for constructing shock distributions
-        when block contains shock specifications as tuples. If None and block
-        requires parameters, will raise an error.
+        The economic model block containing dynamics, shocks, and rewards
+    discount_factor : float
+        Discount factor β from the MMW formulation
+    big_t : int
+        Number of periods T to simulate forward (finite horizon approximation)
+    parameters : dict
+        Model calibration parameters
+    use_constraints : bool, optional
+        Whether to add Fischer-Burmeister constraint penalties to the loss.
+        When True, adds penalty terms for constraint violations to ensure
+        economic feasibility of solutions. Default is False for backward compatibility.
 
     Returns
     --------
-    Grid
-        Training grid with combined state variables and shock realizations.
-        Grid.labels contains all variable names including shock suffixes.
-        Grid.values contains the full training data as a PyTorch tensor.
+    callable
+        EDLR loss function with signature: (policy_function, input_grid) -> loss_tensor
+        Returns negative lifetime reward (plus constraint penalties) for minimization by optimizers
     """
-    # Create base state grid
-    states_grid = Grid(state_config)
+    # TODO: Should be able to get 'state variables' from block
+    # Maybe with ZP's analysis modules
 
-    # Get number of state points
-    n_states = len(states_grid.values)
-
-    # Get device from states_grid
-    device = (
-        states_grid.values.device
-        if hasattr(states_grid.values, "device")
-        else torch.device("cpu")
+    # convoluted
+    # TODO: codify this encoding and decoding of the grid into a separate object
+    # It is specifically the EDLR loss function that requires big_t of the shocks.
+    # other AiO loss functions use 2 copies of the shocks only.
+    shock_vars = block.get_shocks()
+    big_t_shock_syms = sum(
+        [[f"{sym}_{t}" for sym in list(shock_vars.keys())] for t in range(big_t)], []
     )
 
-    # Draw shocks for t and t+1
-    from skagent.model import construct_shocks
+    def expected_discounted_lifetime_reward_loss(df: callable, input_grid: Grid):
+        """
+        Compute Expected Discounted Lifetime Reward loss for given policy function.
 
-    shock_vars = block.get_shocks()
-    new_shock_values = {}
+        This implements the core MMW JME '21 computation by:
+        1. Extracting state variables and big_t shock sequences from input grid
+        2. Forward simulating the policy for big_t periods
+        3. Computing discounted sum of rewards over the trajectory
+        4. Returning negative reward (for minimization by optimizers)
 
-    # Only add shocks if the block has any
-    if shock_vars:
-        # Construct actual distributions if needed (handle tuples)
-        if any(isinstance(shock_vars[var], tuple) for var in shock_vars):
-            # Need calibration parameters to construct shocks
-            if parameters is None:
-                raise ValueError(
-                    "Block contains shock specifications that require calibration parameters, "
-                    "but no parameters were provided. Please pass parameters argument with "
-                    "calibration values needed to construct shock distributions."
-                )
-            constructed_shocks = construct_shocks(shock_vars, parameters)
+        Parameters
+        -----------
+        df : callable
+            Policy function that maps (states, shocks, parameters) -> controls
+        input_grid : Grid
+            Training grid containing initial states and shock sequences
+
+        Returns
+        --------
+        torch.Tensor
+            Negative expected discounted lifetime rewards for each grid point
+        """
+        # Extract state variables and shock sequences from training grid
+        given_vals = input_grid.to_dict()
+
+        # Organize shocks by time period for forward simulation
+        shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
+        shocks_by_t = {
+            sym: torch.stack([shock_vals[f"{sym}_{t}"] for t in range(big_t)])
+            for sym in shock_vars
+        }
+
+        # Compute expected discounted lifetime reward via forward simulation
+        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
+        edlr = estimate_discounted_lifetime_reward(
+            block,
+            discount_factor,
+            df,
+            {sym: given_vals[sym] for sym in state_variables},
+            big_t,
+            parameters=parameters,
+            agent=None,  # TODO: Pass through the agent?
+            shocks_by_t=shocks_by_t,
+            # Handle multiple decision rules?
+        )
+
+        # Add constraint penalties if requested
+        if use_constraints:
+            # Compute constraint violations for each point and time period
+            constraint_penalty = 0
+
+            # Extract initial states for constraint checking
+            initial_states = {sym: given_vals[sym] for sym in state_variables}
+            initial_shocks = {sym: given_vals[f"{sym}_0"] for sym in block.get_shocks()}
+
+            # Get initial policy decision
+            initial_controls = df(initial_states, initial_shocks, parameters)
+
+            # Check constraint violations
+            violations = get_constraint_violations(
+                block, initial_states, initial_controls, parameters
+            )
+
+            # Add Fischer-Burmeister penalties
+            for constraint_name, violation in violations.items():
+                # Use small multiplier as in Bellman case
+                multiplier = torch.ones_like(violation) * 0.1
+                fb_penalty = fischer_burmeister(violation, multiplier)
+                constraint_penalty += torch.mean(fb_penalty)
+
+            # Weight constraint penalty appropriately
+            constraint_weight = 10.0  # Higher weight for EDLR to ensure feasibility
+            total_loss = -edlr + constraint_weight * constraint_penalty
+
+            return total_loss
         else:
-            constructed_shocks = shock_vars
+            # Return negative for minimization (optimizers minimize, but we want to maximize reward)
+            return -edlr
 
-        for period in [0, 1]:  # t and t+1
-            shocks = draw_shocks(
-                constructed_shocks, np.zeros(n_states)
-            )  # conditions not used for most shocks
-            for shock_name, shock_values in shocks.items():
-                new_shock_values[f"{shock_name}_{period}"] = torch.tensor(
-                    shock_values, dtype=torch.float32, device=device
-                )
-
-    # Combine state grid with shock values
-    states_dict = states_grid.to_dict()
-    combined_dict = {**states_dict, **new_shock_values}
-
-    # Create new grid with combined data
-    combined_labels = list(combined_dict.keys())
-    combined_values = torch.stack([combined_dict[label] for label in combined_labels]).T
-
-    # Create a new Grid-like structure
-    result_grid = Grid(state_config)  # Start with state config
-    result_grid.labels = combined_labels
-    result_grid.values = combined_values
-
-    return result_grid
-
-
-def generate_euler_training_grid(state_config, block, n_samples=100, parameters=None):
-    """
-    Generate training grid for Euler residual loss function.
-
-    This is an alias for generate_bellman_training_grid() since both Euler and
-    Bellman methods use the same 2-shock structure (periods t and t+1).
-
-    The grid contains:
-    - State variables: Cartesian product over specified ranges
-    - Shock variables: Independent draws with suffixes "_0" (period t) and "_1" (period t+1)
-
-    This efficient 2-shock structure is computationally superior to the EDLR
-    approach which requires big_t shock copies for forward simulation.
-
-    Parameters
-    -----------
-    state_config : dict
-        Grid configuration for state variables. Each key is a variable name,
-        each value is a dict with "min", "max", "count" specifying the grid range.
-        Example: {"assets": {"min": 0.1, "max": 10.0, "count": 50}}
-    block : DBlock
-        Model block containing shock distribution information via get_shocks().
-        Shock distributions will be used to draw realizations for periods t and t+1.
-    n_samples : int, optional
-        Number of shock samples to draw for each state point. Default is 100.
-        Note: Currently not used as we draw one shock per state point.
-    parameters : dict, optional
-        Model calibration parameters required for constructing shock distributions
-        when block contains shock specifications as tuples. If None and block
-        requires parameters, will raise an error.
-
-    Returns
-    --------
-    Grid
-        Training grid with combined state variables and shock realizations.
-        Grid.labels contains all variable names including shock suffixes.
-        Grid.values contains the full training data as a PyTorch tensor.
-
-    See Also
-    --------
-    generate_bellman_training_grid : Same function for Bellman method
-    """
-    return generate_bellman_training_grid(state_config, block, n_samples, parameters)
+    return expected_discounted_lifetime_reward_loss
 
 
 def get_bellman_residual_loss(
@@ -844,8 +726,7 @@ def get_bellman_residual_loss(
                 multiplier = torch.ones_like(violation) * 0.1
 
                 # Add squared Fischer-Burmeister residual
-                fb_residual = fischer_burmeister(violation, multiplier)
-                fb_penalty += fb_residual**2
+                fb_penalty += fischer_burmeister(violation, multiplier)
 
             # Combine Bellman residual with constraint penalties
             # Use weight to balance Bellman accuracy vs constraint satisfaction
@@ -857,146 +738,6 @@ def get_bellman_residual_loss(
     return bellman_residual_loss
 
 
-def get_expected_discounted_lifetime_reward_loss(
-    state_variables, block, discount_factor, big_t, parameters, use_constraints=False
-):
-    """
-    Creates an Expected Discounted Lifetime Reward (EDLR) loss function.
-
-    This implements the primary MMW JME '21 all-in-one loss function approach
-    that maximizes expected discounted lifetime utility through forward simulation.
-    This is the main method described in MMW Definition 2.4.
-
-    Mathematical Foundation (MMW JME '21):
-    Ξ(θ) = E_ω[∑_{t=0}^{T} β^t r(m_t, s_t, φ(m_t, s_t; θ))]
-
-    Where:
-    - θ are neural network parameters
-    - φ(·; θ) is the policy function approximation
-    - r(·) is the period reward function
-    - β is the discount factor
-    - The expectation is over initial conditions and all future shocks
-
-    Uses big_t copies of shocks for multi-period simulation, enabling proper
-    integration over the full shock sequence as required by the MMW approach.
-
-    Parameters
-    -----------
-    state_variables : list of str
-        Names of state variables that define the problem state space
-    block : DBlock
-        The economic model block containing dynamics, shocks, and rewards
-    discount_factor : float
-        Discount factor β from the MMW formulation
-    big_t : int
-        Number of periods T to simulate forward (finite horizon approximation)
-    parameters : dict
-        Model calibration parameters
-    use_constraints : bool, optional
-        Whether to add Fischer-Burmeister constraint penalties to the loss.
-        When True, adds penalty terms for constraint violations to ensure
-        economic feasibility of solutions. Default is False for backward compatibility.
-
-    Returns
-    --------
-    callable
-        EDLR loss function with signature: (policy_function, input_grid) -> loss_tensor
-        Returns negative lifetime reward (plus constraint penalties) for minimization by optimizers
-    """
-    # TODO: Should be able to get 'state variables' from block
-    # Maybe with ZP's analysis modules
-
-    # convoluted
-    # TODO: codify this encoding and decoding of the grid into a separate object
-    # It is specifically the EDLR loss function that requires big_t of the shocks.
-    # other AiO loss functions use 2 copies of the shocks only.
-    shock_vars = block.get_shocks()
-    big_t_shock_syms = sum(
-        [[f"{sym}_{t}" for sym in list(shock_vars.keys())] for t in range(big_t)], []
-    )
-
-    def expected_discounted_lifetime_reward_loss(df: callable, input_grid: Grid):
-        """
-        Compute Expected Discounted Lifetime Reward loss for given policy function.
-
-        This implements the core MMW JME '21 computation by:
-        1. Extracting state variables and big_t shock sequences from input grid
-        2. Forward simulating the policy for big_t periods
-        3. Computing discounted sum of rewards over the trajectory
-        4. Returning negative reward (for minimization by optimizers)
-
-        Parameters
-        -----------
-        df : callable
-            Policy function that maps (states, shocks, parameters) -> controls
-        input_grid : Grid
-            Training grid containing initial states and shock sequences
-
-        Returns
-        --------
-        torch.Tensor
-            Negative expected discounted lifetime rewards for each grid point
-        """
-        # Extract state variables and shock sequences from training grid
-        given_vals = input_grid.to_dict()
-
-        # Organize shocks by time period for forward simulation
-        shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
-        shocks_by_t = {
-            sym: torch.stack([shock_vals[f"{sym}_{t}"] for t in range(big_t)])
-            for sym in shock_vars
-        }
-
-        # Compute expected discounted lifetime reward via forward simulation
-        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
-        edlr = estimate_discounted_lifetime_reward(
-            block,
-            discount_factor,
-            df,
-            {sym: given_vals[sym] for sym in state_variables},
-            big_t,
-            parameters=parameters,
-            agent=None,  # TODO: Pass through the agent?
-            shocks_by_t=shocks_by_t,
-            # Handle multiple decision rules?
-        )
-
-        # Add constraint penalties if requested
-        if use_constraints:
-            # Compute constraint violations for each point and time period
-            constraint_penalty = 0
-
-            # Extract initial states for constraint checking
-            initial_states = {sym: given_vals[sym] for sym in state_variables}
-            initial_shocks = {sym: given_vals[f"{sym}_0"] for sym in block.get_shocks()}
-
-            # Get initial policy decision
-            initial_controls = df(initial_states, initial_shocks, parameters)
-
-            # Check constraint violations
-            violations = get_constraint_violations(
-                block, initial_states, initial_controls, parameters
-            )
-
-            # Add Fischer-Burmeister penalties
-            for constraint_name, violation in violations.items():
-                # Use small multiplier as in Bellman case
-                multiplier = torch.ones_like(violation) * 0.1
-                fb_residual = fischer_burmeister(violation, multiplier)
-                constraint_penalty += torch.mean(fb_residual**2)
-
-            # Weight constraint penalty appropriately
-            constraint_weight = 10.0  # Higher weight for EDLR to ensure feasibility
-            total_loss = -edlr + constraint_weight * constraint_penalty
-
-            return total_loss
-        else:
-            # Return negative for minimization (optimizers minimize, but we want to maximize reward)
-            return -edlr
-
-    return expected_discounted_lifetime_reward_loss
-
-
 def get_euler_residual_loss(
     state_variables,
     block,
@@ -1004,6 +745,10 @@ def get_euler_residual_loss(
     parameters,
     disc_params=None,
     use_fischer_burmeister=False,
+    expectation_type="mean",
+    n_shock_samples=128,
+    residual_form: Optional[Callable] = None,
+    fb_form: Optional[Callable] = None,
 ):
     """
     Creates an Euler equation all-in-one loss function for the Maliar method.
@@ -1012,6 +757,10 @@ def get_euler_residual_loss(
     Euler equation residuals instead of the primary EDLR method. This approach
     minimizes violations of the first-order optimality conditions derived from
     the Euler equation of consumption.
+
+    If the DBlock provides custom euler_resid functions, those will be used instead
+    of the generic automatic differentiation approach. This enables exact reproduction
+    of model-specific methods like MMW.
 
     Mathematical Foundation (MMW JME '21, Section 2.3):
     The Euler equation for consumption choice is:
@@ -1044,6 +793,7 @@ def get_euler_residual_loss(
         The economic model block containing dynamics, shocks, and rewards.
         Must define transition function T(s_t, ε_t, c_t) and reward function u(·).
         The reward function should be differentiable to compute marginal utilities.
+        If block.euler_resid is provided, those custom functions will be used.
     discount_factor : float
         Discount factor β ∈ (0,1) from the Euler equation
     parameters : dict
@@ -1053,6 +803,18 @@ def get_euler_residual_loss(
         If None, uses Monte Carlo integration with provided shock realizations.
     use_fischer_burmeister : bool, optional
         Whether to use Fischer-Burmeister function for constraint handling
+    expectation_type : str, optional
+        Type of expectation operator:
+        - 'mean': E[R(ε)] (standard Monte Carlo, default)
+        - 'product': E[R(ε¹) × R(ε²)] (cross-product for MMW all-in-one)
+        - 'square': E[R(ε)]² (squared expectation)
+    n_shock_samples : int, optional
+        Number of shock samples for Monte Carlo integration when using 'product'
+        expectation type. Default 128.
+    residual_form : callable, optional
+        Custom residual form for Euler equation.
+    fb_form : callable, optional
+        Custom Fischer-Burmeister form for constraint handling.
 
     Returns
     --------
@@ -1065,7 +827,13 @@ def get_euler_residual_loss(
     """
     from skagent.model import discretized_shock_dstn
     from HARK.distributions import expected
+    from inspect import signature
 
+    # Check if DBlock provides custom euler residuals within dynamics
+    custom_residuals = block.dynamics.get("euler_resid", None)
+    
+
+    
     # Set up shock handling - use 2 copies of shocks (t and t+1)
     shock_vars = block.get_shocks()
     shock_syms_t = [f"{sym}_0" for sym in shock_vars.keys()]
@@ -1078,25 +846,90 @@ def get_euler_residual_loss(
     # Get the reward symbol (assumes single reward for now)
     rsym = list(block.reward.keys())[0]
 
+    # Get all state variables, including those from discrete distributions
+    if disc_params is not None:
+        for dist in disc_params.values():
+            if hasattr(dist, "variables"):
+                state_variables.extend(dist.variables)
+
+    # Function to compute the full loss, including cross-product expectations
     def euler_residual_loss(policy_function, input_grid):
+        # Handle both Grid objects and dict-like objects
+        if hasattr(input_grid, 'values'):
+            # Grid object
+            n_samples = input_grid.values.shape[0]
+        elif hasattr(input_grid, 'keys'):
+            # Dict-like object
+            n_samples = input_grid[list(input_grid.keys())[0]].shape[0]
+        else:
+            # Fallback
+            n_samples = len(list(input_grid.values())[0])
+
+        if expectation_type == "product":
+            return compute_cross_product_euler_residuals(
+                policy_function, input_grid, n_samples
+            )
+        else:
+            return compute_standard_euler_residuals(
+                policy_function, input_grid, n_samples
+            )
+
+    def compute_custom_residuals(states_t, controls_t, states_t1, controls_t1, shocks_t, params):
         """
-        Compute Euler equation residuals for given policy function.
-
-        Parameters
-        ----------
-        policy_function : callable
-            Current policy function c*(s,ε)
-        input_grid : Grid
-            Training data with states and shock realizations
-
-        Returns
-        -------
-        torch.Tensor
-            Euler residuals for each point in the input grid
+        Compute residuals using custom euler_resid functions.
+        Use DBlock transition to compute ALL variables including derived ones like c.
         """
-        given_vals = input_grid.to_dict()
+        residuals = []
+        
+        # Compute all variables for current period using DBlock transition
+        current_shocks = {name: torch.zeros_like(shock) for name, shock in shocks_t.items()}
+        current_controls_funcs = {name: lambda val=val: val for name, val in controls_t.items()}
+        full_current = block.transition({**states_t, **current_shocks, **params}, current_controls_funcs)
+        
+        # Compute all variables for next period using DBlock transition
+        next_shocks = {name: torch.zeros_like(shock) for name, shock in shocks_t.items()}
+        next_controls_funcs = {name: lambda val=val: val for name, val in controls_t1.items()}
+        full_next = block.transition({**states_t1, **next_shocks, **params}, next_controls_funcs)
+        
+        # Build complete context with all computed variables
+        context = {**full_current, **params}
+        for k, v in full_next.items():
+            if k not in ["euler_resid"]:  # Skip euler_resid itself to avoid recursion
+                context[f"{k}_next"] = v
+        
+        # Evaluate each custom residual function
+        for resid_fn in custom_residuals:
+            sig = signature(resid_fn)
+            args = [context[param] for param in sig.parameters if param in context]
+            
+            if len(args) == len(sig.parameters):
+                residuals.append(resid_fn(*args))
+            else:
+                missing_params = [p for p in sig.parameters if p not in context]
+                print(f"Warning: Missing parameters for custom residual: {missing_params}")
+                print(f"Available parameters: {list(context.keys())}")
+                continue
+        
+        return residuals
 
+    # Helper to unpack string references to state variables
+    def unpack_variable(val, state_dict):
+        """Unpacks a variable that might be a string key or a numeric value."""
+        if isinstance(val, str):
+            return state_dict[val]
+        if isinstance(val, torch.Tensor) and val.numel() == 1:
+            return val.item()
+        return val
+
+    # Function to compute standard (non-cross-product) Euler loss
+    def compute_standard_euler_residuals(policy_function, input_grid, n_samples):
         # Extract current period states and shocks
+        # Handle both Grid objects and dict-like objects
+        if hasattr(input_grid, 'to_dict'):
+            given_vals = input_grid.to_dict()
+        else:
+            given_vals = input_grid
+            
         states_t = {var: given_vals[var] for var in state_variables}
         shocks_t = {
             sym.replace("_0", ""): given_vals[sym]
@@ -1107,24 +940,65 @@ def get_euler_residual_loss(
         # Get policy decision for current period
         controls_t = policy_function(states_t, shocks_t, parameters)
 
-        # Get control variable name and value for marginal utility computation
-        control_var = list(controls_t.keys())[0]  # assumes single control
-        control_value_t = controls_t[control_var]
+        # Compute next period states
+        states_t1 = tf(states_t, shocks_t, controls_t, parameters)
+        
+        # Get next period shocks
+        shocks_t1 = {
+            sym.replace("_1", ""): given_vals[sym]
+            for sym in shock_syms_t1
+            if sym in given_vals
+        }
+        
+        # Get next period controls
+        controls_t1 = policy_function(states_t1, shocks_t1, parameters)
 
-        # Ensure control values require gradients for automatic differentiation
-        if not control_value_t.requires_grad:
-            control_value_t = control_value_t.detach().requires_grad_(True)
+        # Use custom residuals if available, otherwise fall back to generic computation
+        if custom_residuals:
+            residual_values = compute_custom_residuals(
+                states_t, controls_t, states_t1, controls_t1, shocks_t, parameters
+            )
+            
+            # Combine residuals (sum of squares for multiple residuals)
+            if residual_values:
+                total_residual = sum(r**2 for r in residual_values)
+                return total_residual
+            else:
+                # Fallback to generic if custom residuals failed
+                return compute_generic_euler_residuals(
+                    states_t, controls_t, states_t1, controls_t1, shocks_t, parameters
+                )
+        else:
+            # Use generic automatic differentiation approach
+            return compute_generic_euler_residuals(
+                states_t, controls_t, states_t1, controls_t1, shocks_t, parameters
+            )
 
-        # Recompute reward with gradient-enabled control values
-        controls_t_grad = {control_var: control_value_t}
-        reward_vals_t = rf(states_t, shocks_t, controls_t_grad, parameters)
+    def compute_generic_euler_residuals(states_t, controls_t, states_t1, controls_t1, shocks_t, params):
+        """
+        Generic Euler residual computation using automatic differentiation.
+        This is the fallback when no custom residuals are provided.
+        """
+        # Get all control variables and values for marginal utility computation
+        controls_t_grad = {}
+        for control_var, control_value_t in controls_t.items():
+            # Ensure control values require gradients for automatic differentiation
+            if not control_value_t.requires_grad:
+                control_value_t = control_value_t.detach().requires_grad_(True)
+            controls_t_grad[control_var] = control_value_t
+        
+        reward_vals_t = rf(states_t, shocks_t, controls_t_grad, params)
         current_reward = reward_vals_t[rsym]
 
         # Compute marginal utility u'(c_t) using automatic differentiation
+        # For multiple controls, use the first control (typically consumption)
+        primary_control_var = list(controls_t_grad.keys())[0]
+        primary_control_value = controls_t_grad[primary_control_var]
+
         if current_reward.requires_grad:
             current_reward_grad = torch.autograd.grad(
                 outputs=current_reward.sum(),
-                inputs=control_value_t,
+                inputs=primary_control_value,
                 create_graph=True,
                 retain_graph=True,
             )[0]
@@ -1133,257 +1007,160 @@ def get_euler_residual_loss(
             # Fallback: use numerical approximation for marginal utility
             # For CRRA utility: u'(c) = c^(-gamma)
             # Assume gamma = 2 as common default
-            marginal_utility_t = control_value_t ** (-2.0)
+            marginal_utility_t = primary_control_value ** (-2.0)
 
-        # Compute next period states s_{t+1} = T(s_t, ε_t, c_t)
-        states_t1 = tf(states_t, shocks_t, controls_t, parameters)
+        # Process next period controls similarly
+        controls_t1_grad = {}
+        for ctrl_var, ctrl_value in controls_t1.items():
+            if not ctrl_value.requires_grad:
+                ctrl_value = ctrl_value.detach().requires_grad_(True)
+            controls_t1_grad[ctrl_var] = ctrl_value
 
-        # Compute next period expectation E[u'(c_{t+1}) * (1 + r_{t+1})]
-        if disc_params is not None:
-            # Use discretized expectation if discretization parameters provided
-            ds = discretized_shock_dstn(shock_vars, disc_params)
+        control_value_t1 = controls_t1_grad[primary_control_var]
+        
+        # Use zero shocks for next period reward computation
+        next_shocks = {name: torch.zeros_like(shock) for name, shock in shocks_t.items()}
+        reward_vals_t1 = rf(states_t1, next_shocks, controls_t1_grad, params)
+        next_reward = reward_vals_t1[rsym]
 
-            def euler_integrand(shock_array):
-                # Convert shock array to shock dictionary
-                shock_dict = {var: shock_array[var] for var in ds.variables.keys()}
-
-                # Get next period policy decision
-                controls_t1 = policy_function(states_t1, shock_dict, parameters)
-                control_value_t1 = controls_t1[control_var]
-
-                # Ensure control values require gradients
-                if not control_value_t1.requires_grad:
-                    control_value_t1 = control_value_t1.detach().requires_grad_(True)
-
-                # Recompute reward with gradient-enabled control values
-                controls_t1_grad = {control_var: control_value_t1}
-                reward_vals_t1 = rf(states_t1, shock_dict, controls_t1_grad, parameters)
-                next_reward = reward_vals_t1[rsym]
-
-                # Compute marginal utility u'(c_{t+1})
-                if next_reward.requires_grad:
-                    next_reward_grad = torch.autograd.grad(
-                        outputs=next_reward.sum(),
-                        inputs=control_value_t1,
-                        create_graph=True,
-                        retain_graph=True,
-                    )[0]
-                    marginal_utility_t1 = next_reward_grad
-                else:
-                    # Fallback: use numerical approximation
-                    marginal_utility_t1 = control_value_t1 ** (-2.0)
-
-                # Compute return factor (1 + r_{t+1})
-                # This is model-specific; for now assume unit return
-                return_factor = torch.ones_like(marginal_utility_t1)
-
-                return marginal_utility_t1 * return_factor
-
-            expected_marginal_return = expected(func=euler_integrand, dist=ds)
+        # Compute marginal utility u'(c_{t+1})
+        if next_reward.requires_grad:
+            next_reward_grad = torch.autograd.grad(
+                outputs=next_reward.sum(),
+                inputs=control_value_t1,
+                create_graph=True,
+                retain_graph=True,
+            )[0]
+            marginal_utility_t1 = next_reward_grad
         else:
-            # Use next period shocks from input grid for Monte Carlo integration
-            shocks_t1 = {
-                sym.replace("_1", ""): given_vals[sym]
-                for sym in shock_syms_t1
-                if sym in given_vals
+            # Fallback: use numerical approximation
+            marginal_utility_t1 = control_value_t1 ** (-2.0)
+
+        # Generic Euler equation: β * u'(c_t+1) / u'(c_t) - 1 = 0
+        # This is the most basic form without return factors or other model specifics
+        beta_value = (
+            params.get(discount_factor, discount_factor)
+            if isinstance(discount_factor, str)
+            else discount_factor
+        )
+        
+        # Simple Euler core without return factors (they should be in custom residuals)
+        euler_core = beta_value * marginal_utility_t1 / marginal_utility_t
+
+        if residual_form is None:
+            # Default residual is E[...] - 1 = 0
+            euler_residual = euler_core - 1.0
+        else:
+            # Custom residual form (e.g., for MMW `... - h`)
+            context = {
+                "states_t": states_t, "controls_t": controls_t,
+                "states_t1": states_t1, "controls_t1": controls_t1,
+                "shocks": shocks_t, "params": params,
+            }
+            euler_residual = residual_form(euler_core, **context)
+
+        return euler_residual ** 2
+
+    def compute_cross_product_euler_residuals(policy_function, input_grid, n_samples):
+        """
+        Cross-product expectation operator: E[R(ε¹) × R(ε²)]
+        Uses custom residuals if available, otherwise falls back to generic computation.
+        """
+        # Handle both Grid objects and dict-like objects
+        if hasattr(input_grid, 'to_dict'):
+            given_vals = input_grid.to_dict()
+        else:
+            given_vals = input_grid
+
+        # Sample states from input grid
+        n_grid = len(list(given_vals.values())[0])
+        indices = torch.randint(0, n_grid, (n_samples,))
+
+        # Current states
+        current_states = {var: given_vals[var][indices] for var in state_variables}
+
+        # Generate two independent shock realizations
+        shock_dists = block.get_shocks()
+        shocks_1, shocks_2 = {}, {}
+
+        device = next(iter(current_states.values())).device
+        for shock_name, shock_dist in shock_dists.items():
+            # Always use fallback to avoid HARK distribution device issues
+            sigma = getattr(shock_dist, "sigma", 0.01)
+            # Ensure sigma is a scalar
+            if isinstance(sigma, torch.Tensor):
+                sigma = sigma.item()
+
+            shocks_1[shock_name] = torch.randn(n_samples, device=device) * float(sigma)
+            shocks_2[shock_name] = torch.randn(n_samples, device=device) * float(sigma)
+
+        # Compute residuals for both realizations
+        def compute_single_residual(states, shocks):
+            # Current policy decisions
+            controls_t = policy_function(states, shocks, parameters)
+
+            # Compute next period states
+            states_t1 = tf(states, shocks, controls_t, parameters)
+
+            # Get next period shocks (set to zero for simplicity)
+            next_shocks = {
+                name: torch.zeros_like(shock) for name, shock in shocks.items()
             }
 
-            if shocks_t1:
-                # Get next period policy decision
-                controls_t1 = policy_function(states_t1, shocks_t1, parameters)
-                control_value_t1 = controls_t1[control_var]
+            # Next period policy decisions
+            controls_t1 = policy_function(states_t1, next_shocks, parameters)
 
-                # Ensure control values require gradients
-                if not control_value_t1.requires_grad:
-                    control_value_t1 = control_value_t1.detach().requires_grad_(True)
-
-                # Recompute reward with gradient-enabled control values
-                controls_t1_grad = {control_var: control_value_t1}
-                reward_vals_t1 = rf(states_t1, shocks_t1, controls_t1_grad, parameters)
-                next_reward = reward_vals_t1[rsym]
-
-                # Compute marginal utility u'(c_{t+1})
-                if next_reward.requires_grad:
-                    next_reward_grad = torch.autograd.grad(
-                        outputs=next_reward.sum(),
-                        inputs=control_value_t1,
-                        create_graph=True,
-                        retain_graph=True,
-                    )[0]
-                    marginal_utility_t1 = next_reward_grad
-                else:
-                    # Fallback: use numerical approximation
-                    marginal_utility_t1 = control_value_t1 ** (-2.0)
-
-                # Compute return factor (1 + r_{t+1})
-                # For consumption models, this is often the interest rate
-                # For now, assume unit return; could be extended based on model
-                return_factor = torch.ones_like(marginal_utility_t1)
-
-                expected_marginal_return = marginal_utility_t1 * return_factor
+            # Use custom residuals if available
+            if custom_residuals:
+                residual_values = compute_custom_residuals(
+                    states, controls_t, states_t1, controls_t1, shocks, parameters
+                )
+                
+                # Return residuals (don't square them yet for cross-product)
+                return residual_values
             else:
-                # If no next period shocks, use current period approximation
-                expected_marginal_return = marginal_utility_t
+                # Fallback to generic computation
+                if residual_form is not None:
+                    # Use custom MMW residual form
+                    context = {
+                        "states_t": states, "controls_t": controls_t,
+                        "states_t1": states_t1, "controls_t1": controls_t1,
+                        "shocks": shocks, "params": parameters,
+                    }
+                    euler_residual = residual_form(None, **context)
+                else:
+                    # Generic computation
+                    euler_residual = compute_generic_euler_residuals(
+                        states, controls_t, states_t1, controls_t1, shocks, parameters
+                    )
 
-        # Compute Euler residual: β * E[u'(c_{t+1}) * (1 + r_{t+1})] / u'(c_t) - 1
-        euler_ratio = discount_factor * expected_marginal_return / marginal_utility_t
-        euler_residual = (euler_ratio - 1.0) ** 2
+                # Add Fischer-Burmeister residuals if enabled
+                fb_residual = 0
+                if fb_form is not None:
+                    # Custom FB form provided, use it
+                    fb_residual = fb_form(
+                        policy_function, states, controls_t, parameters
+                    )
+                elif use_fischer_burmeister:
+                    # Fallback to generic constraint violations
+                    violations = get_constraint_violations(
+                        block, states, controls_t, parameters
+                    )
+                    for constraint_name, violation in violations.items():
+                        multiplier = torch.ones_like(violation) * 0.1
+                        fb_residual += fischer_burmeister(violation, multiplier)
 
-        # Add Fischer-Burmeister constraint penalties if enabled
-        if use_fischer_burmeister:
-            # Get constraint violations
-            violations = get_constraint_violations(
-                block, states_t, controls_t, parameters
-            )
+                return [euler_residual, fb_residual] if use_fischer_burmeister else [euler_residual]
 
-            # Add Fischer-Burmeister penalty terms for each constraint
-            fb_penalty = 0
-            for constraint_name, violation in violations.items():
-                # Create dummy multiplier (in practice, could be learned)
-                # For now, use small positive value to penalize violations
-                multiplier = torch.ones_like(violation) * 0.1
+        # Compute for both realizations
+        residuals_1 = compute_single_residual(current_states, shocks_1)
+        residuals_2 = compute_single_residual(current_states, shocks_2)
 
-                # Add squared Fischer-Burmeister residual
-                fb_residual = fischer_burmeister(violation, multiplier)
-                fb_penalty += fb_residual**2
+        # Cross-product expectation: E[R₁(ε¹) × R₁(ε²)] + E[R₂(ε¹) × R₂(ε²)] + ...
+        total_cross_product = 0
+        for r1, r2 in zip(residuals_1, residuals_2):
+            total_cross_product += torch.mean(r1 * r2)
 
-            # Combine Euler residual with constraint penalties
-            # Use weight to balance Euler accuracy vs constraint satisfaction
-            constraint_weight = 1.0  # Could be made configurable
-            euler_residual = euler_residual + constraint_weight * fb_penalty
-
-        return euler_residual
+        return total_cross_product
 
     return euler_residual_loss
-
-
-def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: int):
-    """
-    Generates omega_i values of the MMW JME '21 method.
-
-    states : a grid of starting state values (exogenous and endogenous)
-    block: block information (used to get the shock names)
-    shock_copies : int - number of copies of the shocks to be included.
-    """
-
-    # get the length of the states vectors -- N
-    n = states.n()
-    new_shock_values = {}
-
-    for i in range(shock_copies):
-        # relies on constructed shocks
-        # required
-        shock_values = draw_shocks(block.shocks, n=n)
-        new_shock_values.update(
-            {f"{sym}_{i}": shock_values[sym] for sym in shock_values}
-        )
-
-    givens = states.update_from_dict(new_shock_values)
-
-    return givens
-
-
-def simulate_forward(
-    states_t,
-    block: model.Block,
-    decision_function: callable,
-    parameters,
-    big_t,
-    # state_syms,
-):
-    if isinstance(states_t, Grid):
-        n = states_t.n()
-        states_t = states_t.to_dict()
-    else:
-        # kludge
-        n = len(states_t[next(iter(states_t.keys()))])
-
-    state_syms = list(states_t.keys())
-    tf = create_transition_function(block, state_syms)
-
-    for t in range(big_t):
-        # TODO: make sure block shocks are 'constructed'
-        # TODO: allow option for 'structured' draws, e.g. from exact discretization.
-        shocks_t = draw_shocks(block.shocks, n=n)
-
-        # this is cumbersome; probably can be solved deeper on the data structure level
-        # note similarity to Grid.from_dict() reconciliation logic.
-        states_template = states_t[next(iter(states_t.keys()))]
-        shocks_t = {
-            sym: utils.reconcile(states_template, shocks_t[sym]) for sym in shocks_t
-        }
-
-        controls_t = decision_function(states_t, shocks_t, parameters)
-
-        states_t_plus_1 = tf(states_t, shocks_t, controls_t, parameters)
-        states_t = states_t_plus_1
-
-    return states_t_plus_1
-
-
-def maliar_training_loop(
-    block,
-    loss_function,
-    states_0_n: Grid,
-    parameters,
-    shock_copies=2,
-    max_iterations=5,
-    random_seed=None,
-    simulation_steps=1,
-):
-    """
-    block - a model definition
-    loss_function : callable((df, input_vector) -> loss vector
-    states_0_n : Grid a panel of starting states
-    parameters : dict : given parameters for the model
-
-    shock_copies: int : number of copies of shocks to include in the training set omega
-                        must match expected number of shock copies in the loss function
-                        TODO: make this better, less ad hoc
-
-    loss_function is the "empirical risk Xi^n" in MMW JME'21.
-
-    max_iterations: int
-        Number of times to perform the training loop, if there is no convergence.
-    simulation_steps : int
-        The number of time steps to simulate forward when determining the next omega set for training
-    """
-
-    # Step 1. Initialize the algorithm:
-
-    # i). construct theoretical risk Xi(θ ) = Eω [ξ (ω; θ )] (lifetime reward, Euler/Bellmanequations);
-    # ii). deﬁne empirical risk Xi^n (θ ) = 1n ni=1 ξ (ωi ; θ );
-    loss_function  # This is provided as an argument.
-
-    # iii). deﬁne a topology of neural network ϕ (·, θ );
-    # iv). ﬁx initial vector of the coeﬃcients θ .
-
-    if random_seed is not None:
-        torch.manual_seed(random_seed)
-
-    bpn = ann.BlockPolicyNet(block, width=16)
-
-    states = states_0_n  # V) Create initial panel of agents/starting states.
-
-    # Step 2. Train the machine, i.e., ﬁnd θ that minimizes theempirical risk Xi^n (θ ):
-    for i in range(max_iterations):
-        # i). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
-        givens = generate_givens_from_states(states_0_n, block, shock_copies)
-
-        # ii). construct the gradient ∇ Xi^n (θ ) = 1n ni=1 ∇ ξ (ωi ; θ );
-        # iii). update the coeﬃcients θ_hat = θ − λk ∇ Xi^n (θ ) and go to step 2.i);
-        # TODO how many epochs? What Adam scale? Passing through variables
-        ann.train_block_policy_nn(bpn, givens, loss_function, epochs=250)
-
-        # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
-        next_states = simulate_forward(
-            states, block, bpn.get_decision_function(), parameters, simulation_steps
-        )
-
-        states = Grid.from_dict(next_states)
-
-        # End Step 2 if the convergence criterion || θ_hat − θ ||  < ε is satisﬁed.
-        # TODO: test for difference.. how? This effects the FOR (/while) loop above.
-
-    # Step 3. Assess the accuracy of constructed approximation ϕ (·, θ ) on a new sample.
-    return ann, states
