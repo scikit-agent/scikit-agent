@@ -11,7 +11,6 @@ from HARK.distributions import (
     expected,
 )
 from inspect import signature
-import numpy as np
 from skagent.parser import math_text_to_lambda
 from typing import Any, Callable, Mapping, List, Union
 
@@ -168,33 +167,21 @@ def simulate_dynamics(
     """
     vals = pre.copy()
 
-    for sym in dynamics:
-        # Using the fact that Python dictionaries are ordered
-        feq = dynamics[sym]
+    # Add control decisions
+    for csym, cfunc in dr.items():
+        vals[csym] = cfunc()
+
+    # Simulate transitions (skip special fields like euler_resid)
+    for sym, feq in dynamics.items():
+        if sym == "euler_resid":
+            # Skip euler_resid as it's not a regular dynamics equation
+            continue
 
         if isinstance(feq, Control):
-            # This tests if the decision rule is age varying.
-            # If it is, this will be a vector with the decision rule for each agent.
-            if isinstance(dr[sym], np.ndarray):
-                ## Now we have to loop through each agent, and apply the decision rule.
-                ## This is quite slow.
-                for i in range(dr[sym].size):
-                    vals_i = {
-                        var: (
-                            vals[var][i]
-                            if isinstance(vals[var], np.ndarray)
-                            else vals[var]
-                        )
-                        for var in vals
-                    }
-                    vals[sym][i] = dr[sym][i](
-                        *[vals_i[var] for var in signature(dr[sym][i]).parameters]
-                    )
-            else:
-                vals[sym] = dr[sym](
-                    *[vals[var] for var in signature(dr[sym]).parameters]
-                )  # TODO: test for signature match with Control
+            # Control already handled above
+            continue
         else:
+            # Evaluate dynamics equation
             vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
     return vals
@@ -263,6 +250,10 @@ class DBlock(Block):
         The variable name will almost always appear in 'dynamics'.
         The agent role indicates which agent views the variable as a reward
         to optimize.
+
+    Custom Euler residual functions can be specified within the dynamics
+    dictionary using the key "euler_resid". If provided, these will be used
+    instead of automatic differentiation in get_euler_residual_loss.
 
     """
 
@@ -452,6 +443,23 @@ class DBlock(Block):
             return expected(func=mod_dvf, dist=ds)
 
         return arrival_value_function
+
+    def get_euler_residuals(self):
+        """
+        Return euler residuals as a list of callables from dynamics.
+
+        Returns
+        -------
+        list of callable
+            List of Euler residual functions. Empty list if none provided.
+        """
+        euler_resid = self.dynamics.get("euler_resid", None)
+        if euler_resid is None:
+            return []
+        elif isinstance(euler_resid, list):
+            return euler_resid
+        else:
+            return [euler_resid]
 
     # On DBlock class:
     def iter_dblocks(self):
