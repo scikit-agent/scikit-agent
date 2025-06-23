@@ -11,9 +11,8 @@ from HARK.distributions import (
     expected,
 )
 from inspect import signature
-import numpy as np
 from skagent.parser import math_text_to_lambda
-from typing import Any, Callable, Mapping, List, Union, Optional
+from typing import Any, Callable, Mapping, List, Union
 
 
 class Aggregate:
@@ -177,7 +176,7 @@ def simulate_dynamics(
         if sym == "euler_resid":
             # Skip euler_resid as it's not a regular dynamics equation
             continue
-            
+
         if isinstance(feq, Control):
             # Control already handled above
             continue
@@ -448,7 +447,7 @@ class DBlock(Block):
     def get_euler_residuals(self):
         """
         Return euler residuals as a list of callables from dynamics.
-        
+
         Returns
         -------
         list of callable

@@ -825,15 +825,11 @@ def get_euler_residual_loss(
         The returned function computes squared Euler residuals for each point
         in the input grid, enabling batch training of neural networks.
     """
-    from skagent.model import discretized_shock_dstn
-    from HARK.distributions import expected
     from inspect import signature
 
     # Check if DBlock provides custom euler residuals within dynamics
     custom_residuals = block.dynamics.get("euler_resid", None)
-    
 
-    
     # Set up shock handling - use 2 copies of shocks (t and t+1)
     shock_vars = block.get_shocks()
     shock_syms_t = [f"{sym}_0" for sym in shock_vars.keys()]
@@ -855,10 +851,10 @@ def get_euler_residual_loss(
     # Function to compute the full loss, including cross-product expectations
     def euler_residual_loss(policy_function, input_grid):
         # Handle both Grid objects and dict-like objects
-        if hasattr(input_grid, 'values'):
+        if hasattr(input_grid, "values"):
             # Grid object
             n_samples = input_grid.values.shape[0]
-        elif hasattr(input_grid, 'keys'):
+        elif hasattr(input_grid, "keys"):
             # Dict-like object
             n_samples = input_grid[list(input_grid.keys())[0]].shape[0]
         else:
@@ -874,42 +870,58 @@ def get_euler_residual_loss(
                 policy_function, input_grid, n_samples
             )
 
-    def compute_custom_residuals(states_t, controls_t, states_t1, controls_t1, shocks_t, params):
+    def compute_custom_residuals(
+        states_t, controls_t, states_t1, controls_t1, shocks_t, params
+    ):
         """
         Compute residuals using custom euler_resid functions.
         Use DBlock transition to compute ALL variables including derived ones like c.
         """
         residuals = []
-        
+
         # Compute all variables for current period using DBlock transition
-        current_shocks = {name: torch.zeros_like(shock) for name, shock in shocks_t.items()}
-        current_controls_funcs = {name: lambda val=val: val for name, val in controls_t.items()}
-        full_current = block.transition({**states_t, **current_shocks, **params}, current_controls_funcs)
-        
+        current_shocks = {
+            name: torch.zeros_like(shock) for name, shock in shocks_t.items()
+        }
+        current_controls_funcs = {
+            name: lambda val=val: val for name, val in controls_t.items()
+        }
+        full_current = block.transition(
+            {**states_t, **current_shocks, **params}, current_controls_funcs
+        )
+
         # Compute all variables for next period using DBlock transition
-        next_shocks = {name: torch.zeros_like(shock) for name, shock in shocks_t.items()}
-        next_controls_funcs = {name: lambda val=val: val for name, val in controls_t1.items()}
-        full_next = block.transition({**states_t1, **next_shocks, **params}, next_controls_funcs)
-        
+        next_shocks = {
+            name: torch.zeros_like(shock) for name, shock in shocks_t.items()
+        }
+        next_controls_funcs = {
+            name: lambda val=val: val for name, val in controls_t1.items()
+        }
+        full_next = block.transition(
+            {**states_t1, **next_shocks, **params}, next_controls_funcs
+        )
+
         # Build complete context with all computed variables
         context = {**full_current, **params}
         for k, v in full_next.items():
             if k not in ["euler_resid"]:  # Skip euler_resid itself to avoid recursion
                 context[f"{k}_next"] = v
-        
+
         # Evaluate each custom residual function
         for resid_fn in custom_residuals:
             sig = signature(resid_fn)
             args = [context[param] for param in sig.parameters if param in context]
-            
+
             if len(args) == len(sig.parameters):
                 residuals.append(resid_fn(*args))
             else:
                 missing_params = [p for p in sig.parameters if p not in context]
-                print(f"Warning: Missing parameters for custom residual: {missing_params}")
+                print(
+                    f"Warning: Missing parameters for custom residual: {missing_params}"
+                )
                 print(f"Available parameters: {list(context.keys())}")
                 continue
-        
+
         return residuals
 
     # Helper to unpack string references to state variables
@@ -925,11 +937,11 @@ def get_euler_residual_loss(
     def compute_standard_euler_residuals(policy_function, input_grid, n_samples):
         # Extract current period states and shocks
         # Handle both Grid objects and dict-like objects
-        if hasattr(input_grid, 'to_dict'):
+        if hasattr(input_grid, "to_dict"):
             given_vals = input_grid.to_dict()
         else:
             given_vals = input_grid
-            
+
         states_t = {var: given_vals[var] for var in state_variables}
         shocks_t = {
             sym.replace("_0", ""): given_vals[sym]
@@ -942,14 +954,14 @@ def get_euler_residual_loss(
 
         # Compute next period states
         states_t1 = tf(states_t, shocks_t, controls_t, parameters)
-        
+
         # Get next period shocks
         shocks_t1 = {
             sym.replace("_1", ""): given_vals[sym]
             for sym in shock_syms_t1
             if sym in given_vals
         }
-        
+
         # Get next period controls
         controls_t1 = policy_function(states_t1, shocks_t1, parameters)
 
@@ -958,7 +970,7 @@ def get_euler_residual_loss(
             residual_values = compute_custom_residuals(
                 states_t, controls_t, states_t1, controls_t1, shocks_t, parameters
             )
-            
+
             # Combine residuals (sum of squares for multiple residuals)
             if residual_values:
                 total_residual = sum(r**2 for r in residual_values)
@@ -974,7 +986,9 @@ def get_euler_residual_loss(
                 states_t, controls_t, states_t1, controls_t1, shocks_t, parameters
             )
 
-    def compute_generic_euler_residuals(states_t, controls_t, states_t1, controls_t1, shocks_t, params):
+    def compute_generic_euler_residuals(
+        states_t, controls_t, states_t1, controls_t1, shocks_t, params
+    ):
         """
         Generic Euler residual computation using automatic differentiation.
         This is the fallback when no custom residuals are provided.
@@ -986,7 +1000,7 @@ def get_euler_residual_loss(
             if not control_value_t.requires_grad:
                 control_value_t = control_value_t.detach().requires_grad_(True)
             controls_t_grad[control_var] = control_value_t
-        
+
         reward_vals_t = rf(states_t, shocks_t, controls_t_grad, params)
         current_reward = reward_vals_t[rsym]
 
@@ -1017,9 +1031,11 @@ def get_euler_residual_loss(
             controls_t1_grad[ctrl_var] = ctrl_value
 
         control_value_t1 = controls_t1_grad[primary_control_var]
-        
+
         # Use zero shocks for next period reward computation
-        next_shocks = {name: torch.zeros_like(shock) for name, shock in shocks_t.items()}
+        next_shocks = {
+            name: torch.zeros_like(shock) for name, shock in shocks_t.items()
+        }
         reward_vals_t1 = rf(states_t1, next_shocks, controls_t1_grad, params)
         next_reward = reward_vals_t1[rsym]
 
@@ -1043,7 +1059,7 @@ def get_euler_residual_loss(
             if isinstance(discount_factor, str)
             else discount_factor
         )
-        
+
         # Simple Euler core without return factors (they should be in custom residuals)
         euler_core = beta_value * marginal_utility_t1 / marginal_utility_t
 
@@ -1053,13 +1069,16 @@ def get_euler_residual_loss(
         else:
             # Custom residual form (e.g., for MMW `... - h`)
             context = {
-                "states_t": states_t, "controls_t": controls_t,
-                "states_t1": states_t1, "controls_t1": controls_t1,
-                "shocks": shocks_t, "params": params,
+                "states_t": states_t,
+                "controls_t": controls_t,
+                "states_t1": states_t1,
+                "controls_t1": controls_t1,
+                "shocks": shocks_t,
+                "params": params,
             }
             euler_residual = residual_form(euler_core, **context)
 
-        return euler_residual ** 2
+        return euler_residual**2
 
     def compute_cross_product_euler_residuals(policy_function, input_grid, n_samples):
         """
@@ -1067,7 +1086,7 @@ def get_euler_residual_loss(
         Uses custom residuals if available, otherwise falls back to generic computation.
         """
         # Handle both Grid objects and dict-like objects
-        if hasattr(input_grid, 'to_dict'):
+        if hasattr(input_grid, "to_dict"):
             given_vals = input_grid.to_dict()
         else:
             given_vals = input_grid
@@ -1115,7 +1134,7 @@ def get_euler_residual_loss(
                 residual_values = compute_custom_residuals(
                     states, controls_t, states_t1, controls_t1, shocks, parameters
                 )
-                
+
                 # Return residuals (don't square them yet for cross-product)
                 return residual_values
             else:
@@ -1123,9 +1142,12 @@ def get_euler_residual_loss(
                 if residual_form is not None:
                     # Use custom MMW residual form
                     context = {
-                        "states_t": states, "controls_t": controls_t,
-                        "states_t1": states_t1, "controls_t1": controls_t1,
-                        "shocks": shocks, "params": parameters,
+                        "states_t": states,
+                        "controls_t": controls_t,
+                        "states_t1": states_t1,
+                        "controls_t1": controls_t1,
+                        "shocks": shocks,
+                        "params": parameters,
                     }
                     euler_residual = residual_form(None, **context)
                 else:
@@ -1150,7 +1172,11 @@ def get_euler_residual_loss(
                         multiplier = torch.ones_like(violation) * 0.1
                         fb_residual += fischer_burmeister(violation, multiplier)
 
-                return [euler_residual, fb_residual] if use_fischer_burmeister else [euler_residual]
+                return (
+                    [euler_residual, fb_residual]
+                    if use_fischer_burmeister
+                    else [euler_residual]
+                )
 
         # Compute for both realizations
         residuals_1 = compute_single_residual(current_states, shocks_1)

@@ -596,7 +596,7 @@ def generate_ergodic_training_grid(
     # Convert dict of tensors to Grid format
     var_names = list(ergodic_data.keys())
     values_tensor = torch.stack([ergodic_data[name] for name in var_names], dim=0).T
-    
+
     # Create proper Grid object
     return Grid(var_names, values_tensor)
 
@@ -654,11 +654,11 @@ def train_block_policy_nn(
     --------
     Standard fixed grid training:
     >>> train_block_policy_nn(policy_net, loss_fn, 1000, fixed_grid)
-    
+
     Stochastic training with fresh batches:
     >>> def batch_generator():
     ...     return generate_fresh_batch(batch_size=128)
-    >>> train_block_policy_nn(policy_net, loss_fn, 1000, batch_generator, 
+    >>> train_block_policy_nn(policy_net, loss_fn, 1000, batch_generator,
     ...                      stochastic=True, batch_size=128)
     """
     import torch
@@ -677,15 +677,17 @@ def train_block_policy_nn(
     # Training loop
     if print_loss:
         print(f"Training for {epochs} epochs on {device}...")
-        
+
     start_time = time.time()
-    
+
     # Use tqdm for progress bar
-    epoch_iterator = tqdm(range(epochs), desc="Training") if print_loss else range(epochs)
-    
+    epoch_iterator = (
+        tqdm(range(epochs), desc="Training") if print_loss else range(epochs)
+    )
+
     for epoch in epoch_iterator:
         optimizer.zero_grad()
-        
+
         # Generate training data
         if stochastic:
             # Generate fresh batch each epoch
@@ -696,37 +698,37 @@ def train_block_policy_nn(
         else:
             # Use fixed grid
             current_grid = input_grid
-        
+
         # Ensure grid is on the correct device
-        if hasattr(current_grid, 'to'):
+        if hasattr(current_grid, "to"):
             current_grid = current_grid.to(device)
-        
+
         # Compute loss
         loss = loss_function(policy_net.decision_function, current_grid)
-        
+
         # Handle loss tensor reduction
-        if hasattr(loss, 'mean'):
+        if hasattr(loss, "mean"):
             loss = loss.mean()
-        
+
         # Backward pass
         loss.backward()
         optimizer.step()
-        
+
         # Record loss
-        loss_item = loss.item() if hasattr(loss, 'item') else float(loss)
+        loss_item = loss.item() if hasattr(loss, "item") else float(loss)
         losses.append(loss_item)
-        
+
         # Print progress
         if print_loss and epoch % loss_frequency == 0:
-            if hasattr(epoch_iterator, 'set_postfix'):
+            if hasattr(epoch_iterator, "set_postfix"):
                 epoch_iterator.set_postfix(loss=f"{loss_item:.6f}")
             else:
                 print(f"Epoch {epoch}: Loss = {loss_item:.6f}")
-    
+
     train_time = time.time() - start_time
-    
+
     if print_loss:
         print(f"Training completed in {train_time:.2f} seconds")
         print(f"Final loss: {losses[-1]:.6f}")
-    
+
     return losses

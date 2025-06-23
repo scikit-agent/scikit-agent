@@ -76,8 +76,7 @@ economic models. Journal of Monetary Economics, 122, 76-101.
 """
 
 from skagent.grid import Grid
-import typing  # at the top of the file ensure typing imported
-from typing import Optional, Iterator, Callable, Union
+from typing import Optional, Callable, Union
 
 import torch
 
@@ -314,6 +313,7 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
 
 # Fix train_block_policy_nn typing
 from collections.abc import Iterator as _Iterator
+
 
 def train_block_policy_nn(
     block_policy_nn,
@@ -560,14 +560,14 @@ class FlexibleNet(torch.nn.Module):
             current_state = torch.get_rng_state()
             # Set seed for initialization
             torch.manual_seed(init_seed)
-        
+
         # Custom weight initialisation to match MMW notebook (normal std=0.05)
         for m in self.modules():
             if isinstance(m, torch.nn.Linear):
                 torch.nn.init.normal_(m.weight, mean=0.0, std=0.05)
                 if m.bias is not None:
                     torch.nn.init.zeros_(m.bias)
-        
+
         if init_seed is not None:
             # Restore previous random state
             torch.set_rng_state(current_state)
@@ -583,14 +583,18 @@ class FlexibleNet(torch.nn.Module):
         """Copy weights from another network with compatible architecture."""
         source_params = list(source_network.parameters())
         target_params = list(self.parameters())
-        
+
         if len(source_params) != len(target_params):
-            raise ValueError(f"Network architectures incompatible: {len(source_params)} vs {len(target_params)} parameters")
-        
+            raise ValueError(
+                f"Network architectures incompatible: {len(source_params)} vs {len(target_params)} parameters"
+            )
+
         with torch.no_grad():
             for target_param, source_param in zip(target_params, source_params):
                 if target_param.shape != source_param.shape:
-                    raise ValueError(f"Parameter shape mismatch: {target_param.shape} vs {source_param.shape}")
+                    raise ValueError(
+                        f"Parameter shape mismatch: {target_param.shape} vs {source_param.shape}"
+                    )
                 target_param.copy_(source_param)
 
     def _get_activation_fn(self, activation):
@@ -873,7 +877,9 @@ class FlexiblePolicyNet(FlexibleNet):
                 raise ValueError("Transform list length mismatch with outputs")
             transformed = []
             for i, tr in enumerate(self.transform):
-                transformed.append(self._apply_single_transform(raw_outputs[..., i], tr))
+                transformed.append(
+                    self._apply_single_transform(raw_outputs[..., i], tr)
+                )
             outputs = torch.stack(transformed, dim=-1)
         else:
             # single or None
