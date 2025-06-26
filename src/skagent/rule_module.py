@@ -27,30 +27,30 @@ _TOKEN_RE = re.compile(r"\b[A-Za-z_]\w*\b")
 def format_rule(var, rule):
     """
     Get a printable (string) version of a rule.
-    
+
     This is the main entry point for rule formatting that handles
     all types of rules uniformly.
-    
+
     Parameters
     ----------
     var : str
         The variable name (LHS of structural statement)
     rule : callable, Control, str, or any
         The rule to format (RHS of structural statement)
-        
+
     Returns
     -------
     str
         A human-readable string representation of the rule
-        
+
     Examples
     --------
     >>> format_rule("c", lambda m: m * 0.8)
     "c = m * 0.8"
-    
+
     >>> format_rule("a", Control(["m"], agent="consumer"))
     "a = Control(m)"
-    
+
     >>> format_rule("y", "theta * k")
     "y = theta * k"
     """
@@ -67,9 +67,9 @@ def format_rule(var, rule):
 def extract_dependencies(rule):
     """
     Extract variable dependencies from different rule types.
-    
-    Takes the "right hand side" of a model statement -- which can be a callable 
-    'structural equation', or the information needed to construct a distribution, 
+
+    Takes the "right hand side" of a model statement -- which can be a callable
+    'structural equation', or the information needed to construct a distribution,
     and so on -- and returns the variables that statement depends on.
 
     Parameters
@@ -121,14 +121,14 @@ def extract_dependencies(rule):
 def format_callable_rule(var, rule):
     """
     Format a callable rule (function/lambda) into a string.
-    
+
     Parameters
     ----------
     var : str
         The variable name
     rule : callable
         The callable rule
-        
+
     Returns
     -------
     str
@@ -151,14 +151,14 @@ def format_callable_rule(var, rule):
 def format_control_rule(var, control):
     """
     Format a Control rule into a string.
-    
+
     Parameters
     ----------
     var : str
         The variable name
     control : Control
         The Control object
-        
+
     Returns
     -------
     str
@@ -177,14 +177,14 @@ def format_control_rule(var, control):
 def format_string_rule(var, expression):
     """
     Format a string expression rule.
-    
+
     Parameters
     ----------
     var : str
         The variable name
     expression : str
         The mathematical expression string
-        
+
     Returns
     -------
     str
@@ -196,14 +196,14 @@ def format_string_rule(var, expression):
 def format_constant_rule(var, value):
     """
     Format a constant value rule.
-    
+
     Parameters
     ----------
     var : str
         The variable name
     value : any
         The constant value
-        
+
     Returns
     -------
     str
@@ -215,17 +215,17 @@ def format_constant_rule(var, value):
 def validate_rule(rule):
     """
     Validate that a rule is well-formed.
-    
+
     Parameters
     ----------
     rule : any
         The rule to validate
-        
+
     Returns
     -------
     bool
         True if rule is valid
-        
+
     Raises
     ------
     ValueError
@@ -253,26 +253,26 @@ def validate_rule(rule):
 def get_rule_type(rule):
     """
     Determine the type of a rule.
-    
+
     Parameters
     ----------
     rule : any
         The rule to classify
-        
+
     Returns
     -------
     str
         Rule type: 'control', 'callable', 'string', 'distribution', 'tuple', or 'constant'
     """
     if isinstance(rule, Control):
-        return 'control'
+        return "control"
     elif isinstance(rule, Distribution):
-        return 'distribution'
+        return "distribution"
     elif isinstance(rule, tuple):
-        return 'tuple'
+        return "tuple"
     elif callable(rule):
-        return 'callable'
+        return "callable"
     elif isinstance(rule, str):
-        return 'string'
+        return "string"
     else:
-        return 'constant'
+        return "constant"
