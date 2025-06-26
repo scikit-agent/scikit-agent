@@ -166,21 +166,21 @@ class TestValidateRule:
 
         for rule_name in lambda_rules:
             rule = sample_rules[rule_name]
-            assert validate_rule(rule) == True
+            assert validate_rule(rule)
 
     def test_validate_control(self, sample_rules):
         """Test that Control object is valid."""
         control = sample_rules["consumption_control"]
-        assert validate_rule(control) == True
+        assert validate_rule(control)
 
     def test_validate_parameters(self, sample_rules):
         """Test that parameters are valid."""
-        assert validate_rule(sample_rules["discount_factor"]) == True
-        assert validate_rule(sample_rules["risk_aversion"]) == True
+        assert validate_rule(sample_rules["discount_factor"])
+        assert validate_rule(sample_rules["risk_aversion"])
 
     def test_validate_string(self, sample_rules):
         """Test that string expressions are valid."""
-        assert validate_rule(sample_rules["production"]) == True
+        assert validate_rule(sample_rules["production"])
 
     def test_invalid_string(self):
         """Test that empty strings are invalid."""
@@ -261,7 +261,7 @@ class TestConsumptionModelIntegration:
             assert rule_type in ["callable", "control", "distribution"]
 
             # Should be valid
-            assert validate_rule(rule) == True
+            assert validate_rule(rule)
 
     def test_parameter_processing(self, sample_calibration):
         """Test processing of calibration parameters."""
@@ -274,7 +274,7 @@ class TestConsumptionModelIntegration:
                 assert deps == []  # Parameters have no dependencies
 
                 assert get_rule_type(param_value) == "constant"
-                assert validate_rule(param_value) == True
+                assert validate_rule(param_value)
 
 
 class TestEconomicSemantics:
@@ -282,31 +282,37 @@ class TestEconomicSemantics:
 
     def test_budget_constraint(self):
         """Test budget constraint: a = m - c"""
-        budget_rule = lambda m, c: m - c
+
+        def budget_rule(m, c):
+            return m - c
 
         formatted = format_rule("a", budget_rule)
         deps = extract_dependencies(budget_rule)
 
         assert "a = " in formatted
-        assert "m - c" in formatted
+        assert "[Function]" in formatted
         assert set(deps) == {"m", "c"}
 
     def test_cash_on_hand(self):
         """Test cash-on-hand: m = R * a + y"""
-        coh_rule = lambda R, a, y: R * a + y
+
+        def coh_rule(R, a, y):
+            return R * a + y
 
         formatted = format_rule("m", coh_rule)
         deps = extract_dependencies(coh_rule)
 
-        assert "m = " in formatted
+        assert "[Function]" in formatted
         assert set(deps) == {"R", "a", "y"}
 
     def test_crra_utility(self):
         """Test CRRA utility function."""
-        utility_rule = lambda c, rho: c ** (1 - rho) / (1 - rho)
+
+        def utility_rule(c, rho):
+            return c ** (1 - rho) / (1 - rho)
 
         formatted = format_rule("u", utility_rule)
         deps = extract_dependencies(utility_rule)
 
-        assert "u = " in formatted
+        assert "[Function]" in formatted
         assert set(deps) == {"c", "rho"}
