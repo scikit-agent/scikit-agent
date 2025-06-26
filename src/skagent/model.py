@@ -323,7 +323,9 @@ class DBlock(Block):
         """
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
-    def transition(self, pre, dr, screen=False):
+    def transition(self, pre, dr, screen=False, fix=None):
+        if fix is None:
+            fix = []
         """
         Computes the state variables following pre-given states,
         given a decision rule for all controls.
@@ -336,6 +338,10 @@ class DBlock(Block):
         screen: Boolean
             If True, the remove any dynamics that are prior to the first given state.
             Defaults to False.
+
+        fix: list of string
+            A list of symbols to make static, rather than dynamic.
+            The symbol must appear in both dynamics and pre.
         """
         dyn = self.dynamics.copy()
 
@@ -355,6 +361,14 @@ class DBlock(Block):
             # i.e. if dynamics at time t for variable 'a'
             # depend on state of 'a' at time t-1
             # This is a forbidden case in CDC's design.
+
+        for sym in fix:
+            if sym in dyn and sym in pre:
+                del dyn[sym]
+            else:
+                raise Exception(
+                    f"Attempting to fix variable ({sym}) but it is not in either dyn ({sym in dyn}) or pre ({sym in pre})"
+                )
 
         return simulate_dynamics(dyn, pre, dr)
 
@@ -439,6 +453,11 @@ class DBlock(Block):
 
         return arrival_value_function
 
+    # On DBlock class:
+    def iter_dblocks(self):
+        """A DBlock is its own leaf."""
+        yield self
+
 
 @dataclass
 class RBlock(Block):
@@ -518,3 +537,14 @@ class RBlock(Block):
                 super_rew[k] = v
 
         return super_rew
+
+    def iter_dblocks(self):
+        """Iterate over all DBlock leaves in this RBlock tree."""
+        for block in self.blocks:
+            if isinstance(block, DBlock):
+                yield block
+            elif isinstance(block, RBlock):
+                # Recursively yield from nested RBlocks
+                yield from block.iter_dblocks()
+            else:
+                raise ValueError(f"Unexpected block type: {type(block)}")

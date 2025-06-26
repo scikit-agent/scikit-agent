@@ -19,7 +19,9 @@ from skagent.model import construct_shocks, simulate_dynamics
 from skagent.utils import apply_fun_to_vals
 
 
-def draw_shocks(shocks: Mapping[str, Distribution], conditions: Sequence[int]):
+def draw_shocks(
+    shocks: Mapping[str, Distribution], conditions: Sequence[int] = (), n=None
+):
     """
     Draw from each shock distribution values, subject to given conditions.
 
@@ -33,6 +35,9 @@ def draw_shocks(shocks: Mapping[str, Distribution], conditions: Sequence[int]):
         Typically these will be agent ages.
         # TODO: generalize this to wider range of inputs.
 
+    n : int (optional)
+        Number of draws to do. An alternative to a conditions sequence.
+
     Parameters
     ------------
     draws : Mapping[str, Sequence]
@@ -40,11 +45,14 @@ def draw_shocks(shocks: Mapping[str, Distribution], conditions: Sequence[int]):
     """
     draws = {}
 
+    if n is None:
+        n = len(conditions)
+
     for shock_var in shocks:
         shock = shocks[shock_var]
 
         if isinstance(shock, (int, float)):
-            draws[shock_var] = np.ones(len(conditions)) * shock
+            draws[shock_var] = np.ones(n) * shock
         elif isinstance(shock, Aggregate):
             draws[shock_var] = shock.dist.draw(1)[0]
         elif isinstance(shock, IndexDistribution) or isinstance(
@@ -53,7 +61,7 @@ def draw_shocks(shocks: Mapping[str, Distribution], conditions: Sequence[int]):
             ## TODO  his type test is awkward. They should share a superclass.
             draws[shock_var] = shock.draw(conditions)
         else:
-            draws[shock_var] = shock.draw(len(conditions))
+            draws[shock_var] = shock.draw(n)
             # this is hacky if there are no conditions.
 
     return draws
