@@ -99,6 +99,101 @@ class BlockPolicyNet(Net):
         return df
 
 
+class BlockValueNet(Net):
+    """
+    A neural network for approximating value functions in dynamic programming problems.
+
+    This network takes state variables as input and outputs value estimates.
+    It's designed to work with the Bellman equation loss functions in the Maliar method.
+    """
+
+    def __init__(self, block, width: int = 32):
+        """
+        Initialize the BlockValueNet.
+
+        Parameters
+        ----------
+        block : model.DBlock
+            The model block containing state variables and dynamics
+        width : int, optional
+            Width of hidden layers, by default 32
+        """
+        self.block = block
+
+        # Value function should use the same information set as the policy function
+        # Both V(s) and π(s) take the same state information as input
+        ## pseudo -- assume only one control for now (same as BlockPolicyNet)
+        control = self.block.dynamics[self.block.get_controls()[0]]
+
+        # Use the same information set as the policy network
+        self.state_variables = sorted(list(control.iset))
+
+        # Value function takes state variables as input and outputs a scalar value
+        super().__init__(len(self.state_variables), 1, width)
+
+    def value_function(self, states_t, shocks_t={}, parameters={}):
+        """
+        Compute value function estimates for given state variables.
+
+        The value function takes the same information as the policy function
+        (the control's information set) but doesn't need to compute transitions.
+
+        Parameters
+        ----------
+        states_t : dict
+            State variables as dict (e.g., {"wealth": tensor(...)})
+        shocks_t : dict, optional
+            Shock variables as dict (not used but kept for interface consistency)
+        parameters : dict, optional
+            Model parameters (not used but kept for interface consistency)
+
+        Returns
+        -------
+        torch.Tensor
+            Value function estimates
+        """
+        # Get the control's information set (same as policy network)
+        csym = self.block.get_controls()[0]
+        control = self.block.dynamics[csym]
+
+        # The inputs to the network are the information set variables
+        # Combine states_t and shocks_t to get all available variables
+        all_vars = states_t | shocks_t
+        iset_vals = [all_vars[isym].flatten() for isym in control.iset]
+
+        input_tensor = torch.stack(iset_vals).T
+
+        # Keep tensor on same device as input (don't force to CUDA device)
+        if hasattr(iset_vals[0], "device"):
+            input_tensor = input_tensor.to(iset_vals[0].device)
+            # Also move network to same device
+            self.to(iset_vals[0].device)
+        else:
+            input_tensor = input_tensor.to(device)
+
+        # Forward pass through network
+        output = self(input_tensor)
+
+        return output.flatten()
+
+    def get_value_function(self):
+        """
+        Get a callable value function for use with loss functions.
+
+        This follows the same pattern as BlockPolicyNet.get_decision_function()
+
+        Returns
+        -------
+        callable
+            A function that takes states, shocks, and parameters and returns value estimates
+        """
+
+        def vf(states_t, shocks_t={}, parameters={}):
+            return self.value_function(states_t, shocks_t, parameters)
+
+        return vf
+
+
 ###########
 # Training Nets
 
@@ -137,3 +232,118 @@ def train_block_policy_nn(
             print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
 
     return block_policy_nn
+
+
+def train_block_value_nn(block_value_nn, inputs: Grid, loss_function, epochs=50):
+    """
+    Train a BlockValueNet using a value function loss.
+
+    Parameters
+    ----------
+    block_value_nn : BlockValueNet
+        The value network to train
+    inputs : Grid
+        Input grid containing state variables
+    loss_function : callable
+        Loss function that takes (value_function, input_grid) and returns loss
+    epochs : int, optional
+        Number of training epochs, by default 50
+
+    Returns
+    -------
+    BlockValueNet
+        The trained value network
+    """
+    ## to change
+    # criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(block_value_nn.parameters(), lr=0.01)  # Using Adam
+
+    for epoch in range(epochs):
+        running_loss = 0.0
+        optimizer.zero_grad()
+
+        # Use aggregate_net_loss for consistency with policy training
+        # For value networks, we pass the value function instead of decision function
+        loss = aggregate_net_loss(
+            inputs, block_value_nn.get_value_function(), loss_function
+        )
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+
+        if epoch % 100 == 0:
+            print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
+
+    return block_value_nn
+
+
+def train_block_value_and_policy_nn(
+    block_policy_nn,
+    block_value_nn,
+    inputs: Grid,
+    policy_loss_function,
+    value_loss_function,
+    epochs=50,
+):
+    """
+    Train both BlockPolicyNet and BlockValueNet jointly for value function iteration.
+
+    This follows the same pattern as train_block_policy_nn and train_block_value_nn:
+    takes existing networks and loss functions, trains them, returns trained networks.
+
+    Parameters
+    ----------
+    block_policy_nn : BlockPolicyNet
+        The policy network to train
+    block_value_nn : BlockValueNet
+        The value network to train
+    inputs : Grid
+        Input grid containing states and shocks
+    policy_loss_function : callable
+        Loss function for policy training (takes decision_function, input_grid)
+    value_loss_function : callable
+        Loss function for value training (takes value_function, input_grid)
+    epochs : int, optional
+        Number of training epochs, by default 50
+
+    Returns
+    -------
+    tuple
+        (trained_policy_nn, trained_value_nn)
+    """
+    ## to change
+    # criterion = torch.nn.MSELoss()
+    policy_optimizer = torch.optim.Adam(
+        block_policy_nn.parameters(), lr=0.01
+    )  # Using Adam
+    value_optimizer = torch.optim.Adam(
+        block_value_nn.parameters(), lr=0.01
+    )  # Using Adam
+
+    for epoch in range(epochs):
+        # Train policy network
+        policy_optimizer.zero_grad()
+        policy_loss = aggregate_net_loss(
+            inputs, block_policy_nn.get_decision_function(), policy_loss_function
+        )
+        policy_loss.backward()
+        policy_optimizer.step()
+
+        # Train value network
+        value_optimizer.zero_grad()
+        value_loss = aggregate_net_loss(
+            inputs, block_value_nn.get_value_function(), value_loss_function
+        )
+        value_loss.backward()
+        value_optimizer.step()
+
+        if epoch % 100 == 0:
+            print(
+                "Epoch {}: Policy Loss = {}, Value Loss = {}".format(
+                    epoch,
+                    policy_loss.cpu().detach().numpy(),
+                    value_loss.cpu().detach().numpy(),
+                )
+            )
+
+    return block_policy_nn, block_value_nn
