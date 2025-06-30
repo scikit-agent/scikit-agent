@@ -125,9 +125,12 @@ class TestSolverFunctions(unittest.TestCase):
         )
         test_block.construct_shocks({})
 
-        # Test states and shocks
+        # Test states and shocks - need combined object with both periods
         states_t = {"wealth": torch.tensor([2.0, 4.0])}
-        shocks_t = {"income": torch.tensor([1.0, 1.0])}
+        shocks = {
+            "income_0": torch.tensor([1.0, 1.0]),  # Period t
+            "income_1": torch.tensor([1.2, 0.8]),  # Period t+1 (independent)
+        }
 
         # Estimate Bellman residual
         residual = maliar.estimate_bellman_residual(
@@ -136,7 +139,7 @@ class TestSolverFunctions(unittest.TestCase):
             simple_value_network,
             simple_decision_function,
             states_t,
-            shocks_t,
+            shocks,  # Now passing combined shock object
             parameters={},
         )
 
@@ -314,11 +317,17 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         self.decision_function = simple_decision_function
 
-        # Create test grid
+        # Create test grid with two independent shock realizations
+        # This matches the new 2-shock requirement for Bellman equation
         wealth_values = torch.linspace(0.1, 10.0, 5)
-        income_values = torch.linspace(0.8, 1.2, 5)
+        income_0_values = torch.linspace(0.8, 1.2, 5)  # Period t shocks
+        income_1_values = torch.linspace(0.9, 1.1, 5)  # Period t+1 shocks (independent)
         self.test_grid = grid.Grid.from_dict(
-            {"wealth": wealth_values, "income": income_values}
+            {
+                "wealth": wealth_values,
+                "income_0": income_0_values,
+                "income_1": income_1_values,
+            }
         )
 
     def test_get_bellman_equation_loss(self):
@@ -533,6 +542,134 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.assertEqual(aggregated_loss.shape, ())  # Scalar after aggregation
         self.assertTrue(aggregated_loss >= 0)
 
+    def test_shock_independence_in_bellman_residual(self):
+        """Test that independent shock realizations produce different results than identical shocks."""
+
+        # Create a simple value network that depends on income
+        def simple_value_network(states_t, shocks_t, parameters):
+            wealth = states_t["wealth"]
+            income = shocks_t["income"]
+            return (
+                10.0 * wealth + 5.0 * income
+            )  # Value depends on both wealth and income
+
+        states_t = {"wealth": torch.tensor([2.0, 4.0])}
+
+        # Test 1: Identical shocks for both periods (should be like old behavior)
+        shocks_identical = {
+            "income_0": torch.tensor([1.0, 1.0]),  # Period t
+            "income_1": torch.tensor([1.0, 1.0]),  # Period t+1 (same as t)
+        }
+
+        # Test 2: Independent shocks for the two periods
+        shocks_independent = {
+            "income_0": torch.tensor([1.0, 1.0]),  # Period t
+            "income_1": torch.tensor([1.5, 0.5]),  # Period t+1 (different from t)
+        }
+
+        residual_identical = maliar.estimate_bellman_residual(
+            self.block,
+            0.95,
+            simple_value_network,
+            self.decision_function,
+            states_t,
+            shocks_identical,
+            parameters={},
+        )
+
+        residual_independent = maliar.estimate_bellman_residual(
+            self.block,
+            0.95,
+            simple_value_network,
+            self.decision_function,
+            states_t,
+            shocks_independent,
+            parameters={},
+        )
+
+        # Results should be different when using independent vs identical shocks
+        self.assertFalse(torch.allclose(residual_identical, residual_independent))
+
+        # Both should be finite
+        self.assertTrue(torch.all(torch.isfinite(residual_identical)))
+        self.assertTrue(torch.all(torch.isfinite(residual_independent)))
+
+    def test_bellman_loss_with_different_shock_patterns(self):
+        """Test Bellman loss function with various shock patterns."""
+
+        def simple_value_network(states_t, shocks_t, parameters):
+            wealth = states_t["wealth"]
+            income = shocks_t["income"]
+            return (
+                10.0 * wealth + 2.0 * income
+            )  # Value depends on both wealth and income
+
+        loss_function = maliar.get_bellman_equation_loss(
+            self.state_variables,
+            self.block,
+            self.discount_factor,
+            simple_value_network,
+            self.parameters,
+        )
+
+        # Test with correlated shocks (period t+1 same as period t)
+        test_grid_correlated = grid.Grid.from_dict(
+            {
+                "wealth": torch.tensor([1.0, 2.0, 3.0]),
+                "income_0": torch.tensor([1.0, 1.2, 0.8]),
+                "income_1": torch.tensor([1.0, 1.2, 0.8]),  # Same as period t
+            }
+        )
+
+        # Test with anti-correlated shocks
+        test_grid_anticorrelated = grid.Grid.from_dict(
+            {
+                "wealth": torch.tensor([1.0, 2.0, 3.0]),
+                "income_0": torch.tensor([1.0, 1.2, 0.8]),
+                "income_1": torch.tensor([1.0, 0.8, 1.2]),  # Opposite of period t
+            }
+        )
+
+        loss_correlated = loss_function(self.decision_function, test_grid_correlated)
+        loss_anticorrelated = loss_function(
+            self.decision_function, test_grid_anticorrelated
+        )
+
+        # Both should produce valid losses
+        self.assertTrue(torch.all(loss_correlated >= 0))
+        self.assertTrue(torch.all(loss_anticorrelated >= 0))
+        self.assertTrue(torch.all(torch.isfinite(loss_correlated)))
+        self.assertTrue(torch.all(torch.isfinite(loss_anticorrelated)))
+
+        # Losses should be different for different shock patterns
+        self.assertFalse(torch.allclose(loss_correlated, loss_anticorrelated))
+
+    def test_bellman_residual_error_handling(self):
+        """Test error handling in the refactored Bellman residual function."""
+
+        def simple_value_network(states_t, shocks_t, parameters):
+            wealth = states_t["wealth"]
+            return 10.0 * wealth
+
+        states_t = {"wealth": torch.tensor([2.0, 4.0])}
+
+        # Test with missing shock periods
+        shocks_missing_t1 = {
+            "income_0": torch.tensor([1.0, 1.0]),
+            # Missing "income_1"
+        }
+
+        with self.assertRaises(KeyError):
+            maliar.estimate_bellman_residual(
+                self.block,
+                0.95,
+                simple_value_network,
+                self.decision_function,
+                states_t,
+                shocks_missing_t1,
+                parameters={},
+            )
+
 
 def test_get_euler_residual_loss():
     """Test function placeholder - not implemented yet."""
@@ -557,11 +694,12 @@ def test_get_bellman_equation_loss_with_value_network():
     # Create value network
     value_net = BlockValueNet(test_block, width=16)
 
-    # Create input grid
+    # Create input grid with two independent shock realizations
     input_grid = grid.Grid.from_dict(
         {
             "wealth": torch.linspace(1.0, 10.0, 5),
-            "income": torch.ones(5),  # Fixed income for simplicity
+            "income_0": torch.ones(5),  # Period t shocks
+            "income_1": torch.ones(5) * 1.1,  # Period t+1 shocks (independent)
         }
     )
 

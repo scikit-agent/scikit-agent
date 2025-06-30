@@ -228,9 +228,13 @@ class test_ann_value_functions(unittest.TestCase):
         self.discount_factor = 0.95
         self.parameters = {}
 
-        # Create test grid
+        # Create test grid with two independent shock realizations for Bellman tests
         self.test_grid = grid.Grid.from_dict(
-            {"wealth": torch.linspace(1.0, 5.0, 10), "income": torch.ones(10)}
+            {
+                "wealth": torch.linspace(1.0, 5.0, 10),
+                "income_0": torch.ones(10),  # Period t shocks
+                "income_1": torch.ones(10) * 1.1,  # Period t+1 shocks (independent)
+            }
         )
 
     def test_block_value_net_creation(self):
