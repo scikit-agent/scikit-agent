@@ -1,6 +1,6 @@
 import unittest
 
-from HARK.distributions import Bernoulli, DiscreteDistribution
+from skagent.distributions import Bernoulli, DiscreteDistribution
 import skagent.model as model
 from skagent.model import Control
 import skagent.models.consumer as cons
