@@ -1,4 +1,4 @@
-from HARK.distributions import Bernoulli, Lognormal, MeanOneLogNormal
+from skagent.distributions import Bernoulli, Lognormal, MeanOneLogNormal
 from skagent.model import Control, DBlock, RBlock
 
 """
