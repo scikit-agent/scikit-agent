@@ -1,4 +1,4 @@
-from inspect import signature
+import inspect
 import numpy as np
 import torch
 
@@ -16,7 +16,8 @@ def apply_fun_to_vals(fun, vals):
 
     vals: dict
     """
-    return fun(*[vals[var] for var in signature(fun).parameters])
+    # TODO: Can this just be `fun(**vals)` ?
+    return fun(*[vals[var] for var in inspect.signature(fun).parameters])
 
 
 def reconcile(vec_a, vec_b):
@@ -46,3 +47,46 @@ def reconcile(vec_a, vec_b):
             return vec_b_torch
         else:
             return vec_b_torch.reshape(target_shape)
+
+
+def create_vectorized_function_wrapper_with_mapping(lambda_func, param_to_column):
+    """
+    Create a vectorized wrapper that automatically maps lambda parameters
+    to correct tensor columns based on a parameter-to-column mapping.
+
+    Args:
+        lambda_func: Original lambda function
+        param_to_column: A mapping from parameter names to columns of a tensor
+    """
+
+    def wrapper(input_tensor):
+        # Extract the relevant columns for each parameter
+        param_tensors = {}
+        for param_name, col_idx in param_to_column.items():
+            param_tensors[param_name] = input_tensor[:, col_idx]
+
+        # Apply function with correct parameter mapping
+        try:
+            # Try vectorized application first
+            result = lambda_func(**param_tensors)
+            if not torch.is_tensor(result):
+                result = torch.tensor(
+                    result, dtype=input_tensor.dtype, device=input_tensor.device
+                )
+            return result.unsqueeze(1) if result.dim() == 1 else result
+        except Exception as e:
+            # Fallback to row-by-row if vectorization fails
+            print(f"Vectorization failed ({e}), falling back to row-by-row")
+            results = []
+            for i in range(input_tensor.shape[0]):
+                row_params = {
+                    param_name: input_tensor[i, col_idx].item()
+                    for param_name, col_idx in param_to_column.items()
+                }
+                result = lambda_func(**row_params)
+                results.append(result)
+            return torch.tensor(
+                results, dtype=input_tensor.dtype, device=input_tensor.device
+            ).unsqueeze(1)
+
+    return wrapper
