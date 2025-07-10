@@ -323,7 +323,7 @@ class DBlock(Block):
         """
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
-    def transition(self, pre, dr, screen=False, fix=None):
+    def transition(self, pre, dr, screen=False, until=None, fix=None):
         if fix is None:
             fix = []
         """
@@ -338,6 +338,10 @@ class DBlock(Block):
         screen: Boolean
             If True, the remove any dynamics that are prior to the first given state.
             Defaults to False.
+
+        until: str or None
+            If not None, a symb which is the last symbol to simulate forward.
+            Useful for not overwriting prestates with poststates.
 
         fix: list of string
             A list of symbols to make static, rather than dynamic.
@@ -361,6 +365,17 @@ class DBlock(Block):
             # i.e. if dynamics at time t for variable 'a'
             # depend on state of 'a' at time t-1
             # This is a forbidden case in CDC's design.
+
+        if until:
+            # don't simulate any states that are logically after
+            # the until state
+            met_until = False  # this is a hack; really should use dependency graph
+            for sym in list(dyn.keys()):
+                if not met_until:
+                    if sym == until:
+                        met_until = True
+                else:
+                    del dyn[sym]
 
         for sym in fix:
             if sym in dyn and sym in pre:
