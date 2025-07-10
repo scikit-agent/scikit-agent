@@ -1,4 +1,4 @@
-from conftest import case_0, case_1, case_2, case_3
+from conftest import case_0, case_1, case_2, case_3, case_5, case_6, case_7, case_8
 import skagent.algos.maliar as maliar
 import skagent.ann as ann
 import skagent.grid as grid
@@ -36,8 +36,6 @@ class test_ann_lr(unittest.TestCase):
         ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
-
-        print(c_ann)
 
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
@@ -97,7 +95,6 @@ class test_ann_lr(unittest.TestCase):
 
         errors = c_ann.flatten() - given_0_N["theta_0"]
 
-        print(errors)
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
             torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.03)
@@ -173,6 +170,104 @@ class test_ann_lr(unittest.TestCase):
         given_m = given_0_N["a"] + given_0_N["theta_0"]
 
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04))
+
+    def test_case_5_double_bounded_upper_binds(self):
+        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_5["block"],
+            0.9,
+            1,
+            parameters=case_5["calibration"],
+        )
+
+        given_0_N = case_5["givens"]
+
+        bpn = ann.BlockPolicyNet(case_5["block"], width=8)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
+            {},
+        )["c"]
+
+        self.assertTrue(
+            torch.allclose(c_ann.flatten(), given_0_N["a"].flatten(), atol=0.03)
+        )
+
+    def test_case_6_double_bounded_lower_binds(self):
+        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_6["block"],
+            0.9,
+            1,
+            parameters=case_6["calibration"],
+        )
+
+        given_0_N = case_6["givens"]
+
+        bpn = ann.BlockPolicyNet(case_6["block"], width=8)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
+            {},
+        )["c"]
+
+        self.assertTrue(
+            torch.allclose(c_ann.flatten(), given_0_N["a"].flatten(), atol=0.03)
+        )
+
+    def test_case_7_only_lower_bound(self):
+        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_7["block"],
+            0.9,
+            1,
+            parameters=case_7["calibration"],
+        )
+
+        given_0_N = case_7["givens"]
+
+        bpn = ann.BlockPolicyNet(case_7["block"], width=8)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
+            {},
+        )["c"]
+
+        self.assertTrue(
+            torch.allclose(
+                c_ann.flatten(), torch.zeros(c_ann.shape).to(device) + 1, atol=0.03
+            )
+        )
+
+    def test_case_8_only_upper_bound(self):
+        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_8["block"],
+            0.9,
+            1,
+            parameters=case_8["calibration"],
+        )
+
+        given_0_N = case_8["givens"]
+
+        bpn = ann.BlockPolicyNet(case_8["block"], width=8)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N["a"]},
+            {"theta": given_0_N["theta_0"]},
+            {},
+        )["c"]
+
+        self.assertTrue(
+            torch.allclose(c_ann.flatten(), given_0_N["a"].flatten(), atol=0.03)
+        )
 
     def test_lifetime_reward_perfect_foresight(self):
         ### Model data
