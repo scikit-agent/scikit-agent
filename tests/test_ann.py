@@ -17,31 +17,23 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.is_available())
 
 
-def static_solver(
-    states, block, givens, calibration={}, sub_index=None, width=8, epochs=250
-):
+def static_solver(states, block, givens, calibration={}, width=8, epochs=250):
     """
     states - list of string
     block
     calibration
     """
-    edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+    srl = maliar.get_static_reward_loss(
         states,
         block,
-        0.9,
-        1,  # Big T == 1, so 'static'
         parameters=calibration,
     )
 
     bpn = ann.BlockPolicyNet(block, width=width)
-    ann.train_block_policy_nn(bpn, givens, edlrl, epochs=epochs)
+    ann.train_block_policy_nn(bpn, givens, srl, epochs=epochs)
 
     given_states = {sym: givens[sym] for sym in states}
-    # TODO: This splitting/indexing is a bad hack for the single stage solver
-    #       Fix it when it's decoupled from the lifetime reward stuff.
-    given_shocks = {
-        sym.split("_")[0]: givens[sym] for sym in givens.labels if sym not in states
-    }
+    given_shocks = {sym: givens[sym] for sym in givens.labels if sym not in states}
 
     dec_anns = bpn.decision_function(given_states, given_shocks, calibration)
 
@@ -77,7 +69,7 @@ class test_ann_lr(unittest.TestCase):
         c_ann = dec_anns["c"]
 
         # TODO: This shouldn't require subscripting the shocks
-        errors = c_ann.flatten() - case_1["givens"][0]["theta_0"]
+        errors = c_ann.flatten() - case_1["givens"][0]["theta"]
 
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
@@ -177,7 +169,7 @@ class test_ann_lr(unittest.TestCase):
 
         c_ann = dec_anns["c"]
 
-        given_m = case_3["givens"][0]["a"] + case_3["givens"][0]["theta_0"]
+        given_m = case_3["givens"][0]["a"] + case_3["givens"][0]["theta"]
 
         print(c_ann.flatten() - given_m.flatten())
 

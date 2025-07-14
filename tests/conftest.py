@@ -43,7 +43,7 @@ case_1 = {
         0: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 7},
-                "theta_0": {"min": -1, "max": 1, "count": 7},
+                "theta": {"min": -1, "max": 1, "count": 7},
             }
         ),
         1: grid.Grid.from_config(
@@ -82,7 +82,7 @@ case_2 = {
     "givens": grid.Grid.from_config(
         {
             "a": {"min": 0, "max": 1, "count": 11},
-            "theta_0": {"min": -1, "max": 1, "count": 11},
+            "theta": {"min": -1, "max": 1, "count": 11},
         }
     ),
 }
@@ -110,8 +110,8 @@ case_3 = {
         0: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 5},
-                "theta_0": {"min": -1, "max": 1, "count": 5},
-                "psi_0": {"min": -1, "max": 1, "count": 5},
+                "theta": {"min": -1, "max": 1, "count": 5},
+                "psi": {"min": -1, "max": 1, "count": 5},
             }
         ),
         1: grid.Grid.from_config(
