@@ -40,6 +40,12 @@ case_1 = {
     "calibration": {},
     "optimal_dr": {"c": lambda a, theta: theta},
     "givens": {
+        0: grid.Grid.from_config(
+            {
+                "a": {"min": 0, "max": 1, "count": 7},
+                "theta_0": {"min": -1, "max": 1, "count": 7},
+            }
+        ),
         1: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 7},
@@ -75,8 +81,8 @@ case_2 = {
     "optimal_dr": {"c": lambda a: 0},
     "givens": grid.Grid.from_config(
         {
-            "a": {"min": 0, "max": 1, "count": 5},
-            "theta_0": {"min": -1, "max": 1, "count": 5},
+            "a": {"min": 0, "max": 1, "count": 11},
+            "theta_0": {"min": -1, "max": 1, "count": 11},
         }
     ),
 }
@@ -101,6 +107,13 @@ case_3 = {
     "optimal_dr": {"c": lambda m: m},
     "calibration": {},
     "givens": {
+        0: grid.Grid.from_config(
+            {
+                "a": {"min": 0, "max": 1, "count": 5},
+                "theta_0": {"min": -1, "max": 1, "count": 5},
+                "psi_0": {"min": -1, "max": 1, "count": 5},
+            }
+        ),
         1: grid.Grid.from_config(
             {
                 "a": {"min": 0, "max": 1, "count": 5},

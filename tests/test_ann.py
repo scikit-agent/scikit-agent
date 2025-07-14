@@ -17,34 +17,74 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.is_available())
 
 
+def static_solver(
+    states, block, givens, calibration={}, sub_index=None, width=8, epochs=250
+):
+    """
+    states - list of string
+    block
+    calibration
+    """
+    edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        states,
+        block,
+        0.9,
+        1,  # Big T == 1, so 'static'
+        parameters=calibration,
+    )
+
+    bpn = ann.BlockPolicyNet(block, width=width)
+    ann.train_block_policy_nn(bpn, givens, edlrl, epochs=epochs)
+
+    given_states = {sym: givens[sym] for sym in states}
+    # TODO: This splitting/indexing is a bad hack for the single stage solver
+    #       Fix it when it's decoupled from the lifetime reward stuff.
+    given_shocks = {
+        sym.split("_")[0]: givens[sym] for sym in givens.labels if sym not in states
+    }
+
+    dec_anns = bpn.decision_function(given_states, given_shocks, calibration)
+
+    return dec_anns
+
+
 class test_ann_lr(unittest.TestCase):
     def setUp(self):
         pass
 
     def test_case_0(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        dec_anns = static_solver(
             ["a"],
             case_0["block"],
-            0.9,
-            1,
-            parameters=case_0["calibration"],
+            case_0["givens"],
+            calibration=case_0["calibration"],
         )
-
-        states_0_N = case_0["givens"]
-
-        bpn = ann.BlockPolicyNet(case_0["block"], width=16)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
-
-        c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
-
-        print(c_ann)
+        c_ann = dec_anns["c"]
 
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
             torch.allclose(c_ann, torch.zeros(c_ann.shape).to(device), atol=0.0015)
         )
 
-    def test_case_1(self):
+    def test_case_1_0(self):
+        dec_anns = static_solver(
+            ["a"],
+            case_1["block"],
+            case_1["givens"][0],
+            calibration=case_1["calibration"],
+            epochs=400,
+        )
+        c_ann = dec_anns["c"]
+
+        # TODO: This shouldn't require subscripting the shocks
+        errors = c_ann.flatten() - case_1["givens"][0]["theta_0"]
+
+        # Is this result stochastic? How are the network weights being initialized?
+        self.assertTrue(
+            torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.02)
+        )
+
+    def test_case_1_1(self):
         edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
             ["a"],
             case_1["block"],
@@ -67,6 +107,7 @@ class test_ann_lr(unittest.TestCase):
 
         errors = c_ann.flatten() - given_0_N.to_dict()["theta_0"]
 
+        print(errors)
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
             torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.015)
@@ -104,25 +145,45 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_2(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        static_solver(
             ["a"],
             case_2["block"],
-            0.9,
-            1,
-            parameters=case_2["calibration"],
+            case_2["givens"],
+            calibration=case_2["calibration"],
+            epochs=200,
         )
-
-        given_0_N = case_2["givens"]
-
-        bpn = ann.BlockPolicyNet(case_2["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=100)
+        # c_ann = dec_anns["c"]
 
         # optimal DR is c = 0 = E[theta]
 
         # Just a smoke test. Since the information set to the control
         # actually gives no information, training isn't effective...
+        #
+        # Still, it's unexpected that this can't get closer to the optimal policy.
+        #
+        # print(c_ann)
+        # self.assertTrue(
+        #    torch.allclose(c_ann, torch.full_like(c_ann, 0), atol=0.03)
+        # )
 
-    def test_case_3(self):
+    def test_case_3_0(self):
+        dec_anns = static_solver(
+            ["a"],
+            case_3["block"],
+            case_3["givens"][0],
+            calibration=case_3["calibration"],
+            epochs=400,
+        )
+
+        c_ann = dec_anns["c"]
+
+        given_m = case_3["givens"][0]["a"] + case_3["givens"][0]["theta_0"]
+
+        print(c_ann.flatten() - given_m.flatten())
+
+        self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.035))
+
+    def test_case_3_1(self):
         edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
             ["a"],
             case_3["block"],
