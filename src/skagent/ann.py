@@ -48,46 +48,37 @@ class BlockPolicyNet(Net):
         # If it is bounded, set up the vectorized version of the bound
         # This will be used directly in the forward pass of the network.
         self.upper_bound = self.control.upper_bound
-        if self.upper_bound:
-            sig = inspect.signature(self.upper_bound)
-            param_names = list(sig.parameters.keys())
-            self.upper_bound_param_to_column = {}
-            for param_name in param_names:
-                if param_name in self.iset:
-                    self.upper_bound_param_to_column[param_name] = self.iset.index(
-                        param_name
-                    )
-                else:
-                    raise ValueError(
-                        f"Upper bound parameter '{param_name}' not found in control.iset: {self.iset}"
-                    )
-            self.upper_bound_vec_func = create_vectorized_function_wrapper_with_mapping(
-                self.upper_bound, self.upper_bound_param_to_column
-            )
-
+        self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
+            self.upper_bound, "Upper bound"
+        )
         self.lower_bound = self.control.lower_bound
-        if self.lower_bound:
-            sig = inspect.signature(self.lower_bound)
-            param_names = list(sig.parameters.keys())
-            self.lower_bound_param_to_column = {}
-            for param_name in param_names:
-                if param_name in self.iset:
-                    self.lower_bound_param_to_column[param_name] = self.iset.index(
-                        param_name
-                    )
-                else:
-                    raise ValueError(
-                        f"Lower bound parameter '{param_name}' not found in control.iset: {self.iset}"
-                    )
-            self.lower_bound_vec_func = create_vectorized_function_wrapper_with_mapping(
-                self.lower_bound, self.lower_bound_param_to_column
-            )
+        self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
+            self.lower_bound, "Lower bound"
+        )
 
         super().__init__(
             len(self.iset),
             1,
             width,
         )
+
+    def _setup_bound(self, bound_func, bound_name):
+        if bound_func:
+            sig = inspect.signature(bound_func)
+            param_names = list(sig.parameters.keys())
+            param_to_column = {}
+            for param_name in param_names:
+                if param_name in self.iset:
+                    param_to_column[param_name] = self.iset.index(param_name)
+                else:
+                    raise ValueError(
+                        f"{bound_name} parameter '{param_name}' not found in control.iset: {self.iset}"
+                    )
+            vec_func = create_vectorized_function_wrapper_with_mapping(
+                bound_func, param_to_column
+            )
+            return vec_func, param_to_column
+        return None, None
 
     def decision_function(self, states_t, shocks_t, parameters):
         """
@@ -144,31 +135,29 @@ class BlockPolicyNet(Net):
         """
 
         # using the swish
-        x1 = torch.nn.functional.silu(self.hidden1(x))
-        x2 = torch.nn.functional.silu(self.hidden2(x1))
-        x3 = self.output(x2)
+        x1 = super().forward(x)
 
         if not self.upper_bound and not self.lower_bound:
-            x4 = x3
+            x2 = x1
         if self.upper_bound and self.lower_bound:
             # Compute bounds from input using wrapped functions
             upper_bound = self.upper_bound_vec_func(x)
             lower_bound = self.lower_bound_vec_func(x)
 
             # Scale to bounds
-            x4 = lower_bound + torch.nn.functional.sigmoid(x3) * (
+            x2 = lower_bound + torch.nn.functional.sigmoid(x1) * (
                 upper_bound - lower_bound
             )
 
         if self.lower_bound and not self.upper_bound:
             lower_bound = self.lower_bound_vec_func(x)
-            x4 = lower_bound + torch.nn.functional.softplus(x3)
+            x2 = lower_bound + torch.nn.functional.softplus(x1)
 
         if not self.lower_bound and self.upper_bound:
             upper_bound = self.upper_bound_vec_func(x)
-            x4 = upper_bound - torch.nn.functional.softplus(x3)
+            x2 = upper_bound - torch.nn.functional.softplus(x1)
 
-        return x4
+        return x2
 
     def get_decision_function(self):
         def df(states_t, shocks_t, parameters):

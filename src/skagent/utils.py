@@ -1,4 +1,5 @@
 import inspect
+import logging
 import numpy as np
 import torch
 
@@ -76,7 +77,7 @@ def create_vectorized_function_wrapper_with_mapping(lambda_func, param_to_column
             return result.unsqueeze(1) if result.dim() == 1 else result
         except Exception as e:
             # Fallback to row-by-row if vectorization fails
-            print(f"Vectorization failed ({e}), falling back to row-by-row")
+            logging.warning(f"Vectorization failed ({e}), falling back to row-by-row")
             results = []
             for i in range(input_tensor.shape[0]):
                 row_params = {
