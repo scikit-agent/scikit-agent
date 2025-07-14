@@ -175,7 +175,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04))
 
     def test_case_9_empty_information_set(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        loss_fn = maliar.get_estimated_discounted_lifetime_reward_loss(
             ["a"],
             case_9["block"],
             0.9,
@@ -186,7 +186,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_9["givens"]
 
         bpn = ann.BlockPolicyNet(case_9["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, loss_fn, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
