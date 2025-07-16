@@ -1,4 +1,4 @@
-from conftest import case_0, case_1, case_2, case_3
+from conftest import case_0, case_1, case_2, case_3, case_9
 import skagent.algos.maliar as maliar
 import skagent.ann as ann
 import skagent.grid as grid
@@ -173,6 +173,32 @@ class test_ann_lr(unittest.TestCase):
         given_m = given_0_N["a"] + given_0_N["theta_0"]
 
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04))
+
+    def test_case_9_empty_information_set(self):
+        loss_fn = maliar.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_9["block"],
+            0.9,
+            2,
+            parameters=case_9["calibration"],
+        )
+
+        given_0_N = case_9["givens"]
+
+        bpn = ann.BlockPolicyNet(case_9["block"], width=8)
+        ann.train_block_policy_nn(bpn, given_0_N, loss_fn, epochs=300)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N["a"]},
+            {},
+            {},
+        )["c"]
+
+        self.assertTrue(
+            torch.allclose(
+                c_ann.flatten(), torch.full_like(c_ann.flatten(), 3.0), atol=0.04
+            )
+        )
 
     def test_lifetime_reward_perfect_foresight(self):
         ### Model data
