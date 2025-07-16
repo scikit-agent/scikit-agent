@@ -76,5 +76,3 @@ def extract_dependencies(rule):
                 pass
 
     return deps
-
-
