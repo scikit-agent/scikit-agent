@@ -9,23 +9,17 @@ import pytest
 import sys
 
 sys.path.append("../src")
-from skagent.rule import extract_dependencies  # noqa: E402
+from skagent.rule import extract_dependencies
 
-# ---------------------------------------------------------------------------
-# Detect optional dependencies
-# ---------------------------------------------------------------------------
 SKAGENT_AVAILABLE = find_spec("skagent") is not None
 HARK_AVAILABLE = find_spec("HARK") is not None
-HAS_DEPENDENCIES = SKAGENT_AVAILABLE and HARK_AVAILABLE  # <-- ★ 关键新增行
+HAS_DEPENDENCIES = SKAGENT_AVAILABLE and HARK_AVAILABLE
 
 pytestmark = pytest.mark.skipif(
     not HAS_DEPENDENCIES,
     reason="Optional dependencies (`scikit‑agent` and/or `HARK`) not installed.",
 )
 
-# ---------------------------------------------------------------------------
-# Import model objects only if dependencies exist
-# ---------------------------------------------------------------------------
 if HAS_DEPENDENCIES:
     from skagent.models.consumer import consumption_block, calibration
 
