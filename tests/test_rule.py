@@ -1,7 +1,7 @@
 """
 Tests for rule_module.py using real scikit-agent objects and scenarios.
 
-Based on actual consumption-savings model structure.
+Based on actual consumption-savings model structure from scikit-agent.
 """
 
 from importlib.util import find_spec
