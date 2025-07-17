@@ -26,7 +26,7 @@ u(c)                : period utility
 TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0
 """
 
-from HARK.distributions import Normal, MeanOneLogNormal
+from skagent.distributions import Normal, MeanOneLogNormal
 from skagent.model import Control, DBlock
 import torch
 import numpy as np

@@ -4,7 +4,7 @@ Tools for crafting models.
 
 from dataclasses import dataclass, field, replace
 from copy import copy, deepcopy
-from HARK.distributions import (
+from skagent.distributions import (
     Distribution,
     DiscreteDistributionLabeled,
     combine_indep_dstns,

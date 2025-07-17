@@ -5,7 +5,7 @@ import skagent.grid as grid
 import skagent.model as model
 import torch
 import unittest
-from HARK.distributions import Normal
+from skagent.distributions import Normal
 from skagent.algos.maliar import (
     get_bellman_equation_loss,
 )
