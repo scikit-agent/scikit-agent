@@ -461,6 +461,31 @@ class DBlock(Block):
         """A DBlock is its own leaf."""
         yield self
 
+    def deep_replace(
+        self, name=None, description=None, shocks=None, dynamics=None, reward=None
+    ):
+        """
+        Creates a deep copy of the block with new shocks, dynamics, and rewards dictionaries.
+        These dictionaries will have updated values based on the inputs.
+        """
+        new_name = self.name if name is None else name
+        new_description = self.description if description is None else description
+
+        new_shocks = self.shocks | ({} if shocks is None else {})
+        new_dynamics = self.dynamics | ({} if dynamics is None else {})
+        new_reward = self.reward | ({} if reward is None else {})
+
+        replacement = replace(
+            self,
+            name=new_name,
+            description=new_description,
+            shocks=new_shocks,
+            dynamics=new_dynamics,
+            reward=new_reward,
+        )
+
+        return replacement
+
 
 @dataclass
 class RBlock(Block):

@@ -102,6 +102,37 @@ class BlockPolicyNet(Net):
 
         return df
 
+    def get_decision_rule(self, length=None):
+        """
+        Returns the decision rule corresponding to this neural network.
+        """
+
+        def decision_rule(*information):
+            """
+            A decision rule positional arguments (reflecting the information set)
+            values to control values.
+
+            Parameters
+            ----------
+            information: *args
+                values arrays
+
+            Returns
+            -------
+
+            decisions - array
+            """
+            if len(information) > 0:
+                input_tensor = torch.stack(information).T
+                input_tensor = input_tensor.to(device)
+            else:
+                batch_size = length
+                input_tensor = torch.empty(batch_size, 0, device=device)
+
+            return self(input_tensor)  # application of network
+
+        return decision_rule
+
 
 class BlockValueNet(Net):
     """
