@@ -100,7 +100,7 @@ class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
             - history["c"][5]
         )
 
-        self.assertTrue((a1 == b1).all())
+        self.assertTrue(np.allclose(a1, b1))
 
     def test_make_shock_history(self):
         self.simulator = AgentTypeMonteCarloSimulator(
