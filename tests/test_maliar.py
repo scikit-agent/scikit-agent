@@ -40,28 +40,6 @@ class TestSolverFunctions(unittest.TestCase):
     def setUp(self):
         self.block = model.DBlock(**block_data)
 
-    def test_create_transition_function(self):
-        transition_function = maliar.create_transition_function(self.block, ["a", "e"])
-
-        states_1 = transition_function(states_0, {}, decisions, parameters=parameters)
-
-        self.assertAlmostEqual(states_1["a"], 0.7)
-        self.assertEqual(states_1["e"], 0.1)
-
-    def test_create_decision_function(self):
-        decision_function = maliar.create_decision_function(self.block, decision_rules)
-
-        decisions_0 = decision_function(states_0, {}, parameters=parameters)
-
-        self.assertEqual(decisions_0["c"], 0.5)
-
-    def test_create_reward_function(self):
-        reward_function = maliar.create_reward_function(self.block)
-
-        reward_0 = reward_function(states_0, {}, decisions, parameters=parameters)
-
-        self.assertAlmostEqual(reward_0["u"], -0.69314718)
-
     def test_estimate_discounted_lifetime_reward(self):
         dlr_0 = maliar.estimate_discounted_lifetime_reward(
             self.block,

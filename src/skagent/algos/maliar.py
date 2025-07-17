@@ -3,8 +3,14 @@ import skagent.ann as ann
 from skagent.grid import Grid
 import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
+from skagent.solver import (
+    create_decision_function,
+    create_reward_function,
+    create_transition_function,
+    simulate_forward,
+    static_reward,
+)
 import torch
-import skagent.utils as utils
 
 """
 Tools for the implementation of the Maliar, Maliar, and Winant (JME '21) method.
@@ -13,58 +19,6 @@ This method relies on a simpler problem representation than that elaborated
 by the skagent Block system.
 
 """
-
-
-def create_transition_function(block, state_syms):
-    """
-    block
-    state_syms : list of string
-        A list of symbols for 'state variables at time t', aka arrival states.
-        # TODO: state variables should be derived from the block analysis.
-    """
-
-    def transition_function(states_t, shocks_t, controls_t, parameters):
-        vals = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals, {}, fix=list(controls_t.keys()))
-
-        return {sym: post[sym] for sym in state_syms}
-
-    return transition_function
-
-
-def create_decision_function(block, decision_rules):
-    """
-    block
-    decision_rules
-    """
-
-    def decision_function(states_t, shocks_t, parameters):
-        if parameters is None:
-            parameters = {}
-        vals = parameters | states_t | shocks_t
-        post = block.transition(vals, decision_rules)
-
-        return {sym: post[sym] for sym in decision_rules}
-
-    return decision_function
-
-
-def create_reward_function(block, agent=None):
-    """
-    block
-    agent : optional, str
-    """
-
-    def reward_function(states_t, shocks_t, controls_t, parameters):
-        vals_t = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals_t, {}, fix=list(controls_t.keys()))
-        return {
-            sym: post[sym]
-            for sym in block.reward
-            if agent is None or block.reward[sym] == agent
-        }
-
-    return reward_function
 
 
 def estimate_discounted_lifetime_reward(
@@ -179,6 +133,33 @@ def get_estimated_discounted_lifetime_reward_loss(
     return estimated_discounted_lifetime_reward_loss
 
 
+def get_static_reward_loss(state_variables, block, parameters):
+    # TODO: Should be able to get 'state variables' from block
+    # Maybe with ZP's analysis modules
+
+    shock_vars = block.get_shocks()
+
+    def static_reward_loss(df: callable, input_grid: Grid):
+        ## includes the values of state_0 variables, and shocks.
+        given_vals = input_grid.to_dict()
+
+        shock_vals = {sym: input_grid[sym] for sym in shock_vars}
+
+        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
+        r = static_reward(
+            block,
+            df,
+            {sym: given_vals[sym] for sym in state_variables},
+            parameters=parameters,
+            agent=None,  ## TODO: Pass through the agent?
+            shocks=shock_vals,
+            ## Handle multiple decision rules?
+        )
+        return -r
+
+    return static_reward_loss
+
+
 def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: int):
     """
     Generates omega_i values of the MMW JME '21 method.
@@ -203,44 +184,6 @@ def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: 
     givens = states.update_from_dict(new_shock_values)
 
     return givens
-
-
-def simulate_forward(
-    states_t,
-    block: model.Block,
-    decision_function: callable,
-    parameters,
-    big_t,
-    # state_syms,
-):
-    if isinstance(states_t, Grid):
-        n = states_t.n()
-        states_t = states_t.to_dict()
-    else:
-        # kludge
-        n = len(states_t[next(iter(states_t.keys()))])
-
-    state_syms = list(states_t.keys())
-    tf = create_transition_function(block, state_syms)
-
-    for t in range(big_t):
-        # TODO: make sure block shocks are 'constructed'
-        # TODO: allow option for 'structured' draws, e.g. from exact discretization.
-        shocks_t = draw_shocks(block.shocks, n=n)
-
-        # this is cumbersome; probably can be solved deeper on the data structure level
-        # note similarity to Grid.from_dict() reconciliation logic.
-        states_template = states_t[next(iter(states_t.keys()))]
-        shocks_t = {
-            sym: utils.reconcile(states_template, shocks_t[sym]) for sym in shocks_t
-        }
-
-        controls_t = decision_function(states_t, shocks_t, parameters)
-
-        states_t_plus_1 = tf(states_t, shocks_t, controls_t, parameters)
-        states_t = states_t_plus_1
-
-    return states_t_plus_1
 
 
 def maliar_training_loop(
