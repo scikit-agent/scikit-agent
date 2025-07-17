@@ -31,13 +31,17 @@ class Net(torch.nn.Module):
 
 
 class BlockPolicyNet(Net):
-    def __init__(self, block, width=32):
+    def __init__(self, block, csym=None, width=32):
         self.block = block
 
         ## pseudo -- assume only one for now
-        control = self.block.dynamics[self.block.get_controls()[0]]
+        if csym is None:
+            csym = next(iter(self.block.get_controls()))
 
-        super().__init__(len(control.iset), 1, width)
+        self.csym = csym
+        self.cobj = self.block.dynamics[csym]
+
+        super().__init__(len(self.cobj.iset), 1, width)
 
     def decision_function(self, states_t, shocks_t, parameters):
         """
@@ -72,14 +76,10 @@ class BlockPolicyNet(Net):
 
         post = self.block.transition(vals, drs)
 
-        # assuming only on control for now
-        csym = self.block.get_controls()[0]
-        control = self.block.dynamics[csym]
-
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
 
-        iset_vals = [post[isym].flatten() for isym in control.iset]
+        iset_vals = [post[isym].flatten() for isym in self.cobj.iset]
 
         if len(iset_vals) > 0:
             input_tensor = torch.stack(iset_vals).T
@@ -93,7 +93,7 @@ class BlockPolicyNet(Net):
         # again, assuming only one for now...
         # decisions = dict(zip([csym], output))
         # ... when using multiple csyms, note the orientation of the output tensor
-        decisions = {csym: output.flatten()}
+        decisions = {self.csym: output.flatten()}
         return decisions
 
     def get_decision_function(self):
@@ -111,7 +111,7 @@ class BlockValueNet(Net):
     It's designed to work with the Bellman equation loss functions in the Maliar method.
     """
 
-    def __init__(self, block, width: int = 32):
+    def __init__(self, block, csym=None, width: int = 32):
         """
         Initialize the BlockValueNet.
 
@@ -127,10 +127,14 @@ class BlockValueNet(Net):
         # Value function should use the same information set as the policy function
         # Both V(s) and π(s) take the same state information as input
         ## pseudo -- assume only one control for now (same as BlockPolicyNet)
-        control = self.block.dynamics[self.block.get_controls()[0]]
+        if csym is None:
+            csym = next(iter(self.block.get_controls()))
+
+        self.csym = csym
+        self.cobj = self.block.dynamics[csym]
 
         # Use the same information set as the policy network
-        self.state_variables = sorted(list(control.iset))
+        self.state_variables = sorted(list(self.cobj.iset))
 
         # Value function takes state variables as input and outputs a scalar value
         super().__init__(len(self.state_variables), 1, width)
@@ -156,14 +160,10 @@ class BlockValueNet(Net):
         torch.Tensor
             Value function estimates
         """
-        # Get the control's information set (same as policy network)
-        csym = self.block.get_controls()[0]
-        control = self.block.dynamics[csym]
-
         # The inputs to the network are the information set variables
         # Combine states_t and shocks_t to get all available variables
         all_vars = states_t | shocks_t
-        iset_vals = [all_vars[isym].flatten() for isym in control.iset]
+        iset_vals = [all_vars[isym].flatten() for isym in self.cobj.iset]
 
         input_tensor = torch.stack(iset_vals).T
 

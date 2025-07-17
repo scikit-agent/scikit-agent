@@ -227,9 +227,12 @@ class Block:
         return attributions
 
     def get_controls(self):
+        """
+        Returns only the Control variables from the Block dynamics.
+        """
         dyn = self.get_dynamics()
 
-        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
+        return {sym: dyn[sym] for sym in dyn if isinstance(dyn[sym], Control)}
 
 
 @dataclass
