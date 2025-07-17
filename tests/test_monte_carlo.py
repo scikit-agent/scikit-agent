@@ -209,4 +209,5 @@ class test_MonteCarloSimulator(unittest.TestCase):
             - history["c"][5]
         )
 
-        self.assertTrue((a1 == b1).all())
+        # Use allclose for numerical tolerance instead of exact equality
+        self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))

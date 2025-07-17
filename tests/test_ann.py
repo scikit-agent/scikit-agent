@@ -6,7 +6,7 @@ import skagent.model as model
 import skagent.models.perfect_foresight as pfm
 import torch
 import unittest
-from HARK.distributions import Normal
+from skagent.distributions import Normal
 
 
 torch.manual_seed(10077696)
@@ -205,7 +205,7 @@ class test_ann_value_functions(unittest.TestCase):
     def setUp(self):
         """Set up a simple test block for value function testing."""
         import skagent.model as model
-        from HARK.distributions import Normal
+        from skagent.distributions import Normal
 
         # Create a simple consumption-savings model
         self.test_block = model.DBlock(
