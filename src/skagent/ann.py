@@ -351,3 +351,466 @@ def train_block_value_and_policy_nn(
             )
 
     return block_policy_nn, block_value_nn
+
+
+class FlexibleNet(torch.nn.Module):
+    """
+    A flexible feedforward neural network with configurable architecture.
+
+    Parameters
+    ----------
+    n_inputs : int
+        Number of input features
+    n_outputs : int
+        Number of output features
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    activation : str, list, callable, or None, optional
+        Activation function(s) to use. Options:
+        - str: Apply same activation to all layers ('silu', 'relu', 'tanh', 'sigmoid')
+        - list: Apply different activations to each layer, e.g., ['relu', 'tanh', 'silu']
+        - callable: Custom activation function
+        - None: No activation (identity function)
+
+        Available activations: 'silu', 'relu', 'tanh', 'sigmoid', 'identity'
+        Default is 'silu'.
+    transform : str, list, callable, or None, optional
+        Transformation to apply to outputs. Options:
+        - str: Apply same transform to all outputs ('sigmoid', 'exp', 'tanh', etc.)
+        - list: Apply different transforms to each output, e.g., ['sigmoid', 'exp']
+        - callable: Custom transformation function
+        - None: No transformation
+
+        Available transforms: 'sigmoid', 'exp', 'tanh', 'relu', 'softplus', 'softmax', 'abs', 'square', 'identity'
+        Default is None.
+    """
+
+    def __init__(
+        self,
+        n_inputs,
+        n_outputs,
+        width=32,
+        n_layers=2,
+        activation="silu",
+        transform=None,
+        init_seed=None,
+        copy_weights_from=None,
+    ):
+        super().__init__()
+
+        # Validate n_layers
+        if not (1 <= n_layers <= 10):
+            raise ValueError(f"n_layers must be between 1 and 10, got {n_layers}")
+
+        self.n_inputs = n_inputs
+        self.n_outputs = n_outputs
+        self.width = width
+        self.n_layers = n_layers
+        self.transform = transform
+        self.init_seed = init_seed
+        self.copy_weights_from = copy_weights_from
+
+        # Set activation function(s) and track which are identity for performance
+        if isinstance(activation, list):
+            if len(activation) != n_layers:
+                raise ValueError(
+                    f"Number of activations ({len(activation)}) must match "
+                    f"number of layers ({n_layers})"
+                )
+            self.activations = [self._get_activation_fn(act) for act in activation]
+            self.activation_is_identity = [self._is_identity(act) for act in activation]
+        else:
+            # Single activation applied to all layers
+            self.activations = [self._get_activation_fn(activation)] * n_layers
+            self.activation_is_identity = [self._is_identity(activation)] * n_layers
+
+        # Build network layers
+        self.layers = torch.nn.ModuleList()
+
+        # First hidden layer
+        self.layers.append(torch.nn.Linear(n_inputs, width))
+
+        # Additional hidden layers
+        for _ in range(n_layers - 1):
+            self.layers.append(torch.nn.Linear(width, width))
+
+        # Output layer
+        self.output = torch.nn.Linear(width, n_outputs)
+
+        # Initialize weights first (before device placement)
+        if init_seed is not None:
+            # Save current random state
+            current_state = torch.get_rng_state()
+            # Set seed for initialization
+            torch.manual_seed(init_seed)
+
+        # Custom weight initialisation to match MMW notebook (normal std=0.05)
+        for m in self.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.normal_(m.weight, mean=0.0, std=0.05)
+                if m.bias is not None:
+                    torch.nn.init.zeros_(m.bias)
+
+        if init_seed is not None:
+            # Restore previous random state
+            torch.set_rng_state(current_state)
+
+        # Copy weights AFTER initialization if requested
+        if copy_weights_from is not None:
+            self._copy_weights_from_network(copy_weights_from)
+
+        # Move to device for backward compatibility (after all initialization)
+        self.to(device)
+
+    def _copy_weights_from_network(self, source_network):
+        """Copy weights from another network with compatible architecture."""
+        source_params = list(source_network.parameters())
+        target_params = list(self.parameters())
+
+        if len(source_params) != len(target_params):
+            raise ValueError(
+                f"Network architectures incompatible: {len(source_params)} vs {len(target_params)} parameters"
+            )
+
+        with torch.no_grad():
+            for target_param, source_param in zip(target_params, source_params):
+                if target_param.shape != source_param.shape:
+                    raise ValueError(
+                        f"Parameter shape mismatch: {target_param.shape} vs {source_param.shape}"
+                    )
+                target_param.copy_(source_param)
+
+    def _get_activation_fn(self, activation):
+        """Get activation function from string name, callable, or None."""
+        if activation == "silu":
+            return torch.nn.functional.silu
+        elif activation == "relu":
+            return torch.nn.functional.relu
+        elif activation == "tanh":
+            return torch.nn.functional.tanh
+        elif activation == "sigmoid":
+            return torch.nn.functional.sigmoid
+        elif activation == "identity" or activation is None:
+            return None  # Will be skipped in forward pass for performance
+        elif callable(activation):
+            return activation
+        else:
+            raise ValueError(f"Unsupported activation: {activation}")
+
+    def _is_identity(self, activation):
+        """Check if activation is identity/None for performance optimization."""
+        return activation == "identity" or activation is None
+
+    @property
+    def device(self):
+        """Device property for backward compatibility."""
+        return next(self.parameters()).device
+
+    def forward(self, x):
+        # Forward through hidden layers with layer-specific activations
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            # Skip identity activations for performance
+            if not self.activation_is_identity[i]:
+                x = self.activations[i](x)
+
+        # Output layer
+        x = self.output(x)
+
+        # Apply output transformation if specified
+        if self.transform is not None:
+            x = self._apply_transform(x)
+
+        return x
+
+    def _apply_transform(self, x):
+        """Apply output transformation based on configuration."""
+        if isinstance(self.transform, list):
+            # List of transforms: apply each transform to corresponding output
+            if len(self.transform) != x.shape[-1]:
+                raise ValueError(
+                    f"Number of transforms ({len(self.transform)}) must match "
+                    f"number of outputs ({x.shape[-1]})"
+                )
+
+            transformed_outputs = []
+            for i, transform in enumerate(self.transform):
+                output_i = x[..., i]
+                transformed_outputs.append(
+                    self._apply_single_transform(output_i, transform)
+                )
+
+            return torch.stack(transformed_outputs, dim=-1)
+
+        elif self.transform is None:
+            # No transformation
+            return x
+
+        else:
+            # Single transform applied to all outputs (string or callable)
+            return self._apply_single_transform(x, self.transform)
+
+    def _apply_single_transform(self, x, transform):
+        """Apply a single transformation to a tensor."""
+        if transform == "sigmoid":
+            return torch.sigmoid(x)
+        elif transform == "exp":
+            return torch.exp(x)
+        elif transform == "tanh":
+            return torch.tanh(x)
+        elif transform == "relu":
+            return torch.nn.functional.relu(x)
+        elif transform == "softplus":
+            return torch.nn.functional.softplus(x)
+        elif transform == "softmax":
+            return torch.nn.functional.softmax(x, dim=-1)
+        elif transform == "abs":
+            return torch.abs(x)
+        elif transform == "square":
+            return x**2
+        elif transform == "identity" or transform is None:
+            return x
+        elif callable(transform):
+            return transform(x)
+        else:
+            raise ValueError(f"Unknown single transform: {transform}")
+
+
+class FlexiblePolicyNet(FlexibleNet):
+    """
+    A flexible neural network that implements a policy function for a given block.
+
+    This network automatically handles input/output dimensions based on the block
+    specification. Inherits from FlexibleNet to provide configurable architecture
+    with economic model integration.
+
+    The network relies solely on the DBlock specification to determine its inputs.
+    For example, if the control variable's information set is ['r','delta','p','q','w'],
+    those symbols will be stacked (after an inexpensive transition call) and fed to the
+    neural network. No additional flags are necessary.
+
+    Parameters
+    ----------
+    block : DBlock
+        The economic model block
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    activation : str, list, callable, or None, optional
+        Activation function(s). Default is 'silu'.
+    transform : str, list, callable, or None, optional
+        Output transformation to apply. Options:
+        - str: Apply same transform to all outputs ('sigmoid', 'exp', 'tanh', etc.)
+        - list: Apply different transforms to each output, e.g., ['sigmoid', 'exp'] for MMW-style outputs
+        - callable: Custom transformation function
+        - None: No transformation
+
+        Available transforms: 'sigmoid', 'exp', 'tanh', 'relu', 'softplus', 'softmax', 'abs', 'square', 'identity'
+        Default is None.
+    """
+
+    def __init__(
+        self,
+        block,
+        width=32,
+        n_layers=2,
+        activation="silu",
+        transform=None,
+        init_seed=None,
+        copy_weights_from=None,
+    ):
+        self.block = block
+
+        # Get control variables
+        controls = block.get_controls()
+        self.control_names = controls
+
+        # Group controls by their information set for efficient computation
+        self.control_groups = self._group_controls_by_iset()
+
+        # Use first control's information set to determine input dimension
+        control = self.block.dynamics[self.block.get_controls()[0]]
+        n_inputs = len(control.iset)
+
+        # Determine number of outputs based on controls and transforms
+        if isinstance(transform, list):
+            n_outputs = len(transform)
+        else:
+            n_outputs = len(controls)
+
+        # Initialize parent FlexibleNet with computed parameters
+        super().__init__(
+            n_inputs=n_inputs,
+            n_outputs=n_outputs,
+            width=width,
+            n_layers=n_layers,
+            activation=activation,
+            transform=transform,
+            init_seed=init_seed,
+            copy_weights_from=copy_weights_from,
+        )
+
+        # Store for constraint handling and auxiliary output access
+        self.last_outputs = None
+        self.last_raw_outputs = None
+        self.last_states = None
+
+    def _group_controls_by_iset(self):
+        """
+        Group controls by their information set for efficient computation.
+
+        Returns
+        --------
+        dict
+            Dictionary mapping frozenset(iset) -> list of control names
+        """
+        groups = {}
+        for control_name in self.control_names:
+            control = self.block.dynamics[control_name]
+            iset_key = frozenset(control.iset)
+            if iset_key not in groups:
+                groups[iset_key] = []
+            groups[iset_key].append(control_name)
+        return groups
+
+    def get_auxiliary_outputs(self):
+        """
+        Get auxiliary outputs for constraint functions.
+
+        Returns
+        --------
+        dict
+            Dictionary with 'raw', 'transformed', 'states' keys
+        """
+        return {
+            "raw": self.last_raw_outputs,
+            "transformed": self.last_outputs,
+            "states": self.last_states,
+            "controls": dict(
+                zip(
+                    self.control_names,
+                    [
+                        self.last_outputs[..., i]
+                        if self.last_outputs is not None
+                        else None
+                        for i in range(len(self.control_names))
+                    ],
+                )
+            ),
+        }
+
+    def forward(self, states, shocks, parameters):
+        """
+        Forward pass through the policy network.
+
+        Parameters
+        -----------
+        states : dict
+            Dictionary mapping state variable names to tensor values
+        shocks : dict
+            Dictionary mapping shock variable names to tensor values
+        parameters : dict
+            Model calibration parameters
+
+        Returns
+        --------
+        dict
+            Dictionary mapping control variable names to policy outputs
+        """
+        if parameters is None:
+            parameters = {}
+
+        # Fast-path: if no shocks and all inputs already in `states`, skip expensive transition
+        control_name = self.control_names[0]
+        control = self.block.dynamics[control_name]
+
+        if not shocks and all(var in states for var in control.iset):
+            post = states  # already have required inputs
+        else:
+            vals = parameters | states | shocks
+            drs = {csym: lambda: 1 for csym in self.block.get_controls()}
+            post = self.block.transition(vals, drs)
+
+        # Extract input values from control's information set
+        input_vals = []
+        for var in control.iset:
+            if var in post:
+                val = post[var]
+                if not isinstance(val, torch.Tensor):
+                    val = torch.tensor(val, dtype=torch.float32)
+                input_vals.append(val.flatten())
+            else:
+                raise ValueError(f"Variable {var} not found in post-transition values")
+
+        if not input_vals:
+            raise ValueError("No input variables found from control information set")
+
+        input_tensor = torch.stack(input_vals).T.to(self.device)
+
+        # ------- Forward pass WITHOUT transforms first -------
+        saved_transform = self.transform
+        self.transform = None
+        raw_outputs = super().forward(input_tensor)
+        self.transform = saved_transform
+
+        # Apply per-output transform AFTER slicing for list case
+        if isinstance(self.transform, list):
+            if len(self.transform) != raw_outputs.shape[-1]:
+                raise ValueError("Transform list length mismatch with outputs")
+            transformed = []
+            for i, tr in enumerate(self.transform):
+                transformed.append(
+                    self._apply_single_transform(raw_outputs[..., i], tr)
+                )
+            outputs = torch.stack(transformed, dim=-1)
+        else:
+            # single or None
+            outputs = self._apply_single_transform(raw_outputs, self.transform)
+
+        self.last_raw_outputs = raw_outputs
+        self.last_outputs = outputs
+        self.last_states = {**states, **shocks}
+
+        # Return control outputs following skagent pattern
+        if len(self.control_names) == 1:
+            return {self.control_names[0]: outputs.flatten()}
+        else:
+            # Multiple controls - map outputs to control names
+            result = {}
+            for i, control_name in enumerate(self.control_names):
+                if i < outputs.shape[-1]:
+                    result[control_name] = outputs[..., i].flatten()
+                else:
+                    result[control_name] = torch.zeros_like(outputs[..., 0].flatten())
+            return result
+
+    def get_decision_function(self):
+        """Return a decision function compatible with skagent interfaces."""
+
+        def decision_function(states_t, shocks_t, parameters):
+            return self.decision_function(states_t, shocks_t, parameters)
+
+        return decision_function
+
+    def decision_function(self, states_t, shocks_t, parameters):
+        """
+        Decision function interface for compatibility with skagent.
+
+        Parameters
+        -----------
+        states_t : dict
+            State variables at time t
+        shocks_t : dict
+            Shock realizations at time t
+        parameters : dict
+            Model parameters
+
+        Returns
+        --------
+        dict
+            Control variable decisions
+        """
+        return self.forward(states_t, shocks_t, parameters)
