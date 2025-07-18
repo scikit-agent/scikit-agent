@@ -130,11 +130,17 @@ class BlockPolicyNet(Net):
                 input_tensor = input_tensor.to(device)
             else:
                 batch_size = length
+
+                if batch_size is None:
+                    raise Exception(
+                        "You must pass a tensor length when creating a decision rule"
+                        " with an empty information set."
+                    )
                 input_tensor = torch.empty(batch_size, 0, device=device)
 
-            return self(input_tensor)  # application of network
+            return self(input_tensor).flatten()  # application of network
 
-        return decision_rule
+        return {self.csym: decision_rule}
 
 
 class BlockValueNet(Net):
@@ -260,7 +266,7 @@ def train_block_policy_nn(
         running_loss = 0.0
         optimizer.zero_grad()
         loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_decision_function(), loss_function
+            inputs, block_policy_nn.get_decision_rule(length=inputs.n()), loss_function
         )
         loss.backward()
         optimizer.step()
