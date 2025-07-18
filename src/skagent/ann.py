@@ -81,6 +81,9 @@ class BlockPolicyNet(Net):
 
         iset_vals = [post[isym].flatten() for isym in self.cobj.iset]
 
+        # TODO: Refactor with decision rule
+        # self.get_decision_rule()()...
+
         if len(iset_vals) > 0:
             input_tensor = torch.stack(iset_vals).T
             input_tensor = input_tensor.to(device)
