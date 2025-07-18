@@ -191,9 +191,27 @@ def simulate_dynamics(
                         *[vals_i[var] for var in signature(dr[sym][i]).parameters]
                     )
             else:
-                vals[sym] = dr[sym](
-                    *[vals[var] for var in signature(dr[sym]).parameters]
-                )  # TODO: test for signature match with Control
+                if len(signature(dr[sym]).parameters) > 0:
+                    try:
+                        vals[sym] = dr[sym](
+                            *[
+                                vals[var] for var in feq.iset
+                            ]  # signature(dr[sym]).parameters]
+                        )  # TODO: test for signature match with Control
+                    except Exception as e:
+                        print("symbol", sym)
+                        print("decision rule", dr[sym])
+                        print("decision rule signature", signature(dr[sym]))
+                        print(
+                            "decision rule signature parameters",
+                            signature(dr[sym]).parameters,
+                        )
+                        print("control information set", feq.iset)
+                        raise (Exception(f"Can't compute decision rule. {e}"))
+                else:
+                    # decision rule takes no arguments
+                    # easy to compute in any scope...
+                    vals[sym] = dr[sym]()
         else:
             vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
