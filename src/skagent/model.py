@@ -191,9 +191,27 @@ def simulate_dynamics(
                         *[vals_i[var] for var in signature(dr[sym][i]).parameters]
                     )
             else:
-                vals[sym] = dr[sym](
-                    *[vals[var] for var in signature(dr[sym]).parameters]
-                )  # TODO: test for signature match with Control
+                if len(signature(dr[sym]).parameters) > 0:
+                    try:
+                        vals[sym] = dr[sym](
+                            *[
+                                vals[var] for var in feq.iset
+                            ]  # signature(dr[sym]).parameters]
+                        )  # TODO: test for signature match with Control
+                    except Exception as e:
+                        print("symbol", sym)
+                        print("decision rule", dr[sym])
+                        print("decision rule signature", signature(dr[sym]))
+                        print(
+                            "decision rule signature parameters",
+                            signature(dr[sym]).parameters,
+                        )
+                        print("control information set", feq.iset)
+                        raise (Exception(f"Can't compute decision rule. {e}"))
+                else:
+                    # decision rule takes no arguments
+                    # easy to compute in any scope...
+                    vals[sym] = dr[sym]()
         else:
             vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
@@ -227,9 +245,12 @@ class Block:
         return attributions
 
     def get_controls(self):
+        """
+        Returns only the Control variables from the Block dynamics.
+        """
         dyn = self.get_dynamics()
 
-        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
+        return {sym: dyn[sym] for sym in dyn if isinstance(dyn[sym], Control)}
 
 
 @dataclass
@@ -323,7 +344,7 @@ class DBlock(Block):
         """
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
-    def transition(self, pre, dr, screen=False, fix=None):
+    def transition(self, pre, dr, screen=False, until=None, fix=None):
         if fix is None:
             fix = []
         """
@@ -338,6 +359,10 @@ class DBlock(Block):
         screen: Boolean
             If True, the remove any dynamics that are prior to the first given state.
             Defaults to False.
+
+        until: str or None
+            If not None, a symb which is the last symbol to simulate forward.
+            Useful for not overwriting prestates with poststates.
 
         fix: list of string
             A list of symbols to make static, rather than dynamic.
@@ -361,6 +386,17 @@ class DBlock(Block):
             # i.e. if dynamics at time t for variable 'a'
             # depend on state of 'a' at time t-1
             # This is a forbidden case in CDC's design.
+
+        if until:
+            # don't simulate any states that are logically after
+            # the until state
+            met_until = False  # this is a hack; really should use dependency graph
+            for sym in list(dyn.keys()):
+                if not met_until:
+                    if sym == until:
+                        met_until = True
+                else:
+                    del dyn[sym]
 
         for sym in fix:
             if sym in dyn and sym in pre:
@@ -457,6 +493,31 @@ class DBlock(Block):
     def iter_dblocks(self):
         """A DBlock is its own leaf."""
         yield self
+
+    def deep_replace(
+        self, name=None, description=None, shocks=None, dynamics=None, reward=None
+    ):
+        """
+        Creates a deep copy of the block with new shocks, dynamics, and rewards dictionaries.
+        These dictionaries will have updated values based on the inputs.
+        """
+        new_name = self.name if name is None else name
+        new_description = self.description if description is None else description
+
+        new_shocks = self.shocks | ({} if shocks is None else {})
+        new_dynamics = self.dynamics | ({} if dynamics is None else {})
+        new_reward = self.reward | ({} if reward is None else {})
+
+        replacement = replace(
+            self,
+            name=new_name,
+            description=new_description,
+            shocks=new_shocks,
+            dynamics=new_dynamics,
+            reward=new_reward,
+        )
+
+        return replacement
 
 
 @dataclass
