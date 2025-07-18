@@ -1,9 +1,10 @@
-from conftest import case_0, case_1, case_2, case_3, case_9
+from conftest import case_0, case_1, case_2, case_3, case_9, case_10
 import skagent.algos.maliar as maliar
 import skagent.ann as ann
 import skagent.grid as grid
 import skagent.model as model
 import skagent.models.perfect_foresight as pfm
+import skagent.solver as solver
 import torch
 import unittest
 from HARK.distributions import Normal
@@ -224,6 +225,80 @@ class test_ann_lr(unittest.TestCase):
         bpn = ann.BlockPolicyNet(pfblock, width=8)
         ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=100)
         ## This is just a smoke test.
+
+
+class test_ann_multiple_controls(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_case_10_multiple_controls(self):
+        # Control policy networks for each control in the block.
+        cpns = {}
+
+        # Invent Policy Neural Networks for each Control variable.
+        for csym in case_10["block"].get_controls():
+            cpns[csym] = ann.BlockPolicyNet(case_10["block"], csym=csym)
+
+        dict_of_decision_rules = {
+            k: v
+            for d in [
+                cpns[csym].get_decision_rule(length=case_10["givens"].n())
+                for csym in cpns
+            ]
+            for k, v in d.items()
+        }
+
+        # train for CSYM1 with decision rule from the other net
+        # for 'c'
+        ann.train_block_policy_nn(
+            cpns["c"],
+            case_10["givens"],
+            solver.get_static_reward_loss(
+                ["a"],
+                case_10["block"],
+                case_10["calibration"],
+                dict_of_decision_rules,
+            ),
+            epochs=200,
+        )
+
+        # train for CSYM2 with decision rule from other net
+        ann.train_block_policy_nn(
+            cpns["d"],
+            case_10["givens"],
+            solver.get_static_reward_loss(
+                ["a"],
+                case_10["block"],
+                case_10["calibration"],
+                dict_of_decision_rules,
+            ),
+            epochs=200,
+        )
+
+        # train Network 1
+
+        ann.train_block_policy_nn(
+            cpns["c"],
+            case_10["givens"],
+            solver.get_static_reward_loss(
+                ["a"],
+                case_10["block"],
+                case_10["calibration"],
+                dict_of_decision_rules,
+            ),
+            epochs=100,
+        )
+
+        rf = maliar.create_reward_function(
+            case_10["block"], decision_rules=dict_of_decision_rules
+        )
+        rewards = rf({"a": case_10["givens"]["a"]}, {}, {}, case_10["calibration"])
+
+        self.assertTrue(
+            torch.allclose(
+                rewards["u"], torch.zeros(rewards["u"].shape).to(device), atol=0.03
+            )
+        )
 
 
 class test_ann_value_functions(unittest.TestCase):

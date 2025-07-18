@@ -174,3 +174,24 @@ case_9 = {
         }
     ),
 }
+
+case_10 = {
+    "block": DBlock(
+        **{
+            "name": "multi control case",
+            "dynamics": {
+                "c": Control(["a"], agent="agent"),
+                "d": Control([], agent="agent"),
+                "u": lambda a, c, d, k: -((a - c) ** 2) - (k - d) ** 2,
+            },
+            "reward": {"u": "agent"},
+        }
+    ),
+    "calibration": {"k": 3},
+    "optimal_dr": {"c": lambda a: a, "d": lambda: 3},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": -2, "max": 2, "count": 11},
+        }
+    ),
+}
