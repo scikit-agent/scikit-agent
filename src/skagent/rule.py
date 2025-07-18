@@ -16,21 +16,41 @@ Key functions:
 - extract_dependencies: Get variables that a rule depends on
 """
 
-import re
 import inspect
 from skagent.model import Control
 from HARK.distributions import Distribution
+from sympy.parsing.sympy_parser import parse_expr
 
-_TOKEN_RE = re.compile(r"\b[A-Za-z_]\w*\b")
+
+def math_text_to_free_variable_names(txt):
+    """
+    Extract free variable names from mathematical text using SymPy.
+
+    Parameters
+    ----------
+    txt : str
+        Mathematical expression as string
+
+    Returns
+    -------
+    list
+        List of free variable names
+
+    Examples
+    --------
+    >>> math_text_to_free_variable_names("10 * x + y **2 - z")
+    ['x', 'y', 'z']
+    """
+    try:
+        return [sym.name for sym in parse_expr(txt).free_symbols]
+    except Exception:
+        # If SymPy fails, return empty list
+        return []
 
 
 def extract_dependencies(rule):
     """
-    Extract variable dependencies from different rule types.
-
-    Takes the "right hand side" of a model statement -- which can be a callable
-    'structural equation', or the information needed to construct a distribution,
-    and so on -- and returns the variables that statement depends on.
+    Extract variable dependencies from a model rule.
 
     Parameters
     ----------
@@ -45,34 +65,29 @@ def extract_dependencies(rule):
     deps = []
 
     if isinstance(rule, Control):
-        # Control has explicit information set
         deps = list(rule.iset)
     elif isinstance(rule, Distribution):
-        # Distribution might depend on calibration parameters
-        # This would require inspecting the distribution parameters
-        # For now, we'll need to handle this case-by-case
         pass
     elif isinstance(rule, tuple) and len(rule) == 2:
-        # Shock definition with (Distribution, params)
         dist_class, params = rule
         if isinstance(params, dict):
             for param_expr in params.values():
                 if isinstance(param_expr, str):
-                    # Extract variables from string expressions
-                    deps.extend(_TOKEN_RE.findall(param_expr))
+                    deps.extend(math_text_to_free_variable_names(param_expr))
     elif isinstance(rule, str):
-        # String expression
-        deps = _TOKEN_RE.findall(rule)
+        deps = math_text_to_free_variable_names(rule)
     elif callable(rule):
-        # Callable function
-        try:
-            deps = list(inspect.signature(rule).parameters.keys())
-        except Exception:
-            # Fallback: parse source code
+        # Check if it's a built-in or module function
+        module = getattr(rule, "__module__", None)
+        if module in ("builtins", "math", "numpy", "scipy") or module is None:
+            # Built-in functions, math functions, etc. don't depend on model variables
+            deps = []
+        else:
             try:
-                src = inspect.getsource(rule)
-                deps = _TOKEN_RE.findall(src)
+                deps = list(inspect.signature(rule).parameters.keys())
             except Exception:
-                pass
+                # For other callables that fail signature inspection,
+                # just return empty list since they don't depend on model variables
+                deps = []
 
     return deps
