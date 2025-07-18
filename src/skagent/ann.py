@@ -74,7 +74,7 @@ class BlockPolicyNet(Net):
         # very brittle, because it can interfere with constraints
         drs = {csym: lambda: 1 for csym in self.block.get_controls()}
 
-        post = self.block.transition(vals, drs)
+        post = self.block.transition(vals, drs, until=self.csym)
 
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
