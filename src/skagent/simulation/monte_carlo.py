@@ -170,7 +170,10 @@ class AgentTypeMonteCarloSimulator(Simulator):
 
         # shocks are exogenous (but for age) but can depend on calibration
         raw_shocks = block.get_shocks()
-        self.shocks = construct_shocks(raw_shocks, calibration)
+        # Pass RNG to construct_shocks for deterministic distribution creation
+        self.shocks = construct_shocks(
+            raw_shocks, calibration, rng=np.random.default_rng(seed)
+        )
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
@@ -498,7 +501,10 @@ class MonteCarloSimulator(Simulator):
 
         # shocks are exogenous (but for age) but can depend on calibration
         raw_shocks = block.get_shocks()
-        self.shocks = construct_shocks(raw_shocks, calibration)
+        # Pass RNG to construct_shocks for deterministic distribution creation
+        self.shocks = construct_shocks(
+            raw_shocks, calibration, rng=np.random.default_rng(seed)
+        )
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
