@@ -106,6 +106,7 @@ class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
         # Use allclose for numerical tolerance instead of exact equality
         self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
 
+
     def test_make_shock_history(self):
         self.simulator = AgentTypeMonteCarloSimulator(
             self.calibration,
