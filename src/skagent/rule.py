@@ -18,7 +18,7 @@ Key functions:
 
 import inspect
 from skagent.model import Control
-from HARK.distributions import Distribution
+from skagent.distributions import Distribution
 from sympy.parsing.sympy_parser import parse_expr
 
 

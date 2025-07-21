@@ -1,4 +1,4 @@
-from HARK.distributions import Normal
+from skagent.distributions import Normal
 import skagent.grid as grid
 from skagent.model import Control, DBlock
 
