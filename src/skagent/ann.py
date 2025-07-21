@@ -751,10 +751,9 @@ class FlexiblePolicyNet(FlexibleNet):
         input_tensor = torch.stack(input_vals).T.to(self.device)
 
         # ------- Forward pass WITHOUT transforms first -------
-        saved_transform = self.transform
-        self.transform = None
+        current_transform = self.transform
         raw_outputs = super().forward(input_tensor)
-        self.transform = saved_transform
+        self.transform = current_transform
 
         # Apply per-output transform AFTER slicing for list case
         if isinstance(self.transform, list):
