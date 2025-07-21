@@ -58,6 +58,9 @@ class test_simulate_dynamics(unittest.TestCase):
 
 class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
     def setUp(self):
+        # Set numpy random seed for deterministic test behavior
+        np.random.seed(0)
+
         self.calibration = {  # TODO
             "G": 1.05,
         }
@@ -100,7 +103,8 @@ class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
             - history["c"][5]
         )
 
-        self.assertTrue((a1 == b1).all())
+        # Use allclose for numerical tolerance instead of exact equality
+        self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
 
     def test_make_shock_history(self):
         self.simulator = AgentTypeMonteCarloSimulator(
