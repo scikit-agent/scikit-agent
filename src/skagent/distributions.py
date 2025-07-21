@@ -19,18 +19,21 @@ class Distribution(ABC):
     that works with both scipy and torch backends.
     """
 
-    def __init__(self, backend: str = "scipy"):
+    def __init__(self, backend: str = "scipy", rng: np.random.Generator | None = None):
         """
         Parameters
         ----------
         backend : str
             Either "scipy" or "torch" for the computational backend
+        rng : np.random.Generator, optional
+            Random number generator instance. If None, creates own RNG with random seed.
         """
         if backend not in ["scipy", "torch"]:
             msg = f"Unsupported backend: {backend}. Must be 'scipy' or 'torch'"
             raise ValueError(msg)
 
         self.backend = backend
+        self.rng = rng if rng is not None else np.random.default_rng()
 
     @abstractmethod
     def draw(self, n: int = 1) -> np.ndarray:
@@ -54,8 +57,14 @@ class Distribution(ABC):
 class Normal(Distribution):
     """Normal distribution compatible with skagent.distributions.Normal"""
 
-    def __init__(self, mu: float = 0.0, sigma: float = 1.0, backend: str = "scipy"):
-        super().__init__(backend)
+    def __init__(
+        self,
+        mu: float = 0.0,
+        sigma: float = 1.0,
+        backend: str = "scipy",
+        rng: np.random.Generator | None = None,
+    ):
+        super().__init__(backend, rng)
         self.mu = mu
         self.sigma = sigma
 
@@ -69,7 +78,7 @@ class Normal(Distribution):
 
     def draw(self, n: int = 1) -> np.ndarray:
         if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n))
+            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
         if self.backend == "torch":
             samples = self._dist.sample((n,))
             return samples.detach().cpu().numpy()
@@ -116,8 +125,14 @@ class Normal(Distribution):
 class Lognormal(Distribution):
     """Lognormal distribution compatible with skagent.distributions.Lognormal"""
 
-    def __init__(self, mean: float = 1.0, std: float = 1.0, backend: str = "scipy"):
-        super().__init__(backend)
+    def __init__(
+        self,
+        mean: float = 1.0,
+        std: float = 1.0,
+        backend: str = "scipy",
+        rng: np.random.Generator | None = None,
+    ):
+        super().__init__(backend, rng)
         # Convert mean/std parameterization to mu/sigma for lognormal
         self.mean_param = mean
         self.std_param = std
@@ -150,7 +165,7 @@ class Lognormal(Distribution):
             return np.full(n, self.mean_param)
 
         if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n))
+            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
         if self.backend == "torch":
             samples = self._dist.sample((n,))
             return samples.detach().cpu().numpy()
@@ -190,20 +205,30 @@ class Lognormal(Distribution):
 class MeanOneLogNormal(Lognormal):
     """Lognormal distribution with mean normalized to 1.0"""
 
-    def __init__(self, sigma: float = 1.0, backend: str = "scipy"):
+    def __init__(
+        self,
+        sigma: float = 1.0,
+        backend: str = "scipy",
+        rng: np.random.Generator | None = None,
+    ):
         # For mean-one lognormal: mu = -sigma^2/2
         mu = -(sigma**2) / 2
         mean = 1.0  # By construction
         std = np.sqrt(np.exp(2 * mu + sigma**2) * (np.exp(sigma**2) - 1))
-        super().__init__(mean=mean, std=std, backend=backend)
+        super().__init__(mean=mean, std=std, backend=backend, rng=rng)
         self.sigma_param = sigma
 
 
 class Bernoulli(Distribution):
     """Bernoulli distribution compatible with skagent.distributions.Bernoulli"""
 
-    def __init__(self, p: float = 0.5, backend: str = "scipy"):
-        super().__init__(backend)
+    def __init__(
+        self,
+        p: float = 0.5,
+        backend: str = "scipy",
+        rng: np.random.Generator | None = None,
+    ):
+        super().__init__(backend, rng)
         self.p = p
 
         if self.backend == "scipy":
@@ -213,7 +238,7 @@ class Bernoulli(Distribution):
 
     def draw(self, n: int = 1) -> np.ndarray:
         if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n))
+            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
         if self.backend == "torch":
             samples = self._dist.sample((n,))
             return samples.detach().cpu().numpy()
@@ -245,10 +270,12 @@ class DiscreteDistribution:
         points: np.ndarray,
         weights: np.ndarray,
         var_names: list[str] | None = None,
+        rng: np.random.Generator | None = None,
     ):
         self.points = np.asarray(points)
         self.weights = np.asarray(weights)
         self.var_names = var_names or ["x"]
+        self.rng = rng if rng is not None else np.random.default_rng()
 
         # Normalize weights
         self.weights = self.weights / np.sum(self.weights)
@@ -261,7 +288,7 @@ class DiscreteDistribution:
 
     def draw(self, n: int = 1) -> np.ndarray:
         """Draw samples from the discrete distribution"""
-        indices = np.random.choice(len(self.points), size=n, p=self.weights)
+        indices = self.rng.choice(len(self.points), size=n, p=self.weights)
         return self.points[indices]
 
     @property
@@ -302,9 +329,15 @@ class IndexDistribution:
     Distribution that varies by index (like age), compatible with skagent.distributions.IndexDistribution
     """
 
-    def __init__(self, dist_class, params_dict: dict[str, list]):
+    def __init__(
+        self,
+        dist_class,
+        params_dict: dict[str, list],
+        rng: np.random.Generator | None = None,
+    ):
         self.dist_class = dist_class
         self.params_dict = params_dict
+        self.rng = rng if rng is not None else np.random.default_rng()
 
         # Create distributions for each index
         self.distributions = []
@@ -312,7 +345,8 @@ class IndexDistribution:
 
         for i in range(n_indices):
             params = {key: values[i] for key, values in params_dict.items()}
-            self.distributions.append(dist_class(**params))
+            # Pass the same RNG instance to all child distributions
+            self.distributions.append(dist_class(**params, rng=self.rng))
 
     def draw(self, conditions: np.ndarray) -> np.ndarray:
         """Draw samples based on conditions (typically ages)"""

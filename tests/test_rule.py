@@ -23,7 +23,7 @@ pytestmark = pytest.mark.skipif(
 if HAS_DEPENDENCIES:
     from skagent.models.consumer import consumption_block
     from skagent.model import Control
-    from HARK.distributions import Bernoulli
+    from skagent.distributions import Bernoulli
 
 
 class TestRuleDependencyExtraction:
