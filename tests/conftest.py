@@ -1,4 +1,4 @@
-from skagent.distributions import Normal
+from skagent.distributions import Normal, Uniform
 import skagent.grid as grid
 from skagent.model import Control, DBlock
 
@@ -125,8 +125,8 @@ case_4 = {
         **{
             "name": "maliar test - non-trivial ergodic states",
             "shocks": {
-                "theta": (Normal, {"mu": 0, "sigma": 1}),
-                "psi": (Normal, {"mu": 0, "sigma": 1}),
+                "theta": (Uniform, {"low": -1, "high": 1}),
+                "psi": (Uniform, {"low": -1, "high": 1}),
             },
             "dynamics": {
                 "c": Control(["g", "m"]),
