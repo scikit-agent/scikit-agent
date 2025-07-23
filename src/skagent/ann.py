@@ -1,5 +1,7 @@
+import inspect
 from skagent.grid import Grid
 import torch
+from skagent.utils import create_vectorized_function_wrapper_with_mapping
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # model.to(device)
@@ -31,13 +33,63 @@ class Net(torch.nn.Module):
 
 
 class BlockPolicyNet(Net):
-    def __init__(self, block, width=32):
+    """
+    Parameters
+    -----------
+
+    apply_open_bounds: boolean
+        If True, then the network forward output is normalized by the upper and/or lower bounds,
+        computed as a function of the input tensor. These bounds are "open" because output
+        can be arbitrarily close to, but not equal to, the bounds.
+    """
+
+    def __init__(self, block, width=32, apply_open_bounds=True):
         self.block = block
+        self.apply_open_bounds = apply_open_bounds
 
         ## pseudo -- assume only one for now
-        control = self.block.dynamics[self.block.get_controls()[0]]
+        # assuming only on control for now
+        self.csym = self.block.get_controls()[0]
+        self.control = self.block.dynamics[self.csym]
+        self.iset = self.control.iset
 
-        super().__init__(len(control.iset), 1, width)
+        ## assess whether/how the control is bounded
+        # this will be more challenging with multiple controls.
+        # If not None, these will be _functions_.
+        # If it is bounded, set up the vectorized version of the bound
+        # This will be used directly in the forward pass of the network.
+        self.upper_bound = self.control.upper_bound
+        self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
+            self.upper_bound, "Upper bound"
+        )
+        self.lower_bound = self.control.lower_bound
+        self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
+            self.lower_bound, "Lower bound"
+        )
+
+        super().__init__(
+            len(self.iset),
+            1,
+            width,
+        )
+
+    def _setup_bound(self, bound_func, bound_name):
+        if bound_func:
+            sig = inspect.signature(bound_func)
+            param_names = list(sig.parameters.keys())
+            param_to_column = {}
+            for param_name in param_names:
+                if param_name in self.iset:
+                    param_to_column[param_name] = self.iset.index(param_name)
+                else:
+                    raise ValueError(
+                        f"{bound_name} parameter '{param_name}' not found in control.iset: {self.iset}"
+                    )
+            vec_func = create_vectorized_function_wrapper_with_mapping(
+                bound_func, param_to_column
+            )
+            return vec_func, param_to_column
+        return None, None
 
     def decision_function(self, states_t, shocks_t, parameters):
         """
@@ -70,17 +122,11 @@ class BlockPolicyNet(Net):
         # very brittle, because it can interfere with constraints
         drs = {csym: lambda: 1 for csym in self.block.get_controls()}
 
-        post = self.block.transition(vals, drs)
-
-        # assuming only on control for now
-        csym = self.block.get_controls()[0]
-        control = self.block.dynamics[csym]
+        post = self.block.transition(vals, drs, until=self.csym)
 
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
-
-        iset_vals = [post[isym].flatten() for isym in control.iset]
-
+        iset_vals = [post[isym].flatten() for isym in self.iset]
         if len(iset_vals) > 0:
             input_tensor = torch.stack(iset_vals).T
             input_tensor = input_tensor.to(device)
@@ -93,8 +139,44 @@ class BlockPolicyNet(Net):
         # again, assuming only one for now...
         # decisions = dict(zip([csym], output))
         # ... when using multiple csyms, note the orientation of the output tensor
-        decisions = {csym: output.flatten()}
+        decisions = {self.csym: output.flatten()}
         return decisions
+
+    def forward(self, x):
+        """
+        Note that this uses the same architecture of the superclass
+        but adds on a normalization layer appropriate to the
+        bounds of the decision rule.
+        """
+
+        # using the swish
+        x1 = super().forward(x)
+
+        if self.apply_open_bounds:
+            if not self.upper_bound and not self.lower_bound:
+                x2 = x1
+            if self.upper_bound and self.lower_bound:
+                # Compute bounds from input using wrapped functions
+                upper_bound = self.upper_bound_vec_func(x)
+                lower_bound = self.lower_bound_vec_func(x)
+
+                # Scale to bounds
+                x2 = lower_bound + torch.nn.functional.sigmoid(x1) * (
+                    upper_bound - lower_bound
+                )
+
+            if self.lower_bound and not self.upper_bound:
+                lower_bound = self.lower_bound_vec_func(x)
+                x2 = lower_bound + torch.nn.functional.softplus(x1)
+
+            if not self.lower_bound and self.upper_bound:
+                upper_bound = self.upper_bound_vec_func(x)
+                x2 = upper_bound - torch.nn.functional.softplus(x1)
+        else:
+            # return un-normalized reals.
+            x2 = x1
+
+        return x2
 
     def get_decision_function(self):
         def df(states_t, shocks_t, parameters):
