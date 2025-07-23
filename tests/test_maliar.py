@@ -1,17 +1,22 @@
 from conftest import case_1, case_2, case_3, case_4
 import numpy as np
+import os
 import skagent.algos.maliar as maliar
 import skagent.grid as grid
 import skagent.model as model
 import torch
 import unittest
-from HARK.distributions import Normal
+from skagent.distributions import Normal
 from skagent.algos.maliar import (
     get_bellman_equation_loss,
 )
 from skagent.ann import BlockValueNet
 
-torch.manual_seed(10077693)
+# Deterministic test seed - change this single value to modify all seeding
+TEST_SEED = 10077693
+
+# Device selection (but no global state modification at import time)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parameters = {"q": 1.1}
 
@@ -207,7 +212,9 @@ class TestGridManipulations(unittest.TestCase):
         # TODO: we're going to need to build the blocks in the test, because of this mutation,
         #       or else make this return a copy.
         block = case_1["block"]
-        block.construct_shocks(case_1["calibration"])
+        block.construct_shocks(
+            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
+        )
 
         state_grid = grid.Grid.from_config(
             {
@@ -221,7 +228,9 @@ class TestGridManipulations(unittest.TestCase):
 
     def test_givens_case_3(self):
         block = case_3["block"]
-        block.construct_shocks(case_1["calibration"])
+        block.construct_shocks(
+            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
+        )
 
         state_grid = grid.Grid.from_config(
             {
@@ -236,12 +245,20 @@ class TestGridManipulations(unittest.TestCase):
 
 class TestMaliarTrainingLoop(unittest.TestCase):
     def setUp(self):
-        pass
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_maliar_state_convergence(self):
         big_t = 2
 
-        case_4["block"].construct_shocks(case_4["calibration"])
+        # Use deterministic RNG for shock construction
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
 
         states_0_n = grid.Grid.from_config(
             {
@@ -258,12 +275,14 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             case_4["calibration"],
         )
 
+        # Use fixed random seed for deterministic training
         ann, states = maliar.maliar_training_loop(
             case_4["block"],
             edlrl,
             states_0_n,
             case_4["calibration"],
             simulation_steps=2,
+            random_seed=TEST_SEED,  # Fixed seed for deterministic training
         )
 
         sd = states.to_dict()

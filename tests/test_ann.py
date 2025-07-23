@@ -1,4 +1,16 @@
-from conftest import case_0, case_1, case_2, case_3, case_5, case_6, case_7, case_8
+from conftest import (
+    case_0,
+    case_1,
+    case_2,
+    case_3,
+    case_5,
+    case_6,
+    case_7,
+    case_8,
+    case_9,
+)
+import numpy as np
+import os
 import skagent.algos.maliar as maliar
 import skagent.ann as ann
 import skagent.grid as grid
@@ -6,20 +18,26 @@ import skagent.model as model
 import skagent.models.perfect_foresight as pfm
 import torch
 import unittest
-from HARK.distributions import Normal
+from skagent.distributions import Normal
 
+# Deterministic test seed - change this single value to modify all seeding
+# Using same seed as test_maliar.py for consistency across test suite
+TEST_SEED = 10077693
 
-torch.manual_seed(10077696)
-# np.random.seed(seed_value)
-
-## CUDA handling
+# Device selection (but no global state modification at import time)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.is_available())
 
 
 class test_ann_lr(unittest.TestCase):
     def setUp(self):
-        pass
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_case_0(self):
         edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
@@ -120,6 +138,11 @@ class test_ann_lr(unittest.TestCase):
         # actually gives no information, training isn't effective...
 
     def test_case_3(self):
+        # Construct shocks with deterministic RNG for reproducible test
+        case_3["block"].construct_shocks(
+            case_3["calibration"], rng=np.random.default_rng(TEST_SEED)
+        )
+
         edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
             ["a"],
             case_3["block"],
@@ -269,6 +292,32 @@ class test_ann_lr(unittest.TestCase):
             torch.allclose(c_ann.flatten(), given_0_N["a"].flatten(), atol=0.03)
         )
 
+    def test_case_9_empty_information_set(self):
+        loss_fn = maliar.get_estimated_discounted_lifetime_reward_loss(
+            ["a"],
+            case_9["block"],
+            0.9,
+            2,
+            parameters=case_9["calibration"],
+        )
+
+        given_0_N = case_9["givens"]
+
+        bpn = ann.BlockPolicyNet(case_9["block"], width=8)
+        ann.train_block_policy_nn(bpn, given_0_N, loss_fn, epochs=300)
+
+        c_ann = bpn.decision_function(
+            {"a": given_0_N["a"]},
+            {},
+            {},
+        )["c"]
+
+        self.assertTrue(
+            torch.allclose(
+                c_ann.flatten(), torch.full_like(c_ann.flatten(), 3.0), atol=0.04
+            )
+        )
+
     def test_lifetime_reward_perfect_foresight(self):
         ### Model data
 
@@ -299,8 +348,16 @@ class test_ann_value_functions(unittest.TestCase):
 
     def setUp(self):
         """Set up a simple test block for value function testing."""
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
         import skagent.model as model
-        from HARK.distributions import Normal
+        from skagent.distributions import Normal
 
         # Create a simple consumption-savings model
         self.test_block = model.DBlock(
@@ -317,7 +374,7 @@ class test_ann_value_functions(unittest.TestCase):
             },
             reward={"utility": "consumer"},
         )
-        self.test_block.construct_shocks({})
+        self.test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
         self.state_variables = ["wealth"]
         self.discount_factor = 0.95
@@ -562,7 +619,7 @@ class test_ann_value_functions(unittest.TestCase):
             },
             reward={"utility": "consumer"},
         )
-        test_block.construct_shocks({})
+        test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
         # Create value network
         value_net = ann.BlockValueNet(test_block, width=32)

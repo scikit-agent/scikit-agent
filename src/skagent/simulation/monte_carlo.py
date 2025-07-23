@@ -7,7 +7,7 @@ from typing import Mapping, Sequence
 
 import numpy as np
 
-from HARK.distributions import (
+from skagent.distributions import (
     Distribution,
     IndexDistribution,
     TimeVaryingDiscreteDistribution,
@@ -20,7 +20,10 @@ from skagent.utils import apply_fun_to_vals
 
 
 def draw_shocks(
-    shocks: Mapping[str, Distribution], conditions: Sequence[int] = (), n=None
+    shocks: Mapping[str, Distribution],
+    conditions: Sequence[int] = (),
+    n=None,
+    rng: np.random.Generator | None = None,
 ):
     """
     Draw from each shock distribution values, subject to given conditions.
@@ -38,8 +41,12 @@ def draw_shocks(
     n : int (optional)
         Number of draws to do. An alternative to a conditions sequence.
 
-    Parameters
-    ------------
+    rng : np.random.Generator, optional
+        Random number generator to use for drawing. If provided, will be used for
+        distributions that support it.
+
+    Returns
+    -------
     draws : Mapping[str, Sequence]
         A mapping from shock names to drawn shock values.
     """
@@ -54,13 +61,22 @@ def draw_shocks(
         if isinstance(shock, (int, float)):
             draws[shock_var] = np.ones(n) * shock
         elif isinstance(shock, Aggregate):
+            # For Aggregate shocks, set RNG if the distribution supports it
+            if rng is not None and hasattr(shock.dist, "rng"):
+                shock.dist.rng = rng
             draws[shock_var] = shock.dist.draw(1)[0]
         elif isinstance(shock, IndexDistribution) or isinstance(
             shock, TimeVaryingDiscreteDistribution
         ):
             ## TODO  his type test is awkward. They should share a superclass.
+            # For index-varying distributions, set RNG if supported
+            if rng is not None and hasattr(shock, "rng"):
+                shock.rng = rng
             draws[shock_var] = shock.draw(conditions)
         else:
+            # For regular distributions, set RNG if the distribution supports it
+            if rng is not None and hasattr(shock, "rng"):
+                shock.rng = rng
             draws[shock_var] = shock.draw(n)
             # this is hacky if there are no conditions.
 
@@ -154,7 +170,10 @@ class AgentTypeMonteCarloSimulator(Simulator):
 
         # shocks are exogenous (but for age) but can depend on calibration
         raw_shocks = block.get_shocks()
-        self.shocks = construct_shocks(raw_shocks, calibration)
+        # Pass RNG to construct_shocks for deterministic distribution creation
+        self.shocks = construct_shocks(
+            raw_shocks, calibration, rng=np.random.default_rng(seed)
+        )
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
@@ -182,6 +201,29 @@ class AgentTypeMonteCarloSimulator(Simulator):
         Reset the random number generator for this type.
         """
         self.RNG = np.random.default_rng(self.seed)
+        # Set RNG on shock distributions after RNG is reset
+        self._set_rng_on_shocks()
+
+    def _set_rng_on_shocks(self):
+        """
+        Set the simulator's RNG on all shock distributions that support it.
+        This ensures deterministic behavior when the simulator's seed is set.
+        """
+
+        def _set_rng_recursive(obj):
+            if hasattr(obj, "rng"):
+                obj.rng = self.RNG
+            if hasattr(obj, "dist") and hasattr(obj.dist, "rng"):
+                obj.dist.rng = self.RNG
+            if hasattr(obj, "distributions"):
+                for dist in obj.distributions:
+                    _set_rng_recursive(dist)
+
+        for shock_name, shock in self.shocks.items():
+            _set_rng_recursive(shock)
+
+        for init_name, init_dist in self.initial.items():
+            _set_rng_recursive(init_dist)
 
     def initialize_sim(self):
         """
@@ -255,7 +297,7 @@ class AgentTypeMonteCarloSimulator(Simulator):
                 shocks_now[var_name] = self.shock_history[var_name][self.t_sim, :]
         else:
             ### BIG CHANGES HERE from HARK.core.AgentType
-            shocks_now = draw_shocks(self.shocks, self.t_age)
+            shocks_now = draw_shocks(self.shocks, self.t_age, rng=self.RNG)
 
         pre = calibration_by_age(self.t_age, self.calibration)
 
@@ -341,7 +383,9 @@ class AgentTypeMonteCarloSimulator(Simulator):
             }
 
         else:
-            initial_vals = draw_shocks(self.initial, np.zeros(which_agents.sum()))
+            initial_vals = draw_shocks(
+                self.initial, np.zeros(which_agents.sum()), rng=self.RNG
+            )
 
         if np.sum(which_agents) > 0:
             for sym in initial_vals:
@@ -457,7 +501,10 @@ class MonteCarloSimulator(Simulator):
 
         # shocks are exogenous (but for age) but can depend on calibration
         raw_shocks = block.get_shocks()
-        self.shocks = construct_shocks(raw_shocks, calibration)
+        # Pass RNG to construct_shocks for deterministic distribution creation
+        self.shocks = construct_shocks(
+            raw_shocks, calibration, rng=np.random.default_rng(seed)
+        )
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
@@ -484,6 +531,29 @@ class MonteCarloSimulator(Simulator):
         Reset the random number generator for this type.
         """
         self.RNG = np.random.default_rng(self.seed)
+        # Set RNG on shock distributions after RNG is reset
+        self._set_rng_on_shocks()
+
+    def _set_rng_on_shocks(self):
+        """
+        Set the simulator's RNG on all shock distributions that support it.
+        This ensures deterministic behavior when the simulator's seed is set.
+        """
+
+        def _set_rng_recursive(obj):
+            if hasattr(obj, "rng"):
+                obj.rng = self.RNG
+            if hasattr(obj, "dist") and hasattr(obj.dist, "rng"):
+                obj.dist.rng = self.RNG
+            if hasattr(obj, "distributions"):
+                for dist in obj.distributions:
+                    _set_rng_recursive(dist)
+
+        for shock_name, shock in self.shocks.items():
+            _set_rng_recursive(shock)
+
+        for init_name, init_dist in self.initial.items():
+            _set_rng_recursive(init_dist)
 
     def initialize_sim(self):
         """
@@ -544,6 +614,7 @@ class MonteCarloSimulator(Simulator):
             self.shocks,
             np.zeros(self.agent_count),  # TODO: stupid hack to remove age calculations.
             # this needs a little more thought
+            rng=self.RNG,
         )
 
         pre = self.calibration  # for AgentTypeMC, this is conditional on age
@@ -579,7 +650,9 @@ class MonteCarloSimulator(Simulator):
         None
         """
 
-        initial_vals = draw_shocks(self.initial, np.zeros(which_agents.sum()))
+        initial_vals = draw_shocks(
+            self.initial, np.zeros(which_agents.sum()), rng=self.RNG
+        )
 
         if np.sum(which_agents) > 0:
             for sym in initial_vals:

@@ -127,9 +127,13 @@ class BlockPolicyNet(Net):
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
         iset_vals = [post[isym].flatten() for isym in self.iset]
-        input_tensor = torch.stack(iset_vals).T
+        if len(iset_vals) > 0:
+            input_tensor = torch.stack(iset_vals).T
+            input_tensor = input_tensor.to(device)
+        else:
+            batch_size = len(next(iter(states_t.values())))
+            input_tensor = torch.empty(batch_size, 0, device=device)
 
-        input_tensor = input_tensor.to(device)
         output = self(input_tensor)  # application of network
 
         # again, assuming only one for now...

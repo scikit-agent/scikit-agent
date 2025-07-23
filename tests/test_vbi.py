@@ -1,5 +1,5 @@
 import skagent.algos.vbi as vbi
-from HARK.distributions import Bernoulli
+from skagent.distributions import Bernoulli
 from skagent.model import Control, DBlock
 import skagent.models.consumer as cons
 import numpy as np

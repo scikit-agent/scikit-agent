@@ -1,4 +1,4 @@
-from HARK.distributions import Normal
+from skagent.distributions import Normal
 import skagent.grid as grid
 from skagent.model import Control, DBlock
 
@@ -252,6 +252,27 @@ case_8 = {
         {
             "a": {"min": 0, "max": 1, "count": 5},
             "theta_0": {"min": -1, "max": 1, "count": 5},
+        }
+    ),
+}
+
+case_9 = {
+    "block": DBlock(
+        **{
+            "name": "empty information set",
+            "dynamics": {
+                "a": lambda a: a,
+                "c": Control([]),
+                "u": lambda c: -((c - 3) ** 2),
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "calibration": {},
+    "optimal_dr": {"c": lambda: 3},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": 0, "max": 2, "count": 21},
         }
     ),
 }
