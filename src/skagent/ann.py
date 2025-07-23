@@ -33,8 +33,19 @@ class Net(torch.nn.Module):
 
 
 class BlockPolicyNet(Net):
-    def __init__(self, block, width=32):
+    """
+    Parameters
+    -----------
+
+    apply_open_bounds: boolean
+        If True, then the network forward output is normalized by the upper and/or lower bounds,
+        computed as a function of the input tensor. These bounds are "open" because output
+        can be arbitrarily close to, but not equal to, the bounds.
+    """
+
+    def __init__(self, block, width=32, apply_open_bounds=True):
         self.block = block
+        self.apply_open_bounds = apply_open_bounds
 
         ## pseudo -- assume only one for now
         # assuming only on control for now
@@ -137,25 +148,29 @@ class BlockPolicyNet(Net):
         # using the swish
         x1 = super().forward(x)
 
-        if not self.upper_bound and not self.lower_bound:
+        if self.apply_open_bounds:
+            if not self.upper_bound and not self.lower_bound:
+                x2 = x1
+            if self.upper_bound and self.lower_bound:
+                # Compute bounds from input using wrapped functions
+                upper_bound = self.upper_bound_vec_func(x)
+                lower_bound = self.lower_bound_vec_func(x)
+
+                # Scale to bounds
+                x2 = lower_bound + torch.nn.functional.sigmoid(x1) * (
+                    upper_bound - lower_bound
+                )
+
+            if self.lower_bound and not self.upper_bound:
+                lower_bound = self.lower_bound_vec_func(x)
+                x2 = lower_bound + torch.nn.functional.softplus(x1)
+
+            if not self.lower_bound and self.upper_bound:
+                upper_bound = self.upper_bound_vec_func(x)
+                x2 = upper_bound - torch.nn.functional.softplus(x1)
+        else:
+            # return un-normalized reals.
             x2 = x1
-        if self.upper_bound and self.lower_bound:
-            # Compute bounds from input using wrapped functions
-            upper_bound = self.upper_bound_vec_func(x)
-            lower_bound = self.lower_bound_vec_func(x)
-
-            # Scale to bounds
-            x2 = lower_bound + torch.nn.functional.sigmoid(x1) * (
-                upper_bound - lower_bound
-            )
-
-        if self.lower_bound and not self.upper_bound:
-            lower_bound = self.lower_bound_vec_func(x)
-            x2 = lower_bound + torch.nn.functional.softplus(x1)
-
-        if not self.lower_bound and self.upper_bound:
-            upper_bound = self.upper_bound_vec_func(x)
-            x2 = upper_bound - torch.nn.functional.softplus(x1)
 
         return x2
 
