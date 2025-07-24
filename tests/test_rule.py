@@ -11,6 +11,7 @@ import sys
 sys.path.append("../src")
 from skagent.rule import extract_dependencies, extract_formula, format_rule
 
+
 SKAGENT_AVAILABLE = find_spec("skagent") is not None
 HARK_AVAILABLE = find_spec("HARK") is not None
 HAS_DEPENDENCIES = SKAGENT_AVAILABLE and HARK_AVAILABLE
@@ -217,6 +218,7 @@ class TestRuleRobustness:
         assert isinstance(deps, list)
 
 
+
 class TestRuleFormulaAndFormatting:
     """Test formula extraction and formatting functions."""
 
@@ -263,3 +265,4 @@ class TestRuleFormulaAndFormatting:
         for name, rule in consumption_block.dynamics.items():
             formatted = format_rule(name, rule)
             assert formatted.startswith(f"{name} = ")
+

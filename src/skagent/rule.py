@@ -156,3 +156,4 @@ def format_rule(var, rule):
     """
     formula = extract_formula(rule)
     return f"{var} = {formula}"
+

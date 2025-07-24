@@ -308,4 +308,202 @@ def maliar_training_loop(
         # TODO: test for difference.. how? This effects the FOR (/while) loop above.
 
     # Step 3. Assess the accuracy of constructed approximation ϕ (·, θ ) on a new sample.
-    return ann, states
+    return bpn, states
+
+
+def estimate_bellman_residual(
+    block,
+    discount_factor,
+    value_network,
+    df,
+    states_t,
+    shocks,
+    parameters={},
+    agent=None,
+):
+    """
+    Computes the Bellman equation residual for given states and shocks.
+
+    The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
+    This function computes: V(s) - [u(s,c,ε) + β V(s')]
+    where s' = f(s,c,ε) and V(s') is evaluated at a specific future shock realization ε'.
+
+    Parameters
+    ----------
+    block : model.DBlock
+        The model block containing dynamics, rewards, and shocks
+    discount_factor : float
+        The discount factor β
+    value_network : callable
+        A value function that takes state variables and returns value estimates
+    df : callable
+        Decision function that returns controls given states and shocks
+    states_t : dict
+        Current state variables
+    shocks : dict
+        Shock realizations for both periods:
+        - {shock_sym}_0: period t shocks (for immediate reward and transitions)
+        - {shock_sym}_1: period t+1 shocks (for continuation value evaluation)
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+
+    Returns
+    -------
+    torch.Tensor
+        Bellman equation residual
+    """
+    if callable(discount_factor):
+        raise Exception(
+            "Currently only numerical, not state-dependent, discount factors are supported."
+        )
+
+    # Get state variable names for transition
+    state_variables = list(states_t.keys())
+
+    # Get shock variable names
+    shock_vars = block.get_shocks()
+    shock_syms = list(shock_vars.keys())
+
+    # Extract period-specific shocks from the combined shocks object
+    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
+    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
+
+    # Get reward variables
+    reward_vars = [
+        sym for sym in block.reward if agent is None or block.reward[sym] == agent
+    ]
+    if len(reward_vars) == 0:
+        raise Exception("No reward variables found in block")
+    reward_sym = reward_vars[0]  # Assume single reward for now
+
+    # Get current value estimates (using period t shocks)
+    current_values = value_network(states_t, shocks_t, parameters)
+
+    # Get controls from decision function (using period t shocks)
+    controls_t = df(states_t, shocks_t, parameters)
+
+    # Create transition and reward functions
+    tf = create_transition_function(block, state_variables)
+    rf = create_reward_function(block, agent)
+
+    # Compute immediate reward (using period t shocks)
+    immediate_reward = rf(states_t, shocks_t, controls_t, parameters)[reward_sym]
+
+    # Compute next states (using period t shocks)
+    next_states = tf(states_t, shocks_t, controls_t, parameters)
+
+    # Compute continuation value using value network (using period t+1 shocks)
+    continuation_values = value_network(next_states, shocks_t_plus_1, parameters)
+
+    # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
+    bellman_rhs = immediate_reward + discount_factor * continuation_values
+
+    # Return residual: V(s) - [u(s,c,ε) + β V(s')]
+    bellman_residual = current_values - bellman_rhs
+
+    return bellman_residual
+
+
+def get_bellman_equation_loss(
+    state_variables, block, discount_factor, value_network, parameters={}, agent=None
+):
+    """
+    Creates a Bellman equation loss function for the Maliar method.
+
+    The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
+    where s' = f(s,c,ε) is the next state given current state s, control c, and shock ε,
+    and the expectation E_ε' is taken over future shock realizations ε'.
+
+    This follows the same pattern as get_estimated_discounted_lifetime_reward_loss
+    and is designed for use with the Maliar all-in-one approach.
+
+    This function expects the input grid to contain two independent shock realizations:
+    - {shock_sym}_0: shocks for period t (used for immediate reward and transitions)
+    - {shock_sym}_1: shocks for period t+1 (used for continuation value evaluation)
+
+    Parameters
+    ----------
+    state_variables : list of str
+        List of state variable names (endogenous state variables)
+    block : model.DBlock
+        The model block containing dynamics, rewards, and shocks
+    discount_factor : float
+        The discount factor β
+    value_network : callable
+        A value function that takes state variables and returns value estimates
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+
+    Returns
+    -------
+    callable
+        A loss function that takes (decision_function, input_grid) and returns
+        the Bellman equation residual loss
+    """
+    if callable(discount_factor):
+        raise Exception(
+            "Currently only numerical, not state-dependent, discount factors are supported."
+        )
+
+    # Get shock variables
+    shock_vars = block.get_shocks()
+    shock_syms = list(shock_vars.keys())
+
+    # Get control variables
+    control_vars = block.get_controls()
+    if len(control_vars) == 0:
+        raise Exception("No control variables found in block")
+
+    # Get reward variables
+    reward_vars = [
+        sym for sym in block.reward if agent is None or block.reward[sym] == agent
+    ]
+    if len(reward_vars) == 0:
+        raise Exception("No reward variables found in block")
+    reward_vars[0]  # Assume single reward for now
+
+    def bellman_equation_loss(df, input_grid: Grid):
+        """
+        Bellman equation loss function.
+
+        Parameters
+        ----------
+        df : callable
+            Decision function from policy network
+        input_grid : Grid
+            Grid containing current states and two independent shock realizations:
+            - {shock_sym}_0: period t shocks
+            - {shock_sym}_1: period t+1 shocks (independent of period t)
+
+        Returns
+        -------
+        torch.Tensor
+            Bellman equation residual loss (squared)
+        """
+        given_vals = input_grid.to_dict()
+
+        # Extract current states and both shock realizations
+        states_t = {sym: given_vals[sym] for sym in state_variables}
+        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in shock_syms}
+        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in shock_syms})
+
+        # Use helper function to estimate Bellman residual with combined shock object
+        bellman_residual = estimate_bellman_residual(
+            block,
+            discount_factor,
+            value_network,
+            df,
+            states_t,
+            shocks,
+            parameters,
+            agent,
+        )
+
+        # Return squared residual as loss
+        return bellman_residual**2
+
+    return bellman_equation_loss
