@@ -142,11 +142,13 @@ d2_block = DBlock(
 def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     """D-2: c_t = (1-β)/(1-β^(T-t+1)) * W_t (remaining horizon formula)"""
     beta = calibration["DiscFac"]
-    T = calibration["T"]
 
     def policy(states, shocks, parameters):
         W = states["W"]
         t = states.get("t", 0)
+        
+        # Use T from parameters if available, otherwise from calibration
+        T = parameters.get("T", calibration["T"])
 
         # Remaining horizon consumption rule
         remaining_periods = T - t + 1
