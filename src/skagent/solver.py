@@ -1,7 +1,49 @@
+import skagent.ann as ann
 import numpy as np
 from skagent.algos.maliar import create_decision_function, create_reward_function
 from skagent.grid import Grid
 import torch
+
+
+def solve_multiple_controls(control_order, block, givens, calibration):
+    """
+
+    Parameters
+    ----------
+    control_order: list
+        List of control symbols in order to be solved
+    """
+
+    get_loss_function = get_static_reward_loss
+    epochs = 200
+
+    # Control policy networks for each control in the block.
+    cpns = {}
+
+    # Invent Policy Neural Networks for each Control variable.
+    for csym in block.get_controsl():
+        cpns[csym] = ann.BlockPolicyNet(block, csym=csym)
+
+    dict_of_decision_rules = {
+        k: v
+        for d in [cpns[csym].get_decision_rule(length=givens.n()) for csym in cpns]
+        for k, v in d.items()
+    }
+
+    for csym in control_order:
+        ann.train_block_policy_nn(
+            cpns[csym],
+            givens,
+            get_loss_function(  # !!
+                ["a"],  # !!
+                block,
+                calibration,
+                dict_of_decision_rules,
+            ),
+            epochs=epochs,  # !!
+        )
+
+    return dict_of_decision_rules
 
 
 def static_reward(
