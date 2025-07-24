@@ -283,13 +283,14 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             case_4["calibration"],
             simulation_steps=2,
             random_seed=TEST_SEED,  # Fixed seed for deterministic training
+            max_iterations=3,
         )
 
         sd = states.to_dict()
 
         # testing for the states converged on the ergodic distribution
-        # note we actual expect these to diverge up to two variance-1 shocks.
-        self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=3))
+        # note we actual expect these to diverge up to Uniform[-1, 1] shocks.
+        self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=2.5))
 
 
 class TestBellmanLossFunctions(unittest.TestCase):

@@ -6,7 +6,7 @@ for better integration with neural network methods while maintaining API compati
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-
+import math
 import numpy as np
 import torch
 import torch.distributions as torch_dist
@@ -217,6 +217,67 @@ class MeanOneLogNormal(Lognormal):
         std = np.sqrt(np.exp(2 * mu + sigma**2) * (np.exp(sigma**2) - 1))
         super().__init__(mean=mean, std=std, backend=backend, rng=rng)
         self.sigma_param = sigma
+
+
+class Uniform(Distribution):
+    """Uniform distribution"""
+
+    def __init__(
+        self,
+        low: float = 0.0,
+        high: float = 1.0,
+        backend: str = "scipy",
+        rng: np.random.Generator | None = None,
+    ):
+        super().__init__(backend, rng)
+        self.low = low
+        self.high = high
+
+        if self.backend == "scipy":
+            self._dist = stats.uniform(loc=low, scale=high - low)
+        elif self.backend == "torch":
+            self._dist = torch_dist.Uniform(
+                torch.tensor(low, dtype=torch.float32),
+                torch.tensor(high, dtype=torch.float32),
+            )
+
+    def draw(self, n: int = 1) -> np.ndarray:
+        if self.backend == "scipy":
+            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
+        if self.backend == "torch":
+            samples = self._dist.sample((n,))
+            return samples.detach().cpu().numpy()
+        msg = f"Unsupported backend: {self.backend}"
+        raise ValueError(msg)
+
+    def discretize(
+        self,
+        n_points: int = 7,
+        N: int | None = None,
+        **kwargs,
+    ) -> DiscreteDistribution:
+        """Discretize using Gauss-Hermite quadrature or uniform grid"""
+        # Handle HARK-style parameter naming
+        if N is not None:
+            n_points = N
+
+        # Uniform grid approach
+        points = np.linspace(
+            self.low,
+            self.high,
+            n_points,
+        )
+        weights = np.ones(n_points) / n_points
+
+        return DiscreteDistribution(points, weights, var_names=["x"])
+
+    @property
+    def mean(self) -> float:
+        return (self.low + self.high) / 2
+
+    @property
+    def std(self) -> float:
+        return (self.high - self.low) / (2 * math.sqrt(3))
 
 
 class Bernoulli(Distribution):

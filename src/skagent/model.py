@@ -396,6 +396,11 @@ class DBlock(Block):
             # This is a forbidden case in CDC's design.
 
         if until:
+            # Validate that `until` is a valid symbol in `dyn`
+            if until not in dyn:
+                raise ValueError(
+                    f"The `until` parameter ({until}) does not match any valid symbol in `dyn`. Available symbols: {list(dyn.keys())}"
+                )
             # don't simulate any states that are logically after
             # the until state
             met_until = False  # this is a hack; really should use dependency graph
