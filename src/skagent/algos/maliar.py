@@ -15,17 +15,18 @@ by the skagent Block system.
 """
 
 
-def create_transition_function(block, state_syms):
+def create_transition_function(block, state_syms, decision_rules=None):
     """
     block
     state_syms : list of string
         A list of symbols for 'state variables at time t', aka arrival states.
         # TODO: state variables should be derived from the block analysis.
     """
+    decision_rules = {} if decision_rules is None else decision_rules
 
     def transition_function(states_t, shocks_t, controls_t, parameters):
         vals = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals, {}, fix=list(controls_t.keys()))
+        post = block.transition(vals, decision_rules, fix=list(controls_t.keys()))
 
         return {sym: post[sym] for sym in state_syms}
 
@@ -43,21 +44,24 @@ def create_decision_function(block, decision_rules):
             parameters = {}
         vals = parameters | states_t | shocks_t
         post = block.transition(vals, decision_rules)
-
         return {sym: post[sym] for sym in decision_rules}
 
     return decision_function
 
 
-def create_reward_function(block, agent=None):
+def create_reward_function(block, agent=None, decision_rules=None):
     """
     block
     agent : optional, str
+    decision_rules : optional, dict
+        Decision rules of control variables that will _not_
+        be given to the function.
     """
+    decision_rules = {} if decision_rules is None else decision_rules
 
     def reward_function(states_t, shocks_t, controls_t, parameters):
         vals_t = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals_t, {}, fix=list(controls_t.keys()))
+        post = block.transition(vals_t, decision_rules, fix=list(controls_t.keys()))
         return {
             sym: post[sym]
             for sym in block.reward
