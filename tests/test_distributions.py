@@ -146,7 +146,7 @@ class TestDistributions(unittest.TestCase):
         """Test Uniform distribution discretization"""
         u = Uniform(0, 1, backend="scipy")
         disc = u.discretize(n_points=5)
-        
+
         assert len(disc.points) == 5
         assert len(disc.weights) == 5
         np.testing.assert_array_almost_equal(disc.weights, [0.2, 0.2, 0.2, 0.2, 0.2])
@@ -156,7 +156,7 @@ class TestDistributions(unittest.TestCase):
     def test_uniform_discretize_hark_compatibility(self):
         """Test Uniform distribution discretization with HARK-style parameters"""
         u = Uniform(0, 1, backend="scipy")
-        
+
         # Test with N parameter for HARK compatibility
         disc_n = u.discretize(N=7)
         assert len(disc_n.points) == 7
