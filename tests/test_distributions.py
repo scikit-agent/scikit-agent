@@ -17,6 +17,7 @@ from skagent.distributions import (
     MeanOneLogNormal,
     Normal,
     TimeVaryingDiscreteDistribution,
+    Uniform,
     combine_indep_dstns,
     expected,
 )
@@ -101,6 +102,73 @@ class TestDistributions(unittest.TestCase):
         b.backend = "unsupported"
         with pytest.raises(ValueError, match="Unsupported backend"):
             b.draw(10)
+
+    def test_uniform_scipy(self):
+        """Test Uniform distribution with scipy backend"""
+        u = Uniform(0, 1, backend="scipy")
+        samples = u.draw(1000)
+
+        assert len(samples) == 1000
+        assert all(0 <= s <= 1 for s in samples)  # All samples should be in [0, 1]
+        # Mean should be close to 0.5
+        assert np.isclose(np.mean(samples), 0.5, atol=0.1)
+        assert u.mean == 0.5
+        # Standard deviation for uniform(0,1) is 1/(2*sqrt(3)) ≈ 0.2887
+        expected_std = 1 / (2 * np.sqrt(3))
+        assert np.isclose(u.std, expected_std, atol=1e-6)
+
+    def test_uniform_torch(self):
+        """Test Uniform distribution with torch backend"""
+        u = Uniform(0, 1, backend="torch")
+        samples = u.draw(1000)
+
+        assert len(samples) == 1000
+        assert all(0 <= s <= 1 for s in samples)  # All samples should be in [0, 1]
+        # Mean should be close to 0.5
+        assert np.isclose(np.mean(samples), 0.5, atol=0.1)
+        assert u.mean == 0.5
+
+    def test_uniform_custom_range(self):
+        """Test Uniform distribution with custom range"""
+        u = Uniform(-2, 3, backend="scipy")
+        samples = u.draw(1000)
+
+        assert len(samples) == 1000
+        assert all(-2 <= s <= 3 for s in samples)  # All samples should be in [-2, 3]
+        # Mean should be close to 0.5
+        assert np.isclose(np.mean(samples), 0.5, atol=0.1)
+        assert u.mean == 0.5
+        # Standard deviation for uniform(-2,3) is 5/(2*sqrt(3))
+        expected_std = 5 / (2 * np.sqrt(3))
+        assert np.isclose(u.std, expected_std, atol=1e-6)
+
+    def test_uniform_discretize(self):
+        """Test Uniform distribution discretization"""
+        u = Uniform(0, 1, backend="scipy")
+        disc = u.discretize(n_points=5)
+
+        assert len(disc.points) == 5
+        assert len(disc.weights) == 5
+        np.testing.assert_array_almost_equal(disc.weights, [0.2, 0.2, 0.2, 0.2, 0.2])
+        np.testing.assert_array_almost_equal(disc.points, [0.0, 0.25, 0.5, 0.75, 1.0])
+        assert np.isclose(np.sum(disc.weights), 1.0, atol=1e-6)
+
+    def test_uniform_discretize_hark_compatibility(self):
+        """Test Uniform distribution discretization with HARK-style parameters"""
+        u = Uniform(0, 1, backend="scipy")
+
+        # Test with N parameter for HARK compatibility
+        disc_n = u.discretize(N=7)
+        assert len(disc_n.points) == 7
+        assert len(disc_n.weights) == 7
+        assert np.isclose(np.sum(disc_n.weights), 1.0, atol=1e-6)
+
+    def test_uniform_unsupported_backend_error(self):
+        """Test Uniform distribution with unsupported backend raises error"""
+        u = Uniform(0, 1, backend="scipy")
+        u.backend = "unsupported"
+        with pytest.raises(ValueError, match="Unsupported backend"):
+            u.draw(10)
 
     def test_lognormal_scipy(self):
         """Test Lognormal distribution with scipy backend"""
@@ -425,16 +493,18 @@ class TestDistributions(unittest.TestCase):
     def test_distribution_imports(self):
         """Test that required distributions are importable"""
         # Since scipy and torch are hard dependencies, they should always import
-        from skagent.distributions import Normal, Lognormal, Bernoulli
+        from skagent.distributions import Normal, Lognormal, Bernoulli, Uniform
 
         # Test that we can create instances
         n = Normal(0, 1)
         ln = Lognormal(1, 0.5)
         b = Bernoulli(0.5)
+        u = Uniform(0, 1)
 
         assert n.backend == "scipy"
         assert ln.backend == "scipy"
         assert b.backend == "scipy"
+        assert u.backend == "scipy"
 
     def test_lognormal_torch_distribution_creation(self):
         """Test Lognormal torch distribution creation to cover lines 163-172"""
