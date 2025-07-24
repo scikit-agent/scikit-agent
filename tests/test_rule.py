@@ -218,7 +218,6 @@ class TestRuleRobustness:
         assert isinstance(deps, list)
 
 
-
 class TestRuleFormulaAndFormatting:
     """Test formula extraction and formatting functions."""
 
@@ -265,4 +264,3 @@ class TestRuleFormulaAndFormatting:
         for name, rule in consumption_block.dynamics.items():
             formatted = format_rule(name, rule)
             assert formatted.startswith(f"{name} = ")
-
