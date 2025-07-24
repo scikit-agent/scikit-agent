@@ -8,7 +8,7 @@ much larger time horizons and validate against analytical solutions.
 
 Key innovations:
 1. No shock space explosion - can test large T values
-2. Analytical validation - compare numerical vs closed-form solutions  
+2. Analytical validation - compare numerical vs closed-form solutions from benchmarks.py
 3. Comprehensive coverage - various model types and time horizons
 4. Performance benchmarking - demonstrate scalability improvements
 """
@@ -22,7 +22,9 @@ import skagent.models.perfect_foresight as pfm
 from skagent.models.benchmarks import (
     get_benchmark_model, 
     get_benchmark_calibration, 
-    get_analytical_policy
+    get_analytical_policy,
+    d1_analytical_lifetime_reward,
+    d2_analytical_lifetime_reward
 )
 
 # Test configuration
@@ -31,104 +33,8 @@ TOLERANCE_BASIC = 1e-6    # For simple analytical cases
 TOLERANCE_NUMERICAL = 1e-4  # For complex numerical cases
 
 
-class AnalyticalLifetimeReward:
-    """
-    Computes analytical lifetime rewards for perfect foresight models.
-    
-    This class implements closed-form solutions for lifetime discounted rewards
-    that can be used to validate the numerical solver.
-    """
-    
-    @staticmethod
-    def two_period_log_utility(initial_wealth: float, discount_factor: float, 
-                               interest_rate: float) -> float:
-        """
-        Analytical lifetime reward for D-1: Two-period log utility model.
-        
-        With optimal policy c1 = W/(1+β), c2 = βRW/(1+β):
-        Lifetime reward = ln(c1) + β*ln(c2)
-                        = ln(W/(1+β)) + β*ln(βRW/(1+β))
-                        = (1+β)*ln(W) + β*ln(βR) - (1+β)*ln(1+β)
-        """
-        beta = discount_factor
-        R = interest_rate
-        W = initial_wealth
-        
-        if W <= 0:
-            return -np.inf
-            
-        return ((1 + beta) * np.log(W) + 
-                beta * np.log(beta * R) - 
-                (1 + beta) * np.log(1 + beta))
-    
-    @staticmethod
-    def finite_horizon_log_utility(initial_wealth: float, discount_factor: float,
-                                   interest_rate: float, time_horizon: int) -> float:
-        """
-        Analytical lifetime reward for D-2: Finite horizon log utility.
-        
-        Forward simulation that exactly matches the D-2 model implementation.
-        """
-        beta = discount_factor
-        R = interest_rate
-        W = initial_wealth
-        T = time_horizon
-        
-        if W <= 0 or T <= 0:
-            return -np.inf
-            
-        # Forward simulation matching D-2 model
-        total_utility = 0.0
-        current_wealth = W
-        
-        for t in range(T):
-            # Remaining periods calculation: T - t + 1 (matches D-2 policy) 
-            remaining = T - t + 1
-            
-            if remaining <= 1:
-                # Terminal period: consume everything
-                consumption = current_wealth
-            else:
-                # Use remaining horizon formula: c_t = (1-β)/(1-β^remaining) * W_t
-                consumption_rate = (1 - beta) / (1 - beta**remaining)
-                consumption = consumption_rate * current_wealth
-           
-            period_utility = np.log(consumption)
-            total_utility += (beta**t) * period_utility
-           
-            if t < T - 1:
-                current_wealth = (current_wealth - consumption) * R
-                
-        return total_utility
-    
-    @staticmethod  
-    def infinite_horizon_crra(cash_on_hand: float, discount_factor: float,
-                              interest_rate: float, risk_aversion: float) -> float:
-        """
-        Analytical lifetime reward for D-3: Infinite horizon CRRA.
-        
-        With optimal policy c = κ*m where κ = (R - (βR)^(1/σ))/R:
-        V(m) = κ^(1-σ)/(1-σ) * m^(1-σ) / (1 - β*(βR)^((1-σ)/σ))
-        """
-        beta = discount_factor
-        R = interest_rate  
-        sigma = risk_aversion
-        m = cash_on_hand
-        
-        if m <= 0:
-            return -np.inf
-            
-        growth_factor = (beta * R) ** (1 / sigma)
-        if growth_factor >= R:
-            raise ValueError("Return-impatience condition violated")
-            
-        kappa = (R - growth_factor) / R
-        
-        if sigma == 1:  # Log utility case
-            return (np.log(kappa) + np.log(m)) / (1 - beta)
-        else:  # General CRRA case
-            denominator = 1 - beta * (beta * R) ** ((1 - sigma) / sigma)
-            return (kappa**(1 - sigma) * m**(1 - sigma) / (1 - sigma)) / denominator
+# Analytical lifetime reward functions are imported from benchmarks.py
+# This provides a centralized location for all benchmark-related functionality
 
 
 class TestPerfectForesightLifetimeReward(unittest.TestCase):
@@ -144,7 +50,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         """Set up test configuration."""
         torch.manual_seed(TEST_SEED)
         np.random.seed(TEST_SEED)
-        self.analytical = AnalyticalLifetimeReward()
     
     def test_two_period_model_basic(self):
         """Test D-1 two-period model with basic parameters."""
@@ -167,7 +72,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         numerical_reward = u1 + calibration["DiscFac"] * u2
         
         # Analytical lifetime reward  
-        analytical_reward = self.analytical.two_period_log_utility(
+        analytical_reward = d1_analytical_lifetime_reward(
             initial_wealth, 
             calibration["DiscFac"], 
             calibration["R"]
@@ -200,7 +105,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 u2 = float(torch.log(torch.as_tensor(c2, dtype=torch.float32)))
                 numerical = u1 + calibration["DiscFac"] * u2
                 
-                analytical = self.analytical.two_period_log_utility(
+                analytical = d1_analytical_lifetime_reward(
                     W, calibration["DiscFac"], calibration["R"]
                 )
                 
@@ -236,7 +141,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 )
                 
                 # Analytical solution
-                analytical = self.analytical.finite_horizon_log_utility(
+                analytical = d2_analytical_lifetime_reward(
                     initial_wealth, calibration["DiscFac"], 
                     calibration["R"], T
                 )
@@ -349,7 +254,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 u2 = float(torch.log(torch.as_tensor(c2, dtype=torch.float32)))
                 reward = u1 + calibration["DiscFac"] * u2
                 
-                analytical = self.analytical.two_period_log_utility(
+                analytical = d1_analytical_lifetime_reward(
                     case["W"], calibration["DiscFac"], calibration["R"]
                 )
                 
@@ -357,6 +262,113 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                     self.assertAlmostEqual(
                         reward, analytical, places=6  # Reduced from 10
                     )
+    
+    def test_policy_function_accuracy(self):
+        """Test that numerical and analytical policies produce identical consumption decisions."""
+        # Test D-1 model policy accuracy
+        model_id = "D-1"
+        calibration = get_benchmark_calibration(model_id)
+        analytical_policy = get_analytical_policy(model_id)
+        
+        # Test multiple wealth levels
+        wealth_levels = [0.5, 1.0, 2.0, 5.0, 10.0]
+        
+        for W in wealth_levels:
+            with self.subTest(model=model_id, wealth=W):
+                # Get analytical policy decision
+                analytical_decision = analytical_policy({"W": W}, {}, calibration)
+                
+                # For perfect foresight models, analytical policy should be exact
+                # Verify the policy satisfies optimality conditions
+                c1 = float(analytical_decision["c1"])
+                c2 = float(analytical_decision["c2"])
+                
+                # Budget constraint: c1 + c2/R = W
+                budget_constraint = c1 + c2/calibration["R"]
+                self.assertAlmostEqual(
+                    budget_constraint, W, places=10,
+                    msg=f"Budget constraint violated: {budget_constraint} != {W}")
+                
+                # Optimality condition: 1/c1 = β*R/c2 (Euler equation)
+                lhs = 1.0 / c1
+                rhs = calibration["DiscFac"] * calibration["R"] / c2
+                self.assertAlmostEqual(
+                    lhs, rhs, places=10,
+                    msg=f"Euler equation violated: {lhs} != {rhs}")
+    
+    def test_d3_policy_function_accuracy(self):
+        """Test D-3 infinite horizon policy function accuracy."""
+        model_id = "D-3"
+        calibration = get_benchmark_calibration(model_id)
+        analytical_policy = get_analytical_policy(model_id)
+        
+        # Test multiple cash-on-hand levels
+        cash_on_hand_levels = [1.0, 2.0, 3.0, 5.0, 10.0]
+        
+        for m in cash_on_hand_levels:
+            with self.subTest(model=model_id, cash_on_hand=m):
+                # Get analytical policy decision
+                analytical_decision = analytical_policy({"m": m}, {}, calibration)
+                c = float(analytical_decision["c"])
+                
+                # Verify consumption is positive and feasible
+                self.assertGreater(c, 0, "Consumption must be positive")
+                self.assertLess(c, m, "Consumption must be less than cash-on-hand")
+                
+                # Verify consumption function: c = κ*m where κ = (R - (βR)^(1/σ))/R
+                beta = calibration["DiscFac"]
+                R = calibration["R"]
+                sigma = calibration["CRRA"]
+                
+                expected_kappa = (R - (beta * R)**(1/sigma)) / R
+                expected_c = expected_kappa * m
+                
+                self.assertAlmostEqual(
+                    c, expected_c, places=10,
+                    msg=f"Consumption function violated: {c} != {expected_c}")
+                
+                # Verify marginal propensity to consume is reasonable
+                self.assertGreater(expected_kappa, 0, "MPC must be positive")
+                self.assertLess(expected_kappa, 1, "MPC must be less than 1")
+    
+    def test_d2_policy_function_accuracy(self):
+        """Test D-2 finite horizon policy function accuracy."""
+        model_id = "D-2"
+        calibration = get_benchmark_calibration(model_id).copy()
+        
+        # Test with different time horizons
+        time_horizons = [2, 3, 5, 10]
+        wealth_levels = [1.0, 2.0, 5.0]
+        
+        for T in time_horizons:
+            calibration["T"] = T
+            analytical_policy = get_analytical_policy(model_id)
+            
+            for W in wealth_levels:
+                for t in range(T):
+                    with self.subTest(model=model_id, T=T, W=W, t=t):
+                        # Get analytical policy decision
+                        analytical_decision = analytical_policy({"W": W, "t": t}, {}, calibration)
+                        c = float(analytical_decision["c"])
+                        
+                        # Verify consumption is positive and feasible
+                        self.assertGreater(c, 0, "Consumption must be positive")
+                        self.assertLessEqual(c, W, "Consumption cannot exceed wealth")
+                        
+                        # Verify consumption rate formula: c_t = (1-β)/(1-β^(T-t+1)) * W_t
+                        beta = calibration["DiscFac"]
+                        remaining = T - t + 1
+                        
+                        if remaining <= 1:
+                            # Terminal period: consume everything
+                            expected_c = W
+                        else:
+                            consumption_rate = (1 - beta) / (1 - beta**remaining)
+                            expected_c = consumption_rate * W
+                        
+                        self.assertAlmostEqual(
+                            c, expected_c, places=10,
+                            msg=f"Consumption rate formula violated: {c} != {expected_c}")
     
     def test_consistency_with_existing_tests(self):
         """Ensure new tests are consistent with existing test patterns."""

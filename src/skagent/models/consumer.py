@@ -35,7 +35,9 @@ consumption_block = DBlock(
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "p": lambda PermGroFac, p: PermGroFac * p,
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: torch.log(c) if CRRA == 1 else c ** (1 - CRRA) / (1 - CRRA),
+            "u": lambda c, CRRA: torch.log(c)
+            if CRRA == 1
+            else c ** (1 - CRRA) / (1 - CRRA),
         },
         "reward": {"u": "consumer"},
     }
@@ -53,7 +55,9 @@ consumption_block_normalized = DBlock(
             "m": lambda b, theta: b + theta,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": "m - c",
-            "u": lambda c, CRRA: torch.log(c) if CRRA == 1 else c ** (1 - CRRA) / (1 - CRRA),
+            "u": lambda c, CRRA: torch.log(c)
+            if CRRA == 1
+            else c ** (1 - CRRA) / (1 - CRRA),
         },
         "reward": {"u": "consumer"},
     }

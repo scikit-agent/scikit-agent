@@ -128,7 +128,9 @@ def estimate_discounted_lifetime_reward(
                 torch.isnan(reward_t[rsym])
             ):
                 raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
-            if isinstance(reward_t[rsym], np.ndarray) and np.any(np.isnan(reward_t[rsym])):
+            if isinstance(reward_t[rsym], np.ndarray) and np.any(
+                np.isnan(reward_t[rsym])
+            ):
                 raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
             period_reward += reward_t[rsym]
 
