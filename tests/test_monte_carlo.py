@@ -4,7 +4,7 @@ This file implements unit tests for the Monte Carlo simulation module
 
 import unittest
 
-from HARK.distributions import Bernoulli, IndexDistribution, MeanOneLogNormal
+from skagent.distributions import Bernoulli, IndexDistribution, MeanOneLogNormal
 from skagent.model import Aggregate, Control, DBlock, simulate_dynamics
 from skagent.simulation.monte_carlo import (
     AgentTypeMonteCarloSimulator,
@@ -100,7 +100,8 @@ class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
             - history["c"][5]
         )
 
-        self.assertTrue((a1 == b1).all())
+        # Use allclose for numerical tolerance instead of exact equality
+        self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
 
     def test_make_shock_history(self):
         self.simulator = AgentTypeMonteCarloSimulator(
@@ -209,4 +210,5 @@ class test_MonteCarloSimulator(unittest.TestCase):
             - history["c"][5]
         )
 
-        self.assertTrue((a1 == b1).all())
+        # Use allclose for numerical tolerance instead of exact equality
+        self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))

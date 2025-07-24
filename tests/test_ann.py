@@ -1,4 +1,6 @@
 from conftest import case_0, case_1, case_2, case_3, case_9, case_10
+import numpy as np
+import os
 import skagent.algos.maliar as maliar
 import skagent.ann as ann
 import skagent.grid as grid
@@ -7,20 +9,25 @@ import skagent.models.perfect_foresight as pfm
 import skagent.solver as solver
 import torch
 import unittest
-from HARK.distributions import Normal
+from skagent.distributions import Normal
 
+# Deterministic test seed - change this single value to modify all seeding
+# Using same seed as test_maliar.py for consistency across test suite
+TEST_SEED = 10077693
 
-torch.manual_seed(10077696)
-# np.random.seed(seed_value)
-
-## CUDA handling
+# Device selection (but no global state modification at import time)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(torch.cuda.is_available())
 
 
 class test_ann_lr(unittest.TestCase):
     def setUp(self):
-        pass
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_case_0(self):
         edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
@@ -67,7 +74,6 @@ class test_ann_lr(unittest.TestCase):
         )["c"]
 
         errors = c_ann.flatten() - given_0_N.to_dict()["theta_0"]
-        print(errors)
 
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
@@ -309,7 +315,7 @@ class test_ann_value_functions(unittest.TestCase):
     def setUp(self):
         """Set up a simple test block for value function testing."""
         import skagent.model as model
-        from HARK.distributions import Normal
+        from skagent.distributions import Normal
 
         # Create a simple consumption-savings model
         self.test_block = model.DBlock(
@@ -326,7 +332,7 @@ class test_ann_value_functions(unittest.TestCase):
             },
             reward={"utility": "consumer"},
         )
-        self.test_block.construct_shocks({})
+        self.test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
         self.state_variables = ["wealth"]
         self.discount_factor = 0.95
@@ -571,7 +577,7 @@ class test_ann_value_functions(unittest.TestCase):
             },
             reward={"utility": "consumer"},
         )
-        test_block.construct_shocks({})
+        test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
         # Create value network
         value_net = ann.BlockValueNet(test_block, width=32)

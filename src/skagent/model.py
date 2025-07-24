@@ -4,7 +4,7 @@ Tools for crafting models.
 
 from dataclasses import dataclass, field, replace
 from copy import copy, deepcopy
-from HARK.distributions import (
+from skagent.distributions import (
     Distribution,
     DiscreteDistributionLabeled,
     combine_indep_dstns,
@@ -90,7 +90,7 @@ def discretized_shock_dstn(shocks, disc_params):
     return all_shock_dstn
 
 
-def construct_shocks(shock_data, scope):
+def construct_shocks(shock_data, scope, rng=None):
     """
     Returns a dictionary from shock labels to Distributions.
 
@@ -116,6 +116,10 @@ def construct_shocks(shock_data, scope):
     scope: dict(str, values)
         Variables assigned to numerical values.
         The scope in which expressions will be evaluated
+
+    rng: np.random.Generator, optional
+        Random number generator to pass to distribution constructors.
+        If provided, distributions created from tuples will use this RNG.
     """
     sd = deepcopy(shock_data)
 
@@ -133,6 +137,11 @@ def construct_shocks(shock_data, scope):
                     )
 
                     dist_args[a] = arg_value
+
+            # Add RNG to distribution arguments if provided
+            if rng is not None:
+                dist_args = dist_args.copy()  # Don't modify original
+                dist_args["rng"] = rng
 
             dist = dist_class(**dist_args)
 
@@ -285,12 +294,19 @@ class DBlock(Block):
     dynamics: dict = field(default_factory=dict)
     reward: dict = field(default_factory=dict)
 
-    def construct_shocks(self, calibration):
+    def construct_shocks(self, calibration, rng=None):
         """
         Constructs all shocks given calibration.
         This method mutates the DBlock.
+
+        Parameters
+        ----------
+        calibration : dict
+            Calibration parameters for shock construction
+        rng : np.random.Generator, optional
+            Random number generator to use for distribution construction
         """
-        self.shocks = construct_shocks(self.shocks, calibration)
+        self.shocks = construct_shocks(self.shocks, calibration, rng=rng)
 
     def discretize(self, disc_params):
         """
@@ -526,12 +542,19 @@ class RBlock(Block):
     description: str = ""
     blocks: List[Block] = field(default_factory=list)
 
-    def construct_shocks(self, calibration):
+    def construct_shocks(self, calibration, rng=None):
         """
         Construct all shocks given a calibration dictionary.
+
+        Parameters
+        ----------
+        calibration : dict
+            Calibration parameters for shock construction
+        rng : np.random.Generator, optional
+            Random number generator to use for distribution construction
         """
         for b in self.blocks:
-            b.construct_shocks(calibration)
+            b.construct_shocks(calibration, rng=rng)
 
     def discretize(self, disc_params):
         """
