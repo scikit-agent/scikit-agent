@@ -5,8 +5,13 @@ from skagent.grid import Grid
 import torch
 
 
-def solve_multiple_controls(control_order, block, givens, calibration):
+def solve_multiple_controls(control_order, block, givens, calibration, epochs=200):
     """
+    Solves a block multiple times, once for each control in control_order.
+
+    Currently restricted to static reward loss.
+
+    TODO: all variable 'loss function generator' once API has solidified.
 
     Parameters
     ----------
@@ -15,13 +20,12 @@ def solve_multiple_controls(control_order, block, givens, calibration):
     """
 
     get_loss_function = get_static_reward_loss
-    epochs = 200
 
     # Control policy networks for each control in the block.
     cpns = {}
 
     # Invent Policy Neural Networks for each Control variable.
-    for csym in block.get_controsl():
+    for csym in block.get_controls():
         cpns[csym] = ann.BlockPolicyNet(block, csym=csym)
 
     dict_of_decision_rules = {
