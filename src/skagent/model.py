@@ -198,15 +198,7 @@ def simulate_dynamics(
                                 vals[var] for var in feq.iset
                             ]  # signature(dr[sym]).parameters]
                         )  # TODO: test for signature match with Control
-                    except Exception as e:
-                        print("symbol", sym)
-                        print("decision rule", dr[sym])
-                        print("decision rule signature", signature(dr[sym]))
-                        print(
-                            "decision rule signature parameters",
-                            signature(dr[sym]).parameters,
-                        )
-                        print("control information set", feq.iset)
+                    except (TypeError, ValueError, KeyError) as e:
                         raise (Exception(f"Can't compute decision rule. {e}"))
                 else:
                     # decision rule takes no arguments

@@ -275,7 +275,9 @@ class test_ann_multiple_controls(unittest.TestCase):
             epochs=200,
         )
 
-        # train Network 1
+        # Train the policy neural network for 'c' again to refine its decision rule.
+        # This step ensures that 'c' is optimized with the updated decision rules
+        # from the other networks, improving the overall policy performance.
 
         ann.train_block_policy_nn(
             cpns["c"],
