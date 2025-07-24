@@ -101,11 +101,10 @@ def estimate_discounted_lifetime_reward(
 
     rf = create_reward_function(block, agent)
 
-    # this assumes only one reward is given.
-    # can be generalized in the future.
-    rsym = list(
+    # Get all reward symbols for the agent
+    reward_syms = list(
         {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
-    )[0]
+    )
 
     if callable(discount_factor):
         raise Exception(
@@ -121,15 +120,21 @@ def estimate_discounted_lifetime_reward(
         controls_t = df(states_t, shocks_t, parameters)
         reward_t = rf(states_t, shocks_t, controls_t, parameters)
 
-        # assumes torch
-        if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
-            torch.isnan(reward_t[rsym])
-        ):
-            raise Exception(f"Calculated reward {[rsym]} is NaN: {reward_t}")
-        if isinstance(reward_t[rsym], np.ndarray) and np.any(np.isnan(reward_t[rsym])):
-            raise Exception(f"Calculated reward {[rsym]} is NaN: {reward_t}")
+        # Sum all rewards for this period
+        period_reward = 0
+        for rsym in reward_syms:
+            # assumes torch
+            if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
+                torch.isnan(reward_t[rsym])
+            ):
+                raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+            if isinstance(reward_t[rsym], np.ndarray) and np.any(
+                np.isnan(reward_t[rsym])
+            ):
+                raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+            period_reward += reward_t[rsym]
 
-        total_discounted_reward += reward_t[rsym] * discount_factor**t
+        total_discounted_reward += period_reward * discount_factor**t
 
         # t + 1
         states_t = tf(states_t, shocks_t, controls_t, parameters)
@@ -153,7 +158,7 @@ def get_estimated_discounted_lifetime_reward_loss(
     )
 
     def estimated_discounted_lifetime_reward_loss(df: callable, input_grid: Grid):
-        ## includes the values of state_0 variables, and shocks.
+        # includes the values of state_0 variables, and shocks.
         given_vals = input_grid.to_dict()
 
         shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
@@ -162,7 +167,7 @@ def get_estimated_discounted_lifetime_reward_loss(
             for sym in shock_vars
         }
 
-        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
+        # block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = estimate_discounted_lifetime_reward(
             block,
             discount_factor,
@@ -170,9 +175,9 @@ def get_estimated_discounted_lifetime_reward_loss(
             {sym: given_vals[sym] for sym in state_variables},
             big_t,
             parameters=parameters,
-            agent=None,  ## TODO: Pass through the agent?
+            agent=None,  # TODO: Pass through the agent?
             shocks_by_t=shocks_by_t,
-            ## Handle multiple decision rules?
+            # Handle multiple decision rules?
         )
         return -edlr
 
