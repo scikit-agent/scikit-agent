@@ -123,9 +123,9 @@ class Simulator:
 
 class AgentTypeMonteCarloSimulator(Simulator):
     """
-    A Monte Carlo simulation engine based on the HARK.core.AgentType framework.
+    A Monte Carlo simulation engine for agent-based economic models.
 
-    Unlike HARK.core.AgentType, this class does not do any model solving,
+    This class focuses on simulation without model solving,
     and depends on dynamic equations, shocks, and decision rules paased into it.
 
     The purpose of this class is to provide a way to simulate models without
@@ -183,7 +183,7 @@ class AgentTypeMonteCarloSimulator(Simulator):
         self.agent_count = agent_count
         self.T_sim = T_sim
 
-        # changes here from HARK.core.AgentType
+        # Custom initialization logic
         self.vars = block.get_vars()
 
         self.vars_now = {v: None for v in self.vars}
@@ -296,7 +296,7 @@ class AgentTypeMonteCarloSimulator(Simulator):
             for var_name in self.shocks:
                 shocks_now[var_name] = self.shock_history[var_name][self.t_sim, :]
         else:
-            ### BIG CHANGES HERE from HARK.core.AgentType
+            ### Custom simulation logic
             shocks_now = draw_shocks(self.shocks, self.t_age, rng=self.RNG)
 
         pre = calibration_by_age(self.t_age, self.calibration)
@@ -458,7 +458,7 @@ class MonteCarloSimulator(Simulator):
     """
     A Monte Carlo simulation engine based.
 
-    Unlike the AgentTypeMonteCarloSimulator HARK.core.AgentType,
+    Unlike the AgentTypeMonteCarloSimulator,
     this class does make any assumptions about aging or mortality.
     It operates only on model information passed in as blocks.
 
@@ -514,7 +514,7 @@ class MonteCarloSimulator(Simulator):
         self.agent_count = agent_count  # TODO: pass this in at block level
         self.T_sim = T_sim
 
-        # changes here from HARK.core.AgentType
+        # Custom initialization logic
         self.vars = block.get_vars()
 
         self.vars_now = {v: None for v in self.vars}

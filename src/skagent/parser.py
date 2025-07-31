@@ -45,9 +45,9 @@ def math_text_to_lambda(text):
     return func
 
 
-def harklang_loader():
+def skagent_loader():
     """
-    A PyYAML loader that supports tags for HARKLang,
+    A PyYAML loader that supports tags for scikit-agent,
     such as random variables and model tags.
     """
     loader = yaml.SafeLoader

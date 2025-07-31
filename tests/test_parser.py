@@ -18,7 +18,7 @@ class test_consumption_parsing(unittest.TestCase):
     def test_parse(self):
         self.consumer_yaml_file
 
-        config = yaml.load(self.consumer_yaml_file, Loader=parser.harklang_loader())
+        config = yaml.load(self.consumer_yaml_file, Loader=parser.skagent_loader())
 
         self.assertEqual(config["calibration"]["DiscFac"], 0.96)
         self.assertEqual(config["blocks"][0]["name"], "consumption normalized")
