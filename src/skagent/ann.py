@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Constructing Nets
 
 
-class FlexibleNet(torch.nn.Module):
+class Net(torch.nn.Module):
     """
     A flexible feedforward neural network with configurable architecture.
 
@@ -237,11 +237,11 @@ class FlexibleNet(torch.nn.Module):
             raise ValueError(f"Unknown single transform: {transform}")
 
 
-class BlockPolicyNet(FlexibleNet):
+class BlockPolicyNet(Net):
     """
     A neural network for policy functions in dynamic programming problems.
 
-    This network inherits from FlexibleNet and provides economic model integration.
+    This network inherits from Net and provides economic model integration.
     It automatically determines input/output dimensions from the model block specification
     and handles control variable bounds.
 
@@ -258,11 +258,11 @@ class BlockPolicyNet(FlexibleNet):
     n_layers : int, optional
         Number of hidden layers (1-10). Default is 2.
     activation : str, list, callable, or None, optional
-        Activation function(s). See FlexibleNet documentation for details. Default is 'silu'.
+        Activation function(s). See Net documentation for details. Default is 'silu'.
     transform : str, list, callable, or None, optional
-        Output transformation. See FlexibleNet documentation for details. Default is None.
+        Output transformation. See Net documentation for details. Default is None.
     **kwargs
-        Additional keyword arguments passed to FlexibleNet. See FlexibleNet class
+        Additional keyword arguments passed to Net. See Net class
         documentation for all available options including init_seed, copy_weights_from, etc.
     """
 
@@ -404,13 +404,13 @@ class BlockPolicyNet(FlexibleNet):
         return df
 
 
-class BlockValueNet(FlexibleNet):
+class BlockValueNet(Net):
     """
     A neural network for approximating value functions in dynamic programming problems.
 
     This network takes state variables as input and outputs value estimates.
     It's designed to work with the Bellman equation loss functions in the Maliar method.
-    Inherits from FlexibleNet to provide configurable architecture.
+    Inherits from Net to provide configurable architecture.
 
     Parameters
     ----------
@@ -421,11 +421,11 @@ class BlockValueNet(FlexibleNet):
     n_layers : int, optional
         Number of hidden layers (1-10). Default is 2.
     activation : str, list, callable, or None, optional
-        Activation function(s). See FlexibleNet documentation for details. Default is 'silu'.
+        Activation function(s). See Net documentation for details. Default is 'silu'.
     transform : str, list, callable, or None, optional
-        Output transformation. See FlexibleNet documentation for details. Default is None.
+        Output transformation. See Net documentation for details. Default is None.
     **kwargs
-        Additional keyword arguments passed to FlexibleNet. See FlexibleNet class
+        Additional keyword arguments passed to Net. See Net class
         documentation for all available options including init_seed, copy_weights_from, etc.
     """
 

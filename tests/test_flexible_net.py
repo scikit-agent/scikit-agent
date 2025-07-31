@@ -1,12 +1,12 @@
 import torch
 import pytest
-from skagent.ann import FlexibleNet
+from skagent.ann import Net
 
 # Get device (CUDA if available, else CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class TestFlexibleNet:
+class TestNet:
     def setup_method(self):
         self.n_inputs = 5
         self.n_outputs = 3
@@ -18,8 +18,8 @@ class TestFlexibleNet:
 
     @pytest.mark.parametrize("activation", ["silu", "relu", "tanh", "sigmoid"])
     def test_string_activation(self, activation):
-        """Test FlexibleNet with string activation."""
-        net = FlexibleNet(
+        """Test Net with string activation."""
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -34,9 +34,9 @@ class TestFlexibleNet:
             assert net.activations[i] == net.activations[0]
 
     def test_list_activation(self):
-        """Test FlexibleNet with list of activations."""
+        """Test Net with list of activations."""
         activation_list = ["relu", "tanh", "silu"]
-        net = FlexibleNet(
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -53,7 +53,7 @@ class TestFlexibleNet:
     def test_activation_list_length_mismatch(self):
         """Test that wrong number of activations raises error."""
         with pytest.raises(ValueError):
-            FlexibleNet(
+            Net(
                 self.n_inputs,
                 self.n_outputs,
                 width=self.width,
@@ -63,8 +63,8 @@ class TestFlexibleNet:
 
     @pytest.mark.parametrize("transform", ["sigmoid", "exp", "tanh", "relu"])
     def test_string_transform(self, transform):
-        """Test FlexibleNet with string transform."""
-        net = FlexibleNet(
+        """Test Net with string transform."""
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -83,9 +83,9 @@ class TestFlexibleNet:
             assert torch.all(output >= 0)
 
     def test_list_transform(self):
-        """Test FlexibleNet with list of transforms."""
+        """Test Net with list of transforms."""
         transform_list = ["sigmoid", "exp", "tanh"]
-        net = FlexibleNet(
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -106,7 +106,7 @@ class TestFlexibleNet:
     def test_transform_list_length_mismatch(self):
         """Test that wrong number of transforms raises error."""
         with pytest.raises(ValueError):
-            net = FlexibleNet(
+            net = Net(
                 self.n_inputs,
                 self.n_outputs,
                 width=self.width,
@@ -116,8 +116,8 @@ class TestFlexibleNet:
             net(self.test_input)  # Error should occur on forward pass
 
     def test_no_transform(self):
-        """Test FlexibleNet with no transform."""
-        net = FlexibleNet(
+        """Test Net with no transform."""
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -129,8 +129,8 @@ class TestFlexibleNet:
         # No constraints on output values since no transform applied
 
     def test_softmax_transform(self):
-        """Test FlexibleNet with softmax transform."""
-        net = FlexibleNet(
+        """Test Net with softmax transform."""
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -148,11 +148,11 @@ class TestFlexibleNet:
         assert torch.allclose(row_sums, torch.ones_like(row_sums), atol=1e-6)
 
     def test_combined_activation_and_transform(self):
-        """Test FlexibleNet with both list activation and list transform."""
+        """Test Net with both list activation and list transform."""
         activation_list = ["relu", "tanh", "silu"]
         transform_list = ["sigmoid", "exp", "identity"]
 
-        net = FlexibleNet(
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -171,25 +171,21 @@ class TestFlexibleNet:
     def test_unsupported_activation(self):
         """Test that unsupported activation raises error."""
         with pytest.raises(ValueError):
-            FlexibleNet(
-                self.n_inputs, self.n_outputs, activation="unsupported_activation"
-            )
+            Net(self.n_inputs, self.n_outputs, activation="unsupported_activation")
 
     def test_unsupported_transform(self):
         """Test that unsupported transform raises error."""
         with pytest.raises(ValueError):
-            net = FlexibleNet(
-                self.n_inputs, self.n_outputs, transform="unsupported_transform"
-            )
+            net = Net(self.n_inputs, self.n_outputs, transform="unsupported_transform")
             net(self.test_input)  # Error should occur on forward pass
 
     def test_callable_activation(self):
-        """Test FlexibleNet with callable activation."""
+        """Test Net with callable activation."""
 
         def custom_activation(x, **kwargs):
             return torch.sin(x)  # Custom sine activation
 
-        net = FlexibleNet(
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -203,8 +199,8 @@ class TestFlexibleNet:
             assert net.activations[i] == custom_activation
 
     def test_none_activation(self):
-        """Test FlexibleNet with None activation (identity)."""
-        net = FlexibleNet(
+        """Test Net with None activation (identity)."""
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -220,8 +216,8 @@ class TestFlexibleNet:
             )
 
     def test_identity_activation(self):
-        """Test FlexibleNet with 'identity' string activation."""
-        net = FlexibleNet(
+        """Test Net with 'identity' string activation."""
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -237,13 +233,13 @@ class TestFlexibleNet:
             )
 
     def test_list_activation_with_callable_and_none(self):
-        """Test FlexibleNet with list of activations including callable and None."""
+        """Test Net with list of activations including callable and None."""
 
         def custom_activation(x, **kwargs):
             return torch.cos(x)
 
         activation_list = ["relu", custom_activation, None]
-        net = FlexibleNet(
+        net = Net(
             self.n_inputs,
             self.n_outputs,
             width=self.width,
@@ -266,7 +262,7 @@ class TestFlexibleNet:
     def test_identity_activation_optimization(self):
         """Test that identity/None activations are optimized to skip function calls."""
         # Test identity activation
-        net = FlexibleNet(2, 1, width=4, n_layers=2, activation="identity")
+        net = Net(2, 1, width=4, n_layers=2, activation="identity")
         assert all(net.activation_is_identity), (
             "All layers should be marked as identity"
         )
@@ -275,7 +271,7 @@ class TestFlexibleNet:
         )
 
         # Test None activation
-        net = FlexibleNet(2, 1, width=4, n_layers=2, activation=None)
+        net = Net(2, 1, width=4, n_layers=2, activation=None)
         assert all(net.activation_is_identity), (
             "All layers should be marked as identity"
         )
@@ -284,9 +280,7 @@ class TestFlexibleNet:
         )
 
         # Test mixed activations
-        net = FlexibleNet(
-            2, 1, width=4, n_layers=3, activation=["relu", "identity", None]
-        )
+        net = Net(2, 1, width=4, n_layers=3, activation=["relu", "identity", None])
         expected_identity = [False, True, True]
         assert net.activation_is_identity == expected_identity
         assert net.activations[0] is not None  # relu
@@ -301,7 +295,7 @@ class TestFlexibleNet:
     def test_softmax_as_regular_transform(self):
         """Test that softmax works as a regular string transform option."""
         # Test softmax as single transform
-        net = FlexibleNet(2, 3, transform="softmax")
+        net = Net(2, 3, transform="softmax")
         x = torch.randn(5, 2).to(net.device)
         output = net(x)
 
@@ -313,7 +307,7 @@ class TestFlexibleNet:
         assert output.shape == (5, 3)
 
         # Test softmax in list of transforms
-        net = FlexibleNet(2, 3, transform=["sigmoid", "softmax", "exp"])
+        net = Net(2, 3, transform=["sigmoid", "softmax", "exp"])
         x = torch.randn(5, 2).to(net.device)
         output = net(x)
 
@@ -330,7 +324,7 @@ class TestFlexibleNet:
 
     def test_parameter_consistency_string_example(self):
         """Test that activation and transform parameters work consistently with strings."""
-        net = FlexibleNet(
+        net = Net(
             n_inputs=5,
             n_outputs=3,
             n_layers=3,
@@ -347,7 +341,7 @@ class TestFlexibleNet:
 
     def test_parameter_consistency_list_example(self):
         """Test that activation and transform parameters work consistently with lists."""
-        net = FlexibleNet(
+        net = Net(
             n_inputs=5,
             n_outputs=3,
             n_layers=3,
@@ -377,7 +371,7 @@ class TestFlexibleNet:
             """Custom transform function: scale and shift"""
             return 2 * x + 1
 
-        net = FlexibleNet(
+        net = Net(
             n_inputs=5,
             n_outputs=3,
             n_layers=3,
@@ -395,7 +389,7 @@ class TestFlexibleNet:
 
     def test_parameter_consistency_none_identity_example(self):
         """Test that activation and transform parameters work consistently with None."""
-        net = FlexibleNet(
+        net = Net(
             n_inputs=5,
             n_outputs=3,
             n_layers=3,
@@ -422,7 +416,7 @@ class TestFlexibleNet:
             """Custom transform function: scale and shift"""
             return 2 * x + 1
 
-        net = FlexibleNet(
+        net = Net(
             n_inputs=5,
             n_outputs=3,
             n_layers=3,
@@ -467,7 +461,7 @@ class TestFlexibleNet:
             # Adjust outputs for list case
             n_outputs = 2 if isinstance(transform, list) else 3
 
-            net = FlexibleNet(
+            net = Net(
                 n_inputs=4,
                 n_outputs=n_outputs,
                 n_layers=2,
