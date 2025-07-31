@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from skagent.distributions import Normal, Uniform
 import skagent.grid as grid
 from skagent.model import Control, DBlock
