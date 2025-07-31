@@ -13,8 +13,7 @@ from skagent.rule import extract_dependencies, extract_formula, format_rule
 
 
 SKAGENT_AVAILABLE = find_spec("skagent") is not None
-HARK_AVAILABLE = find_spec("HARK") is not None
-HAS_DEPENDENCIES = SKAGENT_AVAILABLE and HARK_AVAILABLE
+HAS_DEPENDENCIES = SKAGENT_AVAILABLE
 
 pytestmark = pytest.mark.skipif(
     not HAS_DEPENDENCIES,
@@ -24,7 +23,7 @@ pytestmark = pytest.mark.skipif(
 if HAS_DEPENDENCIES:
     from skagent.models.consumer import consumption_block
     from skagent.model import Control
-    from HARK.distributions import Bernoulli
+    from skagent.distributions import Bernoulli
 
 
 class TestRuleDependencyExtraction:
