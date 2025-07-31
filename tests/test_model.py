@@ -1,6 +1,6 @@
 import unittest
 
-from HARK.distributions import Bernoulli, DiscreteDistribution
+from skagent.distributions import Bernoulli, DiscreteDistribution
 import skagent.model as model
 from skagent.model import Control
 import skagent.models.consumer as cons
@@ -74,6 +74,11 @@ class test_DBlock(unittest.TestCase):
         post = self.cblock.transition(self.dpre, self.dr)
 
         self.assertEqual(post["a"], 0)
+
+    def test_transition_until(self):
+        post = self.cblock.transition(self.dpre, self.dr, until="c")
+
+        self.assertTrue("u" not in post)
 
     def test_calc_reward(self):
         self.assertEqual(self.cblock.calc_reward({"c": 1, "CRRA": 2})["u"], -1.0)

@@ -1,4 +1,4 @@
-from HARK.distributions import Bernoulli
+from skagent.distributions import Bernoulli
 from skagent.model import Control, DBlock
 
 calibration = {
