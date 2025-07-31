@@ -1,4 +1,4 @@
-from HARK.distributions import Normal
+from skagent.distributions import Normal, Uniform
 import skagent.grid as grid
 from skagent.model import Control, DBlock
 
@@ -125,8 +125,8 @@ case_4 = {
         **{
             "name": "maliar test - non-trivial ergodic states",
             "shocks": {
-                "theta": (Normal, {"mu": 0, "sigma": 1}),
-                "psi": (Normal, {"mu": 0, "sigma": 1}),
+                "theta": (Uniform, {"low": -1, "high": 1}),
+                "psi": (Uniform, {"low": -1, "high": 1}),
             },
             "dynamics": {
                 "c": Control(["g", "m"]),
@@ -152,4 +152,127 @@ case_4 = {
             }
         ),
     },
+}
+
+case_5 = {
+    "block": DBlock(
+        **{
+            "name": "double bounded control -- upper bound binds",
+            "shocks": {
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "c": Control(["a"], upper_bound=lambda a: a, lower_bound=lambda a: 0),
+                "a": lambda a, c, theta: a - c + 2.72**theta,
+                "u": lambda c: c,
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "calibration": {},
+    "optimal_dr": {"c": lambda a: a},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": 0, "max": 1, "count": 5},
+            "theta_0": {"min": -1, "max": 1, "count": 5},
+        }
+    ),
+}
+
+case_6 = {
+    "block": DBlock(
+        **{
+            "name": "double bounded control -- lower bound binds",
+            "shocks": {
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "c": Control(
+                    ["a"], upper_bound=lambda a: 2 * a, lower_bound=lambda a: a
+                ),
+                "a": lambda a, c, theta: a + 2.72**theta,
+                "u": lambda c: -c,
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "calibration": {},
+    "optimal_dr": {"c": lambda a: a},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": 0, "max": 1, "count": 5},
+            "theta_0": {"min": -1, "max": 1, "count": 5},
+        }
+    ),
+}
+
+case_7 = {
+    "block": DBlock(
+        **{
+            "name": "lower bounded control only",
+            "shocks": {
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "c": Control(["a"], lower_bound=lambda a: 1),
+                "a": lambda a, c, theta: a + 2.72**theta - c,
+                "u": lambda c: -c,
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "calibration": {},
+    "optimal_dr": {"c": lambda a: 1},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": 0, "max": 1, "count": 5},
+            "theta_0": {"min": -1, "max": 1, "count": 5},
+        }
+    ),
+}
+
+case_8 = {
+    "block": DBlock(
+        **{
+            "name": "upper bounded control only",
+            "shocks": {
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "c": Control(["a"], upper_bound=lambda a: a),
+                "a": lambda a, c, theta: a + 2.72**theta - c,
+                "u": lambda c: c,
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "calibration": {},
+    "optimal_dr": {"c": lambda a: a},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": 0, "max": 1, "count": 5},
+            "theta_0": {"min": -1, "max": 1, "count": 5},
+        }
+    ),
+}
+
+case_9 = {
+    "block": DBlock(
+        **{
+            "name": "empty information set",
+            "dynamics": {
+                "a": lambda a: a,
+                "c": Control([]),
+                "u": lambda c: -((c - 3) ** 2),
+            },
+            "reward": {"u": "consumer"},
+        }
+    ),
+    "calibration": {},
+    "optimal_dr": {"c": lambda: 3},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": 0, "max": 2, "count": 21},
+        }
+    ),
 }
