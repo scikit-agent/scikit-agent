@@ -23,7 +23,7 @@ A DBlock has four main components:
 
 ```python
 import skagent as ska
-from HARK.distributions import MeanOneLogNormal
+from skagent.distributions import MeanOneLogNormal
 
 # Example: Simple consumption block
 consumption_block = ska.DBlock(
@@ -60,7 +60,7 @@ We want to model an agent who:
 #### Step 2: Set Up Shocks
 
 ```python
-from HARK.distributions import Lognormal, MeanOneLogNormal
+from skagent.distributions import Lognormal, MeanOneLogNormal
 
 # Define all random variables
 shocks = {
@@ -281,7 +281,7 @@ print("Post-transition state:", post_state)
 # my_models.py
 
 from skagent import DBlock, Control
-from HARK.distributions import MeanOneLogNormal
+from skagent.distributions import MeanOneLogNormal
 
 # Standard calibration for consumption models
 CONSUMPTION_CALIBRATION = {

@@ -90,7 +90,7 @@ class Normal(Distribution):
         **kwargs,
     ) -> DiscreteDistribution:
         """Discretize using Gauss-Hermite quadrature or uniform grid"""
-        # Handle HARK-style parameter naming
+        # Handle alternative parameter naming
         if N is not None:
             n_points = N
 
@@ -172,7 +172,7 @@ class Lognormal(Distribution):
     def discretize(
         self, n_points: int = 7, N: int | None = None, **kwargs
     ) -> DiscreteDistribution:
-        # Handle HARK-style parameter naming
+        # Handle alternative parameter naming
         if N is not None:
             n_points = N
 
@@ -245,7 +245,7 @@ class Uniform(Distribution):
         **kwargs,
     ) -> DiscreteDistribution:
         """Discretize using Gauss-Hermite quadrature or uniform grid"""
-        # Handle HARK-style parameter naming
+        # Handle alternative parameter naming
         if N is not None:
             n_points = N
 
@@ -302,7 +302,7 @@ class Bernoulli(Distribution):
 
 class DiscreteDistribution:
     """
-    A discrete distribution representation compatible with HARK's DiscreteDistributionLabeled
+    A discrete distribution representation for labeled discrete distributions
     """
 
     def __init__(
@@ -323,7 +323,7 @@ class DiscreteDistribution:
         # Create variables dict for compatibility
         self.variables = {name: i for i, name in enumerate(self.var_names)}
 
-        # HARK compatibility attributes
+        # Legacy compatibility attributes
         self.pmv = self.weights  # pmv = probability mass vector
 
     def draw(self, n: int = 1) -> np.ndarray:
@@ -343,7 +343,7 @@ class DiscreteDistribution:
 
 class DiscreteDistributionLabeled(DiscreteDistribution):
     """
-    Labeled discrete distribution for compatibility with HARK
+    Labeled discrete distribution with variable names
     """
 
     @classmethod
@@ -484,7 +484,7 @@ def expected(func, dist: DiscreteDistribution) -> float:
                 # First try passing scalar value directly (most common case)
                 result = func(point)
             except (TypeError, IndexError):
-                # If that fails, try with dict-like structure for HARK compatibility
+                # If that fails, try with dict-like structure for legacy compatibility
                 if len(dist.var_names) == 1:
 
                     class PointDict:

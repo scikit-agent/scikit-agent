@@ -9,7 +9,6 @@ scikit-agent requires:
 - SciPy
 - Matplotlib
 - PyTorch
-- HARK (Econ-ARK)
 
 ## Install from PyPI
 

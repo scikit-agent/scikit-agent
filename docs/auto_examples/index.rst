@@ -85,6 +85,23 @@ other computational methods.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to build, solve, and simulate a consumption-portfolio choice model using scikit-agent. The model includes:">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_consumption_portfolio_model_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Consumption-Portfolio Model</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html

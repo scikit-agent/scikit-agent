@@ -24,7 +24,7 @@ from skagent.distributions import (
 
 
 class TestDistributions(unittest.TestCase):
-    """Test cases for the distribution classes that replace HARK distributions"""
+    """Test cases for the distribution classes in scikit-agent"""
 
     def test_normal_scipy(self):
         """Test Normal distribution with scipy backend"""
@@ -153,11 +153,11 @@ class TestDistributions(unittest.TestCase):
         np.testing.assert_array_almost_equal(disc.points, [0.0, 0.25, 0.5, 0.75, 1.0])
         assert np.isclose(np.sum(disc.weights), 1.0, atol=1e-6)
 
-    def test_uniform_discretize_hark_compatibility(self):
-        """Test Uniform distribution discretization with HARK-style parameters"""
+    def test_uniform_discretize_parameter_compatibility(self):
+        """Test Uniform distribution discretization with alternative parameter style"""
         u = Uniform(0, 1, backend="scipy")
 
-        # Test with N parameter for HARK compatibility
+        # Test with N parameter for compatibility
         disc_n = u.discretize(N=7)
         assert len(disc_n.points) == 7
         assert len(disc_n.weights) == 7
@@ -216,10 +216,10 @@ class TestDistributions(unittest.TestCase):
         assert all(s > 0 for s in samples)
 
     def test_discretization(self):
-        """Test distribution discretization with HARK-style parameters"""
+        """Test distribution discretization with alternative parameter style"""
         n = Normal(0, 1, backend="scipy")
 
-        # Test with N parameter for HARK compatibility
+        # Test with N parameter for compatibility
         disc_n = n.discretize(N=5)
         assert len(disc_n.points) == 5
         assert len(disc_n.weights) == 5
@@ -230,7 +230,7 @@ class TestDistributions(unittest.TestCase):
         assert len(disc_n2.points) == 7
         assert len(disc_n2.weights) == 7
 
-        # Test that pmv attribute exists for HARK compatibility
+        # Test that pmv attribute exists for legacy compatibility
         assert hasattr(disc_n, "pmv")
         np.testing.assert_array_equal(disc_n.pmv, disc_n.weights)
 
@@ -375,7 +375,7 @@ class TestDistributions(unittest.TestCase):
         manual_expected = np.sum([square(p) * w for p, w in zip(points, weights)])
         assert np.isclose(expected_val, manual_expected, atol=1e-6)
 
-        # Test with function that expects indexable object (like HARK usage)
+        # Test with function that expects indexable object (legacy usage)
         def square_indexed(point_obj):
             x_val = point_obj["x"]  # Access by variable name
             return x_val * x_val

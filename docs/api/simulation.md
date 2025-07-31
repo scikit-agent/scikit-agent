@@ -10,8 +10,8 @@ models.
 
 ### AgentTypeMonteCarloSimulator
 
-A Monte Carlo simulation engine based on the HARK.core.AgentType framework. This
-simulator includes aging and mortality assumptions.
+A Monte Carlo simulation engine inspired by agent-based modeling frameworks.
+This simulator includes aging and mortality assumptions.
 
 ```{eval-rst}
 .. autoclass:: skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator

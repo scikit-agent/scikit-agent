@@ -12,15 +12,13 @@ sys.path.append("../src")
 from skagent.rule import extract_dependencies
 
 SKAGENT_AVAILABLE = find_spec("skagent") is not None
-HARK_AVAILABLE = find_spec("HARK") is not None
-HAS_DEPENDENCIES = SKAGENT_AVAILABLE and HARK_AVAILABLE
 
 pytestmark = pytest.mark.skipif(
-    not HAS_DEPENDENCIES,
-    reason="Optional dependencies (`scikit-agent` and/or `HARK`) not installed.",
+    not SKAGENT_AVAILABLE,
+    reason="Optional dependency (`scikit-agent`) not installed.",
 )
 
-if HAS_DEPENDENCIES:
+if SKAGENT_AVAILABLE:
     from skagent.models.consumer import consumption_block
     from skagent.model import Control
     from skagent.distributions import Bernoulli
