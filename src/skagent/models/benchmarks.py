@@ -142,11 +142,13 @@ d2_block = DBlock(
 def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     """D-2: c_t = (1-β)/(1-β^(T-t+1)) * W_t (remaining horizon formula)"""
     beta = calibration["DiscFac"]
-    T = calibration["T"]
 
     def policy(states, shocks, parameters):
         W = states["W"]
         t = states.get("t", 0)
+
+        # Use T from parameters if available, otherwise from calibration
+        T = parameters.get("T", calibration["T"])
 
         # Remaining horizon consumption rule
         remaining_periods = T - t + 1
@@ -1142,6 +1144,138 @@ def euler_equation_test(model_id: str, test_points: int = 100) -> Dict[str, Any]
         "model_id": model_id,
         "error": f"Euler test not implemented for {model_id}",
     }
+
+
+# ANALYTICAL LIFETIME REWARD FUNCTIONS
+# ===================================
+
+
+def d1_analytical_lifetime_reward(
+    initial_wealth: float, discount_factor: float, interest_rate: float
+) -> float:
+    """
+    Analytical lifetime reward for D-1: Two-period log utility model.
+
+    With optimal policy c1 = W/(1+β), c2 = βRW/(1+β):
+    Lifetime reward = ln(c1) + β*ln(c2)
+                    = ln(W/(1+β)) + β*ln(βRW/(1+β))
+                    = (1+β)*ln(W) + β*ln(βR) - (1+β)*ln(1+β)
+    """
+    beta = discount_factor
+    R = interest_rate
+    W = initial_wealth
+
+    if W <= 0:
+        return -np.inf
+
+    return (
+        (1 + beta) * np.log(W) + beta * np.log(beta * R) - (1 + beta) * np.log(1 + beta)
+    )
+
+
+def d2_analytical_lifetime_reward(
+    initial_wealth: float,
+    discount_factor: float,
+    interest_rate: float,
+    time_horizon: int,
+) -> float:
+    """
+    Analytical lifetime reward for D-2: Finite horizon log utility.
+
+    Forward simulation that exactly matches the D-2 model implementation.
+    """
+    beta = discount_factor
+    R = interest_rate
+    W = initial_wealth
+    T = time_horizon
+
+    if W <= 0 or T <= 0:
+        return -np.inf
+
+    # Forward simulation matching D-2 model
+    total_utility = 0.0
+    current_wealth = W
+
+    for t in range(T):
+        # Remaining periods calculation: T - t + 1 (matches D-2 policy)
+        remaining = T - t + 1
+
+        if remaining <= 1:
+            # Terminal period: consume everything
+            consumption = current_wealth
+        else:
+            # Use remaining horizon formula: c_t = (1-β)/(1-β^remaining) * W_t
+            consumption_rate = (1 - beta) / (1 - beta**remaining)
+            consumption = consumption_rate * current_wealth
+
+        period_utility = np.log(consumption)
+        total_utility += (beta**t) * period_utility
+
+        if t < T - 1:
+            current_wealth = (current_wealth - consumption) * R
+
+    return total_utility
+
+
+def d3_analytical_lifetime_reward(
+    cash_on_hand: float,
+    discount_factor: float,
+    interest_rate: float,
+    risk_aversion: float,
+) -> float:
+    """
+    Analytical lifetime reward for D-3: Infinite horizon CRRA.
+
+    With optimal policy c = κ*m where κ = (R - (βR)^(1/σ))/R:
+    V(m) = κ^(1-σ)/(1-σ) * m^(1-σ) / (1 - β*(βR)^((1-σ)/σ))
+    """
+    beta = discount_factor
+    R = interest_rate
+    sigma = risk_aversion
+    m = cash_on_hand
+
+    if m <= 0:
+        return -np.inf
+
+    growth_factor = (beta * R) ** (1 / sigma)
+    if growth_factor >= R:
+        raise ValueError("Return-impatience condition violated")
+
+    kappa = (R - growth_factor) / R
+
+    if sigma == 1:  # Log utility case
+        return (np.log(kappa) + np.log(m)) / (1 - beta)
+    else:  # General CRRA case
+        denominator = 1 - beta * (beta * R) ** ((1 - sigma) / sigma)
+        return (kappa ** (1 - sigma) * m ** (1 - sigma) / (1 - sigma)) / denominator
+
+
+def get_analytical_lifetime_reward(model_id: str, *args, **kwargs) -> float:
+    """
+    Get analytical lifetime reward for a benchmark model.
+
+    Parameters
+    ----------
+    model_id : str
+        Model identifier (D-1, D-2, D-3, etc.)
+    *args, **kwargs
+        Arguments to pass to the specific analytical function
+
+    Returns
+    -------
+    float
+        Analytical lifetime reward value
+    """
+    analytical_functions = {
+        "D-1": d1_analytical_lifetime_reward,
+        "D-2": d2_analytical_lifetime_reward,
+        "D-3": d3_analytical_lifetime_reward,
+    }
+
+    if model_id not in analytical_functions:
+        raise ValueError(f"No analytical lifetime reward function for {model_id}")
+
+    return analytical_functions[model_id](*args, **kwargs)
 
 
 if __name__ == "__main__":

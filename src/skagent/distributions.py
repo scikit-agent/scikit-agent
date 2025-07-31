@@ -35,9 +35,15 @@ class Distribution(ABC):
         self.backend = backend
         self.rng = rng if rng is not None else np.random.default_rng()
 
-    @abstractmethod
     def draw(self, n: int = 1) -> np.ndarray:
         """Draw n samples from the distribution"""
+        if self.backend == "scipy":
+            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
+        if self.backend == "torch":
+            samples = self._dist.sample((n,))
+            return samples.detach().cpu().numpy()
+        msg = f"Unsupported backend: {self.backend}"
+        raise ValueError(msg)
 
     @abstractmethod
     def discretize(self, **kwargs) -> DiscreteDistribution:
@@ -75,15 +81,6 @@ class Normal(Distribution):
                 torch.tensor(mu, dtype=torch.float32),
                 torch.tensor(sigma, dtype=torch.float32),
             )
-
-    def draw(self, n: int = 1) -> np.ndarray:
-        if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
-        if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
-        msg = f"Unsupported backend: {self.backend}"
-        raise ValueError(msg)
 
     def discretize(
         self,
@@ -241,15 +238,6 @@ class Uniform(Distribution):
                 torch.tensor(high, dtype=torch.float32),
             )
 
-    def draw(self, n: int = 1) -> np.ndarray:
-        if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
-        if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
-        msg = f"Unsupported backend: {self.backend}"
-        raise ValueError(msg)
-
     def discretize(
         self,
         n_points: int = 7,
@@ -296,15 +284,6 @@ class Bernoulli(Distribution):
             self._dist = stats.bernoulli(p=p)
         elif self.backend == "torch":
             self._dist = torch_dist.Bernoulli(torch.tensor(p, dtype=torch.float32))
-
-    def draw(self, n: int = 1) -> np.ndarray:
-        if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
-        if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
-        msg = f"Unsupported backend: {self.backend}"
-        raise ValueError(msg)
 
     def discretize(self, **kwargs) -> DiscreteDistribution:
         """Bernoulli is already discrete"""
