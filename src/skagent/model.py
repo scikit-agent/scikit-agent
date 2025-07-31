@@ -208,7 +208,7 @@ def simulate_dynamics(
                             ]  # signature(dr[sym]).parameters]
                         )  # TODO: test for signature match with Control
                     except (TypeError, ValueError, KeyError) as e:
-                        raise (Exception(f"Can't compute decision rule. {e}"))
+                        raise Exception(f"Can't compute decision rule. {e}")
                 else:
                     # decision rule takes no arguments
                     # easy to compute in any scope...
