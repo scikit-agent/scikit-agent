@@ -348,7 +348,7 @@ def maliar_training_loop(
         iteration += 1
 
     if not converged:
-        print(
+        logging.warning(
             f"Training completed without convergence after {max_iterations} iterations."
         )
 
