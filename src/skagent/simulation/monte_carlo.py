@@ -6,6 +6,9 @@ from copy import copy
 from typing import Mapping, Sequence
 
 import numpy as np
+import pandas as pd
+import torch
+from itertools import product
 
 from skagent.distributions import (
     Distribution,
@@ -15,8 +18,6 @@ from skagent.distributions import (
 from skagent.model import Aggregate
 from skagent.model import DBlock
 from skagent.model import construct_shocks, simulate_dynamics
-
-from skagent.utils import apply_fun_to_vals
 
 
 def draw_shocks(
@@ -630,9 +631,8 @@ class MonteCarloSimulator(Simulator):
 
         post = simulate_dynamics(self.dynamics, pre, dr)
 
-        for r in self.block.reward:
-            post[r] = apply_fun_to_vals(self.block.reward[r], post)
-
+        # Rewards are computed as part of dynamics; reward mapping lists agent roles.
+        # Do not treat reward mapping values as callables.
         self.vars_now = post
 
     def sim_birth(self, which_agents):
@@ -718,3 +718,197 @@ class MonteCarloSimulator(Simulator):
         for var_name in self.vars:
             self.history[var_name] = np.empty((self.T_sim, self.agent_count))
             self.history[var_name].fill(np.nan)
+
+
+def ergodic_moments(
+    history: dict[str, np.ndarray],
+    *,
+    variables: list[str] | None = None,
+    burn_in: int | float = 0.5,
+    stats: dict[str, callable] | None = None,
+) -> dict[str, float]:
+    """
+    Compute ergodic-distribution moments from a Monte Carlo history.
+
+    Inputs
+    - history[var]: np.ndarray of shape (T_sim, agent_count)
+    - variables: which variables to summarize; defaults to all array-valued keys
+    - burn_in: fraction in [0,1] or absolute periods to drop from the start
+    - stats: mapping stat_name -> function(np.ndarray -> float); defaults include
+      mean, std, min, max, p10, p50, p90 (nan-safe)
+
+    Returns flat dict like {'c_mean': ..., 'c_p50': ..., 'a_mean': ...}
+
+    Notes
+    -----
+    This function flattens the post–burn-in sample along time and agent
+    dimensions to approximate ergodic-distribution moments. Ensure T_sim is
+    sufficiently large and burn-in is appropriate for your mixing time.
+    """
+    if not isinstance(history, dict) or not history:
+        return {}
+
+    # Choose default variable list as all 2D arrays in history
+    if variables is None:
+        variables = [
+            k for k, v in history.items() if isinstance(v, np.ndarray) and v.ndim == 2
+        ]
+
+    # Default stats
+    if stats is None:
+        stats = {
+            "mean": lambda x: float(np.nanmean(x)),
+            "std": lambda x: float(np.nanstd(x)),
+            "min": lambda x: float(np.nanmin(x)),
+            "p10": lambda x: float(np.nanpercentile(x, 10)),
+            "p50": lambda x: float(np.nanpercentile(x, 50)),
+            "p90": lambda x: float(np.nanpercentile(x, 90)),
+            "max": lambda x: float(np.nanmax(x)),
+        }
+
+    # Determine burn-in index
+    if variables:
+        any_key = variables[0]
+    else:
+        any_key = next(iter(history))
+    T_sim = history[any_key].shape[0] if isinstance(history[any_key], np.ndarray) else 0
+
+    if isinstance(burn_in, float):
+        burn_idx = int(T_sim * burn_in)
+    elif isinstance(burn_in, int):
+        burn_idx = burn_in
+    else:
+        burn_idx = 0
+
+    burn_idx = max(0, min(burn_idx, max(T_sim - 1, 0)))
+
+    out: dict[str, float] = {}
+
+    for var in variables:
+        arr = history.get(var, None)
+        if not isinstance(arr, np.ndarray) or arr.ndim != 2:
+            continue
+        # Slice post burn-in and flatten time x agents
+        X = arr[burn_idx:, :].reshape(-1)
+        for stat_name, fn in stats.items():
+            try:
+                out[f"{var}_{stat_name}"] = float(fn(X))
+            except Exception:
+                # Skip if stat fails
+                continue
+
+    return out
+
+
+def sweep(
+    *,
+    block: DBlock,
+    base_calibration: dict[str, object],
+    dr: dict[str, object],
+    initial: dict[str, object],
+    param_grid: dict[str, list[object]] | object,
+    agent_count: int = 1,
+    T_sim: int = 2000,
+    burn_in: int | float = 0.5,
+    seed: int = 0,
+    variables: list[str] | None = None,
+    stats: dict[str, callable] | None = None,
+) -> pd.DataFrame:
+    """
+    For each θ in Θ, run MonteCarloSimulator, compute ergodic moments, and return a DataFrame H.
+
+    - param_grid can be dict of lists (cartesian product) or an object with .labels and .values
+      (compatible with skagent.grid.Grid).
+    - Per-θ RNG seed = seed + index for reproducibility.
+    - variables: list of variable names to summarize; default is all array-valued history keys.
+    - stats: mapping stat_name -> reducer(np.ndarray -> float); defaults in ergodic_moments.
+
+    Returns:
+      A pandas DataFrame with one row per θ; columns include parameter values and <var>_<stat>.
+
+    Examples
+    --------
+    >>> from skagent.models.benchmarks import d3_block, d3_calibration
+    >>> H = sweep(
+    ...     block=d3_block,
+    ...     base_calibration=d3_calibration,
+    ...     dr={"c": lambda m: 0.3*m},
+    ...     initial={"a": 0.5},
+    ...     param_grid={"DiscFac": [0.94, 0.96], "CRRA": [1.5, 2.0]},
+    ...     agent_count=100,
+    ...     T_sim=2000,
+    ...     burn_in=0.5,
+    ...     variables=["a", "c", "m", "u"],
+    ... )
+    >>> set(["DiscFac", "CRRA"]).issubset(set(H.columns))
+    True
+    """
+    # Build iterable of parameter points
+    params_list: list[dict[str, object]] = []
+
+    if isinstance(param_grid, dict):
+        keys = sorted(param_grid.keys())
+        values_lists = []
+        for k in keys:
+            v = param_grid[k]
+            if isinstance(v, (list, tuple, np.ndarray)):
+                values_lists.append(list(v))
+            else:
+                values_lists.append([v])
+        for combo in product(*values_lists):
+            params_list.append(
+                {
+                    k: (c.item() if hasattr(c, "item") else c)
+                    for k, c in zip(keys, combo)
+                }
+            )
+    elif hasattr(param_grid, "labels") and hasattr(param_grid, "values"):
+        labels = list(getattr(param_grid, "labels"))
+        values = getattr(param_grid, "values")
+        if isinstance(values, torch.Tensor):
+            arr = values.detach().cpu().numpy()
+        else:
+            arr = np.asarray(values)
+        for i in range(arr.shape[0]):
+            row = arr[i]
+            params_list.append(
+                {
+                    labels[j]: (row[j].item() if hasattr(row[j], "item") else row[j])
+                    for j in range(len(labels))
+                }
+            )
+    else:
+        raise TypeError(
+            "Unsupported param_grid type; use dict-of-lists or skagent.grid.Grid"
+        )
+
+    rows: list[dict[str, object]] = []
+
+    for i, theta in enumerate(params_list):
+        calibration_i = dict(base_calibration)
+        calibration_i.update(theta)
+
+        sim = MonteCarloSimulator(
+            calibration_i,
+            block,
+            dr,
+            initial,
+            seed=seed + i,
+            agent_count=agent_count,
+            T_sim=T_sim,
+        )
+        sim.initialize_sim()
+        history = sim.simulate()
+
+        moments = ergodic_moments(
+            history,
+            variables=variables,
+            burn_in=burn_in,
+            stats=stats,
+        )
+
+        row = {**theta, **moments}
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    return df

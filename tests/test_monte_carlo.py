@@ -12,6 +12,14 @@ from skagent.simulation.monte_carlo import (
     draw_shocks,
 )
 import numpy as np
+import pandas as pd
+from skagent.models.benchmarks import (
+    d3_block,
+    d3_calibration,
+    d4_block,
+    d4_calibration,
+)
+from skagent.simulation.monte_carlo import sweep
 
 cons_shocks = {
     "agg_gro": Aggregate(MeanOneLogNormal(1)),
@@ -212,3 +220,119 @@ class test_MonteCarloSimulator(unittest.TestCase):
 
         # Use allclose for numerical tolerance instead of exact equality
         self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
+
+
+class test_sweep_infinite_horizon(unittest.TestCase):
+    def test_sweep_d3_vary_discfac_crra(self):
+        block = d3_block
+        base = d3_calibration.copy()
+        # Simple linear policy; not necessarily optimal, but sufficient for simulation
+        dr = {"c": lambda m: 0.3 * m}
+        initial = {"a": 0.5}
+
+        param_grid = {
+            "DiscFac": [0.94, 0.96],
+            "CRRA": [1.5, 2.0],
+        }
+
+        H = sweep(
+            block=block,
+            base_calibration=base,
+            dr=dr,
+            initial=initial,
+            param_grid=param_grid,
+            agent_count=50,
+            T_sim=400,
+            burn_in=0.5,
+            variables=["a", "c", "m", "u"],
+            seed=123,
+        )
+
+        self.assertEqual(H.shape[0], 4)
+        for col in ["DiscFac", "CRRA", "a_mean", "c_mean", "m_mean", "u_mean"]:
+            self.assertIn(col, H.columns)
+
+        # Reproducibility with same seed
+        H2 = sweep(
+            block=block,
+            base_calibration=base,
+            dr=dr,
+            initial=initial,
+            param_grid=param_grid,
+            agent_count=50,
+            T_sim=400,
+            burn_in=0.5,
+            variables=["a", "c", "m", "u"],
+            seed=123,
+        )
+        pd.testing.assert_frame_equal(
+            H.reset_index(drop=True), H2.reset_index(drop=True)
+        )
+
+    def test_sweep_d4_vary_survivalprob(self):
+        block = d4_block
+        base = d4_calibration.copy()
+        dr = {"c": lambda m: 0.35 * m}
+        initial = {"a": 0.4}
+
+        param_grid = {
+            "SurvivalProb": [0.98, 0.99],
+        }
+
+        H = sweep(
+            block=block,
+            base_calibration=base,
+            dr=dr,
+            initial=initial,
+            param_grid=param_grid,
+            agent_count=40,
+            T_sim=300,
+            burn_in=0.4,
+            variables=["a", "c", "m", "u"],
+            seed=777,
+        )
+
+        self.assertEqual(H.shape[0], 2)
+        for col in ["SurvivalProb", "a_mean", "c_mean", "m_mean", "u_mean"]:
+            self.assertIn(col, H.columns)
+
+        # Identity check in sample averages: a ≈ m - c
+        diff = (H["m_mean"] - H["c_mean"] - H["a_mean"]).abs()
+        self.assertTrue(np.all(diff < 1e-6))
+
+    def test_burn_in_effect_changes_moments(self):
+        block = d3_block
+        base = d3_calibration.copy()
+        dr = {"c": lambda m: 0.3 * m}
+        initial = {"a": 0.5}
+        param_grid = {"DiscFac": [0.96]}
+
+        H0 = sweep(
+            block=block,
+            base_calibration=base,
+            dr=dr,
+            initial=initial,
+            param_grid=param_grid,
+            agent_count=30,
+            T_sim=200,
+            burn_in=0.0,
+            variables=["a", "c", "m", "u"],
+            seed=1,
+        )
+        H1 = sweep(
+            block=block,
+            base_calibration=base,
+            dr=dr,
+            initial=initial,
+            param_grid=param_grid,
+            agent_count=30,
+            T_sim=200,
+            burn_in=0.6,
+            variables=["a", "c", "m", "u"],
+            seed=1,
+        )
+        # At least one column of moments should differ when changing burn-in
+        moment_cols = [c for c in H0.columns if c not in param_grid.keys()]
+        self.assertTrue(
+            any(not np.isclose(H0[c].values, H1[c].values) for c in moment_cols)
+        )

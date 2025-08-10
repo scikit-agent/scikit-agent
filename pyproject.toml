@@ -38,6 +38,7 @@ dependencies = [
   "pyyaml",
   "scipy",
   "xarray",
+  "pandas",
 ]
 
 [project.optional-dependencies]
