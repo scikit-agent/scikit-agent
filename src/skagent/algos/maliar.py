@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import skagent.ann as ann
 from skagent.grid import Grid
@@ -337,7 +338,9 @@ def maliar_training_loop(
                 f"Converged after {iteration + 1} iterations. Parameter difference: {param_diff:.2e}"
             )
         else:
-            logging.info(f"Iteration {iteration + 1}: Parameter difference: {param_diff:.2e}")
+            logging.info(
+                f"Iteration {iteration + 1}: Parameter difference: {param_diff:.2e}"
+            )
 
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         next_states = simulate_forward(
