@@ -333,11 +333,11 @@ def maliar_training_loop(
 
         if param_diff < tolerance:
             converged = True
-            print(
+            logging.info(
                 f"Converged after {iteration + 1} iterations. Parameter difference: {param_diff:.2e}"
             )
         else:
-            print(f"Iteration {iteration + 1}: Parameter difference: {param_diff:.2e}")
+            logging.info(f"Iteration {iteration + 1}: Parameter difference: {param_diff:.2e}")
 
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         next_states = simulate_forward(
