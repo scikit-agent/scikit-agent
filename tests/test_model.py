@@ -198,3 +198,70 @@ class test_RBlock(unittest.TestCase):
         # Expected order: test_block_B, then test_block_C, then test_block_D
         expected_blocks = [self.test_block_B, self.test_block_C, self.test_block_D]
         self.assertEqual(result, expected_blocks)
+
+
+class test_HeterogeneousCalibrationAndSolver(unittest.TestCase):
+    def test_expand_heterogeneous_calibration_vector_and_broadcast(self):
+        import numpy as np
+
+        # Broadcast single-element vector to N
+        calib = {"alpha": [0.9]}
+        out = model.expand_heterogeneous_calibration(calib, agent_count=3)
+        self.assertTrue(isinstance(out["alpha"], np.ndarray))
+        np.testing.assert_array_equal(out["alpha"], [0.9, 0.9, 0.9])
+
+        # Accept exact-length vector
+        calib = {"alpha": [0.9, 1.0, 1.1]}
+        out = model.expand_heterogeneous_calibration(calib, agent_count=3)
+        np.testing.assert_array_equal(out["alpha"], [0.9, 1.0, 1.1])
+
+        # Raise on length mismatch
+        with self.assertRaises(ValueError):
+            model.expand_heterogeneous_calibration({"alpha": [0.9, 1.0]}, agent_count=3)
+
+    def test_solver_requires_iset_variables_in_grid(self):
+        from skagent.algos import vbi
+
+        blk = model.DBlock(
+            **{
+                "dynamics": {
+                    "c": Control(["m", "gamma"]),
+                    "u": lambda c: -(c**2),
+                },
+                "reward": {"u": "consumer"},
+            }
+        )
+
+        # Missing 'gamma' in grid
+        with self.assertRaises(ValueError):
+            vbi.solve(
+                blk,
+                continuation=lambda: 0,
+                state_grid={"m": [0, 1]},
+                calibration={"gamma": 1.0},
+            )
+
+    def test_solver_param_in_iset(self):
+        from skagent.algos import vbi
+
+        blk = model.DBlock(
+            **{
+                "dynamics": {
+                    # Loose bounds
+                    "c": Control([], lower_bound=lambda: -1.0, upper_bound=lambda: 2.0),
+                    "u": lambda c, gamma: -((c - gamma) ** 2),
+                },
+                "reward": {"u": "consumer"},
+            }
+        )
+
+        # Ensure 'gamma' is part of the information set by including it in state_grid
+        dr, _, _ = vbi.solve(
+            blk,
+            continuation=lambda: 0,
+            state_grid={"gamma": [0.25, 0.75]},
+            calibration={},
+        )
+
+        self.assertAlmostEqual(dr["c"](gamma=0.25), 0.25, places=3)
+        self.assertAlmostEqual(dr["c"](gamma=0.75), 0.75, places=3)

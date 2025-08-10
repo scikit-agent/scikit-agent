@@ -13,7 +13,142 @@ from skagent.distributions import (
 from inspect import signature
 import numpy as np
 from skagent.parser import math_text_to_lambda
-from typing import Any, Callable, Mapping, List, Union
+from typing import Any, Callable, Mapping, List, Union, Sequence
+
+
+def expand_heterogeneous_calibration(
+    calibration: dict, agent_count: int, rng: np.random.Generator = None
+) -> dict:
+    """
+    Expand calibration parameters to support ex ante agent heterogeneity.
+
+    Only expands parameters when heterogeneity is explicitly requested (via vectors or distributions).
+    Preserves backward compatibility by keeping scalars as scalars when no heterogeneity is present.
+
+    Supports two types of heterogeneous parameters:
+    1. Vector calibration: Arrays/lists of values for N agents
+    2. Distribution calibration: Distribution objects that get sampled for N agents
+
+    Parameters
+    ----------
+    calibration : dict
+        Dictionary of calibration parameters that may contain:
+        - Scalar values (float, int): kept as scalars unless heterogeneity is present
+        - Vectors (lists, arrays): used directly if length matches agent_count
+        - Distribution objects: sampled to generate agent-specific values
+
+    agent_count : int
+        Number of agents
+
+    rng : np.random.Generator, optional
+        Random number generator for sampling distributions
+
+    Returns
+    -------
+    dict
+        Calibration with heterogeneous parameters expanded to arrays when needed
+
+    Examples
+    --------
+    >>> from skagent.distributions import Normal
+    >>> # No heterogeneity - scalars preserved for backward compatibility
+    >>> calibration = {"DiscFac": 0.96, "CRRA": 2.0}
+    >>> expanded = expand_heterogeneous_calibration(calibration, agent_count=3)
+    >>> # Returns: {"DiscFac": 0.96, "CRRA": 2.0}
+    >>>
+    >>> # With heterogeneity - all parameters become arrays
+    >>> calibration = {"DiscFac": 0.96, "CRRA": [2.0, 2.5, 3.0]}
+    >>> expanded = expand_heterogeneous_calibration(calibration, agent_count=3)
+    >>> # Returns: {"DiscFac": [0.96, 0.96, 0.96], "CRRA": [2.0, 2.5, 3.0]}
+    Notes
+    -----
+    - Ex ante heterogeneity is applied once per agent and remains fixed over time
+      ("types").
+    - If no heterogeneity is specified anywhere in the calibration, scalar values
+      are preserved for backward compatibility.
+    - Discount factor heterogeneity (e.g., per-agent DiscFac) is excluded from the
+      scope of issue #91. This function is generic and will expand any parameter,
+      but project usage should keep discount factors homogeneous unless explicitly
+      supported elsewhere.
+
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    # Check if any parameter requires heterogeneity (is a vector or distribution)
+    has_heterogeneity = False
+    for param_value in calibration.values():
+        if isinstance(param_value, Distribution):
+            has_heterogeneity = True
+            break
+        elif isinstance(param_value, (list, tuple, np.ndarray)):
+            # Any list/array (even single element) indicates heterogeneity intention
+            has_heterogeneity = True
+            break
+
+    # If no heterogeneity is present, return original calibration for backward compatibility
+    if not has_heterogeneity:
+        return calibration.copy()
+
+    # Expand all parameters when heterogeneity is present
+    expanded = {}
+
+    for param_name, param_value in calibration.items():
+        if isinstance(param_value, Distribution):
+            # Distribution calibration: sample for each agent
+            expanded[param_name] = param_value.draw(agent_count)
+        elif isinstance(param_value, (list, tuple, np.ndarray)):
+            # Vector calibration: validate length and use directly
+            param_array = np.asarray(param_value)
+            if len(param_array) == 1:
+                # Single element - broadcast to all agents
+                expanded[param_name] = np.full(agent_count, param_array[0])
+            elif len(param_array) == agent_count:
+                # Correct length - use directly
+                expanded[param_name] = param_array
+            else:
+                raise ValueError(
+                    f"Parameter '{param_name}' has length {len(param_array)} "
+                    f"but agent_count is {agent_count}. Length must be 1 or {agent_count}."
+                )
+        else:
+            # Scalar calibration: broadcast to all agents when heterogeneity is present
+            expanded[param_name] = np.full(agent_count, param_value)
+
+    return expanded
+
+
+def calibration_agent_subset(calibration: dict, agent_indices: Sequence[int]) -> dict:
+    """
+    Extract calibration parameters for a subset of agents.
+
+    Parameters
+    ----------
+    calibration : dict
+        Expanded calibration dictionary with vectorized parameters
+    agent_indices : sequence of int
+        Indices of agents to extract parameters for
+
+    Returns
+    -------
+    dict
+        Calibration dictionary with parameters for specified agents only
+    """
+    subset = {}
+
+    for param_name, param_value in calibration.items():
+        if isinstance(param_value, np.ndarray):
+            if param_value.size == 1:
+                # Scalar broadcast - keep as scalar
+                subset[param_name] = param_value.item()
+            else:
+                # Vector - extract subset
+                subset[param_name] = param_value[agent_indices]
+        else:
+            # Non-array parameter - use directly
+            subset[param_name] = param_value
+
+    return subset
 
 
 class Aggregate:
@@ -115,7 +250,8 @@ def construct_shocks(shock_data, scope, rng=None):
 
     scope: dict(str, values)
         Variables assigned to numerical values.
-        The scope in which expressions will be evaluated
+        The scope in which expressions will be evaluated.
+        May contain vectorized parameters from heterogeneous calibration.
 
     rng: np.random.Generator, optional
         Random number generator to pass to distribution constructors.
@@ -132,10 +268,27 @@ def construct_shocks(shock_data, scope, rng=None):
             for a in dist_args:
                 if isinstance(dist_args[a], str):
                     arg_lambda = math_text_to_lambda(dist_args[a])
-                    arg_value = arg_lambda(
-                        *[scope[var] for var in signature(arg_lambda).parameters]
-                    )
 
+                    # Evaluate the lambda with potentially vectorized scope parameters
+                    lambda_params = list(signature(arg_lambda).parameters)
+                    param_values = []
+
+                    for var in lambda_params:
+                        if var in scope:
+                            scope_val = scope[var]
+                            # If a scope parameter is vectorized (heterogeneous), use the
+                            # first value as a representative when creating a single (homogeneous)
+                            # shock distribution. This preserves existing modeling choices
+                            # where shocks are homogeneous across agents. To model agent-varying
+                            # shock parameters, build IndexDistribution explicitly.
+                            if isinstance(scope_val, np.ndarray) and scope_val.size > 1:
+                                param_values.append(scope_val[0])
+                            else:
+                                param_values.append(scope_val)
+                        else:
+                            raise KeyError(f"Variable '{var}' not found in scope")
+
+                    arg_value = arg_lambda(*param_values)
                     dist_args[a] = arg_value
 
             # Add RNG to distribution arguments if provided
@@ -165,34 +318,56 @@ def simulate_dynamics(
     dynamics: Mapping[str, Callable]
         Maps variable names to functions from variables to values.
         Can include Controls
-        ## TODO: Make collection of equations into a named type
-
 
     pre : Mapping[str, Any]
         Bound values for all variables that must be known before beginning the period's dynamics.
-
+        May contain vectorized parameters from heterogeneous calibration.
+        If any input values are vectorized (size > 1), this function treats them
+        as per-agent inputs and evaluates each equation agent-by-agent. Scalars
+        and broadcast-sized arrays (size == 1) are handled seamlessly.
 
     dr : Mapping[str, Callable]
         Decision rules for all the Control variables in the dynamics.
+        If a decision rule is provided as an array of callables, it is applied
+        per agent (useful for age-varying or type-varying rules).
     """
     vals = pre.copy()
+
+    # Detect if we're working with multiple agents based on any vectorized values
+    agent_count = 1
+    for var, val in vals.items():
+        if isinstance(val, np.ndarray) and val.size > 1:
+            if agent_count == 1:
+                agent_count = val.size
+            elif agent_count != val.size:
+                raise ValueError(
+                    f"Inconsistent agent counts in dynamics: variable '{var}' has size {val.size}, "
+                    f"but expected size {agent_count}"
+                )
 
     for sym in dynamics:
         # Using the fact that Python dictionaries are ordered
         feq = dynamics[sym]
 
         if isinstance(feq, Control):
-            # This tests if the decision rule is age varying.
-            # If it is, this will be a vector with the decision rule for each agent.
+            # Initialize control array for multiple agents
+            if agent_count > 1:
+                vals[sym] = np.zeros(agent_count)
+
+            # This tests if the decision rule is age varying or agent-heterogeneous
             if isinstance(dr[sym], np.ndarray):
-                ## Now we have to loop through each agent, and apply the decision rule.
-                ## This is quite slow.
+                # Now we have to loop through each agent, and apply the decision rule.
                 for i in range(dr[sym].size):
                     vals_i = {
                         var: (
                             vals[var][i]
-                            if isinstance(vals[var], np.ndarray)
-                            else vals[var]
+                            if isinstance(vals[var], np.ndarray) and vals[var].size > 1
+                            else (
+                                vals[var].item()
+                                if isinstance(vals[var], np.ndarray)
+                                and vals[var].size == 1
+                                else vals[var]
+                            )
                         )
                         for var in vals
                     }
@@ -200,11 +375,59 @@ def simulate_dynamics(
                         *[vals_i[var] for var in signature(dr[sym][i]).parameters]
                     )
             else:
-                vals[sym] = dr[sym](
-                    *[vals[var] for var in signature(dr[sym]).parameters]
-                )  # TODO: test for signature match with Control
+                # Single decision rule applied to all agents
+                if agent_count > 1:
+                    # Apply decision rule agent by agent
+                    for i in range(agent_count):
+                        vals_i = {
+                            var: (
+                                vals[var][i]
+                                if isinstance(vals[var], np.ndarray)
+                                and vals[var].size > 1
+                                else (
+                                    vals[var].item()
+                                    if isinstance(vals[var], np.ndarray)
+                                    and vals[var].size == 1
+                                    else vals[var]
+                                )
+                            )
+                            for var in vals
+                        }
+                        vals[sym][i] = dr[sym](
+                            *[vals_i[var] for var in signature(dr[sym]).parameters]
+                        )
+                else:
+                    # Single agent case
+                    vals[sym] = dr[sym](
+                        *[vals[var] for var in signature(dr[sym]).parameters]
+                    )
         else:
-            vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
+            # Regular dynamics equation (not a control)
+            if agent_count > 1:
+                # Initialize result array
+                vals[sym] = np.zeros(agent_count)
+
+                # Apply dynamics equation agent by agent to handle heterogeneous parameters
+                for i in range(agent_count):
+                    vals_i = {
+                        var: (
+                            vals[var][i]
+                            if isinstance(vals[var], np.ndarray) and vals[var].size > 1
+                            else (
+                                vals[var].item()
+                                if isinstance(vals[var], np.ndarray)
+                                and vals[var].size == 1
+                                else vals[var]
+                            )
+                        )
+                        for var in vals
+                    }
+                    vals[sym][i] = feq(
+                        *[vals_i[var] for var in signature(feq).parameters]
+                    )
+            else:
+                # Single agent case - use original logic
+                vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
     return vals
 

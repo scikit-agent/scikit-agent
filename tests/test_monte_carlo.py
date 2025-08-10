@@ -212,3 +212,97 @@ class test_MonteCarloSimulator(unittest.TestCase):
 
         # Use allclose for numerical tolerance instead of exact equality
         self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
+
+
+class test_HeterogeneousCalibrationSimulation(unittest.TestCase):
+    def test_distribution_calibration_used_in_dynamics(self):
+        import numpy as np
+        from skagent.distributions import Normal, MeanOneLogNormal
+        from skagent.model import Control, DBlock
+        from skagent.simulation.monte_carlo import MonteCarloSimulator
+
+        block = DBlock(
+            **{
+                "shocks": {"eps": Normal(0.0, 1.0)},
+                "dynamics": {
+                    "x": lambda a, alpha, eps: alpha * a + eps,
+                    "c": Control(["x"]),
+                    "a": lambda x, c: x - c,
+                },
+            }
+        )
+
+        calib = {"alpha": Normal(1.0, 0.0)}  # degenerate at 1.0
+        initial = {"a": MeanOneLogNormal(0.0)}
+        sim = MonteCarloSimulator(
+            calib,
+            block,
+            {"c": lambda x: 0.0},
+            initial,
+            agent_count=3,
+            seed=123,
+        )
+        sim.initialize_sim()
+        hist = sim.simulate(sim_periods=2)
+        # At t=1: x - eps == alpha * a_prev. With degenerate alpha=1, equals a at t=0.
+        np.testing.assert_allclose(
+            hist["x"][1] - hist["eps"][1], hist["a"][0], rtol=1e-12, atol=1e-12
+        )
+
+    def test_age_varying_then_heterogeneous(self):
+        import numpy as np
+        from skagent.distributions import MeanOneLogNormal
+        from skagent.model import Control, DBlock
+        from skagent.simulation.monte_carlo import AgentTypeMonteCarloSimulator
+
+        block = DBlock(
+            **{
+                "shocks": {"eps": MeanOneLogNormal(0.0)},
+                "dynamics": {
+                    "y": lambda a, beta, eps: beta * a + eps,
+                    "c": Control(["y"]),
+                    "a": lambda y, c: y - c,
+                    "live": lambda: 1,  # keep alive
+                },
+            }
+        )
+        calib = {"beta": [0.5, 1.0, 1.5]}
+        initial = {"a": MeanOneLogNormal(0.0), "live": 1}
+
+        sim = AgentTypeMonteCarloSimulator(
+            calib, block, {"c": lambda y: 0.0}, initial, agent_count=3, seed=0
+        )
+        sim.initialize_sim()
+        hist = sim.simulate(sim_periods=2)
+        # At t=1: y - eps == beta(age=1) * a_prev. beta(age=1) = 1.0
+        np.testing.assert_allclose(
+            hist["y"][1] - hist["eps"][1], 1.0 * hist["a"][0], rtol=1e-12, atol=1e-12
+        )
+
+    def test_per_agent_vector_calibration(self):
+        import numpy as np
+        from skagent.distributions import MeanOneLogNormal
+        from skagent.model import Control, DBlock
+        from skagent.simulation.monte_carlo import MonteCarloSimulator
+
+        block = DBlock(
+            **{
+                "shocks": {"eps": MeanOneLogNormal(0.0)},
+                "dynamics": {
+                    "x": lambda a, gamma, eps: gamma * a + eps,
+                    "c": Control(["x"]),
+                    "a": lambda x, c: x - c,
+                },
+            }
+        )
+        calib = {"gamma": [0.9, 1.0, 1.1]}
+        initial = {"a": MeanOneLogNormal(0.0)}
+        sim = MonteCarloSimulator(
+            calib, block, {"c": lambda x: 0.0}, initial, agent_count=3, seed=0
+        )
+        sim.initialize_sim()
+        hist = sim.simulate(sim_periods=2)
+        a_prev, x1, eps1 = hist["a"][0], hist["x"][1], hist["eps"][1]
+        np.testing.assert_allclose(
+            x1 - eps1, np.array([0.9, 1.0, 1.1]) * a_prev, rtol=1e-12, atol=1e-12
+        )

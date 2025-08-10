@@ -14,9 +14,11 @@ from skagent.distributions import (
 )
 from skagent.model import Aggregate
 from skagent.model import DBlock
-from skagent.model import construct_shocks, simulate_dynamics
-
-from skagent.utils import apply_fun_to_vals
+from skagent.model import (
+    construct_shocks,
+    simulate_dynamics,
+    expand_heterogeneous_calibration,
+)
 
 
 def draw_shocks(
@@ -138,11 +140,16 @@ class AgentTypeMonteCarloSimulator(Simulator):
     ------------
 
     calibration: Mapping[str, Any]
+        A calibration dictionary. Supports ex ante heterogeneity via:
+        - vectors/arrays (length N agents)
+        - distributions (sampled once per agent at initialization)
 
     block : DBlock
         Has shocks, dynamics, and rewards
 
     dr: Mapping[str, Callable]
+        Decision rules. May be a single callable per control, or an array of
+        callables for age/type-varying policies.
 
     initial: dict
 
@@ -165,23 +172,29 @@ class AgentTypeMonteCarloSimulator(Simulator):
     ):
         super().__init__()
 
-        self.calibration = calibration
+        self.raw_calibration = calibration  # Store original calibration
         self.block = block
+        self.seed = seed  # NOQA
+        self.agent_count = agent_count
+        self.T_sim = T_sim
+
+        # Expand calibration to support heterogeneous parameters
+        rng = np.random.default_rng(seed)
+        self.calibration = expand_heterogeneous_calibration(
+            calibration, agent_count, rng=rng
+        )
 
         # shocks are exogenous (but for age) but can depend on calibration
         raw_shocks = block.get_shocks()
         # Pass RNG to construct_shocks for deterministic distribution creation
-        self.shocks = construct_shocks(
-            raw_shocks, calibration, rng=np.random.default_rng(seed)
-        )
+        # Use original calibration for shock construction to avoid vectorized parameter issues.
+        # If shock parameters should vary by agent, construct agent-varying shocks explicitly
+        # (e.g., IndexDistribution).
+        self.shocks = construct_shocks(raw_shocks, calibration, rng=rng)
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
         self.initial = initial
-
-        self.seed = seed  # NOQA
-        self.agent_count = agent_count
-        self.T_sim = T_sim
 
         # changes here from HARK.core.AgentType
         self.vars = block.get_vars()
@@ -299,7 +312,15 @@ class AgentTypeMonteCarloSimulator(Simulator):
             ### BIG CHANGES HERE from HARK.core.AgentType
             shocks_now = draw_shocks(self.shocks, self.t_age, rng=self.RNG)
 
-        pre = calibration_by_age(self.t_age, self.calibration)
+        # Combine age-varying and heterogeneous calibration
+        # First get age-varying parameters (maps per-age values to current ages)
+        age_calibration = calibration_by_age(self.t_age, self.raw_calibration)
+
+        # Then expand for heterogeneity, which may override age-varying parameters
+        # if the raw calibration contains heterogeneous specifications
+        pre = expand_heterogeneous_calibration(
+            age_calibration, self.agent_count, rng=self.RNG
+        )
 
         pre.update(self.vars_prev)
         pre.update(shocks_now)
@@ -469,6 +490,9 @@ class MonteCarloSimulator(Simulator):
     ------------
 
     calibration: Mapping[str, Any]
+        A calibration dictionary. Supports ex ante heterogeneity via:
+        - vectors/arrays (length N agents)
+        - distributions (sampled once per agent at initialization)
 
     block : DBlock
         Has shocks, dynamics, and rewards
@@ -496,23 +520,31 @@ class MonteCarloSimulator(Simulator):
     ):
         super().__init__()
 
-        self.calibration = calibration
+        self.raw_calibration = calibration  # Store original calibration
         self.block = block
+        self.seed = seed  # NOQA
+        self.agent_count = agent_count  # TODO: pass this in at block level
+        self.T_sim = T_sim
+
+        # Expand calibration to support heterogeneous parameters.
+        # Ex ante heterogeneity is applied once per agent (types) and
+        # remains fixed over time.
+        rng = np.random.default_rng(seed)
+        self.calibration = expand_heterogeneous_calibration(
+            calibration, agent_count, rng=rng
+        )
 
         # shocks are exogenous (but for age) but can depend on calibration
         raw_shocks = block.get_shocks()
         # Pass RNG to construct_shocks for deterministic distribution creation
-        self.shocks = construct_shocks(
-            raw_shocks, calibration, rng=np.random.default_rng(seed)
-        )
+        # Use original calibration for shock construction to avoid vectorized parameter issues.
+        # If shock parameters should vary by agent, construct agent-varying shocks explicitly
+        # (e.g., IndexDistribution).
+        self.shocks = construct_shocks(raw_shocks, calibration, rng=rng)
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
         self.initial = initial
-
-        self.seed = seed  # NOQA
-        self.agent_count = agent_count  # TODO: pass this in at block level
-        self.T_sim = T_sim
 
         # changes here from HARK.core.AgentType
         self.vars = block.get_vars()
@@ -617,8 +649,8 @@ class MonteCarloSimulator(Simulator):
             rng=self.RNG,
         )
 
-        pre = self.calibration  # for AgentTypeMC, this is conditional on age
-        # TODO: generalize indexing into calibration.
+        # Use the expanded heterogeneous calibration
+        pre = self.calibration.copy()
 
         pre.update(self.vars_prev)
         pre.update(shocks_now)
@@ -630,8 +662,8 @@ class MonteCarloSimulator(Simulator):
 
         post = simulate_dynamics(self.dynamics, pre, dr)
 
-        for r in self.block.reward:
-            post[r] = apply_fun_to_vals(self.block.reward[r], post)
+        # Rewards are already computed in dynamics, no need to recompute
+        # The reward dict just assigns ownership to agents
 
         self.vars_now = post
 
