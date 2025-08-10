@@ -60,6 +60,17 @@ def expand_heterogeneous_calibration(
     >>> calibration = {"DiscFac": 0.96, "CRRA": [2.0, 2.5, 3.0]}
     >>> expanded = expand_heterogeneous_calibration(calibration, agent_count=3)
     >>> # Returns: {"DiscFac": [0.96, 0.96, 0.96], "CRRA": [2.0, 2.5, 3.0]}
+    Notes
+    -----
+    - Ex ante heterogeneity is applied once per agent and remains fixed over time
+      ("types").
+    - If no heterogeneity is specified anywhere in the calibration, scalar values
+      are preserved for backward compatibility.
+    - Discount factor heterogeneity (e.g., per-agent DiscFac) is excluded from the
+      scope of issue #91. This function is generic and will expand any parameter,
+      but project usage should keep discount factors homogeneous unless explicitly
+      supported elsewhere.
+
     """
     if rng is None:
         rng = np.random.default_rng()
@@ -265,9 +276,11 @@ def construct_shocks(shock_data, scope, rng=None):
                     for var in lambda_params:
                         if var in scope:
                             scope_val = scope[var]
-                            # For vectorized parameters, use the first value as representative
-                            # This supports the case where shock parameters may depend on
-                            # heterogeneous calibration, but the shock itself is homogeneous
+                            # If a scope parameter is vectorized (heterogeneous), use the
+                            # first value as a representative when creating a single (homogeneous)
+                            # shock distribution. This preserves existing modeling choices
+                            # where shocks are homogeneous across agents. To model agent-varying
+                            # shock parameters, build IndexDistribution explicitly.
                             if isinstance(scope_val, np.ndarray) and scope_val.size > 1:
                                 param_values.append(scope_val[0])
                             else:
@@ -309,9 +322,14 @@ def simulate_dynamics(
     pre : Mapping[str, Any]
         Bound values for all variables that must be known before beginning the period's dynamics.
         May contain vectorized parameters from heterogeneous calibration.
+        If any input values are vectorized (size > 1), this function treats them
+        as per-agent inputs and evaluates each equation agent-by-agent. Scalars
+        and broadcast-sized arrays (size == 1) are handled seamlessly.
 
     dr : Mapping[str, Callable]
         Decision rules for all the Control variables in the dynamics.
+        If a decision rule is provided as an array of callables, it is applied
+        per agent (useful for age-varying or type-varying rules).
     """
     vals = pre.copy()
 

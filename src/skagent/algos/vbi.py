@@ -74,16 +74,42 @@ def solve(
 
     Parameters
     -----------
-    block
-    continuation
+    block : DBlock
+        The dynamic block to solve.
+    continuation : callable
+        Continuation value function.
 
-    state_grid: Grid
-        This is a grid over all variables that the optimization will range over.
-        This should be just the information set of the decision variables.
+    state_grid : Grid
+        A grid over variables that the optimization will range over. This must
+        include the union of the information sets (Control.iset) of all control
+        variables in the block. Policies can only condition on variables present
+        here. If a heterogeneous calibration parameter is intended to be in the
+        information set, it must be included in this grid.
 
-    disc_params
-    calibration
+    disc_params : dict
+        Shock discretization parameters.
+    calibration : dict
+        Calibration values used when evaluating values at grid points.
     """
+
+    # Validate that the state_grid covers the information set of all controls
+    controls = block.get_controls()
+    iset_vars = set()
+    for control_name in controls:
+        ctrl = block.dynamics[control_name]
+        # ctrl is a Control instance
+        if getattr(ctrl, "iset", None):
+            if isinstance(ctrl.iset, (list, tuple)):
+                iset_vars.update(ctrl.iset)
+            else:
+                iset_vars.add(ctrl.iset)
+
+    missing = set(iset_vars).difference(state_grid.keys())
+    if missing:
+        raise ValueError(
+            "state_grid is missing information-set variables: "
+            + ", ".join(sorted(missing))
+        )
 
     # state-rule value function
     srv_function = block.get_state_rule_value_function_from_continuation(
