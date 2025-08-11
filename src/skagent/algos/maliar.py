@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import skagent.ann as ann
 from skagent.grid import Grid
@@ -255,6 +256,7 @@ def maliar_training_loop(
     parameters,
     shock_copies=2,
     max_iterations=5,
+    tolerance=1e-6,
     random_seed=None,
     simulation_steps=1,
 ):
@@ -272,9 +274,25 @@ def maliar_training_loop(
 
     max_iterations: int
         Number of times to perform the training loop, if there is no convergence.
+    tolerance: float
+        Convergence tolerance. Training stops when the L2 norm of parameter changes
+        is below this threshold.
     simulation_steps : int
         The number of time steps to simulate forward when determining the next omega set for training
     """
+
+    def extract_parameters(network):
+        """Extract all parameters from the network into a flat tensor."""
+        params = []
+        for param in network.parameters():
+            params.append(param.data.view(-1))
+        return torch.cat(params) if params else torch.tensor([])
+
+    def compute_parameter_difference(params1, params2):
+        """Compute the L2 norm of the difference between two parameter vectors."""
+        if len(params1) != len(params2):
+            return float("inf")
+        return torch.norm(params1 - params2).item()
 
     # Step 1. Initialize the algorithm:
 
@@ -293,7 +311,13 @@ def maliar_training_loop(
     states = states_0_n  # V) Create initial panel of agents/starting states.
 
     # Step 2. Train the machine, i.e., ﬁnd θ that minimizes theempirical risk Xi^n (θ ):
-    for i in range(max_iterations):
+    iteration = 0
+    converged = False
+
+    while iteration < max_iterations and not converged:
+        # Store current parameters before training
+        prev_params = extract_parameters(bpn)
+
         # i). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         givens = generate_givens_from_states(states_0_n, block, shock_copies)
 
@@ -302,15 +326,34 @@ def maliar_training_loop(
         # TODO how many epochs? What Adam scale? Passing through variables
         ann.train_block_policy_nn(bpn, givens, loss_function, epochs=250)
 
+        # Extract parameters after training
+        curr_params = extract_parameters(bpn)
+
+        # Check for convergence: || θ_hat − θ ||  < ε
+        param_diff = compute_parameter_difference(prev_params, curr_params)
+
+        if param_diff < tolerance:
+            converged = True
+            logging.info(
+                f"Converged after {iteration + 1} iterations. Parameter difference: {param_diff:.2e}"
+            )
+        else:
+            logging.info(
+                f"Iteration {iteration + 1}: Parameter difference: {param_diff:.2e}"
+            )
+
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         next_states = simulate_forward(
             states, block, bpn.get_decision_function(), parameters, simulation_steps
         )
 
         states = Grid.from_dict(next_states)
+        iteration += 1
 
-        # End Step 2 if the convergence criterion || θ_hat − θ ||  < ε is satisﬁed.
-        # TODO: test for difference.. how? This effects the FOR (/while) loop above.
+    if not converged:
+        logging.warning(
+            f"Training completed without convergence after {max_iterations} iterations."
+        )
 
     # Step 3. Assess the accuracy of constructed approximation ϕ (·, θ ) on a new sample.
     return bpn, states
