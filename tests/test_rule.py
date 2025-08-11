@@ -9,11 +9,11 @@ import pytest
 import sys
 
 sys.path.append("../src")
-from skagent.rule import extract_dependencies
+from skagent.rule import extract_dependencies, extract_formula, format_rule
+
 
 SKAGENT_AVAILABLE = find_spec("skagent") is not None
-HARK_AVAILABLE = find_spec("HARK") is not None
-HAS_DEPENDENCIES = SKAGENT_AVAILABLE and HARK_AVAILABLE
+HAS_DEPENDENCIES = SKAGENT_AVAILABLE
 
 pytestmark = pytest.mark.skipif(
     not HAS_DEPENDENCIES,
@@ -215,3 +215,51 @@ class TestRuleRobustness:
         # Should handle gracefully without crashing
         deps = extract_dependencies(outer_func)
         assert isinstance(deps, list)
+
+
+class TestRuleFormulaAndFormatting:
+    """Test formula extraction and formatting functions."""
+
+    def test_formula_extraction(self):
+        """Test extract_formula on actual model rules."""
+        # Test shock formulas
+        live_formula = extract_formula(consumption_block.shocks["live"])
+        assert "Bernoulli" in live_formula
+        assert "p=LivPrb" in live_formula
+
+        # Test Control formula
+        c_formula = extract_formula(consumption_block.dynamics["c"])
+        assert "Control(m)" == c_formula
+
+        # Test lambda formula (at least one example)
+        b_rule = consumption_block.dynamics["b"]
+        b_formula = extract_formula(b_rule)
+        # Either extracts the lambda body or shows it as Function
+        assert "k * R" in b_formula or "Function(k, R)" in b_formula
+
+    def test_rule_formatting(self):
+        """Test format_rule on actual model rules."""
+        # Test formatting a shock
+        live_formatted = format_rule("live", consumption_block.shocks["live"])
+        assert live_formatted.startswith("live = ")
+        assert "Bernoulli" in live_formatted
+
+        # Test formatting a Control
+        c_formatted = format_rule("c", consumption_block.dynamics["c"])
+        assert c_formatted == "c = Control(m)"
+
+        # Test formatting a lambda
+        b_formatted = format_rule("b", consumption_block.dynamics["b"])
+        assert b_formatted.startswith("b = ")
+
+    def test_all_model_rules_formattable(self):
+        """Ensure all rules in the model can be formatted without errors."""
+        # Format all shocks
+        for name, rule in consumption_block.shocks.items():
+            formatted = format_rule(name, rule)
+            assert formatted.startswith(f"{name} = ")
+
+        # Format all dynamics
+        for name, rule in consumption_block.dynamics.items():
+            formatted = format_rule(name, rule)
+            assert formatted.startswith(f"{name} = ")
