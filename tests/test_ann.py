@@ -353,19 +353,21 @@ class test_ann_multiple_controls(unittest.TestCase):
         cpns = {}
 
         # Invent Policy Neural Networks for each Control variable.
-        for csym in case_10["block"].get_controls():
-            cpns[csym] = ann.BlockPolicyNet(case_10["block"], csym=csym)
+        for control_sym in case_10["block"].get_controls():
+            cpns[control_sym] = ann.BlockPolicyNet(
+                case_10["block"], control_sym=control_sym
+            )
 
         dict_of_decision_rules = {
             k: v
             for d in [
-                cpns[csym].get_decision_rule(length=case_10["givens"].n())
-                for csym in cpns
+                cpns[control_sym].get_decision_rule(length=case_10["givens"].n())
+                for control_sym in cpns
             ]
             for k, v in d.items()
         }
 
-        # train for CSYM1 with decision rule from the other net
+        # train for control_sym1 with decision rule from the other net
         # for 'c'
         ann.train_block_policy_nn(
             cpns["c"],
@@ -379,7 +381,7 @@ class test_ann_multiple_controls(unittest.TestCase):
             epochs=200,
         )
 
-        # train for CSYM2 with decision rule from other net
+        # train for control_sym2 with decision rule from other net
         ann.train_block_policy_nn(
             cpns["d"],
             case_10["givens"],

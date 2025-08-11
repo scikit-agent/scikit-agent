@@ -25,18 +25,21 @@ def solve_multiple_controls(control_order, block, givens, calibration, epochs=20
     cpns = {}
 
     # Invent Policy Neural Networks for each Control variable.
-    for csym in block.get_controls():
-        cpns[csym] = ann.BlockPolicyNet(block, csym=csym)
+    for control_sym in block.get_controls():
+        cpns[control_sym] = ann.BlockPolicyNet(block, control_sym=control_sym)
 
     dict_of_decision_rules = {
         k: v
-        for d in [cpns[csym].get_decision_rule(length=givens.n()) for csym in cpns]
+        for d in [
+            cpns[control_sym].get_decision_rule(length=givens.n())
+            for control_sym in cpns
+        ]
         for k, v in d.items()
     }
 
-    for csym in control_order:
+    for control_sym in control_order:
         ann.train_block_policy_nn(
-            cpns[csym],
+            cpns[control_sym],
             givens,
             get_loss_function(  # !!
                 ["a"],  # !!
