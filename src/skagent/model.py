@@ -280,6 +280,7 @@ class DBlock(Block):
     shocks: dict = field(default_factory=dict)
     dynamics: dict = field(default_factory=dict)
     reward: dict = field(default_factory=dict)
+    resid: dict = field(default_factory=dict)
 
     def construct_shocks(self, calibration, rng=None):
         """
@@ -324,6 +325,16 @@ class DBlock(Block):
         # for r in self.reward:
         #    if isinstance(self.reward[r], str):
         #        self.reward[r] = math_text_to_lambda(self.reward[r])
+
+        # parse residual functions if provided as strings
+        if isinstance(self.resid, dict):
+            new_resid = {}
+            for k, r in self.resid.items():
+                if isinstance(r, str):
+                    new_resid[k] = math_text_to_lambda(r)
+                else:
+                    new_resid[k] = r
+            self.resid = new_resid
 
     def get_shocks(self):
         return self.shocks

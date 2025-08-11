@@ -270,27 +270,37 @@ class BlockPolicyNet(Net):
         self.block = block
         self.apply_open_bounds = apply_open_bounds
 
-        # pseudo -- assume only one for now
-        # assuming only on control for now
-        self.csym = self.block.get_controls()[0]
-        self.control = self.block.dynamics[self.csym]
-        self.iset = self.control.iset
+        # Support multiple controls; preserve backward compatibility
+        self.csyms = list(self.block.get_controls())
+        if len(self.csyms) == 0:
+            raise ValueError(
+                "BlockPolicyNet requires at least one control in the block dynamics"
+            )
 
-        # assess whether/how the control is bounded
-        # this will be more challenging with multiple controls.
-        # If not None, these will be _functions_.
-        # If it is bounded, set up the vectorized version of the bound
-        # This will be used directly in the forward pass of the network.
-        self.upper_bound = self.control.upper_bound
-        self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
-            self.upper_bound, "Upper bound"
-        )
-        self.lower_bound = self.control.lower_bound
-        self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
-            self.lower_bound, "Lower bound"
-        )
+        # Validate and gather information sets
+        controls = [self.block.dynamics[sym] for sym in self.csyms]
+        # Require identical information sets across controls for simplicity
+        first_iset = list(controls[0].iset)
+        for ctrl in controls[1:]:
+            if list(ctrl.iset) != first_iset:
+                raise ValueError(
+                    f"All controls must share the same information set. Got {first_iset} vs {list(ctrl.iset)}"
+                )
+        self.iset = first_iset
 
-        super().__init__(n_inputs=len(self.iset), n_outputs=1, width=width, **kwargs)
+        # Prepare per-control bound vectorized functions
+        self.upper_bound_vec_funcs = {}
+        self.lower_bound_vec_funcs = {}
+        for csym in self.csyms:
+            ctrl = self.block.dynamics[csym]
+            ub_vec, _ = self._setup_bound(ctrl.upper_bound, "Upper bound")
+            lb_vec, _ = self._setup_bound(ctrl.lower_bound, "Lower bound")
+            self.upper_bound_vec_funcs[csym] = ub_vec
+            self.lower_bound_vec_funcs[csym] = lb_vec
+
+        super().__init__(
+            n_inputs=len(self.iset), n_outputs=len(self.csyms), width=width, **kwargs
+        )
 
     def _setup_bound(self, bound_func, bound_name):
         if bound_func:
@@ -337,28 +347,31 @@ class BlockPolicyNet(Net):
             parameters = {}
         vals = parameters | states_t | shocks_t
 
-        # hacky -- should be moved into transition method as other option
-        # very brittle, because it can interfere with constraints
-        drs = {csym: lambda: 1 for csym in self.block.get_controls()}
+        # Preserve legacy behavior: compute intermediate dynamic variables so that
+        # information-set symbols defined via dynamics (e.g., m) are available.
+        # Use placeholder decision rules to allow evaluating up to the first control.
+        drs = {csym: (lambda: 1) for csym in self.csyms}
+        post = self.block.transition(vals, drs, until=self.csyms[0])
 
-        post = self.block.transition(vals, drs, until=self.csym)
-
-        # the inputs to the network are the information set of the control variable
-        # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
+        # Build inputs from computed post-state values
         iset_vals = [post[isym].flatten() for isym in self.iset]
         if len(iset_vals) > 0:
             input_tensor = torch.stack(iset_vals).T
-            input_tensor = input_tensor.to(device)
+            # Keep tensor on same device as input (don't force to CUDA device)
+            if hasattr(iset_vals[0], "device"):
+                input_tensor = input_tensor.to(iset_vals[0].device)
+                # Also move network to same device
+                self.to(iset_vals[0].device)
+            else:
+                input_tensor = input_tensor.to(device)
         else:
             batch_size = len(next(iter(states_t.values())))
             input_tensor = torch.empty(batch_size, 0, device=device)
 
-        output = self(input_tensor)  # application of network
+        output = self(input_tensor)  # [batch, n_controls]
 
-        # again, assuming only one for now...
-        # decisions = dict(zip([csym], output))
-        # ... when using multiple csyms, note the orientation of the output tensor
-        decisions = {self.csym: output.flatten()}
+        # Map outputs to their corresponding control symbols
+        decisions = {csym: output[:, i].flatten() for i, csym in enumerate(self.csyms)}
         return decisions
 
     def forward(self, x):
@@ -369,32 +382,34 @@ class BlockPolicyNet(Net):
         """
 
         # using the swish
-        x1 = super().forward(x)
+        x1 = super().forward(x)  # [batch, n_controls]
 
-        if self.apply_open_bounds:
-            if not self.upper_bound and not self.lower_bound:
-                x2 = x1
-            elif self.upper_bound and self.lower_bound:
-                # Compute bounds from input using wrapped functions
-                upper_bound = self.upper_bound_vec_func(x)
-                lower_bound = self.lower_bound_vec_func(x)
+        if not self.apply_open_bounds:
+            return x1
 
-                # Scale to bounds
-                x2 = lower_bound + torch.nn.functional.sigmoid(x1) * (
-                    upper_bound - lower_bound
-                )
+        # Apply per-control bound normalization
+        outputs = []
+        for i, csym in enumerate(self.csyms):
+            yi = x1[:, i : i + 1]  # [batch,1]
+            ub_vec = self.upper_bound_vec_funcs.get(csym)
+            lb_vec = self.lower_bound_vec_funcs.get(csym)
 
-            elif self.lower_bound and not self.upper_bound:
-                lower_bound = self.lower_bound_vec_func(x)
-                x2 = lower_bound + torch.nn.functional.softplus(x1)
+            if ub_vec is None and lb_vec is None:
+                yi2 = yi
+            elif ub_vec is not None and lb_vec is not None:
+                upper_bound = ub_vec(x)  # [batch,1]
+                lower_bound = lb_vec(x)  # [batch,1]
+                yi2 = lower_bound + torch.sigmoid(yi) * (upper_bound - lower_bound)
+            elif lb_vec is not None and ub_vec is None:
+                lower_bound = lb_vec(x)
+                yi2 = lower_bound + torch.nn.functional.softplus(yi)
+            else:  # ub_vec is not None and lb_vec is None
+                upper_bound = ub_vec(x)
+                yi2 = upper_bound - torch.nn.functional.softplus(yi)
 
-            elif not self.lower_bound and self.upper_bound:
-                upper_bound = self.upper_bound_vec_func(x)
-                x2 = upper_bound - torch.nn.functional.softplus(x1)
-        else:
-            # return un-normalized reals.
-            x2 = x1
+            outputs.append(yi2)
 
+        x2 = torch.cat(outputs, dim=1)
         return x2
 
     def get_decision_function(self):

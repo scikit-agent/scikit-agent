@@ -5,6 +5,7 @@ import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
 import torch
 import skagent.utils as utils
+import math
 
 """
 Tools for the implementation of the Maliar, Maliar, and Winant (JME '21) method.
@@ -207,6 +208,171 @@ def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: 
 
     givens = states.update_from_dict(new_shock_values)
 
+    return givens
+
+
+############################
+# Euler residual loss (MMW)
+############################
+
+
+def get_euler_fb_loss(state_variables, block: model.DBlock, parameters: dict):
+    """
+    Model-agnostic all-in-one Euler residual loss with optional Fischer–Burmeister term.
+
+    This routine derives everything it can from the DBlock, and accepts optional
+    callables to inject model-specific components (pricing term and complementarity term).
+
+    Expectations are computed via the Maliar all-in-one trick using two independent
+    shock copies per exogenous shock: for each shock name z, columns z_0 and z_1
+    must exist in the input Grid.
+
+    Parameters
+    - state_variables: list of state variable names used by the policy and transitions
+    - block: DBlock
+    - discount_factor: β
+    - parameters: calibration dictionary used by block dynamics
+    - pricing_term: callable(states_t, states_next, parameters) -> tensor factor. If None, uses 1.
+    - consumption_var: name of the consumption variable in block dynamics. If None, try detect
+      from the reward equation arguments.
+    - multiplier_control: optional control name to subtract from the Euler term (e.g., 'h'). If None,
+      no subtraction is performed.
+    - fb_term: optional callable(states_t, controls_t, parameters) -> tensor, the FB residual (R2).
+      If None, no FB penalty is added.
+    - agent: optional agent filter for reward selection (unused for derivative, but kept for symmetry)
+    - weight_fb: multiplier on FB penalty squared.
+    """
+
+    shock_syms = list(block.get_shocks().keys())
+
+    # Require custom residuals on the block
+    if not (
+        hasattr(block, "resid")
+        and isinstance(block.resid, dict)
+        and len(block.resid) > 0
+    ):
+        raise Exception(
+            "get_euler_fb_loss requires block.resid to be provided (dict of residual functions)"
+        )
+
+    def loss(decision_function, input_grid: Grid):
+        vals = input_grid.to_dict()
+        # extract current states
+        states_t = {sym: vals[sym] for sym in state_variables}
+        # controls at t
+        controls_t = decision_function(states_t, {}, parameters)
+        # Expect each residual function rf(states_t, controls_t, shocks, parameters) -> tensor
+        e0 = {sym: vals[f"{sym}_0"] for sym in shock_syms}
+        e1 = {sym: vals[f"{sym}_1"] for sym in shock_syms}
+        losses = []
+        for name, rf in block.resid.items():
+            # Support rf with 4 or 5 arguments (optionally decision_function)
+            try:
+                r0 = rf(states_t, controls_t, e0, parameters, decision_function)
+            except TypeError:
+                r0 = rf(states_t, controls_t, e0, parameters)
+            try:
+                r1 = rf(states_t, controls_t, e1, parameters, decision_function)
+            except TypeError:
+                r1 = rf(states_t, controls_t, e1, parameters)
+            if not torch.is_tensor(r0):
+                r0 = torch.as_tensor(
+                    r0,
+                    dtype=next(iter(states_t.values())).dtype,
+                    device=next(iter(states_t.values())).device,
+                )
+            if not torch.is_tensor(r1):
+                r1 = torch.as_tensor(r1, dtype=r0.dtype, device=r0.device)
+            losses.append(r0 * r1)
+        return sum(losses)
+
+    return loss
+
+
+def generate_random_ergodic_state_grid(
+    calibration: dict,
+    n: int,
+    state_variables: list[str],
+    ergodic_specs: dict[str, dict] | None = None,
+) -> Grid:
+    """
+    Model-agnostic random state generator.
+
+    For each state symbol in state_variables, draw i.i.d. samples using the following rules:
+    - If ergodic_specs provides {"dist": callable, "kwargs": {...}} for the symbol, call it to draw.
+    - Else if both sigma_{sym} and rho_{sym} exist in calibration, draw from N(0, sigma/sqrt(1-rho^2)).
+    - Else if bounds {sym_min, sym_max} exist in calibration, draw Uniform[min,max].
+    - Else, default to N(0,1).
+    """
+
+    draws = {}
+    rng_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def erg_std(sigma, rho):
+        return sigma / math.sqrt(max(1e-24, 1.0 - rho * rho))
+
+    for sym in state_variables:
+        if ergodic_specs and sym in ergodic_specs:
+            spec = ergodic_specs[sym]
+            dist = spec.get("dist")
+            kwargs = spec.get("kwargs", {})
+            if dist is None:
+                raise ValueError(f"Missing 'dist' in ergodic_specs for {sym}")
+            sample = dist(**kwargs)
+            sample = sample if torch.is_tensor(sample) else torch.as_tensor(sample)
+            if sample.numel() != n:
+                sample = sample.reshape(-1)[:n]
+            draws[sym] = sample.to(rng_device)
+            continue
+
+        sigma_key = f"sigma_{sym}"
+        rho_key = f"rho_{sym}"
+        min_key = f"{sym}_min"
+        max_key = f"{sym}_max"
+
+        if sigma_key in calibration and rho_key in calibration:
+            std = erg_std(float(calibration[sigma_key]), float(calibration[rho_key]))
+            draws[sym] = torch.normal(mean=0.0, std=std, size=(n,), device=rng_device)
+        elif min_key in calibration and max_key in calibration:
+            a = float(calibration[min_key])
+            b = float(calibration[max_key])
+            draws[sym] = (
+                torch.distributions.Uniform(low=a, high=b).sample((n,)).to(rng_device)
+            )
+        else:
+            draws[sym] = torch.normal(mean=0.0, std=1.0, size=(n,), device=rng_device)
+
+    return Grid.from_dict(draws)
+
+
+def prepare_aio_training_inputs(
+    block: model.DBlock,
+    calibration: dict,
+    n: int,
+    seed: int | None = None,
+    shock_copies: int = 2,
+    state_variables: list[str] | None = None,
+    ergodic_specs: dict[str, dict] | None = None,
+):
+    """
+    Construct seeded shocks on the block, build a random ergodic state grid (model-agnostic),
+    and append independent shock copies for all-in-one training.
+    """
+    rng = np.random.default_rng(seed) if seed is not None else None
+    block.construct_shocks(calibration, rng=rng)
+    if state_variables is None:
+        # default to the information set of the first control
+        cs = block.get_controls()
+        if len(cs) == 0:
+            raise Exception(
+                "State variables not provided and block has no controls to infer from"
+            )
+        iset = block.dynamics[cs[0]].iset
+        state_variables = list(iset)
+    states = generate_random_ergodic_state_grid(
+        calibration, n, state_variables, ergodic_specs
+    )
+    givens = generate_givens_from_states(states, block, shock_copies=shock_copies)
     return givens
 
 
