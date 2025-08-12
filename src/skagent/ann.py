@@ -253,6 +253,8 @@ class BlockPolicyNet(Net):
         If True, then the network forward output is normalized by the upper and/or lower bounds,
         computed as a function of the input tensor. These bounds are "open" because output
         can be arbitrarily close to, but not equal to, the bounds. Default is True.
+    control_sym : string, optional
+        The symbol for the control variable.
     width : int, optional
         Width of hidden layers. Default is 32.
     n_layers : int, optional
@@ -266,26 +268,30 @@ class BlockPolicyNet(Net):
         documentation for all available options including init_seed, copy_weights_from, etc.
     """
 
-    def __init__(self, block, apply_open_bounds=True, width=32, **kwargs):
+    def __init__(
+        self, block, control_sym=None, apply_open_bounds=True, width=32, **kwargs
+    ):
         self.block = block
         self.apply_open_bounds = apply_open_bounds
 
-        # pseudo -- assume only one for now
-        # assuming only on control for now
-        self.csym = self.block.get_controls()[0]
-        self.control = self.block.dynamics[self.csym]
-        self.iset = self.control.iset
+        ## pseudo -- assume only one for now
+        if control_sym is None:
+            control_sym = next(iter(self.block.get_controls()))
 
-        # assess whether/how the control is bounded
+        self.control_sym = control_sym
+        self.cobj = self.block.dynamics[control_sym]
+        self.iset = self.cobj.iset
+
+        ## assess whether/how the control is bounded
         # this will be more challenging with multiple controls.
         # If not None, these will be _functions_.
         # If it is bounded, set up the vectorized version of the bound
         # This will be used directly in the forward pass of the network.
-        self.upper_bound = self.control.upper_bound
+        self.upper_bound = self.cobj.upper_bound
         self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
             self.upper_bound, "Upper bound"
         )
-        self.lower_bound = self.control.lower_bound
+        self.lower_bound = self.cobj.lower_bound
         self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
             self.lower_bound, "Lower bound"
         )
@@ -339,26 +345,22 @@ class BlockPolicyNet(Net):
 
         # hacky -- should be moved into transition method as other option
         # very brittle, because it can interfere with constraints
-        drs = {csym: lambda: 1 for csym in self.block.get_controls()}
+        drs = {control_sym: lambda: 1 for control_sym in self.block.get_controls()}
 
-        post = self.block.transition(vals, drs, until=self.csym)
+        post = self.block.transition(vals, drs, until=self.control_sym)
 
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
         iset_vals = [post[isym].flatten() for isym in self.iset]
-        if len(iset_vals) > 0:
-            input_tensor = torch.stack(iset_vals).T
-            input_tensor = input_tensor.to(device)
-        else:
-            batch_size = len(next(iter(states_t.values())))
-            input_tensor = torch.empty(batch_size, 0, device=device)
 
-        output = self(input_tensor)  # application of network
+        output = self.get_decision_rule(length=next(iter(post.values())).numel())[
+            self.control_sym
+        ](*iset_vals)
 
         # again, assuming only one for now...
-        # decisions = dict(zip([csym], output))
-        # ... when using multiple csyms, note the orientation of the output tensor
-        decisions = {self.csym: output.flatten()}
+        # decisions = dict(zip([control_sym], output))
+        # ... when using multiple control_syms, note the orientation of the output tensor
+        decisions = {self.control_sym: output}
         return decisions
 
     def forward(self, x):
@@ -403,6 +405,43 @@ class BlockPolicyNet(Net):
 
         return df
 
+    def get_decision_rule(self, length=None):
+        """
+        Returns the decision rule corresponding to this neural network.
+        """
+
+        def decision_rule(*information):
+            """
+            A decision rule positional arguments (reflecting the information set)
+            values to control values.
+
+            Parameters
+            ----------
+            information: *args
+                values arrays
+
+            Returns
+            -------
+
+            decisions - array
+            """
+            if len(information) > 0:
+                input_tensor = torch.stack(information).T
+                input_tensor = input_tensor.to(device)
+            else:
+                batch_size = length
+
+                if batch_size is None:
+                    raise Exception(
+                        "You must pass a tensor length when creating a decision rule"
+                        " with an empty information set."
+                    )
+                input_tensor = torch.empty(batch_size, 0, device=device)
+
+            return self(input_tensor).flatten()  # application of network
+
+        return {self.control_sym: decision_rule}
+
 
 class BlockValueNet(Net):
     """
@@ -420,6 +459,8 @@ class BlockValueNet(Net):
         Width of hidden layers. Default is 32.
     n_layers : int, optional
         Number of hidden layers (1-10). Default is 2.
+    control_sym : string
+        Control variable symbol.
     activation : str, list, callable, or None, optional
         Activation function(s). See Net documentation for details. Default is 'silu'.
     transform : str, list, callable, or None, optional
@@ -429,7 +470,7 @@ class BlockValueNet(Net):
         documentation for all available options including init_seed, copy_weights_from, etc.
     """
 
-    def __init__(self, block, width: int = 32, **kwargs):
+    def __init__(self, block, control_sym=None, width: int = 32, **kwargs):
         """
         Initialize the BlockValueNet.
         """
@@ -437,11 +478,15 @@ class BlockValueNet(Net):
 
         # Value function should use the same information set as the policy function
         # Both V(s) and π(s) take the same state information as input
-        # pseudo -- assume only one control for now (same as BlockPolicyNet)
-        control = self.block.dynamics[self.block.get_controls()[0]]
+        ## pseudo -- assume only one control for now (same as BlockPolicyNet)
+        if control_sym is None:
+            control_sym = next(iter(self.block.get_controls()))
+
+        self.control_sym = control_sym
+        self.cobj = self.block.dynamics[control_sym]
 
         # Use the same information set as the policy network
-        self.state_variables = sorted(list(control.iset))
+        self.state_variables = sorted(list(self.cobj.iset))
 
         # Value function takes state variables as input and outputs a scalar value
         super().__init__(
@@ -469,14 +514,10 @@ class BlockValueNet(Net):
         torch.Tensor
             Value function estimates
         """
-        # Get the control's information set (same as policy network)
-        csym = self.block.get_controls()[0]
-        control = self.block.dynamics[csym]
-
         # The inputs to the network are the information set variables
         # Combine states_t and shocks_t to get all available variables
         all_vars = states_t | shocks_t
-        iset_vals = [all_vars[isym].flatten() for isym in control.iset]
+        iset_vals = [all_vars[isym].flatten() for isym in self.cobj.iset]
 
         input_tensor = torch.stack(iset_vals).T
 
@@ -539,7 +580,7 @@ def train_block_policy_nn(
         running_loss = 0.0
         optimizer.zero_grad()
         loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_decision_function(), loss_function
+            inputs, block_policy_nn.get_decision_rule(length=inputs.n()), loss_function
         )
         loss.backward()
         optimizer.step()

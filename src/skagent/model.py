@@ -200,9 +200,19 @@ def simulate_dynamics(
                         *[vals_i[var] for var in signature(dr[sym][i]).parameters]
                     )
             else:
-                vals[sym] = dr[sym](
-                    *[vals[var] for var in signature(dr[sym]).parameters]
-                )  # TODO: test for signature match with Control
+                if len(signature(dr[sym]).parameters) > 0:
+                    try:
+                        vals[sym] = dr[sym](
+                            *[
+                                vals[var] for var in feq.iset
+                            ]  # signature(dr[sym]).parameters]
+                        )  # TODO: test for signature match with Control
+                    except (TypeError, ValueError, KeyError) as e:
+                        raise (Exception(f"Can't compute decision rule. {e}"))
+                else:
+                    # decision rule takes no arguments
+                    # easy to compute in any scope...
+                    vals[sym] = dr[sym]()
         else:
             vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
@@ -236,9 +246,12 @@ class Block:
         return attributions
 
     def get_controls(self):
+        """
+        Returns only the Control variables from the Block dynamics.
+        """
         dyn = self.get_dynamics()
 
-        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
+        return {sym: dyn[sym] for sym in dyn if isinstance(dyn[sym], Control)}
 
 
 @dataclass
@@ -493,6 +506,31 @@ class DBlock(Block):
     def iter_dblocks(self):
         """A DBlock is its own leaf."""
         yield self
+
+    def deep_replace(
+        self, name=None, description=None, shocks=None, dynamics=None, reward=None
+    ):
+        """
+        Creates a deep copy of the block with new shocks, dynamics, and rewards dictionaries.
+        These dictionaries will have updated values based on the inputs.
+        """
+        new_name = self.name if name is None else name
+        new_description = self.description if description is None else description
+
+        new_shocks = self.shocks | ({} if shocks is None else {})
+        new_dynamics = self.dynamics | ({} if dynamics is None else {})
+        new_reward = self.reward | ({} if reward is None else {})
+
+        replacement = replace(
+            self,
+            name=new_name,
+            description=new_description,
+            shocks=new_shocks,
+            dynamics=new_dynamics,
+            reward=new_reward,
+        )
+
+        return replacement
 
 
 @dataclass

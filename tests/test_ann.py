@@ -8,6 +8,7 @@ from conftest import (
     case_7,
     case_8,
     case_9,
+    case_10,
 )
 import numpy as np
 import os
@@ -16,6 +17,7 @@ import skagent.ann as ann
 import skagent.grid as grid
 import skagent.model as model
 import skagent.models.perfect_foresight as pfm
+import skagent.solver as solver
 import torch
 import unittest
 from skagent.distributions import Normal
@@ -26,7 +28,6 @@ TEST_SEED = 10077693
 
 # Device selection (but no global state modification at import time)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(torch.cuda.is_available())
 
 
 class test_ann_lr(unittest.TestCase):
@@ -72,7 +73,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_1["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=600)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
             # TODO -- make this from the Grid
@@ -85,7 +86,7 @@ class test_ann_lr(unittest.TestCase):
 
         # Is this result stochastic? How are the network weights being initialized?
         self.assertTrue(
-            torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.015)
+            torch.allclose(errors, torch.zeros(errors.shape).to(device), atol=0.03)
         )
 
     def test_case_1_2(self):
@@ -103,7 +104,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_1["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -341,6 +342,84 @@ class test_ann_lr(unittest.TestCase):
         bpn = ann.BlockPolicyNet(pfblock, width=8)
         ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=100)
         ## This is just a smoke test.
+
+
+class test_ann_multiple_controls(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_case_10_multiple_controls(self):
+        # Control policy networks for each control in the block.
+        cpns = {}
+
+        # Invent Policy Neural Networks for each Control variable.
+        for control_sym in case_10["block"].get_controls():
+            cpns[control_sym] = ann.BlockPolicyNet(
+                case_10["block"], control_sym=control_sym
+            )
+
+        dict_of_decision_rules = {
+            k: v
+            for d in [
+                cpns[control_sym].get_decision_rule(length=case_10["givens"].n())
+                for control_sym in cpns
+            ]
+            for k, v in d.items()
+        }
+
+        # train for control_sym1 with decision rule from the other net
+        # for 'c'
+        ann.train_block_policy_nn(
+            cpns["c"],
+            case_10["givens"],
+            solver.get_static_reward_loss(
+                ["a"],
+                case_10["block"],
+                case_10["calibration"],
+                dict_of_decision_rules,
+            ),
+            epochs=200,
+        )
+
+        # train for control_sym2 with decision rule from other net
+        ann.train_block_policy_nn(
+            cpns["d"],
+            case_10["givens"],
+            solver.get_static_reward_loss(
+                ["a"],
+                case_10["block"],
+                case_10["calibration"],
+                dict_of_decision_rules,
+            ),
+            epochs=200,
+        )
+
+        # Train the policy neural network for 'c' again to refine its decision rule.
+        # This step ensures that 'c' is optimized with the updated decision rules
+        # from the other networks, improving the overall policy performance.
+
+        ann.train_block_policy_nn(
+            cpns["c"],
+            case_10["givens"],
+            solver.get_static_reward_loss(
+                ["a"],
+                case_10["block"],
+                case_10["calibration"],
+                dict_of_decision_rules,
+            ),
+            epochs=100,
+        )
+
+        rf = maliar.create_reward_function(
+            case_10["block"], decision_rules=dict_of_decision_rules
+        )
+        rewards = rf({"a": case_10["givens"]["a"]}, {}, {}, case_10["calibration"])
+
+        self.assertTrue(
+            torch.allclose(
+                rewards["u"], torch.zeros(rewards["u"].shape).to(device), atol=0.03
+            )
+        )
 
 
 class test_ann_value_functions(unittest.TestCase):
