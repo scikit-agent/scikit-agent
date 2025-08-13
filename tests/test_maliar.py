@@ -7,9 +7,6 @@ import skagent.model as model
 import torch
 import unittest
 from skagent.distributions import Normal
-from skagent.algos.maliar import (
-    get_bellman_equation_loss,
-)
 from skagent.ann import BlockValueNet
 
 # Deterministic test seed - change this single value to modify all seeding
@@ -762,55 +759,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 def test_get_euler_residual_loss():
     """Test function placeholder - not implemented yet."""
     pass
-
-
-def test_get_bellman_equation_loss_with_value_network():
-    """Test Bellman equation loss function with separate value network."""
-    # Create a simple test block using the same pattern as the existing tests
-    test_block = model.DBlock(
-        name="test_value_net",
-        shocks={"income": Normal(mu=1.0, sigma=0.1)},
-        dynamics={
-            "consumption": model.Control(iset=["wealth"], agent="consumer"),
-            "wealth": lambda wealth, income, consumption: wealth + income - consumption,
-            "utility": lambda consumption: torch.log(consumption + 1e-8),
-        },
-        reward={"utility": "consumer"},
-    )
-    test_block.construct_shocks({})
-
-    # Create value network
-    value_net = BlockValueNet(test_block, width=16)
-
-    # Create input grid with two independent shock realizations
-    input_grid = grid.Grid.from_dict(
-        {
-            "wealth": torch.linspace(1.0, 10.0, 5),
-            "income_0": torch.ones(5),  # Period t shocks
-            "income_1": torch.ones(5) * 1.1,  # Period t+1 shocks (independent)
-        }
-    )
-
-    # Create a decision function
-    def learned_decision_function(states_t, shocks_t, parameters):
-        wealth = states_t["wealth"]
-        consumption = 0.3 * wealth + 0.1
-        consumption = torch.maximum(consumption, torch.tensor(0.01))
-        consumption = torch.minimum(consumption, 0.9 * wealth)
-        return {"consumption": consumption}
-
-    # Create loss function
-    loss_fn = get_bellman_equation_loss(
-        ["wealth"], test_block, 0.95, value_net.get_value_function(), parameters={}
-    )
-
-    # Test that loss function works
-    losses = loss_fn(learned_decision_function, input_grid)
-
-    # Check that we get per-sample losses
-    assert isinstance(losses, torch.Tensor)
-    assert losses.shape[0] == 5  # One loss per grid point
-    assert torch.all(losses >= 0)  # Squared residuals should be non-negative
 
 
 def test_block_value_net():

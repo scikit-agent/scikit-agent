@@ -639,15 +639,14 @@ def train_block_value_and_policy_nn(
     block_policy_nn,
     block_value_nn,
     inputs: Grid,
-    policy_loss_function,
-    value_loss_function,
+    loss_function,
     epochs=50,
 ):
     """
-    Train both BlockPolicyNet and BlockValueNet jointly for value function iteration.
+    Train both BlockPolicyNet and BlockValueNet jointly using a single loss function.
 
-    This follows the same pattern as train_block_policy_nn and train_block_value_nn:
-    takes existing networks and loss functions, trains them, returns trained networks.
+    This is designed for joint training where the same loss function trains both
+    networks simultaneously (e.g., Bellman residuals, shared objectives).
 
     Parameters
     ----------
@@ -657,10 +656,9 @@ def train_block_value_and_policy_nn(
         The value network to train
     inputs : Grid
         Input grid containing states and shocks
-    policy_loss_function : callable
-        Loss function for policy training (takes decision_function, input_grid)
-    value_loss_function : callable
-        Loss function for value training (takes value_function, input_grid)
+    loss_function : callable
+        Unified loss function that takes (decision_function, input_grid)
+        and trains both networks simultaneously
     epochs : int, optional
         Number of training epochs, by default 50
 
@@ -669,39 +667,23 @@ def train_block_value_and_policy_nn(
     tuple
         (trained_policy_nn, trained_value_nn)
     """
-    # to change
-    # criterion = torch.nn.MSELoss()
-    policy_optimizer = torch.optim.Adam(
-        block_policy_nn.parameters(), lr=0.01
-    )  # Using Adam
-    value_optimizer = torch.optim.Adam(
-        block_value_nn.parameters(), lr=0.01
-    )  # Using Adam
+    # Joint optimizer for both networks
+    joint_optimizer = torch.optim.Adam(
+        list(block_policy_nn.parameters()) + list(block_value_nn.parameters()), lr=0.01
+    )
 
     for epoch in range(epochs):
-        # Train policy network
-        policy_optimizer.zero_grad()
-        policy_loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_decision_function(), policy_loss_function
-        )
-        policy_loss.backward()
-        policy_optimizer.step()
+        joint_optimizer.zero_grad()
 
-        # Train value network
-        value_optimizer.zero_grad()
-        value_loss = aggregate_net_loss(
-            inputs, block_value_nn.get_value_function(), value_loss_function
+        # Single loss function trains both networks
+        joint_loss = aggregate_net_loss(
+            inputs, block_policy_nn.get_decision_function(), loss_function
         )
-        value_loss.backward()
-        value_optimizer.step()
+
+        joint_loss.backward()
+        joint_optimizer.step()
 
         if epoch % 100 == 0:
-            print(
-                "Epoch {}: Policy Loss = {}, Value Loss = {}".format(
-                    epoch,
-                    policy_loss.cpu().detach().numpy(),
-                    value_loss.cpu().detach().numpy(),
-                )
-            )
+            print(f"Epoch {epoch}: Joint Loss = {joint_loss.cpu().detach().numpy()}")
 
     return block_policy_nn, block_value_nn

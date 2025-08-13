@@ -559,3 +559,140 @@ def get_bellman_equation_loss(
         return bellman_residual**2
 
     return bellman_equation_loss
+
+
+def bellman_training_loop(
+    block,
+    loss_function,
+    states_0_n: Grid,
+    parameters,
+    shock_copies=2,
+    max_iterations=5,
+    tolerance=1e-6,
+    random_seed=None,
+    simulation_steps=1,
+):
+    """
+    Bellman iteration training loop that trains both policy and value networks.
+
+    This follows the same pattern as maliar_training_loop but uses unified Bellman loss
+    to train both policy and value networks simultaneously.
+
+    Parameters
+    ----------
+    block : DBlock
+        The model definition
+    loss_function : callable
+        Bellman loss function that takes (decision_function, input_grid) -> loss
+    states_0_n : Grid
+        Initial panel of starting states
+    parameters : dict
+        Model parameters
+    shock_copies : int, optional
+        Number of shock copies for training, by default 2
+    max_iterations : int, optional
+        Maximum training iterations, by default 5
+    tolerance : float, optional
+        Convergence tolerance, by default 1e-6
+    random_seed : int, optional
+        Random seed, by default None
+    simulation_steps : int, optional
+        Steps to simulate forward between iterations, by default 1
+
+    Returns
+    -------
+    tuple
+        (trained_policy_net, trained_value_net, final_states)
+    """
+
+    def extract_parameters(network):
+        """Extract all parameters from the network into a flat tensor."""
+        params = []
+        for param in network.parameters():
+            params.append(param.data.view(-1))
+        return torch.cat(params) if params else torch.tensor([])
+
+    def compute_parameter_difference(params1, params2):
+        """Compute the L2 norm of the difference between two parameter vectors."""
+        if len(params1) != len(params2):
+            return float("inf")
+        return torch.norm(params1 - params2).item()
+
+    # Initialize the algorithm - follows maliar_training_loop pattern
+    if random_seed is not None:
+        torch.manual_seed(random_seed)
+
+    # Create both networks (unlike maliar_training_loop which only creates policy)
+    policy_net = ann.BlockPolicyNet(block, width=16)
+    value_net = ann.BlockValueNet(block, width=16)
+
+    states = states_0_n
+    iteration = 0
+    converged = False
+
+    while iteration < max_iterations and not converged:
+        # Store current parameters before training
+        prev_policy_params = extract_parameters(policy_net)
+        prev_value_params = extract_parameters(value_net)
+
+        # Generate training data - matches maliar_training_loop pattern
+        givens = generate_givens_from_states(states_0_n, block, shock_copies)
+
+        # Create dynamic Bellman loss using current value network
+        if callable(loss_function):
+            # Assume loss_function is a factory that takes value_net
+            dynamic_loss_function = loss_function(value_net)
+        else:
+            # Assume loss_function is already a callable loss
+            dynamic_loss_function = loss_function
+
+        # Joint training using unified Bellman loss (like maliar_training_loop)
+        trained_policy, trained_value = ann.train_block_value_and_policy_nn(
+            policy_net,
+            value_net,
+            givens,
+            dynamic_loss_function,
+            epochs=250,  # Match maliar_training_loop epochs
+        )
+
+        # Extract parameters after training
+        curr_policy_params = extract_parameters(policy_net)
+        curr_value_params = extract_parameters(value_net)
+
+        # Check for convergence - simpler logic matching maliar_training_loop
+        policy_diff = compute_parameter_difference(
+            prev_policy_params, curr_policy_params
+        )
+        value_diff = compute_parameter_difference(prev_value_params, curr_value_params)
+        total_diff = max(policy_diff, value_diff)
+
+        if total_diff < tolerance:
+            converged = True
+            logging.info(
+                f"Converged after {iteration + 1} iterations. "
+                f"Policy diff: {policy_diff:.2e}, Value diff: {value_diff:.2e}"
+            )
+        else:
+            logging.info(
+                f"Iteration {iteration + 1}: "
+                f"Policy diff: {policy_diff:.2e}, Value diff: {value_diff:.2e}"
+            )
+
+        # Simulate forward for next iteration - matches maliar_training_loop pattern
+        next_states = simulate_forward(
+            states,
+            block,
+            policy_net.get_decision_function(),
+            parameters,
+            simulation_steps,
+        )
+
+        states = Grid.from_dict(next_states)
+        iteration += 1
+
+    if not converged:
+        logging.warning(
+            f"Training completed without convergence after {max_iterations} iterations."
+        )
+
+    return policy_net, value_net, states

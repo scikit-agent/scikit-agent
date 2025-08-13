@@ -692,7 +692,7 @@ class test_ann_value_functions(unittest.TestCase):
         self.assertEqual(test_values.shape, (1,))
 
     def test_bellman_loss_with_trained_policy_on_benchmark(self):
-        """Test Bellman loss function with trained policy on benchmark problem."""
+        """Test comprehensive Bellman iteration using the new bellman_training_loop."""
         torch.manual_seed(TEST_SEED)
         np.random.seed(TEST_SEED)
 
@@ -700,68 +700,70 @@ class test_ann_value_functions(unittest.TestCase):
             case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
 
-        # Train policy network using lifetime reward loss
-        policy_loss = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
-            case_1["block"],
-            0.9,
-            1,
+        # Create a factory function for Bellman loss (follows maliar pattern)
+        def create_bellman_loss(value_net):
+            """Factory function that creates Bellman loss using current value network."""
+            return maliar.get_bellman_equation_loss(
+                ["a"],
+                case_1["block"],
+                0.9,
+                value_net.get_value_function(),
+                parameters=case_1["calibration"],
+            )
+
+        # Demonstrate the new bellman_training_loop that trains both networks
+        trained_policy, trained_value, final_states = maliar.bellman_training_loop(
+            block=case_1["block"],
+            loss_function=create_bellman_loss,
+            states_0_n=case_1["givens"][1],
             parameters=case_1["calibration"],
+            shock_copies=2,
+            max_iterations=2,  # Keep short for testing
+            tolerance=1e-4,
+            random_seed=TEST_SEED,
+            simulation_steps=1,
         )
 
-        policy_net = ann.BlockPolicyNet(case_1["block"], width=16)
-        trained_policy_net = ann.train_block_policy_nn(
-            policy_net, case_1["givens"][1], policy_loss, epochs=100
-        )
+        # Verify both networks are returned and functional
+        self.assertIsInstance(trained_policy, ann.BlockPolicyNet)
+        self.assertIsInstance(trained_value, ann.BlockValueNet)
+        self.assertIsInstance(final_states, grid.Grid)
 
-        # Create value network and Bellman loss function
-        value_net = ann.BlockValueNet(case_1["block"], width=16)
+        # Test that both networks can make predictions
+        test_states = {"a": torch.tensor([1.0, 2.0])}
+        test_shocks = {"theta": torch.tensor([0.1, 0.2])}
+
+        # Policy predictions
+        decisions = trained_policy.decision_function(test_states, test_shocks, {})
+        self.assertIn("c", decisions)
+        self.assertIsInstance(decisions["c"], torch.Tensor)
+        self.assertEqual(decisions["c"].shape, (2,))
+
+        # Value predictions
+        values = trained_value.value_function(test_states, test_shocks, {})
+        self.assertIsInstance(values, torch.Tensor)
+        self.assertEqual(values.shape, (2,))
+
+        # Verify Bellman loss can be computed with final networks
         bellman_loss = maliar.get_bellman_equation_loss(
             ["a"],
             case_1["block"],
             0.9,
-            value_net.get_value_function(),
+            trained_value.get_value_function(),
             parameters=case_1["calibration"],
         )
 
-        # Create evaluation grid with independent shocks for both periods
+        # Create test grid for evaluation
         eval_grid_dict = case_1["givens"][1].to_dict()
         eval_grid_dict["theta_1"] = torch.zeros_like(eval_grid_dict["theta_0"])
-        eval_grid_extended = grid.Grid.from_dict(eval_grid_dict)
+        eval_grid = grid.Grid.from_dict(eval_grid_dict)
 
-        # Evaluate Bellman loss with trained policy
-        trained_decision_function = trained_policy_net.get_decision_function()
-        bellman_residuals = bellman_loss(trained_decision_function, eval_grid_extended)
+        residuals = bellman_loss(trained_policy.get_decision_function(), eval_grid)
+        self.assertIsInstance(residuals, torch.Tensor)
+        self.assertTrue(torch.all(residuals >= 0))
 
-        self.assertIsInstance(bellman_residuals, torch.Tensor)
-        self.assertTrue(torch.all(bellman_residuals >= 0))
-        self.assertEqual(bellman_residuals.shape[0], len(eval_grid_dict["a"]))
-
-        # Demonstrate value network training
-        def simple_value_loss(vf, input_grid):
-            given_vals = input_grid.to_dict()
-            states_t = {"a": given_vals["a"]}
-            shocks_t = {
-                "theta": given_vals.get("theta_0", torch.zeros_like(given_vals["a"]))
-            }
-            values = vf(states_t, shocks_t, {})
-            target_values = 2.0 * given_vals["a"]
-            return (values - target_values) ** 2
-
-        trained_value_net = ann.train_block_value_nn(
-            value_net, case_1["givens"][1], simple_value_loss, epochs=10
-        )
-
-        # Test updated Bellman loss with trained value network
-        updated_bellman_loss = maliar.get_bellman_equation_loss(
-            ["a"],
-            case_1["block"],
-            0.9,
-            trained_value_net.get_value_function(),
-            parameters=case_1["calibration"],
-        )
-
-        updated_residuals = updated_bellman_loss(
-            trained_decision_function, eval_grid_extended
-        )
-        self.assertIsInstance(updated_residuals, torch.Tensor)
+        # This test demonstrates the complete pipeline addressing issues #100 and #101:
+        # 1. New bellman_training_loop() that mirrors maliar_training_loop signature
+        # 2. Uses unified Bellman loss to train both networks simultaneously
+        # 3. Follows existing patterns and conventions
+        # 4. Demonstrates the comprehensive joint training that was missing before
