@@ -23,7 +23,7 @@ class Net(torch.nn.Module):
     n_outputs : int
         Number of output features
     width : int, optional
-        Width of hidden layers. Default is 16.
+        Width of hidden layers. Default is 32.
     n_layers : int, optional
         Number of hidden layers (1-10). Default is 2.
     activation : str, list, callable, or None, optional
@@ -50,7 +50,7 @@ class Net(torch.nn.Module):
         self,
         n_inputs,
         n_outputs,
-        width=16,
+        width=32,
         n_layers=2,
         activation="silu",
         transform=None,
@@ -256,7 +256,7 @@ class BlockPolicyNet(Net):
     control_sym : string, optional
         The symbol for the control variable.
     width : int, optional
-        Width of hidden layers. Default is 16.
+        Width of hidden layers. Default is 32.
     n_layers : int, optional
         Number of hidden layers (1-10). Default is 2.
     activation : str, list, callable, or None, optional
@@ -269,7 +269,7 @@ class BlockPolicyNet(Net):
     """
 
     def __init__(
-        self, block, control_sym=None, apply_open_bounds=True, width: int = 16, **kwargs
+        self, block, control_sym=None, apply_open_bounds=True, width: int = 32, **kwargs
     ):
         self.block = block
         self.apply_open_bounds = apply_open_bounds
@@ -454,7 +454,7 @@ class BlockValueNet(Net):
     block : model.DBlock
         The model block containing state variables and dynamics
     width : int, optional
-        Width of hidden layers. Default is 16.
+        Width of hidden layers. Default is 32.
     n_layers : int, optional
         Number of hidden layers (1-10). Default is 2.
     control_sym : string
@@ -468,7 +468,7 @@ class BlockValueNet(Net):
         documentation for all available options including init_seed, copy_weights_from, etc.
     """
 
-    def __init__(self, block, control_sym=None, width: int = 16, **kwargs):
+    def __init__(self, block, control_sym=None, width: int = 32, **kwargs):
         """
         Initialize the BlockValueNet.
         """
@@ -592,8 +592,7 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
     """
     # we include the network as a potential input to the loss function
     losses = loss_function(df, inputs)
-    if hasattr(losses, "to"):  # slow, clumsy
-        losses = losses.to(device)
+    losses = losses.to(device)
     return losses.mean()
 
 
@@ -687,7 +686,7 @@ def train_block_value_and_policy_nn(
     inputs : Grid
         Input grid containing states and shocks
     loss_function : callable
-        Unified loss function that takes (decision_function, input_grid)
+        Unified loss function that takes (value_function, decision_function, input_grid)
         and trains both networks simultaneously
     epochs : int, optional
         Number of training epochs, by default 250
@@ -706,12 +705,22 @@ def train_block_value_and_policy_nn(
         joint_optimizer.zero_grad()
 
         # Single loss function trains both networks
+        # Follow exact same pattern as train_block_policy_nn using aggregate_net_loss
+        running_loss = 0.0
+
+        # Create adapted loss function that captures the value function
+        value_function = block_value_nn.get_value_function()
+
+        def adapted_loss_function(df, inputs):
+            return loss_function(value_function, df, inputs)
+
         joint_loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_decision_function(), loss_function
+            inputs, block_policy_nn.get_decision_function(), adapted_loss_function
         )
 
         joint_loss.backward()
         joint_optimizer.step()
+        running_loss += joint_loss.item()
 
         if epoch % 100 == 0:
             print(f"Epoch {epoch}: Joint Loss = {joint_loss.cpu().detach().numpy()}")

@@ -49,8 +49,8 @@ class test_ann_lr(unittest.TestCase):
 
         states_0_N = case_0["givens"]
 
-        bpn = ann.BlockPolicyNet(case_0["block"], width=16)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
+        bpn = ann.BlockPolicyNet(case_0["block"])
+        ann.train_block_policy_nn(bpn, states_0_N, edlrl)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
 
@@ -70,8 +70,8 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_1["givens"][1]
 
-        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        bpn = ann.BlockPolicyNet(case_1["block"])
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             # TODO -- make this from the Grid
@@ -101,8 +101,8 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_1["givens"][2]
 
-        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        bpn = ann.BlockPolicyNet(case_1["block"])
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -129,7 +129,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_2["givens"]
 
         bpn = ann.BlockPolicyNet(case_2["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=100)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         # optimal DR is c = 0 = E[theta]
 
@@ -153,7 +153,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -179,7 +179,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -205,7 +205,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_5["givens"]
 
         bpn = ann.BlockPolicyNet(case_5["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -229,7 +229,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_6["givens"]
 
         bpn = ann.BlockPolicyNet(case_6["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -253,7 +253,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_7["givens"]
 
         bpn = ann.BlockPolicyNet(case_7["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -279,7 +279,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_8["givens"]
 
         bpn = ann.BlockPolicyNet(case_8["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -303,7 +303,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_9["givens"]
 
         bpn = ann.BlockPolicyNet(case_9["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, loss_fn, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, loss_fn)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -338,7 +338,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
         bpn = ann.BlockPolicyNet(pfblock, width=8)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=100)
+        ann.train_block_policy_nn(bpn, states_0_N, edlrl)
         ## This is just a smoke test.
 
 
@@ -376,7 +376,6 @@ class test_ann_multiple_controls(unittest.TestCase):
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
-            epochs=200,
         )
 
         # train for control_sym2 with decision rule from other net
@@ -389,7 +388,6 @@ class test_ann_multiple_controls(unittest.TestCase):
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
-            epochs=200,
         )
 
         # Train the policy neural network for 'c' again to refine its decision rule.
@@ -405,7 +403,6 @@ class test_ann_multiple_controls(unittest.TestCase):
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
-            epochs=100,
         )
 
         rf = maliar.create_reward_function(
@@ -454,7 +451,7 @@ class TestAnnValueFunctions(unittest.TestCase):
 
     def test_block_value_net_creation(self):
         """Test that BlockValueNet can be created and used."""
-        value_net = ann.BlockValueNet(self.test_block, width=16)
+        value_net = ann.BlockValueNet(self.test_block)
 
         self.assertIn("a", value_net.state_variables)
         self.assertIn("theta", value_net.state_variables)
@@ -474,7 +471,7 @@ class TestAnnValueFunctions(unittest.TestCase):
 
     def test_train_block_value_nn(self):
         """Test that value networks can be trained."""
-        value_net = ann.BlockValueNet(self.test_block, width=16)
+        value_net = ann.BlockValueNet(self.test_block)
 
         def simple_value_loss(vf, input_grid):
             given_vals = input_grid.to_dict()
@@ -487,7 +484,7 @@ class TestAnnValueFunctions(unittest.TestCase):
             return (values - target_values) ** 2
 
         trained_net = ann.train_block_value_nn(
-            value_net, self.test_grid, simple_value_loss, epochs=50
+            value_net, self.test_grid, simple_value_loss
         )
 
         self.assertIs(trained_net, value_net)
@@ -500,15 +497,14 @@ class TestAnnValueFunctions(unittest.TestCase):
 
     def test_joint_training_integration(self):
         """Test joint training integration with Bellman loss functions."""
-        ann.BlockPolicyNet(self.test_block, width=16)
-        value_net = ann.BlockValueNet(self.test_block, width=16)
+        ann.BlockPolicyNet(self.test_block)
+        ann.BlockValueNet(self.test_block)
 
         maliar.get_bellman_equation_loss(
             self.state_variables,
             self.test_block,
             self.discount_factor,
-            value_net.get_value_function(),
-            self.parameters,
+            parameters=self.parameters,
         )
 
     def test_value_function_case_scenarios(self):
@@ -516,7 +512,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         # Test value function training with case_0 scenario
 
         # Create value network for case_0
-        value_net = ann.BlockValueNet(case_0["block"], width=16)
+        value_net = ann.BlockValueNet(case_0["block"])
 
         # Create a simple value loss function that targets zero (like the policy tests)
         def zero_target_value_loss(vf, input_grid):
@@ -531,7 +527,7 @@ class TestAnnValueFunctions(unittest.TestCase):
 
         # Test training (short epochs for testing)
         trained_value_net = ann.train_block_value_nn(
-            value_net, case_0["givens"], zero_target_value_loss, epochs=50
+            value_net, case_0["givens"], zero_target_value_loss
         )
 
         # Verify training completed
@@ -541,7 +537,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         """Test value function training with shock scenarios (like case_1)."""
 
         # Create value network for case_1
-        value_net = ann.BlockValueNet(case_1["block"], width=16)
+        value_net = ann.BlockValueNet(case_1["block"])
 
         # Create a value loss function that incorporates shock information
         def shock_aware_value_loss(vf, input_grid):
@@ -557,7 +553,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         # Test training with shock-aware grid
         given_0_N = case_1["givens"][1]
         trained_value_net = ann.train_block_value_nn(
-            value_net, given_0_N, shock_aware_value_loss, epochs=50
+            value_net, given_0_N, shock_aware_value_loss
         )
 
         # Verify training completed and network can make predictions
@@ -575,7 +571,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         )
 
         # Create value network
-        value_net = ann.BlockValueNet(case_1["block"], width=16)
+        value_net = ann.BlockValueNet(case_1["block"])
 
         # Create a loss function that targets a known linear value function
         def linear_target_loss(vf, input_grid):
@@ -595,9 +591,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         )
 
         # Train with more epochs for convergence
-        trained_net = ann.train_block_value_nn(
-            value_net, test_grid, linear_target_loss, epochs=100
-        )
+        trained_net = ann.train_block_value_nn(value_net, test_grid, linear_target_loss)
 
         # Test convergence accuracy
         test_states = {"a": torch.tensor([0.5])}
@@ -613,7 +607,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         """Test value function with perfect foresight model (mirrors policy test)."""
 
         # Create value network for perfect foresight model
-        value_net = ann.BlockValueNet(pfm.block_no_shock, width=16)
+        value_net = ann.BlockValueNet(pfm.block_no_shock)
 
         # Check what state variables the value network actually found
         print(
@@ -624,8 +618,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         self.assertTrue(len(value_net.state_variables) > 0)
 
         # Test that the value function method exists and can be called
-        vf = value_net.get_value_function()
-        self.assertTrue(callable(vf))
+        value_net.get_value_function()
 
         # Test with a simple state input (just verify no crashes)
 
@@ -645,21 +638,18 @@ class TestAnnValueFunctions(unittest.TestCase):
             case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
 
-        # Create a factory function for Bellman loss (follows maliar pattern)
-        def create_bellman_loss(value_net):
-            """Factory function that creates Bellman loss using current value network."""
-            return maliar.get_bellman_equation_loss(
-                ["a"],
-                case_1["block"],
-                0.9,
-                value_net.get_value_function(),
-                parameters=case_1["calibration"],
-            )
+        # Create a unified loss function for joint training (new MMW Definition 2.10 approach)
+        bellman_loss = maliar.get_bellman_equation_loss(
+            ["a"],
+            case_1["block"],
+            0.9,
+            parameters=case_1["calibration"],
+        )
 
         # Demonstrate the new bellman_training_loop that trains both networks
         trained_policy, trained_value, final_states = maliar.bellman_training_loop(
             block=case_1["block"],
-            loss_function_factory=create_bellman_loss,
+            loss_function=bellman_loss,
             states_0_n=case_1["givens"][1],
             parameters=case_1["calibration"],
             shock_copies=2,
@@ -694,7 +684,6 @@ class TestAnnValueFunctions(unittest.TestCase):
             ["a"],
             case_1["block"],
             0.9,
-            trained_value.get_value_function(),
             parameters=case_1["calibration"],
         )
 
@@ -703,7 +692,11 @@ class TestAnnValueFunctions(unittest.TestCase):
         eval_grid_dict["theta_1"] = torch.zeros_like(eval_grid_dict["theta_0"])
         eval_grid = grid.Grid.from_dict(eval_grid_dict)
 
-        residuals = bellman_loss(trained_policy.get_decision_function(), eval_grid)
+        residuals = bellman_loss(
+            trained_value.get_value_function(),
+            trained_policy.get_decision_function(),
+            eval_grid,
+        )
         self.assertIsInstance(residuals, torch.Tensor)
         self.assertTrue(torch.all(residuals >= 0))
 
