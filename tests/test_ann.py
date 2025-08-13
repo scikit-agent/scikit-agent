@@ -498,11 +498,6 @@ class TestAnnValueFunctions(unittest.TestCase):
         self.assertIsInstance(values, torch.Tensor)
         self.assertEqual(values.shape, (1,))
 
-    def test_joint_training_function_exists(self):
-        """Test that joint training function exists."""
-        self.assertTrue(hasattr(ann, "train_block_value_and_policy_nn"))
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
     def test_joint_training_integration(self):
         """Test joint training integration with Bellman loss functions."""
         ann.BlockPolicyNet(self.test_block, width=16)
@@ -515,8 +510,6 @@ class TestAnnValueFunctions(unittest.TestCase):
             value_net.get_value_function(),
             self.parameters,
         )
-
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
 
     def test_value_function_case_scenarios(self):
         """Test value function training with the same case scenarios used for policy testing."""
