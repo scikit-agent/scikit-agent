@@ -104,18 +104,15 @@ class TestSolverFunctions(unittest.TestCase):
     def test_estimate_bellman_residual(self):
         """Test the Bellman residual helper function."""
 
-        # Create a simple value network with correct interface
         def simple_value_network(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
+            return 10.0 * wealth
 
-        # Create a simple decision function
         def simple_decision_function(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             consumption = 0.5 * wealth
             return {"consumption": consumption}
 
-        # Create a simple test block
         test_block = model.DBlock(
             name="test_bellman_residual",
             shocks={"income": Normal(mu=1.0, sigma=0.1)},
@@ -148,11 +145,10 @@ class TestSolverFunctions(unittest.TestCase):
             parameters={},
         )
 
-        # Check that we get a tensor with the right shape
         self.assertIsInstance(residual, torch.Tensor)
-        self.assertEqual(residual.shape, (2,))  # Should match input batch size
+        self.assertEqual(residual.shape, (2,))
 
-        # Check that residuals are finite (not NaN or inf)
+        # Check that residuals are finite
         self.assertTrue(torch.all(torch.isfinite(residual)))
 
 
@@ -339,19 +335,13 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             tolerance=1e-8,  # Very low tolerance
         )
 
-        # Both should return valid networks and states
         self.assertIsNotNone(ann_high_tol)
         self.assertIsNotNone(states_high_tol)
         self.assertIsNotNone(ann_low_tol)
         self.assertIsNotNone(states_low_tol)
-
-        # Test that tolerance affects convergence behavior
-        # (We can't easily test exact iteration counts due to randomness,
-        # but we can verify the function completes successfully with different tolerances)
         sd_high = states_high_tol.to_dict()
         sd_low = states_low_tol.to_dict()
 
-        # Both should produce valid state dictionaries
         self.assertIn("m", sd_high)
         self.assertIn("g", sd_high)
         self.assertIn("m", sd_low)
@@ -469,13 +459,14 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
     def test_get_bellman_equation_loss(self):
-        """Test that the basic Bellman equation loss function can be created."""
+        """Test Bellman equation loss function creation and basic functionality."""
 
         # Create a simple value network with correct interface
         def simple_value_network(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
+        # Test basic loss function creation
         loss_function = maliar.get_bellman_equation_loss(
             self.state_variables,
             self.block,
@@ -484,55 +475,16 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.parameters,
         )
 
-        # Test that the loss function can be called
+        # Test that the loss function works
         loss = loss_function(self.decision_function, self.test_grid)
 
-        # Check that loss is a tensor
+        # Verify basic properties
         self.assertIsInstance(loss, torch.Tensor)
-
-        # Check that loss has the right shape (per-sample losses)
         self.assertEqual(loss.shape, (5,))  # 5 grid points
+        self.assertTrue(torch.all(loss >= 0))  # Squared residuals
 
-        # Check that loss is non-negative (squared residual)
-        self.assertTrue(torch.all(loss >= 0))
-
-    def test_get_bellman_equation_loss_with_value_network(self):
-        """Test that the Bellman loss function with value network can be created."""
-
-        # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
-
-        loss_function = maliar.get_bellman_equation_loss(
-            self.state_variables,
-            self.block,
-            self.discount_factor,
-            simple_value_network,
-            self.parameters,
-        )
-
-        # Test that the loss function can be called
-        loss = loss_function(self.decision_function, self.test_grid)
-
-        # Check that loss is a tensor
-        self.assertIsInstance(loss, torch.Tensor)
-
-        # Check that loss has the right shape (per-sample losses)
-        self.assertEqual(loss.shape, (5,))  # 5 grid points
-
-        # Check that loss is non-negative (squared residual)
-        self.assertTrue(torch.all(loss >= 0))
-
-    def test_bellman_loss_function_with_agent(self):
-        """Test that the Bellman loss function works with agent specification."""
-
-        # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
-
-        loss_function = maliar.get_bellman_equation_loss(
+        # Test with agent specification
+        loss_function_with_agent = maliar.get_bellman_equation_loss(
             self.state_variables,
             self.block,
             self.discount_factor,
@@ -541,13 +493,13 @@ class TestBellmanLossFunctions(unittest.TestCase):
             agent="consumer",
         )
 
-        # Test that the loss function can be called
-        loss = loss_function(self.decision_function, self.test_grid)
-
-        # Check that loss is a tensor
-        self.assertIsInstance(loss, torch.Tensor)
-        self.assertEqual(loss.shape, (5,))
-        self.assertTrue(torch.all(loss >= 0))
+        # Should produce same results for this model
+        loss_with_agent = loss_function_with_agent(
+            self.decision_function, self.test_grid
+        )
+        self.assertIsInstance(loss_with_agent, torch.Tensor)
+        self.assertEqual(loss_with_agent.shape, (5,))
+        self.assertTrue(torch.all(loss_with_agent >= 0))
 
     def test_bellman_loss_function_components(self):
         """Test that the Bellman loss function components work correctly."""
@@ -607,20 +559,10 @@ class TestBellmanLossFunctions(unittest.TestCase):
             )
         self.assertIn("No reward variables found in block", str(context.exception))
 
-    def test_bellman_loss_function_integration(self):
-        """Test integration with the Maliar training loop components."""
+    def test_bellman_loss_with_different_policies(self):
+        """Test that Bellman loss function produces different values for different policies."""
 
-        # Create a more realistic decision function
-        def learned_decision_function(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            # More sophisticated consumption rule
-            consumption = 0.3 * wealth + 0.1
-            # Ensure consumption is positive and not more than wealth
-            consumption = torch.maximum(consumption, torch.tensor(0.01))
-            consumption = torch.minimum(consumption, 0.9 * wealth)
-            return {"consumption": consumption}
-
-        # Create a simple value network with correct interface
+        # Create a simple value network
         def simple_value_network(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
@@ -633,23 +575,31 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.parameters,
         )
 
-        # Test with the learned decision function
-        loss = loss_function(learned_decision_function, self.test_grid)
-
-        self.assertIsInstance(loss, torch.Tensor)
-        self.assertEqual(loss.shape, (5,))
-        self.assertTrue(torch.all(loss >= 0))
-
-        # Test that loss changes with different decision functions
-        def different_decision_function(states_t, shocks_t, parameters):
+        # Test with conservative policy
+        def conservative_policy(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
-            consumption = 0.8 * wealth  # Different consumption rule
+            consumption = 0.3 * wealth  # Conservative consumption
             return {"consumption": consumption}
 
-        loss2 = loss_function(different_decision_function, self.test_grid)
+        # Test with aggressive policy
+        def aggressive_policy(states_t, shocks_t, parameters):
+            wealth = states_t["wealth"]
+            consumption = 0.8 * wealth  # Aggressive consumption
+            return {"consumption": consumption}
 
-        # Losses should be different for different decision functions
-        self.assertFalse(torch.allclose(loss, loss2))
+        loss_conservative = loss_function(conservative_policy, self.test_grid)
+        loss_aggressive = loss_function(aggressive_policy, self.test_grid)
+
+        # Both should be valid losses
+        self.assertIsInstance(loss_conservative, torch.Tensor)
+        self.assertIsInstance(loss_aggressive, torch.Tensor)
+        self.assertEqual(loss_conservative.shape, (5,))
+        self.assertEqual(loss_aggressive.shape, (5,))
+        self.assertTrue(torch.all(loss_conservative >= 0))
+        self.assertTrue(torch.all(loss_aggressive >= 0))
+
+        # Different policies should produce different Bellman residuals
+        self.assertFalse(torch.allclose(loss_conservative, loss_aggressive))
 
     def test_consistency_with_existing_patterns(self):
         """Test that the new Bellman loss functions follow existing skagent patterns."""
