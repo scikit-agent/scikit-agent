@@ -420,7 +420,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         )
 
 
-class test_ann_value_functions(unittest.TestCase):
+class TestAnnValueFunctions(unittest.TestCase):
     """Test the new value function capabilities in ann.py"""
 
     def setUp(self):
@@ -474,7 +474,7 @@ class test_ann_value_functions(unittest.TestCase):
 
     def test_train_block_value_nn(self):
         """Test that value networks can be trained."""
-        value_net = ann.BlockValueNet(self.test_block, width=8)
+        value_net = ann.BlockValueNet(self.test_block, width=16)
 
         def simple_value_loss(vf, input_grid):
             given_vals = input_grid.to_dict()
@@ -487,7 +487,7 @@ class test_ann_value_functions(unittest.TestCase):
             return (values - target_values) ** 2
 
         trained_net = ann.train_block_value_nn(
-            value_net, self.test_grid, simple_value_loss, epochs=5
+            value_net, self.test_grid, simple_value_loss, epochs=50
         )
 
         self.assertIs(trained_net, value_net)
@@ -505,8 +505,8 @@ class test_ann_value_functions(unittest.TestCase):
 
     def test_joint_training_integration(self):
         """Test joint training integration with Bellman loss functions."""
-        ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
+        ann.BlockPolicyNet(self.test_block, width=16)
+        value_net = ann.BlockValueNet(self.test_block, width=16)
 
         maliar.get_bellman_equation_loss(
             self.state_variables,
@@ -538,7 +538,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Test training (short epochs for testing)
         trained_value_net = ann.train_block_value_nn(
-            value_net, case_0["givens"], zero_target_value_loss, epochs=10
+            value_net, case_0["givens"], zero_target_value_loss, epochs=50
         )
 
         # Verify training completed
@@ -582,7 +582,7 @@ class test_ann_value_functions(unittest.TestCase):
         )
 
         # Create value network
-        value_net = ann.BlockValueNet(case_1["block"], width=32)
+        value_net = ann.BlockValueNet(case_1["block"], width=16)
 
         # Create a loss function that targets a known linear value function
         def linear_target_loss(vf, input_grid):
@@ -603,7 +603,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Train with more epochs for convergence
         trained_net = ann.train_block_value_nn(
-            value_net, test_grid, linear_target_loss, epochs=200
+            value_net, test_grid, linear_target_loss, epochs=100
         )
 
         # Test convergence accuracy
@@ -666,7 +666,7 @@ class test_ann_value_functions(unittest.TestCase):
         # Demonstrate the new bellman_training_loop that trains both networks
         trained_policy, trained_value, final_states = maliar.bellman_training_loop(
             block=case_1["block"],
-            loss_function=create_bellman_loss,
+            loss_function_factory=create_bellman_loss,
             states_0_n=case_1["givens"][1],
             parameters=case_1["calibration"],
             shock_copies=2,

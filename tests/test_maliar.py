@@ -18,6 +18,28 @@ TEST_SEED = 10077693
 # Device selection (but no global state modification at import time)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+def create_simple_linear_value_network():
+    """Create a simple linear value network for testing: V(wealth) = 10.0 * wealth"""
+
+    def simple_value_network(states_t, shocks_t, parameters):
+        wealth = states_t["wealth"]
+        return 10.0 * wealth
+
+    return simple_value_network
+
+
+def create_income_aware_value_network():
+    """Create a value network that depends on both wealth and income"""
+
+    def income_aware_value_network(states_t, shocks_t, parameters):
+        wealth = states_t["wealth"]
+        income = shocks_t["income"]
+        return 10.0 * wealth + 5.0 * income  # Value depends on both wealth and income
+
+    return income_aware_value_network
+
+
 parameters = {"q": 1.1}
 
 block_data = {
@@ -104,9 +126,7 @@ class TestSolverFunctions(unittest.TestCase):
     def test_estimate_bellman_residual(self):
         """Test the Bellman residual helper function."""
 
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth
+        simple_value_network = create_simple_linear_value_network()
 
         def simple_decision_function(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
@@ -462,9 +482,9 @@ class TestBellmanLossFunctions(unittest.TestCase):
         """Test Bellman equation loss function creation and basic functionality."""
 
         # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
+        simple_value_network = (
+            create_simple_linear_value_network()
+        )  # Linear value function
 
         # Test basic loss function creation
         loss_function = maliar.get_bellman_equation_loss(
@@ -563,9 +583,9 @@ class TestBellmanLossFunctions(unittest.TestCase):
         """Test that Bellman loss function produces different values for different policies."""
 
         # Create a simple value network
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
+        simple_value_network = (
+            create_simple_linear_value_network()
+        )  # Linear value function
 
         loss_function = maliar.get_bellman_equation_loss(
             self.state_variables,
@@ -605,9 +625,9 @@ class TestBellmanLossFunctions(unittest.TestCase):
         """Test that the new Bellman loss functions follow existing skagent patterns."""
 
         # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
+        simple_value_network = (
+            create_simple_linear_value_network()
+        )  # Linear value function
 
         # Test that it works with the training infrastructure
         loss_function = maliar.get_bellman_equation_loss(
@@ -634,12 +654,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         """Test that independent shock realizations produce different results than identical shocks."""
 
         # Create a simple value network that depends on income
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            income = shocks_t["income"]
-            return (
-                10.0 * wealth + 5.0 * income
-            )  # Value depends on both wealth and income
+        simple_value_network = create_income_aware_value_network()
 
         states_t = {"wealth": torch.tensor([2.0, 4.0])}
 
@@ -685,6 +700,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
     def test_bellman_loss_with_different_shock_patterns(self):
         """Test Bellman loss function with various shock patterns."""
 
+        # Create custom value network for this specific test
         def simple_value_network(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             income = shocks_t["income"]
@@ -735,9 +751,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
     def test_bellman_residual_error_handling(self):
         """Test error handling in the refactored Bellman residual function."""
 
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth
+        simple_value_network = create_simple_linear_value_network()
 
         states_t = {"wealth": torch.tensor([2.0, 4.0])}
 

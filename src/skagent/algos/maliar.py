@@ -148,7 +148,7 @@ def estimate_discounted_lifetime_reward(
 
 
 def get_estimated_discounted_lifetime_reward_loss(
-    state_variables, block, discount_factor, big_t, parameters
+    state_variables, block, discount_factor, big_t, parameters={}, agent=None
 ):
     # TODO: Should be able to get 'state variables' from block
     # Maybe with ZP's analysis modules
@@ -180,7 +180,7 @@ def get_estimated_discounted_lifetime_reward_loss(
             {sym: given_vals[sym] for sym in state_variables},
             big_t,
             parameters=parameters,
-            agent=None,  # TODO: Pass through the agent?
+            agent=agent,
             shocks_by_t=shocks_by_t,
             # Handle multiple decision rules?
         )
@@ -367,7 +367,7 @@ def estimate_bellman_residual(
     block,
     discount_factor,
     value_network,
-    df,
+    dr,
     states_t,
     shocks,
     parameters={},
@@ -388,8 +388,8 @@ def estimate_bellman_residual(
         The discount factor β
     value_network : callable
         A value function that takes state variables and returns value estimates
-    df : callable
-        Decision function that returns controls given states and shocks
+    dr : callable or dict
+        Decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
     states_t : dict
         Current state variables
     shocks : dict
@@ -422,54 +422,54 @@ def estimate_bellman_residual(
     shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
     shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
 
-    # Get reward variables
-    reward_vars = [
-        sym for sym in block.reward if agent is None or block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
+    # Create helper functions early (following estimate_discounted_lifetime_reward pattern)
+    tf = create_transition_function(block, state_variables)
+    rf = create_reward_function(block, agent)
+
+    # Handle decision function conversion (following estimate_discounted_lifetime_reward pattern)
+    if callable(dr):
+        # assume a full decision function has been passed in
+        df = dr
+    else:
+        # create a decision function from the decision rule
+        df = create_decision_function(block, dr)
+
+    # Get all reward symbols for the agent (following estimate_discounted_lifetime_reward pattern)
+    reward_syms = list(
+        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+    )
+    if len(reward_syms) == 0:
         raise Exception("No reward variables found in block")
-    reward_sym = reward_vars[0]  # Assume single reward for now
 
     # Get controls from decision function (using period t shocks)
     controls_t = df(states_t, shocks_t, parameters)
 
-    # Get current value estimates by computing derived variables first
-    # The value network needs the same variables as the control's information set
-    vals_t = parameters | states_t | shocks_t | controls_t
-
-    # Use block's transition to compute derived variables needed for value network
-    # Create decision rules that return the actual computed controls
-    actual_drs = {
-        control_sym: lambda *args, val=controls_t[control_sym]: val
-        for control_sym in controls_t
-    }
-    post_t = block.transition(vals_t, actual_drs)
-    current_values = value_network(post_t, shocks_t, parameters)
-
-    # Create transition and reward functions
-    tf = create_transition_function(block, state_variables)
-    rf = create_reward_function(block, agent)
-
     # Compute immediate reward (using period t shocks)
-    immediate_reward = rf(states_t, shocks_t, controls_t, parameters)[reward_sym]
+    reward_t = rf(states_t, shocks_t, controls_t, parameters)
+
+    # Sum all rewards for this period (following estimate_discounted_lifetime_reward pattern)
+    immediate_reward = 0
+    for rsym in reward_syms:
+        # Add NaN checking (following estimate_discounted_lifetime_reward pattern)
+        if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
+            torch.isnan(reward_t[rsym])
+        ):
+            raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+        if isinstance(reward_t[rsym], np.ndarray) and np.any(np.isnan(reward_t[rsym])):
+            raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+        immediate_reward += reward_t[rsym]
 
     # Compute next states (using period t shocks)
     next_states = tf(states_t, shocks_t, controls_t, parameters)
 
+    # # Compute next period controls
+    # next_controls_t = df(next_states, shocks_t_plus_1, parameters)
+
+    # Get current value estimates using value network (now handles derived variables internally)
+    current_values = value_network(states_t, shocks_t, parameters)
+
     # Compute continuation value using value network for next states
-    # For next period, we need to compute controls using the decision function
-    next_controls_t = df(next_states, shocks_t_plus_1, parameters)
-
-    # Compute derived variables for next period using actual next-period controls
-    vals_t_plus_1 = parameters | next_states | shocks_t_plus_1 | next_controls_t
-
-    # Use block's transition to compute derived variables for next period
-    next_actual_drs = {
-        control_sym: lambda *args, val=next_controls_t[control_sym]: val
-        for control_sym in next_controls_t
-    }
-    post_t_plus_1 = block.transition(vals_t_plus_1, next_actual_drs)
-    continuation_values = value_network(post_t_plus_1, shocks_t_plus_1, parameters)
+    continuation_values = value_network(next_states, shocks_t_plus_1, parameters)
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
@@ -589,7 +589,7 @@ def get_bellman_equation_loss(
 
 def bellman_training_loop(
     block,
-    loss_function,
+    loss_function_factory,
     states_0_n: Grid,
     parameters,
     shock_copies=2,
@@ -608,8 +608,8 @@ def bellman_training_loop(
     ----------
     block : DBlock
         The model definition
-    loss_function : callable
-        Bellman loss function that takes (decision_function, input_grid) -> loss
+    loss_function_factory : callable
+        Factory function that takes value_net and returns Bellman loss function
     states_0_n : Grid
         Initial panel of starting states
     parameters : dict
@@ -665,12 +665,8 @@ def bellman_training_loop(
         givens = generate_givens_from_states(states_0_n, block, shock_copies)
 
         # Create dynamic Bellman loss using current value network
-        if callable(loss_function):
-            # Assume loss_function is a factory that takes value_net
-            dynamic_loss_function = loss_function(value_net)
-        else:
-            # Assume loss_function is already a callable loss
-            dynamic_loss_function = loss_function
+        # loss_function_factory takes value_net and returns a loss function
+        dynamic_loss_function = loss_function_factory(value_net)
 
         # Joint training using unified Bellman loss (like maliar_training_loop)
         trained_policy, trained_value = ann.train_block_value_and_policy_nn(
