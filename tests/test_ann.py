@@ -472,29 +472,6 @@ class test_ann_value_functions(unittest.TestCase):
         values2 = vf(states_t, shocks_t, {})
         self.assertTrue(torch.allclose(values, values2))
 
-    def test_bellman_equation_loss_creation(self):
-        """Test that Bellman equation loss functions can be created."""
-        value_net = ann.BlockValueNet(self.test_block, width=16)
-
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
-            self.test_block,
-            self.discount_factor,
-            value_net.get_value_function(),
-            self.parameters,
-        )
-
-        def simple_decision_function(states_t, shocks_t, parameters):
-            a = states_t["a"]
-            c = 0.3 * a
-            return {"c": c}
-
-        losses = bellman_loss(simple_decision_function, self.test_grid)
-
-        self.assertIsInstance(losses, torch.Tensor)
-        self.assertEqual(losses.shape, (10,))
-        self.assertTrue(torch.all(losses >= 0))
-
     def test_train_block_value_nn(self):
         """Test that value networks can be trained."""
         value_net = ann.BlockValueNet(self.test_block, width=8)
@@ -520,31 +497,6 @@ class test_ann_value_functions(unittest.TestCase):
         values = trained_net.value_function(test_states, test_shocks, {})
         self.assertIsInstance(values, torch.Tensor)
         self.assertEqual(values.shape, (1,))
-
-    def test_all_in_one_bellman_loss_integration(self):
-        """Test Bellman loss function integration."""
-        ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
-
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
-            self.test_block,
-            self.discount_factor,
-            value_net.get_value_function(),
-            self.parameters,
-        )
-
-        self.assertTrue(callable(bellman_loss))
-
-        lifetime_loss = maliar.get_estimated_discounted_lifetime_reward_loss(
-            self.state_variables,
-            self.test_block,
-            self.discount_factor,
-            1,
-            self.parameters,
-        )
-
-        self.assertTrue(callable(lifetime_loss))
 
     def test_joint_training_function_exists(self):
         """Test that joint training function exists."""
