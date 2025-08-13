@@ -1,5 +1,7 @@
 from skagent.distributions import Normal, Uniform
+import math
 import skagent.grid as grid
+import torch
 from skagent.model import Control, DBlock
 
 case_0 = {
@@ -296,4 +298,44 @@ case_10 = {
             "a": {"min": -2, "max": 2, "count": 11},
         }
     ),
+}
+
+case_11 = {
+    "block": DBlock(
+        **{
+            "name": "simple consumer",
+            "shocks": {
+                "theta": (Normal, {"mu": 0.0, "sigma": 1}),
+            },
+            "dynamics": {
+                "m": lambda a, r, theta: a * r + math.e**theta,
+                "c": Control(
+                    ["m"],
+                    agent="agent",
+                    upper_bound=lambda m: m,
+                    lower_bound=lambda m: 0,
+                ),
+                "a": lambda c, m: m - c,
+                "u": lambda c: torch.log(c),
+            },
+            "reward": {"u": "agent"},
+        }
+    ),
+    "calibration": {"r": torch.tensor(1.1)},
+    # "optimal_dr": {"c": TO DO - is there a closed form?},
+    "givens": {
+        "static": grid.Grid.from_config(
+            {
+                "a": {"min": 0, "max": 3, "count": 11},
+                "theta": {"min": -1, "max": 1, "count": 7},
+            }
+        ),
+        "bellman": grid.Grid.from_config(
+            {
+                "a": {"min": 0, "max": 3, "count": 11},
+                "theta_0": {"min": -1, "max": 1, "count": 7},
+                "theta_1": {"min": -1, "max": 1, "count": 7},
+            }
+        ),
+    },
 }

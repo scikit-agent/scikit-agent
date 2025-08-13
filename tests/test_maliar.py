@@ -1,4 +1,4 @@
-from conftest import case_1, case_2, case_3, case_4
+from conftest import case_0, case_1, case_2, case_3, case_4, case_11
 import numpy as np
 import os
 import skagent.algos.maliar as maliar
@@ -8,6 +8,9 @@ import torch
 import unittest
 from skagent.distributions import Normal
 from skagent.ann import BlockValueNet
+from skagent.algos.maliar import (
+    get_bellman_equation_loss,
+)
 
 # Deterministic test seed - change this single value to modify all seeding
 TEST_SEED = 10077693
@@ -755,6 +758,55 @@ class TestBellmanLossFunctions(unittest.TestCase):
                 parameters={},
             )
 
+    def test_maliar_training_loop_with_bellman_loss(self):
+        """Test that maliar_training_loop works with Bellman loss for policy training."""
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+
+        # Use case_0 which has no shocks in the information set (simpler)
+        case_0["block"].construct_shocks(
+            case_0["calibration"], rng=np.random.default_rng(TEST_SEED)
+        )
+
+        # Create a simple pre-trained value network (fixed baseline)
+        value_net = BlockValueNet(case_0["block"], width=16)
+
+        # Create Bellman loss function using the fixed value network
+        bellman_loss = get_bellman_equation_loss(
+            ["a"],  # state variables
+            case_0["block"],
+            0.9,  # discount factor
+            value_net.get_value_function(),
+            parameters=case_0["calibration"],
+        )
+
+        # Test maliar_training_loop with Bellman loss (policy training only)
+        trained_policy, final_states = maliar.maliar_training_loop(
+            case_0["block"],
+            bellman_loss,  # Use Bellman loss instead of lifetime reward loss
+            case_0["givens"],
+            case_0["calibration"],
+            simulation_steps=2,
+            random_seed=TEST_SEED,
+            max_iterations=2,  # Keep short for testing
+            tolerance=1e-4,
+        )
+
+        # Verify that policy training worked
+        self.assertIsNotNone(trained_policy)
+        self.assertIsNotNone(final_states)
+
+        # Test that the trained policy produces valid outputs
+        test_states = case_0["givens"].to_dict()
+        decision_function = trained_policy.get_decision_function()
+        controls = decision_function(test_states, {}, case_0["calibration"])
+
+        self.assertIn("c", controls)
+        self.assertIsInstance(controls["c"], torch.Tensor)
+        self.assertTrue(
+            torch.all(torch.isfinite(controls["c"]))
+        )  # Consumption should be finite
+
 
 def test_get_euler_residual_loss():
     """Test function placeholder - not implemented yet."""
@@ -812,3 +864,46 @@ def test_train_block_value_and_policy_nn():
     # The function signature is consistent with other training functions:
     # train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
     pass
+
+
+class TestMaliarBellmanTrainingLoop(unittest.TestCase):
+    def setUp(self):
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+    def test_maliar_case_11(self):
+        # Use deterministic RNG for shock construction
+        rng = np.random.default_rng(TEST_SEED)
+        case_11["block"].construct_shocks(case_11["calibration"], rng=rng)
+
+        bvn = BlockValueNet(case_11["block"], width=16)
+
+        # Use actual state variables (a) not derived variables (m)
+        # state_variables, block, discount_factor, value_network, parameters={}, agent=None
+        bl = maliar.get_bellman_equation_loss(
+            ["a"],  # state variables are ["a"], not ["m"]
+            case_11["block"],
+            0.9,
+            bvn.value_function,
+            parameters=case_11["calibration"],
+        )
+
+        # Use fixed random seed for deterministic training
+        ann, states = maliar.maliar_training_loop(
+            case_11["block"],
+            bl,
+            case_11["givens"]["bellman"],
+            case_11["calibration"],
+            simulation_steps=1,
+            random_seed=TEST_SEED,  # Fixed seed for deterministic training
+            max_iterations=3,  # Enable max_iterations to prevent long runs
+        )
+
+        # Smoke test - verify we got back valid objects
+        self.assertIsNotNone(ann)
+        self.assertIsNotNone(states)

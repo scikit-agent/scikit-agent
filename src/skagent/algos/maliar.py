@@ -430,11 +430,21 @@ def estimate_bellman_residual(
         raise Exception("No reward variables found in block")
     reward_sym = reward_vars[0]  # Assume single reward for now
 
-    # Get current value estimates (using period t shocks)
-    current_values = value_network(states_t, shocks_t, parameters)
-
     # Get controls from decision function (using period t shocks)
     controls_t = df(states_t, shocks_t, parameters)
+
+    # Get current value estimates by computing derived variables first
+    # The value network needs the same variables as the control's information set
+    vals_t = parameters | states_t | shocks_t | controls_t
+
+    # Use block's transition to compute derived variables needed for value network
+    # Create decision rules that return the actual computed controls
+    actual_drs = {
+        control_sym: lambda *args, val=controls_t[control_sym]: val
+        for control_sym in controls_t
+    }
+    post_t = block.transition(vals_t, actual_drs)
+    current_values = value_network(post_t, shocks_t, parameters)
 
     # Create transition and reward functions
     tf = create_transition_function(block, state_variables)
@@ -446,8 +456,20 @@ def estimate_bellman_residual(
     # Compute next states (using period t shocks)
     next_states = tf(states_t, shocks_t, controls_t, parameters)
 
-    # Compute continuation value using value network (using period t+1 shocks)
-    continuation_values = value_network(next_states, shocks_t_plus_1, parameters)
+    # Compute continuation value using value network for next states
+    # For next period, we need to compute controls using the decision function
+    next_controls_t = df(next_states, shocks_t_plus_1, parameters)
+
+    # Compute derived variables for next period using actual next-period controls
+    vals_t_plus_1 = parameters | next_states | shocks_t_plus_1 | next_controls_t
+
+    # Use block's transition to compute derived variables for next period
+    next_actual_drs = {
+        control_sym: lambda *args, val=next_controls_t[control_sym]: val
+        for control_sym in next_controls_t
+    }
+    post_t_plus_1 = block.transition(vals_t_plus_1, next_actual_drs)
+    continuation_values = value_network(post_t_plus_1, shocks_t_plus_1, parameters)
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
@@ -536,6 +558,10 @@ def get_bellman_equation_loss(
         torch.Tensor
             Bellman equation residual loss (squared)
         """
+        # Convert decision rule dict to single callable if needed
+        if isinstance(df, dict):
+            df = create_decision_function(block, decision_rules=df)
+
         given_vals = input_grid.to_dict()
 
         # Extract current states and both shock realizations
