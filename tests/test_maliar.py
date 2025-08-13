@@ -1,4 +1,4 @@
-from conftest import case_1, case_2, case_3, case_4
+from conftest import case_1, case_2, case_3, case_4, case_11
 import numpy as np
 import os
 import skagent.algos.maliar as maliar
@@ -409,6 +409,46 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         self.assertIn("g", sd)
         self.assertTrue(torch.all(torch.isfinite(sd["m"])))
         self.assertTrue(torch.all(torch.isfinite(sd["g"])))
+
+
+class TestMaliarBellmanTrainingLoop(unittest.TestCase):
+    def setUp(self):
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+    def test_maliar_case_11(self):
+        # Use deterministic RNG for shock construction
+        rng = np.random.default_rng(TEST_SEED)
+        case_11["block"].construct_shocks(case_11["calibration"], rng=rng)
+
+        bvn = BlockValueNet(case_11["block"], width=16)
+
+        # state_variables, block, discount_factor, value_network, parameters={}, agent=None
+        bl = maliar.get_bellman_equation_loss(
+            case_11["givens"]["bellman"].labels,
+            case_11["block"],
+            0.9,
+            bvn.value_function,
+            parameters=case_11["calibration"],
+        )
+
+        # Use fixed random seed for deterministic training
+        ann, states = maliar.maliar_training_loop(
+            case_11["block"],
+            bl,
+            case_11["givens"]["bellman"],
+            case_11["calibration"],
+            simulation_steps=1,
+            random_seed=TEST_SEED,  # Fixed seed for deterministic training
+            # max_iterations=3,
+        )
+
+        # smoke test
 
 
 class TestBellmanLossFunctions(unittest.TestCase):
