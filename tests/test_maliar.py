@@ -433,7 +433,7 @@ class TestMaliarBellmanTrainingLoop(unittest.TestCase):
             case_11["givens"]["bellman"].labels,
             case_11["block"],
             0.9,
-            bvn,
+            bvn.value_function,
             parameters=case_11["calibration"],
         )
 
