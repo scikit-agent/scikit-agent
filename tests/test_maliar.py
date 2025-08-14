@@ -496,7 +496,10 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.assertEqual(
             loss.shape, (539,)
         )  # 11 * 7 * 7 grid points from case_11 bellman grid
-        self.assertTrue(torch.all(loss >= 0))  # Should be non-negative
+        self.assertTrue(
+            torch.all(torch.isfinite(loss))
+        )  # Should be finite (not NaN/inf)
+        # Note: Complete MMW Definition 2.10 can produce negative values due to product of residuals
         # Note: requires_grad depends on input tensor gradients
 
         # Test with agent specification
@@ -514,9 +517,11 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
         self.assertIsInstance(loss_with_agent, torch.Tensor)
         self.assertEqual(loss_with_agent.shape, (539,))  # Same grid size
-        self.assertTrue(torch.all(loss_with_agent >= 0))
+        self.assertTrue(
+            torch.all(torch.isfinite(loss_with_agent))
+        )  # Should be finite (not NaN/inf)
 
-    def test_bellman_loss_function_components(self):
+    def test_bellman_equation_loss_function_components(self):
         """Test that the Bellman loss function components work correctly."""
         # Test transition function - use case_11 variables
         tf = maliar.create_transition_function(self.block, ["a"])
@@ -538,7 +543,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Utility can be negative for log(consumption), so just check it's finite
         self.assertTrue(torch.all(torch.isfinite(reward["u"])))
 
-    def test_bellman_loss_function_error_handling(self):
+    def test_bellman_equation_loss_function_error_handling(self):
         """Test error handling in Bellman loss functions."""
         # Test with block that has no controls
         no_control_block = model.DBlock(
@@ -577,7 +582,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             )
         self.assertIn("No reward variables found in block", str(context.exception))
 
-    def test_bellman_loss_with_different_policies(self):
+    def test_bellman_equation_loss_with_different_policies(self):
         """Test that Bellman loss function produces different values for different policies."""
 
         # Create a simple value network
@@ -622,8 +627,12 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.assertIsInstance(loss_aggressive, torch.Tensor)
         self.assertEqual(loss_conservative.shape, (539,))  # case_11 bellman grid size
         self.assertEqual(loss_aggressive.shape, (539,))
-        self.assertTrue(torch.all(loss_conservative >= 0))
-        self.assertTrue(torch.all(loss_aggressive >= 0))
+        self.assertTrue(
+            torch.all(torch.isfinite(loss_conservative))
+        )  # Should be finite (not NaN/inf)
+        self.assertTrue(
+            torch.all(torch.isfinite(loss_aggressive))
+        )  # Should be finite (not NaN/inf)
 
         # Different policies should produce different Bellman residuals (now properly implemented)
         self.assertFalse(torch.allclose(loss_conservative, loss_aggressive))
@@ -655,7 +664,9 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         self.assertIsInstance(test_loss, torch.Tensor)
         self.assertEqual(test_loss.shape, (539,))  # case_11 bellman grid size
-        self.assertTrue(torch.all(test_loss >= 0))
+        self.assertTrue(
+            torch.all(torch.isfinite(test_loss))
+        )  # Should be finite (not NaN/inf)
 
     def test_shock_independence_in_bellman_residual(self):
         """Test that independent shock realizations produce different results than identical shocks."""
@@ -717,7 +728,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.assertTrue(torch.all(torch.isfinite(residual_identical)))
         self.assertTrue(torch.all(torch.isfinite(residual_independent)))
 
-    def test_bellman_loss_with_different_shock_patterns(self):
+    def test_bellman_equation_loss_with_different_shock_patterns(self):
         """Test Bellman loss function with various shock patterns."""
 
         # Create custom value network for this specific test
@@ -759,10 +770,12 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         # Both should produce valid losses
-        self.assertTrue(torch.all(loss_correlated >= 0))
-        self.assertTrue(torch.all(loss_anticorrelated >= 0))
-        self.assertTrue(torch.all(torch.isfinite(loss_correlated)))
-        self.assertTrue(torch.all(torch.isfinite(loss_anticorrelated)))
+        self.assertTrue(
+            torch.all(torch.isfinite(loss_correlated))
+        )  # Should be finite (not NaN/inf)
+        self.assertTrue(
+            torch.all(torch.isfinite(loss_anticorrelated))
+        )  # Should be finite (not NaN/inf)
 
         # Losses should be different for different shock patterns (now properly implemented)
         self.assertFalse(torch.allclose(loss_correlated, loss_anticorrelated))
@@ -791,7 +804,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
                 parameters={},
             )
 
-    def test_bellman_training_loop_with_bellman_loss(self):
+    def test_bellman_training_loop_with_bellman_equation_loss(self):
         """Test that bellman_training_loop works with Bellman loss for joint training."""
         torch.manual_seed(TEST_SEED)
         np.random.seed(TEST_SEED)
@@ -802,7 +815,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         # Create Bellman loss function (unified MMW Definition 2.10)
-        bellman_loss = get_bellman_equation_loss(
+        bellman_equation_loss = get_bellman_equation_loss(
             ["a"],  # state variables
             case_0["block"],
             0.9,  # discount factor
@@ -812,7 +825,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Test bellman_training_loop with Bellman loss (joint training)
         trained_policy, trained_value, final_states = maliar.bellman_training_loop(
             case_0["block"],
-            bellman_loss,  # Use Bellman loss for joint training
+            bellman_equation_loss,  # Use Bellman loss for joint training
             case_0["givens"],
             case_0["calibration"],
             simulation_steps=2,
@@ -933,7 +946,7 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
             case_0["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
 
-        bellman_loss = get_bellman_equation_loss(
+        bellman_equation_loss = get_bellman_equation_loss(
             ["a"],  # state variables
             case_0["block"],
             0.9,  # discount factor
@@ -943,7 +956,7 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
         # Test 1: High tolerance (should converge quickly)
         policy_high_tol, value_high_tol, states_high_tol = maliar.bellman_training_loop(
             case_0["block"],
-            bellman_loss,
+            bellman_equation_loss,
             case_0["givens"],
             case_0["calibration"],
             simulation_steps=1,
@@ -955,7 +968,7 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
         # Test 2: Low tolerance (should require more iterations or hit max_iterations)
         policy_low_tol, value_low_tol, states_low_tol = maliar.bellman_training_loop(
             case_0["block"],
-            bellman_loss,
+            bellman_equation_loss,
             case_0["givens"],
             case_0["calibration"],
             simulation_steps=1,
@@ -980,7 +993,7 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
             case_0["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
 
-        bellman_loss = get_bellman_equation_loss(
+        bellman_equation_loss = get_bellman_equation_loss(
             ["a"],  # state variables
             case_0["block"],
             0.9,  # discount factor
@@ -990,7 +1003,7 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
         # Test with very high tolerance to ensure early convergence
         policy, value, states = maliar.bellman_training_loop(
             case_0["block"],
-            bellman_loss,
+            bellman_equation_loss,
             case_0["givens"],
             case_0["calibration"],
             simulation_steps=1,

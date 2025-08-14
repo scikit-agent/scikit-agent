@@ -629,7 +629,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         self.assertIsInstance(test_values, torch.Tensor)
         self.assertEqual(test_values.shape, (1,))
 
-    def test_bellman_loss_with_trained_policy_on_benchmark(self):
+    def test_bellman_equation_loss_with_trained_policy_on_benchmark(self):
         """Test comprehensive Bellman iteration using the new bellman_training_loop."""
         torch.manual_seed(TEST_SEED)
         np.random.seed(TEST_SEED)
@@ -639,7 +639,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         )
 
         # Create a unified loss function for joint training (new MMW Definition 2.10 approach)
-        bellman_loss = maliar.get_bellman_equation_loss(
+        bellman_equation_loss = maliar.get_bellman_equation_loss(
             ["a"],
             case_1["block"],
             0.9,
@@ -649,7 +649,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         # Demonstrate the new bellman_training_loop that trains both networks
         trained_policy, trained_value, final_states = maliar.bellman_training_loop(
             block=case_1["block"],
-            loss_function=bellman_loss,
+            loss_function=bellman_equation_loss,
             states_0_n=case_1["givens"][1],
             parameters=case_1["calibration"],
             shock_copies=2,
@@ -680,7 +680,7 @@ class TestAnnValueFunctions(unittest.TestCase):
         self.assertEqual(values.shape, (2,))
 
         # Verify Bellman loss can be computed with final networks
-        bellman_loss = maliar.get_bellman_equation_loss(
+        bellman_equation_loss = maliar.get_bellman_equation_loss(
             ["a"],
             case_1["block"],
             0.9,
@@ -692,13 +692,16 @@ class TestAnnValueFunctions(unittest.TestCase):
         eval_grid_dict["theta_1"] = torch.zeros_like(eval_grid_dict["theta_0"])
         eval_grid = grid.Grid.from_dict(eval_grid_dict)
 
-        residuals = bellman_loss(
+        residuals = bellman_equation_loss(
             trained_value.get_value_function(),
             trained_policy.get_decision_function(),
             eval_grid,
         )
         self.assertIsInstance(residuals, torch.Tensor)
-        self.assertTrue(torch.all(residuals >= 0))
+        self.assertTrue(
+            torch.all(torch.isfinite(residuals))
+        )  # Should be finite (not NaN/inf)
+        # Note: Complete MMW Definition 2.10 can produce negative values due to product of residuals
 
         # This test demonstrates the complete pipeline addressing issues #100 and #101:
         # 1. New bellman_training_loop() that mirrors maliar_training_loop signature
