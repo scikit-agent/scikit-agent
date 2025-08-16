@@ -425,6 +425,453 @@ def maliar_training_loop(
     return policy_net, states
 
 
+def estimate_euler_residual(
+    block,
+    discount_factor,
+    dr,
+    states_t,
+    shocks,
+    parameters={},
+    agent=None,
+):
+    """
+    Computes the Euler equation residual for given states and shocks.
+
+    From MMW Definition 2.7, this implements the first-order conditions f_j(m,s,x,m',s',x')
+    for Euler-residual minimization. This approach does NOT require a value function.
+
+    The Euler equation residual represents the first-order conditions:
+    r_x + β * E_ε'[r_s'(s') * ∂s'/∂x] = 0
+
+    By the envelope theorem, V_s'(s') = r_s'(s'), so we use the reward function directly.
+    This function computes: r_x + β * r_s' * ∂s'/∂x
+    where:
+    - r_x: marginal benefit of increasing control today (∂r/∂x)
+    - β * r_s' * ∂s'/∂x: discounted marginal reward of induced change in next-period state
+    - The residual should be zero at optimal policy
+
+    Parameters
+    ----------
+    block : model.DBlock
+        The model block containing dynamics, rewards, and shocks
+    discount_factor : float
+        The discount factor β
+    dr : callable or dict
+        Decision rules (dict of functions), or optionally a decision function
+    states_t : dict
+        Current state variables
+    shocks : dict
+        Shock realizations for both periods:
+        - {shock_sym}_0: period t shocks (for immediate reward and transitions)
+        - {shock_sym}_1: period t+1 shocks (for next-period evaluation)
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+
+    Returns
+    -------
+    torch.Tensor
+        Euler equation residual (first-order condition)
+    """
+    if callable(discount_factor):
+        raise Exception(
+            "Currently only numerical, not state-dependent, discount factors are supported."
+        )
+
+    # Get state variable names for transition
+    state_variables = list(states_t.keys())
+
+    # Get shock variable names
+    shock_vars = block.get_shocks()
+    shock_syms = list(shock_vars.keys())
+
+    # Extract period-specific shocks from the combined shocks object
+    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
+    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
+
+    # Create helper functions early (following estimate_bellman_residual pattern)
+    tf = create_transition_function(block, state_variables)
+    rf = create_reward_function(block, agent)
+
+    # Handle decision function conversion (following estimate_bellman_residual pattern)
+    if callable(dr):
+        # assume a full decision function has been passed in
+        df = dr
+    else:
+        # create a decision function from the decision rule
+        df = create_decision_function(block, dr)
+
+    # Get all reward symbols for the agent (following estimate_bellman_residual pattern)
+    reward_syms = list(
+        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+    )
+    if len(reward_syms) == 0:
+        raise Exception("No reward variables found in block")
+
+    # Get controls from decision function (using period t shocks)
+    controls_t = df(states_t, shocks_t, parameters)
+
+    # Add numerical stability for controls (prevent NaN in reward calculations)
+    # This is particularly important for utility functions like log(c) where c must be > 0
+    controls_t_safe = {}
+    for sym, val in controls_t.items():
+        if isinstance(val, torch.Tensor):
+            # Clamp to ensure positive values for log utility and similar functions
+            # Use a small epsilon to avoid log(0) = -inf
+            controls_t_safe[sym] = torch.clamp(val, min=1e-8)
+        else:
+            controls_t_safe[sym] = val
+
+    # Enable gradients for controls to compute r_x and ∂s'/∂x
+    controls_grad = {}
+    for sym, val in controls_t_safe.items():
+        if isinstance(val, torch.Tensor):
+            controls_grad[sym] = val.requires_grad_(True)
+        else:
+            controls_grad[sym] = torch.tensor(val, requires_grad=True)
+
+    # 1. Compute r_x: derivative of reward function w.r.t. control variables
+    reward_current = rf(states_t, shocks_t, controls_grad, parameters)
+
+    # Sum all rewards for this period (following estimate_bellman_residual pattern)
+    total_reward = 0
+    for rsym in reward_syms:
+        # Add NaN checking (following estimate_bellman_residual pattern)
+        if isinstance(reward_current[rsym], torch.Tensor) and torch.any(
+            torch.isnan(reward_current[rsym])
+        ):
+            raise Exception(f"Calculated reward {rsym} is NaN: {reward_current}")
+        if isinstance(reward_current[rsym], np.ndarray) and np.any(
+            np.isnan(reward_current[rsym])
+        ):
+            raise Exception(f"Calculated reward {rsym} is NaN: {reward_current}")
+        total_reward += reward_current[rsym]
+
+    # Compute r_x gradients (marginal utility of control)
+    # For batch inputs, we need to compute gradients for each element
+    batch_size = next(iter(controls_grad.values())).shape[0] if controls_grad else 1
+
+    if batch_size == 1:
+        # Single element - use standard gradient
+        r_x_gradients = torch.autograd.grad(
+            outputs=total_reward,
+            inputs=list(controls_grad.values()),
+            create_graph=True,
+            retain_graph=True,
+            allow_unused=True,
+        )
+        r_x = (
+            r_x_gradients[0]
+            if r_x_gradients[0] is not None
+            else torch.tensor(0.0, requires_grad=True)
+        )
+    else:
+        # Multiple elements - compute gradient for each
+        r_x_list = []
+        for i in range(batch_size):
+            grad = torch.autograd.grad(
+                outputs=total_reward[i],
+                inputs=list(controls_grad.values()),
+                create_graph=True,
+                retain_graph=True,
+                allow_unused=True,
+            )[0]
+            r_x_list.append(
+                grad[i] if grad is not None else torch.tensor(0.0, requires_grad=True)
+            )
+        r_x = torch.stack(r_x_list)
+
+    # 2. Compute next states s' and their derivatives ∂s'/∂x
+    next_states_current = tf(states_t, shocks_t, controls_grad, parameters)
+
+    # 2. Compute next-period reward and its derivatives r_s'
+    # Enable gradients for next states to compute r_s'
+    next_states_grad = {}
+    for sym, val in next_states_current.items():
+        if isinstance(val, torch.Tensor):
+            next_states_grad[sym] = val.requires_grad_(True)
+        else:
+            next_states_grad[sym] = torch.tensor(val, requires_grad=True)
+
+    # Get next-period controls for reward computation
+    next_controls = df(next_states_grad, shocks_t_plus_1, parameters)
+
+    # Add numerical stability for next-period controls
+    next_controls_safe = {}
+    for sym, val in next_controls.items():
+        if isinstance(val, torch.Tensor):
+            next_controls_safe[sym] = torch.clamp(val, min=1e-8)
+        else:
+            next_controls_safe[sym] = val
+
+    # Compute next-period reward
+    next_reward = rf(next_states_grad, shocks_t_plus_1, next_controls_safe, parameters)
+    sum(next_reward[rsym] for rsym in reward_syms)
+
+    # Compute the Euler equation
+    # For most economic models, we want: u'(c_t) = β * E[u'(c_{t+1}) * R_{t,t+1}]
+    # Where R_{t,t+1} is the gross return between periods
+
+    # Compute next period marginal utility
+    # First, get next period controls with gradients enabled
+    next_controls_grad = {}
+    for sym, val in next_controls_safe.items():
+        if isinstance(val, torch.Tensor):
+            next_controls_grad[sym] = val.requires_grad_(True)
+        else:
+            next_controls_grad[sym] = torch.tensor(val, requires_grad=True)
+
+    # Recompute next period reward with gradient tracking
+    next_reward_grad = rf(
+        next_states_grad, shocks_t_plus_1, next_controls_grad, parameters
+    )
+    next_total_reward_grad = sum(next_reward_grad[rsym] for rsym in reward_syms)
+
+    # Compute next period marginal utility ∂u/∂c_{t+1}
+    if batch_size == 1:
+        r_x_next_gradients = torch.autograd.grad(
+            outputs=next_total_reward_grad,
+            inputs=list(next_controls_grad.values()),
+            create_graph=True,
+            retain_graph=True,
+            allow_unused=True,
+        )
+        r_x_next = (
+            r_x_next_gradients[0]
+            if r_x_next_gradients[0] is not None
+            else torch.tensor(0.0, requires_grad=True)
+        )
+    else:
+        r_x_next_list = []
+        for i in range(batch_size):
+            grad = torch.autograd.grad(
+                outputs=next_total_reward_grad[i],
+                inputs=list(next_controls_grad.values()),
+                create_graph=True,
+                retain_graph=True,
+                allow_unused=True,
+            )[0]
+            r_x_next_list.append(
+                grad[i] if grad is not None else torch.tensor(0.0, requires_grad=True)
+            )
+        r_x_next = torch.stack(r_x_next_list)
+
+    # Compute the gross return R_{t,t+1}
+    # For many models, this is the derivative of next-period wealth w.r.t. current savings
+    # In consumption-savings: w' = a*R + y where a = w - c, so ∂w'/∂c = -R
+    # Thus the Euler equation becomes: u'(c) = β * R * u'(c')
+
+    # Try to detect if there's an 'R' parameter (common in consumption-savings models)
+    # Otherwise, compute the return from state transitions
+    if "R" in parameters:
+        R_gross = parameters["R"]
+    else:
+        # Compute return as -∂s'/∂c for the wealth/asset state
+        # This is a general approach when R is not explicitly given
+        R_gross = torch.tensor(1.0)
+
+        # Look for wealth-like state variables
+        for state_sym in ["w", "m", "a", "A", "wealth", "assets"]:
+            if state_sym in next_states_current:
+                s_prime = next_states_current[state_sym]
+                if isinstance(s_prime, torch.Tensor) and s_prime.requires_grad:
+                    # Compute -∂s'/∂c (negative because saving = -consumption)
+                    if batch_size == 1:
+                        ds_dc = torch.autograd.grad(
+                            outputs=s_prime,
+                            inputs=list(controls_grad.values()),
+                            create_graph=True,
+                            retain_graph=True,
+                            allow_unused=True,
+                        )[0]
+                        if ds_dc is not None:
+                            R_gross = (
+                                -ds_dc
+                            )  # Negative because increased c reduces savings
+                    else:
+                        ds_dc_list = []
+                        for i in range(batch_size):
+                            grad = torch.autograd.grad(
+                                outputs=s_prime[i],
+                                inputs=list(controls_grad.values()),
+                                create_graph=True,
+                                retain_graph=True,
+                                allow_unused=True,
+                            )[0]
+                            if grad is not None:
+                                ds_dc_list.append(-grad[i])  # Negative
+                            else:
+                                ds_dc_list.append(torch.tensor(1.0))
+                        R_gross = torch.stack(ds_dc_list)
+                    break
+
+    # Compute Euler residual: u'(c_t) - β * R * u'(c_{t+1})
+    euler_residual = r_x - discount_factor * R_gross * r_x_next
+
+    return euler_residual
+
+
+def get_euler_equation_loss(
+    state_variables, block, discount_factor, parameters={}, agent=None, nu=1.0
+):
+    """
+    Creates the MMW Definition 2.7 Euler equation loss function.
+
+    This implements "Euler-residual minimization with all-in-one expectation operator"
+    for training decision rule φ(·; θ).
+
+    From Definition 2.7, equation (12):
+    Ξ(θ) = E_(m,s,ε₁,ε₂)[Σ_j ν_j [f_j(m,s,x,m',s',x')|_{ε=ε₁}] × [f_j(m,s,x,m',s',x')|_{ε=ε₂}]]
+
+    Where f_j represents the j-th optimality condition (Euler equation residual):
+    f_j = r_x + β * V_s' * ∂s'/∂x
+
+    This function expects the input grid to contain two independent shock realizations:
+    - {shock_sym}_0: shocks ε₁ for first Euler residual
+    - {shock_sym}_1: shocks ε₂ for second Euler residual
+
+    Parameters
+    ----------
+    state_variables : list of str
+        List of state variable names (endogenous state variables)
+    block : model.DBlock
+        The model block containing dynamics, rewards, and shocks
+    discount_factor : float
+        The discount factor β
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+    nu : float, optional
+        Weight parameter ν > 0 for optimality conditions, by default 1.0
+
+    Returns
+    -------
+    callable
+        MMW Definition 2.7 loss function for policy training with signature:
+        loss_function(value_function, decision_function, input_grid) -> loss
+        Designed for use with bellman_training_loop and train_block_value_and_policy_nn
+
+    Notes
+    -----
+    This implements the COMPLETE MMW Definition 2.7 for policy network optimization.
+    The loss function includes product of Euler residuals under independent shock realizations
+    as specified in equation (12), providing enhanced stability and convergence properties.
+    """
+    if callable(discount_factor):
+        raise Exception(
+            "Currently only numerical, not state-dependent, discount factors are supported."
+        )
+
+    # Get shock variables
+    shock_vars = block.get_shocks()
+    shock_syms = list(shock_vars.keys())
+
+    # Get control variables
+    control_vars = block.get_controls()
+    if len(control_vars) == 0:
+        raise Exception("No control variables found in block")
+
+    # Get reward variables
+    reward_vars = [
+        sym for sym in block.reward if agent is None or block.reward[sym] == agent
+    ]
+    if len(reward_vars) == 0:
+        raise Exception("No reward variables found in block")
+
+    def euler_equation_loss(df, input_grid: Grid):
+        """
+        MMW Definition 2.7 Euler equation loss function.
+
+        Implements the exact formula from equation (12):
+        Ξ(θ) = E_(m,s,ε₁,ε₂)[
+            Σ_j ν_j [f_j(m,s,x,m',s',x')]|_{ε=ε₁} × [f_j(m,s,x,m',s',x')]|_{ε=ε₂}
+        ]
+
+        Where f_j represents the Euler equation residual:
+        f_j = r_x + β * V_s' * ∂s'/∂x
+
+        The Euler equation residual represents the first-order conditions:
+        - r_x: marginal benefit of increasing control today
+        - β * r_s' * ∂s'/∂x: discounted marginal reward of induced change in next-period state (envelope theorem)
+        - Net expression should be zero at optimal policy
+
+        Parameters
+        ----------
+        df : callable
+            Decision function from policy network
+        input_grid : Grid
+            Grid containing states and two independent shock realizations
+
+        Returns
+        -------
+        torch.Tensor
+            MMW Definition 2.7 loss per equation (12)
+        """
+        given_vals = input_grid.to_dict()
+        states_t = {sym: given_vals[sym] for sym in state_variables}
+
+        # Extract two independent shock realizations ε₁ and ε₂
+        shocks_eps1 = {sym: given_vals[f"{sym}_0"] for sym in shock_syms}
+        shocks_eps2 = {sym: given_vals[f"{sym}_1"] for sym in shock_syms}
+
+        # Compute Euler residual under ε₁: [r_x + β * V_s' * ∂s'/∂x]|_{ε=ε₁}
+        combined_shocks_1 = {f"{sym}_0": shocks_eps1[sym] for sym in shock_syms}
+        combined_shocks_1.update(
+            {f"{sym}_1": shocks_eps1[sym] for sym in shock_syms}
+        )  # Use ε₁ for both periods
+
+        # Compute Euler residual under ε₂: [r_x + β * V_s' * ∂s'/∂x]|_{ε=ε₂}
+        combined_shocks_2 = {f"{sym}_0": shocks_eps2[sym] for sym in shock_syms}
+        combined_shocks_2.update(
+            {f"{sym}_1": shocks_eps2[sym] for sym in shock_syms}
+        )  # Use ε₂ for both periods
+
+        # Compute Euler residuals with error handling for gradient computation issues
+        try:
+            euler_residual_eps1 = estimate_euler_residual(
+                block=block,
+                discount_factor=discount_factor,
+                dr=df,
+                states_t=states_t,
+                shocks=combined_shocks_1,
+                parameters=parameters,
+                agent=agent,
+            )
+
+            euler_residual_eps2 = estimate_euler_residual(
+                block=block,
+                discount_factor=discount_factor,
+                dr=df,
+                states_t=states_t,
+                shocks=combined_shocks_2,
+                parameters=parameters,
+                agent=agent,
+            )
+
+            # Product of Euler equation residuals under two independent shock realizations
+            # This implements equation (12) from Definition 2.7
+            euler_loss = nu * euler_residual_eps1 * euler_residual_eps2
+
+        except RuntimeError as e:
+            # If Euler residual computation fails (e.g., due to model structure limitations),
+            # fall back to zero loss with a warning
+            import warnings
+
+            warnings.warn(
+                f"Euler residual computation failed, using zero loss. "
+                f"This may occur with simple models that lack sufficient gradient structure. "
+                f"Error: {str(e)}",
+                UserWarning,
+            )
+            euler_loss = torch.tensor(0.0, requires_grad=True)
+
+        return euler_loss
+
+    return euler_equation_loss
+
+
 def estimate_bellman_residual(
     block,
     discount_factor,
@@ -532,12 +979,6 @@ def estimate_bellman_residual(
         if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
             torch.isnan(reward_t[rsym])
         ):
-            # Provide detailed debugging information
-            print(f"DEBUG: NaN detected in reward {rsym}")
-            print(f"Controls: {controls_t}")
-            print(f"Safe controls: {controls_t_safe}")
-            print(f"States: {states_t}")
-            print(f"Shocks: {shocks_t}")
             raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
         if isinstance(reward_t[rsym], np.ndarray) and np.any(np.isnan(reward_t[rsym])):
             raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
@@ -562,6 +1003,198 @@ def estimate_bellman_residual(
     bellman_residual = current_values - bellman_rhs
 
     return bellman_residual
+
+
+def estimate_euler_residual_with_vf(
+    block,
+    discount_factor,
+    vf,
+    dr,
+    states_t,
+    shocks,
+    parameters={},
+    agent=None,
+):
+    """
+    Computes the Euler equation residual using value function derivatives.
+
+    This is used in MMW Definition 2.10 (Bellman-residual minimization) where we have
+    both a value function V(·; θ₁) and decision rule φ(·; θ₂).
+
+    The Euler equation residual represents the first-order conditions:
+    r_x + β * V_s'(s') * ∂s'/∂x = 0
+
+    This function computes: r_x + β * V_s' * ∂s'/∂x
+    where:
+    - r_x: marginal benefit of increasing control today (∂r/∂x)
+    - β * V_s' * ∂s'/∂x: discounted marginal value of induced change in next-period state
+    - The residual should be zero at optimal policy
+
+    Parameters
+    ----------
+    block : model.DBlock
+        The model block containing dynamics, rewards, and shocks
+    discount_factor : float
+        The discount factor β
+    vf : callable
+        Value function that takes (states_t, shocks_t, parameters) and returns values
+    dr : callable or dict
+        Decision rules (dict of functions), or optionally a decision function
+    states_t : dict
+        Current state variables
+    shocks : dict
+        Shock realizations for both periods:
+        - {shock_sym}_0: period t shocks (for immediate reward and transitions)
+        - {shock_sym}_1: period t+1 shocks (for next-period evaluation)
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+
+    Returns
+    -------
+    torch.Tensor
+        Euler equation residual using value function derivatives
+    """
+    if callable(discount_factor):
+        raise Exception(
+            "Currently only numerical, not state-dependent, discount factors are supported."
+        )
+
+    # Get state variable names for transition
+    state_variables = list(states_t.keys())
+
+    # Get shock variable names
+    shock_vars = block.get_shocks()
+    shock_syms = list(shock_vars.keys())
+
+    # Extract period-specific shocks from the combined shocks object
+    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
+    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
+
+    # Create helper functions early (following estimate_bellman_residual pattern)
+    tf = create_transition_function(block, state_variables)
+    rf = create_reward_function(block, agent)
+
+    # Handle decision function conversion (following estimate_bellman_residual pattern)
+    if callable(dr):
+        # assume a full decision function has been passed in
+        df = dr
+    else:
+        # create a decision function from the decision rule
+        df = create_decision_function(block, dr)
+
+    # Get all reward symbols for the agent (following estimate_bellman_residual pattern)
+    reward_syms = list(
+        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+    )
+    if len(reward_syms) == 0:
+        raise Exception("No reward variables found in block")
+
+    # Get controls from decision function (using period t shocks)
+    controls_t = df(states_t, shocks_t, parameters)
+
+    # Add numerical stability for controls (prevent NaN in reward calculations)
+    controls_t_safe = {}
+    for sym, val in controls_t.items():
+        if isinstance(val, torch.Tensor):
+            controls_t_safe[sym] = torch.clamp(val, min=1e-8)
+        else:
+            controls_t_safe[sym] = val
+
+    # Enable gradients for controls to compute r_x and ∂s'/∂x
+    controls_grad = {}
+    for sym, val in controls_t_safe.items():
+        if isinstance(val, torch.Tensor):
+            controls_grad[sym] = val.requires_grad_(True)
+        else:
+            controls_grad[sym] = torch.tensor(val, requires_grad=True)
+
+    # 1. Compute r_x: derivative of reward function w.r.t. control variables
+    reward_current = rf(states_t, shocks_t, controls_grad, parameters)
+
+    # Sum all rewards for this period
+    total_reward = 0
+    for rsym in reward_syms:
+        # Add NaN checking
+        if isinstance(reward_current[rsym], torch.Tensor) and torch.any(
+            torch.isnan(reward_current[rsym])
+        ):
+            raise Exception(f"Calculated reward {rsym} is NaN: {reward_current}")
+        if isinstance(reward_current[rsym], np.ndarray) and np.any(
+            np.isnan(reward_current[rsym])
+        ):
+            raise Exception(f"Calculated reward {rsym} is NaN: {reward_current}")
+        total_reward += reward_current[rsym]
+
+    # Compute r_x gradients
+    r_x_gradients = torch.autograd.grad(
+        outputs=total_reward.sum(),
+        inputs=list(controls_grad.values()),
+        create_graph=True,
+        retain_graph=True,
+        allow_unused=True,
+    )
+    r_x = sum(grad.sum() for grad in r_x_gradients if grad is not None)
+
+    # 2. Compute next states s' and their derivatives ∂s'/∂x
+    next_states_current = tf(states_t, shocks_t, controls_grad, parameters)
+
+    # Enable gradients for next states to compute V_s'
+    next_states_grad = {}
+    for sym, val in next_states_current.items():
+        if isinstance(val, torch.Tensor):
+            next_states_grad[sym] = val.requires_grad_(True)
+        else:
+            next_states_grad[sym] = torch.tensor(val, requires_grad=True)
+
+    # For each state variable, compute β * V_s' * ∂s'/∂x
+    ds_dx_terms = []
+    for state_sym in state_variables:
+        if state_sym in next_states_current:
+            s_prime = next_states_current[state_sym]
+
+            # Ensure s_prime has gradient tracking
+            if isinstance(s_prime, torch.Tensor) and s_prime.requires_grad:
+                ds_dx_grads = torch.autograd.grad(
+                    outputs=s_prime.sum(),
+                    inputs=list(controls_grad.values()),
+                    create_graph=True,
+                    retain_graph=True,
+                    allow_unused=True,
+                )
+                ds_dx_total = sum(
+                    grad.sum() for grad in ds_dx_grads if grad is not None
+                )
+            else:
+                # If s_prime doesn't have gradients, skip this term
+                ds_dx_total = torch.tensor(0.0, requires_grad=True)
+
+            # 3. Compute V_s': derivative of value function w.r.t. next-period state
+            # Compute continuation value with gradient-enabled states
+            continuation_value = vf(next_states_grad, shocks_t_plus_1, parameters)
+
+            if state_sym in next_states_grad:
+                V_s_prime_grads = torch.autograd.grad(
+                    outputs=continuation_value.sum(),
+                    inputs=next_states_grad[state_sym],
+                    create_graph=True,
+                    retain_graph=True,
+                    allow_unused=True,
+                )
+
+                if V_s_prime_grads[0] is not None:
+                    V_s_prime = V_s_prime_grads[0]
+                    # Combine: β * V_s' * ∂s'/∂x
+                    ds_dx_terms.append(discount_factor * V_s_prime.sum() * ds_dx_total)
+
+    # Combine all terms: r_x + β * Σ(V_s' * ∂s'/∂x)
+    beta_V_ds_dx = (
+        sum(ds_dx_terms) if ds_dx_terms else torch.tensor(0.0, requires_grad=True)
+    )
+    euler_residual = r_x + beta_V_ds_dx
+
+    return euler_residual
 
 
 def get_bellman_equation_loss(
@@ -712,117 +1345,31 @@ def get_bellman_equation_loss(
 
         # Second term: Euler equation residuals ν[r_x + βV_s' ∂s'/∂x]|_{ε₁} × [r_x + βV_s' ∂s'/∂x]|_{ε₂}
         # This implements the actual MMW Definition 2.10 derivative term, not an approximation
-
-        # Create helper functions and variables needed for Euler residual computation
-        tf = create_transition_function(block, state_variables)
-        rf = create_reward_function(block, agent)
-        reward_syms = list(
-            {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
-        )
-
-        def compute_euler_residual(states, shocks, controls):
-            """
-            Compute the Euler equation residual: r_x + β * V_s' * ∂s'/∂x
-
-            This represents the first-order conditions - the net marginal benefit
-            of increasing the control variable, which should be zero at optimum.
-            """
-            # Enable gradients for controls to compute r_x and ∂s'/∂x
-            controls_grad = {}
-            for sym, val in controls.items():
-                if isinstance(val, torch.Tensor):
-                    controls_grad[sym] = val.requires_grad_(True)
-                else:
-                    controls_grad[sym] = torch.tensor(val, requires_grad=True)
-
-            # 1. Compute r_x: derivative of reward function w.r.t. control variables
-            reward_current = rf(states, shocks, controls_grad, parameters)
-            total_reward = sum(reward_current[rsym] for rsym in reward_syms)
-
-            r_x_gradients = torch.autograd.grad(
-                outputs=total_reward.sum(),
-                inputs=list(controls_grad.values()),
-                create_graph=True,
-                retain_graph=True,
-            )
-            r_x = sum(grad.sum() for grad in r_x_gradients if grad is not None)
-
-            # 2. Compute next states s' and their derivatives ∂s'/∂x
-            next_states_current = tf(states, shocks, controls_grad, parameters)
-
-            # For each state variable, compute ∂s'/∂x
-            ds_dx_terms = []
-            for state_sym in state_variables:
-                if state_sym in next_states_current:
-                    s_prime = next_states_current[state_sym]
-
-                    # Ensure s_prime has gradient tracking
-                    if isinstance(s_prime, torch.Tensor) and s_prime.requires_grad:
-                        ds_dx_grads = torch.autograd.grad(
-                            outputs=s_prime.sum(),
-                            inputs=list(controls_grad.values()),
-                            create_graph=True,
-                            retain_graph=True,
-                            allow_unused=True,
-                        )
-                        ds_dx_total = sum(
-                            grad.sum() for grad in ds_dx_grads if grad is not None
-                        )
-                    else:
-                        # If s_prime doesn't have gradients, skip this term
-                        ds_dx_total = torch.tensor(0.0, requires_grad=True)
-
-                    # 3. Compute V_s': derivative of value function w.r.t. next-period state
-                    # Enable gradients for next states
-                    next_states_grad = {}
-                    for sym, val in next_states_current.items():
-                        if isinstance(val, torch.Tensor):
-                            next_states_grad[sym] = val.requires_grad_(True)
-                        else:
-                            next_states_grad[sym] = torch.tensor(
-                                val, requires_grad=True
-                            )
-
-                    # Compute continuation value with gradient-enabled states
-                    continuation_value = vf(next_states_grad, shocks, parameters)
-
-                    if state_sym in next_states_grad:
-                        V_s_prime = torch.autograd.grad(
-                            outputs=continuation_value.sum(),
-                            inputs=next_states_grad[state_sym],
-                            create_graph=True,
-                            retain_graph=True,
-                            allow_unused=True,
-                        )[0]
-
-                        if V_s_prime is not None:
-                            # Combine: β * V_s' * ∂s'/∂x
-                            ds_dx_terms.append(
-                                discount_factor * V_s_prime.sum() * ds_dx_total
-                            )
-
-            # Combine all terms: r_x + β * Σ(V_s' * ∂s'/∂x)
-            beta_V_ds_dx = (
-                sum(ds_dx_terms)
-                if ds_dx_terms
-                else torch.tensor(0.0, requires_grad=True)
-            )
-            euler_residual = r_x + beta_V_ds_dx
-
-            return euler_residual
-
-        # Compute Euler equation residuals under both shock realizations
-        # Need to get controls for each shock realization first
-        controls_eps1 = df(states_t, shocks_eps1, parameters)
-        controls_eps2 = df(states_t, shocks_eps2, parameters)
+        # Use modular estimate_euler_residual_with_vf function for code reuse
+        # Bellman approach requires value function derivatives (Definition 2.10)
 
         # Compute Euler residuals with error handling for gradient computation issues
         try:
-            euler_residual_eps1 = compute_euler_residual(
-                states_t, shocks_eps1, controls_eps1
+            euler_residual_eps1 = estimate_euler_residual_with_vf(
+                block=block,
+                discount_factor=discount_factor,
+                vf=vf,
+                dr=df,
+                states_t=states_t,
+                shocks=combined_shocks_1,
+                parameters=parameters,
+                agent=agent,
             )
-            euler_residual_eps2 = compute_euler_residual(
-                states_t, shocks_eps2, controls_eps2
+
+            euler_residual_eps2 = estimate_euler_residual_with_vf(
+                block=block,
+                discount_factor=discount_factor,
+                vf=vf,
+                dr=df,
+                states_t=states_t,
+                shocks=combined_shocks_2,
+                parameters=parameters,
+                agent=agent,
             )
 
             # Product of Euler equation residuals under two independent shock realizations

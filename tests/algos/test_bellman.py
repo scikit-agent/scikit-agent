@@ -1,16 +1,19 @@
-from conftest import case_0, case_1, case_2, case_3, case_4, case_11
+from conftest import case_0, case_11
+import conftest
 import numpy as np
 import os
 import skagent.algos.maliar as maliar
+import skagent.ann as ann
 import skagent.grid as grid
-import skagent.model as model
 import torch
 import unittest
-from skagent.distributions import Normal
 from skagent.ann import BlockValueNet
 from skagent.algos.maliar import (
     get_bellman_equation_loss,
 )
+from skagent.models.benchmarks import d3_block, d3_calibration, d3_analytical_policy
+
+from algos.test_maliar import create_simple_linear_value_network
 
 # Deterministic test seed - change this single value to modify all seeding
 TEST_SEED = 10077693
@@ -19,431 +22,12 @@ TEST_SEED = 10077693
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def create_simple_linear_value_network():
-    """Create a simple linear value network for testing: V(a) = 10.0 * a"""
-
-    def simple_value_network(states_t, shocks_t, parameters):
-        # Handle both 'a' (case_11) and 'wealth' (custom test blocks)
-        if "a" in states_t:
-            return 10.0 * states_t["a"]
-        elif "wealth" in states_t:
-            return 10.0 * states_t["wealth"]
-        else:
-            raise ValueError(
-                f"Expected state variable 'a' or 'wealth', got: {list(states_t.keys())}"
-            )
-
-    return simple_value_network
-
-
-def create_income_aware_value_network():
-    """Create a value network that depends on both wealth and income"""
-
-    def income_aware_value_network(states_t, shocks_t, parameters):
-        # Handle both variable name conventions
-        if "a" in states_t:
-            wealth = states_t["a"]
-        else:
-            wealth = states_t["wealth"]
-
-        if "theta" in shocks_t:
-            income = shocks_t["theta"]
-        else:
-            income = shocks_t["income"]
-
-        return 10.0 * wealth + 5.0 * income  # Value depends on both wealth and income
-
-    return income_aware_value_network
-
-
-parameters = {"q": 1.1}
-
-block_data = {
-    "name": "test block - maliar",
-    "dynamics": {
-        "c": model.Control(["a"]),
-        "a": lambda a, c, e, q: q * a - c + e,
-        "e": lambda e: e,
-        "u": lambda c: np.log(c),
-    },
-    "reward": {"u": "consumer"},
-}
-
-states_0 = {
-    "a": 1,
-    "e": 0.1,
-}
-
-# a dummy policy
-decision_rules = {"c": lambda a: a / 2}
-decisions = {"c": 0.5}
-
-
-class TestSolverFunctions(unittest.TestCase):
-    def setUp(self):
-        self.block = model.DBlock(**block_data)
-
-    def test_create_transition_function(self):
-        transition_function = maliar.create_transition_function(self.block, ["a", "e"])
-
-        states_1 = transition_function(states_0, {}, decisions, parameters=parameters)
-
-        self.assertAlmostEqual(states_1["a"], 0.7)
-        self.assertEqual(states_1["e"], 0.1)
-
-    def test_create_decision_function(self):
-        decision_function = maliar.create_decision_function(self.block, decision_rules)
-
-        decisions_0 = decision_function(states_0, {}, parameters=parameters)
-
-        self.assertEqual(decisions_0["c"], 0.5)
-
-    def test_create_reward_function(self):
-        reward_function = maliar.create_reward_function(self.block)
-
-        reward_0 = reward_function(states_0, {}, decisions, parameters=parameters)
-
-        self.assertAlmostEqual(reward_0["u"], -0.69314718)
-
-    def test_estimate_discounted_lifetime_reward(self):
-        dlr_0 = maliar.estimate_discounted_lifetime_reward(
-            self.block,
-            0.9,
-            decision_rules,
-            states_0,
-            0,
-            parameters=parameters,
-        )
-
-        self.assertEqual(dlr_0, 0)
-
-        dlr_1 = maliar.estimate_discounted_lifetime_reward(
-            self.block,
-            0.9,
-            decision_rules,
-            states_0,
-            1,
-            parameters=parameters,
-        )
-
-        self.assertAlmostEqual(dlr_1, -0.69314718)
-
-        dlr_2 = maliar.estimate_discounted_lifetime_reward(
-            self.block,
-            0.9,
-            decision_rules,
-            states_0,
-            2,
-            parameters=parameters,
-        )
-
-        self.assertAlmostEqual(dlr_2, -1.63798709)
-
-    def test_estimate_bellman_residual(self):
-        """Test the Bellman residual helper function."""
-
-        simple_value_network = create_simple_linear_value_network()
-
-        def simple_decision_function(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            consumption = 0.5 * wealth
-            return {"consumption": consumption}
-
-        test_block = model.DBlock(
-            name="test_bellman_residual",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={
-                "wealth": lambda wealth, income, consumption: wealth
-                + income
-                - consumption,
-                "consumption": model.Control(iset=["wealth"], agent="consumer"),
-                "utility": lambda consumption: torch.log(consumption + 1e-8),
-            },
-            reward={"utility": "consumer"},
-        )
-        test_block.construct_shocks({})
-
-        # Test states and shocks - need combined object with both periods
-        states_t = {"wealth": torch.tensor([2.0, 4.0])}
-        shocks = {
-            "income_0": torch.tensor([1.0, 1.0]),  # Period t
-            "income_1": torch.tensor([1.2, 0.8]),  # Period t+1 (independent)
-        }
-
-        # Estimate Bellman residual
-        residual = maliar.estimate_bellman_residual(
-            test_block,
-            0.95,  # discount factor
-            simple_value_network,
-            simple_decision_function,
-            states_t,
-            shocks,  # Now passing combined shock object
-            parameters={},
-        )
-
-        self.assertIsInstance(residual, torch.Tensor)
-        self.assertEqual(residual.shape, (2,))
-
-        # Check that residuals are finite
-        self.assertTrue(torch.all(torch.isfinite(residual)))
-
-
-class TestLifetimeReward(unittest.TestCase):
-    """
-    More tests of the lifetime reward function specifically.
-    """
-
-    def setUp(self):
-        self.states_0 = {"a": 0}
-
-    def test_block_1(self):
-        dlr_1 = maliar.estimate_discounted_lifetime_reward(
-            case_1["block"],
-            0.9,
-            case_1["optimal_dr"],
-            self.states_0,
-            1,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[0]]))},
-        )
-
-        self.assertEqual(dlr_1, 0)
-
-        # big_t is 2
-        dlr_1_2 = maliar.estimate_discounted_lifetime_reward(
-            case_1["block"],
-            0.9,
-            case_1["optimal_dr"],
-            self.states_0,
-            2,
-            shocks_by_t={"theta": torch.FloatTensor(np.array([[0], [0]]))},
-        )
-
-        self.assertEqual(dlr_1_2, 0)
-
-    def test_block_2(self):
-        dlr_2 = maliar.estimate_discounted_lifetime_reward(
-            case_2["block"],
-            0.9,
-            case_2["optimal_dr"],
-            self.states_0,
-            1,
-            shocks_by_t={
-                "theta": torch.FloatTensor(np.array([[0]])),
-                "psi": torch.FloatTensor(np.array([[0]])),
-            },
-        )
-
-        self.assertEqual(dlr_2, 0)
-
-
-class TestGridManipulations(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def test_givens_case_1(self):
-        # TODO: we're going to need to build the blocks in the test, because of this mutation,
-        #       or else make this return a copy.
-        block = case_1["block"]
-        block.construct_shocks(
-            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
-        )
-
-        state_grid = grid.Grid.from_config(
-            {
-                "a": {"min": 0, "max": 1, "count": 7},
-            }
-        )
-
-        full_grid = maliar.generate_givens_from_states(state_grid, block, 1)
-
-        self.assertEqual(full_grid["theta_0"].shape.numel(), 7)
-
-    def test_givens_case_3(self):
-        block = case_3["block"]
-        block.construct_shocks(
-            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
-        )
-
-        state_grid = grid.Grid.from_config(
-            {
-                "a": {"min": 0, "max": 1, "count": 7},
-            }
-        )
-
-        full_grid = maliar.generate_givens_from_states(state_grid, block, 2)
-
-        self.assertEqual(len(full_grid["psi_0"]), 7)
-
-
-class TestMaliarTrainingLoop(unittest.TestCase):
-    def setUp(self):
-        # Set deterministic state for each test (avoid global state interference in parallel runs)
-        torch.manual_seed(TEST_SEED)
-        np.random.seed(TEST_SEED)
-        # Ensure PyTorch uses deterministic algorithms when possible
-        torch.use_deterministic_algorithms(True, warn_only=True)
-        # Set CUDA deterministic behavior for reproducible tests
-        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-
-    def test_maliar_state_convergence(self):
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": -20, "max": 20, "count": 9},
-                "g": {"min": -20, "max": 20, "count": 9},
-            }
-        )
-
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            states_0_n.labels,
-            case_4["block"],
-            0.9,
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Use fixed random seed for deterministic training
-        ann, states = maliar.maliar_training_loop(
-            case_4["block"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=2,
-            random_seed=TEST_SEED,  # Fixed seed for deterministic training
-            max_iterations=3,
-        )
-
-        sd = states.to_dict()
-
-        # testing for the states converged on the ergodic distribution
-        # note we actual expect these to diverge up to Uniform[-1, 1] shocks.
-        self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=2.5))
-
-    def test_maliar_convergence_tolerance(self):
-        """Test the convergence functionality in the Maliar training loop."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": -10, "max": 10, "count": 5},
-                "g": {"min": -10, "max": 10, "count": 5},
-            }
-        )
-
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            states_0_n.labels,
-            case_4["block"],
-            0.9,
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test 1: High tolerance (should converge quickly)
-        ann_high_tol, states_high_tol = maliar.maliar_training_loop(
-            case_4["block"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=2,
-            random_seed=TEST_SEED,
-            max_iterations=10,
-            tolerance=1e-1,  # High tolerance for quick convergence
-        )
-
-        # Test 2: Low tolerance (should require more iterations or hit max_iterations)
-        ann_low_tol, states_low_tol = maliar.maliar_training_loop(
-            case_4["block"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=2,
-            random_seed=TEST_SEED,
-            max_iterations=3,
-            tolerance=1e-8,  # Very low tolerance
-        )
-
-        self.assertIsNotNone(ann_high_tol)
-        self.assertIsNotNone(states_high_tol)
-        self.assertIsNotNone(ann_low_tol)
-        self.assertIsNotNone(states_low_tol)
-        sd_high = states_high_tol.to_dict()
-        sd_low = states_low_tol.to_dict()
-
-        self.assertIn("m", sd_high)
-        self.assertIn("g", sd_high)
-        self.assertIn("m", sd_low)
-        self.assertIn("g", sd_low)
-
-        # Verify states are finite tensors
-        self.assertTrue(torch.all(torch.isfinite(sd_high["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_high["g"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_low["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_low["g"])))
-
-    def test_maliar_convergence_early_stopping(self):
-        """Test that the training loop can stop early when convergence is achieved."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        # Use a smaller grid for faster convergence testing
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": 0, "max": 5, "count": 3},
-                "g": {"min": 0, "max": 5, "count": 3},
-            }
-        )
-
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            states_0_n.labels,
-            case_4["block"],
-            0.9,
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test with very high tolerance to ensure early convergence
-        ann, states = maliar.maliar_training_loop(
-            case_4["block"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=1,
-            random_seed=TEST_SEED,
-            max_iterations=100,  # Set high max iterations
-            tolerance=1.0,  # Very high tolerance - should converge in 1-2 iterations
-        )
-
-        # Should complete successfully
-        self.assertIsNotNone(ann)
-        self.assertIsNotNone(states)
-
-        # States should be valid
-        sd = states.to_dict()
-        self.assertIn("m", sd)
-        self.assertIn("g", sd)
-        self.assertTrue(torch.all(torch.isfinite(sd["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd["g"])))
-
-
 class TestBellmanLossFunctions(unittest.TestCase):
     """Test the Bellman equation loss functions for the Maliar method."""
 
     def setUp(self):
         """Set up using case_11 from conftest - simple consumer problem."""
         # Use case_11 from conftest - simple consumer problem with Bellman grid
-        import conftest
 
         self.case = conftest.case_11
         self.block = self.case["block"]
@@ -542,45 +126,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.assertIn("u", reward)  # case_11 reward variable is "u"
         # Utility can be negative for log(consumption), so just check it's finite
         self.assertTrue(torch.all(torch.isfinite(reward["u"])))
-
-    def test_bellman_equation_loss_function_error_handling(self):
-        """Test error handling in Bellman loss functions."""
-        # Test with block that has no controls
-        no_control_block = model.DBlock(
-            name="no_control",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={"wealth": lambda wealth, income: wealth + income},
-            reward={},
-        )
-        no_control_block.construct_shocks({})
-
-        # Create a dummy value network for error testing
-        def dummy_value_network(wealth):
-            return 10.0 * wealth
-
-        with self.assertRaises(Exception) as context:
-            maliar.get_bellman_equation_loss(
-                ["wealth"], no_control_block, self.discount_factor
-            )
-        self.assertIn("No control variables found in block", str(context.exception))
-
-        # Test with block that has no rewards
-        no_reward_block = model.DBlock(
-            name="no_reward",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={
-                "wealth": lambda wealth, income: wealth + income,
-                "consumption": model.Control(iset=["wealth"], agent="consumer"),
-            },
-            reward={},
-        )
-        no_reward_block.construct_shocks({})
-
-        with self.assertRaises(Exception) as context:
-            maliar.get_bellman_equation_loss(
-                ["wealth"], no_reward_block, self.discount_factor
-            )
-        self.assertIn("No reward variables found in block", str(context.exception))
 
     def test_bellman_equation_loss_with_different_policies(self):
         """Test that Bellman loss function produces different values for different policies."""
@@ -834,10 +379,10 @@ class TestBellmanLossFunctions(unittest.TestCase):
             tolerance=1e-4,
         )
 
-        # Verify that joint training worked
-        self.assertIsNotNone(trained_policy)
-        self.assertIsNotNone(trained_value)
-        self.assertIsNotNone(final_states)
+        # Verify that joint training worked - test meaningful properties
+        self.assertIsInstance(trained_policy, ann.BlockPolicyNet)
+        self.assertIsInstance(trained_value, ann.BlockValueNet)
+        self.assertIsInstance(final_states, grid.Grid)
 
         # Test that the trained policy produces valid outputs
         test_states = case_0["givens"].to_dict()
@@ -851,50 +396,35 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )  # Consumption should be finite
 
 
-def test_get_euler_residual_loss():
-    """Test function placeholder - not implemented yet."""
-    pass
+class TestBlockValueNet(unittest.TestCase):
+    def setUp(self):
+        self.case = conftest.case_11
+        self.test_block = self.case["block"]
+        self.test_block.construct_shocks(self.case["calibration"])
+        self.value_net = BlockValueNet(self.test_block)
 
+    def test_block_value_net_functionality(self):
+        """Test BlockValueNet functionality using conftest case."""
+        # Test value function computation using case_11 variables
+        states_t = {"a": torch.tensor([1.0, 2.0, 3.0])}  # Use case_11 state variable
+        shocks_t = {
+            "theta": torch.tensor([0.5, 0.5, 0.5])
+        }  # Use case_11 shock variable
 
-def test_block_value_net():
-    """Test BlockValueNet functionality."""
-    # Create a test block with multiple state variables
-    test_block = model.DBlock(
-        name="test_multi_state",
-        shocks={"income": Normal(mu=1.0, sigma=0.1)},
-        dynamics={
-            "wealth": lambda wealth, income, consumption: wealth + income - consumption,
-            "capital": lambda capital, investment: capital + investment,
-            "consumption": model.Control(iset=["wealth"], agent="consumer"),
-            "investment": model.Control(iset=["capital"], agent="consumer"),
-            "utility": lambda consumption: torch.log(consumption + 1e-8),
-        },
-        reward={"utility": "consumer"},
-    )
-    test_block.construct_shocks({})
+        values = self.value_net.value_function(
+            states_t, shocks_t, self.case["calibration"]
+        )
 
-    # Create value network - now takes block instead of state_variables
-    value_net = BlockValueNet(test_block)
+        # Check output shape and type
+        self.assertIsInstance(values, torch.Tensor)
+        self.assertEqual(values.shape, (3,))
 
-    # Test value function computation
-    states_t = {"wealth": torch.tensor([1.0, 2.0, 3.0])}
-    shocks_t = {"income": torch.tensor([1.0, 1.0, 1.0])}
+        # Test get_value_function method
+        vf = self.value_net.get_value_function()
+        values2 = vf(states_t, shocks_t, self.case["calibration"])
 
-    values = value_net.value_function(states_t, shocks_t, {})
-
-    # Check output shape and type
-    assert isinstance(values, torch.Tensor)
-    assert values.shape == (3,)
-
-    # Test get_value_function method
-    vf = value_net.get_value_function()
-    values2 = vf(states_t, shocks_t, {})
-
-    # Should give same results
-    assert torch.allclose(values, values2)
-
-
-# Removed test_train_block_value_and_policy_nn() - was only checking callable existence
+        # Should give same results
+        self.assertTrue(torch.allclose(values, values2))
 
 
 class TestBellmanJointTrainingLoop(unittest.TestCase):
@@ -931,10 +461,27 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
             max_iterations=2,  # Keep short for testing
         )
 
-        # Verify both networks were trained
-        self.assertIsNotNone(policy_net)
-        self.assertIsNotNone(value_net)
-        self.assertIsNotNone(states)
+        # Verify both networks were trained - test meaningful properties
+        self.assertIsInstance(policy_net, ann.BlockPolicyNet)
+        self.assertIsInstance(value_net, ann.BlockValueNet)
+
+        # Test that networks can produce outputs (basic functionality)
+        test_states = {"a": torch.tensor([1.0])}
+        test_shocks = {"theta": torch.tensor([0.5])}
+
+        policy_output = policy_net.decision_function(
+            test_states, test_shocks, case_11["calibration"]
+        )
+        value_output = value_net.value_function(
+            test_states, test_shocks, case_11["calibration"]
+        )
+
+        self.assertIsInstance(policy_output, dict)
+        self.assertIsInstance(value_output, torch.Tensor)
+        self.assertTrue(torch.isfinite(value_output).all())
+
+        # Verify final states were updated
+        self.assertIsInstance(states, grid.Grid)
 
     def test_bellman_convergence_tolerance(self):
         """Test the convergence functionality in the Bellman training loop (parallel to maliar test)."""
@@ -977,11 +524,25 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
             tolerance=1e-8,  # Very low tolerance
         )
 
-        # Both should produce valid results
-        self.assertIsNotNone(policy_high_tol)
-        self.assertIsNotNone(value_high_tol)
-        self.assertIsNotNone(policy_low_tol)
-        self.assertIsNotNone(value_low_tol)
+        # Both should produce valid results - test meaningful properties
+        self.assertIsInstance(policy_high_tol, ann.BlockPolicyNet)
+        self.assertIsInstance(value_high_tol, ann.BlockValueNet)
+        self.assertIsInstance(policy_low_tol, ann.BlockPolicyNet)
+        self.assertIsInstance(value_low_tol, ann.BlockValueNet)
+
+        # Test that both networks can produce outputs
+        test_states = {"a": torch.tensor([1.0])}
+        test_shocks = {}  # case_0 has no shocks
+
+        policy_high_output = policy_high_tol.decision_function(
+            test_states, test_shocks, case_0["calibration"]
+        )
+        policy_low_output = policy_low_tol.decision_function(
+            test_states, test_shocks, case_0["calibration"]
+        )
+
+        self.assertIsInstance(policy_high_output, dict)
+        self.assertIsInstance(policy_low_output, dict)
 
     def test_bellman_convergence_early_stopping(self):
         """Test that the Bellman training loop can stop early when convergence is achieved (parallel to maliar test)."""
@@ -1012,7 +573,120 @@ class TestBellmanJointTrainingLoop(unittest.TestCase):
             tolerance=1.0,  # Very high tolerance - should converge immediately
         )
 
-        # Should have converged early
-        self.assertIsNotNone(policy)
-        self.assertIsNotNone(value)
-        self.assertIsNotNone(states)
+        # Should have converged early - test meaningful properties
+        self.assertIsInstance(policy, ann.BlockPolicyNet)
+        self.assertIsInstance(value, ann.BlockValueNet)
+        self.assertIsInstance(states, grid.Grid)
+
+        # Test that networks can produce outputs after training
+        test_states = {"a": torch.tensor([1.0])}
+        test_shocks = {}  # case_0 has no shocks
+
+        policy_output = policy.decision_function(
+            test_states, test_shocks, case_0["calibration"]
+        )
+        value_output = value.value_function(
+            test_states, test_shocks, case_0["calibration"]
+        )
+
+        self.assertIsInstance(policy_output, dict)
+        self.assertIsInstance(value_output, torch.Tensor)
+        self.assertTrue(torch.isfinite(value_output).all())
+
+
+class TestD3AnalyticalApproximation(unittest.TestCase):
+    """Test that neural networks can approximate the D-3 analytical policy solution."""
+
+    def test_d3_analytical_policy_approximation(self):
+        """Test that Bellman training can approximate the D-3 analytical policy solution."""
+
+        # Set up the D-3 model with tensor parameters
+        d3_calibration_tensors = {
+            k: torch.tensor(v, dtype=torch.float32, device=device)
+            if isinstance(v, (int, float))
+            else v
+            for k, v in d3_calibration.items()
+        }
+        d3_block.construct_shocks(d3_calibration_tensors)
+
+        # Get the analytical policy
+        analytical_policy = d3_analytical_policy(d3_calibration)
+
+        # Create test grid for D-3 infinite horizon model
+        # Need both m (current market resources) and a (previous assets that generated m)
+        # Relationship: m = a * R + y, so a = (m - y) / R
+        R = d3_calibration_tensors["R"]
+        y = d3_calibration_tensors["y"]
+
+        # D-3 training grid should provide pre-decision assets 'a'
+        # The model will compute m = a * R + y internally
+        a_min, a_max = 0.0, 8.0  # Assets range that will generate reasonable m values
+
+        test_grid = grid.Grid.from_config(
+            {"a": {"min": a_min, "max": a_max, "count": 25}}
+        )
+
+        # Create Bellman loss function
+        bellman_loss = maliar.get_bellman_equation_loss(
+            test_grid.labels,
+            d3_block,
+            d3_calibration_tensors["DiscFac"],
+            parameters=d3_calibration_tensors,
+        )
+
+        # Train neural networks
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+
+        policy_net, value_net, final_states = maliar.bellman_training_loop(
+            d3_block,
+            bellman_loss,
+            test_grid,
+            d3_calibration_tensors,
+            max_iterations=10,
+            epochs=500,  # Increased for better convergence
+            tolerance=1e-4,
+            random_seed=TEST_SEED,
+        )
+
+        # Test approximation quality - provide pre-decision assets
+        test_a = torch.tensor([1.0, 3.0, 6.0], device=device)
+        test_states = {"a": test_a}  # D-3 pre-decision state
+        test_shocks = {}  # D-3 has no shocks
+
+        # Get neural network policy
+        nn_policy_output = policy_net.decision_function(
+            test_states, test_shocks, d3_calibration_tensors
+        )
+
+        # Get analytical policy - it expects m (cash-on-hand) as input
+        # Compute m from the pre-decision assets a
+        test_m = test_a * R.cpu().item() + y.cpu().item()
+        test_states_for_analytical = {"m": test_m}
+        analytical_output = analytical_policy(
+            test_states_for_analytical, test_shocks, d3_calibration
+        )
+
+        # Compare policies - should be close (ensure same device)
+        nn_consumption = nn_policy_output["c"]
+        analytical_consumption = analytical_output["c"].to(nn_consumption.device)
+
+        # Test that neural network approximation is reasonably close to analytical solution
+        relative_error = torch.abs(
+            (nn_consumption - analytical_consumption) / analytical_consumption
+        )
+        max_relative_error = torch.max(relative_error).item()
+
+        # Allow up to 10% relative error for neural network approximation
+        self.assertLess(
+            max_relative_error,
+            0.10,
+            f"Neural network policy deviates too much from analytical solution. "
+            f"Max relative error: {max_relative_error:.4f}",
+        )
+
+        # Test that both produce finite, positive consumption
+        self.assertTrue(torch.all(nn_consumption > 0))
+        self.assertTrue(torch.all(torch.isfinite(nn_consumption)))
+        self.assertTrue(torch.all(analytical_consumption > 0))
+        self.assertTrue(torch.all(torch.isfinite(analytical_consumption)))
