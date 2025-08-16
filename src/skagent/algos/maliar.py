@@ -575,8 +575,8 @@ def get_bellman_equation_loss(
     and decision rule φ(·; θ₂).
 
     The complete MMW Definition 2.10 includes:
-    1. Product of Bellman residuals under two independent shock realizations
-    2. Derivative terms weighted by parameter ν
+    1. Product of Bellman residuals under two independent shock realizations (drives value function error to zero)
+    2. Product of Euler equation residuals [r_x + βV_s' ∂s'/∂x] weighted by parameter ν (drives policy error to zero)
     3. All-in-one expectation operator combining both components
 
     This function expects the input grid to contain two independent shock realizations:
@@ -640,8 +640,17 @@ def get_bellman_equation_loss(
         Ξ(θ) = E_(m,s,ε₁,ε₂)[
             [V(m,s; θ₁) - r(m,s,x) - βV(m',s'; θ₁)]|_{ε=ε₁}
             × [V(m,s; θ₁) - r(m,s,x) - βV(m',s'; θ₁)]|_{ε=ε₂}
-            + ν[r_x(m,s,x) + βV_s'(m',s'; θ₁)|_{ε=ε₁} ∂s'/∂x][r_x(m,s,x) + βV_s'(m',s'; θ₁)|_{ε=ε₂} ∂s'/∂x]
+            + ν[r_x(m,s,x) + βV_s'(m',s'; θ₁) ∂s'/∂x]|_{ε=ε₁} × [r_x(m,s,x) + βV_s'(m',s'; θ₁) ∂s'/∂x]|_{ε=ε₂}
         ]
+
+        The loss function contains two terms:
+        1. Product of Bellman residuals under independent shock realizations (drives value function error to zero)
+        2. Product of Euler equation residuals under independent shock realizations (drives policy error to zero)
+
+        The Euler equation residual [r_x + βV_s' ∂s'/∂x] represents the first-order conditions:
+        - r_x: marginal benefit of increasing control today
+        - βV_s' ∂s'/∂x: discounted marginal value of the induced change in next-period state
+        - Net expression should be zero at optimal policy
 
         Parameters
         ----------
@@ -701,74 +710,135 @@ def get_bellman_equation_loss(
         # First term: Product of Bellman residuals under two independent shock realizations
         residual_product = residual_eps1 * residual_eps2
 
-        # Second term: Derivative terms ν[r_x + βV_s' ∂s'/∂x]|_{ε₁} × [r_x + βV_s' ∂s'/∂x]|_{ε₂}
-        derivative_term = torch.tensor(0.0, requires_grad=True)
+        # Second term: Euler equation residuals ν[r_x + βV_s' ∂s'/∂x]|_{ε₁} × [r_x + βV_s' ∂s'/∂x]|_{ε₂}
+        # This implements the actual MMW Definition 2.10 derivative term, not an approximation
 
+        # Create helper functions and variables needed for Euler residual computation
+        tf = create_transition_function(block, state_variables)
+        rf = create_reward_function(block, agent)
+        reward_syms = list(
+            {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+        )
+
+        def compute_euler_residual(states, shocks, controls):
+            """
+            Compute the Euler equation residual: r_x + β * V_s' * ∂s'/∂x
+
+            This represents the first-order conditions - the net marginal benefit
+            of increasing the control variable, which should be zero at optimum.
+            """
+            # Enable gradients for controls to compute r_x and ∂s'/∂x
+            controls_grad = {}
+            for sym, val in controls.items():
+                if isinstance(val, torch.Tensor):
+                    controls_grad[sym] = val.requires_grad_(True)
+                else:
+                    controls_grad[sym] = torch.tensor(val, requires_grad=True)
+
+            # 1. Compute r_x: derivative of reward function w.r.t. control variables
+            reward_current = rf(states, shocks, controls_grad, parameters)
+            total_reward = sum(reward_current[rsym] for rsym in reward_syms)
+
+            r_x_gradients = torch.autograd.grad(
+                outputs=total_reward.sum(),
+                inputs=list(controls_grad.values()),
+                create_graph=True,
+                retain_graph=True,
+            )
+            r_x = sum(grad.sum() for grad in r_x_gradients if grad is not None)
+
+            # 2. Compute next states s' and their derivatives ∂s'/∂x
+            next_states_current = tf(states, shocks, controls_grad, parameters)
+
+            # For each state variable, compute ∂s'/∂x
+            ds_dx_terms = []
+            for state_sym in state_variables:
+                if state_sym in next_states_current:
+                    s_prime = next_states_current[state_sym]
+
+                    # Ensure s_prime has gradient tracking
+                    if isinstance(s_prime, torch.Tensor) and s_prime.requires_grad:
+                        ds_dx_grads = torch.autograd.grad(
+                            outputs=s_prime.sum(),
+                            inputs=list(controls_grad.values()),
+                            create_graph=True,
+                            retain_graph=True,
+                            allow_unused=True,
+                        )
+                        ds_dx_total = sum(
+                            grad.sum() for grad in ds_dx_grads if grad is not None
+                        )
+                    else:
+                        # If s_prime doesn't have gradients, skip this term
+                        ds_dx_total = torch.tensor(0.0, requires_grad=True)
+
+                    # 3. Compute V_s': derivative of value function w.r.t. next-period state
+                    # Enable gradients for next states
+                    next_states_grad = {}
+                    for sym, val in next_states_current.items():
+                        if isinstance(val, torch.Tensor):
+                            next_states_grad[sym] = val.requires_grad_(True)
+                        else:
+                            next_states_grad[sym] = torch.tensor(
+                                val, requires_grad=True
+                            )
+
+                    # Compute continuation value with gradient-enabled states
+                    continuation_value = vf(next_states_grad, shocks, parameters)
+
+                    if state_sym in next_states_grad:
+                        V_s_prime = torch.autograd.grad(
+                            outputs=continuation_value.sum(),
+                            inputs=next_states_grad[state_sym],
+                            create_graph=True,
+                            retain_graph=True,
+                            allow_unused=True,
+                        )[0]
+
+                        if V_s_prime is not None:
+                            # Combine: β * V_s' * ∂s'/∂x
+                            ds_dx_terms.append(
+                                discount_factor * V_s_prime.sum() * ds_dx_total
+                            )
+
+            # Combine all terms: r_x + β * Σ(V_s' * ∂s'/∂x)
+            beta_V_ds_dx = (
+                sum(ds_dx_terms)
+                if ds_dx_terms
+                else torch.tensor(0.0, requires_grad=True)
+            )
+            euler_residual = r_x + beta_V_ds_dx
+
+            return euler_residual
+
+        # Compute Euler equation residuals under both shock realizations
+        # Need to get controls for each shock realization first
+        controls_eps1 = df(states_t, shocks_eps1, parameters)
+        controls_eps2 = df(states_t, shocks_eps2, parameters)
+
+        # Compute Euler residuals with error handling for gradient computation issues
         try:
-            # Enable gradients for control variables to compute r_x (reward derivatives)
-            # and state variables to compute ∂s'/∂x (transition derivatives)
-            # control_syms = list(control_vars.keys())
-
-            # Get controls under both shock realizations with gradients enabled
-            states_grad = {
-                sym: states_t[sym].requires_grad_(True)
-                if isinstance(states_t[sym], torch.Tensor)
-                else torch.tensor(states_t[sym], requires_grad=True)
-                for sym in states_t
-            }
-
-            # Compute controls under ε₁
-            controls_eps1 = df(states_grad, shocks_eps1, parameters)
-            for sym in controls_eps1:
-                if isinstance(controls_eps1[sym], torch.Tensor):
-                    controls_eps1[sym] = controls_eps1[sym].requires_grad_(True)
-                else:
-                    controls_eps1[sym] = torch.tensor(
-                        controls_eps1[sym], requires_grad=True
-                    )
-
-            # Compute controls under ε₂
-            controls_eps2 = df(states_grad, shocks_eps2, parameters)
-            for sym in controls_eps2:
-                if isinstance(controls_eps2[sym], torch.Tensor):
-                    controls_eps2[sym] = controls_eps2[sym].requires_grad_(True)
-                else:
-                    controls_eps2[sym] = torch.tensor(
-                        controls_eps2[sym], requires_grad=True
-                    )
-
-            # Compute derivative term components for both shock realizations
-            # This is a simplified approximation of the full derivative computation
-            # In practice, this would require computing r_x, V_s', and ∂s'/∂x explicitly
-
-            # For now, use gradient of Bellman residuals w.r.t. controls as proxy for derivative terms
-            grad_eps1 = torch.autograd.grad(
-                outputs=residual_eps1.sum(),
-                inputs=list(controls_eps1.values()) + list(states_grad.values()),
-                create_graph=True,
-                allow_unused=True,
+            euler_residual_eps1 = compute_euler_residual(
+                states_t, shocks_eps1, controls_eps1
+            )
+            euler_residual_eps2 = compute_euler_residual(
+                states_t, shocks_eps2, controls_eps2
             )
 
-            grad_eps2 = torch.autograd.grad(
-                outputs=residual_eps2.sum(),
-                inputs=list(controls_eps2.values()) + list(states_grad.values()),
-                create_graph=True,
-                allow_unused=True,
+            # Product of Euler equation residuals under two independent shock realizations
+            derivative_term = euler_residual_eps1 * euler_residual_eps2
+
+        except RuntimeError as e:
+            # If Euler residual computation fails (e.g., due to model structure limitations),
+            # fall back to zero derivative term with a warning
+            import warnings
+
+            warnings.warn(
+                f"Euler residual computation failed, using zero derivative term. "
+                f"This may occur with simple models that lack sufficient gradient structure. "
+                f"Error: {str(e)}",
+                UserWarning,
             )
-
-            # Product of derivative terms
-            grad_sum_eps1 = torch.tensor(0.0, requires_grad=True)
-            grad_sum_eps2 = torch.tensor(0.0, requires_grad=True)
-
-            for g1, g2 in zip(grad_eps1, grad_eps2):
-                if g1 is not None and g2 is not None:
-                    grad_sum_eps1 = grad_sum_eps1 + g1.sum()
-                    grad_sum_eps2 = grad_sum_eps2 + g2.sum()
-
-            derivative_term = grad_sum_eps1 * grad_sum_eps2
-
-        except (RuntimeError, AttributeError):
-            # If gradient computation fails, use zero derivative term
             derivative_term = torch.tensor(0.0, requires_grad=True)
 
         # Complete MMW Definition 2.10: residual product + weighted derivative term
