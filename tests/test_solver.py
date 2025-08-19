@@ -27,7 +27,6 @@ class TestSolverFunctions(unittest.TestCase):
     def test_case_0(self):
         cl = CustomLoss(
             static_reward,
-            ["a"],
             case_0["block"],
             parameters=case_0["calibration"],
         )

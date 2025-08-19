@@ -42,7 +42,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_0(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_0["block"],
             0.9,
             1,
@@ -63,7 +62,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_1(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_1["block"],
             0.9,
             1,
@@ -94,7 +92,6 @@ class test_ann_lr(unittest.TestCase):
         Running case 1 with big_t == 2
         """
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_1["block"],
             0.9,
             2,
@@ -121,7 +118,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_2(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_2["block"],
             0.9,
             1,
@@ -145,7 +141,6 @@ class test_ann_lr(unittest.TestCase):
         )
 
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_3["block"],
             0.9,
             1,
@@ -171,7 +166,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_3_2(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_3["block"],
             0.9,
             2,
@@ -197,7 +191,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_5_double_bounded_upper_binds(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_5["block"],
             0.9,
             1,
@@ -221,7 +214,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_6_double_bounded_lower_binds(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_6["block"],
             0.9,
             1,
@@ -245,7 +237,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_7_only_lower_bound(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_7["block"],
             0.9,
             1,
@@ -271,7 +262,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_8_only_upper_bound(self):
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_8["block"],
             0.9,
             1,
@@ -295,7 +285,6 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_9_empty_information_set(self):
         loss_fn = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            ["a"],
             case_9["block"],
             0.9,
             2,
@@ -323,11 +312,10 @@ class test_ann_lr(unittest.TestCase):
         ### Model data
 
         pfblock = pfm.block_no_shock
-        state_variables = ["a", "p"]
 
         ### Loss function
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            state_variables, pfblock, 0.9, 1, parameters=pfm.calibration
+            pfblock, 0.9, 1, parameters=pfm.calibration
         )
 
         ### Setting up the training
@@ -374,7 +362,6 @@ class test_ann_multiple_controls(unittest.TestCase):
             case_10["givens"],
             solver.StaticRewardLoss(
                 case_10["block"],
-                ["a"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
@@ -387,7 +374,6 @@ class test_ann_multiple_controls(unittest.TestCase):
             case_10["givens"],
             solver.StaticRewardLoss(
                 case_10["block"],
-                ["a"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
@@ -403,7 +389,6 @@ class test_ann_multiple_controls(unittest.TestCase):
             case_10["givens"],
             solver.StaticRewardLoss(
                 case_10["block"],
-                ["a"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
@@ -577,7 +562,6 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Step 4: Test that this follows the same pattern as lifetime reward loss
         lifetime_loss = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            self.state_variables,
             self.test_block,  # Also takes a DBlock
             self.discount_factor,
             1,  # big_t

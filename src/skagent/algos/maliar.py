@@ -161,12 +161,12 @@ class EstimatedDiscountedLifetimeRewardLoss:
     parameters
     """
 
-    def __init__(self, state_variables, block, discount_factor, big_t, parameters):
-        self.state_variables = state_variables  # replace with block arrival states
+    def __init__(self, block, discount_factor, big_t, parameters):
         self.block = block
+        self.parameters = parameters
+        self.state_variables = self.block.get_arrival_states(calibration=parameters)
         self.discount_factor = discount_factor
         self.big_t = big_t
-        self.parameters = parameters
 
     def __call__(self, df: callable, input_grid: Grid):
         # convoluted

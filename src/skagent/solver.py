@@ -108,10 +108,10 @@ class StaticRewardLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, block, state_variables, parameters, other_dr=dict()):
+    def __init__(self, block, parameters, other_dr=dict()):
         self.block = block
-        self.state_variables = state_variables  # replace with arrival states from block
         self.parameters = parameters
+        self.state_variables = self.block.get_arrival_states(calibration=parameters)
         self.other_dr = other_dr
 
     def __call__(self, new_dr, input_grid: Grid):
@@ -146,12 +146,10 @@ class CustomLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(
-        self, loss_function, state_variables, block, parameters, other_dr=dict()
-    ):
+    def __init__(self, loss_function, block, parameters, other_dr=dict()):
         self.block = block
-        self.state_variables = state_variables  # replace with arrival states from block
         self.parameters = parameters
+        self.state_variables = self.block.get_arrival_states(calibration=parameters)
         self.other_dr = other_dr
         self.loss_function = loss_function
 

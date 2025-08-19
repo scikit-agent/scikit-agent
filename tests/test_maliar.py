@@ -268,7 +268,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            states_0_n.labels,
             case_4["block"],
             0.9,
             big_t,
@@ -308,7 +307,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            states_0_n.labels,
             case_4["block"],
             0.9,
             big_t,
@@ -380,7 +378,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
-            states_0_n.labels,
             case_4["block"],
             0.9,
             big_t,
