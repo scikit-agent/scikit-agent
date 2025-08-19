@@ -372,9 +372,9 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_policy_nn(
             cpns["c"],
             case_10["givens"],
-            solver.get_static_reward_loss(
-                ["a"],
+            solver.StaticRewardLoss(
                 case_10["block"],
+                ["a"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
@@ -385,9 +385,9 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_policy_nn(
             cpns["d"],
             case_10["givens"],
-            solver.get_static_reward_loss(
-                ["a"],
+            solver.StaticRewardLoss(
                 case_10["block"],
+                ["a"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
@@ -401,9 +401,9 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_policy_nn(
             cpns["c"],
             case_10["givens"],
-            solver.get_static_reward_loss(
-                ["a"],
+            solver.StaticRewardLoss(
                 case_10["block"],
+                ["a"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
