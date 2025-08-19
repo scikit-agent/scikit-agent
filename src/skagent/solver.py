@@ -108,7 +108,7 @@ class StaticRewardLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, block, state_variables, parameters, other_dr):
+    def __init__(self, block, state_variables, parameters, other_dr=dict()):
         self.block = block
         self.state_variables = state_variables  # replace with arrival states from block
         self.parameters = parameters
@@ -138,3 +138,45 @@ class StaticRewardLoss:
             ## Handle multiple decision rules?
         )
         return -r
+
+
+class CustomLoss:
+    """
+    A custom loss function that computes the negative reward for a block,
+    assuming it is executed just once (a non-dynamic model)
+    """
+
+    def __init__(
+        self, loss_function, state_variables, block, parameters, other_dr=dict()
+    ):
+        self.block = block
+        self.state_variables = state_variables  # replace with arrival states from block
+        self.parameters = parameters
+        self.other_dr = other_dr
+        self.loss_function = loss_function
+
+    def __call__(self, new_dr, input_grid: Grid):
+        """
+        new_dr : dict of callable
+        """
+        ## includes the values of state_0 variables, and shocks.
+        given_vals = input_grid.to_dict()
+
+        ## most variable part -- many uses of double shocks
+        shock_vars = self.block.get_shocks()
+        shock_vals = {sym: input_grid[sym] for sym in shock_vars}
+
+        # override any decision rules if necessary
+        fresh_dr = {**self.other_dr, **new_dr}
+
+        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
+        neg_loss = self.loss_function(
+            self.block,
+            fresh_dr,  # useful
+            {
+                sym: given_vals[sym] for sym in self.state_variables
+            },  # replace with arrival states
+            parameters=self.parameters,
+            shocks=shock_vals,
+        )
+        return -neg_loss
