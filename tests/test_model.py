@@ -103,6 +103,23 @@ class test_DBlock(unittest.TestCase):
 
         av({"k": 1, "R": 1.05, "PermGroFac": 1.1, "theta": 1, "CRRA": 2})
 
+    def test_arrival_states(self):
+        a_calibration = {"CRRA", "PermGroFac", "Rfree"}
+        a_arrival_states = self.test_block_A.get_arrival_states(
+            calibration=a_calibration
+        )
+
+        self.assertFalse("CRRA" in a_arrival_states)
+        self.assertFalse("m" in a_arrival_states)
+        self.assertTrue("p" in a_arrival_states)
+
+        c_calibration = {"R", "CRRA", "PermGroFac"}
+        c_arrival_states = self.cblock.get_arrival_states(calibration=c_calibration)
+        self.assertFalse("CRRA" in c_arrival_states)
+        self.assertFalse("theta" in c_arrival_states)
+        self.assertFalse("m" in c_arrival_states)
+        self.assertTrue("k" in c_arrival_states)
+
     def test_attributions(self):
         block_a_attributions = self.test_block_A.get_attributions()
 

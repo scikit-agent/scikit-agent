@@ -17,7 +17,6 @@ Key functions:
 """
 
 import inspect
-from skagent.model import Control
 from skagent.distributions import Distribution
 from sympy.parsing.sympy_parser import parse_expr
 
@@ -62,6 +61,8 @@ def extract_dependencies(rule):
     list
         List of dependency variable names
     """
+    from skagent.model import Control  # TODO: move to separate module
+
     deps = []
 
     if isinstance(rule, Control):
@@ -107,6 +108,8 @@ def extract_formula(rule):
     str
         The formula as string
     """
+    from skagent.model import Control
+
     if isinstance(rule, Control):
         deps = ", ".join(sorted(rule.iset))
         return f"Control({deps})"
