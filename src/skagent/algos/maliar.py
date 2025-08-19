@@ -6,6 +6,7 @@ import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
 import torch
 import skagent.utils as utils
+from torch.autograd import grad
 
 """
 Tools for the implementation of the Maliar, Maliar, and Winant (JME '21) method.
@@ -70,6 +71,28 @@ def create_reward_function(block, agent=None, decision_rules=None):
         }
 
     return reward_function
+
+
+def grad_reward(reward, wrt):
+    """
+    Compute gradients of reward function.
+
+    Parameters
+    ----------
+    reward : dict
+        Pre-computed reward values (dictionary of tensors)
+    wrt : dict
+        Dictionary of variables to compute gradients with respect to
+
+    Returns
+    -------
+    dict
+        Dictionary of gradients for each reward symbol
+    """
+    return {
+        sym: grad(reward[sym], wrt.values(), retain_graph=True, allow_unused=True)[0]
+        for sym in reward
+    }
 
 
 def estimate_discounted_lifetime_reward(

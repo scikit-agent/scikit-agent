@@ -1,4 +1,4 @@
-from conftest import case_1, case_2, case_3, case_4
+from conftest import case_0, case_1, case_2, case_3, case_4
 import numpy as np
 import os
 import skagent.algos.maliar as maliar
@@ -899,6 +899,121 @@ def test_block_value_net():
 
     # Should give same results
     assert torch.allclose(values, values2)
+
+
+def test_grad_reward():
+    """Test the grad_reward function with a known reward function."""
+    from skagent.algos.maliar import grad_reward
+
+    # Use case_1 which has reward u = -(theta - c)^2
+    # The gradient w.r.t. c should be 2*(theta - c)
+    # The gradient w.r.t. theta should be -2*(theta - c)
+
+    block = case_1["block"]
+
+    # Create some test values with requires_grad=True
+    theta = torch.tensor(0.5, requires_grad=True)
+    c = torch.tensor(0.3, requires_grad=True)
+    a = torch.tensor(1.0, requires_grad=True)
+
+    # Create states and controls dictionaries
+    states_t = {"a": a}
+    shocks_t = {"theta": theta}
+    controls_t = {"c": c}
+    parameters = {}
+
+    # Compute reward using the block's reward function
+    rf = maliar.create_reward_function(block)
+    reward = rf(states_t, shocks_t, controls_t, parameters)
+
+    # Test gradient w.r.t. controls (single variable)
+    grad_controls = grad_reward(reward, controls_t)
+
+    # For u = -(theta - c)^2, du/dc = 2*(theta - c)
+    expected_grad_c = 2 * (theta - c)
+
+    assert "u" in grad_controls
+    assert torch.allclose(grad_controls["u"], expected_grad_c, atol=1e-6)
+
+    # Test gradient w.r.t. shocks (need fresh tensors due to grad computation)
+    theta2 = torch.tensor(0.5, requires_grad=True)
+    c2 = torch.tensor(0.3, requires_grad=True)
+    a2 = torch.tensor(1.0, requires_grad=True)
+
+    states_t2 = {"a": a2}
+    shocks_t2 = {"theta": theta2}
+    controls_t2 = {"c": c2}
+
+    reward2 = rf(states_t2, shocks_t2, controls_t2, parameters)
+    grad_shocks = grad_reward(reward2, shocks_t2)
+
+    # For u = -(theta - c)^2, du/dtheta = -2*(theta - c)
+    expected_grad_theta = -2 * (theta2 - c2)
+
+    assert "u" in grad_shocks
+    assert torch.allclose(grad_shocks["u"], expected_grad_theta, atol=1e-6)
+
+    # Test gradient w.r.t. states (should be zero since u doesn't depend on a)
+    theta3 = torch.tensor(0.5, requires_grad=True)
+    c3 = torch.tensor(0.3, requires_grad=True)
+    a3 = torch.tensor(1.0, requires_grad=True)
+
+    states_t3 = {"a": a3}
+    shocks_t3 = {"theta": theta3}
+    controls_t3 = {"c": c3}
+
+    reward3 = rf(states_t3, shocks_t3, controls_t3, parameters)
+    grad_states = grad_reward(reward3, states_t3)
+
+    # For u = -(theta - c)^2, du/da = 0 (u doesn't depend on a)
+    # When allow_unused=True, unused variables return None
+    assert "u" in grad_states
+    assert grad_states["u"] is None  # Gradient is None for unused variables
+
+
+def test_grad_reward_simple():
+    """Test grad_reward with a simpler reward function from case_0."""
+    from skagent.algos.maliar import grad_reward
+
+    # Use case_0 which has reward u = -c^2
+    # The gradient w.r.t. c should be -2*c
+
+    block = case_0["block"]
+
+    # Create test values
+    c = torch.tensor(0.5, requires_grad=True)
+    a = torch.tensor(1.0, requires_grad=True)
+
+    # Create states and controls dictionaries
+    states_t = {"a": a}
+    controls_t = {"c": c}
+    parameters = {}
+
+    # Compute reward using the block's reward function
+    rf = maliar.create_reward_function(block)
+    reward = rf(states_t, {}, controls_t, parameters)  # No shocks in case_0
+
+    # Test gradient w.r.t. controls
+    grad_controls = grad_reward(reward, controls_t)
+
+    # For u = -c^2, du/dc = -2*c
+    expected_grad_c = -2 * c
+
+    assert "u" in grad_controls
+    assert torch.allclose(grad_controls["u"], expected_grad_c, atol=1e-6)
+
+    # Test gradient w.r.t. states (should be None since u doesn't depend on a)
+    c2 = torch.tensor(0.5, requires_grad=True)
+    a2 = torch.tensor(1.0, requires_grad=True)
+
+    states_t2 = {"a": a2}
+    controls_t2 = {"c": c2}
+
+    reward2 = rf(states_t2, {}, controls_t2, parameters)
+    grad_states = grad_reward(reward2, states_t2)
+
+    assert "u" in grad_states
+    assert grad_states["u"] is None  # u doesn't depend on a
 
 
 def test_train_block_value_and_policy_nn():
