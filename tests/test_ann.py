@@ -15,12 +15,10 @@ import os
 import skagent.algos.maliar as maliar
 import skagent.ann as ann
 import skagent.grid as grid
-import skagent.model as model
 import skagent.models.perfect_foresight as pfm
 import skagent.solver as solver
 import torch
 import unittest
-from skagent.distributions import Normal
 
 # Deterministic test seed - change this single value to modify all seeding
 # Using same seed as test_maliar.py for consistency across test suite
@@ -51,8 +49,8 @@ class test_ann_lr(unittest.TestCase):
 
         states_0_N = case_0["givens"]
 
-        bpn = ann.BlockPolicyNet(case_0["block"], width=16)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
+        bpn = ann.BlockPolicyNet(case_0["block"])
+        ann.train_block_policy_nn(bpn, states_0_N, edlrl)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
 
@@ -72,8 +70,8 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_1["givens"][1]
 
-        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        bpn = ann.BlockPolicyNet(case_1["block"])
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             # TODO -- make this from the Grid
@@ -103,8 +101,8 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_1["givens"][2]
 
-        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        bpn = ann.BlockPolicyNet(case_1["block"])
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -131,7 +129,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_2["givens"]
 
         bpn = ann.BlockPolicyNet(case_2["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=100)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         # optimal DR is c = 0 = E[theta]
 
@@ -155,7 +153,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -181,7 +179,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -207,7 +205,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_5["givens"]
 
         bpn = ann.BlockPolicyNet(case_5["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -231,7 +229,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_6["givens"]
 
         bpn = ann.BlockPolicyNet(case_6["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -255,7 +253,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_7["givens"]
 
         bpn = ann.BlockPolicyNet(case_7["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -281,7 +279,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_8["givens"]
 
         bpn = ann.BlockPolicyNet(case_8["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, edlrl)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -305,7 +303,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_9["givens"]
 
         bpn = ann.BlockPolicyNet(case_9["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, loss_fn, epochs=300)
+        ann.train_block_policy_nn(bpn, given_0_N, loss_fn)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -340,7 +338,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
         bpn = ann.BlockPolicyNet(pfblock, width=8)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=100)
+        ann.train_block_policy_nn(bpn, states_0_N, edlrl)
         ## This is just a smoke test.
 
 
@@ -378,7 +376,6 @@ class test_ann_multiple_controls(unittest.TestCase):
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
-            epochs=200,
         )
 
         # train for control_sym2 with decision rule from other net
@@ -391,7 +388,6 @@ class test_ann_multiple_controls(unittest.TestCase):
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
-            epochs=200,
         )
 
         # Train the policy neural network for 'c' again to refine its decision rule.
@@ -407,7 +403,6 @@ class test_ann_multiple_controls(unittest.TestCase):
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
-            epochs=100,
         )
 
         rf = maliar.create_reward_function(
@@ -422,7 +417,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         )
 
 
-class test_ann_value_functions(unittest.TestCase):
+class TestAnnValueFunctions(unittest.TestCase):
     """Test the new value function capabilities in ann.py"""
 
     def setUp(self):
@@ -435,203 +430,89 @@ class test_ann_value_functions(unittest.TestCase):
         # Set CUDA deterministic behavior for reproducible tests
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
-        import skagent.model as model
-        from skagent.distributions import Normal
-
-        # Create a simple consumption-savings model
-        self.test_block = model.DBlock(
-            name="test_value_functions",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={
-                "consumption": model.Control(iset=["wealth"], agent="consumer"),
-                "wealth": lambda wealth, income, consumption: wealth
-                + income
-                - consumption,
-                "utility": lambda consumption: torch.log(consumption + 1e-8)
-                if hasattr(consumption, "device")
-                else torch.log(torch.tensor(consumption) + 1e-8),
-            },
-            reward={"utility": "consumer"},
+        # Use case_1 benchmark problem for value function tests
+        case_1["block"].construct_shocks(
+            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
-        self.test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
-        self.state_variables = ["wealth"]
-        self.discount_factor = 0.95
-        self.parameters = {}
+        self.test_block = case_1["block"]
+        self.state_variables = ["a"]
+        self.discount_factor = 0.9
+        self.parameters = case_1["calibration"]
 
         # Create test grid with two independent shock realizations for Bellman tests
         self.test_grid = grid.Grid.from_dict(
             {
-                "wealth": torch.linspace(1.0, 5.0, 10),
-                "income_0": torch.ones(10),  # Period t shocks
-                "income_1": torch.ones(10) * 1.1,  # Period t+1 shocks (independent)
+                "a": torch.linspace(0.1, 1.0, 10),
+                "theta_0": torch.zeros(10),  # Period t shocks
+                "theta_1": torch.ones(10) * 0.1,  # Period t+1 shocks (independent)
             }
         )
 
     def test_block_value_net_creation(self):
         """Test that BlockValueNet can be created and used."""
-        # Create value network
-        value_net = ann.BlockValueNet(self.test_block, width=16)
+        value_net = ann.BlockValueNet(self.test_block)
 
-        # Test that it correctly identifies state variables
-        self.assertIn("wealth", value_net.state_variables)
-        self.assertNotIn("consumption", value_net.state_variables)  # Control
-        self.assertNotIn("utility", value_net.state_variables)  # Reward
-        self.assertNotIn("income", value_net.state_variables)  # Shock
+        self.assertIn("a", value_net.state_variables)
+        self.assertIn("theta", value_net.state_variables)
+        self.assertNotIn("c", value_net.state_variables)
+        self.assertNotIn("u", value_net.state_variables)
 
-        # Test value function computation (same interface as policy function)
-        states_t = {"wealth": torch.tensor([1.0, 2.0, 3.0])}
-        shocks_t = {"income": torch.tensor([1.0, 1.0, 1.0])}
+        states_t = {"a": torch.tensor([1.0, 2.0, 3.0])}
+        shocks_t = {"theta": torch.tensor([1.0, 1.0, 1.0])}
         values = value_net.value_function(states_t, shocks_t, {})
 
         self.assertIsInstance(values, torch.Tensor)
         self.assertEqual(values.shape, (3,))
 
-        # Test get_value_function method
         vf = value_net.get_value_function()
         values2 = vf(states_t, shocks_t, {})
         self.assertTrue(torch.allclose(values, values2))
 
-    def test_bellman_equation_loss_creation(self):
-        """Test that Bellman equation loss functions can be created."""
-        # Create value network
-        value_net = ann.BlockValueNet(self.test_block, width=16)
-
-        # Create Bellman loss function - this is the key all-in-one loss function
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
-            self.test_block,
-            self.discount_factor,
-            value_net.get_value_function(),
-            self.parameters,
-        )
-
-        # Create a simple decision function
-        def simple_decision_function(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            consumption = 0.3 * wealth
-            return {"consumption": consumption}
-
-        # Test that the loss function works
-        losses = bellman_loss(simple_decision_function, self.test_grid)
-
-        self.assertIsInstance(losses, torch.Tensor)
-        self.assertEqual(losses.shape, (10,))  # Per-sample losses
-        self.assertTrue(torch.all(losses >= 0))  # Squared residuals
-
     def test_train_block_value_nn(self):
         """Test that value networks can be trained."""
-        # Create value network
-        value_net = ann.BlockValueNet(self.test_block, width=8)
+        value_net = ann.BlockValueNet(self.test_block)
 
-        # Create a simple value loss function for testing
         def simple_value_loss(vf, input_grid):
             given_vals = input_grid.to_dict()
-            states_t = {"wealth": given_vals["wealth"]}
+            states_t = {"a": given_vals["a"]}
             shocks_t = {
-                "income": given_vals.get(
-                    "income", torch.zeros_like(given_vals["wealth"])
-                )
+                "theta": given_vals.get("theta_0", torch.zeros_like(given_vals["a"]))
             }
             values = vf(states_t, shocks_t, {})
-            target_values = 2.0 * given_vals["wealth"]  # Linear target
+            target_values = 2.0 * given_vals["a"]
             return (values - target_values) ** 2
 
-        # Test training (just a few epochs)
         trained_net = ann.train_block_value_nn(
-            value_net, self.test_grid, simple_value_loss, epochs=5
+            value_net, self.test_grid, simple_value_loss
         )
 
-        # Check that we get the network back
         self.assertIs(trained_net, value_net)
 
-        # Check that network can still make predictions
-        test_states = {"wealth": torch.tensor([2.0])}
-        test_shocks = {"income": torch.tensor([1.0])}
+        test_states = {"a": torch.tensor([0.5])}
+        test_shocks = {"theta": torch.tensor([0.1])}
         values = trained_net.value_function(test_states, test_shocks, {})
         self.assertIsInstance(values, torch.Tensor)
         self.assertEqual(values.shape, (1,))
 
-    def test_all_in_one_bellman_loss_integration(self):
-        """Test the complete all-in-one Bellman loss function integration."""
-        # This demonstrates the key objective: taking a DBlock and producing
-        # a loss function that represents the value function/Bellman equation form
-
-        # Step 1: Create networks
-        ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
-
-        # Step 2: Create the all-in-one Bellman loss function from DBlock
-        # This is the key all-in-one function that takes a DBlock and produces a loss function
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
-            self.test_block,  # Takes a DBlock - TRUE all-in-one!
-            self.discount_factor,
-            value_net.get_value_function(),  # Use the value network we created
-            self.parameters,
-        )
-        # This produces a loss function representing Bellman equation form
-
-        # Step 3: Test that the loss function can be created (core objective achieved)
-        self.assertTrue(callable(bellman_loss))
-
-        # Step 4: Test that this follows the same pattern as lifetime reward loss
-        lifetime_loss = maliar.get_estimated_discounted_lifetime_reward_loss(
-            self.state_variables,
-            self.test_block,  # Also takes a DBlock
-            self.discount_factor,
-            1,  # big_t
-            self.parameters,
-        )
-        # Both functions: DBlock -> loss function (all-in-one approach)
-
-        self.assertTrue(callable(lifetime_loss))
-
-        # Both functions take a DBlock and produce loss functions - this is the key objective
-        # They represent different forms: lifetime reward vs Bellman equation
-
-    def test_joint_training_function_exists(self):
-        """Test that joint training function exists and is consistent."""
-        # Test that the joint training function exists
-        self.assertTrue(hasattr(ann, "train_block_value_and_policy_nn"))
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
-        # The function follows the same pattern as individual training functions
-        # Signature: train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
-
-        # This enables value function iteration algorithms that need both policy and value updates
-
     def test_joint_training_integration(self):
         """Test joint training integration with Bellman loss functions."""
-        # This demonstrates how to use the joint training function with Bellman losses
+        ann.BlockPolicyNet(self.test_block)
+        ann.BlockValueNet(self.test_block)
 
-        # Step 1: Create networks
-        ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
-
-        # Step 2: Create Bellman loss function
         maliar.get_bellman_equation_loss(
             self.state_variables,
             self.test_block,
             self.discount_factor,
-            value_net.get_value_function(),
-            self.parameters,
+            parameters=self.parameters,
         )
-
-        # Step 3: Test that joint training can be used with the loss function
-        # (Just verify the interface exists - actual training would require careful setup)
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
-        # The pattern is: create networks, create loss functions, then train jointly
-        # train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
 
     def test_value_function_case_scenarios(self):
         """Test value function training with the same case scenarios used for policy testing."""
         # Test value function training with case_0 scenario
-        from conftest import case_0
 
         # Create value network for case_0
-        value_net = ann.BlockValueNet(case_0["block"], width=16)
+        value_net = ann.BlockValueNet(case_0["block"])
 
         # Create a simple value loss function that targets zero (like the policy tests)
         def zero_target_value_loss(vf, input_grid):
@@ -646,7 +527,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Test training (short epochs for testing)
         trained_value_net = ann.train_block_value_nn(
-            value_net, case_0["givens"], zero_target_value_loss, epochs=10
+            value_net, case_0["givens"], zero_target_value_loss
         )
 
         # Verify training completed
@@ -654,10 +535,9 @@ class test_ann_value_functions(unittest.TestCase):
 
     def test_value_function_with_shocks(self):
         """Test value function training with shock scenarios (like case_1)."""
-        from conftest import case_1
 
         # Create value network for case_1
-        value_net = ann.BlockValueNet(case_1["block"], width=16)
+        value_net = ann.BlockValueNet(case_1["block"])
 
         # Create a value loss function that incorporates shock information
         def shock_aware_value_loss(vf, input_grid):
@@ -673,7 +553,7 @@ class test_ann_value_functions(unittest.TestCase):
         # Test training with shock-aware grid
         given_0_N = case_1["givens"][1]
         trained_value_net = ann.train_block_value_nn(
-            value_net, given_0_N, shock_aware_value_loss, epochs=50
+            value_net, given_0_N, shock_aware_value_loss
         )
 
         # Verify training completed and network can make predictions
@@ -685,78 +565,60 @@ class test_ann_value_functions(unittest.TestCase):
 
     def test_value_function_convergence_accuracy(self):
         """Test value function convergence accuracy (similar to policy convergence tests)."""
-        # Create a simple test case where we know the correct value function
-        test_block = model.DBlock(
-            name="convergence_test",
-            shocks={"income": Normal(mu=0.0, sigma=0.1)},
-            dynamics={
-                "wealth": lambda wealth, income, consumption: wealth
-                + income
-                - consumption,
-                "consumption": model.Control(iset=["wealth"], agent="consumer"),
-                "utility": lambda consumption: torch.log(consumption + 1e-8),
-            },
-            reward={"utility": "consumer"},
+        # Use case_1 benchmark problem for convergence testing
+        case_1["block"].construct_shocks(
+            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
-        test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
         # Create value network
-        value_net = ann.BlockValueNet(test_block, width=32)
+        value_net = ann.BlockValueNet(case_1["block"])
 
         # Create a loss function that targets a known linear value function
         def linear_target_loss(vf, input_grid):
             given_vals = input_grid.to_dict()
-            states_t = {"wealth": given_vals["wealth"]}
+            states_t = {"a": given_vals["a"]}
             shocks_t = {
-                "income": given_vals.get(
-                    "income", torch.zeros_like(given_vals["wealth"])
-                )
+                "theta": given_vals.get("theta_0", torch.zeros_like(given_vals["a"]))
             }
             values = vf(states_t, shocks_t, {})
-            # Target a simple linear value function: V(w) = 2*w
-            target_values = 2.0 * given_vals["wealth"]
+            # Target a simple linear value function: V(a) = 2*a
+            target_values = 2.0 * given_vals["a"]
             return (values - target_values) ** 2
 
-        # Create test grid
+        # Create test grid using case_1 structure
         test_grid = grid.Grid.from_dict(
-            {"wealth": torch.linspace(1.0, 10.0, 20), "income": torch.zeros(20)}
+            {"a": torch.linspace(0.1, 1.0, 20), "theta_0": torch.zeros(20)}
         )
 
         # Train with more epochs for convergence
-        trained_net = ann.train_block_value_nn(
-            value_net, test_grid, linear_target_loss, epochs=200
-        )
+        trained_net = ann.train_block_value_nn(value_net, test_grid, linear_target_loss)
 
         # Test convergence accuracy
-        test_states = {"wealth": torch.tensor([5.0])}
+        test_states = {"a": torch.tensor([0.5])}
         predicted_value = trained_net.value_function(
-            test_states, {"income": torch.tensor([0.0])}, {}
+            test_states, {"theta": torch.tensor([0.0])}, {}
         )
-        target_value = 2.0 * test_states["wealth"]
+        target_value = 2.0 * test_states["a"]
 
         # Should converge reasonably close (similar tolerance to policy tests)
         self.assertTrue(torch.allclose(predicted_value, target_value, atol=0.5))
 
     def test_value_function_perfect_foresight(self):
         """Test value function with perfect foresight model (mirrors policy test)."""
-        import skagent.models.perfect_foresight as pfm
 
         # Create value network for perfect foresight model
-        value_net = ann.BlockValueNet(pfm.block_no_shock, width=16)
+        value_net = ann.BlockValueNet(pfm.block_no_shock)
 
         # Check what state variables the value network actually found
         print(
             f"Perfect foresight value network state variables: {value_net.state_variables}"
         )
 
-        # This is a smoke test like the policy version - just verify the network can be created
-        # and can make predictions
         self.assertIsInstance(value_net, ann.BlockValueNet)
         self.assertTrue(len(value_net.state_variables) > 0)
 
         # Test that the value function method exists and can be called
-        vf = value_net.get_value_function()
-        self.assertTrue(callable(vf))
+        value_net.get_value_function()
 
         # Test with a simple state input (just verify no crashes)
 
@@ -767,33 +629,82 @@ class test_ann_value_functions(unittest.TestCase):
         self.assertIsInstance(test_values, torch.Tensor)
         self.assertEqual(test_values.shape, (1,))
 
-        # The main point is that BlockValueNet works with perfect foresight models
-        # This mirrors the policy test pattern of basic smoke testing
+    def test_bellman_equation_loss_with_trained_policy_on_benchmark(self):
+        """Test comprehensive Bellman iteration using the new bellman_training_loop."""
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
 
-    def test_joint_training_comprehensive(self):
-        """Test comprehensive joint training that mirrors policy training patterns."""
-        # Test that joint training function exists and has correct signature
-        self.assertTrue(hasattr(ann, "train_block_value_and_policy_nn"))
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
-        # Create networks
-        policy_net = ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
-
-        # Test that networks can make predictions before training
-        policy_decisions = policy_net.decision_function(
-            {"wealth": torch.tensor([2.0])}, {"income": torch.tensor([1.0])}, {}
+        case_1["block"].construct_shocks(
+            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
-        self.assertIn("consumption", policy_decisions)
-        self.assertIsInstance(policy_decisions["consumption"], torch.Tensor)
 
-        # Test value network predictions
-        test_states = {"wealth": torch.tensor([2.0])}
-        value_estimates = value_net.value_function(
-            test_states, {"income": torch.tensor([1.0])}, {}
+        # Create a unified loss function for joint training (new MMW Definition 2.10 approach)
+        bellman_equation_loss = maliar.get_bellman_equation_loss(
+            ["a"],
+            case_1["block"],
+            0.9,
+            parameters=case_1["calibration"],
         )
-        self.assertIsInstance(value_estimates, torch.Tensor)
-        self.assertEqual(value_estimates.shape, (1,))
 
-        # This demonstrates that the joint training infrastructure exists
-        # The actual training is tested in the individual components
+        # Demonstrate the new bellman_training_loop that trains both networks
+        trained_policy, trained_value, final_states = maliar.bellman_training_loop(
+            block=case_1["block"],
+            loss_function=bellman_equation_loss,
+            states_0_n=case_1["givens"][1],
+            parameters=case_1["calibration"],
+            shock_copies=2,
+            max_iterations=2,  # Keep short for testing
+            tolerance=1e-4,
+            random_seed=TEST_SEED,
+            simulation_steps=1,
+        )
+
+        # Verify both networks are returned and functional
+        self.assertIsInstance(trained_policy, ann.BlockPolicyNet)
+        self.assertIsInstance(trained_value, ann.BlockValueNet)
+        self.assertIsInstance(final_states, grid.Grid)
+
+        # Test that both networks can make predictions
+        test_states = {"a": torch.tensor([1.0, 2.0])}
+        test_shocks = {"theta": torch.tensor([0.1, 0.2])}
+
+        # Policy predictions
+        decisions = trained_policy.decision_function(test_states, test_shocks, {})
+        self.assertIn("c", decisions)
+        self.assertIsInstance(decisions["c"], torch.Tensor)
+        self.assertEqual(decisions["c"].shape, (2,))
+
+        # Value predictions
+        values = trained_value.value_function(test_states, test_shocks, {})
+        self.assertIsInstance(values, torch.Tensor)
+        self.assertEqual(values.shape, (2,))
+
+        # Verify Bellman loss can be computed with final networks
+        bellman_equation_loss = maliar.get_bellman_equation_loss(
+            ["a"],
+            case_1["block"],
+            0.9,
+            parameters=case_1["calibration"],
+        )
+
+        # Create test grid for evaluation
+        eval_grid_dict = case_1["givens"][1].to_dict()
+        eval_grid_dict["theta_1"] = torch.zeros_like(eval_grid_dict["theta_0"])
+        eval_grid = grid.Grid.from_dict(eval_grid_dict)
+
+        residuals = bellman_equation_loss(
+            trained_value.get_value_function(),
+            trained_policy.get_decision_function(),
+            eval_grid,
+        )
+        self.assertIsInstance(residuals, torch.Tensor)
+        self.assertTrue(
+            torch.all(torch.isfinite(residuals))
+        )  # Should be finite (not NaN/inf)
+        # Note: Complete MMW Definition 2.10 can produce negative values due to product of residuals
+
+        # This test demonstrates the complete pipeline addressing issues #100 and #101:
+        # 1. New bellman_training_loop() that mirrors maliar_training_loop signature
+        # 2. Uses unified Bellman loss to train both networks simultaneously
+        # 3. Follows existing patterns and conventions
+        # 4. Demonstrates the comprehensive joint training that was missing before

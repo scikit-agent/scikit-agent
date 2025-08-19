@@ -199,7 +199,7 @@ d3_calibration = {
     "DiscFac": 0.96,
     "CRRA": 2.0,
     "R": 1.03,
-    "y": 1.0,
+    "y": 0.0,  # Set to 0 for analytical solution to be valid
     "description": "D-3: Infinite horizon CRRA perfect foresight",
 }
 
@@ -208,9 +208,9 @@ d3_block = DBlock(
         "name": "d3_infinite_crra",
         "shocks": {},
         "dynamics": {
-            "m": lambda a, R, y: a * R + y,
-            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
-            "a": lambda m, c: m - c,
+            "w": lambda a, R, y: a * R + y,  # Total wealth = assets*return + income
+            "c": Control(["w"], upper_bound=lambda w: w, agent="consumer"),
+            "a": lambda w, c: w - c,  # Next period assets = wealth - consumption
             "u": lambda c, CRRA: torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA)
             / (1 - CRRA)
             if CRRA != 1
@@ -222,7 +222,7 @@ d3_block = DBlock(
 
 
 def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """D-3: c_t = κ*m_t where κ = (R - (βR)^(1/σ))/R"""
+    """D-3: c_t = κ*w_t where κ = (R - (βR)^(1/σ))/R"""
     beta = calibration["DiscFac"]
     R = calibration["R"]
     sigma = calibration["CRRA"]
@@ -236,8 +236,8 @@ def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     kappa = (R - growth_factor) / R
 
     def policy(states, shocks, parameters):
-        m = states["m"]
-        c_optimal = kappa * m
+        w = states["w"]  # Use wealth instead of m
+        c_optimal = kappa * w
         return {"c": c_optimal}
 
     return policy
