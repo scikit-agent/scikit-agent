@@ -147,46 +147,63 @@ def estimate_discounted_lifetime_reward(
     return total_discounted_reward
 
 
-def get_estimated_discounted_lifetime_reward_loss(
-    state_variables, block, discount_factor, big_t, parameters
-):
-    # TODO: Should be able to get 'state variables' from block
-    # Maybe with ZP's analysis modules
+class EstimatedDiscountedLifetimeRewardLoss:
+    """
+    A loss function for a Block that computes the discounted lifetime reward for T time periods.
 
-    # convoluted
-    # TODO: codify this encoding and decoding of the grid into a separate object
-    # It is specifically the EDLR loss function that requires big_t of the shocks.
-    # other AiO loss functions use 2 copies of the shocks only.
-    shock_vars = block.get_shocks()
-    big_t_shock_syms = sum(
-        [[f"{sym}_{t}" for sym in list(shock_vars.keys())] for t in range(big_t)], []
-    )
+    Parameters
+    -----------
 
-    def estimated_discounted_lifetime_reward_loss(df: callable, input_grid: Grid):
+    block: Block
+    discount_factor
+    big_t: int
+        The number of time steps to compute reward for
+    parameters
+    """
+
+    def __init__(self, state_variables, block, discount_factor, big_t, parameters):
+        self.state_variables = state_variables  # replace with block arrival states
+        self.block = block
+        self.discount_factor = discount_factor
+        self.big_t = big_t
+        self.parameters = parameters
+
+    def __call__(self, df: callable, input_grid: Grid):
+        # convoluted
+        shock_vars = self.block.get_shocks()
+        big_t_shock_syms = sum(
+            [
+                [f"{sym}_{t}" for sym in list(shock_vars.keys())]
+                for t in range(self.big_t)
+            ],
+            [],
+        )
+        # TODO: codify this encoding and decoding of the grid into a separate object
+        # It is specifically the EDLR loss function that requires big_t of the shocks.
+        # other AiO loss functions use 2 copies of the shocks only.
+
         # includes the values of state_0 variables, and shocks.
         given_vals = input_grid.to_dict()
 
         shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
         shocks_by_t = {
-            sym: torch.stack([shock_vals[f"{sym}_{t}"] for t in range(big_t)])
+            sym: torch.stack([shock_vals[f"{sym}_{t}"] for t in range(self.big_t)])
             for sym in shock_vars
         }
 
         # block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = estimate_discounted_lifetime_reward(
-            block,
-            discount_factor,
+            self.block,
+            self.discount_factor,
             df,
-            {sym: given_vals[sym] for sym in state_variables},
-            big_t,
-            parameters=parameters,
+            {sym: given_vals[sym] for sym in self.state_variables},
+            self.big_t,
+            parameters=self.parameters,
             agent=None,  # TODO: Pass through the agent?
             shocks_by_t=shocks_by_t,
             # Handle multiple decision rules?
         )
         return -edlr
-
-    return estimated_discounted_lifetime_reward_loss
 
 
 def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: int):

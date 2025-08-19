@@ -41,7 +41,7 @@ class test_ann_lr(unittest.TestCase):
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_case_0(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_0["block"],
             0.9,
@@ -62,7 +62,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_1(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_1["block"],
             0.9,
@@ -93,7 +93,7 @@ class test_ann_lr(unittest.TestCase):
         """
         Running case 1 with big_t == 2
         """
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_1["block"],
             0.9,
@@ -120,7 +120,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_2(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_2["block"],
             0.9,
@@ -144,7 +144,7 @@ class test_ann_lr(unittest.TestCase):
             case_3["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
 
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_3["block"],
             0.9,
@@ -170,7 +170,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03))
 
     def test_case_3_2(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_3["block"],
             0.9,
@@ -196,7 +196,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04))
 
     def test_case_5_double_bounded_upper_binds(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_5["block"],
             0.9,
@@ -220,7 +220,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_6_double_bounded_lower_binds(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_6["block"],
             0.9,
@@ -244,7 +244,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_7_only_lower_bound(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_7["block"],
             0.9,
@@ -270,7 +270,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_8_only_upper_bound(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_8["block"],
             0.9,
@@ -294,7 +294,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_9_empty_information_set(self):
-        loss_fn = maliar.get_estimated_discounted_lifetime_reward_loss(
+        loss_fn = maliar.EstimatedDiscountedLifetimeRewardLoss(
             ["a"],
             case_9["block"],
             0.9,
@@ -326,7 +326,7 @@ class test_ann_lr(unittest.TestCase):
         state_variables = ["a", "p"]
 
         ### Loss function
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             state_variables, pfblock, 0.9, 1, parameters=pfm.calibration
         )
 
@@ -576,7 +576,7 @@ class test_ann_value_functions(unittest.TestCase):
         self.assertTrue(callable(bellman_loss))
 
         # Step 4: Test that this follows the same pattern as lifetime reward loss
-        lifetime_loss = maliar.get_estimated_discounted_lifetime_reward_loss(
+        lifetime_loss = maliar.EstimatedDiscountedLifetimeRewardLoss(
             self.state_variables,
             self.test_block,  # Also takes a DBlock
             self.discount_factor,

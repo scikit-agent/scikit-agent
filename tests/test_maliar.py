@@ -267,7 +267,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             }
         )
 
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             states_0_n.labels,
             case_4["block"],
             0.9,
@@ -307,7 +307,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             }
         )
 
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             states_0_n.labels,
             case_4["block"],
             0.9,
@@ -379,7 +379,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             }
         )
 
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
             states_0_n.labels,
             case_4["block"],
             0.9,
