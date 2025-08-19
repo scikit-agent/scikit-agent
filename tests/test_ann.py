@@ -483,8 +483,7 @@ class test_ann_value_functions(unittest.TestCase):
         value_net = ann.BlockValueNet(self.test_block, width=16)
 
         # Create Bellman loss function - this is the key all-in-one loss function
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        bellman_loss = maliar.BellmanEquationLoss(
             self.test_block,
             self.discount_factor,
             value_net.get_value_function(),
@@ -548,8 +547,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Step 2: Create the all-in-one Bellman loss function from DBlock
         # This is the key all-in-one function that takes a DBlock and produces a loss function
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        bellman_loss = maliar.BellmanEquationLoss(
             self.test_block,  # Takes a DBlock - TRUE all-in-one!
             self.discount_factor,
             value_net.get_value_function(),  # Use the value network we created
@@ -594,8 +592,7 @@ class test_ann_value_functions(unittest.TestCase):
         value_net = ann.BlockValueNet(self.test_block, width=8)
 
         # Step 2: Create Bellman loss function
-        maliar.get_bellman_equation_loss(
-            self.state_variables,
+        maliar.BellmanEquationLoss(
             self.test_block,
             self.discount_factor,
             value_net.get_value_function(),

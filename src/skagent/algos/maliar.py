@@ -475,9 +475,7 @@ def estimate_bellman_residual(
     return bellman_residual
 
 
-def get_bellman_equation_loss(
-    state_variables, block, discount_factor, value_network, parameters={}, agent=None
-):
+class BellmanEquationLoss:
     """
     Creates a Bellman equation loss function for the Maliar method.
 
@@ -513,29 +511,37 @@ def get_bellman_equation_loss(
         A loss function that takes (decision_function, input_grid) and returns
         the Bellman equation residual loss
     """
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
 
-    # Get shock variables
-    shock_vars = block.get_shocks()
-    shock_syms = list(shock_vars.keys())
+    def __init__(
+        self, block, discount_factor, value_network, parameters={}, agent=None
+    ):
+        self.block = block
+        self.parameters = parameters
+        self.arrival_variables = block.get_arrival_states(calibration=parameters)
 
-    # Get control variables
-    control_vars = block.get_controls()
-    if len(control_vars) == 0:
-        raise Exception("No control variables found in block")
+        self.value_network = value_network
 
-    # Get reward variables
-    reward_vars = [
-        sym for sym in block.reward if agent is None or block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
-        raise Exception("No reward variables found in block")
-    reward_vars[0]  # Assume single reward for now
+        self.discount_factor = discount_factor
+        if callable(discount_factor):
+            raise Exception(
+                "Currently only numerical, not state-dependent, discount factors are supported."
+            )
 
-    def bellman_equation_loss(df, input_grid: Grid):
+        # Get shock variables
+        shock_vars = block.get_shocks()
+        self.shock_syms = list(shock_vars.keys())
+
+        self.agent = agent
+        # Test reward variables
+        reward_vars = [
+            sym
+            for sym in block.reward
+            if agent is None or block.reward[sym] == self.agent
+        ]
+        if len(reward_vars) == 0:
+            raise Exception("No reward variables found in block")
+
+    def __call__(self, df, input_grid: Grid):
         """
         Bellman equation loss function.
 
@@ -556,23 +562,21 @@ def get_bellman_equation_loss(
         given_vals = input_grid.to_dict()
 
         # Extract current states and both shock realizations
-        states_t = {sym: given_vals[sym] for sym in state_variables}
-        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in shock_syms}
-        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in shock_syms})
+        states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
+        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
 
         # Use helper function to estimate Bellman residual with combined shock object
         bellman_residual = estimate_bellman_residual(
-            block,
-            discount_factor,
-            value_network,
+            self.block,
+            self.discount_factor,
+            self.value_network,
             df,
             states_t,
             shocks,
-            parameters,
-            agent,
+            self.parameters,
+            self.agent,
         )
 
         # Return squared residual as loss
         return bellman_residual**2
-
-    return bellman_equation_loss

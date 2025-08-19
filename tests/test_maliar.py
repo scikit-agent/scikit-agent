@@ -7,9 +7,6 @@ import skagent.model as model
 import torch
 import unittest
 from skagent.distributions import Normal
-from skagent.algos.maliar import (
-    get_bellman_equation_loss,
-)
 from skagent.ann import BlockValueNet
 
 # Deterministic test seed - change this single value to modify all seeding
@@ -419,15 +416,15 @@ class TestBellmanLossFunctions(unittest.TestCase):
             description="Simple consumption-savings model",
             shocks={"income": Normal(mu=1.0, sigma=0.1)},
             dynamics={
-                "wealth": lambda wealth, income, consumption: wealth
-                + income
-                - consumption,
                 "consumption": model.Control(
                     iset=["wealth"],
                     lower_bound=lambda wealth: 0.0,
                     upper_bound=lambda wealth: wealth,
                     agent="consumer",
                 ),
+                "wealth": lambda wealth, income, consumption: wealth
+                + income
+                - consumption,
                 "utility": lambda consumption: torch.log(
                     consumption + 1e-8
                 ),  # Add small constant to avoid log(0)
@@ -465,7 +462,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             }
         )
 
-    def test_get_bellman_equation_loss(self):
+    def test_bellman_equation_loss(self):
         """Test that the basic Bellman equation loss function can be created."""
 
         # Create a simple value network with correct interface
@@ -473,8 +470,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        loss_function = maliar.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -493,7 +489,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Check that loss is non-negative (squared residual)
         self.assertTrue(torch.all(loss >= 0))
 
-    def test_get_bellman_equation_loss_with_value_network(self):
+    def test_bellman_equation_loss_with_value_network(self):
         """Test that the Bellman loss function with value network can be created."""
 
         # Create a simple value network with correct interface
@@ -501,8 +497,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        loss_function = maliar.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -529,8 +524,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        loss_function = maliar.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -580,12 +574,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         def dummy_value_network(wealth):
             return 10.0 * wealth
 
-        with self.assertRaises(Exception) as context:
-            maliar.get_bellman_equation_loss(
-                ["wealth"], no_control_block, self.discount_factor, dummy_value_network
-            )
-        self.assertIn("No control variables found in block", str(context.exception))
-
         # Test with block that has no rewards
         no_reward_block = model.DBlock(
             name="no_reward",
@@ -599,8 +587,8 @@ class TestBellmanLossFunctions(unittest.TestCase):
         no_reward_block.construct_shocks({})
 
         with self.assertRaises(Exception) as context:
-            maliar.get_bellman_equation_loss(
-                ["wealth"], no_reward_block, self.discount_factor, dummy_value_network
+            maliar.BellmanEquationLoss(
+                no_reward_block, self.discount_factor, dummy_value_network
             )
         self.assertIn("No reward variables found in block", str(context.exception))
 
@@ -622,8 +610,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        loss_function = maliar.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -657,8 +644,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             return 10.0 * wealth  # Linear value function
 
         # Test that it works with the training infrastructure
-        loss_function = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        loss_function = maliar.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -739,8 +725,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
                 10.0 * wealth + 2.0 * income
             )  # Value depends on both wealth and income
 
-        loss_function = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        loss_function = maliar.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -811,7 +796,7 @@ def test_get_euler_residual_loss():
     pass
 
 
-def test_get_bellman_equation_loss_with_value_network():
+def test_bellman_equation_loss_with_value_network():
     """Test Bellman equation loss function with separate value network."""
     # Create a simple test block using the same pattern as the existing tests
     test_block = model.DBlock(
@@ -847,8 +832,8 @@ def test_get_bellman_equation_loss_with_value_network():
         return {"consumption": consumption}
 
     # Create loss function
-    loss_fn = get_bellman_equation_loss(
-        ["wealth"], test_block, 0.95, value_net.get_value_function(), parameters={}
+    loss_fn = maliar.BellmanEquationLoss(
+        test_block, 0.95, value_net.get_value_function(), parameters={}
     )
 
     # Test that loss function works
