@@ -576,6 +576,7 @@ def train_block_policy_nn(
     # criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=0.01)  # Using Adam
 
+    final_loss = None
     for epoch in range(epochs):
         running_loss = 0.0
         optimizer.zero_grad()
@@ -585,11 +586,12 @@ def train_block_policy_nn(
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
+        final_loss = loss.item()  # Store the final loss value
 
         if epoch % 100 == 0:
             print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
 
-    return block_policy_nn
+    return block_policy_nn, final_loss
 
 
 def train_block_value_nn(block_value_nn, inputs: Grid, loss_function, epochs=50):

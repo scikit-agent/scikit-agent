@@ -6,6 +6,7 @@ import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
 import torch
 import skagent.utils as utils
+from skagent.utils import extract_parameters, compute_parameter_difference
 
 """
 Tools for the implementation of the Maliar, Maliar, and Winant (JME '21) method.
@@ -279,24 +280,11 @@ def maliar_training_loop(
     max_iterations: int
         Number of times to perform the training loop, if there is no convergence.
     tolerance: float
-        Convergence tolerance. Training stops when the L2 norm of parameter changes
-        is below this threshold.
+        Convergence tolerance. Training stops when either the L2 norm of parameter changes
+        or the absolute difference in loss is below this threshold.
     simulation_steps : int
         The number of time steps to simulate forward when determining the next omega set for training
     """
-
-    def extract_parameters(network):
-        """Extract all parameters from the network into a flat tensor."""
-        params = []
-        for param in network.parameters():
-            params.append(param.data.view(-1))
-        return torch.cat(params) if params else torch.tensor([])
-
-    def compute_parameter_difference(params1, params2):
-        """Compute the L2 norm of the difference between two parameter vectors."""
-        if len(params1) != len(params2):
-            return float("inf")
-        return torch.norm(params1 - params2).item()
 
     # Step 1. Initialize the algorithm:
 
@@ -317,6 +305,7 @@ def maliar_training_loop(
     # Step 2. Train the machine, i.e., ﬁnd θ that minimizes theempirical risk Xi^n (θ ):
     iteration = 0
     converged = False
+    prev_loss = None
 
     while iteration < max_iterations and not converged:
         # Store current parameters before training
@@ -328,23 +317,44 @@ def maliar_training_loop(
         # ii). construct the gradient ∇ Xi^n (θ ) = 1n ni=1 ∇ ξ (ωi ; θ );
         # iii). update the coeﬃcients θ_hat = θ − λk ∇ Xi^n (θ ) and go to step 2.i);
         # TODO how many epochs? What Adam scale? Passing through variables
-        ann.train_block_policy_nn(bpn, givens, loss_function, epochs=250)
+        bpn, current_loss = ann.train_block_policy_nn(
+            bpn, givens, loss_function, epochs=250
+        )
 
         # Extract parameters after training
         curr_params = extract_parameters(bpn)
 
-        # Check for convergence: || θ_hat − θ ||  < ε
+        # Check for parameter convergence
         param_diff = compute_parameter_difference(prev_params, curr_params)
+        param_converged = param_diff < tolerance
 
-        if param_diff < tolerance:
-            converged = True
-            logging.info(
-                f"Converged after {iteration + 1} iterations. Parameter difference: {param_diff:.2e}"
-            )
+        # Check for loss convergence
+        loss_converged = False
+        if prev_loss is not None:
+            loss_diff = abs(current_loss - prev_loss)
+            loss_converged = loss_diff < tolerance
+
+        # Convergence if either parameter or loss criteria are met
+        converged = param_converged or loss_converged
+
+        # Logging
+        if converged:
+            if param_converged:
+                logging.info(
+                    f"Converged after {iteration + 1} iterations by parameters. Parameter difference: {param_diff:.2e}"
+                )
+            if loss_converged:
+                logging.info(
+                    f"Converged after {iteration + 1} iterations by loss. Loss difference: {loss_diff:.2e}"
+                )
         else:
-            logging.info(
-                f"Iteration {iteration + 1}: Parameter difference: {param_diff:.2e}"
-            )
+            log_msg = f"Iteration {iteration + 1}: Parameter difference: {param_diff:.2e}, Loss: {current_loss:.2e}"
+            if prev_loss is not None:
+                log_msg += f" (loss diff: {abs(current_loss - prev_loss):.2e})"
+            logging.info(log_msg)
+
+        # Update previous loss for next iteration
+        prev_loss = current_loss
 
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         next_states = simulate_forward(
