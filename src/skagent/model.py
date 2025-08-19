@@ -13,6 +13,7 @@ from skagent.distributions import (
 from inspect import signature
 import numpy as np
 from skagent.parser import math_text_to_lambda
+from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
 
 
@@ -179,9 +180,9 @@ def simulate_dynamics(
 
     for sym in dynamics:
         # Using the fact that Python dictionaries are ordered
-        feq = dynamics[sym]
+        update_fn = dynamics[sym]
 
-        if isinstance(feq, Control):
+        if isinstance(update_fn, Control):
             # This tests if the decision rule is age varying.
             # If it is, this will be a vector with the decision rule for each agent.
             if isinstance(dr[sym], np.ndarray):
@@ -204,7 +205,7 @@ def simulate_dynamics(
                     try:
                         vals[sym] = dr[sym](
                             *[
-                                vals[var] for var in feq.iset
+                                vals[var] for var in update_fn.iset
                             ]  # signature(dr[sym]).parameters]
                         )  # TODO: test for signature match with Control
                     except (TypeError, ValueError, KeyError) as e:
@@ -214,7 +215,9 @@ def simulate_dynamics(
                     # easy to compute in any scope...
                     vals[sym] = dr[sym]()
         else:
-            vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
+            vals[sym] = update_fn(
+                *[vals[var] for var in signature(update_fn).parameters]
+            )
 
     return vals
 
@@ -252,6 +255,40 @@ class Block:
         dyn = self.get_dynamics()
 
         return {sym: dyn[sym] for sym in dyn if isinstance(dyn[sym], Control)}
+
+    def get_arrival_states(self, calibration=None):
+        """
+        Return a list of symbols that are:
+          - required by the dynamic equations of the block
+          - dynamic variables themselves (controlled by dynamic equations)
+
+        This is the list of symbols that are implicitly 'lagged',
+        or must be provided 'on arrival'.
+
+        Parameters
+        -----------
+
+        calibration: dict, optional
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+        """
+        maybe_lag_variables = set()
+
+        for sym in reversed(self.dynamics):
+            maybe_lag_variables.discard(sym)  # not a lag if updated dynamically now.
+            rule = self.dynamics[sym]
+            dependencies = extract_dependencies(rule)
+            maybe_lag_variables.update(dependencies)
+
+        for sym in self.shocks:
+            # shocks aren't lag variables
+            maybe_lag_variables.discard(sym)
+
+        if calibration is not None:
+            # these variables are parameters not states
+            for sym in calibration:
+                maybe_lag_variables.discard(sym)
+
+        return maybe_lag_variables
 
 
 @dataclass
@@ -428,8 +465,10 @@ class DBlock(Block):
         rvals = {}
 
         for sym in self.reward:
-            feq = self.dynamics[sym]
-            rvals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
+            update_fn = self.dynamics[sym]
+            rvals[sym] = update_fn(
+                *[vals[var] for var in signature(update_fn).parameters]
+            )
 
         return rvals
 
