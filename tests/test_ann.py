@@ -52,7 +52,7 @@ class test_ann_lr(unittest.TestCase):
         states_0_N = case_0["givens"]
 
         bpn = ann.BlockPolicyNet(case_0["block"], width=16)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
+        ann.train_block_nn(bpn, states_0_N, edlrl, epochs=250)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
 
@@ -73,7 +73,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_1["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
             # TODO -- make this from the Grid
@@ -104,7 +104,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_1["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_1["block"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -131,7 +131,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_2["givens"]
 
         bpn = ann.BlockPolicyNet(case_2["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=100)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=100)
 
         # optimal DR is c = 0 = E[theta]
 
@@ -155,7 +155,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -181,7 +181,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_3["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -645,7 +645,7 @@ class test_ann_value_functions(unittest.TestCase):
             return (values - target_values) ** 2
 
         # Test training (short epochs for testing)
-        trained_value_net = ann.train_block_value_nn(
+        trained_value_net = ann.train_block_nn(
             value_net, case_0["givens"], zero_target_value_loss, epochs=10
         )
 
@@ -723,7 +723,7 @@ class test_ann_value_functions(unittest.TestCase):
         )
 
         # Train with more epochs for convergence
-        trained_net = ann.train_block_value_nn(
+        trained_net = ann.train_block_nn(
             value_net, test_grid, linear_target_loss, epochs=200
         )
 
