@@ -735,30 +735,18 @@ class test_ann_value_functions(unittest.TestCase):
         # The main point is that BlockValueNet works with perfect foresight models
         # This mirrors the policy test pattern of basic smoke testing
 
-    def test_joint_training_comprehensive(self):
+    def test_BlockPolicyValueNet(self):
         """Test comprehensive joint training that mirrors policy training patterns."""
-        # Test that joint training function exists and has correct signature
-        self.assertTrue(hasattr(ann, "train_block_value_and_policy_nn"))
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
 
         # Create networks
-        policy_net = ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
+        policy_value_net = ann.BlockPolicyValueNet(self.test_block)
 
-        # Test that networks can make predictions before training
-        policy_decisions = policy_net.decision_function(
-            {"wealth": torch.tensor([2.0])}, {"income": torch.tensor([1.0])}, {}
-        )
-        self.assertIn("consumption", policy_decisions)
-        self.assertIsInstance(policy_decisions["consumption"], torch.Tensor)
+        drs, vf = policy_value_net.get_policy_and_value_functions(10)
+
+        self.assertIn("consumption", drs)
 
         # Test value network predictions
         test_states = {"wealth": torch.tensor([2.0])}
-        value_estimates = value_net.value_function(
-            test_states, {"income": torch.tensor([1.0])}, {}
-        )
+        value_estimates = vf(test_states, {"income": torch.tensor([1.0])}, {})
         self.assertIsInstance(value_estimates, torch.Tensor)
         self.assertEqual(value_estimates.shape, (1,))
-
-        # This demonstrates that the joint training infrastructure exists
-        # The actual training is tested in the individual components

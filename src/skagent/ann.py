@@ -582,6 +582,9 @@ class BlockPolicyValueNet(Net):
         """
         Initialize the BlockPolicyValueNet.
         """
+        # This network isn't used for anything, because really this wraps two other networks?
+        super().__init__(n_inputs=0, n_outputs=0)  # Call this FIRST
+        # we will overwrite forward() to use the other two networks as well
 
         self.policy_network = BlockPolicyNet(
             block,
