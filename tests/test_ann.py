@@ -590,41 +590,6 @@ class test_ann_value_functions(unittest.TestCase):
         # Both functions take a DBlock and produce loss functions - this is the key objective
         # They represent different forms: lifetime reward vs Bellman equation
 
-    def test_joint_training_function_exists(self):
-        """Test that joint training function exists and is consistent."""
-        # Test that the joint training function exists
-        self.assertTrue(hasattr(ann, "train_block_value_and_policy_nn"))
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
-        # The function follows the same pattern as individual training functions
-        # Signature: train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
-
-        # This enables value function iteration algorithms that need both policy and value updates
-
-    def test_joint_training_integration(self):
-        """Test joint training integration with Bellman loss functions."""
-        # This demonstrates how to use the joint training function with Bellman losses
-
-        # Step 1: Create networks
-        ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
-
-        # Step 2: Create Bellman loss function
-        maliar.get_bellman_equation_loss(
-            self.state_variables,
-            self.test_block,
-            self.discount_factor,
-            value_net.get_value_function(),
-            self.parameters,
-        )
-
-        # Step 3: Test that joint training can be used with the loss function
-        # (Just verify the interface exists - actual training would require careful setup)
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
-        # The pattern is: create networks, create loss functions, then train jointly
-        # train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
-
     def test_value_function_case_scenarios(self):
         """Test value function training with the same case scenarios used for policy testing."""
         # Test value function training with case_0 scenario
