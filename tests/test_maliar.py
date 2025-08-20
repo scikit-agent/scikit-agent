@@ -3,6 +3,7 @@ import numpy as np
 import os
 import skagent.algos.maliar as maliar
 import skagent.grid as grid
+import skagent.loss as loss
 import skagent.model as model
 import torch
 import unittest
@@ -264,7 +265,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             }
         )
 
-        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["block"],
             0.9,
             big_t,
@@ -303,7 +304,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             }
         )
 
-        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["block"],
             0.9,
             big_t,
@@ -374,7 +375,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             }
         )
 
-        edlrl = maliar.EstimatedDiscountedLifetimeRewardLoss(
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["block"],
             0.9,
             big_t,
@@ -470,7 +471,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.BellmanEquationLoss(
+        loss_function = loss.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -478,16 +479,16 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         # Test that the loss function can be called
-        loss = loss_function(self.decision_function, self.test_grid)
+        losses = loss_function(self.decision_function, self.test_grid)
 
         # Check that loss is a tensor
-        self.assertIsInstance(loss, torch.Tensor)
+        self.assertIsInstance(losses, torch.Tensor)
 
         # Check that loss has the right shape (per-sample losses)
-        self.assertEqual(loss.shape, (5,))  # 5 grid points
+        self.assertEqual(losses.shape, (5,))  # 5 grid points
 
         # Check that loss is non-negative (squared residual)
-        self.assertTrue(torch.all(loss >= 0))
+        self.assertTrue(torch.all(losses >= 0))
 
     def test_bellman_equation_loss_with_value_network(self):
         """Test that the Bellman loss function with value network can be created."""
@@ -497,7 +498,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.BellmanEquationLoss(
+        loss_function = loss.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -505,16 +506,16 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         # Test that the loss function can be called
-        loss = loss_function(self.decision_function, self.test_grid)
+        losses = loss_function(self.decision_function, self.test_grid)
 
         # Check that loss is a tensor
-        self.assertIsInstance(loss, torch.Tensor)
+        self.assertIsInstance(losses, torch.Tensor)
 
         # Check that loss has the right shape (per-sample losses)
-        self.assertEqual(loss.shape, (5,))  # 5 grid points
+        self.assertEqual(losses.shape, (5,))  # 5 grid points
 
         # Check that loss is non-negative (squared residual)
-        self.assertTrue(torch.all(loss >= 0))
+        self.assertTrue(torch.all(losses >= 0))
 
     def test_bellman_loss_function_with_agent(self):
         """Test that the Bellman loss function works with agent specification."""
@@ -524,7 +525,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.BellmanEquationLoss(
+        loss_function = loss.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -533,12 +534,12 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         # Test that the loss function can be called
-        loss = loss_function(self.decision_function, self.test_grid)
+        losses = loss_function(self.decision_function, self.test_grid)
 
         # Check that loss is a tensor
-        self.assertIsInstance(loss, torch.Tensor)
-        self.assertEqual(loss.shape, (5,))
-        self.assertTrue(torch.all(loss >= 0))
+        self.assertIsInstance(losses, torch.Tensor)
+        self.assertEqual(losses.shape, (5,))
+        self.assertTrue(torch.all(losses >= 0))
 
     def test_bellman_loss_function_components(self):
         """Test that the Bellman loss function components work correctly."""
@@ -587,7 +588,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         no_reward_block.construct_shocks({})
 
         with self.assertRaises(Exception) as context:
-            maliar.BellmanEquationLoss(
+            loss.BellmanEquationLoss(
                 no_reward_block, self.discount_factor, dummy_value_network
             )
         self.assertIn("No reward variables found in block", str(context.exception))
@@ -610,7 +611,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        loss_function = maliar.BellmanEquationLoss(
+        loss_function = loss.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -618,11 +619,11 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         # Test with the learned decision function
-        loss = loss_function(learned_decision_function, self.test_grid)
+        losses = loss_function(learned_decision_function, self.test_grid)
 
-        self.assertIsInstance(loss, torch.Tensor)
-        self.assertEqual(loss.shape, (5,))
-        self.assertTrue(torch.all(loss >= 0))
+        self.assertIsInstance(losses, torch.Tensor)
+        self.assertEqual(losses.shape, (5,))
+        self.assertTrue(torch.all(losses >= 0))
 
         # Test that loss changes with different decision functions
         def different_decision_function(states_t, shocks_t, parameters):
@@ -633,7 +634,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         loss2 = loss_function(different_decision_function, self.test_grid)
 
         # Losses should be different for different decision functions
-        self.assertFalse(torch.allclose(loss, loss2))
+        self.assertFalse(torch.allclose(losses, loss2))
 
     def test_consistency_with_existing_patterns(self):
         """Test that the new Bellman loss functions follow existing skagent patterns."""
@@ -644,7 +645,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             return 10.0 * wealth  # Linear value function
 
         # Test that it works with the training infrastructure
-        loss_function = maliar.BellmanEquationLoss(
+        loss_function = loss.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -725,7 +726,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
                 10.0 * wealth + 2.0 * income
             )  # Value depends on both wealth and income
 
-        loss_function = maliar.BellmanEquationLoss(
+        loss_function = loss.BellmanEquationLoss(
             self.block,
             self.discount_factor,
             simple_value_network,
@@ -832,7 +833,7 @@ def test_bellman_equation_loss_with_value_network():
         return {"consumption": consumption}
 
     # Create loss function
-    loss_fn = maliar.BellmanEquationLoss(
+    loss_fn = loss.BellmanEquationLoss(
         test_block, 0.95, value_net.get_value_function(), parameters={}
     )
 
