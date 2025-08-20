@@ -405,6 +405,10 @@ class BlockPolicyNet(Net):
 
         return df
 
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_decision_rule(length=length)
+
     def get_decision_rule(self, length=None):
         """
         Returns the decision rule corresponding to this neural network.
@@ -551,6 +555,10 @@ class BlockValueNet(Net):
 
         return vf
 
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_value_function()
+
 
 ###########
 # Training Nets
@@ -567,6 +575,27 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
     if hasattr(losses, "to"):  # slow, clumsy
         losses = losses.to(device)
     return losses.mean()
+
+
+def train_block_nn(block_policy_nn, inputs: Grid, loss_function: Callable, epochs=50):
+    # to change
+    # criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=0.01)  # Using Adam
+
+    for epoch in range(epochs):
+        running_loss = 0.0
+        optimizer.zero_grad()
+        loss = aggregate_net_loss(
+            inputs, block_policy_nn.get_core_function(length=inputs.n()), loss_function
+        )
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+
+        if epoch % 100 == 0:
+            print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
+
+    return block_policy_nn
 
 
 def train_block_policy_nn(
