@@ -366,7 +366,7 @@ def maliar_training_loop(
 def estimate_bellman_residual(
     block,
     discount_factor,
-    value_network,
+    value_function,
     df,
     states_t,
     shocks,
@@ -386,7 +386,7 @@ def estimate_bellman_residual(
         The model block containing dynamics, rewards, and shocks
     discount_factor : float
         The discount factor β
-    value_network : callable
+    value_function : callable
         A value function that takes state variables and returns value estimates
     df : callable
         Decision function that returns controls given states and shocks
@@ -431,7 +431,7 @@ def estimate_bellman_residual(
     reward_sym = reward_vars[0]  # Assume single reward for now
 
     # Get current value estimates (using period t shocks)
-    current_values = value_network(states_t, shocks_t, parameters)
+    current_values = value_function(states_t, shocks_t, parameters)
 
     # Get controls from decision function (using period t shocks)
     controls_t = df(states_t, shocks_t, parameters)
@@ -447,7 +447,7 @@ def estimate_bellman_residual(
     next_states = tf(states_t, shocks_t, controls_t, parameters)
 
     # Compute continuation value using value network (using period t+1 shocks)
-    continuation_values = value_network(next_states, shocks_t_plus_1, parameters)
+    continuation_values = value_function(next_states, shocks_t_plus_1, parameters)
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
