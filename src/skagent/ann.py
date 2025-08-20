@@ -560,6 +560,67 @@ class BlockValueNet(Net):
         return self.get_value_function()
 
 
+class BlockPolicyValueNet(Net):
+    """
+    A neural network for approximating policy and value functions in dynamic control problems.
+
+    This network takes state variables as input and outputs both policy (control values) and value estimates.
+
+    It's designed to work with the Bellman equation loss functions in the Maliar method.
+    Inherits from Net to provide configurable architecture.
+
+    Parameters
+    ----------
+    block : model.DBlock
+        The model block containing state variables and dynamics
+    control_sym : string
+        Control variable symbol.
+    apply_open_bounds : bool, optional
+        If True, then the network forward output is normalized by the upper and/or lower bounds,
+        computed as a function of the input tensor. These bounds are "open" because output
+        can be arbitrarily close to, but not equal to, the bounds. Default is True.
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    **kwargs
+        Additional keyword arguments passed to Net. See Net class
+        documentation for all available options including width, activation, transform, init_seed, copy_weights_from, etc.
+    """
+
+    def __init__(self, block, control_sym=None, apply_open_bounds=True, **kwargs):
+        """
+        Initialize the BlockPolicyValueNet.
+        """
+
+        self.policy_network = BlockPolicyNet(
+            block,
+            control_sym=control_sym,
+            apply_open_bounds=apply_open_bounds,
+            **kwargs,
+        )
+        self.value_network = BlockValueNet(block, control_sym=control_sym, **kwargs)
+
+    def get_policy_and_value_functions(self, length=None):
+        """
+        Get a callable policy and value function for use with loss functions.
+
+        Returns
+        -------
+        callable
+            A function that takes states, shocks, and parameters and returns value estimates
+        """
+
+        def pvf(states_t, shocks_t={}, parameters={}):
+            return self.value_network.value_function(states_t, shocks_t, parameters)
+
+        return self.policy_network.get_decision_rule(length=length), pvf
+
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_policy_and_value_functions(length=length)
+
+
 ###########
 # Training Nets
 
