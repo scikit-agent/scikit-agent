@@ -257,15 +257,9 @@ class BlockPolicyNet(Net):
         The symbol for the control variable.
     width : int, optional
         Width of hidden layers. Default is 32.
-    n_layers : int, optional
-        Number of hidden layers (1-10). Default is 2.
-    activation : str, list, callable, or None, optional
-        Activation function(s). See Net documentation for details. Default is 'silu'.
-    transform : str, list, callable, or None, optional
-        Output transformation. See Net documentation for details. Default is None.
     **kwargs
         Additional keyword arguments passed to Net. See Net class
-        documentation for all available options including init_seed, copy_weights_from, etc.
+        documentation for all available options including activation, transform, n_layers, init_seed, copy_weights_from, etc.
     """
 
     def __init__(
@@ -465,13 +459,9 @@ class BlockValueNet(Net):
         Number of hidden layers (1-10). Default is 2.
     control_sym : string
         Control variable symbol.
-    activation : str, list, callable, or None, optional
-        Activation function(s). See Net documentation for details. Default is 'silu'.
-    transform : str, list, callable, or None, optional
-        Output transformation. See Net documentation for details. Default is None.
     **kwargs
         Additional keyword arguments passed to Net. See Net class
-        documentation for all available options including init_seed, copy_weights_from, etc.
+        documentation for all available options including activation, transform, init_seed, copy_weights_from, etc.
     """
 
     def __init__(self, block, control_sym=None, width: int = 32, **kwargs):
