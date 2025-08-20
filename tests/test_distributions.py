@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+import torch
 
 from skagent.distributions import (
     Bernoulli,
@@ -22,9 +23,18 @@ from skagent.distributions import (
     expected,
 )
 
+# Deterministic test seed - change this single value to modify all seeding
+# Using same seed as test_maliar.py for consistency across test suite
+TEST_SEED = 10077693
+
 
 class TestDistributions(unittest.TestCase):
     """Test cases for the distribution classes that replace HARK distributions"""
+
+    def setUp(self):
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
 
     def test_normal_scipy(self):
         """Test Normal distribution with scipy backend"""
@@ -131,9 +141,9 @@ class TestDistributions(unittest.TestCase):
     def test_uniform_custom_range(self):
         """Test Uniform distribution with custom range"""
         u = Uniform(-2, 3, backend="scipy")
-        samples = u.draw(1000)
+        samples = u.draw(10000)
 
-        assert len(samples) == 1000
+        assert len(samples) == 10000
         assert all(-2 <= s <= 3 for s in samples)  # All samples should be in [-2, 3]
         # Mean should be close to 0.5
         assert np.isclose(np.mean(samples), 0.5, atol=0.1)
