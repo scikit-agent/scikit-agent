@@ -1,5 +1,5 @@
 import numpy as np
-from skagent.algos.maliar import (
+from skagent.bellman import (
     create_decision_function,
     create_reward_function,
     estimate_discounted_lifetime_reward,
