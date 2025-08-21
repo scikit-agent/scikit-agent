@@ -202,7 +202,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_5["givens"]
 
         bpn = ann.BlockPolicyNet(case_5["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -225,7 +225,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_6["givens"]
 
         bpn = ann.BlockPolicyNet(case_6["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -248,7 +248,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_7["givens"]
 
         bpn = ann.BlockPolicyNet(case_7["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -273,7 +273,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_8["givens"]
 
         bpn = ann.BlockPolicyNet(case_8["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -296,7 +296,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_9["givens"]
 
         bpn = ann.BlockPolicyNet(case_9["block"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, loss_fn, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, loss_fn, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -330,7 +330,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
         bpn = ann.BlockPolicyNet(pfblock, width=8)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=100)
+        ann.train_block_nn(bpn, states_0_N, edlrl, epochs=100)
         ## This is just a smoke test.
 
 
@@ -359,7 +359,7 @@ class test_ann_multiple_controls(unittest.TestCase):
 
         # train for control_sym1 with decision rule from the other net
         # for 'c'
-        ann.train_block_policy_nn(
+        ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
             solver.StaticRewardLoss(
@@ -371,7 +371,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         )
 
         # train for control_sym2 with decision rule from other net
-        ann.train_block_policy_nn(
+        ann.train_block_nn(
             cpns["d"],
             case_10["givens"],
             solver.StaticRewardLoss(
@@ -386,7 +386,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         # This step ensures that 'c' is optimized with the updated decision rules
         # from the other networks, improving the overall policy performance.
 
-        ann.train_block_policy_nn(
+        ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
             solver.StaticRewardLoss(
@@ -524,7 +524,7 @@ class test_ann_value_functions(unittest.TestCase):
             return (values - target_values) ** 2
 
         # Test training (just a few epochs)
-        trained_net = ann.train_block_value_nn(
+        trained_net = ann.train_block_nn(
             value_net, self.test_grid, simple_value_loss, epochs=5
         )
 
@@ -585,7 +585,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Test training with shock-aware grid
         given_0_N = case_1["givens"][1]
-        trained_value_net = ann.train_block_value_nn(
+        trained_value_net = ann.train_block_nn(
             value_net, given_0_N, shock_aware_value_loss, epochs=50
         )
 

@@ -594,7 +594,7 @@ class BlockPolicyValueNet(Net):
         )
         self.value_network = BlockValueNet(block, control_sym=control_sym, **kwargs)
 
-    def get_policy_and_value_functions(self, length=None):
+    def get_policy_and_value_functions(self, length):
         """
         Get a callable policy and value function for use with loss functions.
 
@@ -611,7 +611,7 @@ class BlockPolicyValueNet(Net):
 
     def get_core_function(self, length=None):
         # consider making this an abstract method in a base class
-        return self.get_policy_and_value_functions(length=length)
+        return self.get_policy_and_value_functions(length)
 
 
 ###########
@@ -650,72 +650,6 @@ def train_block_nn(block_policy_nn, inputs: Grid, loss_function: Callable, epoch
             print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
 
     return block_policy_nn
-
-
-def train_block_policy_nn(
-    block_policy_nn, inputs: Grid, loss_function: Callable, epochs=50
-):
-    # to change
-    # criterion = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=0.01)  # Using Adam
-
-    for epoch in range(epochs):
-        running_loss = 0.0
-        optimizer.zero_grad()
-        loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_decision_rule(length=inputs.n()), loss_function
-        )
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item()
-
-        if epoch % 100 == 0:
-            print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
-
-    return block_policy_nn
-
-
-def train_block_value_nn(block_value_nn, inputs: Grid, loss_function, epochs=50):
-    """
-    Train a BlockValueNet using a value function loss.
-
-    Parameters
-    ----------
-    block_value_nn : BlockValueNet
-        The value network to train
-    inputs : Grid
-        Input grid containing state variables
-    loss_function : callable
-        Loss function that takes (value_function, input_grid) and returns loss
-    epochs : int, optional
-        Number of training epochs, by default 50
-
-    Returns
-    -------
-    BlockValueNet
-        The trained value network
-    """
-    # to change
-    # criterion = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(block_value_nn.parameters(), lr=0.01)  # Using Adam
-
-    for epoch in range(epochs):
-        running_loss = 0.0
-        optimizer.zero_grad()
-
-        # Use aggregate_net_loss for consistency with policy training
-        # For value networks, we pass the value function instead of decision function
-        loss = aggregate_net_loss(
-            inputs, block_value_nn.get_value_function(), loss_function
-        )
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item()
-
-        if epoch % 100 == 0:
-            print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
-
-    return block_value_nn
 
 
 def train_block_value_and_policy_nn(
