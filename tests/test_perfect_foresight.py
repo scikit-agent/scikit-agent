@@ -31,7 +31,7 @@ import unittest
 import torch
 import numpy as np
 
-import skagent.algos.maliar as maliar
+import skagent.bellman as bellman
 import skagent.models.perfect_foresight as pfm
 from skagent.models.benchmarks import (
     get_benchmark_model,
@@ -178,7 +178,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                     return policy(states, shocks, calibration)
 
                 # Numerical solution
-                numerical = maliar.estimate_discounted_lifetime_reward(
+                numerical = bellman.estimate_discounted_lifetime_reward(
                     block,
                     calibration["DiscFac"],
                     policy_with_calibration,
@@ -215,7 +215,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
             with self.subTest(big_t=big_t):
                 # D-3 model needs both 'a' (assets) and 'm' (cash-on-hand)
                 initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
-                numerical = maliar.estimate_discounted_lifetime_reward(
+                numerical = bellman.estimate_discounted_lifetime_reward(
                     block,
                     calibration["DiscFac"],
                     policy,
@@ -236,7 +236,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         pfblock = pfm.block_no_shock
 
         # This should work without throwing an exception
-        result = maliar.estimate_discounted_lifetime_reward(
+        result = bellman.estimate_discounted_lifetime_reward(
             pfblock,
             0.96,
             lambda s, sh, p: {"c": 0.5 * s["a"]},
@@ -279,7 +279,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
             # D-3 model needs both 'a' (assets) and 'm' (cash-on-hand)
             cash_on_hand = 2.0
             initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
-            reward = maliar.estimate_discounted_lifetime_reward(
+            reward = bellman.estimate_discounted_lifetime_reward(
                 block,
                 calibration["DiscFac"],
                 policy,
@@ -491,7 +491,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         pfblock = pfm.block_no_shock
 
         # This should work without throwing an exception
-        result = maliar.estimate_discounted_lifetime_reward(
+        result = bellman.estimate_discounted_lifetime_reward(
             pfblock,
             0.96,
             lambda s, sh, p: {"c": 0.5 * s["a"]},
