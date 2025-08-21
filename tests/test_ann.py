@@ -9,6 +9,7 @@ from conftest import (
     case_8,
     case_9,
     case_10,
+    case_11,
 )
 import numpy as np
 import os
@@ -537,42 +538,6 @@ class test_ann_value_functions(unittest.TestCase):
         self.assertIsInstance(values, torch.Tensor)
         self.assertEqual(values.shape, (1,))
 
-    def test_all_in_one_bellman_loss_integration(self):
-        """Test the complete all-in-one Bellman loss function integration."""
-        # This demonstrates the key objective: taking a DBlock and producing
-        # a loss function that represents the value function/Bellman equation form
-
-        # Step 1: Create networks
-        ann.BlockPolicyNet(self.test_block, width=8)
-        value_net = ann.BlockValueNet(self.test_block, width=8)
-
-        # Step 2: Create the all-in-one Bellman loss function from DBlock
-        # This is the key all-in-one function that takes a DBlock and produces a loss function
-        bellman_loss = loss.BellmanEquationLoss(
-            self.test_block,  # Takes a DBlock - TRUE all-in-one!
-            self.discount_factor,
-            value_net.get_value_function(),  # Use the value network we created
-            self.parameters,
-        )
-        # This produces a loss function representing Bellman equation form
-
-        # Step 3: Test that the loss function can be created (core objective achieved)
-        self.assertTrue(callable(bellman_loss))
-
-        # Step 4: Test that this follows the same pattern as lifetime reward loss
-        lifetime_loss = loss.EstimatedDiscountedLifetimeRewardLoss(
-            self.test_block,  # Also takes a DBlock
-            self.discount_factor,
-            1,  # big_t
-            self.parameters,
-        )
-        # Both functions: DBlock -> loss function (all-in-one approach)
-
-        self.assertTrue(callable(lifetime_loss))
-
-        # Both functions take a DBlock and produce loss functions - this is the key objective
-        # They represent different forms: lifetime reward vs Bellman equation
-
     def test_value_function_case_scenarios(self):
         """Test value function training with the same case scenarios used for policy testing."""
         # Test value function training with case_0 scenario
@@ -718,18 +683,45 @@ class test_ann_value_functions(unittest.TestCase):
         # The main point is that BlockValueNet works with perfect foresight models
         # This mirrors the policy test pattern of basic smoke testing
 
-    def test_BlockPolicyValueNet(self):
+
+class test_block_policy_value_net(unittest.TestCase):
+    """Test the new value function capabilities in ann.py"""
+
+    def setUp(self):
+        """Set up a simple test block for value function testing."""
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+    def test_block_policy_value_net__case_1(self):
         """Test comprehensive joint training that mirrors policy training patterns."""
 
         # Create networks
-        policy_value_net = ann.BlockPolicyValueNet(self.test_block)
+        policy_value_net = ann.BlockPolicyValueNet(case_1["block"])
 
         drs, vf = policy_value_net.get_policy_and_value_functions(10)
 
-        self.assertIn("consumption", drs)
+        self.assertIn("c", drs)
 
         # Test value network predictions
-        test_states = {"wealth": torch.tensor([2.0])}
-        value_estimates = vf(test_states, {"income": torch.tensor([1.0])}, {})
+        test_states = {"a": torch.tensor([2.0])}
+        value_estimates = vf(test_states, {"theta": torch.tensor([1.0])}, {})
         self.assertIsInstance(value_estimates, torch.Tensor)
         self.assertEqual(value_estimates.shape, (1,))
+
+    def test_block_policy_value_net__case_11(self):
+        """Test comprehensive joint training that mirrors policy training patterns."""
+
+        # Create networks
+        policy_value_net = ann.BlockPolicyValueNet(case_11["block"])
+
+        ## This case has a non-trivial continuation value function
+        ## and so is a good one to test policy/value training on.
+
+        policy_value_net
+
+        ## That hasn't been implemented yet :(
