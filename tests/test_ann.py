@@ -12,10 +12,10 @@ from conftest import (
 )
 import numpy as np
 import os
-import skagent.algos.maliar as maliar
 import skagent.ann as ann
 import skagent.bellman as bellman
 import skagent.grid as grid
+import skagent.loss as loss
 import skagent.model as model
 import skagent.models.perfect_foresight as pfm
 import skagent.solver as solver
@@ -42,8 +42,7 @@ class test_ann_lr(unittest.TestCase):
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_case_0(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_0["block"],
             0.9,
             1,
@@ -63,8 +62,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_1(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_1["block"],
             0.9,
             1,
@@ -94,8 +92,7 @@ class test_ann_lr(unittest.TestCase):
         """
         Running case 1 with big_t == 2
         """
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_1["block"],
             0.9,
             2,
@@ -121,8 +118,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_2(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_2["block"],
             0.9,
             1,
@@ -145,8 +141,7 @@ class test_ann_lr(unittest.TestCase):
             case_3["calibration"], rng=np.random.default_rng(TEST_SEED)
         )
 
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_3["block"],
             0.9,
             1,
@@ -171,8 +166,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03))
 
     def test_case_3_2(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_3["block"],
             0.9,
             2,
@@ -197,8 +191,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04))
 
     def test_case_5_double_bounded_upper_binds(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_5["block"],
             0.9,
             1,
@@ -221,8 +214,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_6_double_bounded_lower_binds(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_6["block"],
             0.9,
             1,
@@ -245,8 +237,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_7_only_lower_bound(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_7["block"],
             0.9,
             1,
@@ -271,8 +262,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_8_only_upper_bound(self):
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_8["block"],
             0.9,
             1,
@@ -295,8 +285,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_9_empty_information_set(self):
-        loss_fn = maliar.get_estimated_discounted_lifetime_reward_loss(
-            ["a"],
+        loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_9["block"],
             0.9,
             2,
@@ -324,11 +313,10 @@ class test_ann_lr(unittest.TestCase):
         ### Model data
 
         pfblock = pfm.block_no_shock
-        state_variables = ["a", "p"]
 
         ### Loss function
-        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
-            state_variables, pfblock, 0.9, 1, parameters=pfm.calibration
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
+            pfblock, 0.9, 1, parameters=pfm.calibration
         )
 
         ### Setting up the training
@@ -373,8 +361,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_policy_nn(
             cpns["c"],
             case_10["givens"],
-            solver.get_static_reward_loss(
-                ["a"],
+            solver.StaticRewardLoss(
                 case_10["block"],
                 case_10["calibration"],
                 dict_of_decision_rules,
@@ -386,8 +373,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_policy_nn(
             cpns["d"],
             case_10["givens"],
-            solver.get_static_reward_loss(
-                ["a"],
+            solver.StaticRewardLoss(
                 case_10["block"],
                 case_10["calibration"],
                 dict_of_decision_rules,
@@ -402,8 +388,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_policy_nn(
             cpns["c"],
             case_10["givens"],
-            solver.get_static_reward_loss(
-                ["a"],
+            solver.StaticRewardLoss(
                 case_10["block"],
                 case_10["calibration"],
                 dict_of_decision_rules,
@@ -499,8 +484,7 @@ class test_ann_value_functions(unittest.TestCase):
         value_net = ann.BlockValueNet(self.test_block, width=16)
 
         # Create Bellman loss function - this is the key all-in-one loss function
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        bellman_loss = loss.BellmanEquationLoss(
             self.test_block,
             self.discount_factor,
             value_net.get_value_function(),
@@ -564,8 +548,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Step 2: Create the all-in-one Bellman loss function from DBlock
         # This is the key all-in-one function that takes a DBlock and produces a loss function
-        bellman_loss = maliar.get_bellman_equation_loss(
-            self.state_variables,
+        bellman_loss = loss.BellmanEquationLoss(
             self.test_block,  # Takes a DBlock - TRUE all-in-one!
             self.discount_factor,
             value_net.get_value_function(),  # Use the value network we created
@@ -577,8 +560,7 @@ class test_ann_value_functions(unittest.TestCase):
         self.assertTrue(callable(bellman_loss))
 
         # Step 4: Test that this follows the same pattern as lifetime reward loss
-        lifetime_loss = maliar.get_estimated_discounted_lifetime_reward_loss(
-            self.state_variables,
+        lifetime_loss = loss.EstimatedDiscountedLifetimeRewardLoss(
             self.test_block,  # Also takes a DBlock
             self.discount_factor,
             1,  # big_t
@@ -611,8 +593,7 @@ class test_ann_value_functions(unittest.TestCase):
         value_net = ann.BlockValueNet(self.test_block, width=8)
 
         # Step 2: Create Bellman loss function
-        maliar.get_bellman_equation_loss(
-            self.state_variables,
+        loss.BellmanEquationLoss(
             self.test_block,
             self.discount_factor,
             value_net.get_value_function(),
