@@ -2,6 +2,7 @@ from conftest import case_1, case_2, case_3, case_4
 import numpy as np
 import os
 import skagent.algos.maliar as maliar
+import skagent.bellman as bellman
 import skagent.grid as grid
 import skagent.loss as loss
 import skagent.model as model
@@ -44,7 +45,7 @@ class TestSolverFunctions(unittest.TestCase):
         self.block = model.DBlock(**block_data)
 
     def test_create_transition_function(self):
-        transition_function = maliar.create_transition_function(self.block, ["a", "e"])
+        transition_function = bellman.create_transition_function(self.block, ["a", "e"])
 
         states_1 = transition_function(states_0, {}, decisions, parameters=parameters)
 
@@ -52,14 +53,14 @@ class TestSolverFunctions(unittest.TestCase):
         self.assertEqual(states_1["e"], 0.1)
 
     def test_create_decision_function(self):
-        decision_function = maliar.create_decision_function(self.block, decision_rules)
+        decision_function = bellman.create_decision_function(self.block, decision_rules)
 
         decisions_0 = decision_function(states_0, {}, parameters=parameters)
 
         self.assertEqual(decisions_0["c"], 0.5)
 
     def test_create_reward_function(self):
-        reward_function = maliar.create_reward_function(self.block)
+        reward_function = bellman.create_reward_function(self.block)
 
         reward_0 = reward_function(states_0, {}, decisions, parameters=parameters)
 
@@ -544,7 +545,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
     def test_bellman_loss_function_components(self):
         """Test that the Bellman loss function components work correctly."""
         # Test transition function
-        tf = maliar.create_transition_function(self.block, ["wealth"])
+        tf = bellman.create_transition_function(self.block, ["wealth"])
         states_t = {"wealth": torch.tensor([1.0, 2.0])}
         shocks_t = {"income": torch.tensor([1.0, 1.0])}
         controls_t = {"consumption": torch.tensor([0.5, 1.0])}
@@ -554,7 +555,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.assertTrue(torch.allclose(next_states["wealth"], torch.tensor([1.5, 2.0])))
 
         # Test reward function
-        rf = maliar.create_reward_function(self.block, "consumer")
+        rf = bellman.create_reward_function(self.block, "consumer")
         reward = rf(states_t, shocks_t, controls_t, self.parameters)
         self.assertIn("utility", reward)
         # Utility can be negative for log(consumption), so just check it's finite

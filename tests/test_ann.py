@@ -12,8 +12,8 @@ from conftest import (
 )
 import numpy as np
 import os
-import skagent.algos.maliar as maliar
 import skagent.ann as ann
+import skagent.bellman as bellman
 import skagent.grid as grid
 import skagent.loss as loss
 import skagent.model as model
@@ -396,7 +396,7 @@ class test_ann_multiple_controls(unittest.TestCase):
             epochs=100,
         )
 
-        rf = maliar.create_reward_function(
+        rf = bellman.create_reward_function(
             case_10["block"], decision_rules=dict_of_decision_rules
         )
         rewards = rf({"a": case_10["givens"]["a"]}, {}, {}, case_10["calibration"])

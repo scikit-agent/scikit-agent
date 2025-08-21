@@ -1,6 +1,6 @@
 import skagent.ann as ann
 import numpy as np
-from skagent.algos.maliar import create_decision_function, create_reward_function
+from skagent.bellman import create_decision_function, create_reward_function
 from skagent.grid import Grid
 import torch
 
