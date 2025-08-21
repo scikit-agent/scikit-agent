@@ -1,11 +1,13 @@
 import skagent.ann as ann
 import numpy as np
-from skagent.algos.maliar import create_decision_function, create_reward_function
+from skagent.bellman import create_decision_function, create_reward_function
 from skagent.grid import Grid
 import torch
 
 
-def solve_multiple_controls(control_order, block, givens, calibration, epochs=200):
+def solve_multiple_controls(
+    control_order, block, givens, calibration, epochs=200, loss=None
+):
     """
     Solves a block multiple times, once for each control in control_order.
 
@@ -19,7 +21,8 @@ def solve_multiple_controls(control_order, block, givens, calibration, epochs=20
         List of control symbols in order to be solved
     """
 
-    get_loss_function = get_static_reward_loss
+    if loss is None:
+        loss = StaticRewardLoss
 
     # Control policy networks for each control in the block.
     cpns = {}
@@ -41,9 +44,9 @@ def solve_multiple_controls(control_order, block, givens, calibration, epochs=20
         ann.train_block_policy_nn(
             cpns[control_sym],
             givens,
-            get_loss_function(  # !!
-                ["a"],  # !!
+            loss(  # !!
                 block,
+                ["a"],  # !!
                 calibration,
                 dict_of_decision_rules,
             ),
@@ -99,34 +102,79 @@ def static_reward(
     return reward[rsym]
 
 
-def get_static_reward_loss(state_variables, block, parameters, other_dr):
-    # TODO: Should be able to get 'state variables' from block
-    # Maybe with ZP's analysis modules
+class StaticRewardLoss:
+    """
+    A loss function that computes the negative reward for a block,
+    assuming it is executed just once (a non-dynamic model)
+    """
 
-    shock_vars = block.get_shocks()
+    def __init__(self, block, parameters, other_dr=dict()):
+        self.block = block
+        self.parameters = parameters
+        self.state_variables = self.block.get_arrival_states(calibration=parameters)
+        self.other_dr = other_dr
 
-    def static_reward_loss(new_dr, input_grid: Grid):
+    def __call__(self, new_dr, input_grid: Grid):
         """
-        dr - dict of callables
+        new_dr : dict of callable
         """
         ## includes the values of state_0 variables, and shocks.
         given_vals = input_grid.to_dict()
 
+        shock_vars = self.block.get_shocks()
         shock_vals = {sym: input_grid[sym] for sym in shock_vars}
 
         # override any decision rules if necessary
-        fresh_dr = {**other_dr, **new_dr}
+        fresh_dr = {**self.other_dr, **new_dr}
 
         ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         r = static_reward(
-            block,
+            self.block,
             fresh_dr,
-            {sym: given_vals[sym] for sym in state_variables},
-            parameters=parameters,
+            {sym: given_vals[sym] for sym in self.state_variables},
+            parameters=self.parameters,
             agent=None,  ## TODO: Pass through the agent?
             shocks=shock_vals,
             ## Handle multiple decision rules?
         )
         return -r
 
-    return static_reward_loss
+
+class CustomLoss:
+    """
+    A custom loss function that computes the negative reward for a block,
+    assuming it is executed just once (a non-dynamic model)
+    """
+
+    def __init__(self, loss_function, block, parameters, other_dr=dict()):
+        self.block = block
+        self.parameters = parameters
+        self.state_variables = self.block.get_arrival_states(calibration=parameters)
+        self.other_dr = other_dr
+        self.loss_function = loss_function
+
+    def __call__(self, new_dr, input_grid: Grid):
+        """
+        new_dr : dict of callable
+        """
+        ## includes the values of state_0 variables, and shocks.
+        given_vals = input_grid.to_dict()
+
+        ## most variable part -- many uses of double shocks
+        shock_vars = self.block.get_shocks()
+        shock_vals = {sym: input_grid[sym] for sym in shock_vars}
+
+        # override any decision rules if necessary
+        fresh_dr = {**self.other_dr, **new_dr}
+
+        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
+        neg_loss = self.loss_function(
+            self.block,
+            fresh_dr,  # useful
+            {
+                sym: given_vals[sym] for sym in self.state_variables
+            },  # replace with arrival states
+            parameters=self.parameters,
+            shocks=shock_vals,
+        )
+        return -neg_loss
