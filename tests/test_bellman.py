@@ -196,3 +196,242 @@ class TestLifetimeReward(unittest.TestCase):
         )
 
         self.assertEqual(dlr_2, 0)
+
+
+class TestGradRewardFunction(unittest.TestCase):
+    """
+    Test suite for the get_grad_reward_function and grad_reward_function functionality.
+    """
+
+    def setUp(self):
+        """Set up test blocks and common test data."""
+        # Simple consumption block for testing gradients
+        self.simple_block = model.DBlock(
+            name="simple_consumption",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,  # Simple wealth dynamics
+                "u": lambda c: torch.log(c),  # Log utility
+            },
+            reward={"u": "consumer"},
+        )
+
+        # Block with multiple rewards
+        self.multi_reward_block = model.DBlock(
+            name="multi_reward",
+            dynamics={
+                "c1": model.Control(["w"], agent="consumer1"),
+                "c2": model.Control(["w"], agent="consumer2"),
+                "w": lambda w, c1, c2: w - c1 - c2,  # Shared wealth
+                "u1": lambda c1: torch.log(c1),  # Consumer 1 utility
+                "u2": lambda c2: -0.5 * c2**2,  # Consumer 2 quadratic utility
+            },
+            reward={"u1": "consumer1", "u2": "consumer2"},
+        )
+
+        # Block with shocks and parameters
+        self.shock_block = model.DBlock(
+            name="consumption_with_shocks",
+            shocks={"theta": Normal(mu=0.0, sigma=0.1)},
+            dynamics={
+                "c": model.Control(["a"], agent="consumer"),
+                "a": lambda a, c, theta, gamma: gamma * a - c + theta,
+                "u": lambda c, theta: torch.log(c + theta + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        self.shock_block.construct_shocks({})
+
+    def test_get_grad_reward_function_basic(self):
+        """Test basic functionality of get_grad_reward_function."""
+        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
+
+        # Create test inputs with requires_grad=True
+        c = torch.tensor(0.5, requires_grad=True)
+        a = torch.tensor(1.0, requires_grad=True)
+
+        states_t = {"a": a}
+        controls_t = {"c": c}
+        wrt = {"c": c}  # Compute gradient w.r.t. consumption
+
+        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+
+        # For u = log(c), du/dc = 1/c = 1/0.5 = 2.0
+        expected_grad = 1.0 / c
+
+        self.assertIn("u", gradients)
+        self.assertIn("c", gradients["u"])
+        self.assertTrue(torch.allclose(gradients["u"]["c"], expected_grad, atol=1e-6))
+
+    def test_get_grad_reward_function_multiple_variables(self):
+        """Test gradients with respect to multiple variables."""
+        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
+
+        # Create test inputs
+        c = torch.tensor(0.5, requires_grad=True)
+        a = torch.tensor(1.0, requires_grad=True)
+
+        states_t = {"a": a}
+        controls_t = {"c": c}
+        wrt = {"c": c, "a": a}  # Compute gradients w.r.t. both variables
+
+        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+
+        # For u = log(c), du/dc = 1/c, du/da = 0 (unused variable)
+        expected_grad_c = 1.0 / c
+
+        self.assertIn("u", gradients)
+        self.assertIn("c", gradients["u"])
+        self.assertIn("a", gradients["u"])
+
+        self.assertTrue(torch.allclose(gradients["u"]["c"], expected_grad_c, atol=1e-6))
+        self.assertIsNone(gradients["u"]["a"])  # Unused variable returns None
+
+    def test_get_grad_reward_function_multiple_rewards(self):
+        """Test gradients for multiple rewards."""
+        grad_reward_func = bellman.get_grad_reward_function(self.multi_reward_block)
+
+        # Create test inputs
+        c1 = torch.tensor(0.3, requires_grad=True)
+        c2 = torch.tensor(0.2, requires_grad=True)
+        w = torch.tensor(1.0, requires_grad=True)
+
+        states_t = {"w": w}
+        controls_t = {"c1": c1, "c2": c2}
+        wrt = {"c1": c1, "c2": c2}
+
+        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+
+        # For u1 = log(c1), du1/dc1 = 1/c1, du1/dc2 = 0
+        # For u2 = -0.5*c2^2, du2/dc1 = 0, du2/dc2 = -c2
+        expected_grad_u1_c1 = 1.0 / c1
+        expected_grad_u2_c2 = -c2
+
+        self.assertIn("u1", gradients)
+        self.assertIn("u2", gradients)
+
+        self.assertTrue(
+            torch.allclose(gradients["u1"]["c1"], expected_grad_u1_c1, atol=1e-6)
+        )
+        self.assertIsNone(gradients["u1"]["c2"])  # u1 doesn't depend on c2
+
+        self.assertIsNone(gradients["u2"]["c1"])  # u2 doesn't depend on c1
+        self.assertTrue(
+            torch.allclose(gradients["u2"]["c2"], expected_grad_u2_c2, atol=1e-6)
+        )
+
+    def test_get_grad_reward_function_with_agent_filter(self):
+        """Test agent filtering in grad_reward_function."""
+        # Test with agent filter for consumer1 only
+        grad_reward_func = bellman.get_grad_reward_function(
+            self.multi_reward_block, agent="consumer1"
+        )
+
+        c1 = torch.tensor(0.3, requires_grad=True)
+        c2 = torch.tensor(0.2, requires_grad=True)
+        w = torch.tensor(1.0, requires_grad=True)
+
+        states_t = {"w": w}
+        controls_t = {"c1": c1, "c2": c2}
+        wrt = {"c1": c1}
+
+        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+
+        # Should only contain u1 (consumer1's reward)
+        self.assertIn("u1", gradients)
+        self.assertNotIn("u2", gradients)
+
+        expected_grad = 1.0 / c1
+        self.assertTrue(torch.allclose(gradients["u1"]["c1"], expected_grad, atol=1e-6))
+
+    def test_get_grad_reward_function_with_shocks_and_parameters(self):
+        """Test gradients with shocks and parameters."""
+        grad_reward_func = bellman.get_grad_reward_function(self.shock_block)
+
+        # Create test inputs
+        c = torch.tensor(0.5, requires_grad=True)
+        a = torch.tensor(1.0, requires_grad=True)
+        theta = torch.tensor(0.1, requires_grad=True)
+
+        states_t = {"a": a}
+        shocks_t = {"theta": theta}
+        controls_t = {"c": c}
+        parameters = {"gamma": 0.95}
+        wrt = {"c": c, "theta": theta}
+
+        gradients = grad_reward_func(states_t, shocks_t, controls_t, parameters, wrt)
+
+        # For u = log(c + theta + eps), du/dc = 1/(c + theta + eps), du/dtheta = 1/(c + theta + eps)
+        eps = 1e-8
+        expected_grad = 1.0 / (c + theta + eps)
+
+        self.assertIn("u", gradients)
+        self.assertIn("c", gradients["u"])
+        self.assertIn("theta", gradients["u"])
+
+        self.assertTrue(torch.allclose(gradients["u"]["c"], expected_grad, atol=1e-6))
+        self.assertTrue(
+            torch.allclose(gradients["u"]["theta"], expected_grad, atol=1e-6)
+        )
+
+    def test_get_grad_reward_function_envelope_condition_example(self):
+        """Test usage pattern for envelope condition in optimization."""
+        # This test demonstrates how the function would be used for envelope conditions
+        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
+
+        # Simulate a batch of states and controls
+        batch_size = 3
+        c = torch.tensor([0.3, 0.5, 0.7], requires_grad=True)
+        a = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
+
+        states_t = {"a": a}
+        controls_t = {"c": c}
+        wrt = {"c": c, "a": a}  # Gradients needed for envelope condition
+
+        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+
+        # Check that we get gradients for the full batch
+        self.assertEqual(gradients["u"]["c"].shape, (batch_size,))
+        self.assertIsNone(gradients["u"]["a"])  # u doesn't depend on a
+
+        # For log utility, du/dc = 1/c
+        expected_grad_c = 1.0 / c
+        self.assertTrue(torch.allclose(gradients["u"]["c"], expected_grad_c, atol=1e-6))
+
+    def test_get_grad_reward_function_error_handling(self):
+        """Test error handling and edge cases."""
+        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
+
+        # Test with variable that doesn't require gradients
+        c_no_grad = torch.tensor(0.5, requires_grad=False)
+        a = torch.tensor(1.0, requires_grad=True)
+
+        states_t = {"a": a}
+        controls_t = {"c": c_no_grad}
+        wrt = {"c": c_no_grad}  # This should handle gracefully
+
+        # This should work but return None gradients
+        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        self.assertIn("u", gradients)
+        self.assertIn("c", gradients["u"])
+        # Gradient should be None for tensor without requires_grad=True
+        self.assertIsNone(gradients["u"]["c"])
+
+    def test_get_grad_reward_function_consistency_across_calls(self):
+        """Test that multiple calls with same inputs give consistent results."""
+        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
+
+        # Create test inputs
+        c = torch.tensor(0.5, requires_grad=True)
+        a = torch.tensor(1.0, requires_grad=True)
+
+        states_t = {"a": a}
+        controls_t = {"c": c}
+        wrt = {"c": c}
+
+        # Call multiple times
+        grad1 = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        grad2 = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+
+        # Results should be identical
+        self.assertTrue(torch.allclose(grad1["u"]["c"], grad2["u"]["c"], atol=1e-10))
