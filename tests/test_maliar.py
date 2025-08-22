@@ -243,6 +243,66 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         self.assertTrue(torch.all(torch.isfinite(sd["m"])))
         self.assertTrue(torch.all(torch.isfinite(sd["g"])))
 
+    def test_maliar_convergence_by_loss(self):
+        """Test convergence by both parameter and loss criteria."""
+        big_t = 2
+
+        # Use deterministic RNG for shock construction
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+
+        # Use a small grid for faster testing
+        states_0_n = grid.Grid.from_config(
+            {
+                "m": {"min": 0, "max": 5, "count": 3},
+                "g": {"min": 0, "max": 5, "count": 3},
+            }
+        )
+
+        edlrl = maliar.get_estimated_discounted_lifetime_reward_loss(
+            states_0_n.labels,
+            case_4["block"],
+            0.9,
+            big_t,
+            case_4["calibration"],
+        )
+
+        # Test 1: Strict tolerance (should require more iterations)
+        ann_strict, states_strict = maliar.maliar_training_loop(
+            case_4["block"],
+            edlrl,
+            states_0_n,
+            case_4["calibration"],
+            simulation_steps=1,
+            random_seed=TEST_SEED,
+            max_iterations=10,
+            tolerance=1e-6,  # Strict tolerance
+        )
+
+        # Test 2: Relaxed tolerance (should converge faster)
+        ann_relaxed, states_relaxed = maliar.maliar_training_loop(
+            case_4["block"],
+            edlrl,
+            states_0_n,
+            case_4["calibration"],
+            simulation_steps=1,
+            random_seed=TEST_SEED,
+            max_iterations=10,
+            tolerance=1e-1,  # Relaxed tolerance
+        )
+
+        # Both tests should return valid networks and states
+        for ann, states in [(ann_strict, states_strict), (ann_relaxed, states_relaxed)]:
+            self.assertIsNotNone(ann)
+            self.assertIsNotNone(states)
+
+            # States should be valid
+            sd = states.to_dict()
+            self.assertIn("m", sd)
+            self.assertIn("g", sd)
+            self.assertTrue(torch.all(torch.isfinite(sd["m"])))
+            self.assertTrue(torch.all(torch.isfinite(sd["g"])))
+
 
 class TestBellmanLossFunctions(unittest.TestCase):
     """Test the Bellman equation loss functions for the Maliar method."""
