@@ -12,88 +12,52 @@ import numpy as np
 import torch
 from torch.autograd import grad
 
-
-def create_transition_function(block, state_syms, decision_rules=None):
+class BellmanPeriod():
     """
-    block
-    state_syms : list of string
-        A list of symbols for 'state variables at time t', aka arrival states.
-        # TODO: state variables should be derived from the block analysis.
-    """
-    decision_rules = {} if decision_rules is None else decision_rules
+    A class representing a period of a Bellman or Dynamic Stochastic Optimization Problem.
 
-    def transition_function(states_t, shocks_t, controls_t, parameters):
+    TODO: Currently this is based on a Block, but I think BlockBellmanPeriod should be
+    a subclass of an abstract class.
+    """
+
+    def __init__(self, block, calibration, decision_rules = None):
+        self.block = block
+        self.calibration = calibration
+        self.decision_rules = decision_rules
+        self.arrival_states = self.block.get_arrival_states(calibration)
+
+    def transition_function(states_t, shocks_t, controls_t, parameters, decision_rules = None):
+        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
+        parameters = parameters if parameters else (self.calibration if self.calibration else {})
+
         vals = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals, decision_rules, fix=list(controls_t.keys()))
+        post = self.block.transition(vals, decision_rules, fix=list(controls_t.keys()))
 
         return {sym: post[sym] for sym in state_syms}
 
-    return transition_function
+    def decision_function(states_t, shocks_t, parameters, decision_rules = None):
+        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
+        parameters = parameters if parameters else (self.calibration if self.calibration else {})
 
-
-def create_decision_function(block, decision_rules):
-    """
-    block
-    decision_rules
-    """
-
-    def decision_function(states_t, shocks_t, parameters):
-        if parameters is None:
-            parameters = {}
         vals = parameters | states_t | shocks_t
-        post = block.transition(vals, decision_rules)
+        post = self.block.transition(vals, decision_rules)
         return {sym: post[sym] for sym in decision_rules}
 
-    return decision_function
 
+    def reward_function(states_t, shocks_t, controls_t, parameters, agent = None, decision_rules=None):
+        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
+        parameters = parameters if parameters else (self.calibration if self.calibration else {})
 
-def create_reward_function(block, agent=None, decision_rules=None):
-    """
-    block
-    agent : optional, str
-    decision_rules : optional, dict
-        Decision rules of control variables that will _not_
-        be given to the function.
-    """
-    decision_rules = {} if decision_rules is None else decision_rules
-
-    def reward_function(states_t, shocks_t, controls_t, parameters):
         vals_t = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals_t, decision_rules, fix=list(controls_t.keys()))
+        post = self.block.transition(vals_t, decision_rules, fix=list(controls_t.keys()))
         return {
             sym: post[sym]
             for sym in block.reward
             if agent is None or block.reward[sym] == agent
         }
 
-    return reward_function
 
-
-def get_grad_reward_function(block, agent=None, decision_rules=None):
-    """
-    Create a function to compute gradients of reward functions with respect to specified variables.
-
-    This function returns a grad_reward_function that can compute dr/dx or dr/ds as needed,
-    useful for constructing loss functions for the envelope condition.
-
-    Parameters
-    ----------
-    block : DBlock
-        The dynamic block containing reward specifications
-    agent : str, optional
-        If specified, only compute gradients for rewards belonging to this agent
-    decision_rules : dict, optional
-        Decision rules of control variables that will _not_ be given to the function
-
-    Returns
-    -------
-    callable
-        grad_reward_function(states, shocks, controls, parameters, wrt) that returns
-        gradients of rewards with respect to variables specified in wrt
-    """
-    decision_rules = {} if decision_rules is None else decision_rules
-
-    def grad_reward_function(states_t, shocks_t, controls_t, parameters, wrt):
+    def grad_reward_function(states_t, shocks_t, controls_t, parameters, wrt, agent=None, decision_rules=None):
         """
         Compute gradients of reward function with respect to specified variables.
 
@@ -110,6 +74,10 @@ def get_grad_reward_function(block, agent=None, decision_rules=None):
         wrt : dict
             Dictionary of variables to compute gradients with respect to.
             Keys are variable names, values are tensors with requires_grad=True
+        agent : str, optional
+            If specified, only compute gradients for rewards belonging to this agent
+        decision_rules : dict, optional
+            Decision rules of control variables that will _not_ be given to the function
 
         Returns
         -------
@@ -117,8 +85,8 @@ def get_grad_reward_function(block, agent=None, decision_rules=None):
             Nested dictionary of gradients for each reward symbol and variable:
             {reward_sym: {var_name: gradient}}
         """
-        if parameters is None:
-            parameters = {}
+        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
+        parameters = parameters if parameters else (self.calibration if self.calibration else {})
 
         # Combine all variables for block evaluation
         vals_t = parameters | states_t | shocks_t | controls_t
@@ -179,8 +147,6 @@ def get_grad_reward_function(block, agent=None, decision_rules=None):
                     )
 
         return gradients
-
-    return grad_reward_function
 
 
 def estimate_discounted_lifetime_reward(
