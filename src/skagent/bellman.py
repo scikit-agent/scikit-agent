@@ -26,6 +26,9 @@ class BellmanPeriod():
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
+    def get_arrival_states(self, calibration):
+        return self.block.get_arrival_states(calibration if calibration else self.calibration)
+
     def get_controls(self):
         return self.block.get_controls()
 

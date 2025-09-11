@@ -25,21 +25,18 @@ def static_reward(
     """
     if callable(dr):
         # assume a full decision function has been passed in
-        df = dr
+        controls = dr(states, shocks, parameters)
     else:
-        # create a decision function from the decision rule
-        df = create_decision_function(block, dr)
-
-    rf = create_reward_function(block, agent, decision_rules=dr)
+        controls = bellman_period.decision_function(states, shocks, parameters, decision_rules = dr)
 
     # this assumes only one reward is given.
     # can be generalized in the future.
+    # move this logic to BellmanPeriod
     rsym = list(
-        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+        {sym for sym in bellman_period.block.reward if agent is None or bellman_period.block.reward[sym] == agent}
     )[0]
 
-    controls = df(states, shocks, parameters)
-    reward = rf(states, shocks, controls, parameters)
+    reward = bellman_period.reward_function(states, shocks, controls, parameters, agent = agent, decision_rules=dr)
 
     # Maybe this can be less complicated because of unified array API
     if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):
@@ -54,6 +51,8 @@ class CustomLoss:
     """
     A custom loss function that computes the negative reward for a block,
     assuming it is executed just once (a non-dynamic model)
+
+    TODO: leaving this as ambiguously about Blocks and BellmanPeriods for now
     """
 
     def __init__(self, loss_function, block, parameters = None, other_dr=dict()):
@@ -71,7 +70,7 @@ class CustomLoss:
         given_vals = input_grid.to_dict()
 
         ## most variable part -- many uses of double shocks
-        shock_vars = self.bellman_period.block.get_shocks()
+        shock_vars = self.block.get_shocks()
         shock_vals = {sym: input_grid[sym] for sym in shock_vars}
 
         # override any decision rules if necessary
