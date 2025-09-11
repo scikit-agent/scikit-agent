@@ -236,7 +236,8 @@ def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     kappa = (R - growth_factor) / R
 
     def policy(states, shocks, parameters):
-        m = states["m"]
+        a = states["a"]
+        m = a * parameters["R"] + parameters["y"]
         c_optimal = kappa * m
         return {"c": c_optimal}
 

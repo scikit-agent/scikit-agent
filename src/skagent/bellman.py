@@ -42,7 +42,7 @@ class BellmanPeriod():
         vals = parameters | states_t | shocks_t | controls_t
         post = self.block.transition(vals, decision_rules, fix=list(controls_t.keys()))
 
-        return {sym: post[sym] for sym in state_syms}
+        return {sym: post[sym] for sym in self.arrival_states}
 
     def decision_function(self, states_t, shocks_t, parameters, decision_rules = None):
         decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
@@ -159,7 +159,7 @@ class BellmanPeriod():
 
 
 def estimate_discounted_lifetime_reward(
-    block,
+    bellman_period,
     discount_factor,
     dr,
     states_0,
@@ -173,7 +173,7 @@ def estimate_discounted_lifetime_reward(
 
     MMW JME '21 for inspiration.
 
-    block
+    bellman_period
     discount_factor - can be a number or a function of state variables
     dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
     states_0 - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
@@ -185,8 +185,6 @@ def estimate_discounted_lifetime_reward(
     states_t = states_0
     total_discounted_reward = 0
 
-    tf = create_transition_function(block, list(states_0.keys()))
-
     if callable(dr):
         # assume a full decision function has been passed in
         df = dr
@@ -194,11 +192,10 @@ def estimate_discounted_lifetime_reward(
         # create a decision function from the decision rule
         df = create_decision_function(block, dr)
 
-    rf = create_reward_function(block, agent)
-
     # Get all reward symbols for the agent
+    # TODO: move logic to bellman period
     reward_syms = list(
-        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+        {sym for sym in bellman_period.block.reward if agent is None or bellman_period.block.reward[sym] == agent}
     )
 
     if callable(discount_factor):
@@ -213,7 +210,7 @@ def estimate_discounted_lifetime_reward(
             shocks_t = {}
 
         controls_t = df(states_t, shocks_t, parameters)
-        reward_t = rf(states_t, shocks_t, controls_t, parameters)
+        reward_t = bellman_period.reward_function(states_t, shocks_t, controls_t, parameters, agent= agent)
 
         # Sum all rewards for this period
         period_reward = 0
@@ -232,7 +229,7 @@ def estimate_discounted_lifetime_reward(
         total_discounted_reward += period_reward * discount_factor**t
 
         # t + 1
-        states_t = tf(states_t, shocks_t, controls_t, parameters)
+        states_t = bellman_period.transition_function(states_t, shocks_t, controls_t, parameters)
 
     return total_discounted_reward
 
