@@ -26,7 +26,13 @@ class BellmanPeriod():
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
-    def transition_function(states_t, shocks_t, controls_t, parameters, decision_rules = None):
+    def get_controls(self):
+        return self.block.get_controls()
+
+    def get_shocks(self):
+        return self.block.get_shocks()
+
+    def transition_function(self, states_t, shocks_t, controls_t, parameters, decision_rules = None):
         decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
         parameters = parameters if parameters else (self.calibration if self.calibration else {})
 
@@ -35,7 +41,7 @@ class BellmanPeriod():
 
         return {sym: post[sym] for sym in state_syms}
 
-    def decision_function(states_t, shocks_t, parameters, decision_rules = None):
+    def decision_function(self, states_t, shocks_t, parameters, decision_rules = None):
         decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
         parameters = parameters if parameters else (self.calibration if self.calibration else {})
 
@@ -44,7 +50,7 @@ class BellmanPeriod():
         return {sym: post[sym] for sym in decision_rules}
 
 
-    def reward_function(states_t, shocks_t, controls_t, parameters, agent = None, decision_rules=None):
+    def reward_function(self, states_t, shocks_t, controls_t, parameters, agent = None, decision_rules=None):
         decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
         parameters = parameters if parameters else (self.calibration if self.calibration else {})
 
@@ -52,12 +58,12 @@ class BellmanPeriod():
         post = self.block.transition(vals_t, decision_rules, fix=list(controls_t.keys()))
         return {
             sym: post[sym]
-            for sym in block.reward
-            if agent is None or block.reward[sym] == agent
+            for sym in self.block.reward
+            if agent is None or self.block.reward[sym] == agent
         }
 
 
-    def grad_reward_function(states_t, shocks_t, controls_t, parameters, wrt, agent=None, decision_rules=None):
+    def grad_reward_function(self, states_t, shocks_t, controls_t, parameters, wrt, agent=None, decision_rules=None):
         """
         Compute gradients of reward function with respect to specified variables.
 

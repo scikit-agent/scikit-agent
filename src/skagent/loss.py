@@ -1,16 +1,11 @@
 import numpy as np
-from skagent.bellman import (
-    create_decision_function,
-    create_reward_function,
-    estimate_discounted_lifetime_reward,
-    estimate_bellman_residual,
-)
+from skagent.bellman import BellmanPeriod
 from skagent.grid import Grid
 import torch
 
 
 def static_reward(
-    block,
+    bellman_period,
     dr,
     states,
     shocks={},
@@ -19,7 +14,7 @@ def static_reward(
 ):
     """
     Returns the reward for an agent for a block, given a decision rule, states, shocks, and calibration.
-    block
+    bellman_period
     dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
     states - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
     shocks- dict - sym : vector of shock values
@@ -61,7 +56,7 @@ class CustomLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, loss_function, block, parameters, other_dr=dict()):
+    def __init__(self, loss_function, block, parameters = None, other_dr=dict()):
         self.block = block
         self.parameters = parameters
         self.state_variables = self.block.get_arrival_states(calibration=parameters)
@@ -76,7 +71,7 @@ class CustomLoss:
         given_vals = input_grid.to_dict()
 
         ## most variable part -- many uses of double shocks
-        shock_vars = self.block.get_shocks()
+        shock_vars = self.bellman_period.block.get_shocks()
         shock_vals = {sym: input_grid[sym] for sym in shock_vars}
 
         # override any decision rules if necessary
@@ -101,10 +96,10 @@ class StaticRewardLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, block, parameters, other_dr=dict()):
-        self.block = block
+    def __init__(self, bellman_period, parameters, other_dr=dict()):
+        self.bellman_period = bellman_period
         self.parameters = parameters
-        self.state_variables = self.block.get_arrival_states(calibration=parameters)
+        self.state_variables = self.bellman_period.get_arrival_states(calibration=parameters)
         self.other_dr = other_dr
 
     def __call__(self, new_dr, input_grid: Grid):
@@ -114,7 +109,7 @@ class StaticRewardLoss:
         ## includes the values of state_0 variables, and shocks.
         given_vals = input_grid.to_dict()
 
-        shock_vars = self.block.get_shocks()
+        shock_vars = self.bellman_period.get_shocks()
         shock_vals = {sym: input_grid[sym] for sym in shock_vars}
 
         # override any decision rules if necessary
@@ -122,7 +117,7 @@ class StaticRewardLoss:
 
         ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         r = static_reward(
-            self.block,
+            self.bellman_period,
             fresh_dr,
             {sym: given_vals[sym] for sym in self.state_variables},
             parameters=self.parameters,
@@ -140,23 +135,23 @@ class EstimatedDiscountedLifetimeRewardLoss:
     Parameters
     -----------
 
-    block: Block
+    bellman_period
     discount_factor
     big_t: int
         The number of time steps to compute reward for
     parameters
     """
 
-    def __init__(self, block, discount_factor, big_t, parameters):
-        self.block = block
+    def __init__(self, bellman_period, discount_factor, big_t, parameters):
+        self.bellman_period = bellman_period
         self.parameters = parameters
-        self.state_variables = self.block.get_arrival_states(calibration=parameters)
+        self.state_variables = self.bellman_period.get_arrival_states(calibration=parameters)
         self.discount_factor = discount_factor
         self.big_t = big_t
 
     def __call__(self, df: callable, input_grid: Grid):
         # convoluted
-        shock_vars = self.block.get_shocks()
+        shock_vars = self.bellman_period.get_shocks()
         big_t_shock_syms = sum(
             [
                 [f"{sym}_{t}" for sym in list(shock_vars.keys())]
@@ -177,9 +172,9 @@ class EstimatedDiscountedLifetimeRewardLoss:
             for sym in shock_vars
         }
 
-        # block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
+        # bellman_period, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = estimate_discounted_lifetime_reward(
-            self.block,
+            self.bellman_period,
             self.discount_factor,
             df,
             {sym: given_vals[sym] for sym in self.state_variables},

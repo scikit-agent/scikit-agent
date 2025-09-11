@@ -1,8 +1,6 @@
 import logging
 import skagent.ann as ann
-from skagent.bellman import (
-    create_transition_function,
-)
+from skagent.bellman import BellmanPeriod
 from skagent.grid import Grid
 import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
