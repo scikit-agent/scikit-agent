@@ -837,8 +837,14 @@ def _generate_d2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     }
 
 
-def _generate_d34_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for D-3 and D-4 models: m (cash-on-hand)"""
+def _generate_d3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-3 model: a (cash-on-hand)"""
+    return {"a": torch.linspace(1.0, 5.0, test_points)}
+
+def _generate_d4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-4 models: m (cash-on-hand)
+    TODO: note that this benchmark uses the information set as a state, not the arrival state
+    """
     return {"m": torch.linspace(1.0, 5.0, test_points)}
 
 
@@ -941,14 +947,14 @@ BENCHMARK_MODELS = {
         "block": d3_block,
         "calibration": d3_calibration,
         "analytical_policy": d3_analytical_policy,
-        "test_states": _generate_d34_test_states,
+        "test_states": _generate_d3_test_states,
         "custom_validation": _validate_d3_d4_solution,
     },
     "D-4": {
         "block": d4_block,
         "calibration": d4_calibration,
         "analytical_policy": d4_analytical_policy,
-        "test_states": _generate_d34_test_states,
+        "test_states": _generate_d4_test_states,
         "custom_validation": _validate_d3_d4_solution,
     },
     "U-1": {
