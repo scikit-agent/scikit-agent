@@ -129,7 +129,7 @@ class StaticRewardLoss:
 
         ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         r = static_reward(
-            bellman_period,
+            self.bellman_period,
             fresh_dr,
             {sym: given_vals[sym] for sym in self.state_variables},
             parameters=self.parameters,

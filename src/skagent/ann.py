@@ -453,8 +453,8 @@ class BlockValueNet(Net):
 
     Parameters
     ----------
-    block : model.DBlock
-        The model block containing state variables and dynamics
+    bellman_period : BellmanPeriod
+        The Bellman Period
     width : int, optional
         Width of hidden layers. Default is 32.
     n_layers : int, optional
@@ -470,20 +470,21 @@ class BlockValueNet(Net):
         documentation for all available options including init_seed, copy_weights_from, etc.
     """
 
-    def __init__(self, block, control_sym=None, width: int = 32, **kwargs):
+    def __init__(self, bellman_period, control_sym=None, width: int = 32, **kwargs):
         """
         Initialize the BlockValueNet.
         """
-        self.block = block
+        self.bellman_period = bellman_period
 
         # Value function should use the same information set as the policy function
         # Both V(s) and π(s) take the same state information as input
         ## pseudo -- assume only one control for now (same as BlockPolicyNet)
         if control_sym is None:
-            control_sym = next(iter(self.block.get_controls()))
+            control_sym = next(iter(self.bellman_period.get_controls()))
 
         self.control_sym = control_sym
-        self.cobj = self.block.dynamics[control_sym]
+        # should move this to BP
+        self.cobj = self.bellman_period.block.dynamics[control_sym]
 
         # Use the same information set as the policy network
         self.state_variables = sorted(list(self.cobj.iset))
