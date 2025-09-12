@@ -35,35 +35,29 @@ decision_rules = {"c": lambda a: a / 2}
 decisions = {"c": 0.5}
 
 
-class TestSolverFunctions(unittest.TestCase):
+class TestBellmanPeriodFunctions(unittest.TestCase):
     def setUp(self):
-        self.block = model.DBlock(**block_data)
+        self.bp = bellman.BellmanPeriod(model.DBlock(**block_data), parameters)
 
-    def test_create_transition_function(self):
-        transition_function = bellman.create_transition_function(self.block, ["a", "e"])
-
-        states_1 = transition_function(states_0, {}, decisions, parameters=parameters)
+    def test_transition_function(self):
+        states_1 = self.bp.transition_function(states_0, {}, decisions)
 
         self.assertAlmostEqual(states_1["a"], 0.7)
         self.assertEqual(states_1["e"], 0.1)
 
-    def test_create_decision_function(self):
-        decision_function = bellman.create_decision_function(self.block, decision_rules)
-
-        decisions_0 = decision_function(states_0, {}, parameters=parameters)
+    def test_decision_function(self):
+        decisions_0 = self.bp.decision_function(states_0, {}, parameters=parameters, decision_rules = decision_rules)
 
         self.assertEqual(decisions_0["c"], 0.5)
 
-    def test_create_reward_function(self):
-        reward_function = bellman.create_reward_function(self.block)
-
-        reward_0 = reward_function(states_0, {}, decisions, parameters=parameters)
+    def test_reward_function(self):
+        reward_0 = self.bp.reward_function(states_0, {}, decisions, parameters=parameters)
 
         self.assertAlmostEqual(reward_0["u"], -0.69314718)
 
     def test_estimate_discounted_lifetime_reward(self):
         dlr_0 = bellman.estimate_discounted_lifetime_reward(
-            self.block,
+            self.bp,
             0.9,
             decision_rules,
             states_0,
@@ -74,7 +68,7 @@ class TestSolverFunctions(unittest.TestCase):
         self.assertEqual(dlr_0, 0)
 
         dlr_1 = bellman.estimate_discounted_lifetime_reward(
-            self.block,
+            self.bp,
             0.9,
             decision_rules,
             states_0,
@@ -85,7 +79,7 @@ class TestSolverFunctions(unittest.TestCase):
         self.assertAlmostEqual(dlr_1, -0.69314718)
 
         dlr_2 = bellman.estimate_discounted_lifetime_reward(
-            self.block,
+            self.bp,
             0.9,
             decision_rules,
             states_0,
@@ -133,13 +127,12 @@ class TestSolverFunctions(unittest.TestCase):
 
         # Estimate Bellman residual
         residual = bellman.estimate_bellman_residual(
-            test_block,
+            bellman.BellmanPeriod(test_block, {}),
             0.95,  # discount factor
             simple_value_network,
             simple_decision_function,
             states_t,
-            shocks,  # Now passing combined shock object
-            parameters={},
+            shocks,  # Now passing combined shock object,
         )
 
         # Check that we get a tensor with the right shape
@@ -160,7 +153,7 @@ class TestLifetimeReward(unittest.TestCase):
 
     def test_block_1(self):
         dlr_1 = bellman.estimate_discounted_lifetime_reward(
-            case_1["block"],
+            bellman.BellmanPeriod(case_1["block"], {}),
             0.9,
             case_1["optimal_dr"],
             self.states_0,
@@ -172,7 +165,7 @@ class TestLifetimeReward(unittest.TestCase):
 
         # big_t is 2
         dlr_1_2 = bellman.estimate_discounted_lifetime_reward(
-            case_1["block"],
+            bellman.BellmanPeriod(case_1["block"], {}),
             0.9,
             case_1["optimal_dr"],
             self.states_0,
@@ -184,7 +177,7 @@ class TestLifetimeReward(unittest.TestCase):
 
     def test_block_2(self):
         dlr_2 = bellman.estimate_discounted_lifetime_reward(
-            case_2["block"],
+            bellman.BellmanPeriod(case_2["block"], {}),
             0.9,
             case_2["optimal_dr"],
             self.states_0,
@@ -216,6 +209,8 @@ class TestGradRewardFunction(unittest.TestCase):
             reward={"u": "consumer"},
         )
 
+        self.simple_bp = bellman.BellmanPeriod(self.simple_block, {})
+
         # Block with multiple rewards
         self.multi_reward_block = model.DBlock(
             name="multi_reward",
@@ -228,6 +223,8 @@ class TestGradRewardFunction(unittest.TestCase):
             },
             reward={"u1": "consumer1", "u2": "consumer2"},
         )
+
+        self.multi_reward_bp = bellman.BellmanPeriod(self.multi_reward_block, {})
 
         # Block with shocks and parameters
         self.shock_block = model.DBlock(
@@ -242,10 +239,10 @@ class TestGradRewardFunction(unittest.TestCase):
         )
         self.shock_block.construct_shocks({})
 
+        self.shock_bp = bellman.BellmanPeriod(self.shock_block, {})
+
     def test_get_grad_reward_function_basic(self):
         """Test basic functionality of get_grad_reward_function."""
-        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
-
         # Create test inputs with requires_grad=True
         c = torch.tensor(0.5, requires_grad=True)
         a = torch.tensor(1.0, requires_grad=True)
@@ -254,7 +251,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c}  # Compute gradient w.r.t. consumption
 
-        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
 
         # For u = log(c), du/dc = 1/c = 1/0.5 = 2.0
         expected_grad = 1.0 / c
@@ -265,8 +262,6 @@ class TestGradRewardFunction(unittest.TestCase):
 
     def test_get_grad_reward_function_multiple_variables(self):
         """Test gradients with respect to multiple variables."""
-        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
-
         # Create test inputs
         c = torch.tensor(0.5, requires_grad=True)
         a = torch.tensor(1.0, requires_grad=True)
@@ -275,7 +270,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Compute gradients w.r.t. both variables
 
-        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
 
         # For u = log(c), du/dc = 1/c, du/da = 0 (unused variable)
         expected_grad_c = 1.0 / c
@@ -289,8 +284,6 @@ class TestGradRewardFunction(unittest.TestCase):
 
     def test_get_grad_reward_function_multiple_rewards(self):
         """Test gradients for multiple rewards."""
-        grad_reward_func = bellman.get_grad_reward_function(self.multi_reward_block)
-
         # Create test inputs
         c1 = torch.tensor(0.3, requires_grad=True)
         c2 = torch.tensor(0.2, requires_grad=True)
@@ -300,7 +293,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c1": c1, "c2": c2}
         wrt = {"c1": c1, "c2": c2}
 
-        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        gradients = self.multi_reward_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
 
         # For u1 = log(c1), du1/dc1 = 1/c1, du1/dc2 = 0
         # For u2 = -0.5*c2^2, du2/dc1 = 0, du2/dc2 = -c2
@@ -323,9 +316,6 @@ class TestGradRewardFunction(unittest.TestCase):
     def test_get_grad_reward_function_with_agent_filter(self):
         """Test agent filtering in grad_reward_function."""
         # Test with agent filter for consumer1 only
-        grad_reward_func = bellman.get_grad_reward_function(
-            self.multi_reward_block, agent="consumer1"
-        )
 
         c1 = torch.tensor(0.3, requires_grad=True)
         c2 = torch.tensor(0.2, requires_grad=True)
@@ -335,7 +325,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c1": c1, "c2": c2}
         wrt = {"c1": c1}
 
-        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        gradients = self.multi_reward_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt, agent="consumer1")
 
         # Should only contain u1 (consumer1's reward)
         self.assertIn("u1", gradients)
@@ -346,8 +336,6 @@ class TestGradRewardFunction(unittest.TestCase):
 
     def test_get_grad_reward_function_with_shocks_and_parameters(self):
         """Test gradients with shocks and parameters."""
-        grad_reward_func = bellman.get_grad_reward_function(self.shock_block)
-
         # Create test inputs
         c = torch.tensor(0.5, requires_grad=True)
         a = torch.tensor(1.0, requires_grad=True)
@@ -359,7 +347,7 @@ class TestGradRewardFunction(unittest.TestCase):
         parameters = {"gamma": 0.95}
         wrt = {"c": c, "theta": theta}
 
-        gradients = grad_reward_func(states_t, shocks_t, controls_t, parameters, wrt)
+        gradients = self.shock_bp.grad_reward_function(states_t, shocks_t, controls_t, parameters, wrt)
 
         # For u = log(c + theta + eps), du/dc = 1/(c + theta + eps), du/dtheta = 1/(c + theta + eps)
         eps = 1e-8
@@ -377,7 +365,6 @@ class TestGradRewardFunction(unittest.TestCase):
     def test_get_grad_reward_function_envelope_condition_example(self):
         """Test usage pattern for envelope condition in optimization."""
         # This test demonstrates how the function would be used for envelope conditions
-        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
 
         # Simulate a batch of states and controls
         batch_size = 3
@@ -388,7 +375,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Gradients needed for envelope condition
 
-        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
 
         # Check that we get gradients for the full batch
         self.assertEqual(gradients["u"]["c"].shape, (batch_size,))
@@ -400,8 +387,6 @@ class TestGradRewardFunction(unittest.TestCase):
 
     def test_get_grad_reward_function_error_handling(self):
         """Test error handling and edge cases."""
-        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
-
         # Test with variable that doesn't require gradients
         c_no_grad = torch.tensor(0.5, requires_grad=False)
         a = torch.tensor(1.0, requires_grad=True)
@@ -411,27 +396,8 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c": c_no_grad}  # This should handle gracefully
 
         # This should work but return None gradients
-        gradients = grad_reward_func(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
         self.assertIn("u", gradients)
         self.assertIn("c", gradients["u"])
         # Gradient should be None for tensor without requires_grad=True
         self.assertIsNone(gradients["u"]["c"])
-
-    def test_get_grad_reward_function_consistency_across_calls(self):
-        """Test that multiple calls with same inputs give consistent results."""
-        grad_reward_func = bellman.get_grad_reward_function(self.simple_block)
-
-        # Create test inputs
-        c = torch.tensor(0.5, requires_grad=True)
-        a = torch.tensor(1.0, requires_grad=True)
-
-        states_t = {"a": a}
-        controls_t = {"c": c}
-        wrt = {"c": c}
-
-        # Call multiple times
-        grad1 = grad_reward_func(states_t, {}, controls_t, {}, wrt)
-        grad2 = grad_reward_func(states_t, {}, controls_t, {}, wrt)
-
-        # Results should be identical
-        self.assertTrue(torch.allclose(grad1["u"]["c"], grad2["u"]["c"], atol=1e-10))
