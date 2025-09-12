@@ -45,7 +45,7 @@ def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: 
 
 def simulate_forward(
     states_t,
-    block: model.Block,
+    bellman_period,
     decision_function: callable,
     parameters,
     big_t,
@@ -58,13 +58,11 @@ def simulate_forward(
         # kludge
         n = len(states_t[next(iter(states_t.keys()))])
 
-    state_syms = list(states_t.keys())
-    tf = create_transition_function(block, state_syms)
-
     for t in range(big_t):
         # TODO: make sure block shocks are 'constructed'
         # TODO: allow option for 'structured' draws, e.g. from exact discretization.
-        shocks_t = draw_shocks(block.shocks, n=n)
+        # this breaks the BP abstraction somewhat; BP should have a wrapper method
+        shocks_t = draw_shocks(bellman_period.block.shocks, n=n)
 
         # this is cumbersome; probably can be solved deeper on the data structure level
         # note similarity to Grid.from_dict() reconciliation logic.
@@ -75,14 +73,14 @@ def simulate_forward(
 
         controls_t = decision_function(states_t, shocks_t, parameters)
 
-        states_t_plus_1 = tf(states_t, shocks_t, controls_t, parameters)
+        states_t_plus_1 = bellman_period.transition_function(states_t, shocks_t, controls_t, parameters)
         states_t = states_t_plus_1
 
     return states_t_plus_1
 
 
 def maliar_training_loop(
-    block,
+    bellman_period,
     loss_function,
     states_0_n: Grid,
     parameters,
@@ -93,7 +91,7 @@ def maliar_training_loop(
     simulation_steps=1,
 ):
     """
-    block - a model definition
+    bellman_period - a model definition
     loss_function : callable((df, input_vector) -> loss vector
     states_0_n : Grid a panel of starting states
     parameters : dict : given parameters for the model
@@ -125,7 +123,7 @@ def maliar_training_loop(
     if random_seed is not None:
         torch.manual_seed(random_seed)
 
-    bpn = ann.BlockPolicyNet(block, width=16)
+    bpn = ann.BlockPolicyNet(bellman_period, width=16)
 
     states = states_0_n  # V) Create initial panel of agents/starting states.
 
@@ -139,7 +137,9 @@ def maliar_training_loop(
         prev_params = extract_parameters(bpn)
 
         # i). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
-        givens = generate_givens_from_states(states_0_n, block, shock_copies)
+        # TODO: this breaks the bellman period abstraction slightly. consider refactoring generate-givens
+        # to use BP instead.
+        givens = generate_givens_from_states(states_0_n, bellman_period.block, shock_copies)
 
         # ii). construct the gradient ∇ Xi^n (θ ) = 1n ni=1 ∇ ξ (ωi ; θ );
         # iii). update the coeﬃcients θ_hat = θ − λk ∇ Xi^n (θ ) and go to step 2.i);
@@ -184,8 +184,9 @@ def maliar_training_loop(
         prev_loss = current_loss
 
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
+        # todo: same thing about breaking the BellmanPeriod abstraction
         next_states = simulate_forward(
-            states, block, bpn.get_decision_function(), parameters, simulation_steps
+            states, bellman_period, bpn.get_decision_function(), parameters, simulation_steps
         )
 
         states = Grid.from_dict(next_states)
