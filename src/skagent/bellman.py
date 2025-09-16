@@ -10,6 +10,7 @@ and framing them in terms of arrival states, shocks, and decisions.
 
 import numpy as np
 import torch
+from torch.autograd import grad
 
 
 def create_transition_function(block, state_syms, decision_rules=None):
@@ -66,6 +67,120 @@ def create_reward_function(block, agent=None, decision_rules=None):
         }
 
     return reward_function
+
+
+def get_grad_reward_function(block, agent=None, decision_rules=None):
+    """
+    Create a function to compute gradients of reward functions with respect to specified variables.
+
+    This function returns a grad_reward_function that can compute dr/dx or dr/ds as needed,
+    useful for constructing loss functions for the envelope condition.
+
+    Parameters
+    ----------
+    block : DBlock
+        The dynamic block containing reward specifications
+    agent : str, optional
+        If specified, only compute gradients for rewards belonging to this agent
+    decision_rules : dict, optional
+        Decision rules of control variables that will _not_ be given to the function
+
+    Returns
+    -------
+    callable
+        grad_reward_function(states, shocks, controls, parameters, wrt) that returns
+        gradients of rewards with respect to variables specified in wrt
+    """
+    decision_rules = {} if decision_rules is None else decision_rules
+
+    def grad_reward_function(states_t, shocks_t, controls_t, parameters, wrt):
+        """
+        Compute gradients of reward function with respect to specified variables.
+
+        Parameters
+        ----------
+        states_t : dict
+            State variables at time t
+        shocks_t : dict
+            Shock variables at time t
+        controls_t : dict
+            Control variables at time t
+        parameters : dict
+            Model parameters
+        wrt : dict
+            Dictionary of variables to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True
+
+        Returns
+        -------
+        dict
+            Nested dictionary of gradients for each reward symbol and variable:
+            {reward_sym: {var_name: gradient}}
+        """
+        if parameters is None:
+            parameters = {}
+
+        # Combine all variables for block evaluation
+        vals_t = parameters | states_t | shocks_t | controls_t
+
+        # Compute rewards using block transition
+        post = block.transition(vals_t, decision_rules, fix=list(controls_t.keys()))
+        rewards = {
+            sym: post[sym]
+            for sym in block.reward
+            if agent is None or block.reward[sym] == agent
+        }
+
+        # Compute gradients for each reward with respect to each variable in wrt
+        gradients = {}
+        for reward_sym in rewards:
+            gradients[reward_sym] = {}
+            for var_name, var_tensor in wrt.items():
+                # Skip if variable doesn't require gradients
+                if not var_tensor.requires_grad:
+                    gradients[reward_sym][var_name] = None
+                    continue
+
+                # Compute gradient of this reward with respect to this variable
+                reward_tensor = rewards[reward_sym]
+
+                # For batched computations, we need to compute gradients for each element
+                if reward_tensor.dim() > 0 and reward_tensor.numel() > 1:
+                    # Handle batched case: compute gradients for each element in the batch
+                    batch_gradients = []
+                    for i in range(reward_tensor.shape[0]):
+                        grad_result = grad(
+                            reward_tensor[i],
+                            var_tensor,
+                            retain_graph=True,
+                            allow_unused=True,
+                        )
+                        if grad_result[0] is not None:
+                            batch_gradients.append(
+                                grad_result[0][i]
+                                if grad_result[0].dim() > 0
+                                else grad_result[0]
+                            )
+                        else:
+                            batch_gradients.append(None)
+
+                    # Stack the gradients if they're not None
+                    if all(g is not None for g in batch_gradients):
+                        gradients[reward_sym][var_name] = torch.stack(batch_gradients)
+                    else:
+                        gradients[reward_sym][var_name] = None
+                else:
+                    # Handle scalar case
+                    grad_result = grad(
+                        reward_tensor, var_tensor, retain_graph=True, allow_unused=True
+                    )
+                    gradients[reward_sym][var_name] = (
+                        grad_result[0] if grad_result[0] is not None else None
+                    )
+
+        return gradients
+
+    return grad_reward_function
 
 
 def estimate_discounted_lifetime_reward(
