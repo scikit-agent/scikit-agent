@@ -526,7 +526,7 @@ class test_ann_value_functions(unittest.TestCase):
             return (values - target_values) ** 2
 
         # Test training (just a few epochs)
-        trained_net = ann.train_block_nn(
+        trained_net, final_loss = ann.train_block_nn(
             value_net, self.test_grid, simple_value_loss, epochs=5
         )
 
@@ -560,7 +560,7 @@ class test_ann_value_functions(unittest.TestCase):
             return (values - target_values) ** 2
 
         # Test training (short epochs for testing)
-        trained_value_net = ann.train_block_nn(
+        trained_value_net, final_loss = ann.train_block_nn(
             value_net, case_0["givens"], zero_target_value_loss, epochs=10
         )
 
@@ -587,7 +587,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Test training with shock-aware grid
         given_0_N = case_1["givens"][1]
-        trained_value_net = ann.train_block_nn(
+        trained_value_net, final_loss = ann.train_block_nn(
             value_net, given_0_N, shock_aware_value_loss, epochs=50
         )
 
@@ -638,7 +638,7 @@ class test_ann_value_functions(unittest.TestCase):
         )
 
         # Train with more epochs for convergence
-        trained_net = ann.train_block_nn(
+        trained_net, final_loss = ann.train_block_nn(
             value_net, test_grid, linear_target_loss, epochs=200
         )
 
