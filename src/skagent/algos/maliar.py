@@ -146,9 +146,7 @@ def maliar_training_loop(
         # ii). construct the gradient ∇ Xi^n (θ ) = 1n ni=1 ∇ ξ (ωi ; θ );
         # iii). update the coeﬃcients θ_hat = θ − λk ∇ Xi^n (θ ) and go to step 2.i);
         # TODO how many epochs? What Adam scale? Passing through variables
-        bpn, current_loss = ann.train_block_policy_nn(
-            bpn, givens, loss_function, epochs=250
-        )
+        bpn, current_loss = ann.train_block_nn(bpn, givens, loss_function, epochs=250)
 
         # Extract parameters after training
         curr_params = extract_parameters(bpn)

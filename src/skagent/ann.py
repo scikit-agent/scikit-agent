@@ -665,7 +665,7 @@ def train_block_value_and_policy_nn(
     """
     Train both BlockPolicyNet and BlockValueNet jointly for value function iteration.
 
-    This follows the same pattern as train_block_policy_nn and train_block_value_nn:
+    This follows the same pattern as train_block_nn:
     takes existing networks and loss functions, trains them, returns trained networks.
 
     Parameters

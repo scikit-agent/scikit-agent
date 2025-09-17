@@ -434,9 +434,11 @@ class test_ann_value_functions(unittest.TestCase):
                 "wealth": lambda wealth, income, consumption: wealth
                 + income
                 - consumption,
-                "utility": lambda consumption: torch.log(consumption + 1e-8)
-                if hasattr(consumption, "device")
-                else torch.log(torch.tensor(consumption) + 1e-8),
+                "utility": lambda consumption: (
+                    torch.log(consumption + 1e-8)
+                    if hasattr(consumption, "device")
+                    else torch.log(torch.tensor(consumption) + 1e-8)
+                ),
             },
             reward={"utility": "consumer"},
         )
@@ -505,7 +507,7 @@ class test_ann_value_functions(unittest.TestCase):
         self.assertEqual(losses.shape, (10,))  # Per-sample losses
         self.assertTrue(torch.all(losses >= 0))  # Squared residuals
 
-    def test_train_block_value_nn(self):
+    def test_train_block_nn(self):
         """Test that value networks can be trained."""
         # Create value network
         value_net = ann.BlockValueNet(self.test_block, width=8)
