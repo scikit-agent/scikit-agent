@@ -257,15 +257,9 @@ class BlockPolicyNet(Net):
         The symbol for the control variable.
     width : int, optional
         Width of hidden layers. Default is 32.
-    n_layers : int, optional
-        Number of hidden layers (1-10). Default is 2.
-    activation : str, list, callable, or None, optional
-        Activation function(s). See Net documentation for details. Default is 'silu'.
-    transform : str, list, callable, or None, optional
-        Output transformation. See Net documentation for details. Default is None.
     **kwargs
         Additional keyword arguments passed to Net. See Net class
-        documentation for all available options including init_seed, copy_weights_from, etc.
+        documentation for all available options including activation, transform, n_layers, init_seed, copy_weights_from, etc.
     """
 
     def __init__(
@@ -405,6 +399,10 @@ class BlockPolicyNet(Net):
 
         return df
 
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_decision_rule(length=length)
+
     def get_decision_rule(self, length=None):
         """
         Returns the decision rule corresponding to this neural network.
@@ -461,13 +459,9 @@ class BlockValueNet(Net):
         Number of hidden layers (1-10). Default is 2.
     control_sym : string
         Control variable symbol.
-    activation : str, list, callable, or None, optional
-        Activation function(s). See Net documentation for details. Default is 'silu'.
-    transform : str, list, callable, or None, optional
-        Output transformation. See Net documentation for details. Default is None.
     **kwargs
         Additional keyword arguments passed to Net. See Net class
-        documentation for all available options including init_seed, copy_weights_from, etc.
+        documentation for all available options including activation, transform, init_seed, copy_weights_from, etc.
     """
 
     def __init__(self, block, control_sym=None, width: int = 32, **kwargs):
@@ -551,6 +545,74 @@ class BlockValueNet(Net):
 
         return vf
 
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_value_function()
+
+
+class BlockPolicyValueNet(Net):
+    """
+    A neural network for approximating policy and value functions in dynamic control problems.
+
+    This network takes state variables as input and outputs both policy (control values) and value estimates.
+
+    It's designed to work with the Bellman equation loss functions in the Maliar method.
+    Inherits from Net to provide configurable architecture.
+
+    Parameters
+    ----------
+    block : model.DBlock
+        The model block containing state variables and dynamics
+    control_sym : string
+        Control variable symbol.
+    apply_open_bounds : bool, optional
+        If True, then the network forward output is normalized by the upper and/or lower bounds,
+        computed as a function of the input tensor. These bounds are "open" because output
+        can be arbitrarily close to, but not equal to, the bounds. Default is True.
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    **kwargs
+        Additional keyword arguments passed to Net. See Net class
+        documentation for all available options including width, activation, transform, init_seed, copy_weights_from, etc.
+    """
+
+    def __init__(self, block, control_sym=None, apply_open_bounds=True, **kwargs):
+        """
+        Initialize the BlockPolicyValueNet.
+        """
+        # This network isn't used for anything, because really this wraps two other networks?
+        super().__init__(n_inputs=0, n_outputs=0)  # Call this FIRST
+        # we will overwrite forward() to use the other two networks as well
+
+        self.policy_network = BlockPolicyNet(
+            block,
+            control_sym=control_sym,
+            apply_open_bounds=apply_open_bounds,
+            **kwargs,
+        )
+        self.value_network = BlockValueNet(block, control_sym=control_sym, **kwargs)
+
+    def get_policy_and_value_functions(self, length):
+        """
+        Get a callable policy and value function for use with loss functions.
+
+        Returns
+        -------
+        callable
+            A function that takes states, shocks, and parameters and returns value estimates
+        """
+
+        def pvf(states_t, shocks_t={}, parameters={}):
+            return self.value_network.value_function(states_t, shocks_t, parameters)
+
+        return self.policy_network.get_decision_rule(length=length), pvf
+
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_policy_and_value_functions(length)
+
 
 ###########
 # Training Nets
@@ -569,9 +631,7 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
     return losses.mean()
 
 
-def train_block_policy_nn(
-    block_policy_nn, inputs: Grid, loss_function: Callable, epochs=50
-):
+def train_block_nn(block_policy_nn, inputs: Grid, loss_function: Callable, epochs=50):
     # to change
     # criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=0.01)  # Using Adam
@@ -581,7 +641,7 @@ def train_block_policy_nn(
         running_loss = 0.0
         optimizer.zero_grad()
         loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_decision_rule(length=inputs.n()), loss_function
+            inputs, block_policy_nn.get_core_function(length=inputs.n()), loss_function
         )
         loss.backward()
         optimizer.step()
@@ -592,49 +652,6 @@ def train_block_policy_nn(
             print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
 
     return block_policy_nn, final_loss
-
-
-def train_block_value_nn(block_value_nn, inputs: Grid, loss_function, epochs=50):
-    """
-    Train a BlockValueNet using a value function loss.
-
-    Parameters
-    ----------
-    block_value_nn : BlockValueNet
-        The value network to train
-    inputs : Grid
-        Input grid containing state variables
-    loss_function : callable
-        Loss function that takes (value_function, input_grid) and returns loss
-    epochs : int, optional
-        Number of training epochs, by default 50
-
-    Returns
-    -------
-    BlockValueNet
-        The trained value network
-    """
-    # to change
-    # criterion = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(block_value_nn.parameters(), lr=0.01)  # Using Adam
-
-    for epoch in range(epochs):
-        running_loss = 0.0
-        optimizer.zero_grad()
-
-        # Use aggregate_net_loss for consistency with policy training
-        # For value networks, we pass the value function instead of decision function
-        loss = aggregate_net_loss(
-            inputs, block_value_nn.get_value_function(), loss_function
-        )
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item()
-
-        if epoch % 100 == 0:
-            print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
-
-    return block_value_nn
 
 
 def train_block_value_and_policy_nn(
@@ -648,7 +665,7 @@ def train_block_value_and_policy_nn(
     """
     Train both BlockPolicyNet and BlockValueNet jointly for value function iteration.
 
-    This follows the same pattern as train_block_policy_nn and train_block_value_nn:
+    This follows the same pattern as train_block_nn:
     takes existing networks and loss functions, trains them, returns trained networks.
 
     Parameters
