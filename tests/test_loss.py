@@ -35,8 +35,8 @@ class TestLossFunctions(unittest.TestCase):
 
         states_0_N = case_0["givens"]
 
-        bpn = ann.BlockPolicyNet(bp, width=16)
-        ann.train_block_policy_nn(bpn, states_0_N, cl, epochs=250)
+        bpn = ann.BlockPolicyNet(case_0["bp"], width=16)
+        ann.train_block_nn(bpn, states_0_N, cl, epochs=250)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
 

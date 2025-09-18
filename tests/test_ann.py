@@ -9,6 +9,7 @@ from conftest import (
     case_8,
     case_9,
     case_10,
+    case_11,
 )
 import numpy as np
 import os
@@ -52,7 +53,7 @@ class test_ann_lr(unittest.TestCase):
         states_0_N = case_0["givens"]
 
         bpn = ann.BlockPolicyNet(case_0["bp"], width=16)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=250)
+        ann.train_block_nn(bpn, states_0_N, edlrl, epochs=250)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
 
@@ -72,7 +73,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_1["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_1["bp"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
             # TODO -- make this from the Grid
@@ -102,7 +103,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_1["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_1["bp"], width=16)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=500)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -128,7 +129,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_2["givens"]
 
         bpn = ann.BlockPolicyNet(case_2["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=100)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=100)
 
         # optimal DR is c = 0 = E[theta]
 
@@ -151,7 +152,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][1]
 
         bpn = ann.BlockPolicyNet(case_3["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -176,7 +177,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_3["givens"][2]
 
         bpn = ann.BlockPolicyNet(case_3["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -201,7 +202,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_5["givens"]
 
         bpn = ann.BlockPolicyNet(case_5["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -224,7 +225,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_6["givens"]
 
         bpn = ann.BlockPolicyNet(case_6["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -247,7 +248,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_7["givens"]
 
         bpn = ann.BlockPolicyNet(case_7["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -272,7 +273,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_8["givens"]
 
         bpn = ann.BlockPolicyNet(case_8["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, edlrl, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -295,7 +296,7 @@ class test_ann_lr(unittest.TestCase):
         given_0_N = case_9["givens"]
 
         bpn = ann.BlockPolicyNet(case_9["bp"], width=8)
-        ann.train_block_policy_nn(bpn, given_0_N, loss_fn, epochs=300)
+        ann.train_block_nn(bpn, given_0_N, loss_fn, epochs=300)
 
         c_ann = bpn.decision_function(
             {"a": given_0_N["a"]},
@@ -330,7 +331,8 @@ class test_ann_lr(unittest.TestCase):
         )
 
         bpn = ann.BlockPolicyNet(pfbp, width=8)
-        ann.train_block_policy_nn(bpn, states_0_N, edlrl, epochs=100)
+        ann.train_block_nn(bpn, states_0_N, edlrl, epochs=100)
+
         ## This is just a smoke test.
 
 
@@ -359,7 +361,7 @@ class test_ann_multiple_controls(unittest.TestCase):
 
         # train for control_sym1 with decision rule from the other net
         # for 'c'
-        ann.train_block_policy_nn(
+        ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
             solver.StaticRewardLoss(
@@ -371,7 +373,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         )
 
         # train for control_sym2 with decision rule from other net
-        ann.train_block_policy_nn(
+        ann.train_block_nn(
             cpns["d"],
             case_10["givens"],
             solver.StaticRewardLoss(
@@ -386,7 +388,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         # This step ensures that 'c' is optimized with the updated decision rules
         # from the other networks, improving the overall policy performance.
 
-        ann.train_block_policy_nn(
+        ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
             solver.StaticRewardLoss(
@@ -433,9 +435,11 @@ class test_ann_value_functions(unittest.TestCase):
                 "wealth": lambda wealth, income, consumption: wealth
                 + income
                 - consumption,
-                "utility": lambda consumption: torch.log(consumption + 1e-8)
-                if hasattr(consumption, "device")
-                else torch.log(torch.tensor(consumption) + 1e-8),
+                "utility": lambda consumption: (
+                    torch.log(consumption + 1e-8)
+                    if hasattr(consumption, "device")
+                    else torch.log(torch.tensor(consumption) + 1e-8)
+                ),
             },
             reward={"utility": "consumer"},
         )
@@ -506,7 +510,7 @@ class test_ann_value_functions(unittest.TestCase):
         self.assertEqual(losses.shape, (10,))  # Per-sample losses
         self.assertTrue(torch.all(losses >= 0))  # Squared residuals
 
-    def test_train_block_value_nn(self):
+    def test_train_block_nn(self):
         """Test that value networks can be trained."""
         # Create value network
         value_net = ann.BlockValueNet(self.test_bp, width=8)
@@ -525,7 +529,7 @@ class test_ann_value_functions(unittest.TestCase):
             return (values - target_values) ** 2
 
         # Test training (just a few epochs)
-        trained_net = ann.train_block_value_nn(
+        trained_net, final_loss = ann.train_block_nn(
             value_net, self.test_grid, simple_value_loss, epochs=5
         )
 
@@ -538,76 +542,6 @@ class test_ann_value_functions(unittest.TestCase):
         values = trained_net.value_function(test_states, test_shocks, {})
         self.assertIsInstance(values, torch.Tensor)
         self.assertEqual(values.shape, (1,))
-
-    def test_all_in_one_bellman_loss_integration(self):
-        """Test the complete all-in-one Bellman loss function integration."""
-        # This demonstrates the key objective: taking a DBlock and producing
-        # a loss function that represents the value function/Bellman equation form
-
-        # Step 1: Create networks
-        ann.BlockPolicyNet(self.test_bp, width=8)
-        value_net = ann.BlockValueNet(self.test_bp, width=8)
-
-        # Step 2: Create the all-in-one Bellman loss function from DBlock
-        # This is the key all-in-one function that takes a DBlock and produces a loss function
-        bellman_loss = loss.BellmanEquationLoss(
-            self.test_bp,  # Takes a DBlock - TRUE all-in-one!
-            self.discount_factor,
-            value_net.get_value_function(),  # Use the value network we created
-            self.parameters,
-        )
-        # This produces a loss function representing Bellman equation form
-
-        # Step 3: Test that the loss function can be created (core objective achieved)
-        self.assertTrue(callable(bellman_loss))
-
-        # Step 4: Test that this follows the same pattern as lifetime reward loss
-        lifetime_loss = loss.EstimatedDiscountedLifetimeRewardLoss(
-            self.test_bp,  # Also takes a DBlock
-            self.discount_factor,
-            1,  # big_t
-            self.parameters,
-        )
-        # Both functions: DBlock -> loss function (all-in-one approach)
-
-        self.assertTrue(callable(lifetime_loss))
-
-        # Both functions take a DBlock and produce loss functions - this is the key objective
-        # They represent different forms: lifetime reward vs Bellman equation
-
-    def test_joint_training_function_exists(self):
-        """Test that joint training function exists and is consistent."""
-        # Test that the joint training function exists
-        self.assertTrue(hasattr(ann, "train_block_value_and_policy_nn"))
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
-        # The function follows the same pattern as individual training functions
-        # Signature: train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
-
-        # This enables value function iteration algorithms that need both policy and value updates
-
-    def test_joint_training_integration(self):
-        """Test joint training integration with Bellman loss functions."""
-        # This demonstrates how to use the joint training function with Bellman losses
-
-        # Step 1: Create networks
-        ann.BlockPolicyNet(self.test_bp, width=8)
-        value_net = ann.BlockValueNet(self.test_bp, width=8)
-
-        # Step 2: Create Bellman loss function
-        loss.BellmanEquationLoss(
-            self.test_bp,
-            self.discount_factor,
-            value_net.get_value_function(),
-            self.parameters,
-        )
-
-        # Step 3: Test that joint training can be used with the loss function
-        # (Just verify the interface exists - actual training would require careful setup)
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
-
-        # The pattern is: create networks, create loss functions, then train jointly
-        # train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
 
     def test_value_function_case_scenarios(self):
         """Test value function training with the same case scenarios used for policy testing."""
@@ -629,7 +563,7 @@ class test_ann_value_functions(unittest.TestCase):
             return (values - target_values) ** 2
 
         # Test training (short epochs for testing)
-        trained_value_net = ann.train_block_value_nn(
+        trained_value_net, final_loss = ann.train_block_nn(
             value_net, case_0["givens"], zero_target_value_loss, epochs=10
         )
 
@@ -656,7 +590,7 @@ class test_ann_value_functions(unittest.TestCase):
 
         # Test training with shock-aware grid
         given_0_N = case_1["givens"][1]
-        trained_value_net = ann.train_block_value_nn(
+        trained_value_net, final_loss = ann.train_block_nn(
             value_net, given_0_N, shock_aware_value_loss, epochs=50
         )
 
@@ -709,7 +643,7 @@ class test_ann_value_functions(unittest.TestCase):
         )
 
         # Train with more epochs for convergence
-        trained_net = ann.train_block_value_nn(
+        trained_net, final_loss = ann.train_block_nn(
             value_net, test_grid, linear_target_loss, epochs=200
         )
 
@@ -758,30 +692,45 @@ class test_ann_value_functions(unittest.TestCase):
         # The main point is that BlockValueNet works with perfect foresight models
         # This mirrors the policy test pattern of basic smoke testing
 
-    def test_joint_training_comprehensive(self):
+
+class test_block_policy_value_net(unittest.TestCase):
+    """Test the new value function capabilities in ann.py"""
+
+    def setUp(self):
+        """Set up a simple test block for value function testing."""
+        # Set deterministic state for each test (avoid global state interference in parallel runs)
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # Ensure PyTorch uses deterministic algorithms when possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        # Set CUDA deterministic behavior for reproducible tests
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+    def test_block_policy_value_net__case_1(self):
         """Test comprehensive joint training that mirrors policy training patterns."""
-        # Test that joint training function exists and has correct signature
-        self.assertTrue(hasattr(ann, "train_block_value_and_policy_nn"))
-        self.assertTrue(callable(ann.train_block_value_and_policy_nn))
 
         # Create networks
-        policy_net = ann.BlockPolicyNet(self.test_bp, width=8)
-        value_net = ann.BlockValueNet(self.test_bp, width=8)
+        policy_value_net = ann.BlockPolicyValueNet(case_1["bp"])
 
-        # Test that networks can make predictions before training
-        policy_decisions = policy_net.decision_function(
-            {"wealth": torch.tensor([2.0])}, {"income": torch.tensor([1.0])}, {}
-        )
-        self.assertIn("consumption", policy_decisions)
-        self.assertIsInstance(policy_decisions["consumption"], torch.Tensor)
+        drs, vf = policy_value_net.get_policy_and_value_functions(10)
+
+        self.assertIn("c", drs)
 
         # Test value network predictions
-        test_states = {"wealth": torch.tensor([2.0])}
-        value_estimates = value_net.value_function(
-            test_states, {"income": torch.tensor([1.0])}, {}
-        )
+        test_states = {"a": torch.tensor([2.0])}
+        value_estimates = vf(test_states, {"theta": torch.tensor([1.0])}, {})
         self.assertIsInstance(value_estimates, torch.Tensor)
         self.assertEqual(value_estimates.shape, (1,))
 
-        # This demonstrates that the joint training infrastructure exists
-        # The actual training is tested in the individual components
+    def test_block_policy_value_net__case_11(self):
+        """Test comprehensive joint training that mirrors policy training patterns."""
+
+        # Create networks
+        policy_value_net = ann.BlockPolicyValueNet(case_11["block"])
+
+        ## This case has a non-trivial continuation value function
+        ## and so is a good one to test policy/value training on.
+
+        policy_value_net
+
+        ## That hasn't been implemented yet :(

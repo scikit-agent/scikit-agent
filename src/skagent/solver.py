@@ -43,7 +43,7 @@ def solve_multiple_controls(
     }
 
     for control_sym in control_order:
-        ann.train_block_policy_nn(
+        ann.train_block_nn(
             cpns[control_sym],
             givens,
             loss(  # !!
