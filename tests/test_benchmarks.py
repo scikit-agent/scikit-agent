@@ -18,10 +18,10 @@ from skagent.models.benchmarks import (
 
 
 class TestBenchmarksCatalogue:
-    """Test suite for all 10 analytically solvable consumption-savings models"""
+    """Test suite for all 8 analytically solvable consumption-savings models (U-3, U-5 removed)"""
 
     def test_complete_catalogue_exists(self):
-        """Test that all 10 models from the comprehensive catalogue are present"""
+        """Test that all 8 models from the comprehensive catalogue are present (U-3, U-5 removed)"""
         expected_models = [
             "D-1",
             "D-2",
@@ -29,18 +29,16 @@ class TestBenchmarksCatalogue:
             "D-4",
             "U-1",
             "U-2",
-            "U-3",
             "U-4",
-            "U-5",
-            "U-6",
+            "U-6",  # U-3, U-5 removed - not actually analytically solvable
         ]
         actual_models = list(BENCHMARK_MODELS.keys())
 
         assert set(expected_models) == set(actual_models), (
             f"Expected {expected_models}, got {actual_models}"
         )
-        assert len(BENCHMARK_MODELS) == 10, (
-            f"Expected 10 models, got {len(BENCHMARK_MODELS)}"
+        assert len(BENCHMARK_MODELS) == 8, (
+            f"Expected 8 models, got {len(BENCHMARK_MODELS)} (U-3, U-5 removed)"
         )
 
     def test_model_registry_structure(self):
@@ -63,7 +61,7 @@ class TestBenchmarksCatalogue:
 
     @pytest.mark.parametrize(
         "model_id",
-        ["D-1", "D-2", "D-3", "D-4", "U-1", "U-2", "U-3", "U-4", "U-5", "U-6"],
+        ["D-1", "D-2", "D-3", "D-4", "U-1", "U-2", "U-4", "U-6"],  # U-3, U-5 removed
     )
     def test_model_validation(self, model_id):
         """Test that each model passes basic validation"""
@@ -102,32 +100,35 @@ class TestBenchmarksCatalogue:
 
         # D-3: Infinite horizon CRRA
         policy_d3 = get_analytical_policy("D-3")
-        test_states = {"m": torch.tensor([1.0, 2.0, 3.0])}
+        test_states = {
+            "a": torch.tensor([1.0, 2.0, 3.0])
+        }  # FIXED: Use arrival state 'a'
         result_d3 = policy_d3(test_states, {}, {})
 
         assert "c" in result_d3
         assert torch.all(result_d3["c"] > 0), "D-3 consumption should be positive"
-        assert torch.all(result_d3["c"] < test_states["m"]), (
-            "D-3 consumption should be less than cash-on-hand"
-        )
+        # Note: With human wealth, consumption can exceed arrival assets
 
         # D-4: Blanchard mortality
         policy_d4 = get_analytical_policy("D-4")
-        test_states = {"m": torch.tensor([1.0, 2.0, 3.0])}
+        test_states = {
+            "a": torch.tensor([1.0, 2.0, 3.0])
+        }  # FIXED: Use arrival state 'a'
         result_d4 = policy_d4(test_states, {}, {})
 
         assert "c" in result_d4
         assert torch.all(result_d4["c"] > 0), "D-4 consumption should be positive"
-        assert torch.all(result_d4["c"] < test_states["m"]), (
-            "D-4 consumption should be less than cash-on-hand"
-        )
+        # Note: With human wealth, consumption can exceed arrival assets
 
     def test_stochastic_models(self):
         """Test key stochastic models (U-1, U-4)"""
 
-        # U-1: Hall random walk - needs c_lag state
+        # U-1: PIH with βR=1 - needs A (assets) and c_lag states
         policy_u1 = get_analytical_policy("U-1")
-        test_states = {"c_lag": torch.tensor([1.0, 2.0, 3.0])}
+        test_states = {
+            "A": torch.tensor([1.0, 2.0, 3.0]),  # FIXED: Add arrival asset state
+            "c_lag": torch.tensor([1.0, 2.0, 3.0]),
+        }
         result_u1 = policy_u1(test_states, {}, {})
 
         assert "c" in result_u1
