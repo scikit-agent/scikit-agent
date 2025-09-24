@@ -15,15 +15,20 @@ An entry qualifies for inclusion ONLY if:
 (ii) The optimal c_t (and any other control) can be written in closed form
     with no recursive objects left implicit
 
-Global Notation (Discrete Time Only)
-------------------------------------
+Standard Timing Convention (Adopted Throughout)
+-----------------------------------------------
 t ∈ {0,1,2,...}     : period index
-A_t                 : end-of-period assets (risk-free bond, gross return R=1+r>1)
-y_t                 : non-capital income
-c_t                 : consumption
-m_t := A_t + h_t    : cash-on-hand; h_t = E_t[∑_{s≥0} R^{-(s+1)} y_{t+s}]
-u(c)                : period utility
-TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0
+A_{t-1}             : beginning-of-period assets (arrival state, before interest)
+y_t                 : non-capital income (realized in period t)
+R                   : gross return on assets (R = 1 + r > 1)
+m_t = R*A_{t-1} + y_t : cash-on-hand (market resources available for consumption)
+c_t                 : consumption (control variable)
+A_t = m_t - c_t     : end-of-period assets (state for next period)
+H_t = E_t[∑_{s=1}^∞ R^{-s} y_{t+s}] : human wealth (present value of future income)
+W_t = m_t + H_t     : total wealth (cash-on-hand plus human wealth)
+u(c)                : period utility function
+β                   : discount factor
+TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality condition)
 """
 
 from skagent.distributions import Normal, MeanOneLogNormal
@@ -542,8 +547,8 @@ u4_block = DBlock(
             "m": lambda A, R, p: A * R
             + p,  # STANDARD TIMING: Cash-on-hand m_t = R*A_{t-1} + p_t
             "c": Control(
-                ["m"],  # Control depends on cash-on-hand (standard timing)
-                upper_bound=lambda m: m,
+                ["m", "p"],  # FIXED: Control depends on both m and p (policy uses both)
+                upper_bound=lambda m, p: m,  # Budget constraint based on cash-on-hand
                 agent="consumer",
             ),
             "A": lambda m, c: m
@@ -620,133 +625,10 @@ def u4_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 # for the complete state space, which typically requires numerical methods.
 # The current "analytical" solution does not meet mathematical rigor standards.
 
-u6_calibration = {
-    "DiscFac": 0.96,
-    "R": 1.03,
-    "rho_h": 0.8,  # Habit persistence
-    "quad_a": 1.0,
-    "quad_b": 0.5,
-    "income_std": 0.1,
-    "description": "U-6: Quadratic with habit formation",
-}
+# REMOVED: All U-6 related dead code eliminated per reviewer feedback
 
 
-class U6HabitSolver:
-    """CORRECTED: LQ solution for quadratic utility with habit formation
-
-    FIXED: Now includes asset state A_t in the optimal policy.
-    For the LQ consumption-savings problem with habit formation, the optimal policy
-    must be linear in all state variables: [A_t, y_t, h_t].
-
-    This is a simplified analytical solution that maintains the LQ structure.
-    """
-
-    def __init__(self, calibration):
-        self.beta = calibration["DiscFac"]
-        self.R = calibration["R"]
-        self.rho_h = calibration["rho_h"]
-        self.quad_a = calibration["quad_a"]
-        self.quad_b = calibration["quad_b"]
-
-        # FIXED: Solve for coefficients including asset state
-        self.phi_A, self.phi_y, self.phi_h = self._solve_lq_policy()
-
-    def _solve_lq_policy(self):
-        """FIXED: LQ policy linear in all state variables: c_t = φ_A*A_t + φ_y*y_t + φ_h*h_t
-
-        For the LQ consumption-savings problem with habit formation, the optimal
-        policy must account for the asset state. This provides a simplified
-        analytical solution that maintains the correct LQ structure.
-        """
-        beta, R, rho_h = self.beta, self.R, self.rho_h
-        quad_a, quad_b = self.quad_a, self.quad_b
-
-        # Assert standard calibration for exact solution
-        if abs(quad_a - 1.0) > 1e-10 or abs(quad_b - 0.5) > 1e-10:
-            raise ValueError(
-                f"Exact solution only valid for quad_a=1.0, quad_b=0.5, got quad_a={quad_a}, quad_b={quad_b}"
-            )
-
-        # CORRECTED LQ policy coefficients that include asset state
-        # These ensure the policy respects the intertemporal budget constraint
-
-        # Asset coefficient: consume a fraction of assets
-        phi_A = (R - 1) / R  # Consume interest on assets
-
-        # Income coefficient: consume most of current income
-        phi_y = quad_a / (quad_b * (1 + beta * rho_h**2))
-
-        # Habit coefficient: negative (habit reduces consumption)
-        phi_h = -quad_b * (1 - rho_h) / (quad_b * (1 + beta * rho_h**2))
-
-        return phi_A, phi_y, phi_h
-
-
-u6_block = DBlock(
-    **{
-        "name": "u6_quadratic_habit",
-        "shocks": {
-            "y_shock": (Normal, {"mean": 1.0, "std": "income_std"}),
-        },
-        "dynamics": {
-            "y": lambda y_shock: y_shock,
-            "h": lambda h, c_lag, rho_h: rho_h * h + (1 - rho_h) * c_lag,  # Habit stock
-            "m": lambda A, y, R=u6_calibration["R"]: A * R + y,
-            "c": Control(["m", "h"], upper_bound=lambda m, h: m, agent="consumer"),
-            "A": lambda m, c: m - c,
-            "c_lag": lambda c: c,  # Store for habit formation
-            "u": lambda c, h, quad_a, quad_b: quad_a * (c - h)
-            - quad_b * (c - h) ** 2 / 2,
-        },
-        "reward": {"u": "consumer"},
-    }
-)
-
-
-def u6_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """
-    U-6: CORRECTED Linear state-feedback c_t = φ_A*A_t + φ_y*y_t + φ_h*h_t
-
-    FIXED: Now includes asset state A_t in the optimal policy (was missing before).
-    For LQ consumption-savings problems, the policy must be linear in ALL state variables.
-
-    This is a proper decision function that:
-    1. Takes arrival states (A, h, c_lag), shocks, and parameters as input
-    2. Computes information set variables (y) from shocks
-    3. Returns optimal controls linear in all state variables [A_t, y_t, h_t]
-    """
-    solver = U6HabitSolver(calibration)
-
-    def policy(states, shocks, parameters):
-        # Extract arrival states
-        A = states["A"]
-        h = states["h"]
-        c_lag = states["c_lag"]
-
-        # Get parameters (allow override of calibration defaults)
-        rho_h = parameters.get("rho_h", calibration["rho_h"])
-
-        # Get current income from shocks
-        y = shocks.get("y_shock", 1.0)  # Default to mean income if no shock
-
-        # Update habit stock: h_t = rho_h * h_{t-1} + (1 - rho_h) * c_{t-1}
-        h_current = rho_h * h + (1 - rho_h) * c_lag
-
-        # CORRECTED: Optimal LQ policy linear in ALL state variables
-        # c_t = φ_A * A_t + φ_y * y_t + φ_h * h_t
-        # This properly accounts for the asset state (was missing before)
-        c_optimal = (
-            solver.phi_A * A  # Asset component (was missing!)
-            + solver.phi_y * y  # Income component
-            + solver.phi_h * h_current  # Habit component
-        )
-
-        # Ensure non-negative consumption (natural economic constraint)
-        c_optimal = torch.max(c_optimal, torch.tensor(0.01))
-
-        return {"c": c_optimal}
-
-    return policy
+# REMOVED: All U-6 related class, DBlock, and policy definitions eliminated
 
 
 # =============================================================================
@@ -787,7 +669,7 @@ def _generate_u4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     # FIXED: For standard timing, policy expects m (computed from A*R + p)
     A = torch.linspace(0.5, 3.0, test_points)
     p = torch.ones(test_points)
-    R = 1.03  # Default R from calibration
+    R = u4_calibration["R"]  # FIXED: Use calibration value instead of hardcoding
 
     return {
         "A": A,  # Keep for reference but policy uses m
@@ -796,13 +678,7 @@ def _generate_u4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     }
 
 
-def _generate_u6_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-6 model: A (arrival assets), h (habit stock), c_lag (lagged consumption)"""
-    return {
-        "A": torch.linspace(0.5, 3.0, test_points),
-        "h": torch.ones(test_points) * 0.5,
-        "c_lag": torch.ones(test_points),
-    }
+# REMOVED: _generate_u6_test_states function eliminated (dead code)
 
 
 def _validate_d3_d4_solution(
@@ -1192,6 +1068,70 @@ def d3_analytical_lifetime_reward(
         ) / denominator
 
 
+def d4_analytical_lifetime_reward(
+    cash_on_hand: float,
+    discount_factor: float,
+    interest_rate: float,
+    risk_aversion: float,
+    survival_prob: float,
+    income: float = 0.0,
+) -> float:
+    """
+    Analytical lifetime reward for D-4: Blanchard discrete-time mortality.
+
+    Similar to D-3 but uses effective discount factor β_eff = s*β where s is survival probability.
+    The mortality risk effectively increases the discount rate, making the agent more impatient.
+
+    With income y > 0, uses total wealth W = m + H where H = y/r.
+    Value function: V(W) = κ_eff^(1-σ)/(1-σ) * W^(1-σ) / (1 - β_eff*(β_eff*R)^((1-σ)/σ))
+    where κ_eff uses β_eff = s*β in place of β.
+    """
+    beta = discount_factor
+    R = interest_rate
+    sigma = risk_aversion
+    s = survival_prob
+    m = cash_on_hand
+    y = income
+
+    if m <= 0:
+        return -np.inf
+
+    if not (0 < s <= 1):
+        raise ValueError(f"Survival probability must be in (0,1], got s={s}")
+
+    # Effective discount factor due to mortality risk
+    beta_eff = s * beta
+
+    growth_factor = (beta_eff * R) ** (1 / sigma)
+    if growth_factor >= R:
+        raise ValueError("Return-impatience condition violated with mortality")
+
+    kappa_eff = (R - growth_factor) / R
+    r = R - 1  # Net interest rate
+
+    # Calculate total wealth W = m + H (same as D-3)
+    if y > 0:
+        human_wealth = y / r  # Human wealth for constant income
+        total_wealth = m + human_wealth
+    else:
+        total_wealth = m  # No income case
+
+    if total_wealth <= 0:
+        return -np.inf
+
+    if sigma == 1:  # Log utility case with mortality
+        # Modified log utility value function with effective discount factor
+        ln_wealth_term = np.log(total_wealth) / (1 - beta_eff)
+        constant_term1 = np.log(1 - beta_eff) / (1 - beta_eff)
+        constant_term2 = beta_eff * np.log(R * beta_eff) / ((1 - beta_eff) ** 2)
+        return ln_wealth_term + constant_term1 + constant_term2
+    else:  # General CRRA case with mortality
+        denominator = 1 - beta_eff * (beta_eff * R) ** ((1 - sigma) / sigma)
+        return (
+            kappa_eff ** (1 - sigma) * total_wealth ** (1 - sigma) / (1 - sigma)
+        ) / denominator
+
+
 def get_analytical_lifetime_reward(model_id: str, *args, **kwargs) -> float:
     """
     Get analytical lifetime reward for a benchmark model.
@@ -1212,6 +1152,7 @@ def get_analytical_lifetime_reward(model_id: str, *args, **kwargs) -> float:
         "D-1": d1_analytical_lifetime_reward,
         "D-2": d2_analytical_lifetime_reward,
         "D-3": d3_analytical_lifetime_reward,
+        "D-4": d4_analytical_lifetime_reward,  # ADDED: Missing D-4 lifetime reward function
     }
 
     if model_id not in analytical_functions:
