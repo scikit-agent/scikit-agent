@@ -12,7 +12,8 @@ import numpy as np
 import torch
 from torch.autograd import grad
 
-class BellmanPeriod():
+
+class BellmanPeriod:
     """
     A class representing a period of a Bellman or Dynamic Stochastic Optimization Problem.
 
@@ -20,14 +21,16 @@ class BellmanPeriod():
     a subclass of an abstract class.
     """
 
-    def __init__(self, block, calibration, decision_rules = None):
+    def __init__(self, block, calibration, decision_rules=None):
         self.block = block
         self.calibration = calibration
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
     def get_arrival_states(self, calibration):
-        return self.block.get_arrival_states(calibration if calibration else self.calibration)
+        return self.block.get_arrival_states(
+            calibration if calibration else self.calibration
+        )
 
     def get_controls(self):
         return self.block.get_controls()
@@ -35,38 +38,77 @@ class BellmanPeriod():
     def get_shocks(self):
         return self.block.get_shocks()
 
-    def transition_function(self, states_t, shocks_t, controls_t, parameters = None, decision_rules = None):
-        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
-        parameters = parameters if parameters else (self.calibration if self.calibration else {})
+    def transition_function(
+        self, states_t, shocks_t, controls_t, parameters=None, decision_rules=None
+    ):
+        decision_rules = (
+            decision_rules
+            if decision_rules
+            else (self.decision_rules if self.decision_rules else {})
+        )
+        parameters = (
+            parameters if parameters else (self.calibration if self.calibration else {})
+        )
 
         vals = parameters | states_t | shocks_t | controls_t
         post = self.block.transition(vals, decision_rules, fix=list(controls_t.keys()))
 
         return {sym: post[sym] for sym in self.arrival_states}
 
-    def decision_function(self, states_t, shocks_t, parameters = None, decision_rules = None):
-        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
-        parameters = parameters if parameters else (self.calibration if self.calibration else {})
+    def decision_function(
+        self, states_t, shocks_t, parameters=None, decision_rules=None
+    ):
+        decision_rules = (
+            decision_rules
+            if decision_rules
+            else (self.decision_rules if self.decision_rules else {})
+        )
+        parameters = (
+            parameters if parameters else (self.calibration if self.calibration else {})
+        )
 
         vals = parameters | states_t | shocks_t
         post = self.block.transition(vals, decision_rules)
         return {sym: post[sym] for sym in decision_rules}
 
-
-    def reward_function(self, states_t, shocks_t, controls_t, parameters = None, agent = None, decision_rules=None):
-        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
-        parameters = parameters if parameters else (self.calibration if self.calibration else {})
+    def reward_function(
+        self,
+        states_t,
+        shocks_t,
+        controls_t,
+        parameters=None,
+        agent=None,
+        decision_rules=None,
+    ):
+        decision_rules = (
+            decision_rules
+            if decision_rules
+            else (self.decision_rules if self.decision_rules else {})
+        )
+        parameters = (
+            parameters if parameters else (self.calibration if self.calibration else {})
+        )
 
         vals_t = parameters | states_t | shocks_t | controls_t
-        post = self.block.transition(vals_t, decision_rules, fix=list(controls_t.keys()))
+        post = self.block.transition(
+            vals_t, decision_rules, fix=list(controls_t.keys())
+        )
         return {
             sym: post[sym]
             for sym in self.block.reward
             if agent is None or self.block.reward[sym] == agent
         }
 
-
-    def grad_reward_function(self, states_t, shocks_t, controls_t, parameters, wrt, agent=None, decision_rules=None):
+    def grad_reward_function(
+        self,
+        states_t,
+        shocks_t,
+        controls_t,
+        parameters,
+        wrt,
+        agent=None,
+        decision_rules=None,
+    ):
         """
         Compute gradients of reward function with respect to specified variables.
 
@@ -94,14 +136,22 @@ class BellmanPeriod():
             Nested dictionary of gradients for each reward symbol and variable:
             {reward_sym: {var_name: gradient}}
         """
-        decision_rules = decision_rules if decision_rules else (self.decision_rules if self.decision_rules else {})
-        parameters = parameters if parameters else (self.calibration if self.calibration else {})
+        decision_rules = (
+            decision_rules
+            if decision_rules
+            else (self.decision_rules if self.decision_rules else {})
+        )
+        parameters = (
+            parameters if parameters else (self.calibration if self.calibration else {})
+        )
 
         # Combine all variables for block evaluation
         vals_t = parameters | states_t | shocks_t | controls_t
 
         # Compute rewards using block transition
-        post = self.block.transition(vals_t, decision_rules, fix=list(controls_t.keys()))
+        post = self.block.transition(
+            vals_t, decision_rules, fix=list(controls_t.keys())
+        )
 
         # move this logic to BP
         rewards = {
@@ -190,7 +240,11 @@ def estimate_discounted_lifetime_reward(
     # Get all reward symbols for the agent
     # TODO: move logic to bellman period
     reward_syms = list(
-        {sym for sym in bellman_period.block.reward if agent is None or bellman_period.block.reward[sym] == agent}
+        {
+            sym
+            for sym in bellman_period.block.reward
+            if agent is None or bellman_period.block.reward[sym] == agent
+        }
     )
 
     if callable(discount_factor):
@@ -209,9 +263,13 @@ def estimate_discounted_lifetime_reward(
             controls_t = dr(states_t, shocks_t, parameters)
         else:
             # create a decision function from the decision rule
-            controls_t = bellman_period.decision_function(states_t, shocks_t, parameters, decision_rules = dr)
+            controls_t = bellman_period.decision_function(
+                states_t, shocks_t, parameters, decision_rules=dr
+            )
 
-        reward_t = bellman_period.reward_function(states_t, shocks_t, controls_t, parameters, agent= agent)
+        reward_t = bellman_period.reward_function(
+            states_t, shocks_t, controls_t, parameters, agent=agent
+        )
 
         # Sum all rewards for this period
         period_reward = 0
@@ -230,7 +288,9 @@ def estimate_discounted_lifetime_reward(
         total_discounted_reward += period_reward * discount_factor**t
 
         # t + 1
-        states_t = bellman_period.transition_function(states_t, shocks_t, controls_t, parameters)
+        states_t = bellman_period.transition_function(
+            states_t, shocks_t, controls_t, parameters
+        )
 
     return total_discounted_reward
 
@@ -294,7 +354,9 @@ def estimate_bellman_residual(
     # Get reward variables
     # TODO: logic to BP
     reward_vars = [
-        sym for sym in bellman_period.block.reward if agent is None or bellman_period.block.reward[sym] == agent
+        sym
+        for sym in bellman_period.block.reward
+        if agent is None or bellman_period.block.reward[sym] == agent
     ]
     if len(reward_vars) == 0:
         raise Exception("No reward variables found in block")
@@ -307,10 +369,14 @@ def estimate_bellman_residual(
     controls_t = df(states_t, shocks_t, parameters)
 
     # Compute immediate reward (using period t shocks)
-    immediate_reward = bellman_period.reward_function(states_t, shocks_t, controls_t, parameters)[reward_sym]
+    immediate_reward = bellman_period.reward_function(
+        states_t, shocks_t, controls_t, parameters
+    )[reward_sym]
 
     # Compute next states (using period t shocks)
-    next_states = bellman_period.transition_function(states_t, shocks_t, controls_t, parameters)
+    next_states = bellman_period.transition_function(
+        states_t, shocks_t, controls_t, parameters
+    )
 
     # Compute continuation value using value network (using period t+1 shocks)
     continuation_values = value_function(next_states, shocks_t_plus_1, parameters)

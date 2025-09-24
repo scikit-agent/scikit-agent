@@ -1,7 +1,5 @@
-import functools
 import skagent.ann as ann
 import numpy as np
-from skagent.bellman import BellmanPeriod
 from skagent.grid import Grid
 import torch
 
@@ -30,8 +28,8 @@ def solve_multiple_controls(
     cpns = {}
 
     # Invent Policy Neural Networks for each Control variable.
-    for control_sym in block.get_controls():
-        cpns[control_sym] = ann.BlockPolicyNet(block, control_sym=control_sym)
+    for control_sym in bellman_period.get_controls():
+        cpns[control_sym] = ann.BlockPolicyNet(bellman_period, control_sym=control_sym)
 
     dict_of_decision_rules = {
         k: v
@@ -47,7 +45,7 @@ def solve_multiple_controls(
             cpns[control_sym],
             givens,
             loss(  # !!
-                block,
+                bellman_period,
                 ["a"],  # !!
                 calibration,
                 dict_of_decision_rules,
@@ -81,17 +79,24 @@ def static_reward(
         # assume a full decision function has been passed in
         controls = dr(states, shocks, parameters)
     else:
-        controls = bellman_period.decision_function(states, shocks, parameters, decision_rules = dr)
+        controls = bellman_period.decision_function(
+            states, shocks, parameters, decision_rules=dr
+        )
 
     # this assumes only one reward is given.
     # can be generalized in the future.
     # -- logic should be moved into the BP object
     rsym = list(
-        {sym for sym in bellman_period.block.reward if agent is None or block.reward[sym] == agent}
+        {
+            sym
+            for sym in bellman_period.block.reward
+            if agent is None or bellman_period.block.reward[sym] == agent
+        }
     )[0]
 
-    
-    reward = bellman_period.reward_function(states, shocks, controls, parameters, agent=agent, decision_rules=dr)
+    reward = bellman_period.reward_function(
+        states, shocks, controls, parameters, agent=agent, decision_rules=dr
+    )
 
     # Maybe this can be less complicated because of unified array API
     if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):
@@ -111,7 +116,9 @@ class StaticRewardLoss:
     def __init__(self, bellman_period, parameters, other_dr=dict()):
         self.bellman_period = bellman_period
         self.parameters = parameters
-        self.state_variables = self.bellman_period.get_arrival_states(calibration=parameters)
+        self.state_variables = self.bellman_period.get_arrival_states(
+            calibration=parameters
+        )
         self.other_dr = other_dr
 
     def __call__(self, new_dr, input_grid: Grid):
@@ -146,7 +153,7 @@ class CustomLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, loss_function, bellman_period, parameters = None, other_dr=dict()):
+    def __init__(self, loss_function, bellman_period, parameters=None, other_dr=dict()):
         self.bellman_period = bellman_period
         self.parameters = parameters
         self.state_variables = self.bellman_period.arrival_states

@@ -368,12 +368,16 @@ class TestBellmanLossFunctions(unittest.TestCase):
         shocks_t = {"income": torch.tensor([1.0, 1.0])}
         controls_t = {"consumption": torch.tensor([0.5, 1.0])}
 
-        next_states = self.bp.transition_function(states_t, shocks_t, controls_t, self.parameters)
+        next_states = self.bp.transition_function(
+            states_t, shocks_t, controls_t, self.parameters
+        )
         self.assertIn("wealth", next_states)
         self.assertTrue(torch.allclose(next_states["wealth"], torch.tensor([1.5, 2.0])))
 
         # Test reward function
-        reward = self.bp.reward_function(states_t, shocks_t, controls_t, self.parameters, agent = "consumer")
+        reward = self.bp.reward_function(
+            states_t, shocks_t, controls_t, self.parameters, agent="consumer"
+        )
         self.assertIn("utility", reward)
         # Utility can be negative for log(consumption), so just check it's finite
         self.assertTrue(torch.all(torch.isfinite(reward["utility"])))
@@ -408,9 +412,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         nrbp = bellman.BellmanPeriod(no_reward_block, {})
 
         with self.assertRaises(Exception) as context:
-            loss.BellmanEquationLoss(
-                nrbp, self.discount_factor, dummy_value_network
-            )
+            loss.BellmanEquationLoss(nrbp, self.discount_factor, dummy_value_network)
         self.assertIn("No reward variables found in block", str(context.exception))
 
     def test_bellman_loss_function_integration(self):

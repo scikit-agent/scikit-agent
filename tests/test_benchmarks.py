@@ -63,7 +63,17 @@ class TestBenchmarksCatalogue:
 
     @pytest.mark.parametrize(
         "model_id",
-        ["D-1", "D-2", "D-4", "U-1", "U-2", "U-3", "U-4", "U-5", "U-6"], # "D-3" altered
+        [
+            "D-1",
+            "D-2",
+            "D-4",
+            "U-1",
+            "U-2",
+            "U-3",
+            "U-4",
+            "U-5",
+            "U-6",
+        ],  # "D-3" altered
     )
     def test_model_validation(self, model_id):
         """Test that each model passes basic validation"""
@@ -258,7 +268,7 @@ class TestStaticIdentityVerification:
     """
     SB: I don't know what a kappa formula is; this benchmark is adjusted to make it work
     with Maliar tests.
-    
+
     def test_d3_d4_kappa_formulas(self):
         ""Test D-3/D-4: c_t = κ*m_t where κ = (R - (βR)^(1/σ))/R""
         for model_id in ["D-3", "D-4"]:
@@ -285,7 +295,7 @@ class TestStaticIdentityVerification:
             assert torch.allclose(result["c"], expected_c, atol=EPS_STATIC), (
                 f"{model_id} κ formula violated: got {result['c']}, expected {expected_c}"
             )
-    """        
+    """
 
     def test_u1_u3_martingale_property(self):
         """Test U-1/U-3: c_t = c_{t-1} (martingale)"""
@@ -573,7 +583,7 @@ class TestDynamicOptimalityChecks:
             T = config["T"]
             torch.manual_seed(42)
 
-            if model_id in ["D-4"]: # "D-3" is adjusted and doesn't work now
+            if model_id in ["D-4"]:  # "D-3" is adjusted and doesn't work now
                 # Cash-on-hand models
                 a_path = torch.zeros(T)
                 m_path = torch.zeros(T)

@@ -32,7 +32,6 @@ import torch
 import numpy as np
 
 import skagent.bellman as bellman
-import skagent.models.perfect_foresight as pfm
 from skagent.models.benchmarks import (
     get_benchmark_model,
     get_benchmark_calibration,
@@ -394,7 +393,9 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         for m in cash_on_hand_levels:
             with self.subTest(model=model_id, cash_on_hand=m):
                 # Get analytical policy decision
-                analytical_decision = analytical_policy({"a": (m - calibration["y"]) / calibration["R"]}, {}, calibration)
+                analytical_decision = analytical_policy(
+                    {"a": (m - calibration["y"]) / calibration["R"]}, {}, calibration
+                )
                 c = float(analytical_decision["c"])
 
                 # Verify consumption is positive and feasible
@@ -473,6 +474,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                             places=10,
                             msg=f"Consumption rate formula violated: {c} != {expected_c}",
                         )
+
 
 if __name__ == "__main__":
     unittest.main()

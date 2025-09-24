@@ -263,7 +263,12 @@ class BlockPolicyNet(Net):
     """
 
     def __init__(
-        self, bellman_period, control_sym=None, apply_open_bounds=True, width=32, **kwargs
+        self,
+        bellman_period,
+        control_sym=None,
+        apply_open_bounds=True,
+        width=32,
+        **kwargs,
     ):
         self.bellman_period = bellman_period
         self.apply_open_bounds = apply_open_bounds
@@ -339,7 +344,9 @@ class BlockPolicyNet(Net):
 
         # hacky -- should be moved into transition method as other option
         # very brittle, because it can interfere with constraints
-        drs = {control_sym: lambda: 1 for control_sym in self.bellman_period.get_controls()}
+        drs = {
+            control_sym: lambda: 1 for control_sym in self.bellman_period.get_controls()
+        }
 
         post = self.bellman_period.block.transition(vals, drs, until=self.control_sym)
 

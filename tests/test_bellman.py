@@ -46,12 +46,16 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
         self.assertEqual(states_1["e"], 0.1)
 
     def test_decision_function(self):
-        decisions_0 = self.bp.decision_function(states_0, {}, parameters=parameters, decision_rules = decision_rules)
+        decisions_0 = self.bp.decision_function(
+            states_0, {}, parameters=parameters, decision_rules=decision_rules
+        )
 
         self.assertEqual(decisions_0["c"], 0.5)
 
     def test_reward_function(self):
-        reward_0 = self.bp.reward_function(states_0, {}, decisions, parameters=parameters)
+        reward_0 = self.bp.reward_function(
+            states_0, {}, decisions, parameters=parameters
+        )
 
         self.assertAlmostEqual(reward_0["u"], -0.69314718)
 
@@ -251,7 +255,9 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c}  # Compute gradient w.r.t. consumption
 
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(
+            states_t, {}, controls_t, {}, wrt
+        )
 
         # For u = log(c), du/dc = 1/c = 1/0.5 = 2.0
         expected_grad = 1.0 / c
@@ -270,7 +276,9 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Compute gradients w.r.t. both variables
 
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(
+            states_t, {}, controls_t, {}, wrt
+        )
 
         # For u = log(c), du/dc = 1/c, du/da = 0 (unused variable)
         expected_grad_c = 1.0 / c
@@ -293,7 +301,9 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c1": c1, "c2": c2}
         wrt = {"c1": c1, "c2": c2}
 
-        gradients = self.multi_reward_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
+        gradients = self.multi_reward_bp.grad_reward_function(
+            states_t, {}, controls_t, {}, wrt
+        )
 
         # For u1 = log(c1), du1/dc1 = 1/c1, du1/dc2 = 0
         # For u2 = -0.5*c2^2, du2/dc1 = 0, du2/dc2 = -c2
@@ -325,7 +335,9 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c1": c1, "c2": c2}
         wrt = {"c1": c1}
 
-        gradients = self.multi_reward_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt, agent="consumer1")
+        gradients = self.multi_reward_bp.grad_reward_function(
+            states_t, {}, controls_t, {}, wrt, agent="consumer1"
+        )
 
         # Should only contain u1 (consumer1's reward)
         self.assertIn("u1", gradients)
@@ -347,7 +359,9 @@ class TestGradRewardFunction(unittest.TestCase):
         parameters = {"gamma": 0.95}
         wrt = {"c": c, "theta": theta}
 
-        gradients = self.shock_bp.grad_reward_function(states_t, shocks_t, controls_t, parameters, wrt)
+        gradients = self.shock_bp.grad_reward_function(
+            states_t, shocks_t, controls_t, parameters, wrt
+        )
 
         # For u = log(c + theta + eps), du/dc = 1/(c + theta + eps), du/dtheta = 1/(c + theta + eps)
         eps = 1e-8
@@ -375,7 +389,9 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Gradients needed for envelope condition
 
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(
+            states_t, {}, controls_t, {}, wrt
+        )
 
         # Check that we get gradients for the full batch
         self.assertEqual(gradients["u"]["c"].shape, (batch_size,))
@@ -396,7 +412,9 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c": c_no_grad}  # This should handle gracefully
 
         # This should work but return None gradients
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, {}, wrt)
+        gradients = self.simple_bp.grad_reward_function(
+            states_t, {}, controls_t, {}, wrt
+        )
         self.assertIn("u", gradients)
         self.assertIn("c", gradients["u"])
         # Gradient should be None for tensor without requires_grad=True

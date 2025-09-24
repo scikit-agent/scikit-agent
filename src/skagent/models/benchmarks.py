@@ -841,6 +841,7 @@ def _generate_d3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     """Generate test states for D-3 model: a (cash-on-hand)"""
     return {"a": torch.linspace(1.0, 5.0, test_points)}
 
+
 def _generate_d4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     """Generate test states for D-4 models: m (cash-on-hand)
     TODO: note that this benchmark uses the information set as a state, not the arrival state

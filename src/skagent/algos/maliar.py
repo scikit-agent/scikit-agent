@@ -1,6 +1,5 @@
 import logging
 import skagent.ann as ann
-from skagent.bellman import BellmanPeriod
 from skagent.grid import Grid
 import skagent.model as model
 from skagent.simulation.monte_carlo import draw_shocks
@@ -73,7 +72,9 @@ def simulate_forward(
 
         controls_t = decision_function(states_t, shocks_t, parameters)
 
-        states_t_plus_1 = bellman_period.transition_function(states_t, shocks_t, controls_t, parameters)
+        states_t_plus_1 = bellman_period.transition_function(
+            states_t, shocks_t, controls_t, parameters
+        )
         states_t = states_t_plus_1
 
     return states_t_plus_1
@@ -139,7 +140,9 @@ def maliar_training_loop(
         # i). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         # TODO: this breaks the bellman period abstraction slightly. consider refactoring generate-givens
         # to use BP instead.
-        givens = generate_givens_from_states(states_0_n, bellman_period.block, shock_copies)
+        givens = generate_givens_from_states(
+            states_0_n, bellman_period.block, shock_copies
+        )
 
         # ii). construct the gradient ∇ Xi^n (θ ) = 1n ni=1 ∇ ξ (ωi ; θ );
         # iii). update the coeﬃcients θ_hat = θ − λk ∇ Xi^n (θ ) and go to step 2.i);
@@ -184,7 +187,11 @@ def maliar_training_loop(
         # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         # todo: same thing about breaking the BellmanPeriod abstraction
         next_states = simulate_forward(
-            states, bellman_period, bpn.get_decision_function(), parameters, simulation_steps
+            states,
+            bellman_period,
+            bpn.get_decision_function(),
+            parameters,
+            simulation_steps,
         )
 
         states = Grid.from_dict(next_states)

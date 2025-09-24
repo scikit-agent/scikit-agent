@@ -1,5 +1,8 @@
 import numpy as np
-from skagent.bellman import BellmanPeriod, estimate_bellman_residual, estimate_discounted_lifetime_reward
+from skagent.bellman import (
+    estimate_bellman_residual,
+    estimate_discounted_lifetime_reward,
+)
 from skagent.grid import Grid
 import torch
 
@@ -27,16 +30,24 @@ def static_reward(
         # assume a full decision function has been passed in
         controls = dr(states, shocks, parameters)
     else:
-        controls = bellman_period.decision_function(states, shocks, parameters, decision_rules = dr)
+        controls = bellman_period.decision_function(
+            states, shocks, parameters, decision_rules=dr
+        )
 
     # this assumes only one reward is given.
     # can be generalized in the future.
     # move this logic to BellmanPeriod
     rsym = list(
-        {sym for sym in bellman_period.block.reward if agent is None or bellman_period.block.reward[sym] == agent}
+        {
+            sym
+            for sym in bellman_period.block.reward
+            if agent is None or bellman_period.block.reward[sym] == agent
+        }
     )[0]
 
-    reward = bellman_period.reward_function(states, shocks, controls, parameters, agent = agent, decision_rules=dr)
+    reward = bellman_period.reward_function(
+        states, shocks, controls, parameters, agent=agent, decision_rules=dr
+    )
 
     # Maybe this can be less complicated because of unified array API
     if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):
@@ -55,7 +66,7 @@ class CustomLoss:
     TODO: leaving this as ambiguously about Blocks and BellmanPeriods for now
     """
 
-    def __init__(self, loss_function, block, parameters = None, other_dr=dict()):
+    def __init__(self, loss_function, block, parameters=None, other_dr=dict()):
         self.block = block
         self.parameters = parameters
         self.state_variables = self.block.arrival_states
