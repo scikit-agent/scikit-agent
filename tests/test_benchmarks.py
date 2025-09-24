@@ -18,27 +18,25 @@ from skagent.models.benchmarks import (
 
 
 class TestBenchmarksCatalogue:
-    """Test suite for all 8 analytically solvable consumption-savings models (U-3, U-5 removed)"""
+    """Test suite for all 6 analytically solvable consumption-savings models (U-2,U-3,U-5,U-6 removed)"""
 
     def test_complete_catalogue_exists(self):
-        """Test that all 8 models from the comprehensive catalogue are present (U-3, U-5 removed)"""
+        """Test that all 6 models from the comprehensive catalogue are present"""
         expected_models = [
             "D-1",
             "D-2",
             "D-3",
             "D-4",
             "U-1",
-            "U-2",
-            "U-4",
-            "U-6",  # U-3, U-5 removed - not actually analytically solvable
+            "U-4",  # U-2,U-3,U-5,U-6 removed - theoretical issues
         ]
         actual_models = list(BENCHMARK_MODELS.keys())
 
         assert set(expected_models) == set(actual_models), (
             f"Expected {expected_models}, got {actual_models}"
         )
-        assert len(BENCHMARK_MODELS) == 8, (
-            f"Expected 8 models, got {len(BENCHMARK_MODELS)} (U-3, U-5 removed)"
+        assert len(BENCHMARK_MODELS) == 6, (
+            f"Expected 6 models, got {len(BENCHMARK_MODELS)} (U-2,U-3,U-5,U-6 removed)"
         )
 
     def test_model_registry_structure(self):
@@ -61,7 +59,7 @@ class TestBenchmarksCatalogue:
 
     @pytest.mark.parametrize(
         "model_id",
-        ["D-1", "D-2", "D-3", "D-4", "U-1", "U-2", "U-4", "U-6"],  # U-3, U-5 removed
+        ["D-1", "D-2", "D-3", "D-4", "U-1", "U-4"],  # U-2,U-3,U-5,U-6 removed
     )
     def test_model_validation(self, model_id):
         """Test that each model passes basic validation"""
@@ -123,10 +121,13 @@ class TestBenchmarksCatalogue:
     def test_stochastic_models(self):
         """Test key stochastic models (U-1, U-4)"""
 
-        # U-1: PIH with βR=1 - needs A (assets) and c_lag states
+        # U-1: PIH with βR=1 - CORRECTED: includes realized income y
         policy_u1 = get_analytical_policy("U-1")
         test_states = {
-            "A": torch.tensor([1.0, 2.0, 3.0]),  # FIXED: Add arrival asset state
+            "A": torch.tensor([1.0, 2.0, 3.0]),  # Financial assets
+            "y": torch.tensor(
+                [1.0, 1.0, 1.0]
+            ),  # FIXED: Realized income (required by policy)
             "c_lag": torch.tensor([1.0, 2.0, 3.0]),
         }
         result_u1 = policy_u1(test_states, {}, {})
@@ -134,11 +135,16 @@ class TestBenchmarksCatalogue:
         assert "c" in result_u1
         assert torch.all(result_u1["c"] > 0), "U-1 consumption should be positive"
 
-        # U-4: Log utility with permanent income
+        # U-4: Log utility with permanent income - CORRECTED: includes cash-on-hand m
         policy_u4 = get_analytical_policy("U-4")
+        A_vals = torch.tensor([1.0, 2.0, 3.0])
+        p_vals = torch.tensor([1.0, 1.0, 1.0])
+        R_default = 1.03
         test_states = {
-            "A": torch.tensor([1.0, 2.0, 3.0]),
-            "p": torch.tensor([1.0, 1.0, 1.0]),
+            "A": A_vals,
+            "p": p_vals,
+            "m": A_vals * R_default
+            + p_vals,  # FIXED: Cash-on-hand (required by standard timing)
         }
         result_u4 = policy_u4(test_states, {}, {})
 
