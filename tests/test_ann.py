@@ -140,7 +140,7 @@ class test_ann_lr(unittest.TestCase):
         # Construct shocks with deterministic RNG for reproducible test
         case_3["block"].construct_shocks(
             case_3["calibration"], rng=np.random.default_rng(TEST_SEED)
-        ) # this should mutate the block object referenced by the BP
+        )  # this should mutate the block object referenced by the BP
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_3["bp"],
@@ -400,8 +400,12 @@ class test_ann_multiple_controls(unittest.TestCase):
         )
 
         rewards = case_10["bp"].reward_function(
-            {"a": case_10["givens"]["a"]}, {}, {}, case_10["calibration"],
-            decision_rules=dict_of_decision_rules)
+            {"a": case_10["givens"]["a"]},
+            {},
+            {},
+            case_10["calibration"],
+            decision_rules=dict_of_decision_rules,
+        )
 
         self.assertTrue(
             torch.allclose(
@@ -726,7 +730,7 @@ class test_block_policy_value_net(unittest.TestCase):
         """Test comprehensive joint training that mirrors policy training patterns."""
 
         # Create networks
-        policy_value_net = ann.BlockPolicyValueNet(case_11["block"])
+        policy_value_net = ann.BlockPolicyValueNet(case_11["bp"])
 
         ## This case has a non-trivial continuation value function
         ## and so is a good one to test policy/value training on.
