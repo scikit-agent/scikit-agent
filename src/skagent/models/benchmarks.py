@@ -211,10 +211,11 @@ d3_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA)
-            / (1 - CRRA)
-            if CRRA != 1
-            else torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "u": lambda c, CRRA: (
+                torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA) / (1 - CRRA)
+                if CRRA != 1
+                else torch.log(torch.as_tensor(c, dtype=torch.float32))
+            ),
         },
         "reward": {"u": "consumer"},
     }
@@ -222,10 +223,18 @@ d3_block = DBlock(
 
 
 def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """D-3: c_t = κ*m_t where κ = (R - (βR)^(1/σ))/R"""
+    """
+    D-3: c_t = κ*m_t where κ = (R - (βR)^(1/σ))/R
+
+    This is a proper decision function that:
+    1. Takes arrival states (a), shocks, and parameters as input
+    2. Computes information set variables (m) from arrival state and parameters
+    3. Returns optimal controls based on information set
+    """
     beta = calibration["DiscFac"]
     R = calibration["R"]
     sigma = calibration["CRRA"]
+    y = calibration["y"]
 
     growth_factor = (beta * R) ** (1 / sigma)
     if growth_factor >= R:
@@ -236,7 +245,17 @@ def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     kappa = (R - growth_factor) / R
 
     def policy(states, shocks, parameters):
-        m = states["m"]
+        # Extract arrival state (assets from previous period)
+        a = states["a"]
+
+        # Get parameters (allow override of calibration defaults)
+        R_param = parameters.get("R", R)
+        y_param = parameters.get("y", y)
+
+        # Compute information set: market resources = assets * return + income
+        m = a * R_param + y_param
+
+        # Optimal consumption: c = κ * m
         c_optimal = kappa * m
         return {"c": c_optimal}
 
@@ -280,10 +299,11 @@ d4_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA)
-            / (1 - CRRA)
-            if CRRA != 1
-            else torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "u": lambda c, CRRA: (
+                torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA) / (1 - CRRA)
+                if CRRA != 1
+                else torch.log(torch.as_tensor(c, dtype=torch.float32))
+            ),
         },
         "reward": {"u": "consumer"},
     }
@@ -291,11 +311,19 @@ d4_block = DBlock(
 
 
 def d4_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """D-4: c_t = κ_s*m_t where κ_s = 1 - (sβR)^(1/σ)/R"""
+    """
+    D-4: c_t = κ_s*m_t where κ_s = 1 - (sβR)^(1/σ)/R
+
+    This is a proper decision function that:
+    1. Takes arrival states (a), shocks, and parameters as input
+    2. Computes information set variables (m) from arrival state and parameters
+    3. Returns optimal controls based on information set
+    """
     beta = calibration["DiscFac"]
     R = calibration["R"]
     sigma = calibration["CRRA"]
     s = calibration["SurvivalProb"]
+    y = calibration["y"]
 
     # Effective discount factor with mortality
     beta_eff = s * beta
@@ -309,7 +337,17 @@ def d4_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     kappa_s = (R - growth_factor) / R
 
     def policy(states, shocks, parameters):
-        m = states["m"]
+        # Extract arrival state (assets from previous period)
+        a = states["a"]
+
+        # Get parameters (allow override of calibration defaults)
+        R_param = parameters.get("R", R)
+        y_param = parameters.get("y", y)
+
+        # Compute information set: market resources = assets * return + income
+        m = a * R_param + y_param
+
+        # Optimal consumption: c = κ_s * m
         c_optimal = kappa_s * m
         return {"c": c_optimal}
 
@@ -454,7 +492,14 @@ u2_block = DBlock(
 
 
 def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-2: c_t = (r/R)*A_t + y_t - (1/r)*[log(βR)/γ + γ*σ²/2]"""
+    """
+    U-2: c_t = (r/R)*A_t + y_t - (1/r)*[log(βR)/γ + γ*σ²/2]
+
+    This is a proper decision function that:
+    1. Takes arrival states (A), shocks, and parameters as input
+    2. Computes information set variables (y) from parameters and shocks
+    3. Returns optimal controls based on information set
+    """
     beta = calibration["DiscFac"]
     R = calibration["R"]
     gamma = calibration["CARA"]
@@ -470,8 +515,15 @@ def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     precautionary_term = (1 / r) * (np.log(beta * R) / gamma + gamma * sigma_eta**2 / 2)
 
     def policy(states, shocks, parameters):
-        A_t = states["A"]  # Financial assets (state variable)
-        y = states.get("y", y_bar)  # Current income
+        # Extract arrival state (assets from previous period)
+        A_t = states["A"]
+
+        # Get parameters (allow override of calibration defaults)
+        y_bar_param = parameters.get("y_bar", y_bar)
+
+        # Get current income from shocks (y = y_bar + eta)
+        eta = shocks.get("eta", 0.0)  # Default to no shock if not provided
+        y = y_bar_param + eta
 
         # CARA certainty equivalence formula
         c_optimal = (r / R) * A_t + y - precautionary_term
@@ -672,7 +724,14 @@ u5_block = DBlock(
 
 
 def u5_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-5: Collapses to D-3 CRRA rule when θ=γ"""
+    """
+    U-5: Collapses to D-3 CRRA rule when θ=γ
+
+    This is a proper decision function that:
+    1. Takes arrival states (A), shocks, and parameters as input
+    2. Computes information set variables (m) from arrival state and shocks
+    3. Returns optimal controls based on information set
+    """
     beta = calibration["DiscFac"]
     R = calibration["R"]
     gamma = calibration["gamma"]
@@ -686,7 +745,19 @@ def u5_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     kappa = (R - growth_factor) / R
 
     def policy(states, shocks, parameters):
-        m = states["m"]
+        # Extract arrival state (assets from previous period)
+        A = states["A"]
+
+        # Get parameters (allow override of calibration defaults)
+        R_param = parameters.get("R", R)
+
+        # Get current income from shocks
+        y = shocks.get("income_shock", 1.0)  # Default to mean income if no shock
+
+        # Compute information set: market resources = assets * return + income
+        m = A * R_param + y
+
+        # Optimal consumption: c = κ * m (same as D-3 due to knife-edge condition)
         c_optimal = kappa * m
         return {"c": c_optimal}
 
@@ -796,22 +867,40 @@ u6_block = DBlock(
 
 
 def u6_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-6: Linear state-feedback c_t = φ1*y_t + φ2*h_{t-1} (exact Riccati solution)"""
+    """
+    U-6: Linear state-feedback c_t = φ1*y_t + φ2*h_{t-1} (exact Riccati solution)
+
+    This is a proper decision function that:
+    1. Takes arrival states (A, h, c_lag), shocks, and parameters as input
+    2. Computes information set variables (y, m) from arrival state and shocks
+    3. Returns optimal controls based on information set
+    """
     solver = U6HabitSolver(calibration)
 
     def policy(states, shocks, parameters):
-        y = states.get("y", 1.0)
-        h = states.get("h", 0.0)
+        # Extract arrival states
+        A = states["A"]
+        h = states["h"]
+        c_lag = states["c_lag"]
+
+        # Get parameters (allow override of calibration defaults)
+        R = parameters.get("R", calibration["R"])
+        rho_h = parameters.get("rho_h", calibration["rho_h"])
+
+        # Get current income from shocks
+        y = shocks.get("y_shock", 1.0)  # Default to mean income if no shock
+
+        # Update habit stock: h_t = rho_h * h_{t-1} + (1 - rho_h) * c_{t-1}
+        h_current = rho_h * h + (1 - rho_h) * c_lag
+
+        # Compute market resources
+        m = A * R + y
 
         # Optimal linear policy from exact Riccati solution
-        c_unconstrained = solver.phi1 * y + solver.phi2 * h
+        c_unconstrained = solver.phi1 * y + solver.phi2 * h_current
 
-        # Only enforce budget constraint if m (cash-on-hand) is explicitly provided
-        if "m" in states:
-            m = states["m"]
-            c_optimal = torch.min(c_unconstrained, m)
-        else:
-            c_optimal = c_unconstrained
+        # Enforce budget constraint
+        c_optimal = torch.min(c_unconstrained, m)
 
         return {"c": c_optimal}
 
@@ -837,41 +926,45 @@ def _generate_d2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
 
 
 def _generate_d34_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for D-3 and D-4 models: m (cash-on-hand)"""
-    return {"m": torch.linspace(1.0, 5.0, test_points)}
+    """Generate test states for D-3 and D-4 models: a (arrival assets)"""
+    return {"a": torch.linspace(0.5, 4.0, test_points)}
 
 
 def _generate_u13_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-1 and U-3 models: c_lag (lagged consumption)"""
-    return {"c_lag": torch.ones(test_points)}
-
-
-def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-2 model: A (assets), y (income)"""
+    """Generate test states for U-1 and U-3 models: A (arrival assets), c_lag (lagged consumption)"""
     return {
         "A": torch.linspace(0.5, 3.0, test_points),
-        "y": torch.ones(test_points),
+        "c_lag": torch.ones(test_points),
     }
 
 
+def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-2 model: A (arrival assets)"""
+    return {"A": torch.linspace(0.5, 3.0, test_points)}
+
+
 def _generate_u4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-4 model: A (assets), p (price)"""
+    """Generate test states for U-4 model: A (assets), p (permanent income), c (consumption)"""
     return {
         "A": torch.linspace(0.5, 3.0, test_points),
         "p": torch.ones(test_points),
+        "c": torch.ones(
+            test_points
+        ),  # Previous period consumption (though policy doesn't use it)
     }
 
 
 def _generate_u5_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-5 model: m (cash-on-hand)"""
-    return {"m": torch.linspace(1.0, 5.0, test_points)}
+    """Generate test states for U-5 model: A (arrival assets)"""
+    return {"A": torch.linspace(0.5, 4.0, test_points)}
 
 
 def _generate_u6_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-6 model: y (income), h (habit)"""
+    """Generate test states for U-6 model: A (arrival assets), h (habit stock), c_lag (lagged consumption)"""
     return {
-        "y": torch.ones(test_points),
+        "A": torch.linspace(0.5, 3.0, test_points),
         "h": torch.ones(test_points) * 0.5,
+        "c_lag": torch.ones(test_points),
     }
 
 
@@ -886,6 +979,7 @@ def _validate_d3_d4_solution(
     beta = calibration["DiscFac"]
     R = calibration["R"]
     sigma = calibration["CRRA"]
+    y = calibration["y"]
 
     # For D-4, use effective discount factor
     if model_id == "D-4":
@@ -896,7 +990,9 @@ def _validate_d3_d4_solution(
 
     kappa = (R - (beta_eff * R) ** (1 / sigma)) / R
 
-    m = test_states["m"]
+    # Compute m from arrival state a (proper decision function structure)
+    a = test_states["a"]
+    m = a * R + y  # market resources = assets * return + income
     c = analytical_controls["c"]
 
     # Check that c_t = κ*m_t
