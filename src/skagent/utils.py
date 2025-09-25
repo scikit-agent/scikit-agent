@@ -91,3 +91,18 @@ def create_vectorized_function_wrapper_with_mapping(lambda_func, param_to_column
             ).unsqueeze(1)
 
     return wrapper
+
+
+def extract_parameters(network):
+    """Extract all parameters from a PyTorch network into a flat tensor."""
+    params = []
+    for param in network.parameters():
+        params.append(param.data.view(-1))
+    return torch.cat(params) if params else torch.tensor([])
+
+
+def compute_parameter_difference(params1, params2):
+    """Compute the L2 norm of the difference between two parameter vectors."""
+    if len(params1) != len(params2):
+        return float("inf")
+    return torch.norm(params1 - params2).item()

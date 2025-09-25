@@ -73,3 +73,31 @@ pip install -e ".[dev,docs]"
 [rtd-link]:                 https://scikit-agent.readthedocs.io/en/latest/?badge=latest
 
 <!-- prettier-ignore-end -->
+
+`scikit-agent` is for agent-based modeling in Python.
+
+- Simple and efficient
+- Built on NumPy, SciPy, and Torch
+- Open source, commercially usable
+
+It goes by many names: multi-agent systems, agent-based modeling, computational
+economics. This library aims to make it easy to develop new models, then solve
+and estimate them using reliable, efficient algorithms.
+
+Functionalities (will) include:
+
+- Building dynamic models from blocks of structural equations
+- Solving for optimal decision rules using deep learning
+- Structurally estimating model parameters using empirical data
+- Displaying model results and predictions
+
+Our goal is for `scikit-agent` to be for computational social scientific
+modeling and statistics what `scikit-learn` is for machine learning.
+
+## Key references
+
+- Hammond, L., Fox, J., Everitt, T., Carey, R., Abate, A. and Wooldridge,
+  M., 2023. Reasoning about causality in games. Artificial Intelligence, 320,
+  p.103919.
+- Maliar, L., Maliar, S. and Winant, P., 2021. Deep learning for solving dynamic
+  economic models. Journal of Monetary Economics, 122, pp.76-101.

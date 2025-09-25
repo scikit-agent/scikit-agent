@@ -4,24 +4,10 @@ on the actual consumption model.
 
 """
 
-from importlib.util import find_spec
-import pytest
-import sys
-
-sys.path.append("../src")
 from skagent.rule import extract_dependencies
-
-SKAGENT_AVAILABLE = find_spec("skagent") is not None
-
-pytestmark = pytest.mark.skipif(
-    not SKAGENT_AVAILABLE,
-    reason="Optional dependency (`scikit-agent`) not installed.",
-)
-
-if SKAGENT_AVAILABLE:
-    from skagent.models.consumer import consumption_block
-    from skagent.model import Control
-    from skagent.distributions import Bernoulli
+from skagent.models.consumer import consumption_block
+from skagent.model import Control
+from skagent.distributions import Bernoulli
 
 
 class TestRuleDependencyExtraction:

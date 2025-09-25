@@ -276,3 +276,51 @@ case_9 = {
         }
     ),
 }
+
+case_10 = {
+    "block": DBlock(
+        **{
+            "name": "multi control case",
+            "dynamics": {
+                "c": Control(["a"], agent="agent"),
+                "d": Control([], agent="agent"),
+                "u": lambda a, c, d, k: -((a - c) ** 2) - (k - d) ** 2,
+            },
+            "reward": {"u": "agent"},
+        }
+    ),
+    "calibration": {"k": 3},
+    "optimal_dr": {"c": lambda a: a, "d": lambda: 3},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": -2, "max": 2, "count": 11},
+        }
+    ),
+}
+
+case_11 = {
+    "block": DBlock(
+        **{
+            "name": "non-trivial continuation value",
+            "shocks": {
+                "theta": (Normal, {"mu": 0, "sigma": 1}),
+            },
+            "dynamics": {
+                "u": lambda a, b: -((a - b) ** 2),
+                "c": Control(["a", "theta"], agent="agent"),
+                "a": lambda a, theta: a + theta,
+                "b": lambda c: c,
+            },
+            "reward": {"u": "agent"},
+        }
+    ),
+    "optimal_dr": {"c": lambda a, theta: a + theta},
+    "givens": grid.Grid.from_config(
+        {
+            "a": {"min": -2, "max": 2, "count": 11},
+            "b": {"min": -2, "max": 2, "count": 11},
+            "theta_0": {"min": -1, "max": 1, "count": 5},
+            "theta_1": {"min": -1, "max": 1, "count": 5},
+        }
+    ),
+}

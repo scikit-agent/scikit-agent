@@ -2,6 +2,7 @@ import inspect
 from skagent.grid import Grid
 import torch
 from skagent.utils import create_vectorized_function_wrapper_with_mapping
+from typing import Callable
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # model.to(device)
@@ -12,66 +13,284 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Net(torch.nn.Module):
-    @property
-    def device(self):
-        return next(self.parameters()).device
+    """
+    A flexible feedforward neural network with configurable architecture.
 
-    def __init__(self, n_inputs, n_outputs, width):
-        super(Net, self).__init__()
+    Parameters
+    ----------
+    n_inputs : int
+        Number of input features
+    n_outputs : int
+        Number of output features
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    activation : str, list, callable, or None, optional
+        Activation function(s) to use. Options:
+        - str: Apply same activation to all layers ('silu', 'relu', 'tanh', 'sigmoid')
+        - list: Apply different activations to each layer, e.g., ['relu', 'tanh', 'silu']
+        - callable: Custom activation function
+        - None: No activation (identity function)
 
-        self.hidden1 = torch.nn.Linear(n_inputs, width)
-        self.hidden2 = torch.nn.Linear(width, width)
+        Available activations: 'silu', 'relu', 'tanh', 'sigmoid', 'identity'
+        Default is 'silu'.
+    transform : str, list, callable, or None, optional
+        Transformation to apply to outputs. Options:
+        - str: Apply same transform to all outputs ('sigmoid', 'exp', 'tanh', etc.)
+        - list: Apply different transforms to each output, e.g., ['sigmoid', 'exp']
+        - callable: Custom transformation function
+        - None: No transformation
+
+        Available transforms: 'sigmoid', 'exp', 'tanh', 'relu', 'softplus', 'softmax', 'abs', 'square', 'identity'
+        Default is None.
+    """
+
+    def __init__(
+        self,
+        n_inputs,
+        n_outputs,
+        width=32,
+        n_layers=2,
+        activation="silu",
+        transform=None,
+        init_seed=None,
+        copy_weights_from=None,
+    ):
+        super().__init__()
+
+        # Validate n_layers
+        if not (1 <= n_layers <= 10):
+            raise ValueError(f"n_layers must be between 1 and 10, got {n_layers}")
+
+        self.n_inputs = n_inputs
+        self.n_outputs = n_outputs
+        self.width = width
+        self.n_layers = n_layers
+        self.transform = transform
+        self.init_seed = init_seed
+        self.copy_weights_from = copy_weights_from
+
+        # Set activation function(s) and track which are identity for performance
+        if isinstance(activation, list):
+            if len(activation) != n_layers:
+                raise ValueError(
+                    f"Number of activations ({len(activation)}) must match "
+                    f"number of layers ({n_layers})"
+                )
+            self.activations = [self._get_activation_fn(act) for act in activation]
+            self.activation_is_identity = [self._is_identity(act) for act in activation]
+        else:
+            # Single activation applied to all layers
+            self.activations = [self._get_activation_fn(activation)] * n_layers
+            self.activation_is_identity = [self._is_identity(activation)] * n_layers
+
+        # Build network layers
+        self.layers = torch.nn.ModuleList()
+
+        # First hidden layer
+        self.layers.append(torch.nn.Linear(n_inputs, width))
+
+        # Additional hidden layers
+        for _ in range(n_layers - 1):
+            self.layers.append(torch.nn.Linear(width, width))
+
+        # Output layer
         self.output = torch.nn.Linear(width, n_outputs)
+
+        # Initialize weights first (before device placement)
+        if init_seed is not None:
+            # Save current random state
+            current_state = torch.get_rng_state()
+            # Set seed for initialization
+            torch.manual_seed(init_seed)
+
+        # Custom weight initialisation to match MMW notebook (normal std=0.05)
+        for m in self.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.normal_(m.weight, mean=0.0, std=0.05)
+                if m.bias is not None:
+                    torch.nn.init.zeros_(m.bias)
+
+        if init_seed is not None:
+            # Restore previous random state
+            torch.set_rng_state(current_state)
+
+        # Copy weights AFTER initialization if requested
+        if copy_weights_from is not None:
+            self._copy_weights_from_network(copy_weights_from)
+
+        # Move to device for backward compatibility (after all initialization)
         self.to(device)
 
+    def _copy_weights_from_network(self, source_network):
+        """Copy weights from another network with compatible architecture."""
+        source_params = list(source_network.parameters())
+        target_params = list(self.parameters())
+
+        if len(source_params) != len(target_params):
+            raise ValueError(
+                f"Network architectures incompatible: {len(source_params)} vs {len(target_params)} parameters"
+            )
+
+        with torch.no_grad():
+            for target_param, source_param in zip(target_params, source_params):
+                if target_param.shape != source_param.shape:
+                    raise ValueError(
+                        f"Parameter shape mismatch: {target_param.shape} vs {source_param.shape}"
+                    )
+                target_param.copy_(source_param)
+
+    def _get_activation_fn(self, activation):
+        """Get activation function from string name, callable, or None."""
+        if activation == "silu":
+            return torch.nn.functional.silu
+        elif activation == "relu":
+            return torch.nn.functional.relu
+        elif activation == "tanh":
+            return torch.nn.functional.tanh
+        elif activation == "sigmoid":
+            return torch.nn.functional.sigmoid
+        elif activation == "identity" or activation is None:
+            return None  # Will be skipped in forward pass for performance
+        elif callable(activation):
+            return activation
+        else:
+            raise ValueError(f"Unsupported activation: {activation}")
+
+    def _is_identity(self, activation):
+        """Check if activation is identity/None for performance optimization."""
+        return activation == "identity" or activation is None
+
+    @property
+    def device(self):
+        """Device property for backward compatibility."""
+        return next(self.parameters()).device
+
     def forward(self, x):
-        # using the swish
-        x = torch.nn.functional.silu(self.hidden1(x))
-        x = torch.nn.functional.silu(self.hidden2(x))
+        # Forward through hidden layers with layer-specific activations
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            # Skip identity activations for performance
+            if not self.activation_is_identity[i]:
+                x = self.activations[i](x)
+
+        # Output layer
         x = self.output(x)
+
+        # Apply output transformation if specified
+        if self.transform is not None:
+            x = self._apply_transform(x)
+
         return x
+
+    def _apply_transform(self, x):
+        """Apply output transformation based on configuration."""
+        if isinstance(self.transform, list):
+            # List of transforms: apply each transform to corresponding output
+            if len(self.transform) != x.shape[-1]:
+                raise ValueError(
+                    f"Number of transforms ({len(self.transform)}) must match "
+                    f"number of outputs ({x.shape[-1]})"
+                )
+
+            transformed_outputs = []
+            for i, transform in enumerate(self.transform):
+                output_i = x[..., i]
+                transformed_outputs.append(
+                    self._apply_single_transform(output_i, transform)
+                )
+
+            return torch.stack(transformed_outputs, dim=-1)
+
+        elif self.transform is None:
+            # No transformation
+            return x
+
+        else:
+            # Single transform applied to all outputs (string or callable)
+            return self._apply_single_transform(x, self.transform)
+
+    def _apply_single_transform(self, x, transform):
+        """Apply a single transformation to a tensor."""
+        if transform == "sigmoid":
+            return torch.sigmoid(x)
+        elif transform == "exp":
+            return torch.exp(x)
+        elif transform == "tanh":
+            return torch.tanh(x)
+        elif transform == "relu":
+            return torch.nn.functional.relu(x)
+        elif transform == "softplus":
+            return torch.nn.functional.softplus(x)
+        elif transform == "softmax":
+            return torch.nn.functional.softmax(x, dim=-1)
+        elif transform == "abs":
+            return torch.abs(x)
+        elif transform == "square":
+            return x**2
+        elif transform == "identity" or transform is None:
+            return x
+        elif callable(transform):
+            return transform(x)
+        else:
+            raise ValueError(f"Unknown single transform: {transform}")
 
 
 class BlockPolicyNet(Net):
     """
+    A neural network for policy functions in dynamic programming problems.
+
+    This network inherits from Net and provides economic model integration.
+    It automatically determines input/output dimensions from the model block specification
+    and handles control variable bounds.
+
     Parameters
     -----------
-
-    apply_open_bounds: boolean
+    block : model.DBlock
+        The model block containing control variables and dynamics
+    apply_open_bounds : bool, optional
         If True, then the network forward output is normalized by the upper and/or lower bounds,
         computed as a function of the input tensor. These bounds are "open" because output
-        can be arbitrarily close to, but not equal to, the bounds.
+        can be arbitrarily close to, but not equal to, the bounds. Default is True.
+    control_sym : string, optional
+        The symbol for the control variable.
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    **kwargs
+        Additional keyword arguments passed to Net. See Net class
+        documentation for all available options including activation, transform, n_layers, init_seed, copy_weights_from, etc.
     """
 
-    def __init__(self, block, width=32, apply_open_bounds=True):
+    def __init__(
+        self, block, control_sym=None, apply_open_bounds=True, width=32, **kwargs
+    ):
         self.block = block
         self.apply_open_bounds = apply_open_bounds
 
         ## pseudo -- assume only one for now
-        # assuming only on control for now
-        self.csym = self.block.get_controls()[0]
-        self.control = self.block.dynamics[self.csym]
-        self.iset = self.control.iset
+        if control_sym is None:
+            control_sym = next(iter(self.block.get_controls()))
+
+        self.control_sym = control_sym
+        self.cobj = self.block.dynamics[control_sym]
+        self.iset = self.cobj.iset
 
         ## assess whether/how the control is bounded
         # this will be more challenging with multiple controls.
         # If not None, these will be _functions_.
         # If it is bounded, set up the vectorized version of the bound
         # This will be used directly in the forward pass of the network.
-        self.upper_bound = self.control.upper_bound
+        self.upper_bound = self.cobj.upper_bound
         self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
             self.upper_bound, "Upper bound"
         )
-        self.lower_bound = self.control.lower_bound
+        self.lower_bound = self.cobj.lower_bound
         self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
             self.lower_bound, "Lower bound"
         )
 
-        super().__init__(
-            len(self.iset),
-            1,
-            width,
-        )
+        super().__init__(n_inputs=len(self.iset), n_outputs=1, width=width, **kwargs)
 
     def _setup_bound(self, bound_func, bound_name):
         if bound_func:
@@ -120,26 +339,22 @@ class BlockPolicyNet(Net):
 
         # hacky -- should be moved into transition method as other option
         # very brittle, because it can interfere with constraints
-        drs = {csym: lambda: 1 for csym in self.block.get_controls()}
+        drs = {control_sym: lambda: 1 for control_sym in self.block.get_controls()}
 
-        post = self.block.transition(vals, drs, until=self.csym)
+        post = self.block.transition(vals, drs, until=self.control_sym)
 
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
         iset_vals = [post[isym].flatten() for isym in self.iset]
-        if len(iset_vals) > 0:
-            input_tensor = torch.stack(iset_vals).T
-            input_tensor = input_tensor.to(device)
-        else:
-            batch_size = len(next(iter(states_t.values())))
-            input_tensor = torch.empty(batch_size, 0, device=device)
 
-        output = self(input_tensor)  # application of network
+        output = self.get_decision_rule(length=next(iter(post.values())).numel())[
+            self.control_sym
+        ](*iset_vals)
 
         # again, assuming only one for now...
-        # decisions = dict(zip([csym], output))
-        # ... when using multiple csyms, note the orientation of the output tensor
-        decisions = {self.csym: output.flatten()}
+        # decisions = dict(zip([control_sym], output))
+        # ... when using multiple control_syms, note the orientation of the output tensor
+        decisions = {self.control_sym: output}
         return decisions
 
     def forward(self, x):
@@ -155,7 +370,7 @@ class BlockPolicyNet(Net):
         if self.apply_open_bounds:
             if not self.upper_bound and not self.lower_bound:
                 x2 = x1
-            if self.upper_bound and self.lower_bound:
+            elif self.upper_bound and self.lower_bound:
                 # Compute bounds from input using wrapped functions
                 upper_bound = self.upper_bound_vec_func(x)
                 lower_bound = self.lower_bound_vec_func(x)
@@ -165,11 +380,11 @@ class BlockPolicyNet(Net):
                     upper_bound - lower_bound
                 )
 
-            if self.lower_bound and not self.upper_bound:
+            elif self.lower_bound and not self.upper_bound:
                 lower_bound = self.lower_bound_vec_func(x)
                 x2 = lower_bound + torch.nn.functional.softplus(x1)
 
-            if not self.lower_bound and self.upper_bound:
+            elif not self.lower_bound and self.upper_bound:
                 upper_bound = self.upper_bound_vec_func(x)
                 x2 = upper_bound - torch.nn.functional.softplus(x1)
         else:
@@ -184,6 +399,47 @@ class BlockPolicyNet(Net):
 
         return df
 
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_decision_rule(length=length)
+
+    def get_decision_rule(self, length=None):
+        """
+        Returns the decision rule corresponding to this neural network.
+        """
+
+        def decision_rule(*information):
+            """
+            A decision rule positional arguments (reflecting the information set)
+            values to control values.
+
+            Parameters
+            ----------
+            information: *args
+                values arrays
+
+            Returns
+            -------
+
+            decisions - array
+            """
+            if len(information) > 0:
+                input_tensor = torch.stack(information).T
+                input_tensor = input_tensor.to(device)
+            else:
+                batch_size = length
+
+                if batch_size is None:
+                    raise Exception(
+                        "You must pass a tensor length when creating a decision rule"
+                        " with an empty information set."
+                    )
+                input_tensor = torch.empty(batch_size, 0, device=device)
+
+            return self(input_tensor).flatten()  # application of network
+
+        return {self.control_sym: decision_rule}
+
 
 class BlockValueNet(Net):
     """
@@ -191,31 +447,45 @@ class BlockValueNet(Net):
 
     This network takes state variables as input and outputs value estimates.
     It's designed to work with the Bellman equation loss functions in the Maliar method.
+    Inherits from Net to provide configurable architecture.
+
+    Parameters
+    ----------
+    block : model.DBlock
+        The model block containing state variables and dynamics
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    control_sym : string
+        Control variable symbol.
+    **kwargs
+        Additional keyword arguments passed to Net. See Net class
+        documentation for all available options including activation, transform, init_seed, copy_weights_from, etc.
     """
 
-    def __init__(self, block, width: int = 32):
+    def __init__(self, block, control_sym=None, width: int = 32, **kwargs):
         """
         Initialize the BlockValueNet.
-
-        Parameters
-        ----------
-        block : model.DBlock
-            The model block containing state variables and dynamics
-        width : int, optional
-            Width of hidden layers, by default 32
         """
         self.block = block
 
         # Value function should use the same information set as the policy function
         # Both V(s) and π(s) take the same state information as input
         ## pseudo -- assume only one control for now (same as BlockPolicyNet)
-        control = self.block.dynamics[self.block.get_controls()[0]]
+        if control_sym is None:
+            control_sym = next(iter(self.block.get_controls()))
+
+        self.control_sym = control_sym
+        self.cobj = self.block.dynamics[control_sym]
 
         # Use the same information set as the policy network
-        self.state_variables = sorted(list(control.iset))
+        self.state_variables = sorted(list(self.cobj.iset))
 
         # Value function takes state variables as input and outputs a scalar value
-        super().__init__(len(self.state_variables), 1, width)
+        super().__init__(
+            n_inputs=len(self.state_variables), n_outputs=1, width=width, **kwargs
+        )
 
     def value_function(self, states_t, shocks_t={}, parameters={}):
         """
@@ -238,14 +508,10 @@ class BlockValueNet(Net):
         torch.Tensor
             Value function estimates
         """
-        # Get the control's information set (same as policy network)
-        csym = self.block.get_controls()[0]
-        control = self.block.dynamics[csym]
-
         # The inputs to the network are the information set variables
         # Combine states_t and shocks_t to get all available variables
         all_vars = states_t | shocks_t
-        iset_vals = [all_vars[isym].flatten() for isym in control.iset]
+        iset_vals = [all_vars[isym].flatten() for isym in self.cobj.iset]
 
         input_tensor = torch.stack(iset_vals).T
 
@@ -279,6 +545,74 @@ class BlockValueNet(Net):
 
         return vf
 
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_value_function()
+
+
+class BlockPolicyValueNet(Net):
+    """
+    A neural network for approximating policy and value functions in dynamic control problems.
+
+    This network takes state variables as input and outputs both policy (control values) and value estimates.
+
+    It's designed to work with the Bellman equation loss functions in the Maliar method.
+    Inherits from Net to provide configurable architecture.
+
+    Parameters
+    ----------
+    block : model.DBlock
+        The model block containing state variables and dynamics
+    control_sym : string
+        Control variable symbol.
+    apply_open_bounds : bool, optional
+        If True, then the network forward output is normalized by the upper and/or lower bounds,
+        computed as a function of the input tensor. These bounds are "open" because output
+        can be arbitrarily close to, but not equal to, the bounds. Default is True.
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    **kwargs
+        Additional keyword arguments passed to Net. See Net class
+        documentation for all available options including width, activation, transform, init_seed, copy_weights_from, etc.
+    """
+
+    def __init__(self, block, control_sym=None, apply_open_bounds=True, **kwargs):
+        """
+        Initialize the BlockPolicyValueNet.
+        """
+        # This network isn't used for anything, because really this wraps two other networks?
+        super().__init__(n_inputs=0, n_outputs=0)  # Call this FIRST
+        # we will overwrite forward() to use the other two networks as well
+
+        self.policy_network = BlockPolicyNet(
+            block,
+            control_sym=control_sym,
+            apply_open_bounds=apply_open_bounds,
+            **kwargs,
+        )
+        self.value_network = BlockValueNet(block, control_sym=control_sym, **kwargs)
+
+    def get_policy_and_value_functions(self, length):
+        """
+        Get a callable policy and value function for use with loss functions.
+
+        Returns
+        -------
+        callable
+            A function that takes states, shocks, and parameters and returns value estimates
+        """
+
+        def pvf(states_t, shocks_t={}, parameters={}):
+            return self.value_network.value_function(states_t, shocks_t, parameters)
+
+        return self.policy_network.get_decision_rule(length=length), pvf
+
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_policy_and_value_functions(length)
+
 
 ###########
 # Training Nets
@@ -297,70 +631,27 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
     return losses.mean()
 
 
-def train_block_policy_nn(
-    block_policy_nn, inputs: Grid, loss_function: callable, epochs=50
-):
-    ## to change
+def train_block_nn(block_policy_nn, inputs: Grid, loss_function: Callable, epochs=50):
+    # to change
     # criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=0.01)  # Using Adam
 
+    final_loss = None
     for epoch in range(epochs):
         running_loss = 0.0
         optimizer.zero_grad()
         loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_decision_function(), loss_function
+            inputs, block_policy_nn.get_core_function(length=inputs.n()), loss_function
         )
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
+        final_loss = loss.item()  # Store the final loss value
 
         if epoch % 100 == 0:
             print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
 
-    return block_policy_nn
-
-
-def train_block_value_nn(block_value_nn, inputs: Grid, loss_function, epochs=50):
-    """
-    Train a BlockValueNet using a value function loss.
-
-    Parameters
-    ----------
-    block_value_nn : BlockValueNet
-        The value network to train
-    inputs : Grid
-        Input grid containing state variables
-    loss_function : callable
-        Loss function that takes (value_function, input_grid) and returns loss
-    epochs : int, optional
-        Number of training epochs, by default 50
-
-    Returns
-    -------
-    BlockValueNet
-        The trained value network
-    """
-    ## to change
-    # criterion = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(block_value_nn.parameters(), lr=0.01)  # Using Adam
-
-    for epoch in range(epochs):
-        running_loss = 0.0
-        optimizer.zero_grad()
-
-        # Use aggregate_net_loss for consistency with policy training
-        # For value networks, we pass the value function instead of decision function
-        loss = aggregate_net_loss(
-            inputs, block_value_nn.get_value_function(), loss_function
-        )
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item()
-
-        if epoch % 100 == 0:
-            print("Epoch {}: Loss = {}".format(epoch, loss.cpu().detach().numpy()))
-
-    return block_value_nn
+    return block_policy_nn, final_loss
 
 
 def train_block_value_and_policy_nn(
@@ -374,7 +665,7 @@ def train_block_value_and_policy_nn(
     """
     Train both BlockPolicyNet and BlockValueNet jointly for value function iteration.
 
-    This follows the same pattern as train_block_policy_nn and train_block_value_nn:
+    This follows the same pattern as train_block_nn:
     takes existing networks and loss functions, trains them, returns trained networks.
 
     Parameters
@@ -397,7 +688,7 @@ def train_block_value_and_policy_nn(
     tuple
         (trained_policy_nn, trained_value_nn)
     """
-    ## to change
+    # to change
     # criterion = torch.nn.MSELoss()
     policy_optimizer = torch.optim.Adam(
         block_policy_nn.parameters(), lr=0.01

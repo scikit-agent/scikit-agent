@@ -118,10 +118,13 @@ def solve(
             # if no controls, no optimization is necessary
             pass
         elif len(controls) == 1:
+            # assume only one for now
+            control_sym = next(iter(controls))
+
             ## get lower bound.
             ## assumes only one control currently
             lower_bound = -1e-6  ## a really low number!
-            feq = block.dynamics[controls[0]].lower_bound
+            feq = block.dynamics[control_sym].lower_bound
             if feq is not None:
                 lower_bound = feq(
                     *[pre_states[var] for var in signature(feq).parameters]
@@ -130,7 +133,7 @@ def solve(
             ## get upper bound
             ## assumes only one control currently
             upper_bound = 1e-12  # a very high number
-            feq = block.dynamics[controls[0]].upper_bound
+            feq = block.dynamics[control_sym].upper_bound
 
             print(feq)
 
