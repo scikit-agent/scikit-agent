@@ -122,7 +122,7 @@ def d1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     return policy
 
 
-# D-1: Infinite Horizon CRRA (Perfect Foresight)
+# D-2: Infinite Horizon CRRA (Perfect Foresight)
 # ----------------------------------------------
 # The canonical perfect-foresight consumption model. With CRRA utility and
 # constant income, the consumption function is linear in cash-on-hand with
@@ -362,12 +362,11 @@ u1_block = DBlock(
             "y": lambda y_mean, eta: y_mean + eta,  # i.i.d. income
             "m": lambda A, R, y: A * R + y,  # Cash-on-hand
             "c": Control(
-                ["A", "y"],
-                upper_bound=lambda A, y, R=u1_calibration["R"]: A * R + y,
+                ["m"],
+                upper_bound=lambda m: m,
                 agent="consumer",
             ),
             "A": lambda m, c: m - c,  # End-of-period assets
-            "c_lag": lambda c: c,  # Store current consumption for next period
             "u": lambda c, quad_a, quad_b: quad_a * c
             - quad_b * c**2 / 2,  # Quadratic utility
         },
@@ -400,25 +399,29 @@ def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     R - 1  # Net interest rate
 
     def policy(states, shocks, parameters):
-        # Extract realized state variables from DBlock dynamics
-        A = states["A"]  # Financial assets (previous period end)
-        y_current = states["y"]  # Current income realization from DBlock dynamics
+        # DECISION FUNCTION ARCHITECTURE:
+        # Step 1: Extract arrival states
+        A = states["A"]  # Financial assets (arrival state)
+        y_current = states["y"]  # Current income realization (from y_mean + eta)
 
         # Get parameters (allow override of calibration defaults)
         R_param = parameters.get("R", R)
         y_mean_param = parameters.get("y_mean", y_mean)
         r_param = R_param - 1
 
+        # Step 2: Construct information set from arrival states
+        m = A * R_param + y_current  # Information set: cash-on-hand/market resources
+
+        # Step 3: Make decision based on information set (m)
         # PIH solution with βR=1: consume annuity value of TOTAL wealth
         # Human wealth for i.i.d. income: H = E[y]/r = y_mean/r
         human_wealth = y_mean_param / r_param
 
-        # PIH total wealth: financial assets with returns + current income + human wealth
-        # Standard timing: W_t = R*A_{t-1} + y_t + H
-        total_wealth = A * R_param + y_current + human_wealth
+        # PIH total wealth: cash-on-hand + human wealth
+        total_wealth = m + human_wealth
 
         # PIH MPC out of total wealth is r/R
-        # c_t = (r/R) * W_t = r*A_{t-1} + (r/R)*y_t + y_mean/R
+        # c_t = (r/R) * W_t where W_t = m_t + H
         c_optimal = (r_param / R_param) * total_wealth
 
         return {"c": c_optimal}
@@ -426,25 +429,7 @@ def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     return policy
 
 
-# REMOVED: U-2 CARA with Gaussian Shocks
-# ----------------------------------------
-# This model was removed due to a fundamental theoretical flaw identified by review.
-#
-# The "constant savings" implementation creates an Euler equation contradiction:
-# • LHS: u'(c_t) varies with stochastic state (A_t, y_t)
-# • RHS: βR E[u'(c_{t+1})] is constant due to deterministic asset evolution A_{t+1} = R*S*
-#
-# This contradiction makes the analytical solution mathematically invalid.
-# The correct CARA solution with non-standard timing requires complex derivation
-# that may not yield a simple closed form.
-
-
-# REMOVED: U-3 Quadratic with Time-Varying Interest Rates
-# --------------------------------------------------------
-# This model was removed because:
-# 1. Normal distribution for R_t allows R ≤ 0 (economically meaningless)
-# 2. Stochastic interest rates are generally not analytically solvable
-# 3. Even with β_t R_t = 1, the stochastic nature creates intractable complications
+# Additional models U-2 through U-6 are excluded from this catalogue
 
 
 # U-2: Log Utility with Geometric Random Walk Income (ρ=1)
@@ -546,37 +531,9 @@ def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     return policy
 
 
-# REMOVED: U-5 Epstein-Zin Knife-Edge Case
-# -----------------------------------------
-# This model was removed because it is NOT actually analytically solvable.
-# With stochastic income and γ≠1, precautionary saving motives make the
-# consumption function non-linear and analytically intractable.
-# The knife-edge condition θ=γ alone does not make the problem tractable.
-
-
-# REMOVED: U-6 Quadratic with Habit Formation
-# --------------------------------------------
-# This model was removed due to theoretically unjustified "Riccati" solution.
-#
-# The implemented coefficients (φ_A = (R-1)/R, etc.) are ad-hoc and not derived
-# from solving the proper Algebraic Riccati Equation (ARE) for the full LQ problem.
-#
-# True LQ solution requires solving interdependent matrix Riccati equations
-# for the complete state space, which typically requires numerical methods.
-# The current "analytical" solution does not meet mathematical rigor standards.
-
-# REMOVED: All U-6 related dead code eliminated per reviewer feedback
-
-
-# REMOVED: All U-6 related class, DBlock, and policy definitions eliminated
-
-
 # =============================================================================
 # Model Registry
 # =============================================================================
-
-
-# REMOVED: _generate_d1_test_states (D-1 eliminated - redundant with D-1)
 
 
 def _generate_d1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
@@ -593,12 +550,11 @@ def _generate_d23_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
 
 
 def _generate_u1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-1 model: A (arrival assets), y (realized income), c_lag (lagged consumption)"""
-    # Include realized income y that the policy expects (not just A and c_lag)
+    """Generate test states for U-1 model: A (arrival assets), y (realized income)"""
+    # Simple Hall random walk - no habit formation, no c_lag
     return {
         "A": torch.linspace(0.5, 3.0, test_points),
         "y": torch.ones(test_points),  # Default income realization for testing
-        "c_lag": torch.ones(test_points),
     }
 
 
@@ -614,9 +570,6 @@ def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
         "p": p,  # Permanent income level
         "m": A * R + p,  # Cash-on-hand that policy expects under standard timing
     }
-
-
-# REMOVED: _generate_u6_test_states function eliminated (dead code)
 
 
 def _validate_d2_d3_solution(
@@ -703,16 +656,12 @@ BENCHMARK_MODELS = {
         "analytical_policy": u1_analytical_policy,
         "test_states": _generate_u1_test_states,
     },
-    # REMOVED: U-2 had fundamental Euler equation contradiction
-    # REMOVED: U-3 was not actually analytically solvable with stochastic interest rates
     "U-2": {
         "block": u2_block,
         "calibration": u2_calibration,
         "analytical_policy": u2_analytical_policy,
         "test_states": _generate_u2_test_states,
     },
-    # REMOVED: U-5 was not actually analytically solvable
-    # REMOVED: U-6 had theoretically unjustified ad-hoc Riccati coefficients
 }
 
 
@@ -875,9 +824,6 @@ def euler_equation_test(model_id: str, test_points: int = 100) -> Dict[str, Any]
 
 # ANALYTICAL LIFETIME REWARD FUNCTIONS
 # ===================================
-
-
-# REMOVED: d1_analytical_lifetime_reward (D-1 eliminated - redundant with D-1)
 
 
 def d1_analytical_lifetime_reward(

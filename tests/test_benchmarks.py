@@ -15,7 +15,7 @@ from skagent.models.benchmarks import (
 
 
 class TestBenchmarksCatalogue:
-    """Test suite for all 5 analytically solvable consumption-savings models (U-2,U-3,U-5,U-6,D-1 removed)"""
+    """Test suite for all 5 analytically solvable consumption-savings models"""
 
     def test_complete_catalogue_exists(self):
         """Test that all 5 models from the comprehensive catalogue are present"""
@@ -24,7 +24,7 @@ class TestBenchmarksCatalogue:
             "D-2",
             "D-3",
             "U-1",
-            "U-2",  # U-2,U-3,U-5,U-6 removed - theoretical issues; D-1 removed - redundant with D-1
+            "U-2",
         ]
         actual_models = list(BENCHMARK_MODELS.keys())
 
@@ -32,7 +32,7 @@ class TestBenchmarksCatalogue:
             f"Expected {expected_models}, got {actual_models}"
         )
         assert len(BENCHMARK_MODELS) == 5, (
-            f"Expected 5 models, got {len(BENCHMARK_MODELS)} (U-2,U-3,U-5,U-6,D-1 removed)"
+            f"Expected 5 models, got {len(BENCHMARK_MODELS)}"
         )
 
     def test_model_registry_structure(self):
@@ -55,7 +55,7 @@ class TestBenchmarksCatalogue:
 
     @pytest.mark.parametrize(
         "model_id",
-        ["D-1", "D-2", "D-3", "U-1", "U-2"],  # U-2,U-3,U-5,U-6,D-1 removed
+        ["D-1", "D-2", "D-3", "U-1", "U-2"],
     )
     def test_model_validation(self, model_id):
         """Test that each model passes basic validation"""
@@ -113,10 +113,7 @@ class TestBenchmarksCatalogue:
         policy_u1 = get_analytical_policy("U-1")
         test_states = {
             "A": torch.tensor([1.0, 2.0, 3.0]),  # Financial assets
-            "y": torch.tensor(
-                [1.0, 1.0, 1.0]
-            ),  # FIXED: Realized income (required by policy)
-            "c_lag": torch.tensor([1.0, 2.0, 3.0]),
+            "y": torch.tensor([1.0, 1.0, 1.0]),  # Realized income (required by policy)
         }
         result_u1 = policy_u1(test_states, {}, {})
 
@@ -440,7 +437,7 @@ class TestDynamicOptimalityChecks:
                     )
 
             elif model_id == "U-1":
-                # PIH Hall model
+                # PIH Hall model (simple - no habit formation)
                 A_path = torch.zeros(T)
                 y_path = torch.zeros(T)
                 c_path = torch.zeros(T)
