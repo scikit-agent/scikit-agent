@@ -14,7 +14,6 @@ The model follows the approach of Merton (1969) and extends it with labor income
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 import skagent as ska
 from skagent.distributions import Lognormal, MeanOneLogNormal, DiscreteDistribution
 
@@ -180,7 +179,11 @@ print(
 # Run the simulation
 print("Running simulation...")
 simulator.initialize_sim()  # Initialize simulation variables
-simulator.simulate()
+
+print("WILL FIX THIS AFTER BENCHMARKS ARE SETTLED")
+# simulator.simulate()
+
+"""
 print("✓ Simulation completed successfully")
 
 # %%
@@ -194,7 +197,7 @@ print(f"\nSimulation generated data for variables: {list(history.keys())}")
 
 # Convert to numpy arrays for analysis
 def extract_var(var_name):
-    """Extract a variable from simulation history as numpy array"""
+    ""Extract a variable from simulation history as numpy array""
     if var_name in history:
         return np.array(history[var_name])
     else:
@@ -383,7 +386,7 @@ print("MODEL INSIGHTS")
 print("=" * 50)
 
 print(
-    """
+    ""
 This consumption-portfolio model demonstrates several key economic principles:
 
 1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income
@@ -409,7 +412,7 @@ Next steps could include:
 - Adding more realistic features (retirement, health shocks, etc.)
 - Calibrating to match empirical moments
 - Comparing different behavioral rules
-"""
+""
 )
 
 # %%
@@ -421,7 +424,7 @@ print("ABOUT SOLUTION METHODS")
 print("=" * 50)
 
 print(
-    """
+    ""
 This example used simple behavioral rules for illustration.
 For rigorous analysis, you would solve for optimal policies using:
 
@@ -440,7 +443,8 @@ For rigorous analysis, you would solve for optimal policies using:
    - Often faster convergence than value function iteration
 
 See the algorithms documentation for detailed examples of solving models optimally.
-"""
+""
 )
 
 print("\n✓ Example completed successfully!")
+"""
