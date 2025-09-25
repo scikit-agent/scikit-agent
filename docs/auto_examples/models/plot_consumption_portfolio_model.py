@@ -152,7 +152,7 @@ print("✓ Defined behavioral decision rules")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # Initial conditions (must be distributions, not scalar values)
-# Use the tracked variable names 'a' and 'p', not 'a' and 'p'
+# Use the tracked variable names 'a' and 'p', not 'a_prev' and 'p_prev'
 initial_conditions = {
     "a": DiscreteDistribution(
         [calibration["init_wealth"]], [1.0]
@@ -351,7 +351,7 @@ plt.show()
 
 # %%
 # Summary Statistics
-# ^^^^^^^^^^^^^^^^^
+# ^^^^^^^^^^^^^^^^^^
 
 print("\n" + "=" * 50)
 print("SIMULATION SUMMARY STATISTICS")

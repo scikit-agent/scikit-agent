@@ -351,7 +351,7 @@ plt.show()
 
 # %%
 # Summary Statistics
-# ^^^^^^^^^^^^^^^^^
+# ^^^^^^^^^^^^^^^^^^
 
 print("\n" + "=" * 50)
 print("SIMULATION SUMMARY STATISTICS")

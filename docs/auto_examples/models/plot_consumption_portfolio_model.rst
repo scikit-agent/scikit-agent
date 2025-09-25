@@ -201,7 +201,7 @@ We'll create a DBlock that represents one period of the model
 
 
     ✓ Created model block with 9 state variables
-    ✓ Control variables: ['c', 'alpha']
+    ✓ Control variables: {'c': <skagent.model.Control object at 0x71446dfefe00>, 'alpha': <skagent.model.Control object at 0x71446d5c7230>}
     ✓ Shock variables: ['theta', 'psi', 'risky_return']
 
 
@@ -403,7 +403,7 @@ Step 6: Analyze and Visualize Results
 
 Create comprehensive plots
 
-.. GENERATED FROM PYTHON SOURCE LINES 218-348
+.. GENERATED FROM PYTHON SOURCE LINES 218-352
 
 .. code-block:: Python
 
@@ -489,7 +489,9 @@ Create comprehensive plots
         final_wealth_clean = final_wealth[~np.isnan(final_wealth)]
 
         if len(final_wealth_clean) > 0:
-            axes[1, 1].hist(final_wealth_clean, bins=50, alpha=0.7, color="gold", edgecolor="black")
+            axes[1, 1].hist(
+                final_wealth_clean, bins=50, alpha=0.7, color="gold", edgecolor="black"
+            )
             axes[1, 1].axvline(
                 np.mean(final_wealth_clean),
                 color="red",
@@ -505,7 +507,9 @@ Create comprehensive plots
                 label=f"Median: {np.median(final_wealth_clean):.2f}",
             )
         else:
-            axes[1, 1].text(0.5, 0.5, 'No valid data', transform=axes[1, 1].transAxes, ha='center')
+            axes[1, 1].text(
+                0.5, 0.5, "No valid data", transform=axes[1, 1].transAxes, ha="center"
+            )
         axes[1, 1].set_title("Final Wealth Distribution")
         axes[1, 1].set_xlabel("Wealth")
         axes[1, 1].set_ylabel("Frequency")
@@ -550,18 +554,18 @@ Create comprehensive plots
 
  .. code-block:: none
 
-    /mnt/c/Users/alujan/GitHub/alanlujan91/scikit-agent/examples/models/plot_consumption_portfolio_model.py:320: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+    /home/sb/projects/scikit-agent/scikit-agent/examples/models/plot_consumption_portfolio_model.py:324: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
       axes[1, 1].legend()
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 349-351
+.. GENERATED FROM PYTHON SOURCE LINES 353-355
 
 Summary Statistics
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 351-373
+.. GENERATED FROM PYTHON SOURCE LINES 355-377
 
 .. code-block:: Python
 
@@ -610,12 +614,12 @@ Summary Statistics
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 374-376
+.. GENERATED FROM PYTHON SOURCE LINES 378-380
 
 Model Insights
 ^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 376-411
+.. GENERATED FROM PYTHON SOURCE LINES 380-415
 
 .. code-block:: Python
 
@@ -697,12 +701,12 @@ Model Insights
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 412-414
+.. GENERATED FROM PYTHON SOURCE LINES 416-418
 
 Note on Solution Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 414-443
+.. GENERATED FROM PYTHON SOURCE LINES 418-447
 
 .. code-block:: Python
 
@@ -776,7 +780,7 @@ Note on Solution Methods
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 26.443 seconds)
+   **Total running time of the script:** (0 minutes 3.385 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_consumption_portfolio_model.py:
