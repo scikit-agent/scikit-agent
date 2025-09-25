@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test suite for the complete benchmarks catalogue with research-grade robustness"""
+"""Test suite for analytically solvable benchmark models with research-grade robustness"""
 
 import pytest
 import torch
@@ -14,11 +14,11 @@ from skagent.models.benchmarks import (
 )
 
 
-class TestBenchmarksCatalogue:
+class TestBenchmarksModels:
     """Test suite for all 5 analytically solvable consumption-savings models"""
 
-    def test_complete_catalogue_exists(self):
-        """Test that all 5 models from the comprehensive catalogue are present"""
+    def test_benchmark_models_exist(self):
+        """Test that all 5 benchmark models are present"""
         expected_models = [
             "D-1",
             "D-2",
@@ -137,7 +137,7 @@ class TestBenchmarksCatalogue:
         assert torch.all(result_u4["c"] > 0), "U-2 consumption should be positive"
 
     def test_model_descriptions(self):
-        """Test that model descriptions match the catalogue"""
+        """Test that model descriptions match expected patterns"""
         models = list_benchmark_models()
 
         expected_descriptions = {
@@ -499,12 +499,12 @@ class TestDynamicOptimalityChecks:
                     )
 
 
-def test_catalogue_completeness():
-    """Integration test: verify the catalogue is complete and functional"""
+def test_benchmark_functionality():
+    """Integration test: verify all benchmark models are functional"""
 
-    print("\n=== COMPLETE CATALOGUE OF ANALYTICALLY SOLVABLE MODELS ===")
-    print("Based on comprehensive catalogue as of June 13, 2025")
-    print("=" * 70)
+    print("\n=== ANALYTICALLY SOLVABLE BENCHMARK MODELS ===")
+    print("Testing well-known benchmark problems")
+    print("=" * 55)
 
     models = list_benchmark_models()
     for model_id, description in models.items():
@@ -523,9 +523,9 @@ def test_catalogue_completeness():
     assert set(models.keys()) == set(expected_models)
     assert len(models) == 5
 
-    print("\n✓ All 5 models from the comprehensive catalogue are implemented")
+    print("\n✓ All 5 benchmark models are implemented")
 
 
 if __name__ == "__main__":
     # Run the integration test when called directly
-    test_catalogue_completeness()
+    test_benchmark_functionality()

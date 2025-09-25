@@ -21,7 +21,7 @@ Test coverage:
     - Analytical validation with high precision (typical error ~1e-8)
     - Policy function optimality verification
     - Economic constraint satisfaction (budget constraints, Euler equations)
-    - Comprehensive benchmark model coverage (D-1, D-2, D-3)
+    - Benchmark model coverage (D-1, D-2, D-3)
 
 This testing framework enables rigorous validation of the lifetime reward solver
 across realistic time horizons that were previously computationally infeasible.

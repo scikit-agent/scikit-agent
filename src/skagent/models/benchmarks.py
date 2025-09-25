@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Complete Catalogue of Analytically Solvable Consumption-Savings Models
+Analytically Solvable Consumption-Savings Models
 
-This module implements the exhaustive collection of discrete-time consumption-savings
+This module implements a collection of discrete-time consumption-savings
 dynamic programming problems for which the literature has succeeded in writing down
-true closed-form policies. The catalogue is complete as of June 13, 2025, to the best
-of our knowledge: no other analytically solvable DP variants are currently known.
+true closed-form policies. These represent well-known benchmark problems from
+the economic literature with established analytical solutions.
 
 THEORETICAL FOUNDATION
 ======================
@@ -429,12 +429,12 @@ def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     return policy
 
 
-# Additional models U-2 through U-6 are excluded from this catalogue
+# Additional models U-2 through U-6 are excluded from this collection
 
 
 # U-2: Log Utility with Geometric Random Walk Income (ρ=1)
 # --------------------------------------------------------
-# Uses standard timing convention for consistency across catalogue.
+# Uses standard timing convention for consistency across models.
 # With log utility and permanent income following a unit root process,
 # consumption is proportional to total wealth (financial + human).
 
@@ -715,7 +715,7 @@ def get_custom_validation(model_id: str) -> Callable | None:
 
 
 def list_benchmark_models() -> Dict[str, str]:
-    """List all 10 analytically solvable discrete-time models from the catalogue"""
+    """List all analytically solvable discrete-time benchmark models"""
     return {
         model_id: model_info["calibration"]["description"]
         for model_id, model_info in BENCHMARK_MODELS.items()
@@ -1019,7 +1019,7 @@ def get_analytical_lifetime_reward(model_id: str, *args, **kwargs) -> float:
 
 
 if __name__ == "__main__":
-    print("Complete Catalogue of Analytically Solvable Models:")
+    print("Analytically Solvable Benchmark Models:")
     print("=" * 60)
 
     for model_id, description in list_benchmark_models().items():
