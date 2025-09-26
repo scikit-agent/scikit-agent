@@ -11,7 +11,8 @@ Key concepts:
 
 from collections import defaultdict
 from skagent.model import Control
-from skagent.rule import extract_dependencies  
+from skagent.rule import extract_dependencies
+
 
 class ModelAnalyzer:
     """
