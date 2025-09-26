@@ -183,268 +183,267 @@ simulator.initialize_sim()  # Initialize simulation variables
 print("WILL FIX THIS AFTER BENCHMARKS ARE SETTLED")
 # simulator.simulate()
 
-"""
-print("✓ Simulation completed successfully")
+# print("✓ Simulation completed successfully")
 
 # %%
 # Step 6: Analyze and Visualize Results
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # Extract simulation history
-history = simulator.history
-print(f"\nSimulation generated data for variables: {list(history.keys())}")
+# history = simulator.history
+# print(f"\nSimulation generated data for variables: {list(history.keys())}")
 
 
 # Convert to numpy arrays for analysis
-def extract_var(var_name):
-    ""Extract a variable from simulation history as numpy array""
-    if var_name in history:
-        return np.array(history[var_name])
-    else:
-        return None
+# def extract_var(var_name):
+#    ""Extract a variable from simulation history as numpy array""
+#    if var_name in history:
+#        return np.array(history[var_name])
+#    else:
+#        return None
 
 
 # Extract key variables
-consumption = extract_var("c")
-assets = extract_var("a")
-income = extract_var("y")
-portfolio_share = extract_var("alpha")
-market_resources = extract_var("m")
+# consumption = extract_var("c")
+# assets = extract_var("a")
+# income = extract_var("y")
+# portfolio_share = extract_var("alpha")
+# market_resources = extract_var("m")
 
-if consumption is not None and assets is not None:
-    print(f"Data shapes: consumption {consumption.shape}, assets {assets.shape}")
-else:
-    print("Warning: Some variables were not found in simulation history")
+# if consumption is not None and assets is not None:
+#    print(f"Data shapes: consumption {consumption.shape}, assets {assets.shape}")
+# else:
+#    print("Warning: Some variables were not found in simulation history")
 
 # %%
 # Create comprehensive plots
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-fig.suptitle("Consumption-Portfolio Model: Simulation Results", fontsize=16)
+# fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+# fig.suptitle("Consumption-Portfolio Model: Simulation Results", fontsize=16)
 
 # Plot 1: Average consumption over time
-if consumption is not None:
-    mean_consumption = np.mean(consumption, axis=1)
-    std_consumption = np.std(consumption, axis=1)
+# if consumption is not None:
+#    mean_consumption = np.mean(consumption, axis=1)
+#    std_consumption = np.std(consumption, axis=1)
 
-    axes[0, 0].plot(mean_consumption, "b-", linewidth=2, label="Mean")
-    axes[0, 0].fill_between(
-        range(len(mean_consumption)),
-        mean_consumption - std_consumption,
-        mean_consumption + std_consumption,
-        alpha=0.3,
-        label="±1 Std Dev",
-    )
-    axes[0, 0].set_title("Consumption Over Time")
-    axes[0, 0].set_xlabel("Period")
-    axes[0, 0].set_ylabel("Consumption")
-    axes[0, 0].legend()
-    axes[0, 0].grid(True, alpha=0.3)
+#    axes[0, 0].plot(mean_consumption, "b-", linewidth=2, label="Mean")
+#    axes[0, 0].fill_between(
+#        range(len(mean_consumption)),
+#        mean_consumption - std_consumption,
+#        mean_consumption + std_consumption,
+#        alpha=0.3,
+#        label="±1 Std Dev",
+#    )
+#    axes[0, 0].set_title("Consumption Over Time")
+#    axes[0, 0].set_xlabel("Period")
+#    axes[0, 0].set_ylabel("Consumption")
+#    axes[0, 0].legend()
+#    axes[0, 0].grid(True, alpha=0.3)
 
 # Plot 2: Asset accumulation
-if assets is not None:
-    mean_assets = np.mean(assets, axis=1)
-    percentiles = np.percentile(assets, [25, 75], axis=1)
+# if assets is not None:
+#    mean_assets = np.mean(assets, axis=1)
+#    percentiles = np.percentile(assets, [25, 75], axis=1)
 
-    axes[0, 1].plot(mean_assets, "g-", linewidth=2, label="Mean")
-    axes[0, 1].fill_between(
-        range(len(mean_assets)),
-        percentiles[0],
-        percentiles[1],
-        alpha=0.3,
-        label="25th-75th percentile",
-    )
-    axes[0, 1].set_title("Asset Accumulation")
-    axes[0, 1].set_xlabel("Period")
-    axes[0, 1].set_ylabel("Assets")
-    axes[0, 1].legend()
-    axes[0, 1].grid(True, alpha=0.3)
+#    axes[0, 1].plot(mean_assets, "g-", linewidth=2, label="Mean")
+#    axes[0, 1].fill_between(
+#        range(len(mean_assets)),
+#        percentiles[0],
+#        percentiles[1],
+#        alpha=0.3,
+#        label="25th-75th percentile",
+#    )
+#    axes[0, 1].set_title("Asset Accumulation")
+#    axes[0, 1].set_xlabel("Period")
+#    axes[0, 1].set_ylabel("Assets")
+#    axes[0, 1].legend()
+#    axes[0, 1].grid(True, alpha=0.3)
 
 # Plot 3: Portfolio allocation
-if portfolio_share is not None:
-    mean_alpha = np.mean(portfolio_share, axis=1)
-    axes[0, 2].plot(mean_alpha, "r-", linewidth=2)
-    axes[0, 2].set_title("Average Risky Asset Share")
-    axes[0, 2].set_xlabel("Period")
-    axes[0, 2].set_ylabel("Share in Risky Asset")
-    axes[0, 2].set_ylim(0, 1)
-    axes[0, 2].grid(True, alpha=0.3)
+# if portfolio_share is not None:
+#    mean_alpha = np.mean(portfolio_share, axis=1)
+#    axes[0, 2].plot(mean_alpha, "r-", linewidth=2)
+#    axes[0, 2].set_title("Average Risky Asset Share")
+#    axes[0, 2].set_xlabel("Period")
+#    axes[0, 2].set_ylabel("Share in Risky Asset")
+#    axes[0, 2].set_ylim(0, 1)
+#    axes[0, 2].grid(True, alpha=0.3)
 
 # Plot 4: Income distribution evolution
-if income is not None:
-    # Show income distribution at different time periods
-    periods_to_show = [0, 25, 50, 75, 99]
-    colors = ["blue", "green", "orange", "red", "purple"]
+# if income is not None:
+#    # Show income distribution at different time periods
+#    periods_to_show = [0, 25, 50, 75, 99]
+#    colors = ["blue", "green", "orange", "red", "purple"]
+#
+#   for i, period in enumerate(periods_to_show):
+#       if period < income.shape[0]:
+#          axes[1, 0].hist(
+#               income[period],
+#               bins=30,
+#               alpha=0.6,
+#              color=colors[i],
+#               label=f"Period {period}",
+#               density=True,
+#           )
 
-    for i, period in enumerate(periods_to_show):
-        if period < income.shape[0]:
-            axes[1, 0].hist(
-                income[period],
-                bins=30,
-                alpha=0.6,
-                color=colors[i],
-                label=f"Period {period}",
-                density=True,
-            )
-
-    axes[1, 0].set_title("Income Distribution Evolution")
-    axes[1, 0].set_xlabel("Income")
-    axes[1, 0].set_ylabel("Density")
-    axes[1, 0].legend()
-    axes[1, 0].grid(True, alpha=0.3)
+#   axes[1, 0].set_title("Income Distribution Evolution")
+#   axes[1, 0].set_xlabel("Income")
+#   axes[1, 0].set_ylabel("Density")
+#   axes[1, 0].legend()
+#   axes[1, 0].grid(True, alpha=0.3)
 
 # Plot 5: Wealth distribution
-if assets is not None:
-    final_wealth = assets[-1]  # Final period wealth
-    # Filter out NaN values
-    final_wealth_clean = final_wealth[~np.isnan(final_wealth)]
-
-    if len(final_wealth_clean) > 0:
-        axes[1, 1].hist(
-            final_wealth_clean, bins=50, alpha=0.7, color="gold", edgecolor="black"
-        )
-        axes[1, 1].axvline(
-            np.mean(final_wealth_clean),
-            color="red",
-            linestyle="--",
-            linewidth=2,
-            label=f"Mean: {np.mean(final_wealth_clean):.2f}",
-        )
-        axes[1, 1].axvline(
-            np.median(final_wealth_clean),
-            color="blue",
-            linestyle="--",
-            linewidth=2,
-            label=f"Median: {np.median(final_wealth_clean):.2f}",
-        )
-    else:
-        axes[1, 1].text(
-            0.5, 0.5, "No valid data", transform=axes[1, 1].transAxes, ha="center"
-        )
-    axes[1, 1].set_title("Final Wealth Distribution")
-    axes[1, 1].set_xlabel("Wealth")
-    axes[1, 1].set_ylabel("Frequency")
-    axes[1, 1].legend()
-    axes[1, 1].grid(True, alpha=0.3)
+# f assets is not None:
+#   final_wealth = assets[-1]  # Final period wealth
+#   # Filter out NaN values
+#   final_wealth_clean = final_wealth[~np.isnan(final_wealth)]
+#
+#   if len(final_wealth_clean) > 0:
+#      axes[1, 1].hist(
+#           final_wealth_clean, bins=50, alpha=0.7, color="gold", edgecolor="black"
+#       )
+#       axes[1, 1].axvline(
+#          np.mean(final_wealth_clean),
+#           color="red",
+#           linestyle="--",
+#           linewidth=2,
+#           label=f"Mean: {np.mean(final_wealth_clean):.2f}",
+#       )
+#      axes[1, 1].axvline(
+#           np.median(final_wealth_clean),
+#           color="blue",
+#           linestyle="--",
+#           linewidth=2,
+#           label=f"Median: {np.median(final_wealth_clean):.2f}",
+#       )
+#   else:
+#       axes[1, 1].text(
+#           0.5, 0.5, "No valid data", transform=axes[1, 1].transAxes, ha="center"
+#       )
+#   axes[1, 1].set_title("Final Wealth Distribution")
+#   axes[1, 1].set_xlabel("Wealth")
+#   axes[1, 1].set_ylabel("Frequency")
+#   axes[1, 1].legend()
+#   axes[1, 1].grid(True, alpha=0.3)
 
 # Plot 6: Consumption vs Income relationship
-if consumption is not None and income is not None:
-    # Take final period data
-    final_c = consumption[-1]
-    final_y = income[-1]
+# f consumption is not None and income is not None:
+#   # Take final period data
+#   final_c = consumption[-1]
+#   final_y = income[-1]
 
-    axes[1, 2].scatter(final_y, final_c, alpha=0.5, s=10)
+#    axes[1, 2].scatter(final_y, final_c, alpha=0.5, s=10)
 
-    # Add regression line
-    coeffs = np.polyfit(final_y, final_c, 1)
-    line = np.poly1d(coeffs)
-    x_line = np.linspace(final_y.min(), final_y.max(), 100)
-    axes[1, 2].plot(
-        x_line, line(x_line), "r--", linewidth=2, label=f"Slope: {coeffs[0]:.3f}"
-    )
+#    # Add regression line
+#    coeffs = np.polyfit(final_y, final_c, 1)
+#    line = np.poly1d(coeffs)
+#    x_line = np.linspace(final_y.min(), final_y.max(), 100)
+#    axes[1, 2].plot(
+#        x_line, line(x_line), "r--", linewidth=2, label=f"Slope: {coeffs[0]:.3f}"
+#    )
 
-    axes[1, 2].set_title("Consumption vs Income (Final Period)")
-    axes[1, 2].set_xlabel("Income")
-    axes[1, 2].set_ylabel("Consumption")
-    axes[1, 2].legend()
-    axes[1, 2].grid(True, alpha=0.3)
+#    axes[1, 2].set_title("Consumption vs Income (Final Period)")
+#    axes[1, 2].set_xlabel("Income")
+#    axes[1, 2].set_ylabel("Consumption")
+#    axes[1, 2].legend()
+#    axes[1, 2].grid(True, alpha=0.3)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 # %%
 # Summary Statistics
 # ^^^^^^^^^^^^^^^^^^
 
-print("\n" + "=" * 50)
-print("SIMULATION SUMMARY STATISTICS")
-print("=" * 50)
+# print("\n" + "=" * 50)
+# print("SIMULATION SUMMARY STATISTICS")
+# print("=" * 50)
 
-if consumption is not None:
-    print(f"Average final consumption: {np.mean(consumption[-1]):.3f}")
-    print(
-        f"Consumption growth rate: {(np.mean(consumption[-1]) / np.mean(consumption[0]) - 1) * 100:.1f}%"
-    )
+# if consumption is not None:
+#    print(f"Average final consumption: {np.mean(consumption[-1]):.3f}")
+#    print(
+#        f"Consumption growth rate: {(np.mean(consumption[-1]) / np.mean(consumption[0]) - 1) * 100:.1f}%"
+#    )
 
-if assets is not None:
-    print(f"Average final assets: {np.mean(assets[-1]):.3f}")
-    print(f"Fraction with negative assets: {np.mean(assets[-1] < 0) * 100:.1f}%")
+# if assets is not None:
+#    print(f"Average final assets: {np.mean(assets[-1]):.3f}")
+#    print(f"Fraction with negative assets: {np.mean(assets[-1] < 0) * 100:.1f}%")
 
-if portfolio_share is not None:
-    print(f"Average risky asset share: {np.mean(portfolio_share):.3f}")
+# if portfolio_share is not None:
+#    print(f"Average risky asset share: {np.mean(portfolio_share):.3f}")
 
-if income is not None:
-    print(f"Average final income: {np.mean(income[-1]):.3f}")
-    print(f"Income volatility (CV): {np.std(income[-1]) / np.mean(income[-1]):.3f}")
+# if income is not None:
+#    print(f"Average final income: {np.mean(income[-1]):.3f}")
+#    print(f"Income volatility (CV): {np.std(income[-1]) / np.mean(income[-1]):.3f}")
 
 # %%
 # Model Insights
 # ^^^^^^^^^^^^^^
 
-print("\n" + "=" * 50)
-print("MODEL INSIGHTS")
-print("=" * 50)
+# print("\n" + "=" * 50)
+# print("MODEL INSIGHTS")
+# print("=" * 50)
 
-print(
-    ""
-This consumption-portfolio model demonstrates several key economic principles:
+# print(
+#    ""
+# This consumption-portfolio model demonstrates several key economic principles:
+#
+# 1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income
+#   through saving and borrowing.
 
-1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income
-   through saving and borrowing.
+# 2. **Portfolio Choice**: The risky asset allocation varies with wealth levels,
+#   showing how risk-taking depends on financial resources.
 
-2. **Portfolio Choice**: The risky asset allocation varies with wealth levels,
-   showing how risk-taking depends on financial resources.
+# 3. **Precautionary Saving**: Agents accumulate assets as a buffer against
+#   income uncertainty.
 
-3. **Precautionary Saving**: Agents accumulate assets as a buffer against
-   income uncertainty.
+# 4. **Life-Cycle Patterns**: The simulation shows realistic wealth accumulation
+#   patterns over the agent lifecycle.
 
-4. **Life-Cycle Patterns**: The simulation shows realistic wealth accumulation
-   patterns over the agent lifecycle.
+# The scikit-agent framework makes it easy to:
+# - Define complex economic models using intuitive building blocks
+# - Run large-scale Monte Carlo simulations
+# - Analyze results with rich data structures
+# - Extend models with additional features
 
-The scikit-agent framework makes it easy to:
-- Define complex economic models using intuitive building blocks
-- Run large-scale Monte Carlo simulations
-- Analyze results with rich data structures
-- Extend models with additional features
-
-Next steps could include:
-- Solving for optimal policies using value function iteration
-- Adding more realistic features (retirement, health shocks, etc.)
-- Calibrating to match empirical moments
-- Comparing different behavioral rules
-""
-)
+# Next steps could include:
+# - Solving for optimal policies using value function iteration
+# - Adding more realistic features (retirement, health shocks, etc.)
+# - Calibrating to match empirical moments
+# - Comparing different behavioral rules
+# ""
+# )
 
 # %%
 # Note on Solution Methods
 # ^^^^^^^^^^^^^^^^^^^^^^^^
 
-print("\n" + "=" * 50)
-print("ABOUT SOLUTION METHODS")
-print("=" * 50)
+# print("\n" + "=" * 50)
+# print("ABOUT SOLUTION METHODS")
+# print("=" * 50)
 
-print(
-    ""
-This example used simple behavioral rules for illustration.
-For rigorous analysis, you would solve for optimal policies using:
+# print(
+#    ""
+# This example used simple behavioral rules for illustration.
+# For rigorous analysis, you would solve for optimal policies using:
 
-1. **Value Function Iteration** (ska.algos.vbi):
-   - Backward induction on Bellman equation
-   - Guaranteed convergence for well-posed problems
-   - Good for models with moderate state dimensions
+# 1. **Value Function Iteration** (ska.algos.vbi):
+#   - Backward induction on Bellman equation
+#   - Guaranteed convergence for well-posed problems
+#   - Good for models with moderate state dimensions#
 
-2. **Neural Network Methods** (ska.ann):
-   - Deep learning approaches for high-dimensional problems
-   - Can handle complex, non-linear policies
-   - Suitable for large-scale heterogeneous agent models
+# 2. **Neural Network Methods** (ska.ann):
+#   - Deep learning approaches for high-dimensional problems
+#   - Can handle complex, non-linear policies
+#   - Suitable for large-scale heterogeneous agent models
 
-3. **Policy Iteration Methods**:
-   - Alternate between policy evaluation and improvement
-   - Often faster convergence than value function iteration
+# 3. **Policy Iteration Methods**:
+#   - Alternate between policy evaluation and improvement
+#   - Often faster convergence than value function iteration
 
-See the algorithms documentation for detailed examples of solving models optimally.
-""
-)
+# See the algorithms documentation for detailed examples of solving models optimally.
+# ""
+# )
 
-print("\n✓ Example completed successfully!")
-"""
+# print("\n✓ Example completed successfully!")
+# """
