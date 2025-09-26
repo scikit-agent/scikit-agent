@@ -86,9 +86,7 @@ class TestBenchmarksModels:
 
         # D-2: Infinite horizon CRRA
         policy_d3 = get_analytical_policy("D-2")
-        test_states = {
-            "a": torch.tensor([1.0, 2.0, 3.0])
-        }  # FIXED: Use arrival state 'a'
+        test_states = {"a": torch.tensor([1.0, 2.0, 3.0])}  # Use arrival state 'a'
         result_d3 = policy_d3(test_states, {}, {})
 
         assert "c" in result_d3
@@ -97,9 +95,7 @@ class TestBenchmarksModels:
 
         # D-3: Blanchard mortality
         policy_d4 = get_analytical_policy("D-3")
-        test_states = {
-            "a": torch.tensor([1.0, 2.0, 3.0])
-        }  # FIXED: Use arrival state 'a'
+        test_states = {"a": torch.tensor([1.0, 2.0, 3.0])}  # Use arrival state 'a'
         result_d4 = policy_d4(test_states, {}, {})
 
         assert "c" in result_d4
@@ -109,7 +105,7 @@ class TestBenchmarksModels:
     def test_stochastic_models(self):
         """Test key stochastic models (U-1, U-2)"""
 
-        # U-1: PIH with βR=1 - CORRECTED: includes realized income y
+        # U-1: PIH with βR=1 - includes realized income y
         policy_u1 = get_analytical_policy("U-1")
         test_states = {
             "A": torch.tensor([1.0, 2.0, 3.0]),  # Financial assets
@@ -120,7 +116,7 @@ class TestBenchmarksModels:
         assert "c" in result_u1
         assert torch.all(result_u1["c"] > 0), "U-1 consumption should be positive"
 
-        # U-2: Log utility with permanent income - CORRECTED: includes cash-on-hand m
+        # U-2: Log utility with permanent income - includes cash-on-hand m
         policy_u4 = get_analytical_policy("U-2")
         A_vals = torch.tensor([1.0, 2.0, 3.0])
         p_vals = torch.tensor([1.0, 1.0, 1.0])
@@ -129,7 +125,7 @@ class TestBenchmarksModels:
             "A": A_vals,
             "p": p_vals,
             "m": A_vals * R_default
-            + p_vals,  # FIXED: Cash-on-hand (required by standard timing)
+            + p_vals,  # Cash-on-hand (required by standard timing)
         }
         result_u4 = policy_u4(test_states, {}, {})
 
