@@ -31,13 +31,12 @@ choice model using scikit-agent. The model includes:
 
 The model follows the approach of Merton (1969) and extends it with labor income risk.
 
-.. GENERATED FROM PYTHON SOURCE LINES 15-21
+.. GENERATED FROM PYTHON SOURCE LINES 15-20
 
 .. code-block:: Python
 
 
     import numpy as np
-    import matplotlib.pyplot as plt
     import skagent as ska
     from skagent.distributions import Lognormal, MeanOneLogNormal, DiscreteDistribution
 
@@ -48,7 +47,7 @@ The model follows the approach of Merton (1969) and extends it with labor income
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 22-30
+.. GENERATED FROM PYTHON SOURCE LINES 21-29
 
 Model Setup
 -----------
@@ -59,7 +58,7 @@ First, let's define the economic environment. We'll create a model where agents:
 3. Allocate savings between safe and risky assets
 4. Maximize expected utility over their lifetime
 
-.. GENERATED FROM PYTHON SOURCE LINES 30-33
+.. GENERATED FROM PYTHON SOURCE LINES 29-32
 
 .. code-block:: Python
 
@@ -80,12 +79,12 @@ First, let's define the economic environment. We'll create a model where agents:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 34-36
+.. GENERATED FROM PYTHON SOURCE LINES 33-35
 
 Step 1: Define Model Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 36-58
+.. GENERATED FROM PYTHON SOURCE LINES 35-57
 
 .. code-block:: Python
 
@@ -134,14 +133,14 @@ Step 1: Define Model Parameters
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 59-63
+.. GENERATED FROM PYTHON SOURCE LINES 58-62
 
 Step 2: Build the Economic Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We'll create a DBlock that represents one period of the model
 
-.. GENERATED FROM PYTHON SOURCE LINES 63-109
+.. GENERATED FROM PYTHON SOURCE LINES 62-108
 
 .. code-block:: Python
 
@@ -201,18 +200,18 @@ We'll create a DBlock that represents one period of the model
 
 
     ✓ Created model block with 9 state variables
-    ✓ Control variables: {'c': <skagent.model.Control object at 0x7f5a9198fcb0>, 'alpha': <skagent.model.Control object at 0x7f5a8f4865a0>}
+    ✓ Control variables: {'c': <skagent.model.Control object at 0x7f57f6952090>, 'alpha': <skagent.model.Control object at 0x7f57f70939b0>}
     ✓ Shock variables: ['theta', 'psi', 'risky_return']
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 110-112
+.. GENERATED FROM PYTHON SOURCE LINES 109-111
 
 Step 3: Construct Distributions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 112-121
+.. GENERATED FROM PYTHON SOURCE LINES 111-120
 
 .. code-block:: Python
 
@@ -243,7 +242,7 @@ Step 3: Construct Distributions
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 122-127
+.. GENERATED FROM PYTHON SOURCE LINES 121-126
 
 Step 4: Define Simple Decision Rules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -251,7 +250,7 @@ Step 4: Define Simple Decision Rules
 For this example, we'll use simple rules rather than solving the full optimization.
 In practice, you would use scikit-agent's solution algorithms.
 
-.. GENERATED FROM PYTHON SOURCE LINES 127-150
+.. GENERATED FROM PYTHON SOURCE LINES 126-149
 
 .. code-block:: Python
 
@@ -291,12 +290,12 @@ In practice, you would use scikit-agent's solution algorithms.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 151-153
+.. GENERATED FROM PYTHON SOURCE LINES 150-152
 
 Step 5: Run Monte Carlo Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 153-186
+.. GENERATED FROM PYTHON SOURCE LINES 152-188
 
 .. code-block:: Python
 
@@ -330,8 +329,11 @@ Step 5: Run Monte Carlo Simulation
     # Run the simulation
     print("Running simulation...")
     simulator.initialize_sim()  # Initialize simulation variables
-    simulator.simulate()
-    print("✓ Simulation completed successfully")
+
+    print("WILL FIX THIS AFTER BENCHMARKS ARE SETTLED")
+    # simulator.simulate()
+
+    # print("✓ Simulation completed successfully")
 
 
 
@@ -343,436 +345,334 @@ Step 5: Run Monte Carlo Simulation
 
     ✓ Created simulator with 5000 agents over 100 periods
     Running simulation...
-    ✓ Simulation completed successfully
+    WILL FIX THIS AFTER BENCHMARKS ARE SETTLED
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 187-189
+.. GENERATED FROM PYTHON SOURCE LINES 189-191
 
 Step 6: Analyze and Visualize Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 189-216
+.. GENERATED FROM PYTHON SOURCE LINES 191-218
 
 .. code-block:: Python
 
 
     # Extract simulation history
-    history = simulator.history
-    print(f"\nSimulation generated data for variables: {list(history.keys())}")
+    # history = simulator.history
+    # print(f"\nSimulation generated data for variables: {list(history.keys())}")
 
 
     # Convert to numpy arrays for analysis
-    def extract_var(var_name):
-        """Extract a variable from simulation history as numpy array"""
-        if var_name in history:
-            return np.array(history[var_name])
-        else:
-            return None
+    # def extract_var(var_name):
+    #    ""Extract a variable from simulation history as numpy array""
+    #    if var_name in history:
+    #        return np.array(history[var_name])
+    #    else:
+    #        return None
 
 
     # Extract key variables
-    consumption = extract_var("c")
-    assets = extract_var("a")
-    income = extract_var("y")
-    portfolio_share = extract_var("alpha")
-    market_resources = extract_var("m")
+    # consumption = extract_var("c")
+    # assets = extract_var("a")
+    # income = extract_var("y")
+    # portfolio_share = extract_var("alpha")
+    # market_resources = extract_var("m")
 
-    if consumption is not None and assets is not None:
-        print(f"Data shapes: consumption {consumption.shape}, assets {assets.shape}")
-    else:
-        print("Warning: Some variables were not found in simulation history")
-
-
-
-
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-
-    Simulation generated data for variables: ['theta', 'psi', 'risky_return', 'y', 'p', 'R_portfolio', 'b', 'm', 'c', 'alpha', 'a', 'u']
-    Data shapes: consumption (100, 5000), assets (100, 5000)
+    # if consumption is not None and assets is not None:
+    #    print(f"Data shapes: consumption {consumption.shape}, assets {assets.shape}")
+    # else:
+    #    print("Warning: Some variables were not found in simulation history")
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 217-218
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 219-220
 
 Create comprehensive plots
 
-.. GENERATED FROM PYTHON SOURCE LINES 218-352
+.. GENERATED FROM PYTHON SOURCE LINES 220-354
 
 .. code-block:: Python
 
 
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    fig.suptitle("Consumption-Portfolio Model: Simulation Results", fontsize=16)
+    # fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    # fig.suptitle("Consumption-Portfolio Model: Simulation Results", fontsize=16)
 
     # Plot 1: Average consumption over time
-    if consumption is not None:
-        mean_consumption = np.mean(consumption, axis=1)
-        std_consumption = np.std(consumption, axis=1)
+    # if consumption is not None:
+    #    mean_consumption = np.mean(consumption, axis=1)
+    #    std_consumption = np.std(consumption, axis=1)
 
-        axes[0, 0].plot(mean_consumption, "b-", linewidth=2, label="Mean")
-        axes[0, 0].fill_between(
-            range(len(mean_consumption)),
-            mean_consumption - std_consumption,
-            mean_consumption + std_consumption,
-            alpha=0.3,
-            label="±1 Std Dev",
-        )
-        axes[0, 0].set_title("Consumption Over Time")
-        axes[0, 0].set_xlabel("Period")
-        axes[0, 0].set_ylabel("Consumption")
-        axes[0, 0].legend()
-        axes[0, 0].grid(True, alpha=0.3)
+    #    axes[0, 0].plot(mean_consumption, "b-", linewidth=2, label="Mean")
+    #    axes[0, 0].fill_between(
+    #        range(len(mean_consumption)),
+    #        mean_consumption - std_consumption,
+    #        mean_consumption + std_consumption,
+    #        alpha=0.3,
+    #        label="±1 Std Dev",
+    #    )
+    #    axes[0, 0].set_title("Consumption Over Time")
+    #    axes[0, 0].set_xlabel("Period")
+    #    axes[0, 0].set_ylabel("Consumption")
+    #    axes[0, 0].legend()
+    #    axes[0, 0].grid(True, alpha=0.3)
 
     # Plot 2: Asset accumulation
-    if assets is not None:
-        mean_assets = np.mean(assets, axis=1)
-        percentiles = np.percentile(assets, [25, 75], axis=1)
+    # if assets is not None:
+    #    mean_assets = np.mean(assets, axis=1)
+    #    percentiles = np.percentile(assets, [25, 75], axis=1)
 
-        axes[0, 1].plot(mean_assets, "g-", linewidth=2, label="Mean")
-        axes[0, 1].fill_between(
-            range(len(mean_assets)),
-            percentiles[0],
-            percentiles[1],
-            alpha=0.3,
-            label="25th-75th percentile",
-        )
-        axes[0, 1].set_title("Asset Accumulation")
-        axes[0, 1].set_xlabel("Period")
-        axes[0, 1].set_ylabel("Assets")
-        axes[0, 1].legend()
-        axes[0, 1].grid(True, alpha=0.3)
+    #    axes[0, 1].plot(mean_assets, "g-", linewidth=2, label="Mean")
+    #    axes[0, 1].fill_between(
+    #        range(len(mean_assets)),
+    #        percentiles[0],
+    #        percentiles[1],
+    #        alpha=0.3,
+    #        label="25th-75th percentile",
+    #    )
+    #    axes[0, 1].set_title("Asset Accumulation")
+    #    axes[0, 1].set_xlabel("Period")
+    #    axes[0, 1].set_ylabel("Assets")
+    #    axes[0, 1].legend()
+    #    axes[0, 1].grid(True, alpha=0.3)
 
     # Plot 3: Portfolio allocation
-    if portfolio_share is not None:
-        mean_alpha = np.mean(portfolio_share, axis=1)
-        axes[0, 2].plot(mean_alpha, "r-", linewidth=2)
-        axes[0, 2].set_title("Average Risky Asset Share")
-        axes[0, 2].set_xlabel("Period")
-        axes[0, 2].set_ylabel("Share in Risky Asset")
-        axes[0, 2].set_ylim(0, 1)
-        axes[0, 2].grid(True, alpha=0.3)
+    # if portfolio_share is not None:
+    #    mean_alpha = np.mean(portfolio_share, axis=1)
+    #    axes[0, 2].plot(mean_alpha, "r-", linewidth=2)
+    #    axes[0, 2].set_title("Average Risky Asset Share")
+    #    axes[0, 2].set_xlabel("Period")
+    #    axes[0, 2].set_ylabel("Share in Risky Asset")
+    #    axes[0, 2].set_ylim(0, 1)
+    #    axes[0, 2].grid(True, alpha=0.3)
 
     # Plot 4: Income distribution evolution
-    if income is not None:
-        # Show income distribution at different time periods
-        periods_to_show = [0, 25, 50, 75, 99]
-        colors = ["blue", "green", "orange", "red", "purple"]
+    # if income is not None:
+    #    # Show income distribution at different time periods
+    #    periods_to_show = [0, 25, 50, 75, 99]
+    #    colors = ["blue", "green", "orange", "red", "purple"]
+    #
+    #   for i, period in enumerate(periods_to_show):
+    #       if period < income.shape[0]:
+    #          axes[1, 0].hist(
+    #               income[period],
+    #               bins=30,
+    #               alpha=0.6,
+    #              color=colors[i],
+    #               label=f"Period {period}",
+    #               density=True,
+    #           )
 
-        for i, period in enumerate(periods_to_show):
-            if period < income.shape[0]:
-                axes[1, 0].hist(
-                    income[period],
-                    bins=30,
-                    alpha=0.6,
-                    color=colors[i],
-                    label=f"Period {period}",
-                    density=True,
-                )
-
-        axes[1, 0].set_title("Income Distribution Evolution")
-        axes[1, 0].set_xlabel("Income")
-        axes[1, 0].set_ylabel("Density")
-        axes[1, 0].legend()
-        axes[1, 0].grid(True, alpha=0.3)
+    #   axes[1, 0].set_title("Income Distribution Evolution")
+    #   axes[1, 0].set_xlabel("Income")
+    #   axes[1, 0].set_ylabel("Density")
+    #   axes[1, 0].legend()
+    #   axes[1, 0].grid(True, alpha=0.3)
 
     # Plot 5: Wealth distribution
-    if assets is not None:
-        final_wealth = assets[-1]  # Final period wealth
-        # Filter out NaN values
-        final_wealth_clean = final_wealth[~np.isnan(final_wealth)]
-
-        if len(final_wealth_clean) > 0:
-            axes[1, 1].hist(
-                final_wealth_clean, bins=50, alpha=0.7, color="gold", edgecolor="black"
-            )
-            axes[1, 1].axvline(
-                np.mean(final_wealth_clean),
-                color="red",
-                linestyle="--",
-                linewidth=2,
-                label=f"Mean: {np.mean(final_wealth_clean):.2f}",
-            )
-            axes[1, 1].axvline(
-                np.median(final_wealth_clean),
-                color="blue",
-                linestyle="--",
-                linewidth=2,
-                label=f"Median: {np.median(final_wealth_clean):.2f}",
-            )
-        else:
-            axes[1, 1].text(
-                0.5, 0.5, "No valid data", transform=axes[1, 1].transAxes, ha="center"
-            )
-        axes[1, 1].set_title("Final Wealth Distribution")
-        axes[1, 1].set_xlabel("Wealth")
-        axes[1, 1].set_ylabel("Frequency")
-        axes[1, 1].legend()
-        axes[1, 1].grid(True, alpha=0.3)
+    # f assets is not None:
+    #   final_wealth = assets[-1]  # Final period wealth
+    #   # Filter out NaN values
+    #   final_wealth_clean = final_wealth[~np.isnan(final_wealth)]
+    #
+    #   if len(final_wealth_clean) > 0:
+    #      axes[1, 1].hist(
+    #           final_wealth_clean, bins=50, alpha=0.7, color="gold", edgecolor="black"
+    #       )
+    #       axes[1, 1].axvline(
+    #          np.mean(final_wealth_clean),
+    #           color="red",
+    #           linestyle="--",
+    #           linewidth=2,
+    #           label=f"Mean: {np.mean(final_wealth_clean):.2f}",
+    #       )
+    #      axes[1, 1].axvline(
+    #           np.median(final_wealth_clean),
+    #           color="blue",
+    #           linestyle="--",
+    #           linewidth=2,
+    #           label=f"Median: {np.median(final_wealth_clean):.2f}",
+    #       )
+    #   else:
+    #       axes[1, 1].text(
+    #           0.5, 0.5, "No valid data", transform=axes[1, 1].transAxes, ha="center"
+    #       )
+    #   axes[1, 1].set_title("Final Wealth Distribution")
+    #   axes[1, 1].set_xlabel("Wealth")
+    #   axes[1, 1].set_ylabel("Frequency")
+    #   axes[1, 1].legend()
+    #   axes[1, 1].grid(True, alpha=0.3)
 
     # Plot 6: Consumption vs Income relationship
-    if consumption is not None and income is not None:
-        # Take final period data
-        final_c = consumption[-1]
-        final_y = income[-1]
+    # f consumption is not None and income is not None:
+    #   # Take final period data
+    #   final_c = consumption[-1]
+    #   final_y = income[-1]
 
-        axes[1, 2].scatter(final_y, final_c, alpha=0.5, s=10)
+    #    axes[1, 2].scatter(final_y, final_c, alpha=0.5, s=10)
 
-        # Add regression line
-        coeffs = np.polyfit(final_y, final_c, 1)
-        line = np.poly1d(coeffs)
-        x_line = np.linspace(final_y.min(), final_y.max(), 100)
-        axes[1, 2].plot(
-            x_line, line(x_line), "r--", linewidth=2, label=f"Slope: {coeffs[0]:.3f}"
-        )
+    #    # Add regression line
+    #    coeffs = np.polyfit(final_y, final_c, 1)
+    #    line = np.poly1d(coeffs)
+    #    x_line = np.linspace(final_y.min(), final_y.max(), 100)
+    #    axes[1, 2].plot(
+    #        x_line, line(x_line), "r--", linewidth=2, label=f"Slope: {coeffs[0]:.3f}"
+    #    )
 
-        axes[1, 2].set_title("Consumption vs Income (Final Period)")
-        axes[1, 2].set_xlabel("Income")
-        axes[1, 2].set_ylabel("Consumption")
-        axes[1, 2].legend()
-        axes[1, 2].grid(True, alpha=0.3)
+    #    axes[1, 2].set_title("Consumption vs Income (Final Period)")
+    #    axes[1, 2].set_xlabel("Income")
+    #    axes[1, 2].set_ylabel("Consumption")
+    #    axes[1, 2].legend()
+    #    axes[1, 2].grid(True, alpha=0.3)
 
-    plt.tight_layout()
-    plt.show()
-
-
-
-
-.. image-sg:: /auto_examples/models/images/sphx_glr_plot_consumption_portfolio_model_001.png
-   :alt: Consumption-Portfolio Model: Simulation Results, Consumption Over Time, Asset Accumulation, Average Risky Asset Share, Income Distribution Evolution, Final Wealth Distribution, Consumption vs Income (Final Period)
-   :srcset: /auto_examples/models/images/sphx_glr_plot_consumption_portfolio_model_001.png
-   :class: sphx-glr-single-img
-
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    /home/sb/projects/scikit-agent/scikit-agent/examples/models/plot_consumption_portfolio_model.py:324: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
-      axes[1, 1].legend()
+    # plt.tight_layout()
+    # plt.show()
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 353-355
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 355-357
 
 Summary Statistics
 ^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 355-377
+.. GENERATED FROM PYTHON SOURCE LINES 357-379
 
 .. code-block:: Python
 
 
-    print("\n" + "=" * 50)
-    print("SIMULATION SUMMARY STATISTICS")
-    print("=" * 50)
+    # print("\n" + "=" * 50)
+    # print("SIMULATION SUMMARY STATISTICS")
+    # print("=" * 50)
 
-    if consumption is not None:
-        print(f"Average final consumption: {np.mean(consumption[-1]):.3f}")
-        print(
-            f"Consumption growth rate: {(np.mean(consumption[-1]) / np.mean(consumption[0]) - 1) * 100:.1f}%"
-        )
+    # if consumption is not None:
+    #    print(f"Average final consumption: {np.mean(consumption[-1]):.3f}")
+    #    print(
+    #        f"Consumption growth rate: {(np.mean(consumption[-1]) / np.mean(consumption[0]) - 1) * 100:.1f}%"
+    #    )
 
-    if assets is not None:
-        print(f"Average final assets: {np.mean(assets[-1]):.3f}")
-        print(f"Fraction with negative assets: {np.mean(assets[-1] < 0) * 100:.1f}%")
+    # if assets is not None:
+    #    print(f"Average final assets: {np.mean(assets[-1]):.3f}")
+    #    print(f"Fraction with negative assets: {np.mean(assets[-1] < 0) * 100:.1f}%")
 
-    if portfolio_share is not None:
-        print(f"Average risky asset share: {np.mean(portfolio_share):.3f}")
+    # if portfolio_share is not None:
+    #    print(f"Average risky asset share: {np.mean(portfolio_share):.3f}")
 
-    if income is not None:
-        print(f"Average final income: {np.mean(income[-1]):.3f}")
-        print(f"Income volatility (CV): {np.std(income[-1]) / np.mean(income[-1]):.3f}")
-
-
-
-
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-
-    ==================================================
-    SIMULATION SUMMARY STATISTICS
-    ==================================================
-    Average final consumption: nan
-    Consumption growth rate: nan%
-    Average final assets: nan
-    Fraction with negative assets: 0.0%
-    Average risky asset share: nan
-    Average final income: 2.683
-    Income volatility (CV): 0.544
+    # if income is not None:
+    #    print(f"Average final income: {np.mean(income[-1]):.3f}")
+    #    print(f"Income volatility (CV): {np.std(income[-1]) / np.mean(income[-1]):.3f}")
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 378-380
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 380-382
 
 Model Insights
 ^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 380-415
+.. GENERATED FROM PYTHON SOURCE LINES 382-417
 
 .. code-block:: Python
 
 
-    print("\n" + "=" * 50)
-    print("MODEL INSIGHTS")
-    print("=" * 50)
+    # print("\n" + "=" * 50)
+    # print("MODEL INSIGHTS")
+    # print("=" * 50)
 
-    print(
-        """
-    This consumption-portfolio model demonstrates several key economic principles:
+    # print(
+    #    ""
+    # This consumption-portfolio model demonstrates several key economic principles:
+    #
+    # 1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income
+    #   through saving and borrowing.
 
-    1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income
-       through saving and borrowing.
+    # 2. **Portfolio Choice**: The risky asset allocation varies with wealth levels,
+    #   showing how risk-taking depends on financial resources.
 
-    2. **Portfolio Choice**: The risky asset allocation varies with wealth levels,
-       showing how risk-taking depends on financial resources.
+    # 3. **Precautionary Saving**: Agents accumulate assets as a buffer against
+    #   income uncertainty.
 
-    3. **Precautionary Saving**: Agents accumulate assets as a buffer against
-       income uncertainty.
+    # 4. **Life-Cycle Patterns**: The simulation shows realistic wealth accumulation
+    #   patterns over the agent lifecycle.
 
-    4. **Life-Cycle Patterns**: The simulation shows realistic wealth accumulation
-       patterns over the agent lifecycle.
+    # The scikit-agent framework makes it easy to:
+    # - Define complex economic models using intuitive building blocks
+    # - Run large-scale Monte Carlo simulations
+    # - Analyze results with rich data structures
+    # - Extend models with additional features
 
-    The scikit-agent framework makes it easy to:
-    - Define complex economic models using intuitive building blocks
-    - Run large-scale Monte Carlo simulations
-    - Analyze results with rich data structures
-    - Extend models with additional features
-
-    Next steps could include:
-    - Solving for optimal policies using value function iteration
-    - Adding more realistic features (retirement, health shocks, etc.)
-    - Calibrating to match empirical moments
-    - Comparing different behavioral rules
-    """
-    )
-
-
-
-
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-
-    ==================================================
-    MODEL INSIGHTS
-    ==================================================
-
-    This consumption-portfolio model demonstrates several key economic principles:
-
-    1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income
-       through saving and borrowing.
-
-    2. **Portfolio Choice**: The risky asset allocation varies with wealth levels,
-       showing how risk-taking depends on financial resources.
-
-    3. **Precautionary Saving**: Agents accumulate assets as a buffer against
-       income uncertainty.
-
-    4. **Life-Cycle Patterns**: The simulation shows realistic wealth accumulation
-       patterns over the agent lifecycle.
-
-    The scikit-agent framework makes it easy to:
-    - Define complex economic models using intuitive building blocks
-    - Run large-scale Monte Carlo simulations
-    - Analyze results with rich data structures
-    - Extend models with additional features
-
-    Next steps could include:
-    - Solving for optimal policies using value function iteration
-    - Adding more realistic features (retirement, health shocks, etc.)
-    - Calibrating to match empirical moments
-    - Comparing different behavioral rules
+    # Next steps could include:
+    # - Solving for optimal policies using value function iteration
+    # - Adding more realistic features (retirement, health shocks, etc.)
+    # - Calibrating to match empirical moments
+    # - Comparing different behavioral rules
+    # ""
+    # )
 
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 416-418
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 418-420
 
 Note on Solution Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 418-447
+.. GENERATED FROM PYTHON SOURCE LINES 420-450
 
 .. code-block:: Python
 
 
-    print("\n" + "=" * 50)
-    print("ABOUT SOLUTION METHODS")
-    print("=" * 50)
+    # print("\n" + "=" * 50)
+    # print("ABOUT SOLUTION METHODS")
+    # print("=" * 50)
 
-    print(
-        """
-    This example used simple behavioral rules for illustration.
-    For rigorous analysis, you would solve for optimal policies using:
+    # print(
+    #    ""
+    # This example used simple behavioral rules for illustration.
+    # For rigorous analysis, you would solve for optimal policies using:
 
-    1. **Value Function Iteration** (ska.algos.vbi):
-       - Backward induction on Bellman equation
-       - Guaranteed convergence for well-posed problems
-       - Good for models with moderate state dimensions
+    # 1. **Value Function Iteration** (ska.algos.vbi):
+    #   - Backward induction on Bellman equation
+    #   - Guaranteed convergence for well-posed problems
+    #   - Good for models with moderate state dimensions#
 
-    2. **Neural Network Methods** (ska.ann):
-       - Deep learning approaches for high-dimensional problems
-       - Can handle complex, non-linear policies
-       - Suitable for large-scale heterogeneous agent models
+    # 2. **Neural Network Methods** (ska.ann):
+    #   - Deep learning approaches for high-dimensional problems
+    #   - Can handle complex, non-linear policies
+    #   - Suitable for large-scale heterogeneous agent models
 
-    3. **Policy Iteration Methods**:
-       - Alternate between policy evaluation and improvement
-       - Often faster convergence than value function iteration
+    # 3. **Policy Iteration Methods**:
+    #   - Alternate between policy evaluation and improvement
+    #   - Often faster convergence than value function iteration
 
-    See the algorithms documentation for detailed examples of solving models optimally.
-    """
-    )
+    # See the algorithms documentation for detailed examples of solving models optimally.
+    # ""
+    # )
 
-    print("\n✓ Example completed successfully!")
-
-
-
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
+    # print("\n✓ Example completed successfully!")
+    # """
 
 
-    ==================================================
-    ABOUT SOLUTION METHODS
-    ==================================================
 
-    This example used simple behavioral rules for illustration.
-    For rigorous analysis, you would solve for optimal policies using:
-
-    1. **Value Function Iteration** (ska.algos.vbi):
-       - Backward induction on Bellman equation
-       - Guaranteed convergence for well-posed problems
-       - Good for models with moderate state dimensions
-
-    2. **Neural Network Methods** (ska.ann):
-       - Deep learning approaches for high-dimensional problems
-       - Can handle complex, non-linear policies
-       - Suitable for large-scale heterogeneous agent models
-
-    3. **Policy Iteration Methods**:
-       - Alternate between policy evaluation and improvement
-       - Often faster convergence than value function iteration
-
-    See the algorithms documentation for detailed examples of solving models optimally.
-
-
-    ✓ Example completed successfully!
 
 
 
@@ -780,7 +680,7 @@ Note on Solution Methods
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 3.365 seconds)
+   **Total running time of the script:** (0 minutes 4.950 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_consumption_portfolio_model.py:

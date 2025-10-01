@@ -16,6 +16,7 @@ callable functions.
 
 ```{eval-rst}
 .. autofunction:: skagent.parser.math_text_to_lambda
+   :no-index:
 ```
 
 ### Parser Classes
@@ -25,6 +26,7 @@ callable functions.
    :members:
    :undoc-members:
    :show-inheritance:
+   :no-index:
 ```
 
 ```{eval-rst}

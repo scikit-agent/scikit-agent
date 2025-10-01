@@ -106,8 +106,8 @@ git push origin main
 
 ```bash
 # Build docs locally
-cd docs
 pip install ".[docs]"
+cd docs
 python -m sphinx -b html . _build
 
 # Serve locally

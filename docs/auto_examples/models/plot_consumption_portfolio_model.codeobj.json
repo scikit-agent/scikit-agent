@@ -1,1139 +1,564 @@
 {
-  "DiscreteDistribution": [
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "DiscreteDistribution"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "DiscreteDistribution"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "DiscreteDistribution"
-    }
-  ],
-  "Lognormal": [
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "Lognormal"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Lognormal"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "Distribution"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Distribution"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "abc",
-      "module_short": "abc",
-      "name": "ABC"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "Lognormal"
-    }
-  ],
-  "MeanOneLogNormal": [
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "MeanOneLogNormal"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "MeanOneLogNormal"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "Lognormal"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Lognormal"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "Distribution"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Distribution"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "abc",
-      "module_short": "abc",
-      "name": "ABC"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "MeanOneLogNormal"
-    }
-  ],
-  "assets": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "assets.shape": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "tuple"
-    }
-  ],
-  "axes": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "calibration": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "dict"
-    }
-  ],
-  "calibration.items": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "builtin_function_or_method"
-    }
-  ],
-  "coeffs": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "colors": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "list"
-    }
-  ],
-  "consumption": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "consumption.shape": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "tuple"
-    }
-  ],
-  "consumption_portfolio_block": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent",
-      "name": "DBlock"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "DBlock"
-    }
-  ],
-  "consumption_portfolio_block.construct_shocks": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent",
-      "name": "DBlock.construct_shocks"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "DBlock.construct_shocks"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent.model",
-      "name": "Block.construct_shocks"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Block.construct_shocks"
-    }
-  ],
-  "consumption_portfolio_block.get_controls": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent",
-      "name": "DBlock.get_controls"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "DBlock.get_controls"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent.model",
-      "name": "Block.get_controls"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Block.get_controls"
-    }
-  ],
-  "consumption_portfolio_block.shocks.items": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "builtin_function_or_method"
-    }
-  ],
-  "consumption_rule": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "function"
-    }
-  ],
-  "decision_rules": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "dict"
-    }
-  ],
-  "dist": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.distributions",
-      "module_short": "skagent.distributions",
-      "name": "Lognormal"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Lognormal"
-    }
-  ],
-  "dynamics": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "dict"
-    }
-  ],
-  "extract_var": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "function"
-    }
-  ],
-  "fig": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib.figure",
-      "module_short": "matplotlib.figure",
-      "name": "Figure"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib",
-      "module_short": "matplotlib",
-      "name": "Figure"
-    }
-  ],
-  "fig.suptitle": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib.figure",
-      "module_short": "matplotlib.figure",
-      "name": "Figure.suptitle"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib",
-      "module_short": "matplotlib",
-      "name": "Figure.suptitle"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib.figure",
-      "module_short": "matplotlib.figure",
-      "name": "FigureBase.suptitle"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib",
-      "module_short": "matplotlib",
-      "name": "FigureBase.suptitle"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib.artist",
-      "module_short": "matplotlib.artist",
-      "name": "Artist.suptitle"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib",
-      "module_short": "matplotlib",
-      "name": "Artist.suptitle"
-    }
-  ],
-  "final_c": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "final_wealth": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "final_wealth_clean": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "final_y": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "final_y.max": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "builtin_function_or_method"
-    }
-  ],
-  "final_y.min": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "builtin_function_or_method"
-    }
-  ],
-  "history": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "dict"
-    }
-  ],
-  "history.keys": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "builtin_function_or_method"
-    }
-  ],
-  "i": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "int"
-    }
-  ],
-  "income": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "income.shape": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "tuple"
-    }
-  ],
-  "initial_conditions": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "dict"
-    }
-  ],
-  "line": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "poly1d"
-    }
-  ],
-  "market_resources": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "mean_alpha": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "mean_assets": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "mean_consumption": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "np.array": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "builtin_function_or_method"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "array"
-    }
-  ],
-  "np.isnan": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ufunc"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "isnan"
-    }
-  ],
-  "np.linspace": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "_ArrayFunctionDispatcher"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "linspace"
-    }
-  ],
-  "np.mean": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "_ArrayFunctionDispatcher"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "mean"
-    }
-  ],
-  "np.median": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "_ArrayFunctionDispatcher"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "median"
-    }
-  ],
-  "np.minimum": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ufunc"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "minimum"
-    }
-  ],
-  "np.percentile": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "_ArrayFunctionDispatcher"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "percentile"
-    }
-  ],
-  "np.poly1d": [
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "poly1d"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "poly1d"
-    }
-  ],
-  "np.polyfit": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "_ArrayFunctionDispatcher"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "polyfit"
-    }
-  ],
-  "np.std": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "_ArrayFunctionDispatcher"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "std"
-    }
-  ],
-  "np.where": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "_ArrayFunctionDispatcher"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "where"
-    }
-  ],
-  "param": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "str"
-    }
-  ],
-  "percentiles": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "period": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "int"
-    }
-  ],
-  "periods_to_show": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "list"
-    }
-  ],
-  "plt.show": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "function"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib.pyplot",
-      "module_short": "matplotlib.pyplot",
-      "name": "show"
-    }
-  ],
-  "plt.subplots": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "function"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib.pyplot",
-      "module_short": "matplotlib.pyplot",
-      "name": "subplots"
-    }
-  ],
-  "plt.tight_layout": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "function"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "matplotlib.pyplot",
-      "module_short": "matplotlib.pyplot",
-      "name": "tight_layout"
-    }
-  ],
-  "portfolio_rule": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "function"
-    }
-  ],
-  "portfolio_share": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "shock_name": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "str"
-    }
-  ],
-  "shocks": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "dict"
-    }
-  ],
-  "shocks.keys": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "builtin_function_or_method"
-    }
-  ],
-  "simulator": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation.monte_carlo",
-      "module_short": "skagent.simulation.monte_carlo",
-      "name": "MonteCarloSimulator"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation",
-      "module_short": "skagent.simulation",
-      "name": "MonteCarloSimulator"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "MonteCarloSimulator"
-    }
-  ],
-  "simulator.T_sim": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "int"
-    }
-  ],
-  "simulator.agent_count": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "int"
-    }
-  ],
-  "simulator.history": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "dict"
-    }
-  ],
-  "simulator.initialize_sim": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation.monte_carlo",
-      "module_short": "skagent.simulation.monte_carlo",
-      "name": "MonteCarloSimulator.initialize_sim"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation",
-      "module_short": "skagent.simulation",
-      "name": "MonteCarloSimulator.initialize_sim"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "MonteCarloSimulator.initialize_sim"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation.monte_carlo",
-      "module_short": "skagent.simulation.monte_carlo",
-      "name": "Simulator.initialize_sim"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation",
-      "module_short": "skagent.simulation",
-      "name": "Simulator.initialize_sim"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Simulator.initialize_sim"
-    }
-  ],
-  "simulator.simulate": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation.monte_carlo",
-      "module_short": "skagent.simulation.monte_carlo",
-      "name": "MonteCarloSimulator.simulate"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation",
-      "module_short": "skagent.simulation",
-      "name": "MonteCarloSimulator.simulate"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "MonteCarloSimulator.simulate"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation.monte_carlo",
-      "module_short": "skagent.simulation.monte_carlo",
-      "name": "Simulator.simulate"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent.simulation",
-      "module_short": "skagent.simulation",
-      "name": "Simulator.simulate"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Simulator.simulate"
-    }
-  ],
-  "ska.Control": [
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent",
-      "name": "Control"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Control"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Control"
-    }
-  ],
-  "ska.DBlock": [
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent",
-      "name": "DBlock"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "DBlock"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent.model",
-      "name": "Block"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Block"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "DBlock"
-    }
-  ],
-  "ska.MonteCarloSimulator": [
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.simulation.monte_carlo",
-      "module_short": "skagent.simulation.monte_carlo",
-      "name": "MonteCarloSimulator"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.simulation",
-      "module_short": "skagent.simulation",
-      "name": "MonteCarloSimulator"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "MonteCarloSimulator"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.simulation.monte_carlo",
-      "module_short": "skagent.simulation.monte_carlo",
-      "name": "Simulator"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent.simulation",
-      "module_short": "skagent.simulation",
-      "name": "Simulator"
-    },
-    {
-      "is_class": true,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "Simulator"
-    },
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "skagent",
-      "module_short": "skagent",
-      "name": "MonteCarloSimulator"
-    }
-  ],
-  "std_consumption": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ],
-  "value": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "builtins",
-      "module_short": "builtins",
-      "name": "float"
-    }
-  ],
-  "x_line": [
-    {
-      "is_class": false,
-      "is_explicit": false,
-      "module": "numpy",
-      "module_short": "numpy",
-      "name": "ndarray"
-    }
-  ]
+ "DiscreteDistribution": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "DiscreteDistribution"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DiscreteDistribution"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "DiscreteDistribution"
+  }
+ ],
+ "Lognormal": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Lognormal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Lognormal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Distribution"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Distribution"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "abc",
+   "module_short": "abc",
+   "name": "ABC"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Lognormal"
+  }
+ ],
+ "MeanOneLogNormal": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "MeanOneLogNormal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "MeanOneLogNormal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Lognormal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Lognormal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Distribution"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Distribution"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "abc",
+   "module_short": "abc",
+   "name": "ABC"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "MeanOneLogNormal"
+  }
+ ],
+ "calibration": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "calibration.items": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "consumption_portfolio_block": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent",
+   "name": "DBlock"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock"
+  }
+ ],
+ "consumption_portfolio_block.construct_shocks": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent",
+   "name": "DBlock.construct_shocks"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock.construct_shocks"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent.model",
+   "name": "Block.construct_shocks"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Block.construct_shocks"
+  }
+ ],
+ "consumption_portfolio_block.get_controls": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent",
+   "name": "DBlock.get_controls"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock.get_controls"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent.model",
+   "name": "Block.get_controls"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Block.get_controls"
+  }
+ ],
+ "consumption_portfolio_block.shocks.items": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "consumption_rule": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  }
+ ],
+ "decision_rules": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "dist": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Lognormal"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Lognormal"
+  }
+ ],
+ "dynamics": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "initial_conditions": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "np.minimum": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ufunc"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "minimum"
+  }
+ ],
+ "np.where": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "where"
+  }
+ ],
+ "param": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "portfolio_rule": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  }
+ ],
+ "shock_name": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "shocks": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "shocks.keys": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "simulator": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "MonteCarloSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "MonteCarloSimulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "MonteCarloSimulator"
+  }
+ ],
+ "simulator.T_sim": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "simulator.agent_count": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "simulator.initialize_sim": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "MonteCarloSimulator.initialize_sim"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "MonteCarloSimulator.initialize_sim"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "MonteCarloSimulator.initialize_sim"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "Simulator.initialize_sim"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "Simulator.initialize_sim"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Simulator.initialize_sim"
+  }
+ ],
+ "ska.Control": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent",
+   "name": "Control"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Control"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Control"
+  }
+ ],
+ "ska.DBlock": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent",
+   "name": "DBlock"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.model",
+   "module_short": "skagent.model",
+   "name": "Block"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Block"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock"
+  }
+ ],
+ "ska.MonteCarloSimulator": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "MonteCarloSimulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "MonteCarloSimulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "MonteCarloSimulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "Simulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "Simulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Simulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "MonteCarloSimulator"
+  }
+ ],
+ "value": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  }
+ ]
 }

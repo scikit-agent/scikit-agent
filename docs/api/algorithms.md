@@ -17,18 +17,22 @@ derive value functions from model blocks.
 
 ```{eval-rst}
 .. autofunction:: skagent.algos.vbi.solve
+   :no-index:
 ```
 
 ```{eval-rst}
 .. autofunction:: skagent.algos.vbi.get_action_rule
+   :no-index:
 ```
 
 ```{eval-rst}
 .. autofunction:: skagent.algos.vbi.ar_from_data
+   :no-index:
 ```
 
 ```{eval-rst}
 .. autofunction:: skagent.algos.vbi.grid_to_data_array
+   :no-index:
 ```
 
 ## Maliar-Style Algorithms
@@ -65,10 +69,6 @@ Specialized neural network for policy functions in economic models.
 ```
 
 ### Training Functions
-
-```{eval-rst}
-.. autofunction:: skagent.ann.train_block_policy_nn
-```
 
 ```{eval-rst}
 .. autofunction:: skagent.ann.aggregate_net_loss
