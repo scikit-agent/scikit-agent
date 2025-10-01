@@ -1,5 +1,6 @@
 from conftest import case_0
 import numpy as np
+from skagent.bellman import BellmanPeriod
 import os
 import skagent.ann as ann
 from skagent.solver import CustomLoss, static_reward
@@ -25,15 +26,16 @@ class TestSolverFunctions(unittest.TestCase):
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_case_0(self):
+        bp = BellmanPeriod(case_0["block"], case_0["calibration"])
+
         cl = CustomLoss(
             static_reward,
-            case_0["block"],
-            parameters=case_0["calibration"],
+            bp,
         )
 
         states_0_N = case_0["givens"]
 
-        bpn = ann.BlockPolicyNet(case_0["block"], width=16)
+        bpn = ann.BlockPolicyNet(case_0["bp"], width=16)
         ann.train_block_nn(bpn, states_0_N, cl, epochs=250)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]

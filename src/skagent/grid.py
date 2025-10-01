@@ -11,13 +11,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Grid:
     """
-    Parameters:
-    config (dict): A dictionary where each key represents a variable, and the value is another
-        dictionary with the following keys:
-        - "min" (float): The minimum value for the variable.
-        - "max" (float): The maximum value for the variable.
-        - "count" (int): The number of points to generate for the variable.
+    A class representing a labeled grid of numerical values.
 
+    Parameters
+    -----------
+
+    config (dict): A dictionary where each key represents a variable, and the value is another
+        dictionary with the following keys: "min" (float): The minimum value for the variable.;
+        "max" (float): The maximum value for the variable;
+        "count" (int): The number of points to generate for the variable.
     """
 
     def __init__(self, labels, values, torched=True):
@@ -98,14 +100,18 @@ def make_grid(config):
     """
     Make a 'grid' of values based on the provided configuration.
 
-    Parameters:
+    Parameters
+    ----------
+
     config (dict): A dictionary where each key represents a variable, and the value is another
         dictionary with the following keys:
-        - "min" (float): The minimum value for the variable.
-        - "max" (float): The maximum value for the variable.
-        - "count" (int): The number of points to generate for the variable.
+        "min" (float): The minimum value for the variable;
+        "max" (float): The maximum value for the variable;
+        "count" (int): The number of points to generate for the variable.
 
-    Returns:
+    Returns
+    --------
+
     numpy.ndarray: A NumPy array of shape `(product_of_counts, num_variables)`, where
         `product_of_counts` is the product of all `count` values in the `config` dictionary,
         and `num_variables` is the number of keys in the `config`.
@@ -128,10 +134,15 @@ def cartesian_product(*arrays):
     """
     Create a Cartesian product of input arrays.
 
-    Parameters:
-    *arrays: Variable length arrays to compute product
+    Parameters
+    -----------
 
-    Returns:
+    *arrays:
+       Variable length arrays to compute product
+
+    Returns
+    -------
+
     Array of shape (product_of_lengths, num_arrays)
     where `product_of_lengths` is the product of the lengths of the input arrays,
     and `num_arrays` is the number of input arrays. Each row contains one element

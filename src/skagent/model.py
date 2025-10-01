@@ -185,6 +185,7 @@ def simulate_dynamics(
         if isinstance(update_fn, Control):
             # This tests if the decision rule is age varying.
             # If it is, this will be a vector with the decision rule for each agent.
+
             if isinstance(dr[sym], np.ndarray):
                 ## Now we have to loop through each agent, and apply the decision rule.
                 ## This is quite slow.
