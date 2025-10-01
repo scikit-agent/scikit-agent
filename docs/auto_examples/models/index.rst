@@ -67,4 +67,3 @@ other computational methods.
 
    /auto_examples/models/plot_basic_consumption_model
    /auto_examples/models/plot_consumption_portfolio_model
-
