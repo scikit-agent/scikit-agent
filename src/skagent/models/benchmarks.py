@@ -137,8 +137,10 @@ def d1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 # This ensures finite value function and non-explosive consumption.
 #
 # Closed-form solution:
-#   c_t = κm_t  where κ = (R - (βR)^{1/σ})/R
-#   m_t = A_t R + y_t  (cash-on-hand)
+#   c_t = κ*W_t  where κ = (R - (βR)^{1/σ})/R
+#   W_t = m_t + H_t  (total wealth = cash-on-hand + human wealth)
+#   H_t = y/r  (human wealth for constant income y)
+#   m_t = A_t*R + y_t  (cash-on-hand)
 #
 # The MPC κ is constant and depends only on deep parameters, not state variables.
 
@@ -171,12 +173,13 @@ d2_block = DBlock(
 
 def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     """
-    D-2: c_t = κ*m_t where κ = (R - (βR)^(1/σ))/R
+    D-2: c_t = κ*W_t where κ = (R - (βR)^(1/σ))/R and W_t = m_t + H_t
 
     This is a proper decision function that:
     1. Takes arrival states (a), shocks, and parameters as input
     2. Computes information set variables (m) from arrival state and parameters
-    3. Returns optimal controls based on information set
+    3. Computes total wealth (W = m + H) including human wealth
+    4. Returns optimal controls based on total wealth
     """
     beta = calibration["DiscFac"]
     R = calibration["R"]
@@ -232,7 +235,9 @@ def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 # Condition: sβR < 1 (mortality-adjusted return-impatience)
 #
 # Closed-form solution:
-#   c_t = κ_s m_t  where κ_s = (R - (sβR)^{1/σ})/R
+#   c_t = κ_s*W_t  where κ_s = (R - (sβR)^{1/σ})/R
+#   W_t = m_t + H_t  (total wealth = cash-on-hand + human wealth)
+#   H_t = y/r  (human wealth for constant income y)
 #
 # Note: κ_s > κ (higher MPC) because mortality makes the agent less patient.
 
@@ -266,7 +271,7 @@ d3_block = DBlock(
 
 def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     """
-    D-3: c_t = κ_s*m_t where κ_s = 1 - (sβR)^(1/σ)/R
+    D-3: c_t = κ_s*(m_t + H) where κ_s = (R - (sβR)^(1/σ))/R
 
     This is a proper decision function that:
     1. Takes arrival states (a), shocks, and parameters as input
@@ -396,8 +401,6 @@ def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
             f"Warning: With high income variance ({income_std}), verify TVC is satisfied"
         )
 
-    R - 1  # Net interest rate
-
     def policy(states, shocks, parameters):
         # DECISION FUNCTION ARCHITECTURE:
         # Step 1: Extract arrival states
@@ -427,9 +430,6 @@ def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
         return {"c": c_optimal}
 
     return policy
-
-
-# Additional models U-2 through U-6 are excluded from this collection
 
 
 # U-2: Log Utility with Geometric Random Walk Income (ρ=1)
@@ -504,8 +504,6 @@ def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
         raise ValueError(
             f"Model requires ρ=1 for analytical tractability, got ρ={rho_p}"
         )
-
-    R - 1  # Net interest rate
 
     def policy(states, shocks, parameters):
         # STANDARD TIMING: Use cash-on-hand from states (computed by DBlock)
@@ -997,7 +995,7 @@ def get_analytical_lifetime_reward(model_id: str, *args, **kwargs) -> float:
     Parameters
     ----------
     model_id : str
-        Model identifier (D-1, D-1, D-2, etc.)
+        Model identifier (D-1, D-2, D-3, etc.)
     *args, **kwargs
         Arguments to pass to the specific analytical function
 
