@@ -13,7 +13,7 @@ THEORETICAL FOUNDATION
 An entry qualifies for inclusion ONLY if:
 (i) The problem is a bona-fide dynamic programming problem
 (ii) The optimal c_t (and any other control) can be written in closed form
-    with no recursive objects left implicit
+with no recursive objects left implicit
 
 Standard Timing Convention (Adopted Throughout)
 -----------------------------------------------

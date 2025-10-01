@@ -247,8 +247,8 @@ class BlockPolicyNet(Net):
 
     Parameters
     -----------
-    block : model.DBlock
-        The model block containing control variables and dynamics
+    bellman_period : BellmanPeriod
+        The model Bellman Period
     apply_open_bounds : bool, optional
         If True, then the network forward output is normalized by the upper and/or lower bounds,
         computed as a function of the input tensor. These bounds are "open" because output
@@ -263,17 +263,22 @@ class BlockPolicyNet(Net):
     """
 
     def __init__(
-        self, block, control_sym=None, apply_open_bounds=True, width=32, **kwargs
+        self,
+        bellman_period,
+        control_sym=None,
+        apply_open_bounds=True,
+        width=32,
+        **kwargs,
     ):
-        self.block = block
+        self.bellman_period = bellman_period
         self.apply_open_bounds = apply_open_bounds
 
         ## pseudo -- assume only one for now
         if control_sym is None:
-            control_sym = next(iter(self.block.get_controls()))
+            control_sym = next(iter(self.bellman_period.get_controls()))
 
         self.control_sym = control_sym
-        self.cobj = self.block.dynamics[control_sym]
+        self.cobj = self.bellman_period.block.dynamics[control_sym]
         self.iset = self.cobj.iset
 
         ## assess whether/how the control is bounded
@@ -339,9 +344,11 @@ class BlockPolicyNet(Net):
 
         # hacky -- should be moved into transition method as other option
         # very brittle, because it can interfere with constraints
-        drs = {control_sym: lambda: 1 for control_sym in self.block.get_controls()}
+        drs = {
+            control_sym: lambda: 1 for control_sym in self.bellman_period.get_controls()
+        }
 
-        post = self.block.transition(vals, drs, until=self.control_sym)
+        post = self.bellman_period.block.transition(vals, drs, until=self.control_sym)
 
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
@@ -451,8 +458,8 @@ class BlockValueNet(Net):
 
     Parameters
     ----------
-    block : model.DBlock
-        The model block containing state variables and dynamics
+    bellman_period : BellmanPeriod
+        The Bellman Period
     width : int, optional
         Width of hidden layers. Default is 32.
     n_layers : int, optional
@@ -464,20 +471,21 @@ class BlockValueNet(Net):
         documentation for all available options including activation, transform, init_seed, copy_weights_from, etc.
     """
 
-    def __init__(self, block, control_sym=None, width: int = 32, **kwargs):
+    def __init__(self, bellman_period, control_sym=None, width: int = 32, **kwargs):
         """
         Initialize the BlockValueNet.
         """
-        self.block = block
+        self.bellman_period = bellman_period
 
         # Value function should use the same information set as the policy function
         # Both V(s) and π(s) take the same state information as input
         ## pseudo -- assume only one control for now (same as BlockPolicyNet)
         if control_sym is None:
-            control_sym = next(iter(self.block.get_controls()))
+            control_sym = next(iter(self.bellman_period.get_controls()))
 
         self.control_sym = control_sym
-        self.cobj = self.block.dynamics[control_sym]
+        # should move this to BP
+        self.cobj = self.bellman_period.block.dynamics[control_sym]
 
         # Use the same information set as the policy network
         self.state_variables = sorted(list(self.cobj.iset))

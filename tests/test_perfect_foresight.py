@@ -32,7 +32,6 @@ import torch
 import numpy as np
 
 import skagent.bellman as bellman
-import skagent.models.perfect_foresight as pfm
 from skagent.models.benchmarks import (
     get_benchmark_model,
     get_benchmark_calibration,
@@ -176,6 +175,8 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id).copy()
 
+        bp = bellman.BellmanPeriod(block, calibration)
+
         # Test with various time horizons - this demonstrates the key advantage
         # of perfect foresight: we can test much larger T values!
         time_horizons = [2, 3, 5, 10, 20, 50]
@@ -192,7 +193,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
 
                 # Numerical solution
                 numerical = bellman.estimate_discounted_lifetime_reward(
-                    block,
+                    bp,
                     calibration["DiscFac"],
                     policy_with_calibration,
                     {"W": initial_wealth, "t": 0},
@@ -217,6 +218,8 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         model_id = "D-3"
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id)
+
+        bp = bellman.BellmanPeriod(block, calibration)
         policy = get_analytical_policy(model_id)
 
         # Test with very large time horizons to approximate infinite horizon
@@ -229,7 +232,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 # D-3 model needs both 'a' (assets) and 'm' (cash-on-hand)
                 initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
                 numerical = bellman.estimate_discounted_lifetime_reward(
-                    block,
+                    bp,
                     calibration["DiscFac"],
                     policy,
                     {"a": initial_assets, "m": cash_on_hand},
@@ -242,24 +245,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 self.assertIsInstance(float(numerical), float)
                 self.assertFalse(np.isnan(float(numerical)))
                 self.assertFalse(np.isinf(float(numerical)))
-
-    def test_perfect_foresight_vs_existing_model(self):
-        """Ensure new tests are consistent with existing test patterns."""
-        # Test the same model that appears in test_ann.py
-        pfblock = pfm.block_no_shock
-
-        # This should work without throwing an exception
-        result = bellman.estimate_discounted_lifetime_reward(
-            pfblock,
-            0.96,
-            lambda s, sh, p: {"c": 0.5 * s["a"]},
-            {"a": 1.0, "p": 1.0},
-            3,
-            parameters={"CRRA": 2.0, "Rfree": 1.03, "PermGroFac": 1.01},
-        )
-
-        self.assertIsNotNone(result)
-        self.assertTrue(torch.is_tensor(result) or isinstance(result, (int, float)))
 
     def test_scalability_benchmark(self):
         """
@@ -280,6 +265,9 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         model_id = "D-3"
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id)
+
+        bp = bellman.BellmanPeriod(block, calibration)
+
         policy = get_analytical_policy(model_id)
 
         # Test scalability - this would be impossible with stochastic models
@@ -293,7 +281,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
             cash_on_hand = 2.0
             initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
             reward = bellman.estimate_discounted_lifetime_reward(
-                block,
+                bp,
                 calibration["DiscFac"],
                 policy,
                 {"a": initial_assets, "m": cash_on_hand},
@@ -533,24 +521,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
 
                 # Verify consumption is feasible (less than cash-on-hand)
                 self.assertLess(c, m, "Consumption must be less than cash-on-hand")
-
-    def test_consistency_with_existing_tests(self):
-        """Ensure new tests are consistent with existing test patterns."""
-        # Test the same model that appears in test_ann.py
-        pfblock = pfm.block_no_shock
-
-        # This should work without throwing an exception
-        result = bellman.estimate_discounted_lifetime_reward(
-            pfblock,
-            0.96,
-            lambda s, sh, p: {"c": 0.5 * s["a"]},
-            {"a": 1.0, "p": 1.0},
-            3,
-            parameters={"CRRA": 2.0, "Rfree": 1.03, "PermGroFac": 1.01},
-        )
-
-        self.assertIsNotNone(result)
-        self.assertTrue(torch.is_tensor(result) or isinstance(result, (int, float)))
 
 
 if __name__ == "__main__":

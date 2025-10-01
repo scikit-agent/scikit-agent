@@ -1,16 +1,14 @@
 import numpy as np
 from skagent.bellman import (
-    create_decision_function,
-    create_reward_function,
-    estimate_discounted_lifetime_reward,
     estimate_bellman_residual,
+    estimate_discounted_lifetime_reward,
 )
 from skagent.grid import Grid
 import torch
 
 
 def static_reward(
-    block,
+    bellman_period,
     dr,
     states,
     shocks={},
@@ -19,7 +17,7 @@ def static_reward(
 ):
     """
     Returns the reward for an agent for a block, given a decision rule, states, shocks, and calibration.
-    block
+    bellman_period
     dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
     states - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
     shocks- dict - sym : vector of shock values
@@ -30,21 +28,26 @@ def static_reward(
     """
     if callable(dr):
         # assume a full decision function has been passed in
-        df = dr
+        controls = dr(states, shocks, parameters)
     else:
-        # create a decision function from the decision rule
-        df = create_decision_function(block, dr)
-
-    rf = create_reward_function(block, agent, decision_rules=dr)
+        controls = bellman_period.decision_function(
+            states, shocks, parameters, decision_rules=dr
+        )
 
     # this assumes only one reward is given.
     # can be generalized in the future.
+    # move this logic to BellmanPeriod
     rsym = list(
-        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
+        {
+            sym
+            for sym in bellman_period.block.reward
+            if agent is None or bellman_period.block.reward[sym] == agent
+        }
     )[0]
 
-    controls = df(states, shocks, parameters)
-    reward = rf(states, shocks, controls, parameters)
+    reward = bellman_period.reward_function(
+        states, shocks, controls, parameters, agent=agent, decision_rules=dr
+    )
 
     # Maybe this can be less complicated because of unified array API
     if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):
@@ -59,12 +62,14 @@ class CustomLoss:
     """
     A custom loss function that computes the negative reward for a block,
     assuming it is executed just once (a non-dynamic model)
+
+    TODO: leaving this as ambiguously about Blocks and BellmanPeriods for now
     """
 
-    def __init__(self, loss_function, block, parameters, other_dr=dict()):
+    def __init__(self, loss_function, block, parameters=None, other_dr=dict()):
         self.block = block
         self.parameters = parameters
-        self.state_variables = self.block.get_arrival_states(calibration=parameters)
+        self.state_variables = self.block.arrival_states
         self.other_dr = other_dr
         self.loss_function = loss_function
 
@@ -101,10 +106,10 @@ class StaticRewardLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, block, parameters, other_dr=dict()):
-        self.block = block
+    def __init__(self, bellman_period, parameters, other_dr=dict()):
+        self.bellman_period = bellman_period
         self.parameters = parameters
-        self.state_variables = self.block.get_arrival_states(calibration=parameters)
+        self.state_variables = self.bellman_period.arrival_states
         self.other_dr = other_dr
 
     def __call__(self, new_dr, input_grid: Grid):
@@ -114,7 +119,7 @@ class StaticRewardLoss:
         ## includes the values of state_0 variables, and shocks.
         given_vals = input_grid.to_dict()
 
-        shock_vars = self.block.get_shocks()
+        shock_vars = self.bellman_period.get_shocks()
         shock_vals = {sym: input_grid[sym] for sym in shock_vars}
 
         # override any decision rules if necessary
@@ -122,7 +127,7 @@ class StaticRewardLoss:
 
         ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         r = static_reward(
-            self.block,
+            self.bellman_period,
             fresh_dr,
             {sym: given_vals[sym] for sym in self.state_variables},
             parameters=self.parameters,
@@ -140,23 +145,23 @@ class EstimatedDiscountedLifetimeRewardLoss:
     Parameters
     -----------
 
-    block: Block
+    bellman_period
     discount_factor
     big_t: int
         The number of time steps to compute reward for
     parameters
     """
 
-    def __init__(self, block, discount_factor, big_t, parameters):
-        self.block = block
+    def __init__(self, bellman_period, discount_factor, big_t, parameters):
+        self.bellman_period = bellman_period
         self.parameters = parameters
-        self.state_variables = self.block.get_arrival_states(calibration=parameters)
+        self.state_variables = self.bellman_period.arrival_states
         self.discount_factor = discount_factor
         self.big_t = big_t
 
     def __call__(self, df: callable, input_grid: Grid):
         # convoluted
-        shock_vars = self.block.get_shocks()
+        shock_vars = self.bellman_period.get_shocks()
         big_t_shock_syms = sum(
             [
                 [f"{sym}_{t}" for sym in list(shock_vars.keys())]
@@ -177,9 +182,9 @@ class EstimatedDiscountedLifetimeRewardLoss:
             for sym in shock_vars
         }
 
-        # block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
+        # bellman_period, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = estimate_discounted_lifetime_reward(
-            self.block,
+            self.bellman_period,
             self.discount_factor,
             df,
             {sym: given_vals[sym] for sym in self.state_variables},
@@ -209,9 +214,7 @@ class BellmanEquationLoss:
 
     Parameters
     ----------
-    state_variables : list of str
-        List of state variable names (endogenous state variables)
-    block : model.DBlock
+    bellman_period : BellmanPeriod
         The model block containing dynamics, rewards, and shocks
     discount_factor : float
         The discount factor β
@@ -230,11 +233,11 @@ class BellmanEquationLoss:
     """
 
     def __init__(
-        self, block, discount_factor, value_network, parameters={}, agent=None
+        self, bellman_period, discount_factor, value_network, parameters={}, agent=None
     ):
-        self.block = block
+        self.bellman_period = bellman_period
         self.parameters = parameters
-        self.arrival_variables = block.get_arrival_states(calibration=parameters)
+        self.arrival_variables = bellman_period.arrival_states
 
         self.value_network = value_network
 
@@ -245,15 +248,16 @@ class BellmanEquationLoss:
             )
 
         # Get shock variables
-        shock_vars = block.get_shocks()
+        shock_vars = self.bellman_period.get_shocks()
         self.shock_syms = list(shock_vars.keys())
 
         self.agent = agent
         # Test reward variables
+        # TODO: move this to BP
         reward_vars = [
             sym
-            for sym in block.reward
-            if agent is None or block.reward[sym] == self.agent
+            for sym in self.bellman_period.block.reward
+            if agent is None or self.bellman_period.block.reward[sym] == self.agent
         ]
         if len(reward_vars) == 0:
             raise Exception("No reward variables found in block")
@@ -285,7 +289,7 @@ class BellmanEquationLoss:
 
         # Use helper function to estimate Bellman residual with combined shock object
         bellman_residual = estimate_bellman_residual(
-            self.block,
+            self.bellman_period,
             self.discount_factor,
             self.value_network,
             df,
