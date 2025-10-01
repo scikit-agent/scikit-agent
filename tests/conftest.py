@@ -1,3 +1,4 @@
+from skagent.bellman import BellmanPeriod
 from skagent.distributions import Normal, Uniform
 import skagent.grid as grid
 from skagent.model import Control, DBlock
@@ -21,6 +22,7 @@ case_0 = {
         }
     ),
 }
+case_0["bp"] = BellmanPeriod(case_0["block"], case_0["calibration"])
 
 case_1 = {
     "block": DBlock(
@@ -55,6 +57,7 @@ case_1 = {
         ),
     },
 }
+case_1["bp"] = BellmanPeriod(case_1["block"], case_1["calibration"])
 
 case_2 = {
     "block": DBlock(
@@ -80,6 +83,7 @@ case_2 = {
         }
     ),
 }
+case_2["bp"] = BellmanPeriod(case_2["block"], case_2["calibration"])
 
 case_3 = {
     "block": DBlock(
@@ -119,6 +123,7 @@ case_3 = {
         ),
     },
 }
+case_3["bp"] = BellmanPeriod(case_3["block"], case_3["calibration"])
 
 case_4 = {
     "block": DBlock(
@@ -153,6 +158,7 @@ case_4 = {
         ),
     },
 }
+case_4["bp"] = BellmanPeriod(case_4["block"], case_4["calibration"])
 
 case_5 = {
     "block": DBlock(
@@ -178,6 +184,7 @@ case_5 = {
         }
     ),
 }
+case_5["bp"] = BellmanPeriod(case_5["block"], case_5["calibration"])
 
 case_6 = {
     "block": DBlock(
@@ -205,6 +212,7 @@ case_6 = {
         }
     ),
 }
+case_6["bp"] = BellmanPeriod(case_6["block"], case_6["calibration"])
 
 case_7 = {
     "block": DBlock(
@@ -230,6 +238,7 @@ case_7 = {
         }
     ),
 }
+case_7["bp"] = BellmanPeriod(case_7["block"], case_7["calibration"])
 
 case_8 = {
     "block": DBlock(
@@ -255,6 +264,7 @@ case_8 = {
         }
     ),
 }
+case_8["bp"] = BellmanPeriod(case_8["block"], case_8["calibration"])
 
 case_9 = {
     "block": DBlock(
@@ -276,6 +286,7 @@ case_9 = {
         }
     ),
 }
+case_9["bp"] = BellmanPeriod(case_9["block"], case_9["calibration"])
 
 case_10 = {
     "block": DBlock(
@@ -297,6 +308,7 @@ case_10 = {
         }
     ),
 }
+case_10["bp"] = BellmanPeriod(case_10["block"], case_10["calibration"])
 
 case_11 = {
     "block": DBlock(
@@ -324,3 +336,4 @@ case_11 = {
         }
     ),
 }
+case_11["bp"] = BellmanPeriod(case_11["block"], {})

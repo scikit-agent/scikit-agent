@@ -85,12 +85,12 @@ class TestBenchmarksModels:
         )
 
         # D-2: Infinite horizon CRRA
-        policy_d3 = get_analytical_policy("D-2")
+        policy_d2 = get_analytical_policy("D-2")
         test_states = {"a": torch.tensor([1.0, 2.0, 3.0])}  # Use arrival state 'a'
-        result_d3 = policy_d3(test_states, {}, {})
+        result_d2 = policy_d2(test_states, {}, {})
 
-        assert "c" in result_d3
-        assert torch.all(result_d3["c"] > 0), "D-2 consumption should be positive"
+        assert "c" in result_d2
+        assert torch.all(result_d2["c"] > 0), "D-2 consumption should be positive"
         # Note: With human wealth, consumption can exceed arrival assets
 
         # D-3: Blanchard mortality

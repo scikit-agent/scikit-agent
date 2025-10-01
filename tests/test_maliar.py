@@ -104,7 +104,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["block"],
+            case_4["bp"],
             0.9,
             big_t,
             case_4["calibration"],
@@ -112,7 +112,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         # Use fixed random seed for deterministic training
         ann, states = maliar.maliar_training_loop(
-            case_4["block"],
+            case_4["bp"],
             edlrl,
             states_0_n,
             case_4["calibration"],
@@ -143,7 +143,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["block"],
+            case_4["bp"],
             0.9,
             big_t,
             case_4["calibration"],
@@ -151,7 +151,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         # Test 1: High tolerance (should converge quickly)
         ann_high_tol, states_high_tol = maliar.maliar_training_loop(
-            case_4["block"],
+            case_4["bp"],
             edlrl,
             states_0_n,
             case_4["calibration"],
@@ -163,7 +163,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         # Test 2: Low tolerance (should require more iterations or hit max_iterations)
         ann_low_tol, states_low_tol = maliar.maliar_training_loop(
-            case_4["block"],
+            case_4["bp"],
             edlrl,
             states_0_n,
             case_4["calibration"],
@@ -214,7 +214,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["block"],
+            case_4["bp"],
             0.9,
             big_t,
             case_4["calibration"],
@@ -222,7 +222,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         # Test with very high tolerance to ensure early convergence
         ann, states = maliar.maliar_training_loop(
-            case_4["block"],
+            case_4["bp"],
             edlrl,
             states_0_n,
             case_4["calibration"],
@@ -260,7 +260,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["block"],
+            case_4["bp"],
             0.9,
             big_t,
             case_4["calibration"],
@@ -268,7 +268,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         # Test 1: Strict tolerance (should require more iterations)
         ann_strict, states_strict = maliar.maliar_training_loop(
-            case_4["block"],
+            case_4["bp"],
             edlrl,
             states_0_n,
             case_4["calibration"],
@@ -280,7 +280,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         # Test 2: Relaxed tolerance (should converge faster)
         ann_relaxed, states_relaxed = maliar.maliar_training_loop(
-            case_4["block"],
+            case_4["bp"],
             edlrl,
             states_0_n,
             case_4["calibration"],
@@ -336,6 +336,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Parameters
         self.discount_factor = 0.95
         self.parameters = {}
+        self.bp = bellman.BellmanPeriod(self.block, self.parameters)
         self.state_variables = ["wealth"]  # Endogenous state variables
 
         # Create a simple decision function for testing
@@ -363,18 +364,20 @@ class TestBellmanLossFunctions(unittest.TestCase):
     def test_bellman_loss_function_components(self):
         """Test that the Bellman loss function components work correctly."""
         # Test transition function
-        tf = bellman.create_transition_function(self.block, ["wealth"])
         states_t = {"wealth": torch.tensor([1.0, 2.0])}
         shocks_t = {"income": torch.tensor([1.0, 1.0])}
         controls_t = {"consumption": torch.tensor([0.5, 1.0])}
 
-        next_states = tf(states_t, shocks_t, controls_t, self.parameters)
+        next_states = self.bp.transition_function(
+            states_t, shocks_t, controls_t, self.parameters
+        )
         self.assertIn("wealth", next_states)
         self.assertTrue(torch.allclose(next_states["wealth"], torch.tensor([1.5, 2.0])))
 
         # Test reward function
-        rf = bellman.create_reward_function(self.block, "consumer")
-        reward = rf(states_t, shocks_t, controls_t, self.parameters)
+        reward = self.bp.reward_function(
+            states_t, shocks_t, controls_t, self.parameters, agent="consumer"
+        )
         self.assertIn("utility", reward)
         # Utility can be negative for log(consumption), so just check it's finite
         self.assertTrue(torch.all(torch.isfinite(reward["utility"])))
@@ -406,10 +409,10 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
         no_reward_block.construct_shocks({})
 
+        nrbp = bellman.BellmanPeriod(no_reward_block, {})
+
         with self.assertRaises(Exception) as context:
-            loss.BellmanEquationLoss(
-                no_reward_block, self.discount_factor, dummy_value_network
-            )
+            loss.BellmanEquationLoss(nrbp, self.discount_factor, dummy_value_network)
         self.assertIn("No reward variables found in block", str(context.exception))
 
     def test_bellman_loss_function_integration(self):
@@ -431,7 +434,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             return 10.0 * wealth  # Linear value function
 
         loss_function = loss.BellmanEquationLoss(
-            self.block,
+            self.bp,
             self.discount_factor,
             simple_value_network,
             self.parameters,
@@ -465,7 +468,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         # Test that it works with the training infrastructure
         loss_function = loss.BellmanEquationLoss(
-            self.block,
+            self.bp,
             self.discount_factor,
             simple_value_network,
             self.parameters,
@@ -509,7 +512,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         }
 
         residual_identical = bellman.estimate_bellman_residual(
-            self.block,
+            self.bp,
             0.95,
             simple_value_network,
             self.decision_function,
@@ -519,7 +522,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         residual_independent = bellman.estimate_bellman_residual(
-            self.block,
+            self.bp,
             0.95,
             simple_value_network,
             self.decision_function,
@@ -546,7 +549,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             )  # Value depends on both wealth and income
 
         loss_function = loss.BellmanEquationLoss(
-            self.block,
+            self.bp,
             self.discount_factor,
             simple_value_network,
             self.parameters,
@@ -601,7 +604,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             bellman.estimate_bellman_residual(
-                self.block,
+                self.bp,
                 0.95,
                 simple_value_network,
                 self.decision_function,
@@ -631,8 +634,10 @@ def test_bellman_equation_loss_with_value_network():
     )
     test_block.construct_shocks({})
 
+    test_bp = bellman.BellmanPeriod(test_block, {})
+
     # Create value network
-    value_net = BlockValueNet(test_block, width=16)
+    value_net = BlockValueNet(test_bp, width=16)
 
     # Create input grid with two independent shock realizations
     input_grid = grid.Grid.from_dict(
@@ -653,7 +658,7 @@ def test_bellman_equation_loss_with_value_network():
 
     # Create loss function
     loss_fn = loss.BellmanEquationLoss(
-        test_block, 0.95, value_net.get_value_function(), parameters={}
+        test_bp, 0.95, value_net.get_value_function(), parameters={}
     )
 
     # Test that loss function works
@@ -682,8 +687,10 @@ def test_block_value_net():
     )
     test_block.construct_shocks({})
 
+    test_bp = bellman.BellmanPeriod(test_block, {})
+
     # Create value network - now takes block instead of state_variables
-    value_net = BlockValueNet(test_block, width=16)
+    value_net = BlockValueNet(test_bp, width=16)
 
     # Test value function computation
     states_t = {"wealth": torch.tensor([1.0, 2.0, 3.0])}
@@ -701,18 +708,3 @@ def test_block_value_net():
 
     # Should give same results
     assert torch.allclose(values, values2)
-
-
-def test_train_block_value_and_policy_nn():
-    """Test joint training of value and policy networks."""
-    # Note: This is a placeholder test. The joint training function exists and follows
-    # the same patterns as the individual training functions. A full test would require
-    # careful handling of block dynamics ordering to avoid dependency issues.
-    from skagent.ann import train_block_value_and_policy_nn
-
-    # Just verify the function exists and can be imported
-    assert callable(train_block_value_and_policy_nn)
-
-    # The function signature is consistent with other training functions:
-    # train_block_value_and_policy_nn(policy_net, value_net, inputs, policy_loss, value_loss, epochs)
-    pass

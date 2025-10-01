@@ -44,7 +44,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_0(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_0["block"],
+            case_0["bp"],
             0.9,
             1,
             parameters=case_0["calibration"],
@@ -52,7 +52,7 @@ class test_ann_lr(unittest.TestCase):
 
         states_0_N = case_0["givens"]
 
-        bpn = ann.BlockPolicyNet(case_0["block"], width=16)
+        bpn = ann.BlockPolicyNet(case_0["bp"], width=16)
         ann.train_block_nn(bpn, states_0_N, edlrl, epochs=250)
 
         c_ann = bpn.decision_function(states_0_N.to_dict(), {}, {})["c"]
@@ -64,7 +64,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_1(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_1["block"],
+            case_1["bp"],
             0.9,
             1,
             parameters=case_1["calibration"],
@@ -72,7 +72,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_1["givens"][1]
 
-        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
+        bpn = ann.BlockPolicyNet(case_1["bp"], width=16)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
@@ -94,7 +94,7 @@ class test_ann_lr(unittest.TestCase):
         Running case 1 with big_t == 2
         """
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_1["block"],
+            case_1["bp"],
             0.9,
             2,
             parameters=case_1["calibration"],
@@ -102,7 +102,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_1["givens"][2]
 
-        bpn = ann.BlockPolicyNet(case_1["block"], width=16)
+        bpn = ann.BlockPolicyNet(case_1["bp"], width=16)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=500)
 
         c_ann = bpn.decision_function(
@@ -120,7 +120,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_2(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_2["block"],
+            case_2["bp"],
             0.9,
             1,
             parameters=case_2["calibration"],
@@ -128,7 +128,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_2["givens"]
 
-        bpn = ann.BlockPolicyNet(case_2["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_2["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=100)
 
         # optimal DR is c = 0 = E[theta]
@@ -140,10 +140,10 @@ class test_ann_lr(unittest.TestCase):
         # Construct shocks with deterministic RNG for reproducible test
         case_3["block"].construct_shocks(
             case_3["calibration"], rng=np.random.default_rng(TEST_SEED)
-        )
+        )  # this should mutate the block object referenced by the BP
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_3["block"],
+            case_3["bp"],
             0.9,
             1,
             parameters=case_3["calibration"],
@@ -151,7 +151,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_3["givens"][1]
 
-        bpn = ann.BlockPolicyNet(case_3["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_3["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
@@ -168,7 +168,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_3_2(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_3["block"],
+            case_3["bp"],
             0.9,
             2,
             parameters=case_3["calibration"],
@@ -176,7 +176,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_3["givens"][2]
 
-        bpn = ann.BlockPolicyNet(case_3["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_3["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
@@ -193,7 +193,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_5_double_bounded_upper_binds(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_5["block"],
+            case_5["bp"],
             0.9,
             1,
             parameters=case_5["calibration"],
@@ -201,7 +201,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_5["givens"]
 
-        bpn = ann.BlockPolicyNet(case_5["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_5["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
@@ -216,7 +216,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_6_double_bounded_lower_binds(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_6["block"],
+            case_6["bp"],
             0.9,
             1,
             parameters=case_6["calibration"],
@@ -224,7 +224,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_6["givens"]
 
-        bpn = ann.BlockPolicyNet(case_6["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_6["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
@@ -239,7 +239,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_7_only_lower_bound(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_7["block"],
+            case_7["bp"],
             0.9,
             1,
             parameters=case_7["calibration"],
@@ -247,7 +247,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_7["givens"]
 
-        bpn = ann.BlockPolicyNet(case_7["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_7["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
@@ -264,7 +264,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_8_only_upper_bound(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_8["block"],
+            case_8["bp"],
             0.9,
             1,
             parameters=case_8["calibration"],
@@ -272,7 +272,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_8["givens"]
 
-        bpn = ann.BlockPolicyNet(case_8["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_8["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, edlrl, epochs=300)
 
         c_ann = bpn.decision_function(
@@ -287,7 +287,7 @@ class test_ann_lr(unittest.TestCase):
 
     def test_case_9_empty_information_set(self):
         loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_9["block"],
+            case_9["bp"],
             0.9,
             2,
             parameters=case_9["calibration"],
@@ -295,7 +295,7 @@ class test_ann_lr(unittest.TestCase):
 
         given_0_N = case_9["givens"]
 
-        bpn = ann.BlockPolicyNet(case_9["block"], width=8)
+        bpn = ann.BlockPolicyNet(case_9["bp"], width=8)
         ann.train_block_nn(bpn, given_0_N, loss_fn, epochs=300)
 
         c_ann = bpn.decision_function(
@@ -314,10 +314,11 @@ class test_ann_lr(unittest.TestCase):
         ### Model data
 
         pfblock = pfm.block_no_shock
+        pfbp = bellman.BellmanPeriod(pfblock, pfm.calibration)
 
         ### Loss function
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            pfblock, 0.9, 1, parameters=pfm.calibration
+            pfbp, 0.9, 1, parameters=pfm.calibration
         )
 
         ### Setting up the training
@@ -329,8 +330,9 @@ class test_ann_lr(unittest.TestCase):
             }
         )
 
-        bpn = ann.BlockPolicyNet(pfblock, width=8)
+        bpn = ann.BlockPolicyNet(pfbp, width=8)
         ann.train_block_nn(bpn, states_0_N, edlrl, epochs=100)
+
         ## This is just a smoke test.
 
 
@@ -343,9 +345,9 @@ class test_ann_multiple_controls(unittest.TestCase):
         cpns = {}
 
         # Invent Policy Neural Networks for each Control variable.
-        for control_sym in case_10["block"].get_controls():
+        for control_sym in case_10["bp"].get_controls():
             cpns[control_sym] = ann.BlockPolicyNet(
-                case_10["block"], control_sym=control_sym
+                case_10["bp"], control_sym=control_sym
             )
 
         dict_of_decision_rules = {
@@ -363,7 +365,7 @@ class test_ann_multiple_controls(unittest.TestCase):
             cpns["c"],
             case_10["givens"],
             solver.StaticRewardLoss(
-                case_10["block"],
+                case_10["bp"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
@@ -375,7 +377,7 @@ class test_ann_multiple_controls(unittest.TestCase):
             cpns["d"],
             case_10["givens"],
             solver.StaticRewardLoss(
-                case_10["block"],
+                case_10["bp"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
@@ -390,17 +392,20 @@ class test_ann_multiple_controls(unittest.TestCase):
             cpns["c"],
             case_10["givens"],
             solver.StaticRewardLoss(
-                case_10["block"],
+                case_10["bp"],
                 case_10["calibration"],
                 dict_of_decision_rules,
             ),
             epochs=100,
         )
 
-        rf = bellman.create_reward_function(
-            case_10["block"], decision_rules=dict_of_decision_rules
+        rewards = case_10["bp"].reward_function(
+            {"a": case_10["givens"]["a"]},
+            {},
+            {},
+            case_10["calibration"],
+            decision_rules=dict_of_decision_rules,
         )
-        rewards = rf({"a": case_10["givens"]["a"]}, {}, {}, case_10["calibration"])
 
         self.assertTrue(
             torch.allclose(
@@ -448,6 +453,8 @@ class test_ann_value_functions(unittest.TestCase):
         self.discount_factor = 0.95
         self.parameters = {}
 
+        self.test_bp = bellman.BellmanPeriod(self.test_block, self.parameters)
+
         # Create test grid with two independent shock realizations for Bellman tests
         self.test_grid = grid.Grid.from_dict(
             {
@@ -460,7 +467,7 @@ class test_ann_value_functions(unittest.TestCase):
     def test_block_value_net_creation(self):
         """Test that BlockValueNet can be created and used."""
         # Create value network
-        value_net = ann.BlockValueNet(self.test_block, width=16)
+        value_net = ann.BlockValueNet(self.test_bp, width=16)
 
         # Test that it correctly identifies state variables
         self.assertIn("wealth", value_net.state_variables)
@@ -484,11 +491,11 @@ class test_ann_value_functions(unittest.TestCase):
     def test_bellman_equation_loss_creation(self):
         """Test that Bellman equation loss functions can be created."""
         # Create value network
-        value_net = ann.BlockValueNet(self.test_block, width=16)
+        value_net = ann.BlockValueNet(self.test_bp, width=16)
 
         # Create Bellman loss function - this is the key all-in-one loss function
         bellman_loss = loss.BellmanEquationLoss(
-            self.test_block,
+            self.test_bp,
             self.discount_factor,
             value_net.get_value_function(),
             self.parameters,
@@ -510,7 +517,7 @@ class test_ann_value_functions(unittest.TestCase):
     def test_train_block_nn(self):
         """Test that value networks can be trained."""
         # Create value network
-        value_net = ann.BlockValueNet(self.test_block, width=8)
+        value_net = ann.BlockValueNet(self.test_bp, width=8)
 
         # Create a simple value loss function for testing
         def simple_value_loss(vf, input_grid):
@@ -546,7 +553,7 @@ class test_ann_value_functions(unittest.TestCase):
         from conftest import case_0
 
         # Create value network for case_0
-        value_net = ann.BlockValueNet(case_0["block"], width=16)
+        value_net = ann.BlockValueNet(case_0["bp"], width=16)
 
         # Create a simple value loss function that targets zero (like the policy tests)
         def zero_target_value_loss(vf, input_grid):
@@ -572,7 +579,7 @@ class test_ann_value_functions(unittest.TestCase):
         from conftest import case_1
 
         # Create value network for case_1
-        value_net = ann.BlockValueNet(case_1["block"], width=16)
+        value_net = ann.BlockValueNet(case_1["bp"], width=16)
 
         # Create a value loss function that incorporates shock information
         def shock_aware_value_loss(vf, input_grid):
@@ -615,8 +622,10 @@ class test_ann_value_functions(unittest.TestCase):
         )
         test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
+        test_bp = bellman.BellmanPeriod(test_block, {})
+
         # Create value network
-        value_net = ann.BlockValueNet(test_block, width=32)
+        value_net = ann.BlockValueNet(test_bp, width=32)
 
         # Create a loss function that targets a known linear value function
         def linear_target_loss(vf, input_grid):
@@ -656,8 +665,10 @@ class test_ann_value_functions(unittest.TestCase):
         """Test value function with perfect foresight model (mirrors policy test)."""
         import skagent.models.perfect_foresight as pfm
 
+        pfbp = bellman.BellmanPeriod(pfm.block_no_shock, pfm.calibration)
+
         # Create value network for perfect foresight model
-        value_net = ann.BlockValueNet(pfm.block_no_shock, width=16)
+        value_net = ann.BlockValueNet(pfbp, width=16)
 
         # Check what state variables the value network actually found
         print(
@@ -703,7 +714,7 @@ class test_block_policy_value_net(unittest.TestCase):
         """Test comprehensive joint training that mirrors policy training patterns."""
 
         # Create networks
-        policy_value_net = ann.BlockPolicyValueNet(case_1["block"])
+        policy_value_net = ann.BlockPolicyValueNet(case_1["bp"])
 
         drs, vf = policy_value_net.get_policy_and_value_functions(10)
 
@@ -719,7 +730,7 @@ class test_block_policy_value_net(unittest.TestCase):
         """Test comprehensive joint training that mirrors policy training patterns."""
 
         # Create networks
-        policy_value_net = ann.BlockPolicyValueNet(case_11["block"])
+        policy_value_net = ann.BlockPolicyValueNet(case_11["bp"])
 
         ## This case has a non-trivial continuation value function
         ## and so is a good one to test policy/value training on.
