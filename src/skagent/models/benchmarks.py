@@ -13,7 +13,7 @@ THEORETICAL FOUNDATION
 An entry qualifies for inclusion ONLY if:
 (i) The problem is a bona-fide dynamic programming problem
 (ii) The optimal c_t (and any other control) can be written in closed form
-    with no recursive objects left implicit
+with no recursive objects left implicit
 
 Global Notation (Discrete Time Only)
 ------------------------------------
@@ -1158,8 +1158,8 @@ def d1_analytical_lifetime_reward(
 
     With optimal policy c1 = W/(1+β), c2 = βRW/(1+β):
     Lifetime reward = ln(c1) + β*ln(c2)
-                    = ln(W/(1+β)) + β*ln(βRW/(1+β))
-                    = (1+β)*ln(W) + β*ln(βR) - (1+β)*ln(1+β)
+    = ln(W/(1+β)) + β*ln(βRW/(1+β))
+    = (1+β)*ln(W) + β*ln(βR) - (1+β)*ln(1+β)
     """
     beta = discount_factor
     R = interest_rate

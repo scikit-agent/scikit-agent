@@ -42,7 +42,6 @@ The deployment workflow consists of several jobs:
 ### Repository Settings
 
 1. **Enable GitHub Pages**:
-
    - Go to Settings → Pages
    - Source: "GitHub Actions"
    - No need to select a branch
@@ -119,12 +118,10 @@ python -m http.server 8000 -d _build
 ### Common Issues
 
 1. **Deployment Fails**:
-
    - Check workflow permissions in repository settings
    - Ensure GitHub Pages is enabled with "GitHub Actions" source
 
 2. **PR Comment Not Created**:
-
    - Verify workflow has "pull-requests: write" permission
    - Check if bot has proper access rights
 
