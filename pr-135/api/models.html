@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>Models - scikit-agent 0.1.dev304+gba03cbdb4</title>
+        <title>Models - scikit-agent 0.1.dev305+g884c6623e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev304+gba03cbdb4</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev305+g884c6623e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -679,6 +679,12 @@ TVC                 : lim_{T→∞} E_0[β^T u’(c_T) A_T] = 0 (transversality 
 </section>
 </section>
 <dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.crra_utility">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">crra_utility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.crra_utility" title="Link to this definition">¶</a></dt>
+<dd><p>CRRA utility: u(c) = c^(1-gamma)/(1-gamma) for gamma != 1, log(c) for gamma == 1</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.d1_analytical_lifetime_reward">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d1_analytical_lifetime_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_wealth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interest_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_horizon</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d1_analytical_lifetime_reward" title="Link to this definition">¶</a></dt>
 <dd><p>Analytical lifetime reward for D-1: Finite horizon log utility.</p>
@@ -700,16 +706,8 @@ TVC                 : lim_{T→∞} E_0[β^T u’(c_T) A_T] = 0 (transversality 
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.d1_analytical_policy">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d1_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d1_analytical_policy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d1_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d1_analytical_policy" title="Link to this definition">¶</a></dt>
 <dd><p>D-1: c_t = (1-β)/(1-β^(T-t)) * W_t (remaining horizon formula)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -738,21 +736,13 @@ Value function: V(W) = κ^(1-σ)/(1-σ) * W^(1-σ) / (1 - β*(βR)^((1-σ)/σ))<
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.d2_analytical_policy">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d2_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d2_analytical_policy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d2_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d2_analytical_policy" title="Link to this definition">¶</a></dt>
 <dd><p>D-2: c_t = κ*W_t where κ = (R - (βR)^(1/σ))/R and W_t = m_t + H_t</p>
 <p>This is a proper decision function that:
 1. Takes arrival states (a), shocks, and parameters as input
 2. Computes information set variables (m) from arrival state and parameters
 3. Computes total wealth (W = m + H) including human wealth
 4. Returns optimal controls based on total wealth</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -783,20 +773,12 @@ where κ_eff uses β_eff = s*β in place of β.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.d3_analytical_policy">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d3_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d3_analytical_policy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d3_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d3_analytical_policy" title="Link to this definition">¶</a></dt>
 <dd><p>D-3: c_t = κ_s*(m_t + H) where κ_s = (R - (sβR)^(1/σ))/R</p>
 <p>This is a proper decision function that:
 1. Takes arrival states (a), shocks, and parameters as input
 2. Computes information set variables (m) from arrival state and parameters
 3. Returns optimal controls based on information set</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -923,37 +905,21 @@ where κ_eff uses β_eff = s*β in place of β.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.u1_analytical_policy">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">u1_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.u1_analytical_policy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">u1_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.u1_analytical_policy" title="Link to this definition">¶</a></dt>
 <dd><p>U-1: Permanent Income Hypothesis with β*R = 1</p>
 <p>This is a proper decision function that implements the PIH solution:
 The agent consumes the annuity value of total wealth (financial + human).
 The martingale property E[c_{t+1}] = c_t is a consequence of this optimal policy.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.u2_analytical_policy">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">u2_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.u2_analytical_policy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">u2_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.u2_analytical_policy" title="Link to this definition">¶</a></dt>
 <dd><p>U-2: PIH with Geometric Random Walk Income using standard timing.</p>
 <p>Uses standard timing m_t = R*A_{t-1} + p_t for consistency.
 With ρ=1, income follows p_t = p_{t-1} * ψ_t (geometric random walk).
 Human wealth: H_t = p_t / r (present value of geometric random walk income).</p>
 <p>Standard timing analytical solution: c_t = (1-β)(m_t + H_t)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -1119,6 +1085,7 @@ Human wealth: H_t = p_t / r (present value of geometric random walk income).</p>
 <li><a class="reference internal" href="#standard-timing-convention-adopted-throughout">Standard Timing Convention (Adopted Throughout)</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.crra_utility"><code class="docutils literal notranslate"><span class="pre">crra_utility()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.models.benchmarks.d1_analytical_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">d1_analytical_lifetime_reward()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.models.benchmarks.d1_analytical_policy"><code class="docutils literal notranslate"><span class="pre">d1_analytical_policy()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.models.benchmarks.d2_analytical_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">d2_analytical_lifetime_reward()</span></code></a></li>
@@ -1152,7 +1119,7 @@ Human wealth: H_t = p_t / r (present value of geometric random walk income).</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=815cc636"></script>
+</div><script src="../_static/documentation_options.js?v=562af003"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
