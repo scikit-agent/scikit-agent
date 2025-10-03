@@ -8,6 +8,7 @@ from skagent.models.benchmarks import (
     get_benchmark_model,
     get_benchmark_calibration,
     get_analytical_policy,
+    get_test_states,
     validate_analytical_solution,
     BENCHMARK_MODELS,
     EPS_STATIC,
@@ -74,63 +75,57 @@ class TestBenchmarksModels:
         """Test all three deterministic models (D-1, D-2, D-3)"""
 
         # D-1: Finite horizon log utility
-        policy_d2 = get_analytical_policy("D-1")
-        test_states = {"W": torch.tensor([2.0, 3.0]), "t": torch.tensor([1, 2])}
-        result_d2 = policy_d2(test_states, {}, {})
+        policy_d1 = get_analytical_policy("D-1")
+        parameters_d1 = get_benchmark_calibration("D-1")
+        test_states_d1 = get_test_states("D-1", test_points=3)
+        result_d1 = policy_d1(test_states_d1, {}, parameters_d1)
 
-        assert "c" in result_d2
-        assert torch.all(result_d2["c"] > 0), "D-1 consumption should be positive"
-        assert torch.all(result_d2["c"] <= test_states["W"]), (
+        assert "c" in result_d1
+        assert torch.all(result_d1["c"] > 0), "D-1 consumption should be positive"
+        assert torch.all(result_d1["c"] <= test_states_d1["W"]), (
             "D-1 consumption should not exceed wealth"
         )
 
         # D-2: Infinite horizon CRRA
         policy_d2 = get_analytical_policy("D-2")
-        test_states = {"a": torch.tensor([1.0, 2.0, 3.0])}  # Use arrival state 'a'
-        result_d2 = policy_d2(test_states, {}, {})
+        parameters_d2 = get_benchmark_calibration("D-2")
+        test_states_d2 = get_test_states("D-2", test_points=3)
+        result_d2 = policy_d2(test_states_d2, {}, parameters_d2)
 
         assert "c" in result_d2
         assert torch.all(result_d2["c"] > 0), "D-2 consumption should be positive"
         # Note: With human wealth, consumption can exceed arrival assets
 
         # D-3: Blanchard mortality
-        policy_d4 = get_analytical_policy("D-3")
-        test_states = {"a": torch.tensor([1.0, 2.0, 3.0])}  # Use arrival state 'a'
-        result_d4 = policy_d4(test_states, {}, {})
+        policy_d3 = get_analytical_policy("D-3")
+        parameters_d3 = get_benchmark_calibration("D-3")
+        test_states_d3 = get_test_states("D-3", test_points=3)
+        result_d3 = policy_d3(test_states_d3, {}, parameters_d3)
 
-        assert "c" in result_d4
-        assert torch.all(result_d4["c"] > 0), "D-3 consumption should be positive"
+        assert "c" in result_d3
+        assert torch.all(result_d3["c"] > 0), "D-3 consumption should be positive"
         # Note: With human wealth, consumption can exceed arrival assets
 
     def test_stochastic_models(self):
         """Test key stochastic models (U-1, U-2)"""
 
-        # U-1: PIH with βR=1 - includes realized income y
+        # U-1: PIH with βR=1
         policy_u1 = get_analytical_policy("U-1")
-        test_states = {
-            "A": torch.tensor([1.0, 2.0, 3.0]),  # Financial assets
-            "y": torch.tensor([1.0, 1.0, 1.0]),  # Realized income (required by policy)
-        }
-        result_u1 = policy_u1(test_states, {}, {})
+        parameters_u1 = get_benchmark_calibration("U-1")
+        test_states_u1 = get_test_states("U-1", test_points=3)
+        result_u1 = policy_u1(test_states_u1, {}, parameters_u1)
 
         assert "c" in result_u1
         assert torch.all(result_u1["c"] > 0), "U-1 consumption should be positive"
 
-        # U-2: Log utility with permanent income - includes cash-on-hand m
-        policy_u4 = get_analytical_policy("U-2")
-        A_vals = torch.tensor([1.0, 2.0, 3.0])
-        p_vals = torch.tensor([1.0, 1.0, 1.0])
-        R_default = 1.03
-        test_states = {
-            "A": A_vals,
-            "p": p_vals,
-            "m": A_vals * R_default
-            + p_vals,  # Cash-on-hand (required by standard timing)
-        }
-        result_u4 = policy_u4(test_states, {}, {})
+        # U-2: Log utility with permanent income
+        policy_u2 = get_analytical_policy("U-2")
+        parameters_u2 = get_benchmark_calibration("U-2")
+        test_states_u2 = get_test_states("U-2", test_points=3)
+        result_u2 = policy_u2(test_states_u2, {}, parameters_u2)
 
-        assert "c" in result_u4
-        assert torch.all(result_u4["c"] > 0), "U-2 consumption should be positive"
+        assert "c" in result_u2
+        assert torch.all(result_u2["c"] > 0), "U-2 consumption should be positive"
 
     def test_model_descriptions(self):
         """Test that model descriptions match expected patterns"""
@@ -204,7 +199,12 @@ class TestStaticIdentityVerification:
 
         # Test at different time periods
         for t in [0, 1, 2]:
-            test_states = {"W": torch.tensor([2.0, 3.0]), "t": torch.tensor([t, t])}
+            # Get test states and set time period
+            base_states = get_test_states("D-1", test_points=3)
+            test_states = {
+                "W": base_states["W"],
+                "t": torch.full_like(base_states["t"], t),
+            }
             result = policy(test_states, {}, calibration)
 
             remaining_periods = T - t
@@ -241,7 +241,7 @@ class TestStaticIdentityVerification:
             r = R - 1
             human_wealth = y / r
 
-            test_states = {"a": torch.tensor([1.0, 2.0, 3.0])}
+            test_states = get_test_states(model_id, test_points=5)
             result = policy(test_states, {}, calibration)
 
             # Policy computes m = a*R + y, then c = κ*(m + H)
@@ -260,10 +260,7 @@ class TestStaticIdentityVerification:
         y_mean = calibration["y_mean"]
         r = R - 1
 
-        test_states = {
-            "A": torch.tensor([1.0, 2.0, 3.0]),
-            "y": torch.tensor([1.0, 1.2, 0.8]),
-        }
+        test_states = get_test_states("U-1", test_points=5)
         result = policy(test_states, {}, calibration)
 
         # PIH total wealth: W = R*A + y + H where H = y_mean/r
@@ -288,10 +285,7 @@ class TestStaticIdentityVerification:
         # Verify ρ=1 for analytical tractability
         assert rho_p == 1.0, f"U-2 requires ρ_p=1.0, got {rho_p}"
 
-        test_states = {
-            "m": torch.tensor([2.0, 3.0, 4.0]),
-            "p": torch.tensor([1.0, 1.2, 0.8]),
-        }
+        test_states = get_test_states("U-2", test_points=5)
         result = policy(test_states, {}, calibration)
 
         # Human wealth for geometric random walk: H_t = p_t / r
@@ -321,10 +315,7 @@ class TestDynamicOptimalityChecks:
         assert rho_p == 1.0, f"U-2 requires ρ_p=1.0, got {rho_p}"
 
         # Test that the policy satisfies the permanent income formula with correct states
-        test_states = {
-            "m": torch.tensor([2.0, 3.0, 4.0]),
-            "p": torch.tensor([1.0, 1.2, 0.8]),
-        }
+        test_states = get_test_states("U-2", test_points=5)
         result = policy(test_states, {}, calibration)
 
         # Human wealth calculation for geometric random walk: H_t = p_t / r
@@ -520,8 +511,3 @@ def test_benchmark_functionality():
     assert len(models) == 5
 
     print("\n✓ All 5 benchmark models are implemented")
-
-
-if __name__ == "__main__":
-    # Run the integration test when called directly
-    test_benchmark_functionality()

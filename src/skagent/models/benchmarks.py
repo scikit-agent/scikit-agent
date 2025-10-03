@@ -34,8 +34,24 @@ TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality co
 from skagent.distributions import Normal, MeanOneLogNormal
 from skagent.model import Control, DBlock
 import torch
+from torch import as_tensor
 import numpy as np
 from typing import Dict, Any, Callable
+
+
+# UTILITY FUNCTIONS
+# =================
+
+
+def crra_utility(c, gamma):
+    """
+    CRRA utility: u(c) = c^(1-gamma)/(1-gamma) for gamma != 1, log(c) for gamma == 1
+    """
+    c_tensor = as_tensor(c)
+    if abs(gamma - 1.0) < 1e-10:
+        return torch.log(c_tensor)
+    return c_tensor ** (1 - gamma) / (1 - gamma)
+
 
 # NUMERICAL TOLERANCE CONSTANTS
 # =============================
@@ -43,6 +59,7 @@ EPS_STATIC = 1e-10  # Static identity verification (deterministic)
 EPS_EULER = 1e-8  # Euler equation residuals (stochastic)
 EPS_BUDGET = 1e-12  # Budget evolution (should be exact)
 EPS_VALIDATION = 1e-8  # General validation tolerance
+
 
 # DETERMINISTIC (PERFECT-FORESIGHT) BENCHMARKS
 # ============================================
@@ -79,47 +96,40 @@ d1_block = DBlock(
             "t": lambda t: t + 1,  # Time counter
             "c": Control(["W", "t"], upper_bound=lambda W, t: W, agent="consumer"),
             "W": lambda W, c, R: (W - c) * R,  # Next period wealth
-            "u": lambda c: torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "u": lambda c: crra_utility(c, 1.0),  # Log utility (CRRA with gamma=1)
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def d1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
+def d1_analytical_policy(states, shocks, parameters):
     """D-1: c_t = (1-β)/(1-β^(T-t)) * W_t (remaining horizon formula)"""
-    beta = calibration["DiscFac"]
+    beta = parameters["DiscFac"]
+    T = parameters["T"]
+    W = states["W"]
+    t = states.get("t", 0)
 
-    def policy(states, shocks, parameters):
-        W = states["W"]
-        t = states.get("t", 0)
+    # Remaining horizon consumption rule
+    remaining_periods = T - t
 
-        # Use T from parameters if available, otherwise from calibration
-        T = parameters.get("T", calibration["T"])
+    # Terminal period: consume everything when remaining_periods <= 0
+    # Otherwise: c = (1-β)/(1-β^(T-t)) * W
+    numerator = 1 - beta
+    denominator = 1 - beta**remaining_periods
 
-        # Remaining horizon consumption rule
-        remaining_periods = T - t
+    # Infer dtype from W: use float64 for scalars, preserve tensor dtype
+    W_tensor = as_tensor(W)
+    dtype = torch.float64 if not isinstance(W, torch.Tensor) else W_tensor.dtype
 
-        # Handle both scalar and tensor cases
-        if torch.is_tensor(remaining_periods):
-            # Terminal period - consume everything where remaining_periods <= 0
-            terminal_mask = remaining_periods <= 0
-            numerator = 1 - beta
-            beta_pow = torch.pow(beta, remaining_periods)
-            denominator = 1 - beta_pow
-            c_optimal = torch.where(terminal_mask, W, (numerator / denominator) * W)
-        else:
-            # Scalar case
-            if remaining_periods <= 0:
-                c_optimal = W
-            else:
-                numerator = 1 - beta
-                denominator = 1 - (beta**remaining_periods)
-                c_optimal = (numerator / denominator) * W
+    # Use torch.where to handle terminal period (works for both scalars and tensors)
+    c_optimal = torch.where(
+        as_tensor(remaining_periods <= 0),
+        as_tensor(W, dtype=dtype),
+        as_tensor((numerator / denominator) * W, dtype=dtype),
+    )
 
-        return {"c": c_optimal}
-
-    return policy
+    return {"c": c_optimal}
 
 
 # D-2: Infinite Horizon CRRA (Perfect Foresight)
@@ -160,18 +170,14 @@ d2_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: (
-                torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA) / (1 - CRRA)
-                if CRRA != 1
-                else torch.log(torch.as_tensor(c, dtype=torch.float32))
-            ),
+            "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
+def d2_analytical_policy(states, shocks, parameters):
     """
     D-2: c_t = κ*W_t where κ = (R - (βR)^(1/σ))/R and W_t = m_t + H_t
 
@@ -181,11 +187,15 @@ def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     3. Computes total wealth (W = m + H) including human wealth
     4. Returns optimal controls based on total wealth
     """
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    sigma = calibration["CRRA"]
-    y = calibration["y"]
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    sigma = parameters["CRRA"]
+    y = parameters["y"]
 
+    # Extract arrival state (assets from previous period)
+    a = states["a"]
+
+    # Compute MPC
     growth_factor = (beta * R) ** (1 / sigma)
     if growth_factor >= R:
         raise ValueError(
@@ -194,29 +204,16 @@ def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 
     kappa = (R - growth_factor) / R
 
-    def policy(states, shocks, parameters):
-        # Extract arrival state (assets from previous period)
-        a = states["a"]
+    # Compute information set: market resources = assets * return + income
+    m = a * R + y
 
-        # Get parameters (allow override of calibration defaults)
-        R_param = parameters.get("R", R)
-        y_param = parameters.get("y", y)
+    # Compute human wealth: present value of constant income stream
+    r = R - 1
+    human_wealth = y / r
 
-        # Compute information set: market resources = assets * return + income
-        m = a * R_param + y_param
-
-        # Compute human wealth: present value of constant income stream
-        r = R_param - 1  # Net interest rate
-        if r <= 0:
-            raise ValueError(f"Interest rate must be > 1, got R = {R_param}")
-        human_wealth = y_param / r
-
-        # Optimal consumption: c = κ * (market resources + human wealth)
-        # This is the correct consumption function accounting for total wealth
-        c_optimal = kappa * (m + human_wealth)
-        return {"c": c_optimal}
-
-    return policy
+    # Optimal consumption: c = κ * (market resources + human wealth)
+    c_optimal = kappa * (m + human_wealth)
+    return {"c": c_optimal}
 
 
 # D-3: Blanchard Discrete-Time Mortality
@@ -258,18 +255,14 @@ d3_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: (
-                torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA) / (1 - CRRA)
-                if CRRA != 1
-                else torch.log(torch.as_tensor(c, dtype=torch.float32))
-            ),
+            "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
+def d3_analytical_policy(states, shocks, parameters):
     """
     D-3: c_t = κ_s*(m_t + H) where κ_s = (R - (sβR)^(1/σ))/R
 
@@ -278,15 +271,19 @@ def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     2. Computes information set variables (m) from arrival state and parameters
     3. Returns optimal controls based on information set
     """
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    sigma = calibration["CRRA"]
-    s = calibration["SurvivalProb"]
-    y = calibration["y"]
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    sigma = parameters["CRRA"]
+    s = parameters["SurvivalProb"]
+    y = parameters["y"]
+
+    # Extract arrival state (assets from previous period)
+    a = states["a"]
 
     # Effective discount factor with mortality
     beta_eff = s * beta
 
+    # Compute MPC with mortality
     growth_factor = (beta_eff * R) ** (1 / sigma)
     if growth_factor >= R:
         raise ValueError(
@@ -295,29 +292,16 @@ def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 
     kappa_s = (R - growth_factor) / R
 
-    def policy(states, shocks, parameters):
-        # Extract arrival state (assets from previous period)
-        a = states["a"]
+    # Compute information set: market resources = assets * return + income
+    m = a * R + y
 
-        # Get parameters (allow override of calibration defaults)
-        R_param = parameters.get("R", R)
-        y_param = parameters.get("y", y)
+    # Compute human wealth: present value of constant income stream
+    r = R - 1
+    human_wealth = y / r
 
-        # Compute information set: market resources = assets * return + income
-        m = a * R_param + y_param
-
-        # Compute human wealth: present value of constant income stream
-        r = R_param - 1  # Net interest rate
-        if r <= 0:
-            raise ValueError(f"Interest rate must be > 1, got R = {R_param}")
-        human_wealth = y_param / r
-
-        # Optimal consumption: c = κ_s * (market resources + human wealth)
-        # This is the correct consumption function accounting for total wealth
-        c_optimal = kappa_s * (m + human_wealth)
-        return {"c": c_optimal}
-
-    return policy
+    # Optimal consumption: c = κ_s * (market resources + human wealth)
+    c_optimal = kappa_s * (m + human_wealth)
+    return {"c": c_optimal}
 
 
 # Remarks: D-2 is the canonical perfect-foresight workhorse; D-3 shows that adding
@@ -380,7 +364,7 @@ u1_block = DBlock(
 )
 
 
-def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
+def u1_analytical_policy(states, shocks, parameters):
     """
     U-1: Permanent Income Hypothesis with β*R = 1
 
@@ -388,10 +372,10 @@ def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
     The agent consumes the annuity value of total wealth (financial + human).
     The martingale property E[c_{t+1}] = c_t is a consequence of this optimal policy.
     """
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    y_mean = calibration["y_mean"]
-    income_std = calibration["income_std"]
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    y_mean = parameters["y_mean"]
+    income_std = parameters.get("income_std", 0.0)
 
     if abs(beta * R - 1.0) > 1e-6:
         print(f"Warning: β*R = {beta * R:.6f} ≠ 1, PIH conditions may not hold exactly")
@@ -401,35 +385,23 @@ def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
             f"Warning: With high income variance ({income_std}), verify TVC is satisfied"
         )
 
-    def policy(states, shocks, parameters):
-        # DECISION FUNCTION ARCHITECTURE:
-        # Step 1: Extract arrival states
-        A = states["A"]  # Financial assets (arrival state)
-        y_current = states["y"]  # Current income realization (from y_mean + eta)
+    # Extract arrival states
+    A = states["A"]  # Financial assets (arrival state)
+    y_current = states["y"]  # Current income realization (from y_mean + eta)
 
-        # Get parameters (allow override of calibration defaults)
-        R_param = parameters.get("R", R)
-        y_mean_param = parameters.get("y_mean", y_mean)
-        r_param = R_param - 1
+    # Construct information set from arrival states
+    m = A * R + y_current  # Information set: cash-on-hand/market resources
 
-        # Step 2: Construct information set from arrival states
-        m = A * R_param + y_current  # Information set: cash-on-hand/market resources
+    # PIH solution with βR=1: consume annuity value of TOTAL wealth
+    r = R - 1
+    human_wealth = y_mean / r
+    total_wealth = m + human_wealth
 
-        # Step 3: Make decision based on information set (m)
-        # PIH solution with βR=1: consume annuity value of TOTAL wealth
-        # Human wealth for i.i.d. income: H = E[y]/r = y_mean/r
-        human_wealth = y_mean_param / r_param
+    # PIH MPC out of total wealth is r/R
+    mpc = r / R
+    c_optimal = mpc * total_wealth
 
-        # PIH total wealth: cash-on-hand + human wealth
-        total_wealth = m + human_wealth
-
-        # PIH MPC out of total wealth is r/R
-        # c_t = (r/R) * W_t where W_t = m_t + H
-        c_optimal = (r_param / R_param) * total_wealth
-
-        return {"c": c_optimal}
-
-    return policy
+    return {"c": c_optimal}
 
 
 # U-2: Log Utility with Geometric Random Walk Income (ρ=1)
@@ -478,14 +450,14 @@ u2_block = DBlock(
             ),
             "A": lambda m, c: m
             - c,  # STANDARD TIMING: End-of-period assets A_t = m_t - c_t
-            "u": lambda c: torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "u": lambda c: crra_utility(c, 1.0),  # Log utility (CRRA with gamma=1)
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
+def u2_analytical_policy(states, shocks, parameters):
     """
     U-2: PIH with Geometric Random Walk Income using standard timing.
 
@@ -495,9 +467,9 @@ def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 
     Standard timing analytical solution: c_t = (1-β)(m_t + H_t)
     """
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    rho_p = calibration["rho_p"]
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    rho_p = parameters["rho_p"]
 
     # Verify ρ=1 for analytical tractability
     if abs(rho_p - 1.0) > 1e-10:
@@ -505,28 +477,22 @@ def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
             f"Model requires ρ=1 for analytical tractability, got ρ={rho_p}"
         )
 
-    def policy(states, shocks, parameters):
-        # STANDARD TIMING: Use cash-on-hand from states (computed by DBlock)
-        m_t = states["m"]  # Cash-on-hand m_t = R*A_{t-1} + p_t
-        p_t = states["p"]  # Current permanent income level
+    # STANDARD TIMING: Use cash-on-hand from states (computed by DBlock)
+    m_t = states["m"]  # Cash-on-hand m_t = R*A_{t-1} + p_t
+    p_t = states["p"]  # Current permanent income level
 
-        # Get parameters (allow override of calibration defaults)
-        R_param = parameters.get("R", R)
-        r_param = R_param - 1
+    # Human wealth for Geometric Random Walk (ρ=1)
+    r = R - 1
+    human_wealth = p_t / r
 
-        # Human wealth for Geometric Random Walk (ρ=1)
-        # H_t = E_t[∑_{s=1}^∞ R^{-s} p_{t+s}] = p_t/r
-        human_wealth = p_t / r_param
+    # Total wealth under standard timing: W_t = m_t + H_t
+    total_wealth = m_t + human_wealth
 
-        # Total wealth under standard timing: W_t = m_t + H_t
-        total_wealth = m_t + human_wealth
+    # Permanent income hypothesis: c_t = (1-β) * W_t
+    mpc = 1 - beta
+    c_optimal = mpc * total_wealth
 
-        # Permanent income hypothesis: c_t = (1-β) * W_t
-        c_optimal = (1 - beta) * total_wealth
-
-        return {"c": c_optimal}
-
-    return policy
+    return {"c": c_optimal}
 
 
 # =============================================================================
@@ -574,18 +540,18 @@ def _validate_d2_d3_solution(
     model_id: str,
     test_states: Dict[str, torch.Tensor],
     analytical_controls: Dict[str, torch.Tensor],
-    calibration: Dict[str, Any],
+    parameters: Dict[str, Any],
     tolerance: float,
 ) -> Dict[str, Any]:
     """Validate D-2 and D-3 perfect foresight optimality conditions"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    sigma = calibration["CRRA"]
-    y = calibration["y"]
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    sigma = parameters["CRRA"]
+    y = parameters["y"]
 
     # For D-3, use effective discount factor
     if model_id == "D-3":
-        s = calibration["SurvivalProb"]
+        s = parameters["SurvivalProb"]
         beta_eff = s * beta
     else:
         beta_eff = beta
@@ -687,10 +653,7 @@ def get_analytical_policy(model_id: str) -> Callable:
         available = list(BENCHMARK_MODELS.keys())
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
 
-    calibration = BENCHMARK_MODELS[model_id]["calibration"]
-    policy_func = BENCHMARK_MODELS[model_id]["analytical_policy"]
-
-    return policy_func(calibration)
+    return BENCHMARK_MODELS[model_id]["analytical_policy"]
 
 
 def get_test_states(model_id: str, test_points: int = 10) -> Dict[str, torch.Tensor]:
@@ -734,14 +697,14 @@ def validate_analytical_solution(
         }
 
     try:
-        calibration = get_benchmark_calibration(model_id)
+        parameters = get_benchmark_calibration(model_id)
         analytical_policy = get_analytical_policy(model_id)
 
         # Generate appropriate test states using the extensible approach
         test_states = get_test_states(model_id, test_points)
 
         # Test analytical policy
-        analytical_controls = analytical_policy(test_states, {}, calibration)
+        analytical_controls = analytical_policy(test_states, {}, parameters)
 
         # Basic feasibility checks
         for control_name, control_values in analytical_controls.items():
@@ -766,7 +729,7 @@ def validate_analytical_solution(
         custom_validation = get_custom_validation(model_id)
         if custom_validation is not None:
             validation_result = custom_validation(
-                model_id, test_states, analytical_controls, calibration, tolerance
+                model_id, test_states, analytical_controls, parameters, tolerance
             )
             if not validation_result["success"]:
                 return {
@@ -1014,21 +977,3 @@ def get_analytical_lifetime_reward(model_id: str, *args, **kwargs) -> float:
         raise ValueError(f"No analytical lifetime reward function for {model_id}")
 
     return analytical_functions[model_id](*args, **kwargs)
-
-
-if __name__ == "__main__":
-    print("Analytically Solvable Benchmark Models:")
-    print("=" * 60)
-
-    for model_id, description in list_benchmark_models().items():
-        print(f"{model_id:4s}: {description}")
-
-    print(f"\nTotal: {len(BENCHMARK_MODELS)} models")
-
-    # Test a few key models
-    print("\nValidation Results:")
-    print("-" * 30)
-    for model_id in ["D-1", "D-2", "U-1", "U-2"]:
-        result = validate_analytical_solution(model_id)
-        status = result.get("validation", result.get("error", "UNKNOWN"))
-        print(f"{model_id}: {status}")
