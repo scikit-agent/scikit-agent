@@ -21,8 +21,7 @@ modeling and statistics what `scikit-learn` is for machine learning.
 
 ## Key Features
 
-- **Scikit-learn compatible API** for easy integration with the Python
-  scientific ecosystem
+- **Built on Scientific Python and Torch** for easy integration with the Python ecosystem
 - **Modular modeling system**. Construct multi-agent environments from modular blocks of structural equations.
 - **Solution algorithms** including deep reinforcement learning methods.
 - **Simulation tools** for generating synthetic data and running policy
