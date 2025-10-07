@@ -12,20 +12,20 @@
 <!-- SPHINX-START -->
 
 **scikit-agent** is a scientific Python toolkit for agent-based economic
-modeling and multi-agent systems design. It provides a unified interface for 
-creating, solving, and simulating
-economic models using modern computational methods including deep reinforcement
-learning as well as more traditional numerical techniques.
+modeling and multi-agent systems design. It provides a unified interface for
+creating, solving, and simulating economic models using modern computational
+methods including deep reinforcement learning as well as more traditional
+numerical techniques.
 
 Our goal is for `scikit-agent` to be for computational social scientific
 modeling and statistics what `scikit-learn` is for machine learning.
 
 ## Key Features
 
-- **Built on Scientific Python and Torch** for easy integration with the
-  Python ecosystem
-- **Modular modeling system**. Construct multi-agent environments from
-  modular blocks of structural equations.
+- **Built on Scientific Python and Torch** for easy integration with the Python
+  ecosystem
+- **Modular modeling system**. Construct multi-agent environments from modular
+  blocks of structural equations.
 - **Solution algorithms** including deep reinforcement learning methods.
 - **Simulation tools** for generating synthetic data and running policy
   experiments
