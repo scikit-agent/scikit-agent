@@ -55,21 +55,6 @@ Parameters can be:
 - Mathematical expressions: `"utility": "c**(1-gamma)/(1-gamma)"`
 - Age-varying sequences: `"income": [1.0, 1.2, 1.1, 0.8]`
 
-### Scikit-Learn Compatible
-
-Following familiar patterns:
-
-```python
-# Fit-predict paradigm for solution algorithms
-solver = vbi.Solver(model)
-solver.fit(grid)
-policy = solver.predict(states)
-
-# Transform paradigm for simulation
-simulator = MonteCarloSimulator(model, policy)
-results = simulator.transform(initial_conditions)
-```
-
 ## Topics Covered
 
 ```{toctree}
