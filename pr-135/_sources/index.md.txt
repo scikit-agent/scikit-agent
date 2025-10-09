@@ -1,11 +1,5 @@
 # scikit-agent
 
-**A scikit-learn compatible toolkit for agent-based economic modeling.**
-
-scikit-agent provides a unified, pythonic interface for creating, solving, and simulating
-economic models using modern computational methods including neural networks, value function
-iteration, and Monte Carlo simulation.
-
 ```{toctree}
 :maxdepth: 2
 :hidden:
@@ -13,33 +7,12 @@ iteration, and Monte Carlo simulation.
 user_guide/index
 auto_examples/index
 api/index
+community/index
 ```
 
 ```{include} ../README.md
 :start-after: <!-- SPHINX-START -->
 ```
-
-## Why scikit-agent?
-
-### 🧱 **Modular Design**
-
-Build complex economic models using intuitive building blocks. Compose **DBlocks** and **RBlocks**
-to represent different stages of economic behavior with clear separation of shocks, dynamics,
-controls, and rewards.
-
-### 🔬 **Multiple Solution Methods**
-
-Choose from traditional methods like value function iteration or modern neural network approaches.
-All algorithms follow consistent APIs and integrate seamlessly with the model framework.
-
-### 📊 **Rich Simulation Engine**
-
-Generate synthetic data with sophisticated Monte Carlo simulators that handle agent heterogeneity,
-life-cycle dynamics, and complex stochastic processes.
-
-### 🐍 **Scikit-Learn Compatible**
-
-Familiar fit-predict patterns, consistent APIs, and integration with the broader Python scientific ecosystem.
 
 ## Quick Example
 
@@ -142,31 +115,28 @@ Detailed documentation of all classes and functions
 - Social Security and pension reform
 - Regulatory impact assessment
 
-## Key Features
 
-✅ **Block-based model architecture** for composable, reusable components
-✅ **String-based equation parsing** with automatic differentiation support
-✅ **Multiple solution algorithms** (VFI, neural networks, policy iteration)
-✅ **Sophisticated simulation engine** with aging, mortality, and heterogeneity
-✅ **Rich visualization tools** and analysis functions
-✅ **Extensive documentation** with examples and tutorials
-✅ **Active development** with growing community
+## Why scikit-agent?
 
-## Installation
+### 🧱 **Modular Design**
 
-Install the latest stable version:
+Build complex economic models using intuitive building blocks. Compose **DBlocks** and **RBlocks**
+to represent different stages of economic behavior with clear separation of shocks, dynamics,
+controls, and rewards.
 
-```bash
-pip install scikit-agent
-```
+### 🔬 **Multiple Solution Methods**
 
-For development installation:
+Choose from traditional methods like value function iteration or modern neural network approaches.
+All algorithms follow consistent APIs and integrate seamlessly with the model framework.
 
-```bash
-git clone https://github.com/scikit-agent/scikit-agent.git
-cd scikit-agent
-pip install -e ".[dev,docs]"
-```
+### 📊 **Rich Simulation Engine**
+
+Generate synthetic data with sophisticated Monte Carlo simulators that handle agent heterogeneity,
+life-cycle dynamics, and complex stochastic processes.
+
+### 🐍 **Scikit-Learn Compatible**
+
+Familiar fit-predict patterns, consistent APIs, and integration with the broader Python scientific ecosystem.
 
 ## Next Steps
 

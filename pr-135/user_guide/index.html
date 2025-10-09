@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Installation" href="installation.html"><link rel="prev" title="scikit-agent" href="../index.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>User Guide - scikit-agent 0.1.dev305+g884c6623e</title>
+        <title>User Guide - scikit-agent 0.1.dev317+g33983e737</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev305+g884c6623e</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev317+g33983e737</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,17 +205,14 @@
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../auto_examples/index.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../auto_examples/index.html#algorithms">Algorithms</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../auto_examples/index.html#economic-models">Economic Models</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html#simulation-examples">Simulation Examples</a><input aria-label="Toggle navigation of Simulation Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_basic_consumption_model.html">Basic Consumption-Savings Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -223,6 +220,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
 </ul>
@@ -322,20 +323,6 @@ code.</p>
 <li><p>Mathematical expressions: <code class="docutils literal notranslate"><span class="pre">&quot;utility&quot;:</span> <span class="pre">&quot;c**(1-gamma)/(1-gamma)&quot;</span></code></p></li>
 <li><p>Age-varying sequences: <code class="docutils literal notranslate"><span class="pre">&quot;income&quot;:</span> <span class="pre">[1.0,</span> <span class="pre">1.2,</span> <span class="pre">1.1,</span> <span class="pre">0.8]</span></code></p></li>
 </ul>
-</section>
-<section id="scikit-learn-compatible">
-<h3>Scikit-Learn Compatible<a class="headerlink" href="#scikit-learn-compatible" title="Link to this heading">¶</a></h3>
-<p>Following familiar patterns:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Fit-predict paradigm for solution algorithms</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">vbi</span><span class="o">.</span><span class="n">Solver</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-<span class="n">solver</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
-<span class="n">policy</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
-
-<span class="c1"># Transform paradigm for simulation</span>
-<span class="n">simulator</span> <span class="o">=</span> <span class="n">MonteCarloSimulator</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">policy</span><span class="p">)</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">initial_conditions</span><span class="p">)</span>
-</pre></div>
-</div>
 </section>
 </section>
 <section id="topics-covered">
@@ -485,7 +472,6 @@ you’re:</p>
 <li><a class="reference internal" href="#key-design-principles">Key Design Principles</a><ul>
 <li><a class="reference internal" href="#block-based-models">Block-Based Models</a></li>
 <li><a class="reference internal" href="#flexible-calibration">Flexible Calibration</a></li>
-<li><a class="reference internal" href="#scikit-learn-compatible">Scikit-Learn Compatible</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#topics-covered">Topics Covered</a></li>
@@ -502,7 +488,7 @@ you’re:</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=562af003"></script>
+</div><script src="../_static/documentation_options.js?v=50c3d570"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
