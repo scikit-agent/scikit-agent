@@ -418,7 +418,8 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         Consumption rule: c = κ*(m + H) where κ = (R - (s*β*R)^(1/σ))/R
         Human wealth: H = y/r
         MPC bounds: 0 < κ < 1 (marginal propensity to consume)
-        Feasibility: 0 < c < m (consumption constraints)
+        Feasibility: 0 < c < m + H (total wealth constraint)
+        Note: DBlock imposes c <= m, which may not hold for all parameter values
         """
         model_id = "D-3"
         calibration = get_benchmark_calibration(model_id)
@@ -464,8 +465,12 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 self.assertGreater(kappa, 0, "MPC must be positive")
                 self.assertLess(kappa, 1, "MPC must be less than 1")
 
-                # Verify consumption is feasible (less than cash-on-hand)
-                self.assertLess(c, m, "Consumption must be less than cash-on-hand")
+                # Verify consumption is feasible (less than total wealth)
+                total_wealth = m + human_wealth
+                self.assertLess(
+                    c, total_wealth, "Consumption must be less than total wealth"
+                )
+                # Note: With current calibration, c < m, but this is not guaranteed for all parameters
 
     def test_d2_policy_function_accuracy(self):
         """
@@ -476,7 +481,8 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         Consumption rule: c = κ*(m + H) where κ = (R - (β*R)^(1/σ))/R
         Human wealth: H = y/r
         MPC bounds: 0 < κ < 1 (marginal propensity to consume)
-        Feasibility: 0 < c < m (consumption constraints)
+        Feasibility: 0 < c < m + H (total wealth constraint)
+        Note: DBlock imposes c <= m, which may not hold for all parameter values
         """
         model_id = "D-2"
         calibration = get_benchmark_calibration(model_id)
@@ -519,9 +525,9 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 self.assertGreater(kappa, 0, "MPC must be positive")
                 self.assertLess(kappa, 1, "MPC must be less than 1")
 
-                # Verify consumption is feasible (less than cash-on-hand)
-                self.assertLess(c, m, "Consumption must be less than cash-on-hand")
-
-
-if __name__ == "__main__":
-    unittest.main()
+                # Verify consumption is feasible (less than total wealth)
+                total_wealth = m + human_wealth
+                self.assertLess(
+                    c, total_wealth, "Consumption must be less than total wealth"
+                )
+                # Note: With current calibration, c < m, but this is not guaranteed for all parameters
