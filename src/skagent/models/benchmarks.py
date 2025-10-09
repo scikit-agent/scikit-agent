@@ -106,6 +106,10 @@ d1_block = DBlock(
 def d1_analytical_policy(states, shocks, parameters):
     """D-1: c_t = (1-β)/(1-β^(T-t)) * W_t (remaining horizon formula)"""
     beta = parameters["DiscFac"]
+    if beta >= 1.0:
+        raise ValueError(
+            f"Discount factor must satisfy β < 1 for finite horizon model, got β={beta}"
+        )
     T = parameters["T"]
     W = states["W"]
     t = states.get("t", 0)
@@ -209,6 +213,10 @@ def d2_analytical_policy(states, shocks, parameters):
 
     # Compute human wealth: present value of constant income stream
     r = R - 1
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
     human_wealth = y / r
 
     # Optimal consumption: c = κ * (market resources + human wealth)
@@ -297,6 +305,10 @@ def d3_analytical_policy(states, shocks, parameters):
 
     # Compute human wealth: present value of constant income stream
     r = R - 1
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
     human_wealth = y / r
 
     # Optimal consumption: c = κ_s * (market resources + human wealth)
@@ -394,6 +406,10 @@ def u1_analytical_policy(states, shocks, parameters):
 
     # PIH solution with βR=1: consume annuity value of TOTAL wealth
     r = R - 1
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
     human_wealth = y_mean / r
     total_wealth = m + human_wealth
 
@@ -483,6 +499,10 @@ def u2_analytical_policy(states, shocks, parameters):
 
     # Human wealth for Geometric Random Walk (ρ=1)
     r = R - 1
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
     human_wealth = p_t / r
 
     # Total wealth under standard timing: W_t = m_t + H_t
@@ -527,7 +547,9 @@ def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     # For standard timing, policy expects m (computed from A*R + p)
     A = torch.linspace(0.5, 3.0, test_points)
     p = torch.ones(test_points)
-    R = u2_calibration["R"]  # Use calibration value instead of hardcoding
+    # Use default R=1.03 for test state generation to avoid coupling to global calibration
+    # Actual policy evaluation uses the calibration-specific R value
+    R = 1.03
 
     return {
         "A": A,  # Keep for reference but policy uses m
@@ -565,6 +587,10 @@ def _validate_d2_d3_solution(
 
     # Compute human wealth: present value of constant income stream
     r = R - 1  # Net interest rate
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
     human_wealth = y / r
 
     # Check that c_t = κ*(m_t + H) where H is human wealth
@@ -862,6 +888,10 @@ def d2_analytical_lifetime_reward(
 
     kappa = (R - growth_factor) / R
     r = R - 1  # Net interest rate
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
 
     # Calculate total wealth W = m + H (including human wealth)
     if y > 0:
@@ -927,6 +957,10 @@ def d3_analytical_lifetime_reward(
 
     kappa_eff = (R - growth_factor) / R
     r = R - 1  # Net interest rate
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
 
     # Calculate total wealth W = m + H (same as D-2)
     if y > 0:
