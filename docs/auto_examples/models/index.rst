@@ -3,7 +3,7 @@
 .. _sphx_glr_auto_examples_models:
 
 Economic Models
-===============
+----------------
 
 This section contains examples demonstrating how to use and create economic models
 with scikit-agent. These examples show how to implement various economic theories

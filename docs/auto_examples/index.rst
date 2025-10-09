@@ -26,7 +26,7 @@ using scikit-agent in your research and applications.
     </div>
 
 Algorithms
-==========
+------------
 
 This section contains examples of different algorithms available in scikit-agent.
 These examples demonstrate how to use various solution methods, optimization
@@ -50,7 +50,7 @@ training, and other computational approaches to solving economic models.
     </div>
 
 Economic Models
-===============
+----------------
 
 This section contains examples demonstrating how to use and create economic models
 with scikit-agent. These examples show how to implement various economic theories
@@ -108,15 +108,12 @@ other computational methods.
 
     </div>
 
-Simulation Examples
-===================
+Simulation
+-----------
 
 This section demonstrates how to run simulations using scikit-agent models.
 These examples show how to generate synthetic data, run Monte Carlo simulations,
 and analyze the results.
-
-Examples include life-cycle simulations, policy experiments, and sensitivity
-analyses that help understand model behavior under different conditions.
 
 
 
