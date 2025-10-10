@@ -124,7 +124,7 @@ class TestModelVisualizerCore(unittest.TestCase):
         and generates prev-period nodes (name*) for lag edges.
         """
         viz = ModelVisualizer(self.analysis_dict)
-        graph = viz.create_graph()
+        viz.create_graph()  # Don't save graph - only interested in side effects
 
         # Original nodes
         expected = set(self.analysis_dict["node_meta"].keys())
