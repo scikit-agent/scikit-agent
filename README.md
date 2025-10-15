@@ -58,11 +58,3 @@ pip install -e ".[dev,docs]"
 [rtd-link]:                 https://scikit-agent.readthedocs.io/en/latest/?badge=latest
 
 <!-- prettier-ignore-end -->
-
-## Key references
-
-- Hammond, L., Fox, J., Everitt, T., Carey, R., Abate, A. and Wooldridge,
-  M., 2023. Reasoning about causality in games. Artificial Intelligence, 320,
-  p.103919.
-- Maliar, L., Maliar, S. and Winant, P., 2021. Deep learning for solving dynamic
-  economic models. Journal of Monetary Economics, 122, pp.76-101.
