@@ -7,13 +7,9 @@ scikit-agent.
 
 Learn about different approaches to solving economic models:
 
-- **Endogenous Grid Method (EGM)**: Efficient consumption-saving solutions
-- **Heterogeneous Agent New Keynesian (HANK)**: Advanced macroeconomic models
+- **All-in-One Deep Learning Methods** : Deep learning solvers that use an
+  All-in-One (AiO) objective function
 - **Value Function Iteration**: Classical dynamic programming approaches
-
-## Choosing the Right Algorithm
-
-Documentation for algorithm selection will be added here.
 
 ## Algorithm Configuration
 
