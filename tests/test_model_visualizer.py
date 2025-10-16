@@ -264,7 +264,3 @@ class TestModelVisualizerComplex(unittest.TestCase):
         self.assertTrue(dot_string.startswith("digraph"))
         self.assertIn("cluster_H", dot_string)
         self.assertIn("cluster_F", dot_string)
-
-
-if __name__ == "__main__":
-    unittest.main()

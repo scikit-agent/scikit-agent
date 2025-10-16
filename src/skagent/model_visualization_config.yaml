@@ -5,13 +5,13 @@ graph_config:
   title: "ModelStructure"
   graph_type: "digraph"
 
-# Variable shape configuration
+# Variable shape configuration (MODIFIED)
 variable_shapes:
-  shock_vars: "triangle"
-  state_vars: "ellipse"
-  control_vars: "box"
-  reward_vars: "diamond"
-  param_vars: "hexagon"
+  shock: "triangle"
+  state: "ellipse"
+  control: "box"
+  reward: "diamond"
+  param: "hexagon"
   default: "ellipse"
 
 # Node style configuration
