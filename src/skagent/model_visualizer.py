@@ -70,14 +70,8 @@ class ModelVisualizer:
 
     def _node_shape(self, kind):
         """Pick shape by variable kind."""
-        key = {
-            "shock": "shock_vars",
-            "state": "state_vars",
-            "control": "control_vars",
-            "reward": "reward_vars",
-            "param": "param_vars",
-        }.get(kind, None) or "default"
-        return self.vs.get(key, self.vs["default"])
+        # MODIFIED: Directly use 'kind' to look up the shape, falling back to default.
+        return self.vs.get(kind, self.vs["default"])
 
     def _make_node(self, name):
         """Create or return a styled pydot.Node."""
