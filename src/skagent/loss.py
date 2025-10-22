@@ -308,14 +308,15 @@ class EulerEquationLoss:
     """
     Creates an Euler equation loss function for the Maliar method.
 
-    The Euler equation is the first-order condition relating marginal utilities
-    across periods. This loss function computes:
+    The Euler equation is the first-order condition from the Bellman equation,
+    relating marginal utilities across periods. This loss function computes:
 
-        f = u'(c_t, ...) - β * u'(c_{t+1}, ...)
+        f = u'(c_t) - β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
 
-    where the reward function u(...) and its derivatives are determined by the
-    BellmanPeriod's block dynamics. Any model-specific factors (like gross returns,
-    permanent income shocks, etc.) should be embedded in the reward function itself.
+    where:
+    - u'(c_t) is the marginal utility of consumption at time t
+    - ∂s_{t+1}/∂c_t is the gradient of next period's state with respect to current control
+    - The transition gradient automatically captures model-specific factors like returns R
 
     This follows the Maliar et al. (2021) methodology (Definition 2.7, equations 9-12)
     and is designed for use with the all-in-one (AiO) expectation operator.
@@ -354,10 +355,11 @@ class EulerEquationLoss:
     and Section 4.4 for the consumption-saving problem with Kuhn-Tucker conditions.
 
     The Euler equation automatically adapts to your model's structure. For example:
-    - Simple models: u(c) directly, Euler equation is u'(c_t) = β*u'(c_{t+1})
-    - With returns: Define u as including return effects, e.g., u(c,R) where
-      marginal utility implicitly includes R in the transition dynamics
+    - Consumption-saving: u(c) = log(c), with A_{t+1} = R*(A_t - c_t) + y
+      Transition gradient ∂A_{t+1}/∂c_t = -R is computed automatically
+      Euler equation becomes: u'(c_t) = β * R * u'(c_{t+1})
     - With permanent income: u(c/P) where P evolves with shocks
+      Multiple transition gradients are summed automatically
 
     Examples
     --------
