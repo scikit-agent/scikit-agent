@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="User Guide" href="user_guide/index.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>scikit-agent 0.1.dev319+gdbf9157b7</title>
+        <title>scikit-agent 0.1.dev330+g16247ca3a</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">scikit-agent 0.1.dev319+gdbf9157b7</div></a>
+      <a href="#"><div class="brand">scikit-agent 0.1.dev330+g16247ca3a</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -200,15 +200,15 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/quickstart.html">Quickstart Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="user_guide/models.html">Models Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/models.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/simulation.html">Simulation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="auto_examples/models/plot_basic_consumption_model.html">Basic Consumption-Savings Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
 </ul>
 </li>
@@ -268,7 +268,7 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="scikit-agent">
+          <section class="tex2jax_ignore mathjax_ignore" id="scikit-agent">
 <h1>scikit-agent<a class="headerlink" href="#scikit-agent" title="Link to this heading">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
@@ -304,16 +304,6 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </div>
 <!-- prettier-ignore-start -->
 <!-- prettier-ignore-end -->
-</section>
-<section id="key-references">
-<h2>Key references<a class="headerlink" href="#key-references" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>Hammond, L., Fox, J., Everitt, T., Carey, R., Abate, A. and Wooldridge,
-M., 2023. Reasoning about causality in games. Artificial Intelligence, 320,
-p.103919.</p></li>
-<li><p>Maliar, L., Maliar, S. and Winant, P., 2021. Deep learning for solving dynamic
-economic models. Journal of Monetary Economics, 122, pp.76-101.</p></li>
-</ul>
 </section>
 <section id="quick-example">
 <h2>Quick Example<a class="headerlink" href="#quick-example" title="Link to this heading">¶</a></h2>
@@ -361,7 +351,7 @@ economic models. Journal of Monetary Economics, 122, pp.76-101.</p></li>
 🧠 Models Guide</div>
 <p class="sd-card-text">Learn to build custom models using DBlocks and economic building blocks</p>
 </div>
-<a class="sd-stretched-link sd-hide-link-text reference internal" href="user_guide/models.html"><span class="doc">Models Guide</span></a></div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="user_guide/models.html"><span class="doc">Block Guide</span></a></div>
 </div>
 <div class="sd-col sd-d-flex-row docutils">
 <div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
@@ -401,71 +391,63 @@ economic models. Journal of Monetary Economics, 122, pp.76-101.</p></li>
 </div>
 </div>
 </div>
-</section>
-<section id="what-can-you-build">
-<h2>What Can You Build?<a class="headerlink" href="#what-can-you-build" title="Link to this heading">¶</a></h2>
-<section id="consumption-saving-models">
-<h3><strong>Consumption-Saving Models</strong><a class="headerlink" href="#consumption-saving-models" title="Link to this heading">¶</a></h3>
-<ul class="simple">
-<li><p>Life-cycle consumption with income uncertainty</p></li>
-<li><p>Precautionary saving with borrowing constraints</p></li>
-<li><p>Habit formation and durable goods</p></li>
-</ul>
-</section>
-<section id="portfolio-choice-models">
-<h3><strong>Portfolio Choice Models</strong><a class="headerlink" href="#portfolio-choice-models" title="Link to this heading">¶</a></h3>
-<ul class="simple">
-<li><p>Mean-variance optimization with labor income</p></li>
-<li><p>Multi-asset allocation problems</p></li>
-<li><p>Portfolio constraints and transaction costs</p></li>
-</ul>
-</section>
-<section id="general-equilibrium-models">
-<h3><strong>General Equilibrium Models</strong><a class="headerlink" href="#general-equilibrium-models" title="Link to this heading">¶</a></h3>
-<ul class="simple">
-<li><p>Overlapping generations models</p></li>
-<li><p>Heterogeneous agent models with aggregate shocks</p></li>
-<li><p>Market clearing and equilibrium computation</p></li>
-</ul>
-</section>
-<section id="policy-analysis">
-<h3><strong>Policy Analysis</strong><a class="headerlink" href="#policy-analysis" title="Link to this heading">¶</a></h3>
-<ul class="simple">
-<li><p>Tax and transfer policy evaluation</p></li>
-<li><p>Social Security and pension reform</p></li>
-<li><p>Regulatory impact assessment</p></li>
-</ul>
-</section>
-</section>
-<section id="why-scikit-agent">
-<h2>Why scikit-agent?<a class="headerlink" href="#why-scikit-agent" title="Link to this heading">¶</a></h2>
-<section id="modular-design">
-<h3>🧱 <strong>Modular Design</strong><a class="headerlink" href="#modular-design" title="Link to this heading">¶</a></h3>
-<p>Build complex economic models using intuitive building blocks. Compose <strong>DBlocks</strong> and <strong>RBlocks</strong>
+<!---
+## What Can You Build?
+
+### **Consumption-Saving Models**
+
+- Life-cycle consumption with income uncertainty
+- Precautionary saving with borrowing constraints
+- Habit formation and durable goods
+
+### **Portfolio Choice Models**
+
+- Mean-variance optimization with labor income
+- Multi-asset allocation problems
+- Portfolio constraints and transaction costs
+
+### **General Equilibrium Models**
+
+- Overlapping generations models
+- Heterogeneous agent models with aggregate shocks
+- Market clearing and equilibrium computation
+
+### **Policy Analysis**
+
+- Tax and transfer policy evaluation
+- Social Security and pension reform
+- Regulatory impact assessment
+
+
+## Why scikit-agent?
+
+### 🧱 **Modular Design**
+
+Build complex economic models using intuitive building blocks. Compose **DBlocks** and **RBlocks**
 to represent different stages of economic behavior with clear separation of shocks, dynamics,
-controls, and rewards.</p>
-</section>
-<section id="multiple-solution-methods">
-<h3>🔬 <strong>Multiple Solution Methods</strong><a class="headerlink" href="#multiple-solution-methods" title="Link to this heading">¶</a></h3>
-<p>Choose from traditional methods like value function iteration or modern neural network approaches.
-All algorithms follow consistent APIs and integrate seamlessly with the model framework.</p>
-</section>
-<section id="rich-simulation-engine">
-<h3>📊 <strong>Rich Simulation Engine</strong><a class="headerlink" href="#rich-simulation-engine" title="Link to this heading">¶</a></h3>
-<p>Generate synthetic data with sophisticated Monte Carlo simulators that handle agent heterogeneity,
-life-cycle dynamics, and complex stochastic processes.</p>
-</section>
-<section id="scikit-learn-compatible">
-<h3>🐍 <strong>Scikit-Learn Compatible</strong><a class="headerlink" href="#scikit-learn-compatible" title="Link to this heading">¶</a></h3>
-<p>Familiar fit-predict patterns, consistent APIs, and integration with the broader Python scientific ecosystem.</p>
-</section>
+controls, and rewards.
+
+### 🔬 **Multiple Solution Methods**
+
+Choose from traditional methods like value function iteration or modern neural network approaches.
+All algorithms follow consistent APIs and integrate seamlessly with the model framework.
+
+### 📊 **Rich Simulation Engine**
+
+Generate synthetic data with sophisticated Monte Carlo simulators that handle agent heterogeneity,
+life-cycle dynamics, and complex stochastic processes.
+
+### 🐍 **Scikit-Learn Compatible**
+
+Familiar fit-predict patterns, consistent APIs, and integration with the broader Python scientific ecosystem.
+--->
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
 <p>New to scikit-agent? Start with the <a class="reference internal" href="user_guide/quickstart.html"><span class="doc">Quickstart Guide</span></a> guide.</p>
 <p>Want to dive deeper? Check out:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="user_guide/models.html"><span class="doc">Models Guide</span></a> for model building concepts</p></li>
+<li><p><a class="reference internal" href="user_guide/models.html"><span class="doc">Block Guide</span></a> for model building concepts</p></li>
 <li><p><a class="reference internal" href="auto_examples/index.html"><span class="doc">Examples</span></a> for complete working examples</p></li>
 <li><p><a class="reference internal" href="api/index.html"><span class="doc">API Reference</span></a> for detailed API documentation</p></li>
 </ul>
@@ -474,10 +456,12 @@ life-cycle dynamics, and complex stochastic processes.</p>
 <h2>Community &amp; Support<a class="headerlink" href="#community-support" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>GitHub Repository</strong>: <a class="reference external" href="https://github.com/scikit-agent/scikit-agent">github.com/scikit-agent/scikit-agent</a></p></li>
-<li><p><strong>Issue Tracker</strong>: Report bugs and request features</p></li>
-<li><p><strong>Discussions</strong>: Ask questions and share examples</p></li>
-<li><p><strong>Contributing</strong>: Help improve scikit-agent for everyone</p></li>
 </ul>
+<!---
+- **Issue Tracker**: Report bugs and request features
+- **Discussions**: Ask questions and share examples
+- **Contributing**: Help improve scikit-agent for everyone
+--->
 </section>
 <hr class="docutils" />
 <section id="indices-and-tables">
@@ -545,23 +529,8 @@ life-cycle dynamics, and complex stochastic processes.</p>
 <li><a class="reference internal" href="#">scikit-agent</a><ul>
 <li><a class="reference internal" href="#key-features">Key Features</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
-<li><a class="reference internal" href="#key-references">Key references</a></li>
 <li><a class="reference internal" href="#quick-example">Quick Example</a></li>
 <li><a class="reference internal" href="#quick-links">Quick Links</a></li>
-<li><a class="reference internal" href="#what-can-you-build">What Can You Build?</a><ul>
-<li><a class="reference internal" href="#consumption-saving-models"><strong>Consumption-Saving Models</strong></a></li>
-<li><a class="reference internal" href="#portfolio-choice-models"><strong>Portfolio Choice Models</strong></a></li>
-<li><a class="reference internal" href="#general-equilibrium-models"><strong>General Equilibrium Models</strong></a></li>
-<li><a class="reference internal" href="#policy-analysis"><strong>Policy Analysis</strong></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#why-scikit-agent">Why scikit-agent?</a><ul>
-<li><a class="reference internal" href="#modular-design">🧱 <strong>Modular Design</strong></a></li>
-<li><a class="reference internal" href="#multiple-solution-methods">🔬 <strong>Multiple Solution Methods</strong></a></li>
-<li><a class="reference internal" href="#rich-simulation-engine">📊 <strong>Rich Simulation Engine</strong></a></li>
-<li><a class="reference internal" href="#scikit-learn-compatible">🐍 <strong>Scikit-Learn Compatible</strong></a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
 <li><a class="reference internal" href="#community-support">Community &amp; Support</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
@@ -576,7 +545,7 @@ life-cycle dynamics, and complex stochastic processes.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=ae0c828b"></script>
+</div><script src="_static/documentation_options.js?v=673068ca"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

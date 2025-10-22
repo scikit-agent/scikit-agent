@@ -1,4 +1,4 @@
-# Models Guide
+# Block Guide
 
 This guide explains how to work with economic models in scikit-agent. You'll
 learn about the core modeling concepts, how to build custom models, and how to
@@ -8,20 +8,47 @@ use predefined models.
 
 ### The Block Architecture
 
-scikit-agent uses a "block" architecture where economic models are composed of
-building blocks:
+scikit-agent uses a "block" architecture where models are composed of building
+blocks:
 
-- **DBlock (Dynamic Block)**: Represents a stage or period of model behavior
-- **RBlock (Recursive Block)**: Combines multiple blocks into a multi-period
-  model
-- **Control**: Represents decision variables that agents optimize
-- **Aggregate**: Represents aggregate (economy-wide) shocks
+- **DBlock (Dynamic Block)**: Represents a structured environment in which
+  agents act
+- **RBlock (Recursive Block)**: Combines multiple blocks into a more complex
+  block
+- **Bellman Block**: A period of a dynamic model
 
-### DBlock Components
+These blocks all define the ways that _variables_ change. The relationships
+between variables are defined in terms of _structural equations_, which in
+scikit-agent are represented as functions.
+
+Some variables are reserved as **control** variables, which are assigned to
+particular agent roles. Agents can choose a decision rule to decide their action
+at each of their control variables.
+
+Some variables are reserved as **reward** variables, which provide the agent
+_utility_ or incentive.
+
+scikit-agent models normally involve agents who are trying to maximize their
+reward through their choices.
+
+<!--- - **Aggregate**: Represents aggregate (economy-wide) shocks --->
+
+### DBlocks
 
 A DBlock has four main components:
 
+- **Shocks**: Variables which are drawn from probabilistic distributions.
+- **Dynamics**: Variables determined by _structural equations_, or functions, of
+  other variables
+- **Controls**: special dynamic variables for which agents decide _decision
+  rules_.
+- **Rewards**: special dynamic variables that agents try to optimize
+
+Here is an example of a simple DBlock representing a single stage of a
+consumption-saving problem:
+
 ```python
+import math
 import skagent as ska
 from skagent.distributions import MeanOneLogNormal
 
@@ -36,12 +63,106 @@ consumption_block = ska.DBlock(
         "m": lambda b, y: b + y,  # Market resources = beginning + income
         "c": ska.Control(["m"]),  # Consumption (control variable)
         "a": lambda m, c: m - c,  # Assets = resources - consumption
+        "u": lambda c: math.log(c),
     },
     # 3. Rewards: What agents maximize
     reward={"u": "consumer"},  # Utility goes to consumer agent
 )
 ```
 
+This corresponds to the following mathematical model:
+
+<!--- correct? --->
+
+$$
+    \theta &\sim LogNormal(1, 0.1) \\
+    y &= p \theta \\
+    m &= b + y \\
+    c &= c(m) \\
+    a &= m - c \\
+    u &= log(c) \\
+$$
+
+Here, the agent can choose its level of consumption $c$ given an _information
+set_ $m$. It receives $u$ as a reward.
+
+<!--- 2025-10-15 edits stopped here--->
+
+#### Arrival states
+
+<!--- More block features here --->
+
+### Control Variable Constraints
+
+Add bounds and information sets to controls:
+
+```python
+consumption_control = ska.Control(
+    iset=["m", "p"],  # Information set
+    lower_bound=lambda: 0.001,  # Minimum consumption
+    upper_bound=lambda m: 0.99 * m,  # Maximum consumption
+    agent="consumer",  # Agent assignment
+)
+```
+
+#### Calibration
+
+```python
+calibration = {
+    "CRRA": 2.0,  # Risk aversion
+    "DiscFac": 0.96,  # Discount factor
+    "Rfree": 1.03,  # Risk-free rate
+    "EqP": 0.06,  # Equity premium
+    "RiskyStd": 0.20,  # Stock volatility
+    "PermGroFac": 1.01,  # Permanent income growth
+    "TranShkStd": 0.1,  # Transitory shock std
+    "PermShkStd": 0.05,  # Permanent shock std
+}
+
+# Apply calibration to construct actual distributions
+portfolio_block.construct_shocks(calibration)
+```
+
+#### String-Based Dynamics
+
+You can define dynamics using string expressions that get parsed automatically:
+
+```python
+dynamics = {
+    "c": ska.Control(["m"]),
+    "u": "c**(1-CRRA)/(1-CRRA)",  # String expression
+    "mpc": "CRRA * c**(-CRRA)",  # Marginal propensity to consume
+    "a": "m - c",  # Simple arithmetic
+}
+```
+
+### RBlocks: Composing Blocks
+
+The RBlock is for composing other blocks together.
+
+```python
+# Retirement transition block
+retirement_block = ska.DBlock(
+    name="retirement",
+    dynamics={
+        "p": lambda p: p * 0.8,  # Retirement income drop
+        "retired": lambda: 1,  # Retirement indicator
+    },
+)
+
+# Life-cycle model
+lifecycle_model = ska.RBlock(
+    name="lifecycle_model", blocks=[portfolio_block, retirement_block]
+)
+```
+
+_TODO: Discussion of how the blocks connect -- arrival states, again._
+
+### Bellman Blocks
+
+_TODO: about bellman blocks -- how these become MDPs_
+
+<!---
 ## Building Custom Models
 
 ### Step-by-Step Model Creation
@@ -103,44 +224,9 @@ portfolio_block = ska.DBlock(
 )
 ```
 
-#### Step 4: Add Parameter Calibration
+--->
 
-```python
-calibration = {
-    "CRRA": 2.0,  # Risk aversion
-    "DiscFac": 0.96,  # Discount factor
-    "Rfree": 1.03,  # Risk-free rate
-    "EqP": 0.06,  # Equity premium
-    "RiskyStd": 0.20,  # Stock volatility
-    "PermGroFac": 1.01,  # Permanent income growth
-    "TranShkStd": 0.1,  # Transitory shock std
-    "PermShkStd": 0.05,  # Permanent shock std
-}
-
-# Apply calibration to construct actual distributions
-portfolio_block.construct_shocks(calibration)
-```
-
-### Multi-Period Models with RBlock
-
-For multi-period models, combine blocks with RBlock:
-
-```python
-# Retirement transition block
-retirement_block = ska.DBlock(
-    name="retirement",
-    dynamics={
-        "p": lambda p: p * 0.8,  # Retirement income drop
-        "retired": lambda: 1,  # Retirement indicator
-    },
-)
-
-# Life-cycle model
-lifecycle_model = ska.RBlock(
-    name="lifecycle_model", blocks=[portfolio_block, retirement_block]
-)
-```
-
+<!---
 ## Working with Predefined Models
 
 scikit-agent includes several predefined models in `skagent.models`:
@@ -179,34 +265,9 @@ from skagent.models import perfect_foresight
 pf_model = perfect_foresight.get_perfect_foresight_model()
 ```
 
-## Advanced Model Features
+--->
 
-### String-Based Dynamics
-
-You can define dynamics using string expressions that get parsed automatically:
-
-```python
-dynamics = {
-    "c": ska.Control(["m"]),
-    "u": "c**(1-CRRA)/(1-CRRA)",  # String expression
-    "mpc": "CRRA * c**(-CRRA)",  # Marginal propensity to consume
-    "a": "m - c",  # Simple arithmetic
-}
-```
-
-### Control Variable Constraints
-
-Add bounds and information sets to controls:
-
-```python
-consumption_control = ska.Control(
-    iset=["m", "p"],  # Information set
-    lower_bound=lambda: 0.001,  # Minimum consumption
-    upper_bound=lambda m: 0.99 * m,  # Maximum consumption
-    agent="consumer",  # Agent assignment
-)
-```
-
+<!---
 ### Aggregate Shocks
 
 Model economy-wide shocks that affect all agents identically:
@@ -226,6 +287,7 @@ aggregate_shock_block = ska.DBlock(
     },
 )
 ```
+--->
 
 ## Model Validation and Inspection
 
@@ -265,15 +327,7 @@ post_state = portfolio_block.transition(pre_state, decision_rules)
 print("Post-transition state:", post_state)
 ```
 
-## Best Practices
-
-### Model Design
-
-1. **Start Simple**: Begin with basic models and add complexity gradually
-2. **Use Clear Names**: Choose descriptive variable names
-3. **Document Dynamics**: Add comments explaining economic meaning
-4. **Validate Calibration**: Check parameter values make economic sense
-
+<!---
 ### Code Organization
 
 ```python
@@ -310,6 +364,7 @@ def make_consumption_block(calibration=None):
     block.construct_shocks(calibration)
     return block
 ```
+--->
 
 ## Next Steps
 

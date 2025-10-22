@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms Guide" href="algorithms.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation Guide" href="simulation.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>Models Guide - scikit-agent 0.1.dev319+gdbf9157b7</title>
+        <title>Block Guide - scikit-agent 0.1.dev330+g16247ca3a</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev319+gdbf9157b7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev330+g16247ca3a</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -200,15 +200,15 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Models Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_basic_consumption_model.html">Basic Consumption-Savings Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
 </ul>
 </li>
@@ -268,8 +268,8 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="models-guide">
-<h1>Models Guide<a class="headerlink" href="#models-guide" title="Link to this heading">¶</a></h1>
+          <section class="tex2jax_ignore mathjax_ignore" id="block-guide">
+<h1>Block Guide<a class="headerlink" href="#block-guide" title="Link to this heading">¶</a></h1>
 <p>This guide explains how to work with economic models in scikit-agent. You’ll
 learn about the core modeling concepts, how to build custom models, and how to
 use predefined models.</p>
@@ -277,20 +277,42 @@ use predefined models.</p>
 <h2>Understanding Model Structure<a class="headerlink" href="#understanding-model-structure" title="Link to this heading">¶</a></h2>
 <section id="the-block-architecture">
 <h3>The Block Architecture<a class="headerlink" href="#the-block-architecture" title="Link to this heading">¶</a></h3>
-<p>scikit-agent uses a “block” architecture where economic models are composed of
-building blocks:</p>
+<p>scikit-agent uses a “block” architecture where models are composed of building
+blocks:</p>
 <ul class="simple">
-<li><p><strong>DBlock (Dynamic Block)</strong>: Represents a stage or period of model behavior</p></li>
-<li><p><strong>RBlock (Recursive Block)</strong>: Combines multiple blocks into a multi-period
-model</p></li>
-<li><p><strong>Control</strong>: Represents decision variables that agents optimize</p></li>
-<li><p><strong>Aggregate</strong>: Represents aggregate (economy-wide) shocks</p></li>
+<li><p><strong>DBlock (Dynamic Block)</strong>: Represents a structured environment in which
+agents act</p></li>
+<li><p><strong>RBlock (Recursive Block)</strong>: Combines multiple blocks into a more complex
+block</p></li>
+<li><p><strong>Bellman Block</strong>: A period of a dynamic model</p></li>
 </ul>
+<p>These blocks all define the ways that <em>variables</em> change. The relationships
+between variables are defined in terms of <em>structural equations</em>, which in
+scikit-agent are represented as functions.</p>
+<p>Some variables are reserved as <strong>control</strong> variables, which are assigned to
+particular agent roles. Agents can choose a decision rule to decide their action
+at each of their control variables.</p>
+<p>Some variables are reserved as <strong>reward</strong> variables, which provide the agent
+<em>utility</em> or incentive.</p>
+<p>scikit-agent models normally involve agents who are trying to maximize their
+reward through their choices.</p>
+<!--- - **Aggregate**: Represents aggregate (economy-wide) shocks --->
 </section>
-<section id="dblock-components">
-<h3>DBlock Components<a class="headerlink" href="#dblock-components" title="Link to this heading">¶</a></h3>
+<section id="dblocks">
+<h3>DBlocks<a class="headerlink" href="#dblocks" title="Link to this heading">¶</a></h3>
 <p>A DBlock has four main components:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
+<ul class="simple">
+<li><p><strong>Shocks</strong>: Variables which are drawn from probabilistic distributions.</p></li>
+<li><p><strong>Dynamics</strong>: Variables determined by <em>structural equations</em>, or functions, of
+other variables</p></li>
+<li><p><strong>Controls</strong>: special dynamic variables for which agents decide <em>decision
+rules</em>.</p></li>
+<li><p><strong>Rewards</strong>: special dynamic variables that agents try to optimize</p></li>
+</ul>
+<p>Here is an example of a simple DBlock representing a single stage of a
+consumption-saving problem:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanOneLogNormal</span>
 
 <span class="c1"># Example: Simple consumption block</span>
@@ -304,77 +326,47 @@ model</p></li>
         <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">b</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span>  <span class="c1"># Market resources = beginning + income</span>
         <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>  <span class="c1"># Consumption (control variable)</span>
         <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">m</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># Assets = resources - consumption</span>
+        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
     <span class="p">},</span>
     <span class="c1"># 3. Rewards: What agents maximize</span>
     <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;consumer&quot;</span><span class="p">},</span>  <span class="c1"># Utility goes to consumer agent</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-</section>
-</section>
-<section id="building-custom-models">
-<h2>Building Custom Models<a class="headerlink" href="#building-custom-models" title="Link to this heading">¶</a></h2>
-<section id="step-by-step-model-creation">
-<h3>Step-by-Step Model Creation<a class="headerlink" href="#step-by-step-model-creation" title="Link to this heading">¶</a></h3>
-<p>Let’s build a portfolio choice model from scratch:</p>
-<section id="step-1-define-the-economic-problem">
-<h4>Step 1: Define the Economic Problem<a class="headerlink" href="#step-1-define-the-economic-problem" title="Link to this heading">¶</a></h4>
-<p>We want to model an agent who:</p>
-<ol class="arabic simple">
-<li><p>Receives labor income with shocks</p></li>
-<li><p>Chooses consumption and savings</p></li>
-<li><p>Allocates savings between safe and risky assets</p></li>
-<li><p>Maximizes expected utility</p></li>
-</ol>
-</section>
-<section id="step-2-set-up-shocks">
-<h4>Step 2: Set Up Shocks<a class="headerlink" href="#step-2-set-up-shocks" title="Link to this heading">¶</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lognormal</span><span class="p">,</span> <span class="n">MeanOneLogNormal</span>
-
-<span class="c1"># Define all random variables</span>
-<span class="n">shocks</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="s2">&quot;TranShkStd&quot;</span><span class="p">}),</span>  <span class="c1"># Transitory income shock</span>
-    <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="s2">&quot;PermShkStd&quot;</span><span class="p">}),</span>  <span class="c1"># Permanent income shock</span>
-    <span class="s2">&quot;risky_return&quot;</span><span class="p">:</span> <span class="p">(</span>
-        <span class="n">Lognormal</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="s2">&quot;EqP&quot;</span><span class="p">,</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="s2">&quot;RiskyStd&quot;</span><span class="p">},</span>
-    <span class="p">),</span>  <span class="c1"># Risky asset return</span>
-<span class="p">}</span>
-</pre></div>
+<p>This corresponds to the following mathematical model:</p>
+<!--- correct? --->
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}
+    \theta &amp;\sim LogNormal(1, 0.1) \\
+    y &amp;= p \theta \\
+    m &amp;= b + y \\
+    c &amp;= c(m) \\
+    a &amp;= m - c \\
+    u &amp;= log(c) \\
+\end{split}\]</div>
 </div>
+<p>Here, the agent can choose its level of consumption <span class="math notranslate nohighlight">\(c\)</span> given an <em>information
+set</em> <span class="math notranslate nohighlight">\(m\)</span>. It receives <span class="math notranslate nohighlight">\(u\)</span> as a reward.</p>
+<!--- 2025-10-15 edits stopped here--->
+<section id="arrival-states">
+<h4>Arrival states<a class="headerlink" href="#arrival-states" title="Link to this heading">¶</a></h4>
+<!--- More block features here --->
 </section>
-<section id="step-3-define-state-transitions">
-<h4>Step 3: Define State Transitions<a class="headerlink" href="#step-3-define-state-transitions" title="Link to this heading">¶</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Economic dynamics</span>
-<span class="n">dynamics</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="c1"># Income process</span>
-    <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">theta</span><span class="p">,</span>
-    <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p_prev</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">PermGroFac</span><span class="p">:</span> <span class="n">p_prev</span> <span class="o">*</span> <span class="n">psi</span> <span class="o">*</span> <span class="n">PermGroFac</span><span class="p">,</span>
-    <span class="c1"># Portfolio returns</span>
-    <span class="s2">&quot;R_portfolio&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">Rfree</span><span class="p">,</span> <span class="n">risky_return</span><span class="p">:</span> <span class="p">(</span>
-        <span class="n">Rfree</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">risky_return</span> <span class="o">-</span> <span class="n">Rfree</span><span class="p">)</span>
-    <span class="p">),</span>
-    <span class="c1"># Market resources</span>
-    <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a_prev</span><span class="p">,</span> <span class="n">R_portfolio</span><span class="p">:</span> <span class="n">a_prev</span> <span class="o">*</span> <span class="n">R_portfolio</span><span class="p">,</span>
-    <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">b</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span>
-    <span class="c1"># Decisions (controls)</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">],</span> <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="p">),</span>
-    <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">],</span> <span class="n">lower_bound</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">upper_bound</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
-    <span class="c1"># End-of-period states</span>
-    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">m</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span>
-    <span class="c1"># Utility</span>
-    <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="n">c</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">),</span>
-<span class="p">}</span>
-
-<span class="c1"># Create the block</span>
-<span class="n">portfolio_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;portfolio_choice&quot;</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="n">shocks</span><span class="p">,</span> <span class="n">dynamics</span><span class="o">=</span><span class="n">dynamics</span><span class="p">,</span> <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;investor&quot;</span><span class="p">}</span>
+</section>
+<section id="control-variable-constraints">
+<h3>Control Variable Constraints<a class="headerlink" href="#control-variable-constraints" title="Link to this heading">¶</a></h3>
+<p>Add bounds and information sets to controls:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">consumption_control</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
+    <span class="n">iset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">],</span>  <span class="c1"># Information set</span>
+    <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>  <span class="c1"># Minimum consumption</span>
+    <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>  <span class="c1"># Maximum consumption</span>
+    <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;consumer&quot;</span><span class="p">,</span>  <span class="c1"># Agent assignment</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-</section>
-<section id="step-4-add-parameter-calibration">
-<h4>Step 4: Add Parameter Calibration<a class="headerlink" href="#step-4-add-parameter-calibration" title="Link to this heading">¶</a></h4>
+<section id="calibration">
+<h4>Calibration<a class="headerlink" href="#calibration" title="Link to this heading">¶</a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;CRRA&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># Risk aversion</span>
     <span class="s2">&quot;DiscFac&quot;</span><span class="p">:</span> <span class="mf">0.96</span><span class="p">,</span>  <span class="c1"># Discount factor</span>
@@ -391,10 +383,22 @@ model</p></li>
 </pre></div>
 </div>
 </section>
+<section id="string-based-dynamics">
+<h4>String-Based Dynamics<a class="headerlink" href="#string-based-dynamics" title="Link to this heading">¶</a></h4>
+<p>You can define dynamics using string expressions that get parsed automatically:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dynamics</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>
+    <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;c**(1-CRRA)/(1-CRRA)&quot;</span><span class="p">,</span>  <span class="c1"># String expression</span>
+    <span class="s2">&quot;mpc&quot;</span><span class="p">:</span> <span class="s2">&quot;CRRA * c**(-CRRA)&quot;</span><span class="p">,</span>  <span class="c1"># Marginal propensity to consume</span>
+    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;m - c&quot;</span><span class="p">,</span>  <span class="c1"># Simple arithmetic</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 </section>
-<section id="multi-period-models-with-rblock">
-<h3>Multi-Period Models with RBlock<a class="headerlink" href="#multi-period-models-with-rblock" title="Link to this heading">¶</a></h3>
-<p>For multi-period models, combine blocks with RBlock:</p>
+</section>
+<section id="rblocks-composing-blocks">
+<h3>RBlocks: Composing Blocks<a class="headerlink" href="#rblocks-composing-blocks" title="Link to this heading">¶</a></h3>
+<p>The RBlock is for composing other blocks together.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Retirement transition block</span>
 <span class="n">retirement_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;retirement&quot;</span><span class="p">,</span>
@@ -410,90 +414,135 @@ model</p></li>
 <span class="p">)</span>
 </pre></div>
 </div>
+<p><em>TODO: Discussion of how the blocks connect – arrival states, again.</em></p>
 </section>
-</section>
-<section id="working-with-predefined-models">
-<h2>Working with Predefined Models<a class="headerlink" href="#working-with-predefined-models" title="Link to this heading">¶</a></h2>
-<p>scikit-agent includes several predefined models in <code class="docutils literal notranslate"><span class="pre">skagent.models</span></code>:</p>
-<section id="consumer-models">
-<h3>Consumer Models<a class="headerlink" href="#consumer-models" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">consumption_block</span><span class="p">,</span>
-    <span class="n">consumption_block_normalized</span><span class="p">,</span>
-    <span class="n">portfolio_block</span><span class="p">,</span>
-    <span class="n">calibration</span><span class="p">,</span>
-<span class="p">)</span>
+<section id="bellman-blocks">
+<h3>Bellman Blocks<a class="headerlink" href="#bellman-blocks" title="Link to this heading">¶</a></h3>
+<p><em>TODO: about bellman blocks – how these become MDPs</em></p>
+<!---
+## Building Custom Models
 
-<span class="c1"># Use predefined consumption-saving model</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Available dynamics:&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">eq</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="benchmark-models">
-<h3>Benchmark Models<a class="headerlink" href="#benchmark-models" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">U6HabitSolver</span>
+### Step-by-Step Model Creation
 
-<span class="c1"># Access benchmark problem specifications</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">U6HabitSolver</span><span class="p">()</span>
-</pre></div>
-</div>
-</section>
-<section id="perfect-foresight-models">
-<h3>Perfect Foresight Models<a class="headerlink" href="#perfect-foresight-models" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">perfect_foresight</span>
+Let's build a portfolio choice model from scratch:
 
-<span class="c1"># Simple deterministic model</span>
-<span class="n">pf_model</span> <span class="o">=</span> <span class="n">perfect_foresight</span><span class="o">.</span><span class="n">get_perfect_foresight_model</span><span class="p">()</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="advanced-model-features">
-<h2>Advanced Model Features<a class="headerlink" href="#advanced-model-features" title="Link to this heading">¶</a></h2>
-<section id="string-based-dynamics">
-<h3>String-Based Dynamics<a class="headerlink" href="#string-based-dynamics" title="Link to this heading">¶</a></h3>
-<p>You can define dynamics using string expressions that get parsed automatically:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dynamics</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>
-    <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;c**(1-CRRA)/(1-CRRA)&quot;</span><span class="p">,</span>  <span class="c1"># String expression</span>
-    <span class="s2">&quot;mpc&quot;</span><span class="p">:</span> <span class="s2">&quot;CRRA * c**(-CRRA)&quot;</span><span class="p">,</span>  <span class="c1"># Marginal propensity to consume</span>
-    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;m - c&quot;</span><span class="p">,</span>  <span class="c1"># Simple arithmetic</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</section>
-<section id="control-variable-constraints">
-<h3>Control Variable Constraints<a class="headerlink" href="#control-variable-constraints" title="Link to this heading">¶</a></h3>
-<p>Add bounds and information sets to controls:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">consumption_control</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
-    <span class="n">iset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">],</span>  <span class="c1"># Information set</span>
-    <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>  <span class="c1"># Minimum consumption</span>
-    <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>  <span class="c1"># Maximum consumption</span>
-    <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;consumer&quot;</span><span class="p">,</span>  <span class="c1"># Agent assignment</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="aggregate-shocks">
-<h3>Aggregate Shocks<a class="headerlink" href="#aggregate-shocks" title="Link to this heading">¶</a></h3>
-<p>Model economy-wide shocks that affect all agents identically:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">aggregate_shock_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">shocks</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;TFP&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Aggregate</span><span class="p">(</span>
-            <span class="n">Lognormal</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
-        <span class="p">),</span>  <span class="c1"># Total factor productivity</span>
-        <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="n">MeanOneLogNormal</span><span class="p">(</span><span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>  <span class="c1"># Idiosyncratic shock</span>
-    <span class="p">},</span>
-    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">TFP</span><span class="p">,</span> <span class="n">L</span><span class="p">:</span> <span class="n">TFP</span> <span class="o">*</span> <span class="n">L</span><span class="p">,</span>  <span class="c1"># Aggregate production</span>
-        <span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">TFP</span><span class="p">:</span> <span class="n">TFP</span><span class="p">,</span>  <span class="c1"># Wage rate</span>
-        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">w</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">w</span> <span class="o">*</span> <span class="n">theta</span><span class="p">,</span>  <span class="c1"># Individual income</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-</pre></div>
-</div>
+#### Step 1: Define the Economic Problem
+
+We want to model an agent who:
+
+1. Receives labor income with shocks
+2. Chooses consumption and savings
+3. Allocates savings between safe and risky assets
+4. Maximizes expected utility
+
+#### Step 2: Set Up Shocks
+
+```python
+from skagent.distributions import Lognormal, MeanOneLogNormal
+
+# Define all random variables
+shocks = {
+    "theta": (MeanOneLogNormal, {"sigma": "TranShkStd"}),  # Transitory income shock
+    "psi": (MeanOneLogNormal, {"sigma": "PermShkStd"}),  # Permanent income shock
+    "risky_return": (
+        Lognormal,
+        {"mean": "EqP", "std": "RiskyStd"},
+    ),  # Risky asset return
+}
+```
+
+#### Step 3: Define State Transitions
+
+```python
+# Economic dynamics
+dynamics = {
+    # Income process
+    "y": lambda p, theta: p * theta,
+    "p": lambda p_prev, psi, PermGroFac: p_prev * psi * PermGroFac,
+    # Portfolio returns
+    "R_portfolio": lambda alpha, Rfree, risky_return: (
+        Rfree + alpha * (risky_return - Rfree)
+    ),
+    # Market resources
+    "b": lambda a_prev, R_portfolio: a_prev * R_portfolio,
+    "m": lambda b, y: b + y,
+    # Decisions (controls)
+    "c": ska.Control(["m"], upper_bound=lambda m: m),
+    "alpha": ska.Control(["a"], lower_bound=0.0, upper_bound=1.0),
+    # End-of-period states
+    "a": lambda m, c: m - c,
+    # Utility
+    "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
+}
+
+# Create the block
+portfolio_block = ska.DBlock(
+    name="portfolio_choice", shocks=shocks, dynamics=dynamics, reward={"u": "investor"}
+)
+```
+
+--->
+<!---
+## Working with Predefined Models
+
+scikit-agent includes several predefined models in `skagent.models`:
+
+### Consumer Models
+
+```python
+from skagent.models.consumer import (
+    consumption_block,
+    consumption_block_normalized,
+    portfolio_block,
+    calibration,
+)
+
+# Use predefined consumption-saving model
+print("Available dynamics:")
+for var, eq in consumption_block.dynamics.items():
+    print(f"  {var}: {eq}")
+```
+
+### Benchmark Models
+
+```python
+from skagent.models.benchmarks import U6HabitSolver
+
+# Access benchmark problem specifications
+solver = U6HabitSolver()
+```
+
+### Perfect Foresight Models
+
+```python
+from skagent.models import perfect_foresight
+
+# Simple deterministic model
+pf_model = perfect_foresight.get_perfect_foresight_model()
+```
+
+--->
+<!---
+### Aggregate Shocks
+
+Model economy-wide shocks that affect all agents identically:
+
+```python
+aggregate_shock_block = ska.DBlock(
+    shocks={
+        "TFP": ska.Aggregate(
+            Lognormal(mean=1.0, std=0.02)
+        ),  # Total factor productivity
+        "theta": MeanOneLogNormal(sigma=0.1),  # Idiosyncratic shock
+    },
+    dynamics={
+        "Y": lambda TFP, L: TFP * L,  # Aggregate production
+        "w": lambda TFP: TFP,  # Wage rate
+        "y": lambda w, theta: w * theta,  # Individual income
+    },
+)
+```
+--->
 </section>
 </section>
 <section id="model-validation-and-inspection">
@@ -533,55 +582,44 @@ model</p></li>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Post-transition state:&quot;</span><span class="p">,</span> <span class="n">post_state</span><span class="p">)</span>
 </pre></div>
 </div>
-</section>
-</section>
-<section id="best-practices">
-<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading">¶</a></h2>
-<section id="model-design">
-<h3>Model Design<a class="headerlink" href="#model-design" title="Link to this heading">¶</a></h3>
-<ol class="arabic simple">
-<li><p><strong>Start Simple</strong>: Begin with basic models and add complexity gradually</p></li>
-<li><p><strong>Use Clear Names</strong>: Choose descriptive variable names</p></li>
-<li><p><strong>Document Dynamics</strong>: Add comments explaining economic meaning</p></li>
-<li><p><strong>Validate Calibration</strong>: Check parameter values make economic sense</p></li>
-</ol>
-</section>
-<section id="code-organization">
-<h3>Code Organization<a class="headerlink" href="#code-organization" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Organize related models in modules</span>
-<span class="c1"># my_models.py</span>
+<!---
+### Code Organization
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="kn">import</span> <span class="n">DBlock</span><span class="p">,</span> <span class="n">Control</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanOneLogNormal</span>
+```python
+# Organize related models in modules
+# my_models.py
 
-<span class="c1"># Standard calibration for consumption models</span>
-<span class="n">CONSUMPTION_CALIBRATION</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;CRRA&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="s2">&quot;DiscFac&quot;</span><span class="p">:</span> <span class="mf">0.96</span><span class="p">,</span>
-    <span class="s2">&quot;Rfree&quot;</span><span class="p">:</span> <span class="mf">1.03</span><span class="p">,</span>
-    <span class="c1"># ... other parameters</span>
-<span class="p">}</span>
+from skagent import DBlock, Control
+from skagent.distributions import MeanOneLogNormal
+
+# Standard calibration for consumption models
+CONSUMPTION_CALIBRATION = {
+    "CRRA": 2.0,
+    "DiscFac": 0.96,
+    "Rfree": 1.03,
+    # ... other parameters
+}
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">make_consumption_block</span><span class="p">(</span><span class="n">calibration</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Factory function for consumption blocks.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">calibration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">calibration</span> <span class="o">=</span> <span class="n">CONSUMPTION_CALIBRATION</span>
+def make_consumption_block(calibration=None):
+    """Factory function for consumption blocks."""
+    if calibration is None:
+        calibration = CONSUMPTION_CALIBRATION
 
-    <span class="n">block</span> <span class="o">=</span> <span class="n">DBlock</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;consumption&quot;</span><span class="p">,</span>
-        <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="s2">&quot;TranShkStd&quot;</span><span class="p">})},</span>
-        <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>
-            <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;c**(1-CRRA)/(1-CRRA)&quot;</span><span class="p">,</span>
-            <span class="c1"># ... other dynamics</span>
-        <span class="p">},</span>
-    <span class="p">)</span>
+    block = DBlock(
+        name="consumption",
+        shocks={"theta": (MeanOneLogNormal, {"sigma": "TranShkStd"})},
+        dynamics={
+            "c": Control(["m"]),
+            "u": "c**(1-CRRA)/(1-CRRA)",
+            # ... other dynamics
+        },
+    )
 
-    <span class="n">block</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">block</span>
-</pre></div>
-</div>
+    block.construct_shocks(calibration)
+    return block
+```
+--->
 </section>
 </section>
 <section id="next-steps">
@@ -633,12 +671,12 @@ maintaining clear economic interpretation.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="algorithms.html">
+          <a class="next-page" href="simulation.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Algorithms Guide</div>
+                <div class="title">Simulation Guide</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -690,43 +728,25 @@ maintaining clear economic interpretation.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Models Guide</a><ul>
+<li><a class="reference internal" href="#">Block Guide</a><ul>
 <li><a class="reference internal" href="#understanding-model-structure">Understanding Model Structure</a><ul>
 <li><a class="reference internal" href="#the-block-architecture">The Block Architecture</a></li>
-<li><a class="reference internal" href="#dblock-components">DBlock Components</a></li>
+<li><a class="reference internal" href="#dblocks">DBlocks</a><ul>
+<li><a class="reference internal" href="#arrival-states">Arrival states</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#building-custom-models">Building Custom Models</a><ul>
-<li><a class="reference internal" href="#step-by-step-model-creation">Step-by-Step Model Creation</a><ul>
-<li><a class="reference internal" href="#step-1-define-the-economic-problem">Step 1: Define the Economic Problem</a></li>
-<li><a class="reference internal" href="#step-2-set-up-shocks">Step 2: Set Up Shocks</a></li>
-<li><a class="reference internal" href="#step-3-define-state-transitions">Step 3: Define State Transitions</a></li>
-<li><a class="reference internal" href="#step-4-add-parameter-calibration">Step 4: Add Parameter Calibration</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#multi-period-models-with-rblock">Multi-Period Models with RBlock</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#working-with-predefined-models">Working with Predefined Models</a><ul>
-<li><a class="reference internal" href="#consumer-models">Consumer Models</a></li>
-<li><a class="reference internal" href="#benchmark-models">Benchmark Models</a></li>
-<li><a class="reference internal" href="#perfect-foresight-models">Perfect Foresight Models</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#advanced-model-features">Advanced Model Features</a><ul>
+<li><a class="reference internal" href="#control-variable-constraints">Control Variable Constraints</a><ul>
+<li><a class="reference internal" href="#calibration">Calibration</a></li>
 <li><a class="reference internal" href="#string-based-dynamics">String-Based Dynamics</a></li>
-<li><a class="reference internal" href="#control-variable-constraints">Control Variable Constraints</a></li>
-<li><a class="reference internal" href="#aggregate-shocks">Aggregate Shocks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rblocks-composing-blocks">RBlocks: Composing Blocks</a></li>
+<li><a class="reference internal" href="#bellman-blocks">Bellman Blocks</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#model-validation-and-inspection">Model Validation and Inspection</a><ul>
 <li><a class="reference internal" href="#examining-model-structure">Examining Model Structure</a></li>
 <li><a class="reference internal" href="#testing-model-dynamics">Testing Model Dynamics</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#best-practices">Best Practices</a><ul>
-<li><a class="reference internal" href="#model-design">Model Design</a></li>
-<li><a class="reference internal" href="#code-organization">Code Organization</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
@@ -746,12 +766,14 @@ maintaining clear economic interpretation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=ae0c828b"></script>
+</div><script src="../_static/documentation_options.js?v=673068ca"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>

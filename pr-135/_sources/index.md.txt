@@ -89,6 +89,7 @@ Detailed documentation of all classes and functions
 
 ::::
 
+<!---
 ## What Can You Build?
 
 ### **Consumption-Saving Models**
@@ -137,6 +138,7 @@ life-cycle dynamics, and complex stochastic processes.
 ### 🐍 **Scikit-Learn Compatible**
 
 Familiar fit-predict patterns, consistent APIs, and integration with the broader Python scientific ecosystem.
+--->
 
 ## Next Steps
 
@@ -151,10 +153,11 @@ Want to dive deeper? Check out:
 ## Community & Support
 
 - **GitHub Repository**: [github.com/scikit-agent/scikit-agent](https://github.com/scikit-agent/scikit-agent)
+<!---
 - **Issue Tracker**: Report bugs and request features
 - **Discussions**: Ask questions and share examples
 - **Contributing**: Help improve scikit-agent for everyone
-
+--->
 ---
 
 ## Indices and tables

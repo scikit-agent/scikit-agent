@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Installation" href="installation.html"><link rel="prev" title="scikit-agent" href="../index.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>User Guide - scikit-agent 0.1.dev319+gdbf9157b7</title>
+        <title>User Guide - scikit-agent 0.1.dev330+g16247ca3a</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev319+gdbf9157b7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev330+g16247ca3a</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -200,15 +200,15 @@
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html">Models Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_basic_consumption_model.html">Basic Consumption-Savings Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
 </ul>
 </li>
@@ -268,28 +268,11 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="user-guide">
+          <section class="tex2jax_ignore mathjax_ignore" id="user-guide">
 <h1>User Guide<a class="headerlink" href="#user-guide" title="Link to this heading">¶</a></h1>
 <p>Welcome to the scikit-agent user guide! This comprehensive guide will help you
 get started with building, solving, and simulating economic models using
 scikit-agent.</p>
-<section id="getting-started">
-<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">¶</a></h2>
-<p>If you’re new to scikit-agent, start here:</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="installation.html"><span class="doc">Installation</span></a> - Install scikit-agent and set up your environment</p></li>
-<li><p><a class="reference internal" href="quickstart.html"><span class="doc">Quickstart Guide</span></a> - Build and simulate your first model in minutes</p></li>
-</ul>
-</section>
-<section id="core-concepts">
-<h2>Core Concepts<a class="headerlink" href="#core-concepts" title="Link to this heading">¶</a></h2>
-<p>Learn about the fundamental concepts and components:</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="models.html"><span class="doc">Models Guide</span></a> - Understanding model structure and building custom models</p></li>
-<li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> - Solution methods for solving your models</p></li>
-<li><p><a class="reference internal" href="simulation.html"><span class="doc">Simulation Guide</span></a> - Monte Carlo simulation and analysis</p></li>
-</ul>
-</section>
 <section id="what-is-scikit-agent">
 <h2>What is scikit-agent?<a class="headerlink" href="#what-is-scikit-agent" title="Link to this heading">¶</a></h2>
 <p>scikit-agent is a Python package for agent-based economic modeling that follows
@@ -303,27 +286,46 @@ simulators that handle heterogeneity, aging, and complex dynamics.</p>
 <p><strong>🐍 Pythonic API</strong>: Familiar patterns for Python users with clear, readable
 code.</p>
 </section>
-<section id="key-design-principles">
-<h2>Key Design Principles<a class="headerlink" href="#key-design-principles" title="Link to this heading">¶</a></h2>
-<section id="block-based-models">
-<h3>Block-Based Models<a class="headerlink" href="#block-based-models" title="Link to this heading">¶</a></h3>
-<p>Models are composed of <strong>DBlocks</strong> (Dynamic Blocks) that capture:</p>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">¶</a></h2>
+<p>If you’re new to scikit-agent, start here:</p>
 <ul class="simple">
-<li><p><strong>Shocks</strong>: Random variables affecting agents</p></li>
-<li><p><strong>Dynamics</strong>: State transition equations</p></li>
-<li><p><strong>Controls</strong>: Decision variables agents optimize</p></li>
-<li><p><strong>Rewards</strong>: Objective functions to maximize</p></li>
+<li><p><a class="reference internal" href="installation.html"><span class="doc">Installation</span></a> - Install scikit-agent and set up your environment</p></li>
+<li><p><a class="reference internal" href="quickstart.html"><span class="doc">Quickstart Guide</span></a> - Build and simulate your first model in minutes</p></li>
 </ul>
 </section>
-<section id="flexible-calibration">
-<h3>Flexible Calibration<a class="headerlink" href="#flexible-calibration" title="Link to this heading">¶</a></h3>
-<p>Parameters can be:</p>
+<section id="core-concepts">
+<h2>Core Concepts<a class="headerlink" href="#core-concepts" title="Link to this heading">¶</a></h2>
+<p>Learn about the fundamental concepts and components:</p>
 <ul class="simple">
-<li><p>Simple numbers: <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;:</span> <span class="pre">2.0</span></code></p></li>
-<li><p>Mathematical expressions: <code class="docutils literal notranslate"><span class="pre">&quot;utility&quot;:</span> <span class="pre">&quot;c**(1-gamma)/(1-gamma)&quot;</span></code></p></li>
-<li><p>Age-varying sequences: <code class="docutils literal notranslate"><span class="pre">&quot;income&quot;:</span> <span class="pre">[1.0,</span> <span class="pre">1.2,</span> <span class="pre">1.1,</span> <span class="pre">0.8]</span></code></p></li>
+<li><p><a class="reference internal" href="models.html"><span class="doc">Block Guide</span></a> - Understanding model structure and building custom models</p></li>
+<li><p><a class="reference internal" href="simulation.html"><span class="doc">Simulation Guide</span></a> - Monte Carlo simulation and analysis</p></li>
+<li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> - Solution methods for solving your models</p></li>
+<li><p><a class="reference internal" href="science.html"><span class="doc">Science</span></a> - Scientific concepts and references</p></li>
 </ul>
-</section>
+<!---
+## Key Design Principles
+
+### Block-Based Models
+
+Models are composed of **Blocks** that capture:
+
+- **Shocks**: Random variables affecting agents
+- **Dynamics**: State transition equations
+- **Controls**: Decision variables agents optimize
+- **Rewards**: Objective functions to maximize
+
+scikit-agent provides an API for building and reusing model blocks.
+
+### Flexible Calibration
+
+Parameters can be:
+
+- Simple numbers: `"CRRA": 2.0`
+- Mathematical expressions: `"utility": "c**(1-gamma)/(1-gamma)"`
+- Age-varying sequences: `"income": [1.0, 1.2, 1.1, 0.8]`
+
+--->
 </section>
 <section id="topics-covered">
 <h2>Topics Covered<a class="headerlink" href="#topics-covered" title="Link to this heading">¶</a></h2>
@@ -347,22 +349,11 @@ code.</p>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html#key-takeaways">Key Takeaways</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Models Guide</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Block Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="models.html#understanding-model-structure">Understanding Model Structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#building-custom-models">Building Custom Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#working-with-predefined-models">Working with Predefined Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#advanced-model-features">Advanced Model Features</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#model-validation-and-inspection">Model Validation and Inspection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#best-practices">Best Practices</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#next-steps">Next Steps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#common-patterns">Common Patterns</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="algorithms.html">Algorithms Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="algorithms.html#solution-methods">Solution Methods</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithms.html#choosing-the-right-algorithm">Choosing the Right Algorithm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithms.html#algorithm-configuration">Algorithm Configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithms.html#performance-considerations">Performance Considerations</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation Guide</a><ul>
@@ -370,6 +361,17 @@ code.</p>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html#simulation-configuration">Simulation Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html#data-collection">Data Collection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html#analysis-and-visualization">Analysis and Visualization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="algorithms.html">Algorithms Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="algorithms.html#solution-methods">Solution Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algorithms.html#algorithm-configuration">Algorithm Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algorithms.html#performance-considerations">Performance Considerations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="science.html">Science</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="science.html#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="science.html#funding">Funding</a></li>
 </ul>
 </li>
 </ul>
@@ -466,14 +468,9 @@ you’re:</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">User Guide</a><ul>
+<li><a class="reference internal" href="#what-is-scikit-agent">What is scikit-agent?</a></li>
 <li><a class="reference internal" href="#getting-started">Getting Started</a></li>
 <li><a class="reference internal" href="#core-concepts">Core Concepts</a></li>
-<li><a class="reference internal" href="#what-is-scikit-agent">What is scikit-agent?</a></li>
-<li><a class="reference internal" href="#key-design-principles">Key Design Principles</a><ul>
-<li><a class="reference internal" href="#block-based-models">Block-Based Models</a></li>
-<li><a class="reference internal" href="#flexible-calibration">Flexible Calibration</a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#topics-covered">Topics Covered</a></li>
 <li><a class="reference internal" href="#need-help">Need Help?</a></li>
 <li><a class="reference internal" href="#contributing">Contributing</a></li>
@@ -488,7 +485,7 @@ you’re:</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=ae0c828b"></script>
+</div><script src="../_static/documentation_options.js?v=673068ca"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
