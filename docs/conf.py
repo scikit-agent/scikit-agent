@@ -12,7 +12,6 @@ extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
@@ -77,6 +76,7 @@ myst_enable_extensions = [
     "deflist",
     "dollarmath",
     "tasklist",
+    "amsmath",
 ]
 
 intersphinx_mapping = {
@@ -104,3 +104,9 @@ html_css_files = ["custom.css"]
 autosummary_generate = True
 autodoc_typehints = "description"
 autodoc_typehints_description_target = "documented"
+
+mathjax3_config = {
+    "tex": {
+        "packages": {"[+]": ["amsmath", "amssymb"]},
+    }
+}
