@@ -4,21 +4,6 @@ Welcome to the scikit-agent user guide! This comprehensive guide will help you
 get started with building, solving, and simulating economic models using
 scikit-agent.
 
-## Getting Started
-
-If you're new to scikit-agent, start here:
-
-- {doc}`installation` - Install scikit-agent and set up your environment
-- {doc}`quickstart` - Build and simulate your first model in minutes
-
-## Core Concepts
-
-Learn about the fundamental concepts and components:
-
-- {doc}`models` - Understanding model structure and building custom models
-- {doc}`algorithms` - Solution methods for solving your models
-- {doc}`simulation` - Monte Carlo simulation and analysis
-
 ## What is scikit-agent?
 
 scikit-agent is a Python package for agent-based economic modeling that follows
@@ -36,16 +21,35 @@ simulators that handle heterogeneity, aging, and complex dynamics.
 **🐍 Pythonic API**: Familiar patterns for Python users with clear, readable
 code.
 
+## Getting Started
+
+If you're new to scikit-agent, start here:
+
+- {doc}`installation` - Install scikit-agent and set up your environment
+- {doc}`quickstart` - Build and simulate your first model in minutes
+
+## Core Concepts
+
+Learn about the fundamental concepts and components:
+
+- {doc}`models` - Understanding model structure and building custom models
+- {doc}`simulation` - Monte Carlo simulation and analysis
+- {doc}`algorithms` - Solution methods for solving your models
+- {doc}`science` - Scientific concepts and references
+
+<!---
 ## Key Design Principles
 
 ### Block-Based Models
 
-Models are composed of **DBlocks** (Dynamic Blocks) that capture:
+Models are composed of **Blocks** that capture:
 
 - **Shocks**: Random variables affecting agents
 - **Dynamics**: State transition equations
 - **Controls**: Decision variables agents optimize
 - **Rewards**: Objective functions to maximize
+
+scikit-agent provides an API for building and reusing model blocks.
 
 ### Flexible Calibration
 
@@ -55,6 +59,8 @@ Parameters can be:
 - Mathematical expressions: `"utility": "c**(1-gamma)/(1-gamma)"`
 - Age-varying sequences: `"income": [1.0, 1.2, 1.1, 0.8]`
 
+--->
+
 ## Topics Covered
 
 ```{toctree}
@@ -63,8 +69,9 @@ Parameters can be:
 installation
 quickstart
 models
-algorithms
 simulation
+algorithms
+science
 ```
 
 ## Need Help?

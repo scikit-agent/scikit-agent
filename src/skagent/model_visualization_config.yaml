@@ -1,0 +1,57 @@
+# model_visualization_config.yaml
+
+# Graph title and general configuration
+graph_config:
+  title: "ModelStructure"
+  graph_type: "digraph"
+
+# Variable shape configuration (MODIFIED)
+variable_shapes:
+  shock: "triangle"
+  state: "ellipse"
+  control: "box"
+  reward: "diamond"
+  param: "hexagon"
+  default: "ellipse"
+
+# Node style configuration
+node_styles:
+  default:
+    style: "filled"
+    fontcolor: "#000000"
+    fontname: "Arial"
+  previous_period:
+    style: "filled,dashed"
+    tooltip_prefix: "Previous period "
+
+# Edge style configuration
+edge_styles:
+  default:
+    arrowhead: "normal"
+    arrowsize: 0.8
+    style: "solid"
+  current_period:
+    style: "solid"
+  previous_period:
+    style: "dashed"
+
+# Color configuration
+color_config:
+  default_other_color: "#708090" # Slate gray for global/other
+
+# Color generation parameters (golden-ratio HSL→RGB)
+color_generation:
+  algorithm: "golden_ratio"
+  golden_ratio_factor: 0.618033988749895
+  saturation_range: [0.5, 0.7]
+  lightness_range: [0.4, 0.6]
+  color_seed: 42
+
+# Graph layout configuration
+graph_layout:
+  rankdir: "LR"
+  node_padding: 0.3
+  cluster_style: "filled"
+  cluster_fillcolor: "#FFFFFF"
+  cluster_label_capitalize: true
+  plate_fontsize: 11
