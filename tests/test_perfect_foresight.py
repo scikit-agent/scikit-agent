@@ -397,7 +397,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                             places=10,
                             msg=f"Policy formula violated at t={t}: {c} != {expected_c}",
                         )
-                    else:
+                    elif remaining == 1:
                         # Terminal period: consume all wealth
                         self.assertAlmostEqual(
                             c,
@@ -470,7 +470,8 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 self.assertLess(
                     c, total_wealth, "Consumption must be less than total wealth"
                 )
-                # Note: With current calibration, c < m, but this is not guaranteed for all parameters
+                # Note: Optimal c = κ*(m+H) can exceed m when human wealth H is large,
+                # but DBlock enforces c <= m, which may bind for some parameter values
 
     def test_d2_policy_function_accuracy(self):
         """
@@ -530,4 +531,5 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 self.assertLess(
                     c, total_wealth, "Consumption must be less than total wealth"
                 )
-                # Note: With current calibration, c < m, but this is not guaranteed for all parameters
+                # Note: Optimal c = κ*(m+H) can exceed m when human wealth H is large,
+                # but DBlock enforces c <= m, which may bind for some parameter values

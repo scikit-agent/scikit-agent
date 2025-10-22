@@ -421,7 +421,8 @@ class TestDynamicOptimalityChecks:
                     human_wealth = calibration["y"] / r
                     total_wealth = m_path[t] + human_wealth
                     assert c_path[t] <= total_wealth + 1e-10, (
-                        f"{model_id} consumption should not exceed total wealth at t={t}: c={c_path[t]}, total_wealth={total_wealth}"
+                        f"{model_id} consumption should not exceed total wealth at t={t}: "
+                        f"c={c_path[t]}, total_wealth={total_wealth}"
                     )
 
             elif model_id == "U-1":
@@ -483,7 +484,8 @@ class TestDynamicOptimalityChecks:
                     )  # Present value of geometric random walk income
                     total_wealth = m_path[t] + human_wealth
                     assert c_path[t] <= total_wealth + 1e-10, (
-                        f"U-2 consumption should not exceed total wealth at t={t}: c={c_path[t]}, total_wealth={total_wealth}"
+                        f"U-2 consumption should not exceed total wealth at t={t}: "
+                        f"c={c_path[t]}, total_wealth={total_wealth}"
                     )
 
     @pytest.mark.parametrize(
@@ -608,8 +610,8 @@ class TestDynamicOptimalityChecks:
             # For infinite horizon models with finite simulation:
             # - Simulated reward captures only T periods of utility
             # - Analytical reward is the infinite horizon value
-            # - Since utility is negative (CRRA), simulated should be MORE negative (lower)
-            # - But with positive consumption, it should be LESS negative (higher)
+            # - With CRRA σ>1 and typical consumption values, utility is negative
+            # - Simulated (finite) reward should be less negative than analytical (infinite)
             # Just check that simulated is reasonable (positive utility means less negative)
             assert numerical_reward > analytical_reward - abs(analytical_reward), (
                 f"{model_id}: Simulated reward {numerical_reward:.10f} seems unreasonable "
