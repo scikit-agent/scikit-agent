@@ -615,8 +615,61 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
 
 def test_get_euler_residual_loss():
-    """Test function placeholder - not implemented yet."""
-    pass
+    """Test Euler equation loss function with two independent shock realizations."""
+    # Create a simple consumption-saving test block
+    test_block = model.DBlock(
+        name="test_euler",
+        shocks={"income": Normal(mu=1.0, sigma=0.1)},
+        dynamics={
+            "consumption": model.Control(iset=["wealth"], agent="consumer"),
+            "wealth": lambda wealth, income, consumption, R: R * (wealth - consumption)
+            + income,
+            "utility": lambda consumption: torch.log(consumption + 1e-8),
+        },
+        reward={"utility": "consumer"},
+    )
+    test_block.construct_shocks({})
+
+    # Parameters including gross interest rate R (required for Euler equation)
+    test_params = {"R": 1.04}
+    test_bp = bellman.BellmanPeriod(test_block, test_params)
+
+    # Create input grid with two independent shock realizations
+    # shock_0 for transitions t -> t+1
+    # shock_1 for transitions t+1 -> t+2 (independent)
+    input_grid = grid.Grid.from_dict(
+        {
+            "wealth": torch.linspace(1.0, 10.0, 5),
+            "income_0": torch.ones(5) * 1.0,  # Period t shocks
+            "income_1": torch.ones(5) * 1.1,  # Period t+1 shocks (independent)
+        }
+    )
+
+    # Create a simple decision function (consumption = 30% of wealth + small offset)
+    # Using 30% ensures we're not at constraint boundaries for testing purposes
+    def learned_decision_function(states_t, shocks_t, parameters):
+        wealth = states_t["wealth"]
+        consumption = 0.3 * wealth + 0.1
+        consumption = torch.maximum(consumption, torch.tensor(0.01))
+        consumption = torch.minimum(consumption, 0.9 * wealth)
+        return {"consumption": consumption}
+
+    # Create Euler equation loss function
+    loss_fn = loss.EulerEquationLoss(
+        test_bp, discount_factor=0.95, parameters=test_params
+    )
+
+    # Test that loss function works
+    losses = loss_fn(learned_decision_function, input_grid)
+
+    # Check that we get per-sample losses
+    assert isinstance(losses, torch.Tensor)
+    assert losses.shape[0] == 5  # One loss per grid point
+    assert torch.all(losses >= 0)  # Squared residuals should be non-negative
+
+    # For this simple linear policy, Euler residuals should be non-zero
+    # (not optimal policy)
+    assert torch.mean(losses) > 1e-6
 
 
 def test_bellman_equation_loss_with_value_network():

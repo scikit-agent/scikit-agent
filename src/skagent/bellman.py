@@ -388,3 +388,174 @@ def estimate_bellman_residual(
     bellman_residual = current_values - bellman_rhs
 
     return bellman_residual
+
+
+def estimate_euler_residual(
+    bellman_period,
+    discount_factor,
+    df,
+    states_t,
+    shocks,
+    parameters={},
+    agent=None,
+):
+    """
+    Computes the Euler equation residual for given states and shocks.
+
+    The Euler equation is the first-order condition relating marginal utilities
+    across periods. This function computes:
+
+        f = u'(c_t, ...) - β * u'(c_{t+1}, ...)
+
+    where the reward function u(...) and its derivatives are determined by the
+    BellmanPeriod's block dynamics. Any model-specific factors (like gross returns,
+    permanent income shocks, etc.) should be embedded in the reward function itself.
+
+    Following Maliar et al. (2021) Definition 2.7 and equation (12), the AiO method
+    approximates the squared expectation with two independent shock realizations:
+
+        L(θ) = E[(f|_{ε=ε₁}) * (f|_{ε=ε₂})]
+
+    where ε₁ and ε₂ are independent draws.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The Bellman period with transitions, rewards, etc.
+    discount_factor : float
+        The discount factor β (time preference parameter).
+    df : callable or dict
+        Decision function that returns controls given states and shocks.
+        Can be a callable with signature df(states_t, shocks_t, parameters) -> controls_t
+        or a dict of decision rules.
+    states_t : dict
+        Current state variables (arrival states)
+    shocks : dict
+        Shock realizations for both periods:
+        - {shock_sym}_0: period t shocks (for transitions to t+1)
+        - {shock_sym}_1: period t+1 shocks (for transitions to t+2)
+        This structure supports the AiO expectation operator.
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+
+    Returns
+    -------
+    torch.Tensor
+        Euler equation residual: u'(c_t, ...) - β * u'(c_{t+1}, ...)
+        When using AiO operator, returns residuals for both shock realizations.
+
+    Notes
+    -----
+    This implementation follows Maliar, Maliar, and Winant (2021, JME) Section 2.2.
+    The AiO expectation operator (Definition 2.7) requires two independent shock
+    realizations to approximate the squared expectation E[(E[f])²].
+
+    Examples
+    --------
+    >>> # Euler equation automatically adapts to your model's reward structure
+    >>> residual = estimate_euler_residual(
+    ...     bp, discount_factor=0.95, df=my_policy,
+    ...     states_t, shocks, parameters
+    ... )
+    """
+    if callable(discount_factor):
+        raise ValueError(
+            "State-dependent discount factors not yet supported for Euler residuals. "
+            "Please pass a numerical discount factor."
+        )
+
+    # Get shock variable names
+    shock_vars = bellman_period.get_shocks()
+    shock_syms = list(shock_vars.keys())
+
+    # Extract period-specific shocks from the combined shocks object
+    # shocks_0 are for transitions from t to t+1
+    # shocks_1 are for transitions from t+1 to t+2 (independent realization)
+    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
+    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
+
+    # Get reward variables (should have exactly one for standard Euler equation)
+    reward_vars = [
+        sym
+        for sym in bellman_period.block.reward
+        if agent is None or bellman_period.block.reward[sym] == agent
+    ]
+    if len(reward_vars) == 0:
+        raise ValueError("No reward variables found in block for the specified agent")
+
+    reward_sym = reward_vars[0]
+
+    # Get controls from decision function for period t
+    if callable(df):
+        # Full decision function provided
+        controls_t = df(states_t, shocks_t, parameters)
+    else:
+        # Dictionary of decision rules provided
+        controls_t = bellman_period.decision_function(
+            states_t, shocks_t, parameters, decision_rules=df
+        )
+
+    # Compute next period states (t+1) using first shock realization
+    states_t_plus_1 = bellman_period.transition_function(
+        states_t, shocks_t, controls_t, parameters
+    )
+
+    # Get controls for period t+1 using second independent shock realization
+    if callable(df):
+        controls_t_plus_1 = df(states_t_plus_1, shocks_t_plus_1, parameters)
+    else:
+        controls_t_plus_1 = bellman_period.decision_function(
+            states_t_plus_1, shocks_t_plus_1, parameters, decision_rules=df
+        )
+
+    # Get control symbols to compute gradients with respect to
+    control_syms = list(controls_t.keys())
+    if len(control_syms) == 0:
+        raise ValueError("No control variables found in decision function")
+    if len(control_syms) > 1:
+        raise NotImplementedError(
+            "Euler residual estimation currently only supports single-control models. "
+            f"Found controls: {control_syms}"
+        )
+
+    control_sym = control_syms[0]  # Assume single control for now
+
+    # Make controls require gradients for automatic differentiation
+    # We need to enable gradients on the control variables
+    controls_t_grad = {
+        sym: controls_t[sym].detach().requires_grad_(True) for sym in controls_t
+    }
+    controls_t_plus_1_grad = {
+        sym: controls_t_plus_1[sym].detach().requires_grad_(True)
+        for sym in controls_t_plus_1
+    }
+
+    # Compute marginal utility at t (u'(c_t))
+    reward_gradients_t = bellman_period.grad_reward_function(
+        states_t,
+        shocks_t,
+        controls_t_grad,
+        parameters,
+        wrt={control_sym: controls_t_grad[control_sym]},
+        agent=agent,
+    )
+    marginal_utility_t = reward_gradients_t[reward_sym][control_sym]
+
+    # Compute marginal utility at t+1 (u'(c_{t+1}))
+    reward_gradients_t_plus_1 = bellman_period.grad_reward_function(
+        states_t_plus_1,
+        shocks_t_plus_1,
+        controls_t_plus_1_grad,
+        parameters,
+        wrt={control_sym: controls_t_plus_1_grad[control_sym]},
+        agent=agent,
+    )
+    marginal_utility_t_plus_1 = reward_gradients_t_plus_1[reward_sym][control_sym]
+
+    # Euler equation first-order condition
+    # Any model-specific factors (returns, shocks, etc.) should be in the reward function
+    euler_residual = marginal_utility_t - discount_factor * marginal_utility_t_plus_1
+
+    return euler_residual
