@@ -1,0 +1,56 @@
+{
+  "Normal": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.distributions",
+      "module_short": "skagent.distributions",
+      "name": "Normal"
+    }
+  ],
+  "rex.calibration": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction",
+      "module_short": "skagent.models.resource_extraction",
+      "name": "calibration"
+    }
+  ],
+  "rex.calibration.items": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction.calibration",
+      "module_short": "skagent.models.resource_extraction.calibration",
+      "name": "items"
+    }
+  ],
+  "rex.optimal_extraction_rule": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction",
+      "module_short": "skagent.models.resource_extraction",
+      "name": "optimal_extraction_rule"
+    }
+  ],
+  "rex.resource_extraction_block": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction",
+      "module_short": "skagent.models.resource_extraction",
+      "name": "resource_extraction_block"
+    }
+  ],
+  "ska.MonteCarloSimulator": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "MonteCarloSimulator"
+    }
+  ]
+}

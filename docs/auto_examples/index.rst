@@ -70,6 +70,23 @@ other computational methods.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable or depletable resource (fishery, forest, mineral deposit, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use. Under certain formulations with stochastic growth, this problem admits analytical or semi-analytical solutions">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_resource_extraction_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_models_resource_extraction.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Resource Extraction Model</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to build, solve, and simulate a consumption-portfolio choice model using scikit-agent. The model includes:">
 
 .. only:: html
