@@ -304,7 +304,7 @@ class Block:
         Parameters
         -----------
 
-        calibration: dict, optional
+        calibration: dict
             A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
 
         Returns
@@ -331,7 +331,7 @@ class Block:
         Parameters
         -----------
 
-        calibration: dict, optional
+        calibration: dict
             A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
         """
         graph = self.visualize(calibration)
