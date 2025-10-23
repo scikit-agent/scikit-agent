@@ -2,9 +2,10 @@
 FormulaGenerator: Extracts and formats human-readable formulas from
 scikit-agent DBlock/RBlock models.
 """
+
 import inspect
 from skagent.model import Control
-from skagent.distributions import Distribution
+
 
 def _extract_formula(rule):
     """
@@ -75,6 +76,7 @@ class FormulaGenerator:
     """
     Analyzes a scikit-agent model to generate a dictionary of formulas.
     """
+
     def __init__(self, model, calibration):
         """
         Parameters
@@ -101,5 +103,5 @@ class FormulaGenerator:
         # Process parameters
         for param, value in self.calibration.items():
             formulas[param] = format_rule(param, value)
-            
+
         return formulas
