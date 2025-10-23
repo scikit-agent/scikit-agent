@@ -102,7 +102,7 @@ class ModelVisualizer:
         """
         Return a PyDot graph visualization of this block.
 
-        Base style configuration is in model_visualizatio_config.yaml
+        Base style configuration is in model_visualization_config.yaml
 
         Parameters
         -----------
