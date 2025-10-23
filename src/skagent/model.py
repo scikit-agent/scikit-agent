@@ -12,9 +12,13 @@ from skagent.distributions import (
 )
 from inspect import signature
 import numpy as np
+from skagent.model_analyzer import ModelAnalyzer
+from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
+
+from IPython.display import SVG, display
 
 
 class Aggregate:
@@ -290,6 +294,49 @@ class Block:
                 maybe_lag_variables.discard(sym)
 
         return maybe_lag_variables
+
+    def visualize(self, calibration):
+        """
+        Return a PyDot graph visualization of this block.
+
+        Base style configuration is in model_visualizatio_config.yaml
+
+        Parameters
+        -----------
+
+        calibration: dict, optional
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+
+        Returns
+        -----------
+
+        graph: pydot.core.Dot
+            A PyDot graph representation of the model.
+        """
+        # Generate analysis
+        analyzer = ModelAnalyzer(self, calibration)
+        analyzer.analyze()
+
+        viz = ModelVisualizer(analyzer.to_dict())
+        graph = viz.create_graph(title=self.name)
+
+        return graph
+
+    def display(self, calibration):
+        """
+        Displays (as in a notebook) an SVG of the visualized graph of this block.
+
+        Base style configuration is in model_visualizatio_config.yaml
+
+        Parameters
+        -----------
+
+        calibration: dict, optional
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+        """
+        graph = self.visualize(calibration)
+
+        display(SVG(graph.create_svg()))
 
 
 @dataclass

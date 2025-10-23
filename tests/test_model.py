@@ -24,6 +24,8 @@ test_block_A_data = {
     "reward": {"u": "consumer"},
 }
 
+a_calibration = {"CRRA", "PermGroFac", "Rfree"}
+
 test_block_B_data = {
     "name": "test block B",
     "shocks": {"SB": Bernoulli(p=0.1)},
@@ -104,7 +106,6 @@ class test_DBlock(unittest.TestCase):
         av({"k": 1, "R": 1.05, "PermGroFac": 1.1, "theta": 1, "CRRA": 2})
 
     def test_arrival_states(self):
-        a_calibration = {"CRRA", "PermGroFac", "Rfree"}
         a_arrival_states = self.test_block_A.get_arrival_states(
             calibration=a_calibration
         )
@@ -136,6 +137,12 @@ class test_DBlock(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertIs(result[0], self.test_block_A)
         self.assertIsInstance(result[0], model.DBlock)
+
+    def test_visualize(self):
+        """Test that the visualize method returns a PyDot with the correct label"""
+        graph = self.test_block_A.visualize(a_calibration)
+
+        self.assertEqual(graph.get_label(), "test block A")
 
 
 class test_RBlock(unittest.TestCase):
