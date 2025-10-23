@@ -30,13 +30,14 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-  "numpy",
-  "sympy",
+  "ipython",
   "numba",
-  "torch",
+  "numpy",
   "pydot",
   "pyyaml",
   "scipy",
+  "sympy",
+  "torch",
   "xarray",
 ]
 

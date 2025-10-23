@@ -98,12 +98,28 @@ class ModelVisualizer:
         self.nodes[name] = node
         return node
 
-    def create_graph(self):
+    def create_graph(self, title=None):
+        """
+        Return a PyDot graph visualization of this block.
+
+        Base style configuration is in model_visualization_config.yaml
+
+        Parameters
+        -----------
+        title : string, optional
+            A title for the generated graph.
+
+        Returns
+        -----------
+
+        graph: pydot.core.Dot
+            A PyDot graph representation of the model.
+        """
         # 1) New graph
         gconf = self.gc
         graph = pydot.Dot(graph_type=gconf["graph_type"])
         # title
-        graph.set_label(gconf["title"])
+        graph.set_label(gconf["title"] if title is None else title)
         graph.set_labelloc("t")
         # layout
         graph.set("rankdir", self.gl["rankdir"])
