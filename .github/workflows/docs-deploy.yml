@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload artifact for PR
         if: steps.path.outputs.is-pr == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docs-pr-${{ github.event.pull_request.number }}
           path: docs/_build
@@ -123,7 +123,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: docs-pr-${{ github.event.pull_request.number }}
           path: ./pr-${{ github.event.pull_request.number }}
