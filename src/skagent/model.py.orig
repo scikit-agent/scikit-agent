@@ -12,13 +12,8 @@ from skagent.distributions import (
 )
 from inspect import signature
 import numpy as np
-from skagent.model_analyzer import ModelAnalyzer
-from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
-from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
-from IPython.display import SVG, display
-from skagent.rule import Rule, format_rule
 
 
 class Aggregate:
@@ -184,12 +179,11 @@ def simulate_dynamics(
 
     for sym in dynamics:
         # Using the fact that Python dictionaries are ordered
-        update_fn = dynamics[sym]
+        feq = dynamics[sym]
 
-        if isinstance(update_fn, Control):
+        if isinstance(feq, Control):
             # This tests if the decision rule is age varying.
             # If it is, this will be a vector with the decision rule for each agent.
-
             if isinstance(dr[sym], np.ndarray):
                 ## Now we have to loop through each agent, and apply the decision rule.
                 ## This is quite slow.
@@ -210,22 +204,25 @@ def simulate_dynamics(
                     try:
                         vals[sym] = dr[sym](
                             *[
-                                vals[var] for var in update_fn.iset
+                                vals[var] for var in feq.iset
                             ]  # signature(dr[sym]).parameters]
                         )  # TODO: test for signature match with Control
-                    except (TypeError, ValueError, KeyError) as e:
+                    except Exception as e:
+                        print("symbol", sym)
+                        print("decision rule", dr[sym])
+                        print("decision rule signature", signature(dr[sym]))
+                        print(
+                            "decision rule signature parameters",
+                            signature(dr[sym]).parameters,
+                        )
+                        print("control information set", feq.iset)
                         raise (Exception(f"Can't compute decision rule. {e}"))
                 else:
                     # decision rule takes no arguments
                     # easy to compute in any scope...
                     vals[sym] = dr[sym]()
         else:
-            if isinstance(update_fn, Rule):
-                update_fn = update_fn.update_func()
-
-            vals[sym] = update_fn(
-                *[vals[var] for var in signature(update_fn).parameters]
-            )
+            vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
     return vals
 
@@ -263,112 +260,6 @@ class Block:
         dyn = self.get_dynamics()
 
         return {sym: dyn[sym] for sym in dyn if isinstance(dyn[sym], Control)}
-
-    def get_arrival_states(self, calibration=None):
-        """
-        Return a list of symbols that are:
-          - required by the dynamic equations of the block
-          - dynamic variables themselves (controlled by dynamic equations)
-
-        This is the list of symbols that are implicitly 'lagged',
-        or must be provided 'on arrival'.
-
-        Parameters
-        -----------
-
-        calibration: dict, optional
-            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
-        """
-        maybe_lag_variables = set()
-
-        for sym in reversed(self.dynamics):
-            maybe_lag_variables.discard(sym)  # not a lag if updated dynamically now.
-            rule = self.dynamics[sym]
-            dependencies = extract_dependencies(rule)
-            maybe_lag_variables.update(dependencies)
-
-        for sym in self.shocks:
-            # shocks aren't lag variables
-            maybe_lag_variables.discard(sym)
-
-        if calibration is not None:
-            # these variables are parameters not states
-            for sym in calibration:
-                maybe_lag_variables.discard(sym)
-
-        return maybe_lag_variables
-
-    def visualize(self, calibration):
-        """
-        Return a PyDot graph visualization of this block.
-
-        Base style configuration is in model_visualization_config.yaml
-
-        Parameters
-        -----------
-
-        calibration: dict
-            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
-
-        Returns
-        -----------
-
-        graph: pydot.core.Dot
-            A PyDot graph representation of the model.
-        """
-        # Generate analysis
-        analyzer = ModelAnalyzer(self, calibration)
-        analyzer.analyze()
-
-        viz = ModelVisualizer(analyzer.to_dict())
-        graph = viz.create_graph(title=self.name)
-
-        return graph
-
-    def display(self, calibration):
-        """
-        Displays (as in a notebook) an SVG of the visualized graph of this block.
-
-        Base style configuration is in model_visualizatio_config.yaml
-
-        Parameters
-        -----------
-
-        calibration: dict
-            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
-        """
-        graph = self.visualize(calibration)
-
-        display(SVG(graph.create_svg()))
-
-    def formulas(self, calibration: dict):
-        """
-        Returns a dictionary of string representations of the block's dynamic formulas.
-
-        Parameters
-        -----------
-
-        calibration: dict
-            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
-        """
-        formulas = {}
-        # Process dynamics from all blocks
-        for var, rule in self.get_dynamics().items():
-            formulas[var] = format_rule(var, rule)
-
-        # Process parameters
-        for param, value in calibration.items():
-            formulas[param] = format_rule(param, value)
-
-        return formulas
-
-    def display_formulas(self):
-        """
-        Prints the model's formulas.
-        """
-        formulas = self.formulas({})
-
-        print("\n".join(formulas.values()))
 
 
 @dataclass
@@ -448,7 +339,7 @@ class DBlock(Block):
     def __post_init__(self):
         for v in self.dynamics:
             if isinstance(self.dynamics[v], str):
-                self.dynamics[v] = Rule(self.dynamics[v])
+                self.dynamics[v] = math_text_to_lambda(self.dynamics[v])
 
         # --- this now has agent assignments.
         # for r in self.reward:
@@ -513,11 +404,14 @@ class DBlock(Block):
             # This is a forbidden case in CDC's design.
 
         if until:
+<<<<<<< HEAD
             # Validate that `until` is a valid symbol in `dyn`
             if until not in dyn:
                 raise ValueError(
                     f"The `until` parameter ({until}) does not match any valid symbol in `dyn`. Available symbols: {list(dyn.keys())}"
                 )
+=======
+>>>>>>> 54396cd (adding 'until' optional argument to block.transition() to stop poststate overwriting)
             # don't simulate any states that are logically after
             # the until state
             met_until = False  # this is a hack; really should use dependency graph
@@ -545,12 +439,8 @@ class DBlock(Block):
         rvals = {}
 
         for sym in self.reward:
-            update_fn = self.dynamics[sym]
-            if isinstance(update_fn, Rule):
-                update_fn = update_fn.update_func()
-            rvals[sym] = update_fn(
-                *[vals[var] for var in signature(update_fn).parameters]
-            )
+            feq = self.dynamics[sym]
+            rvals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
 
         return rvals
 
