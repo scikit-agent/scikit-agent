@@ -4,10 +4,12 @@ on the actual consumption model.
 
 """
 
-from skagent.rule import extract_dependencies
+import inspect
+from skagent.rule import extract_dependencies, Rule
 from skagent.models.consumer import consumption_block
 from skagent.model import Control
 from skagent.distributions import Bernoulli
+import unittest
 
 
 class TestRuleDependencyExtraction:
@@ -199,3 +201,24 @@ class TestRuleRobustness:
         # Should handle gracefully without crashing
         deps = extract_dependencies(outer_func)
         assert isinstance(deps, list)
+
+
+class TestRuleClass(unittest.TestCase):
+    def test_rule_class(self):
+        # Create a rule
+        rule = Rule("x**2 + 2*x + 1")
+
+        # Check the signature
+        self.assertEqual(str(inspect.signature(rule.update_func())), "(x)")
+
+        # String representation returns original string
+        self.assertEqual(str(rule), "x**2 + 2*x + 1")
+
+        # Call it like a function
+        self.assertEqual(rule.update_func()(3), 16)
+        self.assertEqual(rule.update_func()(x=3), 16)
+
+        rule2 = Rule("x*y + z")
+        self.assertEqual(str(inspect.signature(rule2.update_func())), "(x, y, z)")
+        self.assertEqual(rule2.update_func()(2, 3, 4), 10)
+        self.assertEqual(rule2.update_func()(x=2, y=3, z=4), 10)
