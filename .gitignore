@@ -156,3 +156,5 @@ Thumbs.db
 # Common editor files
 *~
 *.swp
+
+*.orig
