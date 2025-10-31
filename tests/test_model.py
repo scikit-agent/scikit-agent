@@ -222,3 +222,29 @@ class test_RBlock(unittest.TestCase):
         # Expected order: test_block_B, then test_block_C, then test_block_D
         expected_blocks = [self.test_block_B, self.test_block_C, self.test_block_D]
         self.assertEqual(result, expected_blocks)
+
+
+class test_display_formula(unittest.TestCase):
+    """Test formula generation functionality."""
+
+    def setUp(self):
+        """Set up the test environment before each test."""
+
+        block = model.DBlock(
+            name="simple",
+            shocks={"eps": (Bernoulli, {"p": 0.5})},
+            dynamics={"x": lambda eps: eps, "y": lambda x, param: x + param},
+            reward={"y": "agent1"},
+        )
+        block.dynamics["ctrl"] = Control(["x"], agent="test_agent")
+
+        self.simple_block = block
+
+    def test_control_formula_format(self):
+        """Test Control object formula formatting."""
+        calibration = {"param": 1.0}
+        formulas = self.simple_block.formulas(calibration)
+
+        self.assertIn("ctrl", formulas)
+        self.assertIn("Control", formulas["ctrl"])
+        self.assertIn("x", formulas["ctrl"])

@@ -4,12 +4,29 @@ on the actual consumption model.
 
 """
 
-import inspect
-from skagent.rule import extract_dependencies, Rule
-from skagent.models.consumer import consumption_block
-from skagent.model import Control
-from skagent.distributions import Bernoulli
-import unittest
+from importlib.util import find_spec
+import pytest
+import sys
+
+sys.path.append("../src")
+from skagent.rule import extract_dependencies, extract_formula, format_rule
+
+
+SKAGENT_AVAILABLE = find_spec("skagent") is not None
+<<<<<<< HEAD
+=======
+HAS_DEPENDENCIES = SKAGENT_AVAILABLE
+>>>>>>> main
+
+pytestmark = pytest.mark.skipif(
+    not SKAGENT_AVAILABLE,
+    reason="Optional dependency (`scikit-agent`) not installed.",
+)
+
+if SKAGENT_AVAILABLE:
+    from skagent.models.consumer import consumption_block
+    from skagent.model import Control
+    from skagent.distributions import Bernoulli
 
 
 class TestRuleDependencyExtraction:
@@ -203,22 +220,49 @@ class TestRuleRobustness:
         assert isinstance(deps, list)
 
 
-class TestRuleClass(unittest.TestCase):
-    def test_rule_class(self):
-        # Create a rule
-        rule = Rule("x**2 + 2*x + 1")
+class TestRuleFormulaAndFormatting:
+    """Test formula extraction and formatting functions."""
 
-        # Check the signature
-        self.assertEqual(str(inspect.signature(rule.update_func())), "(x)")
+    def test_formula_extraction(self):
+        """Test extract_formula on actual model rules."""
+        # Test shock formulas
+        live_formula = extract_formula(consumption_block.shocks["live"])
+        assert "Bernoulli" in live_formula
+        assert "p=LivPrb" in live_formula
 
-        # String representation returns original string
-        self.assertEqual(str(rule), "x**2 + 2*x + 1")
+        # Test Control formula
+        c_formula = extract_formula(consumption_block.dynamics["c"])
+        assert "Control(m)" == c_formula
 
-        # Call it like a function
-        self.assertEqual(rule.update_func()(3), 16)
-        self.assertEqual(rule.update_func()(x=3), 16)
+        # Test lambda formula (at least one example)
+        b_rule = consumption_block.dynamics["b"]
+        b_formula = extract_formula(b_rule)
+        # Either extracts the lambda body or shows it as Function
+        assert "k * R" in b_formula or "Function(k, R)" in b_formula
 
-        rule2 = Rule("x*y + z")
-        self.assertEqual(str(inspect.signature(rule2.update_func())), "(x, y, z)")
-        self.assertEqual(rule2.update_func()(2, 3, 4), 10)
-        self.assertEqual(rule2.update_func()(x=2, y=3, z=4), 10)
+    def test_rule_formatting(self):
+        """Test format_rule on actual model rules."""
+        # Test formatting a shock
+        live_formatted = format_rule("live", consumption_block.shocks["live"])
+        assert live_formatted.startswith("live = ")
+        assert "Bernoulli" in live_formatted
+
+        # Test formatting a Control
+        c_formatted = format_rule("c", consumption_block.dynamics["c"])
+        assert c_formatted == "c = Control(m)"
+
+        # Test formatting a lambda
+        b_formatted = format_rule("b", consumption_block.dynamics["b"])
+        assert b_formatted.startswith("b = ")
+
+    def test_all_model_rules_formattable(self):
+        """Ensure all rules in the model can be formatted without errors."""
+        # Format all shocks
+        for name, rule in consumption_block.shocks.items():
+            formatted = format_rule(name, rule)
+            assert formatted.startswith(f"{name} = ")
+
+        # Format all dynamics
+        for name, rule in consumption_block.dynamics.items():
+            formatted = format_rule(name, rule)
+            assert formatted.startswith(f"{name} = ")
