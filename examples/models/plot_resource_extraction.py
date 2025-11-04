@@ -49,6 +49,7 @@ The linear revenue term :math:`p \cdot u` represents market value, while the qua
 
 """
 
+import matplotlib.pyplot as plt
 import skagent as ska
 from skagent.distributions import Normal
 import skagent.models.resource_extraction as rex
@@ -71,13 +72,13 @@ for param, value in rex.calibration.items():
 # Step 2: Inspect the Resource Extraction Model
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-print(rex.resource_extraction_block)
+rex.resource_extraction_block.display_formulas()
 
 # %%
 # Step 3: Visualize the Resource Extraction Model
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# TODO: Visualizer code here.
+rex.resource_extraction_block.display(rex.calibration)
 
 # %%
 # Step 4: Load Optimal Decision Rule
@@ -105,14 +106,11 @@ optimal_u = rex.optimal_extraction_rule(
 
 
 # Wrap rules in the format expected by simulator
-decision_rules = {"u": optimal_u}
+decision_rule = {"u": optimal_u}
 
 # %%
 # Step 5: Run Monte Carlo Simulation
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-### TODO Construct shocks
 
 # Initial conditions (must be distributions, not scalar values)
 initial_conditions = {
@@ -123,15 +121,11 @@ initial_conditions = {
 simulator = ska.MonteCarloSimulator(
     calibration=rex.calibration,
     block=rex.resource_extraction_block,
-    dr=decision_rules,
+    dr=decision_rule,
     initial=initial_conditions,
     agent_count=1000,  # Simulate 5000 agents
     T_sim=100,  # For 100 periods
     seed=42,  # For reproducibility
-)
-
-print(
-    f"✓ Created simulator with {simulator.agent_count} agents over {simulator.T_sim} periods"
 )
 
 # Run the simulation
@@ -142,3 +136,8 @@ simulator.simulate()
 print("✓ Simulation completed successfully")
 
 # %%
+# Step 6: Plot Simulation Results
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+plt.figure()
+plt.plot(simulator.history["x"].mean())
