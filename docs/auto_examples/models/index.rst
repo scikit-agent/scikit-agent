@@ -27,10 +27,10 @@ other computational methods.
 
 .. only:: html
 
-  .. image:: /auto_examples/models/images/thumb/sphx_glr_resource_extraction_thumb.png
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_resource_extraction_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_models_resource_extraction.py`
+  :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py`
 
 .. raw:: html
 
@@ -65,5 +65,5 @@ other computational methods.
 .. toctree::
    :hidden:
 
-   /auto_examples/models/resource_extraction
+   /auto_examples/models/plot_resource_extraction
    /auto_examples/models/plot_consumption_portfolio_model

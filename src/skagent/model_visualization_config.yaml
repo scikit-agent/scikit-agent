@@ -37,7 +37,7 @@ edge_styles:
 
 # Color configuration
 color_config:
-  default_other_color: "#708090" # Slate gray for global/other
+  default_other_color: "#C0D0E0" # Slate gray for global/other
 
 # Color generation parameters (golden-ratio HSL→RGB)
 color_generation:

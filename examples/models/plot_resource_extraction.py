@@ -78,7 +78,12 @@ rex.resource_extraction_block.display_formulas()
 # Step 3: Visualize the Resource Extraction Model
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-rex.resource_extraction_block.display(rex.calibration)
+img, _ = rex.resource_extraction_block.display(rex.calibration)
+
+plt.figure(figsize=(10, 8))
+plt.imshow(img)
+plt.axis("off")
+plt.tight_layout()
 
 # %%
 # Step 4: Load Optimal Decision Rule
@@ -97,16 +102,11 @@ rex.resource_extraction_block.display(rex.calibration)
 # learning algorithms—we can compare learned policies against the known optimum.
 #
 
-optimal_u = rex.optimal_extraction_rule(
-    r=rex.calibration["r"],
-    p=rex.calibration["p"],
-    c_param=rex.calibration["c_param"],
-    DiscFac=rex.calibration["DiscFac"],
-)
+dr_u, _ = rex.make_optimal_extraction_decision_rule(rex.calibration)
 
 
 # Wrap rules in the format expected by simulator
-decision_rule = {"u": optimal_u}
+decision_rule = {"u": dr_u}
 
 # %%
 # Step 5: Run Monte Carlo Simulation
@@ -140,4 +140,8 @@ print("✓ Simulation completed successfully")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 plt.figure()
-plt.plot(simulator.history["x"].mean())
+plt.plot(simulator.history["x"].mean(axis=1), label="x")
+plt.plot(simulator.history["u"].mean(axis=1), label="u")
+plt.plot(simulator.history["epsilon"].mean(axis=1), label="epsilon")
+plt.plot(simulator.history["profit"].mean(axis=1), label="profit")
+plt.legend()

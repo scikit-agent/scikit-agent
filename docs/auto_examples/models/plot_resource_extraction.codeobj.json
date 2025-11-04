@@ -1,0 +1,521 @@
+{
+  "Normal": [
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent.distributions",
+      "module_short": "skagent.distributions",
+      "name": "Normal"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "Normal"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent.distributions",
+      "module_short": "skagent.distributions",
+      "name": "Distribution"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "Distribution"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "abc",
+      "module_short": "abc",
+      "name": "ABC"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.distributions",
+      "module_short": "skagent.distributions",
+      "name": "Normal"
+    }
+  ],
+  "_": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    }
+  ],
+  "decision_rule": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "dict"
+    }
+  ],
+  "dr_u": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    }
+  ],
+  "img": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "ndarray"
+    }
+  ],
+  "initial_conditions": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "dict"
+    }
+  ],
+  "param": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "str"
+    }
+  ],
+  "plt.axis": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "axis"
+    }
+  ],
+  "plt.figure": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "figure"
+    }
+  ],
+  "plt.imshow": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "imshow"
+    }
+  ],
+  "plt.legend": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "legend"
+    }
+  ],
+  "plt.plot": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "plot"
+    }
+  ],
+  "plt.tight_layout": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "tight_layout"
+    }
+  ],
+  "rex.calibration": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "dict"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction",
+      "module_short": "skagent.models.resource_extraction",
+      "name": "calibration"
+    }
+  ],
+  "rex.calibration.items": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "builtin_function_or_method"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction.calibration",
+      "module_short": "skagent.models.resource_extraction.calibration",
+      "name": "items"
+    }
+  ],
+  "rex.make_optimal_extraction_decision_rule": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction",
+      "module_short": "skagent.models.resource_extraction",
+      "name": "make_optimal_extraction_decision_rule"
+    }
+  ],
+  "rex.resource_extraction_block": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.model",
+      "module_short": "skagent",
+      "name": "DBlock"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "DBlock"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction",
+      "module_short": "skagent.models.resource_extraction",
+      "name": "resource_extraction_block"
+    }
+  ],
+  "rex.resource_extraction_block.display": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.model",
+      "module_short": "skagent",
+      "name": "DBlock.display"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "DBlock.display"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.model",
+      "module_short": "skagent.model",
+      "name": "Block.display"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "Block.display"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction.resource_extraction_block",
+      "module_short": "skagent.models.resource_extraction.resource_extraction_block",
+      "name": "display"
+    }
+  ],
+  "rex.resource_extraction_block.display_formulas": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.model",
+      "module_short": "skagent",
+      "name": "DBlock.display_formulas"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "DBlock.display_formulas"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.model",
+      "module_short": "skagent.model",
+      "name": "Block.display_formulas"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "Block.display_formulas"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.models.resource_extraction.resource_extraction_block",
+      "module_short": "skagent.models.resource_extraction.resource_extraction_block",
+      "name": "display_formulas"
+    }
+  ],
+  "simulator": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation.monte_carlo",
+      "module_short": "skagent.simulation.monte_carlo",
+      "name": "MonteCarloSimulator"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation",
+      "module_short": "skagent.simulation",
+      "name": "MonteCarloSimulator"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "MonteCarloSimulator"
+    }
+  ],
+  "simulator.history": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "dict"
+    }
+  ],
+  "simulator.initialize_sim": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation.monte_carlo",
+      "module_short": "skagent.simulation.monte_carlo",
+      "name": "MonteCarloSimulator.initialize_sim"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation",
+      "module_short": "skagent.simulation",
+      "name": "MonteCarloSimulator.initialize_sim"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "MonteCarloSimulator.initialize_sim"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation.monte_carlo",
+      "module_short": "skagent.simulation.monte_carlo",
+      "name": "Simulator.initialize_sim"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation",
+      "module_short": "skagent.simulation",
+      "name": "Simulator.initialize_sim"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "Simulator.initialize_sim"
+    }
+  ],
+  "simulator.simulate": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation.monte_carlo",
+      "module_short": "skagent.simulation.monte_carlo",
+      "name": "MonteCarloSimulator.simulate"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation",
+      "module_short": "skagent.simulation",
+      "name": "MonteCarloSimulator.simulate"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "MonteCarloSimulator.simulate"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation.monte_carlo",
+      "module_short": "skagent.simulation.monte_carlo",
+      "name": "Simulator.simulate"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent.simulation",
+      "module_short": "skagent.simulation",
+      "name": "Simulator.simulate"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "Simulator.simulate"
+    }
+  ],
+  "ska.MonteCarloSimulator": [
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent.simulation.monte_carlo",
+      "module_short": "skagent.simulation.monte_carlo",
+      "name": "MonteCarloSimulator"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent.simulation",
+      "module_short": "skagent.simulation",
+      "name": "MonteCarloSimulator"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "MonteCarloSimulator"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent.simulation.monte_carlo",
+      "module_short": "skagent.simulation.monte_carlo",
+      "name": "Simulator"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent.simulation",
+      "module_short": "skagent.simulation",
+      "name": "Simulator"
+    },
+    {
+      "is_class": true,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "Simulator"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "skagent",
+      "module_short": "skagent",
+      "name": "MonteCarloSimulator"
+    }
+  ],
+  "value": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "float"
+    }
+  ]
+}
