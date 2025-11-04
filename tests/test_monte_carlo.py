@@ -212,3 +212,102 @@ class test_MonteCarloSimulator(unittest.TestCase):
 
         # Use allclose for numerical tolerance instead of exact equality
         self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
+
+
+class test_MonteCarloSimulatorWithReward(unittest.TestCase):
+    """Test MonteCarloSimulator with a block that has a reward dictionary."""
+
+    def setUp(self):
+        self.calibration = {
+            "G": 1.05,
+            "CRRA": 2.0,
+        }
+        self.block = DBlock(
+            **{
+                "shocks": {
+                    "theta": MeanOneLogNormal(1),
+                    "agg_R": Aggregate(MeanOneLogNormal(1)),
+                },
+                "dynamics": {
+                    "b": lambda agg_R, G, a: agg_R * G * a,
+                    "m": lambda b, theta: b + theta,
+                    "c": Control(["m"], agent="consumer"),
+                    "a": lambda m, c: m - c,
+                    # Reward variable computed in dynamics
+                    "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
+                },
+                # Reward dictionary maps reward variable to agent role
+                "reward": {"u": "consumer"},
+            }
+        )
+
+        self.initial = {"a": MeanOneLogNormal(1)}
+
+        self.dr = {"c": lambda m: m / 2}
+
+    def test_simulate_with_reward(self):
+        """Test that MonteCarloSimulator works with blocks that have reward dictionaries."""
+        self.simulator = MonteCarloSimulator(
+            self.calibration,
+            self.block,
+            self.dr,
+            self.initial,
+            agent_count=3,
+        )
+
+        self.simulator.initialize_sim()
+        history = self.simulator.simulate()
+
+        # Verify that reward variable 'u' is tracked
+        self.assertIn("u", history)
+        self.assertEqual(history["u"].shape, (10, 3))
+
+        # Verify dynamics are computed correctly
+        a1 = history["a"][5]
+        b1 = (
+            history["a"][4] * history["agg_R"][5] * self.calibration["G"]
+            + history["theta"][5]
+            - history["c"][5]
+        )
+        self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
+
+        # Verify reward is computed correctly
+        u1 = history["u"][5]
+        c1 = history["c"][5]
+        u1_expected = c1 ** (1 - self.calibration["CRRA"]) / (
+            1 - self.calibration["CRRA"]
+        )
+        self.assertTrue(np.allclose(u1, u1_expected, rtol=1e-12, atol=1e-12))
+
+
+class test_MonteCarloSimulatorWithConsumerModel(unittest.TestCase):
+    """Test MonteCarloSimulator with the actual consumer model from the issue."""
+
+    def test_simulate_consumer_problem(self):
+        """Test the exact scenario from the issue."""
+        from skagent.distributions import MeanOneLogNormal
+        import skagent.models.consumer as cons
+        from skagent.simulation.monte_carlo import MonteCarloSimulator
+
+        initial = {"a": MeanOneLogNormal(1), "live": 0}
+        dr = {"c": lambda m: m / 2}
+
+        simulator = MonteCarloSimulator(
+            cons.calibration,
+            cons.cons_problem,
+            dr,
+            initial,
+            agent_count=3,
+        )
+
+        simulator.initialize_sim()
+        history = simulator.simulate()
+
+        # Verify the simulation completed successfully
+        self.assertIsNotNone(history)
+        self.assertIn("c", history)
+        self.assertIn("a", history)
+
+        # Verify history structure
+        self.assertEqual(history["c"].shape, (10, 3))
+        self.assertEqual(history["a"].shape, (10, 3))
