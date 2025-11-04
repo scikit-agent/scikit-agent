@@ -17,8 +17,8 @@ from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
-
 from IPython.display import SVG, display
+from skagent.rule import Rule, format_rule
 
 
 class Aggregate:
@@ -220,6 +220,9 @@ def simulate_dynamics(
                     # easy to compute in any scope...
                     vals[sym] = dr[sym]()
         else:
+            if isinstance(update_fn, Rule):
+                update_fn = update_fn.update_func()
+
             vals[sym] = update_fn(
                 *[vals[var] for var in signature(update_fn).parameters]
             )
@@ -339,6 +342,35 @@ class Block:
 
         display(SVG(graph.create_svg()))
 
+    def formulas(self, calibration: dict):
+        """
+        Returns a dictionary of string representations of the block's dynamic formulas.
+
+        Parameters
+        -----------
+
+        calibration: dict
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+        """
+        formulas = {}
+        # Process dynamics from all blocks
+        for var, rule in self.get_dynamics().items():
+            formulas[var] = format_rule(var, rule)
+
+        # Process parameters
+        for param, value in calibration.items():
+            formulas[param] = format_rule(param, value)
+
+        return formulas
+
+    def display_formulas(self):
+        """
+        Prints the model's formulas.
+        """
+        formulas = self.formulas({})
+
+        print("\n".join(formulas.values()))
+
 
 @dataclass
 class DBlock(Block):
@@ -417,7 +449,7 @@ class DBlock(Block):
     def __post_init__(self):
         for v in self.dynamics:
             if isinstance(self.dynamics[v], str):
-                self.dynamics[v] = math_text_to_lambda(self.dynamics[v])
+                self.dynamics[v] = Rule(self.dynamics[v])
 
         # --- this now has agent assignments.
         # for r in self.reward:
@@ -515,6 +547,8 @@ class DBlock(Block):
 
         for sym in self.reward:
             update_fn = self.dynamics[sym]
+            if isinstance(update_fn, Rule):
+                update_fn = update_fn.update_func()
             rvals[sym] = update_fn(
                 *[vals[var] for var in signature(update_fn).parameters]
             )
