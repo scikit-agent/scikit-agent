@@ -247,25 +247,10 @@ class BellmanPeriod:
             Nested dictionary of gradients for each arrival state and variable:
             {state_sym: {var_name: gradient}}
         """
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
+        # Use the existing transition_function method to compute next states
+        next_states = self.transition_function(
+            states_t, shocks_t, controls_t, parameters, decision_rules
         )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
-        )
-
-        # Combine all variables for block evaluation
-        vals_t = parameters | states_t | shocks_t | controls_t
-
-        # Compute next states using block transition
-        post = self.block.transition(
-            vals_t, decision_rules, fix=list(controls_t.keys())
-        )
-
-        # Extract arrival states (next period states)
-        next_states = {sym: post[sym] for sym in self.arrival_states}
 
         # Compute gradients for each next state with respect to each variable in wrt
         gradients = {}
@@ -415,9 +400,20 @@ def estimate_bellman_residual(
     """
     Computes the Bellman equation residual for given states and shocks.
 
-    The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
-    This function computes: V(s) - [u(s,c,ε) + β V(s')]
-    where s' = f(s,c,ε) and V(s') is evaluated at a specific future shock realization ε'.
+    The Bellman equation is:
+
+    .. math::
+
+        V(s) = \\max_c \\{ u(s,c,\\varepsilon) + \\beta E_{\\varepsilon'}[V(s')] \\}
+
+    This function computes the residual:
+
+    .. math::
+
+        f = V(s) - [u(s,c,\\varepsilon) + \\beta V(s')]
+
+    where :math:`s' = f(s,c,\\varepsilon)` and :math:`V(s')` is evaluated at a
+    specific future shock realization :math:`\\varepsilon'`.
 
     Parameters
     ----------
@@ -510,25 +506,48 @@ def estimate_euler_residual(
     Computes the Euler equation residual for given states and shocks.
 
     The Euler equation is the first-order condition from the Bellman equation,
-    relating marginal utilities across periods. This function computes:
+    relating marginal utilities across periods. This function computes the Euler
+    equation **residual**:
 
-        f = u'(c_t) - β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
+    .. math::
 
-    where:
-    - u'(c_t) is the marginal utility of consumption at time t
-    - ∂s_{t+1}/∂c_t is the gradient of next period's state with respect to current control
-    - The transition gradient automatically captures model-specific factors like returns R
+        f = u'(c_t) - \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
 
-    For a consumption-saving model with A_{t+1} = R*(A_t - c_t) + y_{t+1}:
-        ∂A_{t+1}/∂c_t = -R
-    So the Euler equation becomes: u'(c_t) = β * R * u'(c_{t+1})
+    where :math:`f` is the Euler equation residual. At optimality, :math:`f = 0`
+    represents the first-order condition being satisfied.
 
-    Following Maliar et al. (2021) Definition 2.7 and equation (12), the AiO method
-    approximates the squared expectation with two independent shock realizations:
+    **Components:**
 
-        L(θ) = E[(f|_{ε=ε₁}) * (f|_{ε=ε₂})]
+    - :math:`u'(c_t)` is the marginal utility of consumption at time :math:`t`
+    - :math:`\\frac{\\partial s_{t+1}}{\\partial c_t}` is the gradient of next period's state with respect to current control
+    - The transition gradient automatically captures model-specific factors like returns :math:`R`
 
-    where ε₁ and ε₂ are independent draws.
+    **Example:**
+
+    For a consumption-saving model with :math:`A_{t+1} = R(A_t - c_t) + y_{t+1}`:
+
+    .. math::
+
+        \\frac{\\partial A_{t+1}}{\\partial c_t} = -R
+
+    So the Euler equation :math:`u'(c_t) = \\beta R u'(c_{t+1})` yields residual
+    :math:`f = 0` at optimality.
+
+    **Notation:**
+
+    Following Maliar et al. (2021) Definition 2.7 and equation (12), this implementation
+    uses the all-in-one (AiO) expectation operator which approximates the squared
+    expectation with two independent shock realizations:
+
+    .. math::
+
+        L(\\theta) = E[(f|_{\\varepsilon=\\varepsilon_1}) \\cdot (f|_{\\varepsilon=\\varepsilon_2})]
+
+    where :math:`\\varepsilon_1` and :math:`\\varepsilon_2` are independent draws.
+
+    Note: We use :math:`\\varepsilon` (epsilon) to denote exogenous shocks, which may
+    differ slightly from Maliar et al.'s notation but represents the same concept of
+    stochastic disturbances in the model.
 
     Parameters
     ----------
@@ -691,8 +710,10 @@ def estimate_euler_residual(
         )
     transition_gradient_sum = sum(non_none_gradients)
 
-    # Euler equation first-order condition from the Bellman equation
-    # u'(c_t) = β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
+    # Compute the Euler equation residual from the first-order condition
+    # The Euler equation is: u'(c_t) = β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
+    # The residual f = u'(c_t) - β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
+    # At optimality, f = 0 (the first-order condition is satisfied)
     # The transition gradient captures model-specific factors like returns R
     euler_residual = (
         marginal_utility_t

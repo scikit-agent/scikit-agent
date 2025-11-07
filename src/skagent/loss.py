@@ -309,25 +309,45 @@ class EulerEquationLoss:
     Creates an Euler equation loss function for the Maliar method.
 
     The Euler equation is the first-order condition from the Bellman equation,
-    relating marginal utilities across periods. This loss function computes:
+    relating marginal utilities across periods. This loss function computes the
+    Euler equation **residual**:
 
-        f = u'(c_t) - β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
+    .. math::
 
-    where:
-    - u'(c_t) is the marginal utility of consumption at time t
-    - ∂s_{t+1}/∂c_t is the gradient of next period's state with respect to current control
-    - The transition gradient automatically captures model-specific factors like returns R
+        f = u'(c_t) - \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+
+    where :math:`f` is the residual that equals zero at optimality.
+
+    **Components:**
+
+    - :math:`u'(c_t)` is the marginal utility of consumption at time :math:`t`
+    - :math:`\\frac{\\partial s_{t+1}}{\\partial c_t}` is the gradient of next period's state with respect to current control
+    - The transition gradient automatically captures model-specific factors like returns :math:`R`
+
+    **Methodology:**
 
     This follows the Maliar et al. (2021) methodology (Definition 2.7, equations 9-12)
     and is designed for use with the all-in-one (AiO) expectation operator.
 
-    The AiO method approximates the squared expectation E[(E[f])²] using two
-    independent shock realizations ε₁ and ε₂:
-        L(θ) = E[(f|_{ε=ε₁}) * (f|_{ε=ε₂})]
+    The AiO method approximates the squared expectation :math:`E[(E[f])^2]` using two
+    independent shock realizations :math:`\\varepsilon_1` and :math:`\\varepsilon_2`:
+
+    .. math::
+
+        L(\\theta) = E[(f|_{\\varepsilon=\\varepsilon_1}) \\cdot (f|_{\\varepsilon=\\varepsilon_2})]
+
+    **Notation:**
+
+    We use :math:`\\varepsilon` (epsilon) to denote exogenous shocks, following standard
+    convention for stochastic disturbances. This is functionally equivalent to the shock
+    notation in Maliar et al. (2021).
+
+    **Input Grid Structure:**
 
     This function expects the input grid to contain two independent shock realizations:
-    - {shock_sym}_0: shocks for transitions from t to t+1
-    - {shock_sym}_1: shocks for transitions from t+1 to t+2 (independent of period t)
+
+    - ``{shock_sym}_0``: shocks for transitions from t to t+1
+    - ``{shock_sym}_1``: shocks for transitions from t+1 to t+2 (independent of period t)
 
     Parameters
     ----------
