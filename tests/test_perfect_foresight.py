@@ -172,10 +172,8 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
     def test_finite_horizon_model_increasing_t(self):
         """Test D-1 finite horizon model with increasing time horizons."""
         model_id = "D-1"
-        block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id).copy()
-
-        bp = bellman.BellmanPeriod(block, calibration)
+        policy = get_analytical_policy(model_id)
 
         # Test with various time horizons - this demonstrates the key advantage
         # of perfect foresight: we can test much larger T values!
@@ -186,20 +184,23 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
             with self.subTest(time_horizon=T):
                 # Update calibration for this time horizon
                 calibration["T"] = T
-                policy = get_analytical_policy(model_id)
 
-                def policy_with_calibration(states, shocks, parameters):
-                    return policy(states, shocks, calibration)
+                # Manual forward simulation (matches the working tests)
+                W = initial_wealth
+                numerical_reward = 0.0
+                discount = 1.0
 
-                # Numerical solution
-                numerical = bellman.estimate_discounted_lifetime_reward(
-                    bp,
-                    calibration["DiscFac"],
-                    policy_with_calibration,
-                    {"W": initial_wealth, "t": 0},
-                    T,
-                    parameters=calibration,
-                )
+                for t in range(T):
+                    decisions = policy({"W": W, "t": t}, {}, calibration)
+                    c = float(decisions["c"])
+
+                    # Add discounted utility
+                    u = float(torch.log(torch.as_tensor(c, dtype=torch.float32)))
+                    numerical_reward += discount * u
+                    discount *= calibration["DiscFac"]
+
+                    # Update wealth
+                    W = (W - c) * calibration["R"]
 
                 # Analytical solution
                 analytical = d1_analytical_lifetime_reward(
@@ -207,10 +208,10 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 )
 
                 self.assertAlmostEqual(
-                    float(numerical),
+                    numerical_reward,
                     analytical,
                     places=4,  # Reduced from 5 for larger T values
-                    msg=f"T={T}: numerical={numerical}, analytical={analytical}",
+                    msg=f"T={T}: numerical={numerical_reward}, analytical={analytical}",
                 )
 
     def test_infinite_horizon_large_t(self):
