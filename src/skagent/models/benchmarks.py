@@ -85,7 +85,7 @@ d1_calibration = {
     "R": 1.03,
     "T": 5,  # Finite horizon
     "W0": 2.0,  # Initial wealth
-    "t": 0,  # Initial time period
+    # Note: t=0 is the initial STATE, not a parameter, so it's passed in initial_states
     "description": "D-1: Finite horizon log utility",
 }
 
@@ -95,7 +95,8 @@ d1_block = DBlock(
         "shocks": {},
         "dynamics": {
             "c": Control(["W", "t"], upper_bound=lambda W, t: W, agent="consumer"),
-            "u": lambda c: crra_utility(c, 1.0),  # Log utility
+            "u": lambda c, t, T: (as_tensor(t) < as_tensor(T)).float()
+            * crra_utility(c, 1.0),  # Utility cutoff at T (life ends)
             "W": lambda W, c, R: (W - c) * R,  # Next period wealth
             "t": lambda t: t + 1,  # Time counter
         },
@@ -254,7 +255,7 @@ d3_calibration = {
     "R": 1.03,
     "y": 1.0,
     "SurvivalProb": 0.99,  # Survival probability s ∈ (0,1)
-    "liv": 1.0,  # Initial living state (agent starts alive)
+    # Note: liv=1.0 is the initial STATE, not a parameter, so it's passed in initial_states
     "description": "D-3: Blanchard discrete-time mortality",
 }
 
@@ -530,13 +531,21 @@ def _generate_d1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     """Generate test states for D-1 model: W (wealth), t (time)"""
     return {
         "W": torch.linspace(1.0, 5.0, test_points),
-        "t": torch.zeros(test_points),
+        "t": torch.zeros(test_points, dtype=torch.int64),  # Time state (starts at 0)
     }
 
 
-def _generate_d23_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for D-2 and D-3 models: a (arrival assets)"""
+def _generate_d2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-2 model: a (arrival assets)"""
     return {"a": torch.linspace(0.5, 4.0, test_points)}
+
+
+def _generate_d3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-3 model: a (arrival assets), liv (living state)"""
+    return {
+        "a": torch.linspace(0.5, 4.0, test_points),
+        "liv": torch.ones(test_points),  # Living state (starts alive)
+    }
 
 
 def _generate_u1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
@@ -636,14 +645,14 @@ BENCHMARK_MODELS = {
         "block": d2_block,
         "calibration": d2_calibration,
         "analytical_policy": d2_analytical_policy,
-        "test_states": _generate_d23_test_states,
+        "test_states": _generate_d2_test_states,
         "custom_validation": _validate_d2_d3_solution,
     },
     "D-3": {
         "block": d3_block,
         "calibration": d3_calibration,
         "analytical_policy": d3_analytical_policy,
-        "test_states": _generate_d23_test_states,
+        "test_states": _generate_d3_test_states,
         "custom_validation": _validate_d2_d3_solution,
     },
     "U-1": {

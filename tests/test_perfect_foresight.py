@@ -230,13 +230,13 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
 
         for big_t in large_t_values:
             with self.subTest(big_t=big_t):
-                # D-3 model needs both 'a' (assets) and 'm' (cash-on-hand)
+                # D-3 model needs 'a' (assets) and 'liv' (living state)
                 initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
                 numerical = bellman.estimate_discounted_lifetime_reward(
                     bp,
                     calibration["DiscFac"],
                     policy,
-                    {"a": initial_assets, "m": cash_on_hand},
+                    {"a": initial_assets, "liv": 1.0},  # Start alive
                     big_t,
                     parameters=calibration,
                 )
@@ -278,14 +278,14 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         for big_t in time_horizons:
             start_time = time.time()
 
-            # D-3 model needs both 'a' (assets) and 'm' (cash-on-hand)
+            # D-3 model needs 'a' (assets) and 'liv' (living state)
             cash_on_hand = 2.0
             initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
             reward = bellman.estimate_discounted_lifetime_reward(
                 bp,
                 calibration["DiscFac"],
                 policy,
-                {"a": initial_assets, "m": cash_on_hand},
+                {"a": initial_assets, "liv": 1.0},  # Start alive
                 big_t,
                 parameters=calibration,
             )
