@@ -314,15 +314,21 @@ class EulerEquationLoss:
 
     .. math::
 
-        f = u'(c_t) - \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
 
     where :math:`f` is the residual that equals zero at optimality.
 
-    **Components:**
+    **Derivation:**
 
-    - :math:`u'(c_t)` is the marginal utility of consumption at time :math:`t`
-    - :math:`\\frac{\\partial s_{t+1}}{\\partial c_t}` is the gradient of next period's state with respect to current control
-    - The transition gradient automatically captures model-specific factors like returns :math:`R`
+    The first-order condition from the Bellman equation is:
+
+    .. math::
+
+        u'(c_t) = -\\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+
+    For a consumption-saving model with :math:`A_{t+1} = R(A_t - c_t) + y_{t+1}`,
+    where :math:`\\frac{\\partial A_{t+1}}{\\partial c_t} = -R`, this becomes
+    :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
 
     **Methodology:**
 

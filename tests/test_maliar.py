@@ -775,9 +775,15 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
     def test_euler_residual_with_income(self):
         """
-        Test Euler residual with a model that includes exogenous income.
+        Test Euler residual computation with a non-optimal policy.
 
-        This tests the model from the existing test_get_euler_residual_loss function.
+        This test verifies that:
+        1. The Euler residual computation produces finite values
+        2. The residual is non-zero for a non-optimal policy (sensitivity check)
+        3. The computation works correctly with income shocks and two shock realizations
+
+        This complements test_get_euler_residual_loss by focusing on the residual
+        computation itself rather than the loss function wrapper.
         """
 
         # Create a consumption-saving model with income shocks
@@ -791,9 +797,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
                 "wealth": lambda wealth, income, consumption, R: R
                 * (wealth - consumption)
                 + income,
-                "utility": lambda consumption: torch.log(
-                    torch.as_tensor(consumption, dtype=torch.float32) + 1e-8
-                ),
+                "utility": lambda consumption: torch.log(consumption + 1e-8),
             },
             reward={"utility": "consumer"},
         )

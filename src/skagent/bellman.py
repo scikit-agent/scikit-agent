@@ -511,16 +511,25 @@ def estimate_euler_residual(
 
     .. math::
 
-        f = u'(c_t) - \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
 
     where :math:`f` is the Euler equation residual. At optimality, :math:`f = 0`
     represents the first-order condition being satisfied.
 
-    **Components:**
+    **Derivation:**
 
-    - :math:`u'(c_t)` is the marginal utility of consumption at time :math:`t`
-    - :math:`\\frac{\\partial s_{t+1}}{\\partial c_t}` is the gradient of next period's state with respect to current control
-    - The transition gradient automatically captures model-specific factors like returns :math:`R`
+    The first-order condition from the Bellman equation
+    :math:`V(s) = \\max_c \\{ u(c) + \\beta E[V(s')] \\}` is:
+
+    .. math::
+
+        u'(c_t) = -\\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+
+    Rearranging to define the residual :math:`f`:
+
+    .. math::
+
+        f = u'(c_t) + \\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right] = 0
 
     **Example:**
 
@@ -530,8 +539,13 @@ def estimate_euler_residual(
 
         \\frac{\\partial A_{t+1}}{\\partial c_t} = -R
 
-    So the Euler equation :math:`u'(c_t) = \\beta R u'(c_{t+1})` yields residual
-    :math:`f = 0` at optimality.
+    The first-order condition becomes:
+
+    .. math::
+
+        u'(c_t) = -\\beta E[u'(c_{t+1}) \\cdot (-R)] = \\beta R E[u'(c_{t+1})]
+
+    And the residual :math:`f = u'(c_t) - \\beta R E[u'(c_{t+1})] = 0` at optimality.
 
     **Notation:**
 
@@ -711,13 +725,21 @@ def estimate_euler_residual(
     transition_gradient_sum = sum(non_none_gradients)
 
     # Compute the Euler equation residual from the first-order condition
-    # The Euler equation is: u'(c_t) = β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
-    # The residual f = u'(c_t) - β * u'(c_{t+1}) * Σ_s [∂s_{t+1}/∂c_t]
+    # The first-order condition from the Bellman equation is:
+    #   u'(c_t) = -β * E[u'(c_{t+1}) * ∂s_{t+1}/∂c_t]
+    #
+    # For a consumption-saving model with s_{t+1} = R(s_t - c_t) + y_{t+1}:
+    #   ∂s_{t+1}/∂c_t = -R
+    # So the FOC becomes:
+    #   u'(c_t) = -β * E[u'(c_{t+1}) * (-R)] = β R E[u'(c_{t+1})]
+    #
+    # The residual is:
+    #   f = u'(c_t) + β * u'(c_{t+1}) * ∂s_{t+1}/∂c_t
+    #
     # At optimality, f = 0 (the first-order condition is satisfied)
-    # The transition gradient captures model-specific factors like returns R
     euler_residual = (
         marginal_utility_t
-        - discount_factor * marginal_utility_t_plus_1 * transition_gradient_sum
+        + discount_factor * marginal_utility_t_plus_1 * transition_gradient_sum
     )
 
     return euler_residual
