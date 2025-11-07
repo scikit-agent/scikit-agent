@@ -223,6 +223,37 @@ class test_RBlock(unittest.TestCase):
         expected_blocks = [self.test_block_B, self.test_block_C, self.test_block_D]
         self.assertEqual(result, expected_blocks)
 
+    def test_arrival_states(self):
+        """Test that get_arrival_states() works on RBlock."""
+        # Create an RBlock with test blocks that have dynamics
+        r_block = model.RBlock(blocks=[self.test_block_B, self.test_block_D])
+
+        # test_block_B has dynamics: {"pi": lambda a, Rfree: (Rfree - 1) * a}
+        # test_block_D has dynamics: {"z": Control(["y"], agent="foo-agent")}
+        # So the arrival states should include 'a', 'Rfree', and 'y'
+
+        arrival_states = r_block.get_arrival_states()
+
+        # Verify that arrival states include dependencies from dynamics
+        self.assertIn("a", arrival_states)  # from test_block_B dynamics
+        self.assertIn("Rfree", arrival_states)  # from test_block_B dynamics
+        self.assertIn("y", arrival_states)  # from test_block_D dynamics
+
+        # Verify that dynamic variables themselves are not in arrival states
+        self.assertFalse("pi" in arrival_states)  # pi is a dynamic variable
+        self.assertFalse("z" in arrival_states)  # z is a dynamic variable
+
+        # Verify that shocks are not in arrival states
+        self.assertFalse("SB" in arrival_states)  # SB is a shock in test_block_B
+        self.assertFalse("SD" in arrival_states)  # SD is a shock in test_block_D
+
+        # Test with calibration to filter out parameters
+        calibration = {"Rfree"}
+        arrival_states_with_cal = r_block.get_arrival_states(calibration=calibration)
+
+        # Rfree should now be excluded as it's a calibration parameter
+        self.assertFalse("Rfree" in arrival_states_with_cal)
+
 
 class test_display_formula(unittest.TestCase):
     """Test formula generation functionality."""

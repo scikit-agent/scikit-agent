@@ -281,13 +281,13 @@ class Block:
         """
         maybe_lag_variables = set()
 
-        for sym in reversed(self.dynamics):
+        for sym in reversed(self.get_dynamics()):
             maybe_lag_variables.discard(sym)  # not a lag if updated dynamically now.
-            rule = self.dynamics[sym]
+            rule = self.get_dynamics()[sym]
             dependencies = extract_dependencies(rule)
             maybe_lag_variables.update(dependencies)
 
-        for sym in self.shocks:
+        for sym in self.get_shocks():
             # shocks aren't lag variables
             maybe_lag_variables.discard(sym)
 
