@@ -244,7 +244,7 @@ class BellmanEquationLoss:
 
         self.discount_factor = discount_factor
         if callable(discount_factor):
-            raise Exception(
+            raise ValueError(
                 "Currently only numerical, not state-dependent, discount factors are supported."
             )
 
@@ -261,7 +261,7 @@ class BellmanEquationLoss:
             if agent is None or self.bellman_period.block.reward[sym] == self.agent
         ]
         if len(reward_vars) == 0:
-            raise Exception("No reward variables found in block")
+            raise ValueError("No reward variables found in block")
 
     def __call__(self, df, input_grid: Grid):
         """
@@ -335,12 +335,15 @@ class EulerEquationLoss:
     This follows the Maliar et al. (2021) methodology (Definition 2.7, equations 9-12)
     and is designed for use with the all-in-one (AiO) expectation operator.
 
-    The AiO method approximates the squared expectation :math:`E[(E[f])^2]` using two
-    independent shock realizations :math:`\\varepsilon_1` and :math:`\\varepsilon_2`:
+    The implementation computes the Euler residual using two independent shock
+    realizations (:math:`\\varepsilon_0` for period :math:`t` and :math:`\\varepsilon_1`
+    for period :math:`t+1`), then squares it. The loss is:
 
     .. math::
 
-        L(\\theta) = E[(f|_{\\varepsilon=\\varepsilon_1}) \\cdot (f|_{\\varepsilon=\\varepsilon_2})]
+        L(\\theta) = E[f^2]
+
+    where :math:`f` is the Euler equation residual computed with both shock realizations.
 
     **Notation:**
 
@@ -460,9 +463,9 @@ class EulerEquationLoss:
         Returns
         -------
         torch.Tensor
-            Euler equation residual loss (squared).
-            When using AiO operator with two shock realizations, returns the
-            product of residuals: (f|_{ε=ε₁}) * (f|_{ε=ε₂})
+            Weighted squared Euler equation residual.
+            The residual is computed using two independent shock realizations
+            via the AiO expectation operator, then squared and weighted.
 
         Notes
         -----

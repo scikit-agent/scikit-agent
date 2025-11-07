@@ -71,6 +71,75 @@ class BellmanPeriod:
         post = self.block.transition(vals, decision_rules)
         return {sym: post[sym] for sym in decision_rules}
 
+    def _compute_gradients_for_tensors(self, tensors_dict, wrt):
+        """
+        Helper method to compute gradients for a dictionary of tensors with respect to variables.
+
+        This method extracts the common gradient computation pattern used by both
+        grad_reward_function and grad_transition_function.
+
+        Parameters
+        ----------
+        tensors_dict : dict
+            Dictionary mapping symbol names to tensors to compute gradients for
+        wrt : dict
+            Dictionary of variables to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True
+
+        Returns
+        -------
+        dict
+            Nested dictionary of gradients for each tensor symbol and variable:
+            {tensor_sym: {var_name: gradient}}
+        """
+        gradients = {}
+        for tensor_sym in tensors_dict:
+            gradients[tensor_sym] = {}
+            for var_name, var_tensor in wrt.items():
+                # Skip if variable doesn't require gradients
+                if not var_tensor.requires_grad:
+                    gradients[tensor_sym][var_name] = None
+                    continue
+
+                # Compute gradient of this tensor with respect to this variable
+                target_tensor = tensors_dict[tensor_sym]
+
+                # For batched computations, we need to compute gradients for each element
+                if target_tensor.dim() > 0 and target_tensor.numel() > 1:
+                    # Handle batched case: compute gradients for each element in the batch
+                    batch_gradients = []
+                    for i in range(target_tensor.shape[0]):
+                        grad_result = grad(
+                            target_tensor[i],
+                            var_tensor,
+                            retain_graph=True,
+                            allow_unused=True,
+                        )
+                        if grad_result[0] is not None:
+                            batch_gradients.append(
+                                grad_result[0][i]
+                                if grad_result[0].dim() > 0
+                                else grad_result[0]
+                            )
+                        else:
+                            batch_gradients.append(None)
+
+                    # Stack the gradients if they're not None
+                    if all(g is not None for g in batch_gradients):
+                        gradients[tensor_sym][var_name] = torch.stack(batch_gradients)
+                    else:
+                        gradients[tensor_sym][var_name] = None
+                else:
+                    # Handle scalar case
+                    grad_result = grad(
+                        target_tensor, var_tensor, retain_graph=True, allow_unused=True
+                    )
+                    gradients[tensor_sym][var_name] = (
+                        grad_result[0] if grad_result[0] is not None else None
+                    )
+
+        return gradients
+
     def reward_function(
         self,
         states_t,
@@ -160,54 +229,8 @@ class BellmanPeriod:
             if agent is None or self.block.reward[sym] == agent
         }
 
-        # Compute gradients for each reward with respect to each variable in wrt
-        gradients = {}
-        for reward_sym in rewards:
-            gradients[reward_sym] = {}
-            for var_name, var_tensor in wrt.items():
-                # Skip if variable doesn't require gradients
-                if not var_tensor.requires_grad:
-                    gradients[reward_sym][var_name] = None
-                    continue
-
-                # Compute gradient of this reward with respect to this variable
-                reward_tensor = rewards[reward_sym]
-
-                # For batched computations, we need to compute gradients for each element
-                if reward_tensor.dim() > 0 and reward_tensor.numel() > 1:
-                    # Handle batched case: compute gradients for each element in the batch
-                    batch_gradients = []
-                    for i in range(reward_tensor.shape[0]):
-                        grad_result = grad(
-                            reward_tensor[i],
-                            var_tensor,
-                            retain_graph=True,
-                            allow_unused=True,
-                        )
-                        if grad_result[0] is not None:
-                            batch_gradients.append(
-                                grad_result[0][i]
-                                if grad_result[0].dim() > 0
-                                else grad_result[0]
-                            )
-                        else:
-                            batch_gradients.append(None)
-
-                    # Stack the gradients if they're not None
-                    if all(g is not None for g in batch_gradients):
-                        gradients[reward_sym][var_name] = torch.stack(batch_gradients)
-                    else:
-                        gradients[reward_sym][var_name] = None
-                else:
-                    # Handle scalar case
-                    grad_result = grad(
-                        reward_tensor, var_tensor, retain_graph=True, allow_unused=True
-                    )
-                    gradients[reward_sym][var_name] = (
-                        grad_result[0] if grad_result[0] is not None else None
-                    )
-
-        return gradients
+        # Use helper method to compute gradients
+        return self._compute_gradients_for_tensors(rewards, wrt)
 
     def grad_transition_function(
         self,
@@ -252,54 +275,8 @@ class BellmanPeriod:
             states_t, shocks_t, controls_t, parameters, decision_rules
         )
 
-        # Compute gradients for each next state with respect to each variable in wrt
-        gradients = {}
-        for state_sym in next_states:
-            gradients[state_sym] = {}
-            for var_name, var_tensor in wrt.items():
-                # Skip if variable doesn't require gradients
-                if not var_tensor.requires_grad:
-                    gradients[state_sym][var_name] = None
-                    continue
-
-                # Compute gradient of this next state with respect to this variable
-                state_tensor = next_states[state_sym]
-
-                # For batched computations, we need to compute gradients for each element
-                if state_tensor.dim() > 0 and state_tensor.numel() > 1:
-                    # Handle batched case: compute gradients for each element in the batch
-                    batch_gradients = []
-                    for i in range(state_tensor.shape[0]):
-                        grad_result = grad(
-                            state_tensor[i],
-                            var_tensor,
-                            retain_graph=True,
-                            allow_unused=True,
-                        )
-                        if grad_result[0] is not None:
-                            batch_gradients.append(
-                                grad_result[0][i]
-                                if grad_result[0].dim() > 0
-                                else grad_result[0]
-                            )
-                        else:
-                            batch_gradients.append(None)
-
-                    # Stack the gradients if they're not None
-                    if all(g is not None for g in batch_gradients):
-                        gradients[state_sym][var_name] = torch.stack(batch_gradients)
-                    else:
-                        gradients[state_sym][var_name] = None
-                else:
-                    # Handle scalar case
-                    grad_result = grad(
-                        state_tensor, var_tensor, retain_graph=True, allow_unused=True
-                    )
-                    gradients[state_sym][var_name] = (
-                        grad_result[0] if grad_result[0] is not None else None
-                    )
-
-        return gradients
+        # Use helper method to compute gradients
+        return self._compute_gradients_for_tensors(next_states, wrt)
 
 
 def estimate_discounted_lifetime_reward(
@@ -549,15 +526,14 @@ def estimate_euler_residual(
 
     **Notation:**
 
-    Following Maliar et al. (2021) Definition 2.7 and equation (12), this implementation
-    uses the all-in-one (AiO) expectation operator which approximates the squared
-    expectation with two independent shock realizations:
+    Following Maliar et al. (2021) Definition 2.7, this function computes a single
+    Euler equation residual using two independent shock realizations. The residual
+    :math:`f` uses shocks :math:`\\varepsilon_0` for transitions from :math:`t` to
+    :math:`t+1` and :math:`\\varepsilon_1` for transitions from :math:`t+1` to
+    :math:`t+2`.
 
-    .. math::
-
-        L(\\theta) = E[(f|_{\\varepsilon=\\varepsilon_1}) \\cdot (f|_{\\varepsilon=\\varepsilon_2})]
-
-    where :math:`\\varepsilon_1` and :math:`\\varepsilon_2` are independent draws.
+    The loss function then computes :math:`L(\\theta) = E[f^2]` where the squared
+    residual approximates the squared expectation operator from the paper.
 
     Note: We use :math:`\\varepsilon` (epsilon) to denote exogenous shocks, which may
     differ slightly from Maliar et al.'s notation but represents the same concept of
@@ -588,8 +564,8 @@ def estimate_euler_residual(
     Returns
     -------
     torch.Tensor
-        Euler equation residual: u'(c_t, ...) - β * u'(c_{t+1}, ...)
-        When using AiO operator, returns residuals for both shock realizations.
+        Euler equation residual computed using two independent shock realizations
+        (one for each period transition). Returns one residual value per state sample.
 
     Notes
     -----
