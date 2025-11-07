@@ -24,6 +24,8 @@ test_block_A_data = {
     "reward": {"u": "consumer"},
 }
 
+a_calibration = {"CRRA", "PermGroFac", "Rfree"}
+
 test_block_B_data = {
     "name": "test block B",
     "shocks": {"SB": Bernoulli(p=0.1)},
@@ -104,7 +106,6 @@ class test_DBlock(unittest.TestCase):
         av({"k": 1, "R": 1.05, "PermGroFac": 1.1, "theta": 1, "CRRA": 2})
 
     def test_arrival_states(self):
-        a_calibration = {"CRRA", "PermGroFac", "Rfree"}
         a_arrival_states = self.test_block_A.get_arrival_states(
             calibration=a_calibration
         )
@@ -136,6 +137,12 @@ class test_DBlock(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertIs(result[0], self.test_block_A)
         self.assertIsInstance(result[0], model.DBlock)
+
+    def test_visualize(self):
+        """Test that the visualize method returns a PyDot with the correct label"""
+        graph = self.test_block_A.visualize(a_calibration)
+
+        self.assertEqual(graph.get_label(), "test block A")
 
 
 class test_RBlock(unittest.TestCase):
@@ -215,3 +222,60 @@ class test_RBlock(unittest.TestCase):
         # Expected order: test_block_B, then test_block_C, then test_block_D
         expected_blocks = [self.test_block_B, self.test_block_C, self.test_block_D]
         self.assertEqual(result, expected_blocks)
+
+    def test_arrival_states(self):
+        """Test that get_arrival_states() works on RBlock."""
+        # Create an RBlock with test blocks that have dynamics
+        r_block = model.RBlock(blocks=[self.test_block_B, self.test_block_D])
+
+        # test_block_B has dynamics: {"pi": lambda a, Rfree: (Rfree - 1) * a}
+        # test_block_D has dynamics: {"z": Control(["y"], agent="foo-agent")}
+        # So the arrival states should include 'a', 'Rfree', and 'y'
+
+        arrival_states = r_block.get_arrival_states()
+
+        # Verify that arrival states include dependencies from dynamics
+        self.assertIn("a", arrival_states)  # from test_block_B dynamics
+        self.assertIn("Rfree", arrival_states)  # from test_block_B dynamics
+        self.assertIn("y", arrival_states)  # from test_block_D dynamics
+
+        # Verify that dynamic variables themselves are not in arrival states
+        self.assertFalse("pi" in arrival_states)  # pi is a dynamic variable
+        self.assertFalse("z" in arrival_states)  # z is a dynamic variable
+
+        # Verify that shocks are not in arrival states
+        self.assertFalse("SB" in arrival_states)  # SB is a shock in test_block_B
+        self.assertFalse("SD" in arrival_states)  # SD is a shock in test_block_D
+
+        # Test with calibration to filter out parameters
+        calibration = {"Rfree"}
+        arrival_states_with_cal = r_block.get_arrival_states(calibration=calibration)
+
+        # Rfree should now be excluded as it's a calibration parameter
+        self.assertFalse("Rfree" in arrival_states_with_cal)
+
+
+class test_display_formula(unittest.TestCase):
+    """Test formula generation functionality."""
+
+    def setUp(self):
+        """Set up the test environment before each test."""
+
+        block = model.DBlock(
+            name="simple",
+            shocks={"eps": (Bernoulli, {"p": 0.5})},
+            dynamics={"x": lambda eps: eps, "y": lambda x, param: x + param},
+            reward={"y": "agent1"},
+        )
+        block.dynamics["ctrl"] = Control(["x"], agent="test_agent")
+
+        self.simple_block = block
+
+    def test_control_formula_format(self):
+        """Test Control object formula formatting."""
+        calibration = {"param": 1.0}
+        formulas = self.simple_block.formulas(calibration)
+
+        self.assertIn("ctrl", formulas)
+        self.assertIn("Control", formulas["ctrl"])
+        self.assertIn("x", formulas["ctrl"])
