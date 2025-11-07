@@ -43,6 +43,15 @@
       "name": "Normal"
     }
   ],
+  "S_star": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "float"
+    }
+  ],
   "_": [
     {
       "is_class": false,
@@ -52,6 +61,15 @@
       "name": "function"
     }
   ],
+  "c_0": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "float"
+    }
+  ],
   "decision_rule": [
     {
       "is_class": false,
@@ -59,6 +77,15 @@
       "module": "builtins",
       "module_short": "builtins",
       "name": "dict"
+    }
+  ],
+  "delta": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "float"
     }
   ],
   "dr_u": [
@@ -88,6 +115,47 @@
       "name": "dict"
     }
   ],
+  "np.linspace": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "_ArrayFunctionDispatcher"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "linspace"
+    }
+  ],
+  "np.percentile": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "_ArrayFunctionDispatcher"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "percentile"
+    }
+  ],
+  "p": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "float"
+    }
+  ],
   "param": [
     {
       "is_class": false,
@@ -95,6 +163,22 @@
       "module": "builtins",
       "module_short": "builtins",
       "name": "str"
+    }
+  ],
+  "plt.axhline": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "axhline"
     }
   ],
   "plt.axis": [
@@ -113,6 +197,22 @@
       "name": "axis"
     }
   ],
+  "plt.axvline": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "axvline"
+    }
+  ],
   "plt.figure": [
     {
       "is_class": false,
@@ -127,6 +227,38 @@
       "module": "matplotlib.pyplot",
       "module_short": "matplotlib.pyplot",
       "name": "figure"
+    }
+  ],
+  "plt.fill_between": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "fill_between"
+    }
+  ],
+  "plt.grid": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "grid"
     }
   ],
   "plt.imshow": [
@@ -177,6 +309,22 @@
       "name": "plot"
     }
   ],
+  "plt.show": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "show"
+    }
+  ],
   "plt.tight_layout": [
     {
       "is_class": false,
@@ -191,6 +339,63 @@
       "module": "matplotlib.pyplot",
       "module_short": "matplotlib.pyplot",
       "name": "tight_layout"
+    }
+  ],
+  "plt.title": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "title"
+    }
+  ],
+  "plt.xlabel": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "xlabel"
+    }
+  ],
+  "plt.ylabel": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "function"
+    },
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "matplotlib.pyplot",
+      "module_short": "matplotlib.pyplot",
+      "name": "ylabel"
+    }
+  ],
+  "r": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "float"
     }
   ],
   "rex.calibration": [
@@ -225,7 +430,7 @@
       "name": "items"
     }
   ],
-  "rex.make_optimal_extraction_decision_rule": [
+  "rex.make_optimal_decision_rule": [
     {
       "is_class": false,
       "is_explicit": false,
@@ -238,7 +443,7 @@
       "is_explicit": false,
       "module": "skagent.models.resource_extraction",
       "module_short": "skagent.models.resource_extraction",
-      "name": "make_optimal_extraction_decision_rule"
+      "name": "make_optimal_decision_rule"
     }
   ],
   "rex.resource_extraction_block": [
@@ -359,6 +564,15 @@
       "module": "skagent",
       "module_short": "skagent",
       "name": "MonteCarloSimulator"
+    }
+  ],
+  "simulator.T_sim": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "builtins",
+      "module_short": "builtins",
+      "name": "int"
     }
   ],
   "simulator.history": [
@@ -509,6 +723,15 @@
       "name": "MonteCarloSimulator"
     }
   ],
+  "u_optimal": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "ndarray"
+    }
+  ],
   "value": [
     {
       "is_class": false,
@@ -516,6 +739,15 @@
       "module": "builtins",
       "module_short": "builtins",
       "name": "float"
+    }
+  ],
+  "x_range": [
+    {
+      "is_class": false,
+      "is_explicit": false,
+      "module": "numpy",
+      "module_short": "numpy",
+      "name": "ndarray"
     }
   ]
 }

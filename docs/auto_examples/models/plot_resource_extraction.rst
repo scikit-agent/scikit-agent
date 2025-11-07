@@ -23,55 +23,112 @@ Resource Extraction Model
 ############################
 
 The resource extraction problem models the optimal management of a renewable
-or depletable resource (fishery, forest, mineral deposit, etc.).
-The decision-maker must balance immediate profits from extraction against
-preserving the resource stock for future use. Under certain formulations with
-stochastic growth, this problem admits analytical or semi-analytical solutions
+resource (fishery, forest, wildlife, etc.). The decision-maker must balance
+immediate profits from extraction against preserving the resource stock for
+future use.
 
-The model involves a growing resource with stochastic shocks, a controllable
-extraction rate, and reward function that combines revenue and extraction costs.
-The planner agent must balance present profit with future resource availability.
+This example implements the classic model from Reed (1979) [1]_, which shows that
+under multiplicative environmental shocks and stock-dependent harvesting costs,
+the optimal policy has a simple "constant escapement" form. The optimal
+escapement level can be computed analytically, making this an excellent benchmark
+for testing reinforcement learning algorithms.
 
 Model Structure
 ==================
 
-- **State Variable:** :math:`x`: Resource stock level
-- **Control Variable:** :math:`u`: Extraction rate (constrained between 0 and current stock $x$)
+- **State Variable**: :math:`x_t` — Resource stock level at time :math:`t`
+- **Control Variable**: :math:`u_t` — Harvest/extraction rate (constrained: :math:`0 \leq u_t \leq x_t`)
 
-**Dynamics**
+Dynamics
+--------
 
-The resource stock evolves as:
+The resource stock evolves according to:
 
- .. math::
+.. math::
 
-    x_{t+1} = r(x_t - u_t) + \epsilon_t
+    x_{t+1} = r(x_t - u_t) \epsilon_t
 
-where :math:`r > 1` is the growth rate and :math:`\epsilon_t` is a random shock.
+where:
 
-**Reward:**
+- :math:`r > 1` is the deterministic growth rate
+- :math:`(x_t - u_t)` is the **escapement** (stock remaining after harvest)
+- :math:`\epsilon_t` is a multiplicative environmental shock with :math:`\mathbb{E}[\epsilon_t] = 1`
+- :math:`\epsilon_t` follows a log-normal distribution: :math:`\ln(\epsilon_t) \sim \mathcal{N}(-\sigma^2/2, \sigma^2)`
 
-Single-period profit combines revenue and extraction costs:
+Profit Function
+---------------
 
- .. math::
+Single-period profit is:
 
-    \mathrm{profit} = p \cdot u - \frac{c}{2} u^2
+.. math::
 
-The linear revenue term :math:`p \cdot u` represents market value, while the quadratic cost :math:`\frac{c}{2}u^2` reflects increasing marginal extraction costs (it becomes harder and more expensive to extract at higher rates).
+    \pi(u_t, x_t) = \left(p - \frac{c_0}{x_t}\right) u_t
 
-**Parameters:**
+where:
 
-- :math:`r`: Growth rate (e.g., 1.1 = 10% growth per period)
-- :math:`p`: Price per unit extracted
-- :math:`c`: Cost parameter (controls extraction cost curvature)
-- :math:`\gamma` (`DiscFac`): Discount factor for future rewards
-- :math:`\sigma`: Standard deviation of random growth shocks
+- :math:`p` is the (constant) price per unit harvested
+- :math:`c_0/x_t` is the stock-dependent unit cost of harvesting
 
-.. GENERATED FROM PYTHON SOURCE LINES 51-57
+The cost specification captures the realistic feature that harvesting becomes
+more expensive when the stock is depleted (e.g., fish are harder to catch when
+populations are low).
+
+Objective and Bellman Equation
+-------------------------------
+
+The manager seeks to maximize expected discounted profit:
+
+.. math::
+
+    V(x_t) = \max_{u_t} \mathbb{E}\left[\pi(u_t, x_t) + \delta V(x_{t+1})\right]
+
+where :math:`\delta \in (0,1)` is the discount factor, which reflects time
+preference (impatience) and risk. The **Bellman equation** expresses the value
+of being in state :math:`x_t` as the maximum of current profit plus the
+discounted expected continuation value.
+
+Parameters
+----------
+
+- :math:`r` = 1.1: Growth rate (10% per period)
+- :math:`p` = 5.0: Price per unit extracted
+- :math:`c_0` = 2.0: Cost parameter for stock-dependent costs
+- :math:`\delta` (`DiscFac`) = 0.95: Discount factor for future rewards
+- :math:`\sigma` = 0.1: Standard deviation of log-normal growth shock
+
+Optimal Policy: Constant Escapement
+====================================
+
+Reed (1979) [1]_ proved that the optimal policy maintains a constant target stock
+level :math:`S^*` and harvests any surplus:
+
+.. math::
+
+    u_t^* = \max(0, x_t - S^*)
+
+The optimal escapement level is:
+
+.. math::
+
+    S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}
+
+This requires the "impatience condition" :math:`\delta r < 1`, which ensures
+the agent prefers extraction over indefinite accumulation.
+
+References
+----------
+
+.. [1] Reed, W.J. (1979). "Optimal escapement levels in stochastic and
+       deterministic harvesting models." *Journal of Environmental Economics
+       and Management*, 6(4), 350-363.
+
+.. GENERATED FROM PYTHON SOURCE LINES 107-114
 
 .. code-block:: Python
 
 
     import matplotlib.pyplot as plt
+    import numpy as np
     import skagent as ska
     from skagent.distributions import Normal
     import skagent.models.resource_extraction as rex
@@ -83,19 +140,19 @@ The linear revenue term :math:`p \cdot u` represents market value, while the qua
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 58-62
+.. GENERATED FROM PYTHON SOURCE LINES 115-119
 
 Model Inspection
 -------------------
 
 First, let's load the predefined model elements and inspect them.
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-66
+.. GENERATED FROM PYTHON SOURCE LINES 121-123
 
 Step 1: Show Model Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 66-71
+.. GENERATED FROM PYTHON SOURCE LINES 123-128
 
 .. code-block:: Python
 
@@ -115,19 +172,19 @@ Step 1: Show Model Parameters
     Model Calibration:
       r: 1.02
       p: 5.0
-      c_param: 10.0
+      c_0: 10.0
       DiscFac: 0.95
       sigma: 0.1
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-74
+.. GENERATED FROM PYTHON SOURCE LINES 129-131
 
 Step 2: Inspect the Resource Extraction Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 74-77
+.. GENERATED FROM PYTHON SOURCE LINES 131-134
 
 .. code-block:: Python
 
@@ -143,22 +200,20 @@ Step 2: Inspect the Resource Extraction Model
  .. code-block:: none
 
     u = Control(x)
-    revenue = lambda u, p: p * u
-    cost = lambda u, c_param: 0.5 * c_param * u**2
-    profit = lambda revenue, cost: revenue - cost
-    x_after = lambda x, u: x - u
-    x_growth = lambda x_after, r: r * x_after
-    x = lambda x_growth, epsilon: x_growth + epsilon
+    unit_cost = lambda x, c_0: c_0 / x
+    profit = lambda u, p, unit_cost: (p - unit_cost) * u
+    escapement = lambda x, u: x - u
+    x = lambda escapement, r, epsilon: r * escapement * epsilon
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-80
+.. GENERATED FROM PYTHON SOURCE LINES 135-137
 
 Step 3: Visualize the Resource Extraction Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-88
+.. GENERATED FROM PYTHON SOURCE LINES 137-145
 
 .. code-block:: Python
 
@@ -167,7 +222,7 @@ Step 3: Visualize the Resource Extraction Model
 
     plt.figure(figsize=(10, 8))
     plt.imshow(img)
-    plt.axis('off')
+    plt.axis("off")
     plt.tight_layout()
 
 
@@ -188,31 +243,60 @@ Step 3: Visualize the Resource Extraction Model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 89-104
+.. GENERATED FROM PYTHON SOURCE LINES 146-166
 
-Step 4: Load Optimal Decision Rule
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 4: Compute Optimal Escapement Policy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This model has a closed-form optimal policy: the optimal extraction is **linear in the stock**:
+Reed (1979) proved that the optimal policy has a **constant escapement** form:
 
 .. math::
 
-    u^* = \alpha \cdot x
+    u^*(x) = \max(0, x - S^*)
 
-The optimal extraction rate $\alpha$ is determined by solving a system of two equations involving
-the model parameters. A method for solving this system is provided as ``optimal_extraction_rule``.
+where :math:`S^*` is the optimal escapement level (target stock to maintain).
 
-This analytical solution makes the model ideal for validating other policy
+The optimal escapement can be computed analytically:
+
+.. math::
+
+    S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}
+
+This analytical solution makes the model ideal for validating reinforcement
 learning algorithms—we can compare learned policies against the known optimum.
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 104-111
+.. GENERATED FROM PYTHON SOURCE LINES 166-197
 
 .. code-block:: Python
 
 
-    dr_u, _ = rex.make_optimal_extraction_decision_rule(rex.calibration)
+    dr_u, _ = rex.make_optimal_decision_rule(rex.calibration)
 
+    # Compute S* for display
+    r = rex.calibration["r"]
+    p = rex.calibration["p"]
+    c_0 = rex.calibration["c_0"]
+    delta = rex.calibration["DiscFac"]
+    S_star = c_0 * (1 - delta) / (p * (1 - delta * r))
+
+    print(f"\nOptimal escapement level: S* = {S_star:.4f}")
+    print(f"Optimal policy: u*(x) = max(0, x - {S_star:.4f})")
+
+    # Visualize the policy
+    x_range = np.linspace(0, 5, 100)
+    u_optimal = dr_u(x_range)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(x_range, u_optimal, label=r"$u^*(x) = \max(0, x - S^*)$", linewidth=2)
+    plt.axhline(y=0, color='k', linestyle='--', alpha=0.3)
+    plt.axvline(x=S_star, color='r', linestyle='--', alpha=0.5, label=f"$S^* = {S_star:.2f}$")
+    plt.xlabel("Stock level (x)")
+    plt.ylabel("Optimal harvest (u*)")
+    plt.title("Reed's Constant Escapement Policy")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
 
     # Wrap rules in the format expected by simulator
     decision_rule = {"u": dr_u}
@@ -220,23 +304,36 @@ learning algorithms—we can compare learned policies against the known optimum.
 
 
 
+.. image-sg:: /auto_examples/models/images/sphx_glr_plot_resource_extraction_002.png
+   :alt: Reed's Constant Escapement Policy
+   :srcset: /auto_examples/models/images/sphx_glr_plot_resource_extraction_002.png
+   :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+
+    Optimal escapement level: S* = 3.2258
+    Optimal policy: u*(x) = max(0, x - 3.2258)
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 112-114
+.. GENERATED FROM PYTHON SOURCE LINES 198-200
 
 Step 5: Run Monte Carlo Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 114-138
+.. GENERATED FROM PYTHON SOURCE LINES 200-224
 
 .. code-block:: Python
 
 
-    # Initial conditions (must be distributions, not scalar values)
+    # Initial conditions - start with stock level around 2*S*
     initial_conditions = {
-        "x": Normal(mu=0.0, sigma=rex.calibration["sigma"]),
+        "x": Normal(mu=2*S_star, sigma=0.1),
     }
 
     # Create and run simulator
@@ -245,13 +342,13 @@ Step 5: Run Monte Carlo Simulation
         block=rex.resource_extraction_block,
         dr=decision_rule,
         initial=initial_conditions,
-        agent_count=1000,  # Simulate 5000 agents
+        agent_count=1000,  # Simulate 1000 agents
         T_sim=100,  # For 100 periods
         seed=42,  # For reproducibility
     )
 
     # Run the simulation
-    print("Running simulation...")
+    print("\nRunning simulation...")
     simulator.initialize_sim()  # Initialize simulation variables
     simulator.simulate()
 
@@ -265,50 +362,86 @@ Step 5: Run Monte Carlo Simulation
 
  .. code-block:: none
 
+
     Running simulation...
     ✓ Simulation completed successfully
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-141
+.. GENERATED FROM PYTHON SOURCE LINES 225-233
 
 Step 6: Plot Simulation Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 141-148
+The plot shows the distribution of stock levels over time under the optimal
+constant escapement policy. The stock fluctuates around :math:`S^*` due to
+environmental shocks. When stock exceeds :math:`S^*`, the surplus is harvested;
+when shocks drive stock below :math:`S^*`, no harvest occurs and the stock
+recovers through natural growth.
+
+.. GENERATED FROM PYTHON SOURCE LINES 233-275
 
 .. code-block:: Python
 
 
-    plt.figure()
-    plt.plot(simulator.history['x'].mean(axis=1), label = 'x')
-    plt.plot(simulator.history['u'].mean(axis=1), label='u')
-    plt.plot(simulator.history['epsilon'].mean(axis=1), label="epsilon")
-    plt.plot(simulator.history['profit'].mean(axis=1), label="profit")
-    plt.legend()
+    plt.figure(figsize=(10, 6))
+
+    # Plot percentiles to show distribution
+    plt.fill_between(
+        range(simulator.T_sim),
+        np.percentile(simulator.history["x"], 5, axis=1),
+        np.percentile(simulator.history["x"], 95, axis=1),
+        alpha=0.2,
+        label="5th-95th percentile",
+        color='C0'
+    )
+    plt.fill_between(
+        range(simulator.T_sim),
+        np.percentile(simulator.history["x"], 25, axis=1),
+        np.percentile(simulator.history["x"], 75, axis=1),
+        alpha=0.3,
+        label="25th-75th percentile",
+        color='C0'
+    )
+    plt.plot(
+        simulator.history["x"].mean(axis=1),
+        label="Mean stock",
+        linewidth=2,
+        color='C0'
+    )
+
+    # Add reference line for optimal escapement
+    plt.axhline(
+        y=S_star,
+        color='r',
+        linestyle='--',
+        linewidth=2,
+        label=f"Optimal escapement $S^* = {S_star:.2f}$"
+    )
+
+    plt.xlabel("Time period", fontsize=11)
+    plt.ylabel("Stock level (x)", fontsize=11)
+    plt.title("Resource Stock Evolution Under Optimal Escapement Policy", fontsize=12)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 
 
-
-.. image-sg:: /auto_examples/models/images/sphx_glr_plot_resource_extraction_002.png
-   :alt: plot resource extraction
-   :srcset: /auto_examples/models/images/sphx_glr_plot_resource_extraction_002.png
+.. image-sg:: /auto_examples/models/images/sphx_glr_plot_resource_extraction_003.png
+   :alt: Resource Stock Evolution Under Optimal Escapement Policy
+   :srcset: /auto_examples/models/images/sphx_glr_plot_resource_extraction_003.png
    :class: sphx-glr-single-img
 
 
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-
-    <matplotlib.legend.Legend object at 0x760c4c11f380>
 
 
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 2.261 seconds)
+   **Total running time of the script:** (0 minutes 3.590 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_resource_extraction.py:
