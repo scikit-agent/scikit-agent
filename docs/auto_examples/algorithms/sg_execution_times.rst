@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:00.000** total execution time for 0 files **from auto_examples\algorithms**:
+**00:00.000** total execution time for 0 files **from auto_examples/algorithms**:
 
 .. container::
 

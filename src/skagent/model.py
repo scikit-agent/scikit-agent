@@ -337,10 +337,34 @@ class Block:
 
         calibration: dict
             A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+
+
+        Returns
+        -----------
+
+        img : matplotlib.image.mpimg
+        svg_content : str
         """
         graph = self.visualize(calibration)
 
         display(SVG(graph.create_svg()))
+
+        import matplotlib.image as mpimg
+        from io import BytesIO
+        import cairosvg
+
+        svg_content = graph.create_svg()
+
+        # Convert SVG to PNG in memory
+        if isinstance(svg_content, str):
+            svg_content = svg_content.encode("utf-8")
+
+        png_data = cairosvg.svg2png(bytestring=svg_content)
+
+        # Load PNG into matplotlib
+        img = mpimg.imread(BytesIO(png_data), format="png")
+
+        return img, svg_content
 
     def formulas(self, calibration: dict):
         """
