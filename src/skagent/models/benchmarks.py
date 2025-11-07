@@ -85,6 +85,7 @@ d1_calibration = {
     "R": 1.03,
     "T": 5,  # Finite horizon
     "W0": 2.0,  # Initial wealth
+    "t": 0,  # Initial time period
     "description": "D-1: Finite horizon log utility",
 }
 
@@ -93,10 +94,10 @@ d1_block = DBlock(
         "name": "d1_finite_log",
         "shocks": {},
         "dynamics": {
-            "t": lambda t: t + 1,  # Time counter
             "c": Control(["W", "t"], upper_bound=lambda W, t: W, agent="consumer"),
+            "u": lambda c: crra_utility(c, 1.0),  # Log utility
             "W": lambda W, c, R: (W - c) * R,  # Next period wealth
-            "u": lambda c: crra_utility(c, 1.0),  # Log utility (CRRA with gamma=1)
+            "t": lambda t: t + 1,  # Time counter
         },
         "reward": {"u": "consumer"},
     }
@@ -117,7 +118,8 @@ def d1_analytical_policy(states, shocks, parameters):
     # Remaining horizon consumption rule
     remaining_periods = T - t
 
-    # Terminal period: consume everything when remaining_periods <= 0
+    # Terminal period: consume everything when remaining_periods <= 1
+    # (remaining==1 means one period left, which is the terminal period)
     # Otherwise: c = (1-β)/(1-β^(T-t)) * W
     numerator = 1 - beta
     denominator = 1 - beta**remaining_periods
@@ -128,7 +130,7 @@ def d1_analytical_policy(states, shocks, parameters):
 
     # Use torch.where to handle terminal period (works for both scalars and tensors)
     c_optimal = torch.where(
-        as_tensor(remaining_periods <= 0),
+        as_tensor(remaining_periods <= 1),
         as_tensor(W, dtype=dtype),
         as_tensor((numerator / denominator) * W, dtype=dtype),
     )
@@ -252,6 +254,7 @@ d3_calibration = {
     "R": 1.03,
     "y": 1.0,
     "SurvivalProb": 0.99,  # Survival probability s ∈ (0,1)
+    "liv": 1.0,  # Initial living state (agent starts alive)
     "description": "D-3: Blanchard discrete-time mortality",
 }
 
@@ -263,7 +266,10 @@ d3_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: crra_utility(c, CRRA),
+            "liv": lambda liv, SurvivalProb: liv
+            * SurvivalProb,  # Mortality probability
+            "u": lambda c, liv, CRRA: liv
+            * crra_utility(c, CRRA),  # Utility with survival
         },
         "reward": {"u": "consumer"},
     }
