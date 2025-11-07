@@ -49,6 +49,7 @@ The linear revenue term :math:`p \cdot u` represents market value, while the qua
 
 """
 
+import matplotlib.pyplot as plt
 import skagent as ska
 from skagent.distributions import Normal
 import skagent.models.resource_extraction as rex
@@ -71,13 +72,18 @@ for param, value in rex.calibration.items():
 # Step 2: Inspect the Resource Extraction Model
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-print(rex.resource_extraction_block)
+rex.resource_extraction_block.display_formulas()
 
 # %%
 # Step 3: Visualize the Resource Extraction Model
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# TODO: Visualizer code here.
+img, _ = rex.resource_extraction_block.display(rex.calibration)
+
+plt.figure(figsize=(10, 8))
+plt.imshow(img)
+plt.axis("off")
+plt.tight_layout()
 
 # %%
 # Step 4: Load Optimal Decision Rule
@@ -96,23 +102,15 @@ print(rex.resource_extraction_block)
 # learning algorithms—we can compare learned policies against the known optimum.
 #
 
-optimal_u = rex.optimal_extraction_rule(
-    r=rex.calibration["r"],
-    p=rex.calibration["p"],
-    c_param=rex.calibration["c_param"],
-    DiscFac=rex.calibration["DiscFac"],
-)
+dr_u, _ = rex.make_optimal_extraction_decision_rule(rex.calibration)
 
 
 # Wrap rules in the format expected by simulator
-decision_rules = {"u": optimal_u}
+decision_rule = {"u": dr_u}
 
 # %%
 # Step 5: Run Monte Carlo Simulation
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-### TODO Construct shocks
 
 # Initial conditions (must be distributions, not scalar values)
 initial_conditions = {
@@ -123,15 +121,11 @@ initial_conditions = {
 simulator = ska.MonteCarloSimulator(
     calibration=rex.calibration,
     block=rex.resource_extraction_block,
-    dr=decision_rules,
+    dr=decision_rule,
     initial=initial_conditions,
     agent_count=1000,  # Simulate 5000 agents
     T_sim=100,  # For 100 periods
     seed=42,  # For reproducibility
-)
-
-print(
-    f"✓ Created simulator with {simulator.agent_count} agents over {simulator.T_sim} periods"
 )
 
 # Run the simulation
@@ -142,3 +136,12 @@ simulator.simulate()
 print("✓ Simulation completed successfully")
 
 # %%
+# Step 6: Plot Simulation Results
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+plt.figure()
+plt.plot(simulator.history["x"].mean(axis=1), label="x")
+plt.plot(simulator.history["u"].mean(axis=1), label="u")
+plt.plot(simulator.history["epsilon"].mean(axis=1), label="epsilon")
+plt.plot(simulator.history["profit"].mean(axis=1), label="profit")
+plt.legend()
