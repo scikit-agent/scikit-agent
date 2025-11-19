@@ -9,7 +9,7 @@ import sys
 # --- Core Imports ---
 sys.path.append("../src")
 from skagent.models.consumer import consumption_block
-from skagent.model import DBlock
+from skagent.block import DBlock
 from skagent.distributions import Bernoulli
 from skagent.model_analyzer import ModelAnalyzer
 

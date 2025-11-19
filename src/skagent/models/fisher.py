@@ -2,7 +2,7 @@
 A model file for a Fisher 2-period consumption problem.
 """
 
-from skagent.model import Control, DBlock
+from skagent.block import Control, DBlock
 
 
 calibration = {

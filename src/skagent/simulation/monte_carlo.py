@@ -12,9 +12,9 @@ from skagent.distributions import (
     IndexDistribution,
     TimeVaryingDiscreteDistribution,
 )
-from skagent.model import Aggregate
-from skagent.model import DBlock
-from skagent.model import construct_shocks, simulate_dynamics
+from skagent.block import Aggregate
+from skagent.block import DBlock
+from skagent.block import construct_shocks, simulate_dynamics
 
 
 def draw_shocks(

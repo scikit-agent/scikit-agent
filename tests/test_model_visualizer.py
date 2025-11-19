@@ -8,7 +8,7 @@ import unittest
 
 sys.path.append("../src")
 
-from skagent.model import DBlock
+from skagent.block import DBlock
 from skagent.distributions import Bernoulli
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.model_visualizer import ModelVisualizer
