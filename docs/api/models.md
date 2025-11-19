@@ -2,21 +2,21 @@
 
 The `skagent.models` subpackage contains predefined economic models:
 
-### Consumer Models
+## Consumer Models
 
 ```{eval-rst}
 .. automodule:: skagent.models.consumer
    :members:
 ```
 
-### Benchmarks
+## Benchmarks
 
 ```{eval-rst}
 .. automodule:: skagent.models.benchmarks
    :members:
 ```
 
-### Perfect Foresight Models
+## Perfect Foresight Models
 
 ```{eval-rst}
 .. automodule:: skagent.models.perfect_foresight
