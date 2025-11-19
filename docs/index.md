@@ -52,8 +52,8 @@ results = simulator.simulate()
 Get up and running in minutes with your first economic model
 :::
 
-:::{grid-item-card} 🧠 Models Guide
-:link: user_guide/models
+:::{grid-item-card} 🧠 Blocks Guide
+:link: user_guide/blocks
 :link-type: doc
 
 Learn to build custom models using DBlocks and economic building blocks
