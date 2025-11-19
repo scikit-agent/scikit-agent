@@ -146,7 +146,7 @@ New to scikit-agent? Start with the {doc}`user_guide/quickstart` guide.
 
 Want to dive deeper? Check out:
 
-- {doc}`user_guide/models` for model building concepts
+- {doc}`user_guide/blocks` for model building concepts
 - {doc}`auto_examples/index` for complete working examples
 - {doc}`api/index` for detailed API documentation
 
