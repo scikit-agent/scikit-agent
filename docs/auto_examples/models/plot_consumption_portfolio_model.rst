@@ -200,7 +200,7 @@ We'll create a DBlock that represents one period of the model
 
 
     ✓ Created model block with 9 state variables
-    ✓ Control variables: {'c': <skagent.block.Control object at 0x7a008d48f080>, 'alpha': <skagent.block.Control object at 0x7a008c1ea480>}
+    ✓ Control variables: {'c': <skagent.block.Control object at 0x704d23322b40>, 'alpha': <skagent.block.Control object at 0x704c0f1bc0b0>}
     ✓ Shock variables: ['theta', 'psi', 'risky_return']
 
 
@@ -680,7 +680,7 @@ Note on Solution Methods
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 3.004 seconds)
+   **Total running time of the script:** (0 minutes 3.032 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_consumption_portfolio_model.py:
