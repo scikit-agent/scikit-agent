@@ -77,7 +77,7 @@ This corresponds to the following mathematical model:
 $$
     \theta &\sim LogNormal(1, 0.1) \\
     y &= p \theta \\
-    m &= b + y \\
+    m &= b_{-1} + y \\
     c &= c(m) \\
     a &= m - c \\
     u &= log(c) \\
@@ -92,9 +92,28 @@ set_ $m$. It receives $u$ as a reward.
 
 <!--- More block features here --->
 
-### Control Variable Constraints
+Dynamic equations are interpreted in sequence. Each variable is assigned based
+on the values of other variables in scope. If a variable is referenced in a
+dynamic equation before it is assigned, it is an _arrival state_, or _lag
+variable_, which refers to a value that is assigned in some preceding block or
+time step.
 
-Add bounds and information sets to controls:
+In the example above, $b_{-1}$ is such a variable.
+
+Arrival states can be provided by a previous block (see _RBlocks_, below), in a
+previous time period (see _BellmanPeriod_), or by _initialization data_ before a
+simulation.
+
+### Control Variables
+
+A **Control** variable is under the control of some agent. Instead of providing
+a dynamic equation, the modeler specifies an information set -- what information
+(variables) are available to the agent when they decide this variable's value.
+
+#### Constraints
+
+Control variables can be upper and lower bound to values that are themselves
+functions of state variables.
 
 ```python
 consumption_control = ska.Control(

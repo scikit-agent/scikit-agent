@@ -393,10 +393,12 @@ class DBlock(Block):
         of a calibration dictionary.
 
     dynamics: Mapping(str, str or callable)
-        A dictionary mapping variable names to mathematical expressions.
+        An ordered dictionary mapping variable names to mathematical expressions.
         These expressions can be simple functions, in which case the
         argument names should match the variable inputs.
         Or these can be strings, which are parsed into functions.
+        The order of dynamic equations matters, as they are applied sequentially as
+        update rules.
 
     reward: Mapping(str, str)
         A dictionary mapping variable names to agent role labels.

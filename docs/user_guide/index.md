@@ -32,7 +32,7 @@ If you're new to scikit-agent, start here:
 
 Learn about the fundamental concepts and components:
 
-- {doc}`models` - Understanding model structure and building custom models
+- {doc}`blocks` - Understanding model structure and building custom models
 - {doc}`simulation` - Monte Carlo simulation and analysis
 - {doc}`algorithms` - Solution methods for solving your models
 - {doc}`science` - Scientific concepts and references
@@ -68,7 +68,7 @@ Parameters can be:
 
 installation
 quickstart
-models
+blocks
 simulation
 algorithms
 science
