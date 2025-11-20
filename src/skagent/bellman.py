@@ -71,6 +71,75 @@ class BellmanPeriod:
         post = self.block.transition(vals, decision_rules)
         return {sym: post[sym] for sym in decision_rules}
 
+    def _compute_gradients_for_tensors(self, tensors_dict, wrt):
+        """
+        Helper method to compute gradients for a dictionary of tensors with respect to variables.
+
+        This method extracts the common gradient computation pattern used by both
+        grad_reward_function and grad_transition_function.
+
+        Parameters
+        ----------
+        tensors_dict : dict
+            Dictionary mapping symbol names to tensors to compute gradients for
+        wrt : dict
+            Dictionary of variables to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True
+
+        Returns
+        -------
+        dict
+            Nested dictionary of gradients for each tensor symbol and variable:
+            {tensor_sym: {var_name: gradient}}
+        """
+        gradients = {}
+        for tensor_sym in tensors_dict:
+            gradients[tensor_sym] = {}
+            for var_name, var_tensor in wrt.items():
+                # Skip if variable doesn't require gradients
+                if not var_tensor.requires_grad:
+                    gradients[tensor_sym][var_name] = None
+                    continue
+
+                # Compute gradient of this tensor with respect to this variable
+                target_tensor = tensors_dict[tensor_sym]
+
+                # For batched computations, we need to compute gradients for each element
+                if target_tensor.dim() > 0 and target_tensor.numel() > 1:
+                    # Handle batched case: compute gradients for each element in the batch
+                    batch_gradients = []
+                    for i in range(target_tensor.shape[0]):
+                        grad_result = grad(
+                            target_tensor[i],
+                            var_tensor,
+                            retain_graph=True,
+                            allow_unused=True,
+                        )
+                        if grad_result[0] is not None:
+                            batch_gradients.append(
+                                grad_result[0][i]
+                                if grad_result[0].dim() > 0
+                                else grad_result[0]
+                            )
+                        else:
+                            batch_gradients.append(None)
+
+                    # Stack the gradients if they're not None
+                    if all(g is not None for g in batch_gradients):
+                        gradients[tensor_sym][var_name] = torch.stack(batch_gradients)
+                    else:
+                        gradients[tensor_sym][var_name] = None
+                else:
+                    # Handle scalar case
+                    grad_result = grad(
+                        target_tensor, var_tensor, retain_graph=True, allow_unused=True
+                    )
+                    gradients[tensor_sym][var_name] = (
+                        grad_result[0] if grad_result[0] is not None else None
+                    )
+
+        return gradients
+
     def reward_function(
         self,
         states_t,
@@ -160,54 +229,54 @@ class BellmanPeriod:
             if agent is None or self.block.reward[sym] == agent
         }
 
-        # Compute gradients for each reward with respect to each variable in wrt
-        gradients = {}
-        for reward_sym in rewards:
-            gradients[reward_sym] = {}
-            for var_name, var_tensor in wrt.items():
-                # Skip if variable doesn't require gradients
-                if not var_tensor.requires_grad:
-                    gradients[reward_sym][var_name] = None
-                    continue
+        # Use helper method to compute gradients
+        return self._compute_gradients_for_tensors(rewards, wrt)
 
-                # Compute gradient of this reward with respect to this variable
-                reward_tensor = rewards[reward_sym]
+    def grad_transition_function(
+        self,
+        states_t,
+        shocks_t,
+        controls_t,
+        parameters,
+        wrt,
+        decision_rules=None,
+    ):
+        """
+        Compute gradients of transition function with respect to specified variables.
 
-                # For batched computations, we need to compute gradients for each element
-                if reward_tensor.dim() > 0 and reward_tensor.numel() > 1:
-                    # Handle batched case: compute gradients for each element in the batch
-                    batch_gradients = []
-                    for i in range(reward_tensor.shape[0]):
-                        grad_result = grad(
-                            reward_tensor[i],
-                            var_tensor,
-                            retain_graph=True,
-                            allow_unused=True,
-                        )
-                        if grad_result[0] is not None:
-                            batch_gradients.append(
-                                grad_result[0][i]
-                                if grad_result[0].dim() > 0
-                                else grad_result[0]
-                            )
-                        else:
-                            batch_gradients.append(None)
+        This computes ∂s_{t+1}/∂x for each arrival state s_{t+1} and each variable x
+        specified in wrt. This is needed for Euler equations where the gradient of
+        future states with respect to current controls appears (e.g., ∂A_{t+1}/∂c_t = -R).
 
-                    # Stack the gradients if they're not None
-                    if all(g is not None for g in batch_gradients):
-                        gradients[reward_sym][var_name] = torch.stack(batch_gradients)
-                    else:
-                        gradients[reward_sym][var_name] = None
-                else:
-                    # Handle scalar case
-                    grad_result = grad(
-                        reward_tensor, var_tensor, retain_graph=True, allow_unused=True
-                    )
-                    gradients[reward_sym][var_name] = (
-                        grad_result[0] if grad_result[0] is not None else None
-                    )
+        Parameters
+        ----------
+        states_t : dict
+            State variables at time t
+        shocks_t : dict
+            Shock variables at time t
+        controls_t : dict
+            Control variables at time t
+        parameters : dict
+            Model parameters
+        wrt : dict
+            Dictionary of variables to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True
+        decision_rules : dict, optional
+            Decision rules of control variables that will _not_ be given to the function
 
-        return gradients
+        Returns
+        -------
+        dict
+            Nested dictionary of gradients for each arrival state and variable:
+            {state_sym: {var_name: gradient}}
+        """
+        # Use the existing transition_function method to compute next states
+        next_states = self.transition_function(
+            states_t, shocks_t, controls_t, parameters, decision_rules
+        )
+
+        # Use helper method to compute gradients
+        return self._compute_gradients_for_tensors(next_states, wrt)
 
 
 def estimate_discounted_lifetime_reward(
@@ -308,9 +377,20 @@ def estimate_bellman_residual(
     """
     Computes the Bellman equation residual for given states and shocks.
 
-    The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
-    This function computes: V(s) - [u(s,c,ε) + β V(s')]
-    where s' = f(s,c,ε) and V(s') is evaluated at a specific future shock realization ε'.
+    The Bellman equation is:
+
+    .. math::
+
+        V(s) = \\max_c \\{ u(s,c,\\varepsilon) + \\beta E_{\\varepsilon'}[V(s')] \\}
+
+    This function computes the residual:
+
+    .. math::
+
+        f = V(s) - [u(s,c,\\varepsilon) + \\beta V(s')]
+
+    where :math:`s' = f(s,c,\\varepsilon)` and :math:`V(s')` is evaluated at a
+    specific future shock realization :math:`\\varepsilon'`.
 
     Parameters
     ----------
@@ -388,3 +468,254 @@ def estimate_bellman_residual(
     bellman_residual = current_values - bellman_rhs
 
     return bellman_residual
+
+
+def estimate_euler_residual(
+    bellman_period,
+    discount_factor,
+    df,
+    states_t,
+    shocks,
+    parameters={},
+    agent=None,
+):
+    """
+    Computes the Euler equation residual for given states and shocks.
+
+    The Euler equation is the first-order condition from the Bellman equation,
+    relating marginal utilities across periods. This function computes the Euler
+    equation **residual**:
+
+    .. math::
+
+        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+
+    where :math:`f` is the Euler equation residual. At optimality, :math:`f = 0`
+    represents the first-order condition being satisfied.
+
+    **Derivation:**
+
+    The first-order condition from the Bellman equation
+    :math:`V(s) = \\max_c \\{ u(c) + \\beta E[V(s')] \\}` is:
+
+    .. math::
+
+        u'(c_t) = -\\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+
+    Rearranging to define the residual :math:`f`:
+
+    .. math::
+
+        f = u'(c_t) + \\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right] = 0
+
+    **Example:**
+
+    For a consumption-saving model with :math:`A_{t+1} = R(A_t - c_t) + y_{t+1}`:
+
+    .. math::
+
+        \\frac{\\partial A_{t+1}}{\\partial c_t} = -R
+
+    The first-order condition becomes:
+
+    .. math::
+
+        u'(c_t) = -\\beta E[u'(c_{t+1}) \\cdot (-R)] = \\beta R E[u'(c_{t+1})]
+
+    And the residual :math:`f = u'(c_t) - \\beta R E[u'(c_{t+1})] = 0` at optimality.
+
+    **Notation:**
+
+    Following Maliar et al. (2021) Definition 2.7, this function computes a single
+    Euler equation residual using two independent shock realizations. The residual
+    :math:`f` uses shocks :math:`\\varepsilon_0` for transitions from :math:`t` to
+    :math:`t+1` and :math:`\\varepsilon_1` for transitions from :math:`t+1` to
+    :math:`t+2`.
+
+    The loss function then computes :math:`L(\\theta) = E[f^2]` where the squared
+    residual approximates the squared expectation operator from the paper.
+
+    Note: We use :math:`\\varepsilon` (epsilon) to denote exogenous shocks, which may
+    differ slightly from Maliar et al.'s notation but represents the same concept of
+    stochastic disturbances in the model.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The Bellman period with transitions, rewards, etc.
+    discount_factor : float
+        The discount factor β (time preference parameter).
+    df : callable or dict
+        Decision function that returns controls given states and shocks.
+        Can be a callable with signature df(states_t, shocks_t, parameters) -> controls_t
+        or a dict of decision rules.
+    states_t : dict
+        Current state variables (arrival states)
+    shocks : dict
+        Shock realizations for both periods:
+        - {shock_sym}_0: period t shocks (for transitions to t+1)
+        - {shock_sym}_1: period t+1 shocks (for transitions to t+2)
+        This structure supports the AiO expectation operator.
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+
+    Returns
+    -------
+    torch.Tensor
+        Euler equation residual computed using two independent shock realizations
+        (one for each period transition). Returns one residual value per state sample.
+
+    Notes
+    -----
+    This implementation follows Maliar, Maliar, and Winant (2021, JME) Section 2.2.
+    The AiO expectation operator (Definition 2.7) requires two independent shock
+    realizations to approximate the squared expectation E[(E[f])²].
+
+    Examples
+    --------
+    >>> # Euler equation automatically adapts to your model's reward structure
+    >>> residual = estimate_euler_residual(
+    ...     bp, discount_factor=0.95, df=my_policy,
+    ...     states_t, shocks, parameters
+    ... )
+    """
+    if callable(discount_factor):
+        raise ValueError(
+            "State-dependent discount factors not yet supported for Euler residuals. "
+            "Please pass a numerical discount factor."
+        )
+
+    # Get shock variable names
+    shock_vars = bellman_period.get_shocks()
+    shock_syms = list(shock_vars.keys())
+
+    # Extract period-specific shocks from the combined shocks object
+    # shocks_0 are for transitions from t to t+1
+    # shocks_1 are for transitions from t+1 to t+2 (independent realization)
+    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
+    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
+
+    # Get reward variables (should have exactly one for standard Euler equation)
+    reward_vars = [
+        sym
+        for sym in bellman_period.block.reward
+        if agent is None or bellman_period.block.reward[sym] == agent
+    ]
+    if len(reward_vars) == 0:
+        raise ValueError("No reward variables found in block for the specified agent")
+
+    reward_sym = reward_vars[0]
+
+    # Get controls from decision function for period t
+    if callable(df):
+        # Full decision function provided
+        controls_t = df(states_t, shocks_t, parameters)
+    else:
+        # Dictionary of decision rules provided
+        controls_t = bellman_period.decision_function(
+            states_t, shocks_t, parameters, decision_rules=df
+        )
+
+    # Compute next period states (t+1) using first shock realization
+    states_t_plus_1 = bellman_period.transition_function(
+        states_t, shocks_t, controls_t, parameters
+    )
+
+    # Get controls for period t+1 using second independent shock realization
+    if callable(df):
+        controls_t_plus_1 = df(states_t_plus_1, shocks_t_plus_1, parameters)
+    else:
+        controls_t_plus_1 = bellman_period.decision_function(
+            states_t_plus_1, shocks_t_plus_1, parameters, decision_rules=df
+        )
+
+    # Get control symbols to compute gradients with respect to
+    control_syms = list(controls_t.keys())
+    if len(control_syms) == 0:
+        raise ValueError("No control variables found in decision function")
+    if len(control_syms) > 1:
+        raise NotImplementedError(
+            "Euler residual estimation currently only supports single-control models. "
+            f"Found controls: {control_syms}"
+        )
+
+    control_sym = control_syms[0]  # Assume single control for now
+
+    # Make controls require gradients for automatic differentiation
+    # We need to enable gradients on the control variables
+    controls_t_grad = {
+        sym: controls_t[sym].detach().requires_grad_(True) for sym in controls_t
+    }
+    controls_t_plus_1_grad = {
+        sym: controls_t_plus_1[sym].detach().requires_grad_(True)
+        for sym in controls_t_plus_1
+    }
+
+    # Compute marginal utility at t (u'(c_t))
+    reward_gradients_t = bellman_period.grad_reward_function(
+        states_t,
+        shocks_t,
+        controls_t_grad,
+        parameters,
+        wrt={control_sym: controls_t_grad[control_sym]},
+        agent=agent,
+    )
+    marginal_utility_t = reward_gradients_t[reward_sym][control_sym]
+
+    # Compute marginal utility at t+1 (u'(c_{t+1}))
+    reward_gradients_t_plus_1 = bellman_period.grad_reward_function(
+        states_t_plus_1,
+        shocks_t_plus_1,
+        controls_t_plus_1_grad,
+        parameters,
+        wrt={control_sym: controls_t_plus_1_grad[control_sym]},
+        agent=agent,
+    )
+    marginal_utility_t_plus_1 = reward_gradients_t_plus_1[reward_sym][control_sym]
+
+    # Compute transition gradients: ∂s_{t+1}/∂c_t for all arrival states
+    # This captures how today's control affects tomorrow's state (e.g., ∂A_{t+1}/∂c_t = -R)
+    transition_gradients = bellman_period.grad_transition_function(
+        states_t,
+        shocks_t,
+        controls_t_grad,
+        parameters,
+        wrt={control_sym: controls_t_grad[control_sym]},
+    )
+
+    # Sum transition gradients across all arrival states
+    # For single-state models, this is just the gradient for that state
+    # For multi-state models, we sum the effect across all states
+    non_none_gradients = [
+        transition_gradients[state_sym][control_sym]
+        for state_sym in bellman_period.arrival_states
+        if transition_gradients[state_sym][control_sym] is not None
+    ]
+    if len(non_none_gradients) == 0:
+        raise ValueError(
+            f"All transition gradients are None. Control '{control_sym}' may not affect "
+            f"any arrival states, which is invalid for Euler equation estimation."
+        )
+    transition_gradient_sum = sum(non_none_gradients)
+
+    # Compute the Euler equation residual from the first-order condition
+    # The first-order condition from the Bellman equation is:
+    #   u'(c_t) = -β * E[u'(c_{t+1}) * ∂s_{t+1}/∂c_t]
+    #
+    # For a consumption-saving model with s_{t+1} = R(s_t - c_t) + y_{t+1}:
+    #   ∂s_{t+1}/∂c_t = -R
+    # So the FOC becomes:
+    #   u'(c_t) = -β * E[u'(c_{t+1}) * (-R)] = β R E[u'(c_{t+1})]
+    #
+    # The residual is:
+    #   f = u'(c_t) + β * u'(c_{t+1}) * ∂s_{t+1}/∂c_t
+    #
+    # At optimality, f = 0 (the first-order condition is satisfied)
+    euler_residual = (
+        marginal_utility_t
+        + discount_factor * marginal_utility_t_plus_1 * transition_gradient_sum
+    )
+
+    return euler_residual
