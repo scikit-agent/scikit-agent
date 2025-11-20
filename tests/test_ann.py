@@ -44,7 +44,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_0(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_0["bp"],
-            0.9,
             1,
             parameters=case_0["calibration"],
         )
@@ -64,7 +63,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_1(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_1["bp"],
-            0.9,
             1,
             parameters=case_1["calibration"],
         )
@@ -94,7 +92,6 @@ class test_ann_lr(unittest.TestCase):
         """
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_1["bp"],
-            0.9,
             2,
             parameters=case_1["calibration"],
         )
@@ -120,7 +117,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_2(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_2["bp"],
-            0.9,
             1,
             parameters=case_2["calibration"],
         )
@@ -143,7 +139,6 @@ class test_ann_lr(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_3["bp"],
-            0.9,
             1,
             parameters=case_3["calibration"],
         )
@@ -168,7 +163,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_3_2(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_3["bp"],
-            0.9,
             2,
             parameters=case_3["calibration"],
         )
@@ -193,7 +187,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_5_double_bounded_upper_binds(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_5["bp"],
-            0.9,
             1,
             parameters=case_5["calibration"],
         )
@@ -216,7 +209,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_6_double_bounded_lower_binds(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_6["bp"],
-            0.9,
             1,
             parameters=case_6["calibration"],
         )
@@ -239,7 +231,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_7_only_lower_bound(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_7["bp"],
-            0.9,
             1,
             parameters=case_7["calibration"],
         )
@@ -264,7 +255,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_8_only_upper_bound(self):
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_8["bp"],
-            0.9,
             1,
             parameters=case_8["calibration"],
         )
@@ -287,7 +277,6 @@ class test_ann_lr(unittest.TestCase):
     def test_case_9_empty_information_set(self):
         loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_9["bp"],
-            0.9,
             2,
             parameters=case_9["calibration"],
         )
@@ -313,11 +302,11 @@ class test_ann_lr(unittest.TestCase):
         ### Model data
 
         pfblock = pfm.block_no_shock
-        pfbp = bellman.BellmanPeriod(pfblock, pfm.calibration)
+        pfbp = bellman.BellmanPeriod(pfblock, "DiscFac", pfm.calibration)
 
         ### Loss function
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            pfbp, 0.9, 1, parameters=pfm.calibration
+            pfbp, 1, parameters=pfm.calibration
         )
 
         ### Setting up the training
@@ -449,10 +438,9 @@ class test_ann_value_functions(unittest.TestCase):
         self.test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
         self.state_variables = ["wealth"]
-        self.discount_factor = 0.95
-        self.parameters = {}
+        self.parameters = {"beta": 0.9}
 
-        self.test_bp = bellman.BellmanPeriod(self.test_block, self.parameters)
+        self.test_bp = bellman.BellmanPeriod(self.test_block, "beta", self.parameters)
 
         # Create test grid with two independent shock realizations for Bellman tests
         self.test_grid = grid.Grid.from_dict(
@@ -495,7 +483,6 @@ class test_ann_value_functions(unittest.TestCase):
         # Create Bellman loss function - this is the key all-in-one loss function
         bellman_loss = loss.BellmanEquationLoss(
             self.test_bp,
-            self.discount_factor,
             value_net.get_value_function(),
             self.parameters,
         )
@@ -621,7 +608,7 @@ class test_ann_value_functions(unittest.TestCase):
         )
         test_block.construct_shocks({}, rng=np.random.default_rng(TEST_SEED))
 
-        test_bp = bellman.BellmanPeriod(test_block, {})
+        test_bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.9})
 
         # Create value network
         value_net = ann.BlockValueNet(test_bp, width=32)
@@ -664,7 +651,7 @@ class test_ann_value_functions(unittest.TestCase):
         """Test value function with perfect foresight model (mirrors policy test)."""
         import skagent.models.perfect_foresight as pfm
 
-        pfbp = bellman.BellmanPeriod(pfm.block_no_shock, pfm.calibration)
+        pfbp = bellman.BellmanPeriod(pfm.block_no_shock, "DiscFac", pfm.calibration)
 
         # Create value network for perfect foresight model
         value_net = ann.BlockValueNet(pfbp, width=16)
