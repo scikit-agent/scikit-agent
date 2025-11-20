@@ -146,17 +146,15 @@ class EstimatedDiscountedLifetimeRewardLoss:
     -----------
 
     bellman_period
-    discount_factor
     big_t: int
         The number of time steps to compute reward for
     parameters
     """
 
-    def __init__(self, bellman_period, discount_factor, big_t, parameters):
+    def __init__(self, bellman_period, big_t, parameters):
         self.bellman_period = bellman_period
         self.parameters = parameters
         self.state_variables = self.bellman_period.arrival_states
-        self.discount_factor = discount_factor
         self.big_t = big_t
 
     def __call__(self, df: callable, input_grid: Grid):
@@ -185,7 +183,6 @@ class EstimatedDiscountedLifetimeRewardLoss:
         # bellman_period, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = estimate_discounted_lifetime_reward(
             self.bellman_period,
-            self.discount_factor,
             df,
             {sym: given_vals[sym] for sym in self.state_variables},
             self.big_t,
@@ -216,8 +213,6 @@ class BellmanEquationLoss:
     ----------
     bellman_period : BellmanPeriod
         The model block containing dynamics, rewards, and shocks
-    discount_factor : float
-        The discount factor β
     value_network : callable
         A value function that takes state variables and returns value estimates
     parameters : dict, optional
@@ -232,20 +227,12 @@ class BellmanEquationLoss:
         the Bellman equation residual loss
     """
 
-    def __init__(
-        self, bellman_period, discount_factor, value_network, parameters={}, agent=None
-    ):
+    def __init__(self, bellman_period, value_network, parameters={}, agent=None):
         self.bellman_period = bellman_period
         self.parameters = parameters
         self.arrival_variables = bellman_period.arrival_states
 
         self.value_network = value_network
-
-        self.discount_factor = discount_factor
-        if callable(discount_factor):
-            raise Exception(
-                "Currently only numerical, not state-dependent, discount factors are supported."
-            )
 
         # Get shock variables
         shock_vars = self.bellman_period.get_shocks()
@@ -290,7 +277,6 @@ class BellmanEquationLoss:
         # Use helper function to estimate Bellman residual with combined shock object
         bellman_residual = estimate_bellman_residual(
             self.bellman_period,
-            self.discount_factor,
             self.value_network,
             df,
             states_t,

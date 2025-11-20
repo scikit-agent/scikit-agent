@@ -39,6 +39,7 @@ from skagent.models.benchmarks import (
     d1_analytical_lifetime_reward,
     d2_analytical_lifetime_reward,
 )
+import time
 
 # Test configuration
 TEST_SEED = 12345
@@ -162,7 +163,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id).copy()
 
-        bp = bellman.BellmanPeriod(block, calibration)
+        bp = bellman.BellmanPeriod(block, "DiscFac", calibration)
 
         # Test with various time horizons - this demonstrates the key advantage
         # of perfect foresight: we can test much larger T values!
@@ -181,7 +182,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 # Numerical solution
                 numerical = bellman.estimate_discounted_lifetime_reward(
                     bp,
-                    calibration["DiscFac"],
                     policy_with_calibration,
                     {"W": initial_wealth, "t": 0},
                     T,
@@ -206,7 +206,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id)
 
-        bp = bellman.BellmanPeriod(block, calibration)
+        bp = bellman.BellmanPeriod(block, "DiscFac", calibration)
         policy = get_analytical_policy(model_id)
 
         # Test with very large time horizons to approximate infinite horizon
@@ -220,7 +220,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
                 initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
                 numerical = bellman.estimate_discounted_lifetime_reward(
                     bp,
-                    calibration["DiscFac"],
                     policy,
                     {"a": initial_assets, "m": cash_on_hand},
                     big_t,
@@ -247,13 +246,11 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
 
         This represents approximately a 250x improvement in testable time horizons.
         """
-        import time
-
         model_id = "D-3"
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id)
 
-        bp = bellman.BellmanPeriod(block, calibration)
+        bp = bellman.BellmanPeriod(block, "DiscFac", calibration)
 
         policy = get_analytical_policy(model_id)
 
@@ -269,7 +266,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
             initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
             reward = bellman.estimate_discounted_lifetime_reward(
                 bp,
-                calibration["DiscFac"],
                 policy,
                 {"a": initial_assets, "m": cash_on_hand},
                 big_t,

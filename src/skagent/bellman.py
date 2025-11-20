@@ -19,11 +19,28 @@ class BellmanPeriod:
 
     TODO: Currently this is based on a Block, but I think BlockBellmanPeriod should be
     a subclass of an abstract class.
+
+    Parameters
+    -----------
+
+    block: skagent.block.Block
+        A block that represents a single time period of the Bellman problem
+
+    discount_variable: str
+        A variable name which represents the discount factor for future value streams
+
+    calibration: dict
+        Calibration dictionary for setting parameters.
+
+    decision_rules: optional, dict
+        A dictionary mapping control variable names to decision rules.
+
     """
 
-    def __init__(self, block, calibration, decision_rules=None):
+    def __init__(self, block, discount_variable, calibration, decision_rules=None):
         self.block = block
         self.calibration = calibration
+        self.discount_variable = discount_variable
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
@@ -41,6 +58,9 @@ class BellmanPeriod:
     def transition_function(
         self, states_t, shocks_t, controls_t, parameters=None, decision_rules=None
     ):
+        """
+        TODO: refactor with post-function
+        """
         decision_rules = (
             decision_rules
             if decision_rules
@@ -58,6 +78,9 @@ class BellmanPeriod:
     def decision_function(
         self, states_t, shocks_t, parameters=None, decision_rules=None
     ):
+        """
+        TODO: refactor with post-function
+        """
         decision_rules = (
             decision_rules
             if decision_rules
@@ -80,6 +103,9 @@ class BellmanPeriod:
         agent=None,
         decision_rules=None,
     ):
+        """
+        TODO: refactor with post-function
+        """
         decision_rules = (
             decision_rules
             if decision_rules
@@ -98,6 +124,34 @@ class BellmanPeriod:
             for sym in self.block.reward
             if agent is None or self.block.reward[sym] == agent
         }
+
+    def post_function(
+        self,
+        states_t,
+        shocks_t,
+        controls_t,
+        parameters=None,
+        agent=None,
+        decision_rules=None,
+    ):
+        """
+        Returns the full ex post variables for the period, given initial states,
+        shocks, controls, and parameters.
+        """
+        decision_rules = (
+            decision_rules
+            if decision_rules
+            else (self.decision_rules if self.decision_rules else {})
+        )
+        parameters = (
+            parameters if parameters else (self.calibration if self.calibration else {})
+        )
+
+        vals_t = parameters | states_t | shocks_t | controls_t
+        post = self.block.transition(
+            vals_t, decision_rules, fix=list(controls_t.keys())
+        )
+        return post
 
     def grad_reward_function(
         self,
@@ -152,6 +206,7 @@ class BellmanPeriod:
         post = self.block.transition(
             vals_t, decision_rules, fix=list(controls_t.keys())
         )
+        # TODO: refactor with post-function
 
         # move this logic to BP
         rewards = {
@@ -212,7 +267,6 @@ class BellmanPeriod:
 
 def estimate_discounted_lifetime_reward(
     bellman_period,
-    discount_factor,
     dr,
     states_0,
     big_t,
@@ -226,7 +280,6 @@ def estimate_discounted_lifetime_reward(
     MMW JME '21 for inspiration.
 
     bellman_period
-    discount_factor - can be a number or a function of state variables
     dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
     states_0 - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
     shocks_by_t - dict - sym : big_t vector of shock values at each time period
@@ -247,11 +300,6 @@ def estimate_discounted_lifetime_reward(
         }
     )
 
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
-
     for t in range(big_t):
         if shocks_by_t is not None:
             shocks_t = {sym: shocks_by_t[sym][t] for sym in shocks_by_t}
@@ -267,6 +315,14 @@ def estimate_discounted_lifetime_reward(
                 states_t, shocks_t, parameters, decision_rules=dr
             )
 
+        post = bellman_period.post_function(
+            states_t, shocks_t, controls_t, parameters, agent=agent
+        )
+
+        discount_factor = post[bellman_period.discount_variable]
+
+        # TODO: can improve performance by consolidating multiple calls
+        #       that simulation forward.
         reward_t = bellman_period.reward_function(
             states_t, shocks_t, controls_t, parameters, agent=agent
         )
@@ -297,7 +353,6 @@ def estimate_discounted_lifetime_reward(
 
 def estimate_bellman_residual(
     bellman_period,
-    discount_factor,
     value_function,
     df,
     states_t,
@@ -305,19 +360,25 @@ def estimate_bellman_residual(
     parameters={},
     agent=None,
 ):
-    """
+    r"""
     Computes the Bellman equation residual for given states and shocks.
 
-    The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
-    This function computes: V(s) - [u(s,c,ε) + β V(s')]
-    where s' = f(s,c,ε) and V(s') is evaluated at a specific future shock realization ε'.
+    The Bellman equation is:
+    .. math::
+
+        u^* = \alpha \cdot x V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
+
+    This function computes:
+    .. math::
+
+       V(s) - [u(s,c,ε) + β V(s')]
+
+    where :math:`s' = f(s,c,ε)` and :math:`V(s')` is evaluated at a specific future shock realization :math:`ε'`.
 
     Parameters
     ----------
     bellman_period : BellmanPeriod
         The Bellman period with transitions, rewards, etc.
-    discount_factor : float
-        The discount factor β
     value_function : callable
         A value function that takes state variables and returns value estimates
     df : callable
@@ -338,10 +399,6 @@ def estimate_bellman_residual(
     torch.Tensor
         Bellman equation residual
     """
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
 
     # Get shock variable names
     shock_vars = bellman_period.get_shocks()
@@ -380,6 +437,11 @@ def estimate_bellman_residual(
 
     # Compute continuation value using value network (using period t+1 shocks)
     continuation_values = value_function(next_states, shocks_t_plus_1, parameters)
+
+    # TODO: this is all calling the forward simulation multiple times;
+    #       can be made more efficient
+    post = bellman_period.post_function(states_t, shocks_t, controls_t, parameters)
+    discount_factor = post[bellman_period.discount_variable]
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values

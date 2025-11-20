@@ -105,7 +105,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -144,7 +143,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -215,7 +213,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -261,7 +258,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -334,9 +330,8 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.block.construct_shocks({})
 
         # Parameters
-        self.discount_factor = 0.95
-        self.parameters = {}
-        self.bp = bellman.BellmanPeriod(self.block, self.parameters)
+        self.parameters = {"beta": 0.95}
+        self.bp = bellman.BellmanPeriod(self.block, "beta", self.parameters)
         self.state_variables = ["wealth"]  # Endogenous state variables
 
         # Create a simple decision function for testing
@@ -409,10 +404,10 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
         no_reward_block.construct_shocks({})
 
-        nrbp = bellman.BellmanPeriod(no_reward_block, {})
+        nrbp = bellman.BellmanPeriod(no_reward_block, "beta", {"beta": 0.95})
 
         with self.assertRaises(Exception) as context:
-            loss.BellmanEquationLoss(nrbp, self.discount_factor, dummy_value_network)
+            loss.BellmanEquationLoss(nrbp, dummy_value_network)
         self.assertIn("No reward variables found in block", str(context.exception))
 
     def test_bellman_loss_function_integration(self):
@@ -435,7 +430,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         loss_function = loss.BellmanEquationLoss(
             self.bp,
-            self.discount_factor,
             simple_value_network,
             self.parameters,
         )
@@ -469,7 +463,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Test that it works with the training infrastructure
         loss_function = loss.BellmanEquationLoss(
             self.bp,
-            self.discount_factor,
             simple_value_network,
             self.parameters,
         )
@@ -513,7 +506,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         residual_identical = bellman.estimate_bellman_residual(
             self.bp,
-            0.95,
             simple_value_network,
             self.decision_function,
             states_t,
@@ -523,7 +515,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         residual_independent = bellman.estimate_bellman_residual(
             self.bp,
-            0.95,
             simple_value_network,
             self.decision_function,
             states_t,
@@ -550,7 +541,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         loss_function = loss.BellmanEquationLoss(
             self.bp,
-            self.discount_factor,
             simple_value_network,
             self.parameters,
         )
@@ -605,7 +595,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         with self.assertRaises(KeyError):
             bellman.estimate_bellman_residual(
                 self.bp,
-                0.95,
                 simple_value_network,
                 self.decision_function,
                 states_t,
@@ -634,7 +623,7 @@ def test_bellman_equation_loss_with_value_network():
     )
     test_block.construct_shocks({})
 
-    test_bp = bellman.BellmanPeriod(test_block, {})
+    test_bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
 
     # Create value network
     value_net = BlockValueNet(test_bp, width=16)
@@ -658,7 +647,7 @@ def test_bellman_equation_loss_with_value_network():
 
     # Create loss function
     loss_fn = loss.BellmanEquationLoss(
-        test_bp, 0.95, value_net.get_value_function(), parameters={}
+        test_bp, value_net.get_value_function(), parameters={}
     )
 
     # Test that loss function works
@@ -687,7 +676,7 @@ def test_block_value_net():
     )
     test_block.construct_shocks({})
 
-    test_bp = bellman.BellmanPeriod(test_block, {})
+    test_bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
 
     # Create value network - now takes block instead of state_variables
     value_net = BlockValueNet(test_bp, width=16)
