@@ -182,7 +182,7 @@ print(f"Neural network output size: {policy_net.output.out_features}")
 
 After completing this quickstart:
 
-- **Learn more about models**: Read the {doc}`models` guide to understand
+- **Learn more about blocks**: Read the {doc}`blocks` guide to understand
   different model types and how to create custom models
 - **Explore algorithms**: Check out the {doc}`algorithms` guide for different
   solution methods including value function iteration and neural network

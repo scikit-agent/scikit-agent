@@ -157,3 +157,5 @@ Thumbs.db
 *~
 *.swp
 uv.lock
+
+*.orig

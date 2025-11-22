@@ -5,6 +5,7 @@ This section contains the complete API documentation for scikit-agent.
 ```{toctree}
 :maxdepth: 2
 
+blocks
 models
 algorithms
 simulation
@@ -15,7 +16,9 @@ utils
 
 The scikit-agent API is organized into several main modules:
 
-- {doc}`models` - Economic model classes and utilities
+- {doc}`blocks` - Building blocks -- modular componentst out of which to build
+  models
+- {doc}`models` - Canonical models from scientific literature
 - {doc}`algorithms` - Solution algorithms and optimization methods
 - {doc}`simulation` - Simulation tools and analysis functions
 - {doc}`utils` - Utility functions and helpers

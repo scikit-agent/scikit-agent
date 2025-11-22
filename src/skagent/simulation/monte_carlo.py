@@ -12,11 +12,9 @@ from skagent.distributions import (
     IndexDistribution,
     TimeVaryingDiscreteDistribution,
 )
-from skagent.model import Aggregate
-from skagent.model import DBlock
-from skagent.model import construct_shocks, simulate_dynamics
-
-from skagent.utils import apply_fun_to_vals
+from skagent.block import Aggregate
+from skagent.block import DBlock
+from skagent.block import construct_shocks, simulate_dynamics
 
 
 def draw_shocks(
@@ -629,9 +627,6 @@ class MonteCarloSimulator(Simulator):
         # that generalizes to age as a DR argument?
 
         post = simulate_dynamics(self.dynamics, pre, dr)
-
-        for r in self.block.reward:
-            post[r] = apply_fun_to_vals(self.block.reward[r], post)
 
         self.vars_now = post
 

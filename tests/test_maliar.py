@@ -5,7 +5,7 @@ import skagent.algos.maliar as maliar
 import skagent.bellman as bellman
 import skagent.grid as grid
 import skagent.loss as loss
-import skagent.model as model
+import skagent.block as model
 import torch
 import unittest
 from skagent.distributions import Normal

@@ -2,7 +2,7 @@ from conftest import case_1, case_2
 import numpy as np
 import skagent.bellman as bellman
 from skagent.distributions import Normal
-import skagent.model as model
+import skagent.block as model
 import torch
 import unittest
 

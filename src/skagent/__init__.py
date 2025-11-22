@@ -13,7 +13,7 @@ from __future__ import annotations
 from ._version import version as __version__
 
 # Core model building blocks
-from .model import DBlock, RBlock, Control, Aggregate
+from .block import DBlock, RBlock, Control, Aggregate
 
 # Grid and computational tools
 from .grid import Grid, make_grid

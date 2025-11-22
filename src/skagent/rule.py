@@ -19,6 +19,7 @@ Key functions:
 import inspect
 from skagent.distributions import Distribution
 from sympy.parsing.sympy_parser import parse_expr
+from sympy import sympify, lambdify
 
 
 def math_text_to_free_variable_names(txt):
@@ -61,7 +62,7 @@ def extract_dependencies(rule):
     list
         List of dependency variable names
     """
-    from skagent.model import Control  # TODO: move to separate module
+    from skagent.block import Control  # TODO: move to separate module
 
     deps = []
 
@@ -108,7 +109,7 @@ def extract_formula(rule):
     str
         The formula as string
     """
-    from skagent.model import Control
+    from skagent.block import Control
 
     if isinstance(rule, Control):
         deps = ", ".join(sorted(rule.iset))
@@ -128,6 +129,7 @@ def extract_formula(rule):
                 params = list(inspect.signature(rule).parameters.keys())
                 return f"Function({', '.join(params)})"
         except (OSError, TypeError):
+            print(rule)
             return "Function()"
 
     elif isinstance(rule, tuple) and len(rule) == 2:
@@ -159,3 +161,39 @@ def format_rule(var, rule):
     """
     formula = extract_formula(rule)
     return f"{var} = {formula}"
+
+
+class Rule:
+    def __init__(self, expression_string):
+        """
+        Initialize a Rule from a mathematical expression string.
+
+        Args:
+            expression_string: A string representing a mathematical expression
+        """
+        self._original_string = expression_string
+        self._sympy_expr = sympify(expression_string)
+
+        # Extract free symbols from the expression for lambdify
+        self._symbols = sorted(self._sympy_expr.free_symbols, key=lambda s: s.name)
+
+        self._lambda_func = lambdify(self._symbols, self._sympy_expr)
+
+    @property
+    def sympy(self):
+        """Access the underlying SymPy expression."""
+        return self._sympy_expr
+
+    def update_func(self):
+        """
+        Returns the update rule as a function
+        """
+        return self._lambda_func
+
+    def __str__(self):
+        """Return the original string representation."""
+        return self._original_string
+
+    def __repr__(self):
+        """Return a developer-friendly representation."""
+        return f"Rule('{self._original_string}')"

@@ -1,5 +1,5 @@
 from skagent.distributions import Bernoulli
-from skagent.model import Control, DBlock
+from skagent.block import Control, DBlock
 
 calibration = {
     "DiscFac": 0.96,
