@@ -31,7 +31,7 @@ u(c)                : period utility function
 TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality condition)
 """
 
-from skagent.distributions import Normal, MeanOneLogNormal
+from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
 from skagent.model import Control, DBlock
 import torch
 from torch import as_tensor
@@ -262,13 +262,15 @@ d3_calibration = {
 d3_block = DBlock(
     **{
         "name": "d3_blanchard_mortality",
-        "shocks": {},
+        "shocks": {
+            "live": (Bernoulli, {"p": "SurvivalProb"}),  # Survival shock each period
+        },
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "liv": lambda liv, SurvivalProb: liv
-            * SurvivalProb,  # Mortality probability
+            "liv": lambda liv, live: liv
+            * live,  # liv becomes 0 if agent dies (live=0)
             "u": lambda c, liv, CRRA: liv
             * crra_utility(c, CRRA),  # Utility with survival
         },
