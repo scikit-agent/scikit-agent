@@ -32,7 +32,7 @@ TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality co
 """
 
 from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
-from skagent.model import Control, DBlock
+from skagent.block import Control, DBlock
 import torch
 from torch import as_tensor
 import numpy as np
