@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Models" href="models.html"><link rel="prev" title="Simulation" href="../auto_examples/simulation/index.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Blocks" href="blocks.html"><link rel="prev" title="Simulation" href="../auto_examples/simulation/index.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>API Reference - scikit-agent 0.1.dev357+gd94aa899b</title>
+        <title>API Reference - scikit-agent 0.1.dev367+g78f17c806</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev357+gd94aa899b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev367+g78f17c806</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -200,7 +200,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/quickstart.html">Quickstart Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/models.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
@@ -216,6 +216,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
@@ -273,10 +274,15 @@
 <p>This section contains the complete API documentation for scikit-agent.</p>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="blocks.html">Blocks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="blocks.html#block-classes">Block Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blocks.html#model-utilities">Model Utilities</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="models.html#core-model-classes">Core Model Classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#model-utilities">Model Utilities</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#predefined-models">Predefined Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#module-skagent.models.consumer">Consumer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#module-skagent.models.benchmarks">Benchmarks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#module-skagent.models.perfect_foresight">Perfect Foresight Models</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="algorithms.html">Algorithms</a><ul>
@@ -304,7 +310,9 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
 <p>The scikit-agent API is organized into several main modules:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="models.html"><span class="doc">Models</span></a> - Economic model classes and utilities</p></li>
+<li><p><a class="reference internal" href="blocks.html"><span class="doc">Blocks</span></a> - Building blocks – modular componentst out of which to build
+models</p></li>
+<li><p><a class="reference internal" href="models.html"><span class="doc">Models</span></a> - Canonical models from scientific literature</p></li>
 <li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a> - Solution algorithms and optimization methods</p></li>
 <li><p><a class="reference internal" href="simulation.html"><span class="doc">Simulation</span></a> - Simulation tools and analysis functions</p></li>
 <li><p><a class="reference internal" href="utils.html"><span class="doc">Utils</span></a> - Utility functions and helpers</p></li>
@@ -322,12 +330,12 @@ examples in our <a class="reference internal" href="../auto_examples/index.html"
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="models.html">
+          <a class="next-page" href="blocks.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Models</div>
+                <div class="title">Blocks</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -393,7 +401,7 @@ examples in our <a class="reference internal" href="../auto_examples/index.html"
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=b416803b"></script>
+</div><script src="../_static/documentation_options.js?v=73cf9e35"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
