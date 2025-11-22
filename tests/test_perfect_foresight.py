@@ -232,11 +232,11 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
             with self.subTest(big_t=big_t):
                 # D-3 model needs 'a' (assets) and 'liv' (living state)
                 initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
-                
+
                 # Perfect foresight: agent survives every period (live=1)
                 # Mortality risk is incorporated via effective discount factor in analytical solution
                 shocks_by_t = {"live": torch.ones(big_t)}
-                
+
                 numerical = bellman.estimate_discounted_lifetime_reward(
                     bp,
                     calibration["DiscFac"],
@@ -287,11 +287,11 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
             # D-3 model needs 'a' (assets) and 'liv' (living state)
             cash_on_hand = 2.0
             initial_assets = (cash_on_hand - calibration["y"]) / calibration["R"]
-            
+
             # Perfect foresight: agent survives every period (live=1)
             # Mortality risk is incorporated via effective discount factor in analytical solution
             shocks_by_t = {"live": torch.ones(big_t)}
-            
+
             reward = bellman.estimate_discounted_lifetime_reward(
                 bp,
                 calibration["DiscFac"],

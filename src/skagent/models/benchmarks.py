@@ -269,8 +269,7 @@ d3_block = DBlock(
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "liv": lambda liv, live: liv
-            * live,  # liv becomes 0 if agent dies (live=0)
+            "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
             "u": lambda c, liv, CRRA: liv
             * crra_utility(c, CRRA),  # Utility with survival
         },
