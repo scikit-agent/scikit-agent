@@ -8,6 +8,37 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # model.to(device)
 # input_tensor = input_tensor.to(device)
 
+
+class BellmanPeriodMixin:
+    """
+    Mixin class providing common Bellman period initialization for Block*Net classes.
+
+    This mixin extracts and stores the bellman period, control symbol, control object,
+    and information set that are commonly needed across BlockPolicyNet, BlockValueNet, etc.
+    """
+
+    def _init_bellman_period(self, bellman_period, control_sym=None):
+        """
+        Initialize bellman period related attributes.
+
+        Parameters
+        ----------
+        bellman_period : BellmanPeriod
+            The model Bellman Period
+        control_sym : str, optional
+            The symbol for the control variable. If None, uses the first control.
+        """
+        self.bellman_period = bellman_period
+
+        # Get the control symbol (assume only one for now)
+        if control_sym is None:
+            control_sym = next(iter(self.bellman_period.get_controls()))
+
+        self.control_sym = control_sym
+        self.cobj = self.bellman_period.block.dynamics[control_sym]
+        self.iset = self.cobj.iset
+
+
 ##########
 # Constructing Nets
 
@@ -237,7 +268,7 @@ class Net(torch.nn.Module):
             raise ValueError(f"Unknown single transform: {transform}")
 
 
-class BlockPolicyNet(Net):
+class BlockPolicyNet(BellmanPeriodMixin, Net):
     """
     A neural network for policy functions in dynamic programming problems.
 
@@ -270,16 +301,8 @@ class BlockPolicyNet(Net):
         width=32,
         **kwargs,
     ):
-        self.bellman_period = bellman_period
+        self._init_bellman_period(bellman_period, control_sym)
         self.apply_open_bounds = apply_open_bounds
-
-        ## pseudo -- assume only one for now
-        if control_sym is None:
-            control_sym = next(iter(self.bellman_period.get_controls()))
-
-        self.control_sym = control_sym
-        self.cobj = self.bellman_period.block.dynamics[control_sym]
-        self.iset = self.cobj.iset
 
         ## assess whether/how the control is bounded
         # this will be more challenging with multiple controls.
@@ -448,7 +471,7 @@ class BlockPolicyNet(Net):
         return {self.control_sym: decision_rule}
 
 
-class BlockValueNet(Net):
+class BlockValueNet(BellmanPeriodMixin, Net):
     """
     A neural network for approximating value functions in dynamic programming problems.
 
@@ -475,17 +498,7 @@ class BlockValueNet(Net):
         """
         Initialize the BlockValueNet.
         """
-        self.bellman_period = bellman_period
-
-        # Value function should use the same information set as the policy function
-        # Both V(s) and π(s) take the same state information as input
-        ## pseudo -- assume only one control for now (same as BlockPolicyNet)
-        if control_sym is None:
-            control_sym = next(iter(self.bellman_period.get_controls()))
-
-        self.control_sym = control_sym
-        # should move this to BP
-        self.cobj = self.bellman_period.block.dynamics[control_sym]
+        self._init_bellman_period(bellman_period, control_sym)
 
         # Use the same information set as the policy network
         self.state_variables = sorted(list(self.cobj.iset))
