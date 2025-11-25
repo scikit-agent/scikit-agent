@@ -237,8 +237,8 @@ class Simulator:
         """
         if self.T_sim <= 0:
             raise ValueError(
-                "T_sim represents the largest number of observations "
-                "that can be simulated for an agent, and must be a positive number."
+                "T_sim represents the number of periods to simulate "
+                "and must be a positive number."
             )
 
         self.reset_rng()
@@ -272,6 +272,13 @@ class Simulator:
         pre.update(shocks_now)
         return pre
 
+    def _get_shock_conditions(self):
+        """
+        Get the conditions array for shock drawing.
+        Base class uses zeros; subclasses may override (e.g., for age-varying shocks).
+        """
+        return np.zeros(self.agent_count)
+
     def sim_one_period(self):
         """
         Simulates one period for this type.
@@ -279,8 +286,8 @@ class Simulator:
         """
         self._advance_state()
 
-        # Draw shocks (using zeros as conditions for base class)
-        shocks_now = self._get_shocks(np.zeros(self.agent_count))
+        # Draw shocks using conditions from the subclass-overridable method
+        shocks_now = self._get_shocks(self._get_shock_conditions())
 
         pre = self._get_pre_state(shocks_now)
         post = simulate_dynamics(self.dynamics, pre, self.dr)
@@ -400,8 +407,8 @@ class AgentTypeMonteCarloSimulator(Simulator):
         """
         if self.T_sim <= 0:
             raise ValueError(
-                "T_sim represents the largest number of observations "
-                "that can be simulated for an agent, and must be a positive number."
+                "T_sim represents the number of periods to simulate "
+                "and must be a positive number."
             )
 
         self.reset_rng()
@@ -426,6 +433,10 @@ class AgentTypeMonteCarloSimulator(Simulator):
         self.clear_history()
         return None
 
+    def _get_shock_conditions(self):
+        """Override to use agent ages as conditions for shock drawing."""
+        return self.t_age
+
     def sim_one_period(self):
         """
         Simulates one period with mortality and age-varying parameters.
@@ -435,14 +446,14 @@ class AgentTypeMonteCarloSimulator(Simulator):
 
         self._advance_state()
 
-        # Get shocks (from history or draw new)
+        # Get shocks (from history or draw new using age as conditions)
         if self.read_shocks:
             shocks_now = {
                 var_name: self.shock_history[var_name][self.t_sim, :]
                 for var_name in self.shocks
             }
         else:
-            shocks_now = self._get_shocks(self.t_age)
+            shocks_now = self._get_shocks(self._get_shock_conditions())
 
         # Age-varying calibration and decision rules
         pre = calibration_by_age(self.t_age, self.calibration)
