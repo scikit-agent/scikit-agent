@@ -17,9 +17,8 @@ import skagent.ann as ann
 import skagent.bellman as bellman
 import skagent.grid as grid
 import skagent.loss as loss
-import skagent.model as model
+import skagent.block as model
 import skagent.models.perfect_foresight as pfm
-import skagent.solver as solver
 import torch
 import unittest
 from skagent.distributions import Normal
@@ -364,7 +363,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
-            solver.StaticRewardLoss(
+            loss.StaticRewardLoss(
                 case_10["bp"],
                 case_10["calibration"],
                 dict_of_decision_rules,
@@ -376,7 +375,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_nn(
             cpns["d"],
             case_10["givens"],
-            solver.StaticRewardLoss(
+            loss.StaticRewardLoss(
                 case_10["bp"],
                 case_10["calibration"],
                 dict_of_decision_rules,
@@ -391,7 +390,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
-            solver.StaticRewardLoss(
+            loss.StaticRewardLoss(
                 case_10["bp"],
                 case_10["calibration"],
                 dict_of_decision_rules,
@@ -427,7 +426,7 @@ class test_ann_value_functions(unittest.TestCase):
         # Set CUDA deterministic behavior for reproducible tests
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
-        import skagent.model as model
+        import skagent.block as model
         from skagent.distributions import Normal
 
         # Create a simple consumption-savings model

@@ -3,7 +3,7 @@ Use backwards induction to derive the arrival value function
 from a continuation value function and stage dynamics.
 """
 
-from skagent.model import DBlock
+from skagent.block import DBlock
 from inspect import signature
 import itertools
 import numpy as np

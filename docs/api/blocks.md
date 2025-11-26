@@ -2,12 +2,12 @@
 
 This section contains the API documentation for model building blocks.
 
-## Core Model Classes
+## Block Classes
 
 ### DBlock
 
 ```{eval-rst}
-.. autoclass:: skagent.model.DBlock
+.. autoclass:: skagent.block.DBlock
    :members:
    :undoc-members:
    :show-inheritance:
@@ -16,7 +16,7 @@ This section contains the API documentation for model building blocks.
 ### RBlock
 
 ```{eval-rst}
-.. autoclass:: skagent.model.RBlock
+.. autoclass:: skagent.block.RBlock
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,7 +25,7 @@ This section contains the API documentation for model building blocks.
 ### Control
 
 ```{eval-rst}
-.. autoclass:: skagent.model.Control
+.. autoclass:: skagent.block.Control
    :members:
    :undoc-members:
    :show-inheritance:
@@ -34,7 +34,7 @@ This section contains the API documentation for model building blocks.
 ### Aggregate
 
 ```{eval-rst}
-.. autoclass:: skagent.model.Aggregate
+.. autoclass:: skagent.block.Aggregate
    :members:
    :undoc-members:
    :show-inheritance:
@@ -45,17 +45,17 @@ This section contains the API documentation for model building blocks.
 ### Simulation Dynamics
 
 ```{eval-rst}
-.. autofunction:: skagent.model.simulate_dynamics
+.. autofunction:: skagent.block.simulate_dynamics
 ```
 
 ### Shock Construction
 
 ```{eval-rst}
-.. autofunction:: skagent.model.construct_shocks
+.. autofunction:: skagent.block.construct_shocks
 ```
 
 ### Discretized Shock Distribution
 
 ```{eval-rst}
-.. autofunction:: skagent.model.discretized_shock_dstn
+.. autofunction:: skagent.block.discretized_shock_dstn
 ```

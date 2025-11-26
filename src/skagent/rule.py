@@ -62,7 +62,7 @@ def extract_dependencies(rule):
     list
         List of dependency variable names
     """
-    from skagent.model import Control  # TODO: move to separate module
+    from skagent.block import Control  # TODO: move to separate module
 
     deps = []
 
@@ -109,7 +109,7 @@ def extract_formula(rule):
     str
         The formula as string
     """
-    from skagent.model import Control
+    from skagent.block import Control
 
     if isinstance(rule, Control):
         deps = ", ".join(sorted(rule.iset))

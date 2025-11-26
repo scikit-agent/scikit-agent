@@ -5,7 +5,7 @@ This file implements unit tests for the Monte Carlo simulation module
 import unittest
 
 from skagent.distributions import Bernoulli, IndexDistribution, MeanOneLogNormal
-from skagent.model import Aggregate, Control, DBlock, simulate_dynamics
+from skagent.block import Aggregate, Control, DBlock, simulate_dynamics
 from skagent.simulation.monte_carlo import (
     AgentTypeMonteCarloSimulator,
     MonteCarloSimulator,

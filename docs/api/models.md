@@ -1,13 +1,6 @@
-# Predefined Models
+# Models
 
 The `skagent.models` subpackage contains predefined economic models:
-
-## Resource Extraction Models
-
-```{eval-rst}
-.. automodule:: skagent.models.resource_extraction
-   :members:
-```
 
 ## Consumer Models
 
@@ -29,7 +22,3 @@ The `skagent.models` subpackage contains predefined economic models:
 .. automodule:: skagent.models.perfect_foresight
    :members:
 ```
-
----
-
-_This page is under construction. Content will be added as the API develops._

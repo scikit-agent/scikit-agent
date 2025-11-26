@@ -1,7 +1,7 @@
 from skagent.bellman import BellmanPeriod
 from skagent.distributions import Normal, Uniform
 import skagent.grid as grid
-from skagent.model import Control, DBlock
+from skagent.block import Control, DBlock
 
 case_0 = {
     "block": DBlock(

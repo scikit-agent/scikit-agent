@@ -58,7 +58,7 @@ class ModelAnalyzer:
 
     def _collect_nodes(self):
         """Classify every variable and record its metadata."""
-        from skagent.model import Control  # TODO: move to separate module
+        from skagent.block import Control  # TODO: move to separate module
 
         for blk in self._blocks:
             plate = self.block_agent or getattr(blk, "agent", None)

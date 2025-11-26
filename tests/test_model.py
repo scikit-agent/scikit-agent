@@ -1,8 +1,8 @@
 import unittest
 
 from skagent.distributions import Bernoulli, DiscreteDistribution
-import skagent.model as model
-from skagent.model import Control
+import skagent.block as model
+from skagent.block import Control
 import skagent.models.consumer as cons
 
 # TODO: let the shock constructor reference this parameter.
