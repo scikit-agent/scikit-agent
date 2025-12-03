@@ -1,7 +1,7 @@
 import os
 import unittest
 
-import skagent.model as model
+import skagent.block as model
 import skagent.parser as parser
 import yaml
 

@@ -1,6 +1,6 @@
 import skagent.algos.vbi as vbi
 from skagent.distributions import Bernoulli
-from skagent.model import Control, DBlock
+from skagent.block import Control, DBlock
 import skagent.models.consumer as cons
 import numpy as np
 import unittest

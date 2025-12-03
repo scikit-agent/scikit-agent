@@ -1,6 +1,6 @@
 import torch
 from skagent.distributions import Bernoulli, Lognormal, MeanOneLogNormal
-from skagent.model import Control, DBlock, RBlock
+from skagent.block import Control, DBlock, RBlock
 
 """
 Blocks for consumption saving problem (not normalized)

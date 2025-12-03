@@ -146,7 +146,7 @@
     {
       "is_class": false,
       "is_explicit": false,
-      "module": "skagent.model",
+      "module": "skagent.block",
       "module_short": "skagent",
       "name": "DBlock"
     },
@@ -162,7 +162,7 @@
     {
       "is_class": false,
       "is_explicit": false,
-      "module": "skagent.model",
+      "module": "skagent.block",
       "module_short": "skagent",
       "name": "DBlock.construct_shocks"
     },
@@ -176,8 +176,8 @@
     {
       "is_class": false,
       "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent.model",
+      "module": "skagent.block",
+      "module_short": "skagent.block",
       "name": "Block.construct_shocks"
     },
     {
@@ -192,7 +192,7 @@
     {
       "is_class": false,
       "is_explicit": false,
-      "module": "skagent.model",
+      "module": "skagent.block",
       "module_short": "skagent",
       "name": "DBlock.get_controls"
     },
@@ -206,8 +206,8 @@
     {
       "is_class": false,
       "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent.model",
+      "module": "skagent.block",
+      "module_short": "skagent.block",
       "name": "Block.get_controls"
     },
     {
@@ -445,7 +445,7 @@
     {
       "is_class": true,
       "is_explicit": false,
-      "module": "skagent.model",
+      "module": "skagent.block",
       "module_short": "skagent",
       "name": "Control"
     },
@@ -468,7 +468,7 @@
     {
       "is_class": true,
       "is_explicit": false,
-      "module": "skagent.model",
+      "module": "skagent.block",
       "module_short": "skagent",
       "name": "DBlock"
     },
@@ -482,8 +482,8 @@
     {
       "is_class": true,
       "is_explicit": false,
-      "module": "skagent.model",
-      "module_short": "skagent.model",
+      "module": "skagent.block",
+      "module_short": "skagent.block",
       "name": "Block"
     },
     {

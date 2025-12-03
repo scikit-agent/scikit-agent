@@ -1,7 +1,7 @@
 import logging
 import skagent.ann as ann
 from skagent.grid import Grid
-import skagent.model as model
+import skagent.block as model
 from skagent.simulation.monte_carlo import draw_shocks
 import torch
 import skagent.utils as utils

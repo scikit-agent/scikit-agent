@@ -393,10 +393,12 @@ class DBlock(Block):
         of a calibration dictionary.
 
     dynamics: Mapping(str, str or callable)
-        A dictionary mapping variable names to mathematical expressions.
+        An ordered dictionary mapping variable names to mathematical expressions.
         These expressions can be simple functions, in which case the
         argument names should match the variable inputs.
         Or these can be strings, which are parsed into functions.
+        The order of dynamic equations matters, as they are applied sequentially as
+        update rules.
 
     reward: Mapping(str, str)
         A dictionary mapping variable names to agent role labels.
@@ -700,46 +702,42 @@ class RBlock(Block):
         # returns a copy of the RBlock with the blocks replaced
         return replace(self, blocks=cbs)
 
+    def _merge_from_blocks(self, getter):
+        """
+        Merge dictionaries from all blocks using the given getter function.
+
+        Parameters
+        ----------
+        getter : callable
+            Function that takes a block and returns a dict (e.g., lambda b: b.get_shocks())
+
+        Returns
+        -------
+        dict
+            Merged dictionary from all blocks (later blocks override earlier ones)
+        """
+        merged = {}
+        for block in self.blocks:
+            merged.update(getter(block))
+        return merged
+
     def get_shocks(self):
-        ### TODO: Bug in here is causing AttributeError: 'set' object has no attribute 'draw'
-
-        super_shocks = {}  # uses set to avoid duplicates
-
-        for b in self.blocks:
-            for k, v in b.get_shocks().items():  # use d.iteritems() in python 2
-                super_shocks[k] = v
-
-        return super_shocks
+        return self._merge_from_blocks(lambda b: b.get_shocks())
 
     def get_controls(self):
         dyn = self.get_dynamics()
-
         return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
     def get_dynamics(self):
-        super_dyn = {}  # uses set to avoid duplicates
-
-        for b in self.blocks:
-            for k, v in b.get_dynamics().items():  # use d.iteritems() in python 2
-                super_dyn[k] = v
-
-        return super_dyn
+        return self._merge_from_blocks(lambda b: b.get_dynamics())
 
     def get_vars(self):
         return list(self.get_shocks().keys()) + list(self.get_dynamics().keys())
 
     @property
     def reward(self):
-        """
-        The reward attributions for all subblocks.
-        """
-        super_rew = {}  # uses set to avoid duplicates
-
-        for b in self.blocks:
-            for k, v in b.reward.items():  # use d.iteritems() in python 2
-                super_rew[k] = v
-
-        return super_rew
+        """The reward attributions for all subblocks."""
+        return self._merge_from_blocks(lambda b: b.reward)
 
     def iter_dblocks(self):
         """Iterate over all DBlock leaves in this RBlock tree."""

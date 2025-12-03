@@ -7,7 +7,7 @@ on the actual consumption model.
 import inspect
 from skagent.rule import extract_dependencies, Rule
 from skagent.models.consumer import consumption_block
-from skagent.model import Control
+from skagent.block import Control
 from skagent.distributions import Bernoulli
 import unittest
 
