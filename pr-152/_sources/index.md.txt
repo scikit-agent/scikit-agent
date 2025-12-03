@@ -52,8 +52,8 @@ results = simulator.simulate()
 Get up and running in minutes with your first economic model
 :::
 
-:::{grid-item-card} 🧠 Models Guide
-:link: user_guide/models
+:::{grid-item-card} 🧠 Blocks Guide
+:link: user_guide/blocks
 :link-type: doc
 
 Learn to build custom models using DBlocks and economic building blocks
@@ -146,7 +146,7 @@ New to scikit-agent? Start with the {doc}`user_guide/quickstart` guide.
 
 Want to dive deeper? Check out:
 
-- {doc}`user_guide/models` for model building concepts
+- {doc}`user_guide/blocks` for model building concepts
 - {doc}`auto_examples/index` for complete working examples
 - {doc}`api/index` for detailed API documentation
 

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Algorithms" href="algorithms.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>Simulation - scikit-agent 0.1.dev343+g3c10c381d</title>
+        <title>Simulation - scikit-agent 0.1.dev385+gea0b7c98f</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev343+g3c10c381d</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev385+gea0b7c98f</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -200,7 +200,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/quickstart.html">Quickstart Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/models.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
@@ -216,6 +216,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Simulation</a></li>
@@ -284,75 +285,46 @@ This simulator includes aging and mortality assumptions.</p>
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">AgentTypeMonteCarloSimulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulator</span></code></a></p>
-<p>A Monte Carlo simulation engine for agent-based economic models.</p>
-<p>This class focuses on simulation without model solving,
-and depends on dynamic equations, shocks, and decision rules paased into it.</p>
-<p>The purpose of this class is to provide a way to simulate models without
-relying on inheritance from the AgentType class.</p>
+<p>A Monte Carlo simulation engine for agent-based economic models with aging and mortality.</p>
+<p>This class extends the base Simulator with:
+- Age tracking for agents
+- Mortality handling (agents die when <cite>live</cite> state &lt;= 0)
+- Age-varying calibration and decision rules
+- Pre-specified shock history support</p>
 <p>This simulator makes assumptions about population birth and mortality which
 are not generic. All agents are replaced with newborns when they expire.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>calibration</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>)</p></li>
-<li><p><strong>block</strong> (<a class="reference internal" href="models.html#skagent.model.DBlock" title="skagent.model.DBlock"><em>DBlock</em></a>) – Has shocks, dynamics, and rewards</p></li>
-<li><p><strong>dr</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>)</p></li>
-<li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>)</p></li>
-<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – A seed for this instance’s random number generator.</p></li>
+<li><p><strong>calibration</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Model calibration parameters</p></li>
+<li><p><strong>block</strong> (<a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><em>DBlock</em></a>) – Has shocks, dynamics, and rewards</p></li>
+<li><p><strong>dr</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – Decision rules for control variables</p></li>
+<li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Initial state distributions</p></li>
+<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – A seed for this instance’s random number generator</p></li>
+<li><p><strong>agent_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of agents to simulate</p></li>
+<li><p><strong>T_sim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of periods to simulate</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.agent_count">
-<span class="sig-name descname"><span class="pre">agent_count</span></span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.agent_count" title="Link to this definition">¶</a></dt>
-<dd><p>The number of agents of this type to use in simulation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.T_sim">
-<span class="sig-name descname"><span class="pre">T_sim</span></span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.T_sim" title="Link to this definition">¶</a></dt>
-<dd><p>The number of periods to simulate.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.clear_history">
-<span class="sig-name descname"><span class="pre">clear_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.clear_history" title="Link to this definition">¶</a></dt>
-<dd><p>Clears the histories.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.get_mortality">
 <span class="sig-name descname"><span class="pre">get_mortality</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.get_mortality" title="Link to this definition">¶</a></dt>
 <dd><p>Simulates mortality or agent turnover.
-Agents die when their states <cite>live</cite> is less than or equal to zero.</p>
+Agents die when their state <cite>live</cite> is less than or equal to zero.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.initialize_sim">
 <span class="sig-name descname"><span class="pre">initialize_sim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.initialize_sim" title="Link to this definition">¶</a></dt>
-<dd><p>Prepares for a new simulation.  Resets the internal random number generator,
-makes initial states for all agents (using sim_birth), clears histories of tracked variables.</p>
+<dd><p>Prepares for a new simulation with age tracking.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.make_shock_history">
 <span class="sig-name descname"><span class="pre">make_shock_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.make_shock_history" title="Link to this definition">¶</a></dt>
-<dd><p>Makes a pre-specified history of shocks for the simulation.  Shock variables should be named
-in self.shock, a mapping from shock names to distributions.  This method runs a subset
-of the standard simulation loop by simulating only mortality and shocks; each variable named
-in shocks is stored in a T_sim x agent_count array in history dictionary self.history[X].
-Automatically sets self.read_shocks to True so that these pre-specified shocks are used for
-all subsequent calls to simulate().</p>
+<dd><p>Makes a pre-specified history of shocks for the simulation.</p>
+<p>This method runs the simulation loop and stores shock values,
+then sets read_shocks to True so these shocks are used in future simulations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>shock_history</strong> – The subset of simulation history that are the shocks for each agent and time.</p>
@@ -364,22 +336,12 @@ all subsequent calls to simulate().</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.reset_rng">
-<span class="sig-name descname"><span class="pre">reset_rng</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.reset_rng" title="Link to this definition">¶</a></dt>
-<dd><p>Reset the random number generator for this type.</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_birth">
 <span class="sig-name descname"><span class="pre">sim_birth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which_agents</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_birth" title="Link to this definition">¶</a></dt>
-<dd><p>Makes new agents for the simulation.  Takes a boolean array as an input, indicating which
-agent indices are to be “born”.  Does nothing by default, must be overwritten by a subclass.</p>
+<dd><p>Makes new agents for the simulation with age tracking.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>which_agents</strong> (<em>np.array</em><em>(</em><em>Bool</em><em>)</em>) – Boolean array of size self.agent_count indicating which agents should be “born”.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -387,36 +349,8 @@ agent indices are to be “born”.  Does nothing by default, must be overwritte
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_one_period">
 <span class="sig-name descname"><span class="pre">sim_one_period</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_one_period" title="Link to this definition">¶</a></dt>
-<dd><p>Simulates one period for this type.  Calls the methods get_mortality(), get_shocks() or
-read_shocks, get_states(), get_controls(), and get_poststates().  These should be defined for
-AgentType subclasses, except get_mortality (define its components sim_death and sim_birth
-instead) and read_shocks.</p>
+<dd><p>Simulates one period with mortality and age-varying parameters.</p>
 </dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.simulate">
-<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.simulate" title="Link to this definition">¶</a></dt>
-<dd><p>Simulates this agent type for a given number of periods. Defaults to
-self.T_sim if no input.
-Records histories of attributes named in self.track_vars in
-self.history[sym].</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>None</strong></p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>history</strong> – The history tracked during the simulation.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.state_vars">
-<span class="sig-name descname"><span class="pre">state_vars</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.state_vars" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </dd></dl>
 
@@ -425,102 +359,83 @@ self.history[sym].</p>
 <h3>MonteCarloSimulator<a class="headerlink" href="#montecarlosimulator" title="Link to this heading">¶</a></h3>
 <p>A simplified Monte Carlo simulation engine that doesn’t make assumptions about
 aging or mortality.</p>
-<dl class="py class">
+<dl class="py attribute">
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">MonteCarloSimulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulator</span></code></a></p>
-<p>A Monte Carlo simulation engine based.</p>
-<p>Unlike the AgentTypeMonteCarloSimulator,
-this class does make any assumptions about aging or mortality.
-It operates only on model information passed in as blocks.</p>
-<p>It also does not have read_shocks functionality;
-it is a strict subset of the AgentTypeMonteCarloSimulator functionality.</p>
+<span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">MonteCarloSimulator</span></span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulator</span></code></a></p>
+</dd></dl>
+
+</section>
+<section id="base-simulator">
+<h3>Base Simulator<a class="headerlink" href="#base-simulator" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">Simulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base class for Monte Carlo simulation engines.</p>
+<p>Provides common functionality for simulation including:
+- RNG management and seeding
+- State variable tracking
+- History management
+- Simulation loop structure</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>calibration</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>)</p></li>
-<li><p><strong>block</strong> (<a class="reference internal" href="models.html#skagent.model.DBlock" title="skagent.model.DBlock"><em>DBlock</em></a>) – Has shocks, dynamics, and rewards</p></li>
-<li><p><strong>dr</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>)</p></li>
-<li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>)</p></li>
-<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – A seed for this instance’s random number generator.</p></li>
+<li><p><strong>calibration</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Model calibration parameters</p></li>
+<li><p><strong>block</strong> (<a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><em>DBlock</em></a>) – Has shocks, dynamics, and rewards</p></li>
+<li><p><strong>dr</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – Decision rules for control variables</p></li>
+<li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Initial state distributions</p></li>
+<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – A seed for this instance’s random number generator</p></li>
+<li><p><strong>agent_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of agents to simulate</p></li>
+<li><p><strong>T_sim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of periods to simulate</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.agent_count">
-<span class="sig-name descname"><span class="pre">agent_count</span></span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.agent_count" title="Link to this definition">¶</a></dt>
-<dd><p>The number of agents of this type to use in simulation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.T_sim">
-<span class="sig-name descname"><span class="pre">T_sim</span></span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.T_sim" title="Link to this definition">¶</a></dt>
-<dd><p>The number of periods to simulate.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.clear_history">
-<span class="sig-name descname"><span class="pre">clear_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.clear_history" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.clear_history">
+<span class="sig-name descname"><span class="pre">clear_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.clear_history" title="Link to this definition">¶</a></dt>
 <dd><p>Clears the histories.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.initialize_sim">
-<span class="sig-name descname"><span class="pre">initialize_sim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.initialize_sim" title="Link to this definition">¶</a></dt>
-<dd><p>Prepares for a new simulation.  Resets the internal random number generator,
-makes initial states for all agents (using sim_birth), clears histories of tracked variables.</p>
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.initialize_sim">
+<span class="sig-name descname"><span class="pre">initialize_sim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.initialize_sim" title="Link to this definition">¶</a></dt>
+<dd><p>Prepares for a new simulation. Resets the internal random number generator,
+makes initial states for all agents, clears histories of tracked variables.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.reset_rng">
-<span class="sig-name descname"><span class="pre">reset_rng</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.reset_rng" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.reset_rng">
+<span class="sig-name descname"><span class="pre">reset_rng</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.reset_rng" title="Link to this definition">¶</a></dt>
 <dd><p>Reset the random number generator for this type.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.sim_birth">
-<span class="sig-name descname"><span class="pre">sim_birth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which_agents</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.sim_birth" title="Link to this definition">¶</a></dt>
-<dd><p>Makes new agents for the simulation.  Takes a boolean array as an input, indicating which
-agent indices are to be “born”.  Does nothing by default, must be overwritten by a subclass.</p>
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.sim_birth">
+<span class="sig-name descname"><span class="pre">sim_birth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which_agents</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.sim_birth" title="Link to this definition">¶</a></dt>
+<dd><p>Makes new agents for the simulation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>which_agents</strong> (<em>np.array</em><em>(</em><em>Bool</em><em>)</em>) – Boolean array of size self.agent_count indicating which agents should be “born”.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.sim_one_period">
-<span class="sig-name descname"><span class="pre">sim_one_period</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.sim_one_period" title="Link to this definition">¶</a></dt>
-<dd><p>Simulates one period for this type.  Calls the methods get_mortality(), get_shocks() or
-read_shocks, get_states(), get_controls(), and get_poststates().  These should be defined for
-AgentType subclasses, except get_mortality (define its components sim_death and sim_birth
-instead) and read_shocks.</p>
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.sim_one_period">
+<span class="sig-name descname"><span class="pre">sim_one_period</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.sim_one_period" title="Link to this definition">¶</a></dt>
+<dd><p>Simulates one period for this type.
+Subclasses may override to add mortality/aging logic.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.simulate">
-<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.simulate" title="Link to this definition">¶</a></dt>
-<dd><p>Simulates this agent type for a given number of periods. Defaults to
-self.T_sim if no input.</p>
-<p>Records histories of attributes named in self.track_vars in
-self.history[symame].</p>
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.simulate" title="Link to this definition">¶</a></dt>
+<dd><p>Simulates this agent type for a given number of periods.
+Defaults to self.T_sim if no input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sim_periods</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of periods to simulate.</p>
+<dd class="field-odd"><p><strong>sim_periods</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of periods to simulate.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>history</strong> – The history tracked during the simulation.</p>
@@ -532,19 +447,10 @@ self.history[symame].</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.MonteCarloSimulator.state_vars">
-<span class="sig-name descname"><span class="pre">state_vars</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.state_vars" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.state_vars">
+<span class="sig-name descname"><span class="pre">state_vars</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.state_vars" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</dd></dl>
-
-</section>
-<section id="base-simulator">
-<h3>Base Simulator<a class="headerlink" href="#base-simulator" title="Link to this heading">¶</a></h3>
-<dl class="py class">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">Simulator</span></span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 </dd></dl>
 
 </section>
@@ -720,38 +626,30 @@ corresponding to the values for each input age.</p>
 <li><a class="reference internal" href="#monte-carlo-simulation">Monte Carlo Simulation</a><ul>
 <li><a class="reference internal" href="#agenttypemontecarlosimulator">AgentTypeMonteCarloSimulator</a><ul>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.agent_count"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.agent_count</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.T_sim"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.T_sim</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.clear_history"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.clear_history()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.get_mortality"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.get_mortality()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.initialize_sim"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.initialize_sim()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.make_shock_history"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.make_shock_history()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.reset_rng"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.reset_rng()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_birth"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.sim_birth()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_one_period"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.sim_one_period()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.simulate"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.simulate()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.state_vars"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.state_vars</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li><a class="reference internal" href="#montecarlosimulator">MonteCarloSimulator</a><ul>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.agent_count"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.agent_count</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.T_sim"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.T_sim</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.clear_history"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.clear_history()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.initialize_sim"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.initialize_sim()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.reset_rng"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.reset_rng()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.sim_birth"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.sim_birth()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.sim_one_period"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.sim_one_period()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.simulate"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.simulate()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator.state_vars"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator.state_vars</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#base-simulator">Base Simulator</a><ul>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a></li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.clear_history"><code class="docutils literal notranslate"><span class="pre">Simulator.clear_history()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.initialize_sim"><code class="docutils literal notranslate"><span class="pre">Simulator.initialize_sim()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.reset_rng"><code class="docutils literal notranslate"><span class="pre">Simulator.reset_rng()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.sim_birth"><code class="docutils literal notranslate"><span class="pre">Simulator.sim_birth()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.sim_one_period"><code class="docutils literal notranslate"><span class="pre">Simulator.sim_one_period()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.simulate"><code class="docutils literal notranslate"><span class="pre">Simulator.simulate()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.state_vars"><code class="docutils literal notranslate"><span class="pre">Simulator.state_vars</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -783,7 +681,7 @@ corresponding to the values for each input age.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=cdf56661"></script>
+</div><script src="../_static/documentation_options.js?v=fb15fda8"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
