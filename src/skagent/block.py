@@ -17,7 +17,6 @@ from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
-from IPython.display import SVG, display
 from skagent.rule import Rule, format_rule
 
 
@@ -321,10 +320,9 @@ class Block:
         analyzer = ModelAnalyzer(self, calibration)
         analyzer.analyze()
 
-        viz = ModelVisualizer(analyzer.to_dict())
-        graph = viz.create_graph(title=self.name)
+        viz = ModelVisualizer(analyzer.to_dict(), title=self.name)
 
-        return graph
+        return viz
 
     def display(self, calibration):
         """
@@ -345,26 +343,11 @@ class Block:
         img : matplotlib.image.mpimg
         svg_content : str
         """
-        graph = self.visualize(calibration)
+        viz = self.visualize(calibration)
 
-        display(SVG(graph.create_svg()))
+        viz.display()
 
-        import matplotlib.image as mpimg
-        from io import BytesIO
-        import cairosvg
-
-        svg_content = graph.create_svg()
-
-        # Convert SVG to PNG in memory
-        if isinstance(svg_content, str):
-            svg_content = svg_content.encode("utf-8")
-
-        png_data = cairosvg.svg2png(bytestring=svg_content)
-
-        # Load PNG into matplotlib
-        img = mpimg.imread(BytesIO(png_data), format="png")
-
-        return img, svg_content
+        return viz.get_image()
 
     def formulas(self, calibration: dict):
         """

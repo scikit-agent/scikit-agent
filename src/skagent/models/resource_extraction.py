@@ -75,7 +75,7 @@ References
 import numpy as np
 
 from skagent.distributions import MeanOneLogNormal
-from skagent.model import Control, DBlock
+from skagent.block import Control, DBlock
 
 calibration = {
     "r": 1.02,  # growth rate
