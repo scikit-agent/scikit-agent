@@ -266,7 +266,7 @@ This analytical solution makes the model ideal for validating reinforcement
 learning algorithms—we can compare learned policies against the known optimum.
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 166-197
+.. GENERATED FROM PYTHON SOURCE LINES 166-199
 
 .. code-block:: Python
 
@@ -289,8 +289,10 @@ learning algorithms—we can compare learned policies against the known optimum.
 
     plt.figure(figsize=(8, 5))
     plt.plot(x_range, u_optimal, label=r"$u^*(x) = \max(0, x - S^*)$", linewidth=2)
-    plt.axhline(y=0, color='k', linestyle='--', alpha=0.3)
-    plt.axvline(x=S_star, color='r', linestyle='--', alpha=0.5, label=f"$S^* = {S_star:.2f}$")
+    plt.axhline(y=0, color="k", linestyle="--", alpha=0.3)
+    plt.axvline(
+        x=S_star, color="r", linestyle="--", alpha=0.5, label=f"$S^* = {S_star:.2f}$"
+    )
     plt.xlabel("Stock level (x)")
     plt.ylabel("Optimal harvest (u*)")
     plt.title("Reed's Constant Escapement Policy")
@@ -321,19 +323,19 @@ learning algorithms—we can compare learned policies against the known optimum.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 198-200
+.. GENERATED FROM PYTHON SOURCE LINES 200-202
 
 Step 5: Run Monte Carlo Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 200-224
+.. GENERATED FROM PYTHON SOURCE LINES 202-226
 
 .. code-block:: Python
 
 
     # Initial conditions - start with stock level around 2*S*
     initial_conditions = {
-        "x": Normal(mu=2*S_star, sigma=0.1),
+        "x": Normal(mu=2 * S_star, sigma=0.1),
     }
 
     # Create and run simulator
@@ -369,7 +371,7 @@ Step 5: Run Monte Carlo Simulation
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 225-233
+.. GENERATED FROM PYTHON SOURCE LINES 227-235
 
 Step 6: Plot Simulation Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -380,7 +382,7 @@ environmental shocks. When stock exceeds :math:`S^*`, the surplus is harvested;
 when shocks drive stock below :math:`S^*`, no harvest occurs and the stock
 recovers through natural growth.
 
-.. GENERATED FROM PYTHON SOURCE LINES 233-275
+.. GENERATED FROM PYTHON SOURCE LINES 235-275
 
 .. code-block:: Python
 
@@ -394,7 +396,7 @@ recovers through natural growth.
         np.percentile(simulator.history["x"], 95, axis=1),
         alpha=0.2,
         label="5th-95th percentile",
-        color='C0'
+        color="C0",
     )
     plt.fill_between(
         range(simulator.T_sim),
@@ -402,22 +404,19 @@ recovers through natural growth.
         np.percentile(simulator.history["x"], 75, axis=1),
         alpha=0.3,
         label="25th-75th percentile",
-        color='C0'
+        color="C0",
     )
     plt.plot(
-        simulator.history["x"].mean(axis=1),
-        label="Mean stock",
-        linewidth=2,
-        color='C0'
+        simulator.history["x"].mean(axis=1), label="Mean stock", linewidth=2, color="C0"
     )
 
     # Add reference line for optimal escapement
     plt.axhline(
         y=S_star,
-        color='r',
-        linestyle='--',
+        color="r",
+        linestyle="--",
         linewidth=2,
-        label=f"Optimal escapement $S^* = {S_star:.2f}$"
+        label=f"Optimal escapement $S^* = {S_star:.2f}$",
     )
 
     plt.xlabel("Time period", fontsize=11)
@@ -427,6 +426,7 @@ recovers through natural growth.
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.show()
+
 
 
 .. image-sg:: /auto_examples/models/images/sphx_glr_plot_resource_extraction_003.png
@@ -441,7 +441,7 @@ recovers through natural growth.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 3.590 seconds)
+   **Total running time of the script:** (0 minutes 3.737 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_resource_extraction.py:

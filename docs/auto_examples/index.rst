@@ -70,7 +70,7 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance  immediate profits from extraction against preserving the resource stock for  future use.">
+    <div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use.">
 
 .. only:: html
 
