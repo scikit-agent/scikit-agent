@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Simulation" href="simulation.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>Utils - scikit-agent 0.1.dev385+gea0b7c98f</title>
+        <title>Utils - scikit-agent 0.1.dev387+ge83c9d50f</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev385+gea0b7c98f</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev387+ge83c9d50f</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -347,6 +347,31 @@ of <cite>fun</cite>.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="skagent.utils.compute_gradients_for_tensors">
+<span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">compute_gradients_for_tensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensors_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.compute_gradients_for_tensors" title="Link to this definition">¶</a></dt>
+<dd><p>Compute gradients for a dictionary of tensors with respect to variables.</p>
+<p>This function computes gradients using PyTorch’s autograd, handling both
+scalar and batched tensor cases. It is used by grad_reward_function and
+grad_transition_function in BellmanPeriod.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tensors_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Dictionary mapping symbol names to tensors to compute gradients for</p></li>
+<li><p><strong>wrt</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Dictionary of variables to compute gradients with respect to.
+Keys are variable names, values are tensors with requires_grad=True</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nested dictionary of gradients for each tensor symbol and variable:
+{tensor_sym: {var_name: gradient}}</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="skagent.utils.compute_parameter_difference">
 <span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">compute_parameter_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.compute_parameter_difference" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the L2 norm of the difference between two parameter vectors.</p>
@@ -503,6 +528,7 @@ the object type and shape of vec_a.</p>
 </li>
 <li><a class="reference internal" href="#general-utilities">General Utilities</a><ul>
 <li><a class="reference internal" href="#skagent.utils.apply_fun_to_vals"><code class="docutils literal notranslate"><span class="pre">apply_fun_to_vals()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.utils.compute_gradients_for_tensors"><code class="docutils literal notranslate"><span class="pre">compute_gradients_for_tensors()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.compute_parameter_difference"><code class="docutils literal notranslate"><span class="pre">compute_parameter_difference()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.create_vectorized_function_wrapper_with_mapping"><code class="docutils literal notranslate"><span class="pre">create_vectorized_function_wrapper_with_mapping()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.extract_parameters"><code class="docutils literal notranslate"><span class="pre">extract_parameters()</span></code></a></li>
@@ -525,7 +551,7 @@ the object type and shape of vec_a.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=fb15fda8"></script>
+</div><script src="../_static/documentation_options.js?v=2eed44d4"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
