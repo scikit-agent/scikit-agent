@@ -12,6 +12,7 @@ import inspect
 
 import numpy as np
 import torch
+from torch.autograd import grad
 
 from skagent.utils import compute_gradients_for_tensors
 
@@ -502,7 +503,7 @@ def estimate_euler_residual(
     df,
     states_t,
     shocks,
-    parameters={},
+    parameters=None,
     agent=None,
 ):
     """
@@ -607,6 +608,9 @@ def estimate_euler_residual(
     ...     states_t, shocks, parameters
     ... )
     """
+    if parameters is None:
+        parameters = {}
+
     if callable(discount_factor):
         raise ValueError(
             "State-dependent discount factors not yet supported for Euler residuals. "
@@ -620,6 +624,18 @@ def estimate_euler_residual(
     # Extract period-specific shocks from the combined shocks object
     # shocks_0 are for transitions from t to t+1
     # shocks_1 are for transitions from t+1 to t+2 (independent realization)
+    # For deterministic models (no shocks), shock_syms will be empty and these dicts will be empty
+    for sym in shock_syms:
+        if f"{sym}_0" not in shocks:
+            raise KeyError(
+                f"Missing shock '{sym}_0' in shocks dict. For models with shocks, "
+                f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+            )
+        if f"{sym}_1" not in shocks:
+            raise KeyError(
+                f"Missing shock '{sym}_1' in shocks dict. For models with shocks, "
+                f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+            )
     shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
     shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
 
@@ -669,74 +685,159 @@ def estimate_euler_residual(
 
     control_sym = control_syms[0]  # Assume single control for now
 
-    # Make controls require gradients for automatic differentiation
-    # We detach to create new leaf tensors for computing u'(c) w.r.t. c itself.
-    # This is intentional: we want gradients of reward/transition w.r.t. control values,
-    # not gradients through the policy network (which would be handled separately in training).
-    controls_t_grad = {
-        sym: controls_t[sym].detach().requires_grad_(True) for sym in controls_t
-    }
-    controls_t_plus_1_grad = {
-        sym: controls_t_plus_1[sym].detach().requires_grad_(True)
-        for sym in controls_t_plus_1
-    }
+    # For training, we need to compute marginal utilities while keeping the policy
+    # in the computation graph. We use create_graph=True to allow backprop through
+    # the gradient computation itself.
+    #
+    # The approach:
+    # 1. Compute reward with controls that require grad
+    # 2. Use autograd to get u'(c) w.r.t. c, with create_graph=True
+    # 3. This keeps the policy network in the graph for end-to-end training
 
-    # Compute marginal utility at t (u'(c_t))
-    reward_gradients_t = bellman_period.grad_reward_function(
-        states_t,
-        shocks_t,
-        controls_t_grad,
-        parameters,
-        wrt={control_sym: controls_t_grad[control_sym]},
-        agent=agent,
+    # Enable gradients on the original controls (not detached copies)
+    c_t = controls_t[control_sym]
+    c_t_plus_1 = controls_t_plus_1[control_sym]
+
+    # Ensure controls require gradients for computing marginal utility
+    if not c_t.requires_grad:
+        c_t = c_t.detach().requires_grad_(True)
+    if not c_t_plus_1.requires_grad:
+        c_t_plus_1 = c_t_plus_1.detach().requires_grad_(True)
+
+    # Build controls dicts with grad-enabled tensors
+    controls_t_grad = {**controls_t, control_sym: c_t}
+    controls_t_plus_1_grad = {**controls_t_plus_1, control_sym: c_t_plus_1}
+
+    # Compute reward at t and get marginal utility u'(c_t)
+    rewards_t = bellman_period.reward_function(
+        states_t, shocks_t, controls_t_grad, parameters, agent=agent
     )
-    marginal_utility_t = reward_gradients_t[reward_sym][control_sym]
+    reward_t = rewards_t[reward_sym]
 
-    # Compute marginal utility at t+1 (u'(c_{t+1}))
-    reward_gradients_t_plus_1 = bellman_period.grad_reward_function(
+    # Compute marginal utility at t: u'(c_t) = ∂u/∂c
+    # Use create_graph=True to keep policy in computation graph for training
+    marginal_utility_t = grad(
+        reward_t.sum(),
+        c_t,
+        create_graph=True,
+        retain_graph=True,
+        allow_unused=True,
+    )[0]
+
+    if marginal_utility_t is None:
+        raise ValueError(
+            f"Could not compute marginal utility: reward '{reward_sym}' "
+            f"does not depend on control '{control_sym}'"
+        )
+
+    # Compute reward at t+1 and get marginal utility u'(c_{t+1})
+    rewards_t_plus_1 = bellman_period.reward_function(
         states_t_plus_1,
         shocks_t_plus_1,
         controls_t_plus_1_grad,
         parameters,
-        wrt={control_sym: controls_t_plus_1_grad[control_sym]},
         agent=agent,
     )
-    marginal_utility_t_plus_1 = reward_gradients_t_plus_1[reward_sym][control_sym]
+    reward_t_plus_1 = rewards_t_plus_1[reward_sym]
+
+    marginal_utility_t_plus_1 = grad(
+        reward_t_plus_1.sum(),
+        c_t_plus_1,
+        create_graph=True,
+        retain_graph=True,
+        allow_unused=True,
+    )[0]
+
+    if marginal_utility_t_plus_1 is None:
+        raise ValueError(
+            f"Could not compute marginal utility at t+1: reward '{reward_sym}' "
+            f"does not depend on control '{control_sym}'"
+        )
 
     # Compute transition gradients: ∂s_{t+1}/∂c_t for all arrival states
     # This captures how today's control affects tomorrow's state (e.g., ∂a'/∂c = -1)
-    transition_gradients = bellman_period.grad_transition_function(
-        states_t,
-        shocks_t,
-        controls_t_grad,
-        parameters,
-        wrt={control_sym: controls_t_grad[control_sym]},
+    # We need create_graph=True here too for end-to-end training
+    next_states = bellman_period.transition_function(
+        states_t, shocks_t, controls_t_grad, parameters
     )
+
+    transition_gradients = {}
+    for state_sym in bellman_period.arrival_states:
+        next_state = next_states[state_sym]
+        trans_grad = grad(
+            next_state.sum(),
+            c_t,
+            create_graph=True,
+            retain_graph=True,
+            allow_unused=True,
+        )[0]
+        transition_gradients[state_sym] = trans_grad
 
     # Compute the return factor from the dynamics: ∂m'/∂s' (how pre-state depends on arrival state)
     # By the envelope theorem: V'(s') = u'(c') * ∂m'/∂s'
     # For consumption-saving with m = a*R + y, this gives ∂m/∂a = R
     #
-    # Use the centralized grad_pre_state_function to compute these gradients
-    states_t_plus_1_grad = {
-        sym: states_t_plus_1[sym].detach().requires_grad_(True)
-        for sym in bellman_period.arrival_states
-    }
+    # For this, we need to compute gradients of pre-state variables w.r.t. arrival states
+    # Make arrival states at t+1 require gradients
+    states_t_plus_1_grad = {}
+    for sym in bellman_period.arrival_states:
+        s = states_t_plus_1[sym]
+        if not s.requires_grad:
+            s = s.detach().requires_grad_(True)
+        states_t_plus_1_grad[sym] = s
 
-    pre_state_gradients = bellman_period.grad_pre_state_function(
-        states_t_plus_1_grad,
-        shocks_t_plus_1,
-        parameters,
-        wrt=states_t_plus_1_grad,
-        control_sym=control_sym,
-    )
+    # Use grad_pre_state_function but we need to handle it carefully for training
+    # Get the control's pre-state variables
+    control_rule = bellman_period.block.dynamics.get(control_sym)
+    if control_rule is not None and hasattr(control_rule, "iset"):
+        pre_state_vars = control_rule.iset
+    else:
+        # Fall back: assume control depends on arrival states directly
+        pre_state_vars = list(bellman_period.arrival_states)
+
+    # Compute pre-state values with gradient tracking
+    vals = {**states_t_plus_1_grad, **shocks_t_plus_1, **parameters}
+    pre_state_values = {}
+
+    for var_name in pre_state_vars:
+        if var_name in bellman_period.arrival_states:
+            pre_state_values[var_name] = states_t_plus_1_grad[var_name]
+        elif var_name in bellman_period.block.dynamics:
+            rule = bellman_period.block.dynamics[var_name]
+            if callable(rule):
+                sig = inspect.signature(rule)
+                args = {p: vals[p] for p in sig.parameters if p in vals}
+                pre_state_values[var_name] = rule(**args)
+            else:
+                pre_state_values[var_name] = rule
+        else:
+            raise ValueError(
+                f"Pre-state variable '{var_name}' not found in arrival_states or dynamics"
+            )
+
+    # Compute ∂(pre_state)/∂(arrival_state) for each combination
+    pre_state_gradients = {}
+    for pre_var, pre_val in pre_state_values.items():
+        pre_state_gradients[pre_var] = {}
+        for state_sym, state_val in states_t_plus_1_grad.items():
+            if pre_val.requires_grad:
+                ps_grad = grad(
+                    pre_val.sum(),
+                    state_val,
+                    create_graph=True,
+                    retain_graph=True,
+                    allow_unused=True,
+                )[0]
+                pre_state_gradients[pre_var][state_sym] = ps_grad
+            else:
+                pre_state_gradients[pre_var][state_sym] = None
 
     # Compute ∂(pre_state)/∂(arrival_state) * ∂(arrival_state)/∂c summed over states
     # This gives the total derivative of pre-state w.r.t. control through all paths
     return_factor_sum = torch.zeros_like(marginal_utility_t_plus_1)
 
     for state_sym in bellman_period.arrival_states:
-        trans_grad = transition_gradients[state_sym][control_sym]
+        trans_grad = transition_gradients[state_sym]
         if trans_grad is None:
             continue
 

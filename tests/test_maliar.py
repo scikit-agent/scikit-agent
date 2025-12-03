@@ -13,7 +13,6 @@ from skagent.ann import BlockValueNet
 from skagent.models.benchmarks import (
     get_benchmark_model,
     get_benchmark_calibration,
-    get_analytical_policy,
 )
 
 # Deterministic test seed - change this single value to modify all seeding
@@ -853,14 +852,17 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
     def test_euler_residual_d2_optimal_policy(self):
         """
-        Test Euler residual is near zero for D-2 analytical optimal policy.
+        Test that the analytical optimal policy achieves near-zero Euler residual.
 
         D-2 is the infinite horizon CRRA perfect foresight model.
-        The analytical solution is: c_t = κ*(m_t + H) where κ = (R - (βR)^(1/σ))/R
+        The analytical solution is: c_t = κ*m_t where κ = 1 - (βR)^(1/σ)/R
 
         The Euler equation is: u'(c_t) = β*R*u'(c_{t+1})
-        For the optimal policy, the Euler residual should be essentially zero.
+        For the optimal policy, the Euler residual should be essentially zero,
+        validating that estimate_euler_residual correctly implements the FOC.
         """
+        from skagent.models.benchmarks import get_analytical_policy
+
         # Get D-2 benchmark model and calibration
         d2_block = get_benchmark_model("D-2")
         d2_calibration = get_benchmark_calibration("D-2")
@@ -872,57 +874,117 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # Create BellmanPeriod
         bp = bellman.BellmanPeriod(d2_block, d2_calibration)
 
-        # Create test states with larger sample for better expectation estimate
+        # Create test states
         n_samples = 100
         test_states = {"a": torch.linspace(0.1, 10.0, n_samples)}
-
-        # For deterministic model, use empty shocks
         shocks = {}
 
-        # Wrap the analytical policy to match expected signature
-        def optimal_policy(states, shocks_t, parameters):
-            return d2_policy(states, shocks_t, parameters)
-
-        # Suboptimal policy for comparison
-        def suboptimal_policy(states, shocks_t, parameters):
-            a = states["a"]
-            R = parameters["R"]
-            y = parameters["y"]
-            m = a * R + y
-            c = 0.5 * m  # 50% of cash-on-hand (generally suboptimal)
-            return {"c": c}
-
-        # Compute Euler residual using both policies
+        # Compute Euler residual with analytical optimal policy
         optimal_residual = bellman.estimate_euler_residual(
             bp,
             d2_calibration["DiscFac"],
-            optimal_policy,
+            d2_policy,
             test_states,
             shocks,
             d2_calibration,
         )
-        suboptimal_residual = bellman.estimate_euler_residual(
+
+        # For optimal policy, residual should be essentially zero (machine precision)
+        mean_residual = torch.mean(torch.abs(optimal_residual)).item()
+        mse_residual = torch.mean(optimal_residual**2).item()
+
+        # Tolerance accounts for numerical precision in autograd
+        assert mean_residual < 1e-5, (
+            f"Analytical optimal policy should have near-zero Euler residual. "
+            f"Got mean |residual| = {mean_residual:.6e}"
+        )
+
+        assert mse_residual < 1e-10, (
+            f"Analytical optimal policy should have near-zero Euler MSE. "
+            f"Got MSE = {mse_residual:.6e}"
+        )
+
+    def test_euler_equation_training(self):
+        """
+        Test that a policy can be trained via Euler equation loss to achieve near-zero residual.
+
+        This is the key validation test for the Maliar et al. (2021) methodology:
+        train a neural network policy by minimizing squared Euler residuals,
+        and verify the trained policy satisfies the first-order conditions.
+
+        Uses scikit-agent's BlockPolicyNet and train_block_nn for proper integration.
+        """
+        from skagent.ann import BlockPolicyNet, train_block_nn
+
+        # Get D-2 benchmark model and calibration
+        d2_block = get_benchmark_model("D-2")
+        d2_calibration = get_benchmark_calibration("D-2")
+
+        # Construct shocks for the block
+        d2_block.construct_shocks(d2_calibration)
+
+        # Create BellmanPeriod
+        bp = bellman.BellmanPeriod(d2_block, d2_calibration)
+
+        # Create policy network using scikit-agent's BlockPolicyNet
+        torch.manual_seed(TEST_SEED)
+        policy_net = BlockPolicyNet(bp, width=32, init_seed=TEST_SEED)
+
+        # Create Euler equation loss
+        euler_loss_fn = loss.EulerEquationLoss(
+            bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
+        )
+
+        # Create training grid with states (D-2 is deterministic, no shocks needed)
+        n_grid_points = 64
+        train_grid = grid.Grid.from_dict(
+            {
+                "a": torch.rand(n_grid_points, device=device) * 9.9
+                + 0.1,  # a in [0.1, 10]
+            }
+        )
+
+        # Train using scikit-agent's train_block_nn
+        trained_net, final_loss = train_block_nn(
+            policy_net, train_grid, euler_loss_fn, epochs=300
+        )
+
+        # Verify training achieved small loss
+        assert final_loss < 0.01, (
+            f"Training should achieve small Euler loss. Got final loss: {final_loss:.6e}"
+        )
+
+        # Evaluate on test grid using the trained policy
+        test_states = {"a": torch.linspace(0.1, 10.0, 100, device=device)}
+        shocks = {}
+
+        # Get decision function from trained network
+        decision_fn = trained_net.get_decision_function()
+
+        # Compute final Euler residual
+        final_residual = bellman.estimate_euler_residual(
             bp,
             d2_calibration["DiscFac"],
-            suboptimal_policy,
+            decision_fn,
             test_states,
             shocks,
             d2_calibration,
         )
+        final_residual = final_residual.detach()
 
-        # For optimal policy, mean residual should be essentially zero
-        # Tolerance of 1e-5 accounts for numerical precision in autograd
-        mean_optimal = torch.mean(torch.abs(optimal_residual)).item()
-        assert mean_optimal < 1e-5, (
-            f"D-2 optimal policy should have near-zero Euler residual. "
-            f"Got mean |residual| = {mean_optimal:.6e}"
+        # The trained policy should achieve small Euler residual
+        mean_residual = torch.mean(torch.abs(final_residual)).item()
+        mse_residual = torch.mean(final_residual**2).item()
+
+        # Tolerance: trained policy should have mean |residual| < 0.1
+        # (Training loss was ~0.0002, but evaluation on different grid points may be higher)
+        assert mean_residual < 0.1, (
+            f"Trained policy should have small Euler residual. "
+            f"Got mean |residual| = {mean_residual:.6e}"
         )
 
-        # MSE comparison: optimal should be much smaller than suboptimal
-        optimal_mse = torch.mean(optimal_residual**2).item()
-        suboptimal_mse = torch.mean(suboptimal_residual**2).item()
-
-        assert optimal_mse < suboptimal_mse / 100, (
-            f"D-2 optimal policy should have much smaller Euler residual MSE than suboptimal. "
-            f"Got optimal MSE={optimal_mse:.6e}, suboptimal MSE={suboptimal_mse:.6e}"
+        # Verify MSE is reasonably small (< 0.05)
+        assert mse_residual < 0.05, (
+            f"Trained policy should have small Euler residual MSE. "
+            f"Got MSE = {mse_residual:.6e}"
         )

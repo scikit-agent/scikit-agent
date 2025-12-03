@@ -418,10 +418,10 @@ class EulerEquationLoss:
     """
 
     def __init__(
-        self, bellman_period, discount_factor, parameters={}, agent=None, weight=1.0
+        self, bellman_period, discount_factor, parameters=None, agent=None, weight=1.0
     ):
         self.bellman_period = bellman_period
-        self.parameters = parameters
+        self.parameters = parameters if parameters is not None else {}
         self.arrival_variables = bellman_period.arrival_states
 
         self.discount_factor = discount_factor
@@ -477,6 +477,20 @@ class EulerEquationLoss:
 
         # Extract current states and both shock realizations
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
+
+        # Validate shock keys exist in grid
+        for sym in self.shock_syms:
+            if f"{sym}_0" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+            if f"{sym}_1" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+
         shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
         shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
 
