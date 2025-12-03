@@ -8,9 +8,12 @@ and framing them in terms of arrival states, shocks, and decisions.
 
 """
 
+import inspect
+
 import numpy as np
 import torch
-from torch.autograd import grad
+
+from skagent.utils import compute_gradients_for_tensors
 
 
 class BellmanPeriod:
@@ -70,75 +73,6 @@ class BellmanPeriod:
         vals = parameters | states_t | shocks_t
         post = self.block.transition(vals, decision_rules)
         return {sym: post[sym] for sym in decision_rules}
-
-    def _compute_gradients_for_tensors(self, tensors_dict, wrt):
-        """
-        Helper method to compute gradients for a dictionary of tensors with respect to variables.
-
-        This method extracts the common gradient computation pattern used by both
-        grad_reward_function and grad_transition_function.
-
-        Parameters
-        ----------
-        tensors_dict : dict
-            Dictionary mapping symbol names to tensors to compute gradients for
-        wrt : dict
-            Dictionary of variables to compute gradients with respect to.
-            Keys are variable names, values are tensors with requires_grad=True
-
-        Returns
-        -------
-        dict
-            Nested dictionary of gradients for each tensor symbol and variable:
-            {tensor_sym: {var_name: gradient}}
-        """
-        gradients = {}
-        for tensor_sym in tensors_dict:
-            gradients[tensor_sym] = {}
-            for var_name, var_tensor in wrt.items():
-                # Skip if variable doesn't require gradients
-                if not var_tensor.requires_grad:
-                    gradients[tensor_sym][var_name] = None
-                    continue
-
-                # Compute gradient of this tensor with respect to this variable
-                target_tensor = tensors_dict[tensor_sym]
-
-                # For batched computations, we need to compute gradients for each element
-                if target_tensor.dim() > 0 and target_tensor.numel() > 1:
-                    # Handle batched case: compute gradients for each element in the batch
-                    batch_gradients = []
-                    for i in range(target_tensor.shape[0]):
-                        grad_result = grad(
-                            target_tensor[i],
-                            var_tensor,
-                            retain_graph=True,
-                            allow_unused=True,
-                        )
-                        if grad_result[0] is not None:
-                            batch_gradients.append(
-                                grad_result[0][i]
-                                if grad_result[0].dim() > 0
-                                else grad_result[0]
-                            )
-                        else:
-                            batch_gradients.append(None)
-
-                    # Stack the gradients if they're not None
-                    if all(g is not None for g in batch_gradients):
-                        gradients[tensor_sym][var_name] = torch.stack(batch_gradients)
-                    else:
-                        gradients[tensor_sym][var_name] = None
-                else:
-                    # Handle scalar case
-                    grad_result = grad(
-                        target_tensor, var_tensor, retain_graph=True, allow_unused=True
-                    )
-                    gradients[tensor_sym][var_name] = (
-                        grad_result[0] if grad_result[0] is not None else None
-                    )
-
-        return gradients
 
     def reward_function(
         self,
@@ -229,8 +163,8 @@ class BellmanPeriod:
             if agent is None or self.block.reward[sym] == agent
         }
 
-        # Use helper method to compute gradients
-        return self._compute_gradients_for_tensors(rewards, wrt)
+        # Use utility function to compute gradients
+        return compute_gradients_for_tensors(rewards, wrt)
 
     def grad_transition_function(
         self,
@@ -275,8 +209,100 @@ class BellmanPeriod:
             states_t, shocks_t, controls_t, parameters, decision_rules
         )
 
-        # Use helper method to compute gradients
-        return self._compute_gradients_for_tensors(next_states, wrt)
+        # Use utility function to compute gradients
+        return compute_gradients_for_tensors(next_states, wrt)
+
+    def grad_pre_state_function(
+        self,
+        states_t,
+        shocks_t,
+        parameters,
+        wrt,
+        control_sym=None,
+    ):
+        """
+        Compute gradients of pre-decision state variables with respect to arrival states.
+
+        This computes ∂m/∂s for each pre-decision state variable m and each arrival
+        state s specified in wrt. This is needed for the envelope condition in dynamic
+        programming, where the marginal value of an arrival state depends on how
+        that state transforms through the dynamics before reaching the control.
+
+        The "pre-decision state" (or "pre-state") is the state that exists immediately
+        before the control decision is made. For example, cash-on-hand m = Ra + y is
+        the pre-state before consumption c is chosen.
+
+        By the envelope theorem:
+            V'(s) = u'(c) * ∂m/∂s
+
+        where m is the pre-decision state variable that the control depends on.
+
+        For example, in a consumption-saving model with m = a*R + y:
+            ∂m/∂a = R (the return on assets)
+
+        Parameters
+        ----------
+        states_t : dict
+            Arrival state variables (with requires_grad=True for gradient computation)
+        shocks_t : dict
+            Shock variables at time t
+        parameters : dict
+            Model parameters
+        wrt : dict
+            Dictionary of arrival states to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True
+        control_sym : str, optional
+            Name of the control variable whose info-set we want gradients for.
+            If None, uses the first control found in the block.
+
+        Returns
+        -------
+        dict
+            Nested dictionary of gradients for each pre-state variable and arrival state:
+            {pre_state_var: {state_sym: gradient}}
+        """
+        # Get the control's pre-state variables (stored as iset in the Control)
+        if control_sym is None:
+            # Find the first control in dynamics
+            for sym, rule in self.block.dynamics.items():
+                if hasattr(rule, "iset"):
+                    control_sym = sym
+                    break
+
+        if control_sym is None:
+            raise ValueError("No control with pre-state found in block dynamics")
+
+        control_rule = self.block.dynamics.get(control_sym)
+        if control_rule is None or not hasattr(control_rule, "iset"):
+            raise ValueError(f"Control '{control_sym}' has no pre-state (iset) defined")
+
+        pre_state_vars = control_rule.iset
+
+        # Build values dict with arrival states and parameters
+        vals = {**states_t, **shocks_t, **parameters}
+
+        # Compute pre-state variables by running dynamics up to the control
+        pre_state_values = {}
+        for var_name in pre_state_vars:
+            if var_name in self.arrival_states:
+                # Pre-state variable IS an arrival state, gradient is identity
+                pre_state_values[var_name] = states_t[var_name]
+            elif var_name in self.block.dynamics:
+                # Compute the dynamics for this variable
+                rule = self.block.dynamics[var_name]
+                if callable(rule):
+                    sig = inspect.signature(rule)
+                    args = {p: vals[p] for p in sig.parameters if p in vals}
+                    pre_state_values[var_name] = rule(**args)
+                else:
+                    pre_state_values[var_name] = rule
+            else:
+                raise ValueError(
+                    f"Pre-state variable '{var_name}' not found in arrival_states or dynamics"
+                )
+
+        # Use utility function to compute gradients
+        return compute_gradients_for_tensors(pre_state_values, wrt)
 
 
 def estimate_discounted_lifetime_reward(
@@ -644,7 +670,9 @@ def estimate_euler_residual(
     control_sym = control_syms[0]  # Assume single control for now
 
     # Make controls require gradients for automatic differentiation
-    # We need to enable gradients on the control variables
+    # We detach to create new leaf tensors for computing u'(c) w.r.t. c itself.
+    # This is intentional: we want gradients of reward/transition w.r.t. control values,
+    # not gradients through the policy network (which would be handled separately in training).
     controls_t_grad = {
         sym: controls_t[sym].detach().requires_grad_(True) for sym in controls_t
     }
@@ -676,7 +704,7 @@ def estimate_euler_residual(
     marginal_utility_t_plus_1 = reward_gradients_t_plus_1[reward_sym][control_sym]
 
     # Compute transition gradients: ∂s_{t+1}/∂c_t for all arrival states
-    # This captures how today's control affects tomorrow's state (e.g., ∂A_{t+1}/∂c_t = -R)
+    # This captures how today's control affects tomorrow's state (e.g., ∂a'/∂c = -1)
     transition_gradients = bellman_period.grad_transition_function(
         states_t,
         shocks_t,
@@ -685,37 +713,54 @@ def estimate_euler_residual(
         wrt={control_sym: controls_t_grad[control_sym]},
     )
 
-    # Sum transition gradients across all arrival states
-    # For single-state models, this is just the gradient for that state
-    # For multi-state models, we sum the effect across all states
-    non_none_gradients = [
-        transition_gradients[state_sym][control_sym]
-        for state_sym in bellman_period.arrival_states
-        if transition_gradients[state_sym][control_sym] is not None
-    ]
-    if len(non_none_gradients) == 0:
-        raise ValueError(
-            f"All transition gradients are None. Control '{control_sym}' may not affect "
-            f"any arrival states, which is invalid for Euler equation estimation."
-        )
-    transition_gradient_sum = sum(non_none_gradients)
+    # Compute the return factor from the dynamics: ∂m'/∂s' (how pre-state depends on arrival state)
+    # By the envelope theorem: V'(s') = u'(c') * ∂m'/∂s'
+    # For consumption-saving with m = a*R + y, this gives ∂m/∂a = R
+    #
+    # Use the centralized grad_pre_state_function to compute these gradients
+    states_t_plus_1_grad = {
+        sym: states_t_plus_1[sym].detach().requires_grad_(True)
+        for sym in bellman_period.arrival_states
+    }
 
-    # Compute the Euler equation residual from the first-order condition
-    # The first-order condition from the Bellman equation is:
-    #   u'(c_t) = -β * E[u'(c_{t+1}) * ∂s_{t+1}/∂c_t]
+    pre_state_gradients = bellman_period.grad_pre_state_function(
+        states_t_plus_1_grad,
+        shocks_t_plus_1,
+        parameters,
+        wrt=states_t_plus_1_grad,
+        control_sym=control_sym,
+    )
+
+    # Compute ∂(pre_state)/∂(arrival_state) * ∂(arrival_state)/∂c summed over states
+    # This gives the total derivative of pre-state w.r.t. control through all paths
+    return_factor_sum = torch.zeros_like(marginal_utility_t_plus_1)
+
+    for state_sym in bellman_period.arrival_states:
+        trans_grad = transition_gradients[state_sym][control_sym]
+        if trans_grad is None:
+            continue
+
+        # Sum over all pre-state variables
+        for pre_state_var, state_grads in pre_state_gradients.items():
+            pre_state_grad = state_grads.get(state_sym)
+            if pre_state_grad is not None:
+                # Chain rule: dm/dc = dm/ds * ds/dc
+                return_factor_sum = return_factor_sum + pre_state_grad * trans_grad
+
+    # Compute the Euler equation residual
+    # The first-order condition is: u'(c_t) = β * V'(a') * |∂a'/∂c|
+    # where V'(a') = u'(c') * ∂m'/∂a' (envelope theorem)
     #
-    # For a consumption-saving model with s_{t+1} = R(s_t - c_t) + y_{t+1}:
-    #   ∂s_{t+1}/∂c_t = -R
-    # So the FOC becomes:
-    #   u'(c_t) = -β * E[u'(c_{t+1}) * (-R)] = β R E[u'(c_{t+1})]
+    # In residual form with proper signs:
+    # f = u'(c_t) + β * u'(c_{t+1}) * (∂a'/∂c) * (∂m'/∂a')
     #
-    # The residual is:
-    #   f = u'(c_t) + β * u'(c_{t+1}) * ∂s_{t+1}/∂c_t
-    #
-    # At optimality, f = 0 (the first-order condition is satisfied)
+    # For consumption-saving: ∂a'/∂c = -1, ∂m'/∂a' = R
+    # So: f = u'(c) + β * u'(c') * (-1) * R = u'(c) - βR*u'(c')
+
+    # return_factor_sum already contains (∂a'/∂c * ∂m'/∂a') summed over states
     euler_residual = (
         marginal_utility_t
-        + discount_factor * marginal_utility_t_plus_1 * transition_gradient_sum
+        + discount_factor * marginal_utility_t_plus_1 * return_factor_sum
     )
 
     return euler_residual

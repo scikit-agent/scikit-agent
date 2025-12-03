@@ -10,6 +10,11 @@ import torch
 import unittest
 from skagent.distributions import Normal
 from skagent.ann import BlockValueNet
+from skagent.models.benchmarks import (
+    get_benchmark_model,
+    get_benchmark_calibration,
+    get_analytical_policy,
+)
 
 # Deterministic test seed - change this single value to modify all seeding
 TEST_SEED = 10077693
@@ -645,13 +650,13 @@ def test_get_euler_residual_loss():
         }
     )
 
-    # Create a simple decision function (consumption = 30% of wealth + small offset)
-    # Using 30% ensures we're not at constraint boundaries for testing purposes
+    # Create a simple decision function (consumption = 30% of wealth)
+    # This is a feasible but suboptimal policy for testing purposes
     def learned_decision_function(states_t, shocks_t, parameters):
         wealth = states_t["wealth"]
-        consumption = 0.3 * wealth + 0.1
-        consumption = torch.maximum(consumption, torch.tensor(0.01))
-        consumption = torch.minimum(consumption, 0.9 * wealth)
+        # Simple linear consumption rule: consume 30% of wealth
+        # Since wealth >= 1.0 in our grid, consumption is always positive
+        consumption = 0.3 * wealth
         return {"consumption": consumption}
 
     # Create Euler equation loss function
@@ -701,12 +706,11 @@ def test_bellman_equation_loss_with_value_network():
         }
     )
 
-    # Create a decision function
+    # Create a decision function (simple linear rule for testing)
     def learned_decision_function(states_t, shocks_t, parameters):
         wealth = states_t["wealth"]
-        consumption = 0.3 * wealth + 0.1
-        consumption = torch.maximum(consumption, torch.tensor(0.01))
-        consumption = torch.minimum(consumption, 0.9 * wealth)
+        # Simple linear consumption rule: consume 30% of wealth
+        consumption = 0.3 * wealth
         return {"consumption": consumption}
 
     # Create loss function
@@ -805,13 +809,12 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         test_bp = bellman.BellmanPeriod(test_block, {"R": R})
 
-        # Use a simple consumption rule (not necessarily optimal, but feasible)
+        # Use a simple consumption rule (suboptimal but feasible)
         def simple_policy(states, shocks, parameters):
             wealth = states["wealth"]
-            # Consume 30% of wealth
-            consumption = 0.3 * wealth + 0.1
-            consumption = torch.maximum(consumption, torch.tensor(0.01))
-            consumption = torch.minimum(consumption, 0.9 * wealth)
+            # Simple linear consumption rule: consume 30% of wealth
+            # Since wealth >= 2.0 in test_states, consumption is always positive
+            consumption = 0.3 * wealth
             return {"consumption": consumption}
 
         # Create test states
@@ -846,4 +849,80 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # (this verifies that the Euler residual computation is sensitive)
         assert torch.any(torch.abs(euler_residual) > 1e-6), (
             "Euler residual should be non-zero for non-optimal policy"
+        )
+
+    def test_euler_residual_d2_optimal_policy(self):
+        """
+        Test Euler residual is near zero for D-2 analytical optimal policy.
+
+        D-2 is the infinite horizon CRRA perfect foresight model.
+        The analytical solution is: c_t = κ*(m_t + H) where κ = (R - (βR)^(1/σ))/R
+
+        The Euler equation is: u'(c_t) = β*R*u'(c_{t+1})
+        For the optimal policy, the Euler residual should be essentially zero.
+        """
+        # Get D-2 benchmark model and calibration
+        d2_block = get_benchmark_model("D-2")
+        d2_calibration = get_benchmark_calibration("D-2")
+        d2_policy = get_analytical_policy("D-2")
+
+        # Construct shocks for the block (needed even though D-2 is deterministic)
+        d2_block.construct_shocks(d2_calibration)
+
+        # Create BellmanPeriod
+        bp = bellman.BellmanPeriod(d2_block, d2_calibration)
+
+        # Create test states with larger sample for better expectation estimate
+        n_samples = 100
+        test_states = {"a": torch.linspace(0.1, 10.0, n_samples)}
+
+        # For deterministic model, use empty shocks
+        shocks = {}
+
+        # Wrap the analytical policy to match expected signature
+        def optimal_policy(states, shocks_t, parameters):
+            return d2_policy(states, shocks_t, parameters)
+
+        # Suboptimal policy for comparison
+        def suboptimal_policy(states, shocks_t, parameters):
+            a = states["a"]
+            R = parameters["R"]
+            y = parameters["y"]
+            m = a * R + y
+            c = 0.5 * m  # 50% of cash-on-hand (generally suboptimal)
+            return {"c": c}
+
+        # Compute Euler residual using both policies
+        optimal_residual = bellman.estimate_euler_residual(
+            bp,
+            d2_calibration["DiscFac"],
+            optimal_policy,
+            test_states,
+            shocks,
+            d2_calibration,
+        )
+        suboptimal_residual = bellman.estimate_euler_residual(
+            bp,
+            d2_calibration["DiscFac"],
+            suboptimal_policy,
+            test_states,
+            shocks,
+            d2_calibration,
+        )
+
+        # For optimal policy, mean residual should be essentially zero
+        # Tolerance of 1e-5 accounts for numerical precision in autograd
+        mean_optimal = torch.mean(torch.abs(optimal_residual)).item()
+        assert mean_optimal < 1e-5, (
+            f"D-2 optimal policy should have near-zero Euler residual. "
+            f"Got mean |residual| = {mean_optimal:.6e}"
+        )
+
+        # MSE comparison: optimal should be much smaller than suboptimal
+        optimal_mse = torch.mean(optimal_residual**2).item()
+        suboptimal_mse = torch.mean(suboptimal_residual**2).item()
+
+        assert optimal_mse < suboptimal_mse / 100, (
+            f"D-2 optimal policy should have much smaller Euler residual MSE than suboptimal. "
+            f"Got optimal MSE={optimal_mse:.6e}, suboptimal MSE={suboptimal_mse:.6e}"
         )
