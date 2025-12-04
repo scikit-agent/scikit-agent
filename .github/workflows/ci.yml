@@ -89,7 +89,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://github.com/preshing/cairo-windows/releases/download/cairo-1.17.2/cairo-windows-1.17.2.zip" -OutFile cairo.zip
+          Invoke-WebRequest -Uri "https://github.com/preshing/cairo-windows/releases/download/1.17.2/cairo-windows-1.17.2.zip" -OutFile cairo.zip
           Expand-Archive cairo.zip -DestinationPath C:\cairo
           echo "C:\cairo" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "C:\cairo" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append -Name "PATH"
