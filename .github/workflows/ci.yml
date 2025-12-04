@@ -81,7 +81,9 @@ jobs:
 
       - name: Cairo install (macOS)
         if: runner.os == 'macOS'
-        run: brew install cairo libffi
+        run: |
+          brew install cairo libffi
+          echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
