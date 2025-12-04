@@ -79,6 +79,10 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install graphviz
 
+      - name: Cairo install (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cairo libffi
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
