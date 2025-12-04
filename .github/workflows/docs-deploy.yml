@@ -109,7 +109,7 @@ jobs:
       pull-requests: write
     needs: build-docs
     if:
-      ${{ github.event_name == 'pull_request' && secrets.GH_PAT != '' &&
+      ${{ github.event_name == 'pull_request' &&
       !github.event.pull_request.head.repo.fork }}
     steps:
       - name: Checkout gh-pages
