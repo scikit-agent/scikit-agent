@@ -85,11 +85,13 @@ jobs:
           brew install cairo libffi
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
-      - name: Install Cairo via GTK (Windows)
+      - name: Install system dependencies (Windows)
         if: runner.os == 'Windows'
+        shell: bash
         run: |
-          choco install pkgconfiglite
-          choco install gtk-runtime
+          curl -L -o gtk3-runtime.zip https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases/download/2022-01-04/gtk3-runtime-3.24.31-2022-01-04-ts-win64.zip
+          unzip gtk3-runtime.zip -d C:/gtk3
+          echo "C:/gtk3/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
