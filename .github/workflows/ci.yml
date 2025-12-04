@@ -85,6 +85,12 @@ jobs:
           brew install cairo libffi
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
+      - name: Install Cairo via GTK (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install pkgconfiglite
+          choco install gtk-runtime
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
