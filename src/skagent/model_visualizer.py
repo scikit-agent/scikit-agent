@@ -1,7 +1,6 @@
 import os
 import yaml
 import pydot
-import cairosvg
 import colorsys
 import random
 import matplotlib.image as mpimg
@@ -213,9 +212,17 @@ class ModelVisualizer:
         if isinstance(svg_content, str):
             svg_content = svg_content.encode("utf-8")
 
-        png_data = cairosvg.svg2png(bytestring=svg_content)
+        try:
+            import cairosvg
 
-        # Load PNG into matplotlib
-        img = mpimg.imread(BytesIO(png_data), format="png")
+            png_data = cairosvg.svg2png(bytestring=svg_content)
+
+            # Load PNG into matplotlib
+            img = mpimg.imread(BytesIO(png_data), format="png")
+        except (ImportError, OSError):
+            print(
+                "Unable to import cairosvg. This is likely because Cairo is not installed. If using windows, install GTK runtime."
+            )
+            img = None
 
         return img, svg_content

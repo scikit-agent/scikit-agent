@@ -85,25 +85,6 @@ jobs:
           brew install cairo libffi
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
-      - name: Install Cairo (Windows)
-        if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          install: mingw-w64-x86_64-cairo
-          release: false
-
-      - name: Verify and add Cairo to PATH (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $msys_path = "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin"
-          Write-Host "MSYS2 location: $msys_path"
-          Write-Host "Contents of mingw64\bin:"
-          Get-ChildItem $msys_path | Where-Object { $_.Name -like "*cairo*" }
-          echo "$msys_path" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          echo "PATH=$env:PATH;$msys_path" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
