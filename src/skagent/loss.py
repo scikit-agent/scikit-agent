@@ -2,6 +2,7 @@ import numpy as np
 from skagent.bellman import (
     estimate_bellman_residual,
     estimate_discounted_lifetime_reward,
+    estimate_euler_residual,
 )
 from skagent.grid import Grid
 import torch
@@ -243,7 +244,7 @@ class BellmanEquationLoss:
 
         self.discount_factor = discount_factor
         if callable(discount_factor):
-            raise Exception(
+            raise ValueError(
                 "Currently only numerical, not state-dependent, discount factors are supported."
             )
 
@@ -260,7 +261,7 @@ class BellmanEquationLoss:
             if agent is None or self.bellman_period.block.reward[sym] == self.agent
         ]
         if len(reward_vars) == 0:
-            raise Exception("No reward variables found in block")
+            raise ValueError("No reward variables found in block")
 
     def __call__(self, df, input_grid: Grid):
         """
@@ -284,6 +285,20 @@ class BellmanEquationLoss:
 
         # Extract current states and both shock realizations
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
+
+        # Validate shock keys exist in grid
+        for sym in self.shock_syms:
+            if f"{sym}_0" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+            if f"{sym}_1" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+
         shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
         shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
 
@@ -301,3 +316,230 @@ class BellmanEquationLoss:
 
         # Return squared residual as loss
         return bellman_residual**2
+
+
+class EulerEquationLoss:
+    """
+    Creates an Euler equation loss function for the Maliar method.
+
+    The Euler equation is the first-order condition from the Bellman equation,
+    relating marginal utilities across periods. This loss function computes the
+    Euler equation **residual**:
+
+    .. math::
+
+        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[
+            \\frac{\\partial s_{t+1}}{\\partial c_t} \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
+        \\right]
+
+    where :math:`f` is the residual that equals zero at optimality, :math:`s_{t+1}` is
+    the next-period arrival state, and :math:`m'` is the pre-decision state.
+
+    **Derivation:**
+
+    The first-order condition from the Bellman equation is:
+
+    .. math::
+
+        u'(c_t) = -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+
+    By the envelope theorem, :math:`V'(s') = u'(c') \\cdot \\frac{\\partial m'}{\\partial s'}`.
+
+    For a consumption-saving model with :math:`a_{t+1} = m_t - c_t` where
+    :math:`m_t = R \\cdot a_t + y_t` (cash-on-hand):
+
+    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -1`
+    - Pre-state gradient: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} = R`
+    - Combined: :math:`R \\cdot (-1) = -R`
+
+    This gives :math:`f = u'(c_t) - \\beta R \\cdot u'(c_{t+1}) = 0` at optimality,
+    which is the standard Euler equation :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
+
+    **Methodology:**
+
+    This follows the Maliar et al. (2021) methodology (Definition 2.7, equations 9-12)
+    and is designed for use with the all-in-one (AiO) expectation operator.
+
+    The implementation computes the Euler residual using two independent shock
+    realizations (:math:`\\varepsilon_0` for period :math:`t` and :math:`\\varepsilon_1`
+    for period :math:`t+1`), then squares it. The loss is:
+
+    .. math::
+
+        L(\\theta) = E[f^2]
+
+    where :math:`f` is the Euler equation residual computed with both shock realizations.
+
+    **Notation:**
+
+    We use :math:`\\varepsilon` (epsilon) to denote exogenous shocks, following standard
+    convention for stochastic disturbances. This is functionally equivalent to the shock
+    notation in Maliar et al. (2021).
+
+    **Input Grid Structure:**
+
+    This function expects the input grid to contain two independent shock realizations:
+
+    - ``{shock_sym}_0``: shocks for transitions from t to t+1
+    - ``{shock_sym}_1``: shocks for transitions from t+1 to t+2 (independent of period t)
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The model block containing dynamics, rewards, and shocks
+    discount_factor : float
+        The discount factor β (time preference parameter)
+    parameters : dict, optional
+        Model parameters for calibration
+    agent : str, optional
+        Agent identifier for rewards
+    weight : float, optional
+        Exogenous weight for combining multiple optimality conditions (default: 1.0)
+        This corresponds to the vector v in equation (12) of the paper.
+
+    Returns
+    -------
+    callable
+        A loss function that takes (decision_function, input_grid) and returns
+        the Euler equation residual loss
+
+    Notes
+    -----
+    This implementation follows Maliar, Maliar, and Winant (2021, JME) Section 2.2
+    and Section 4.4 for the consumption-saving problem with Kuhn-Tucker conditions.
+
+    **Current Limitations:**
+
+    - Only single-control models are currently supported. Models with multiple
+      control variables will raise a ``NotImplementedError``.
+    - State-dependent discount factors are not yet supported.
+
+    The Euler equation automatically adapts to your model's structure. For example:
+
+    - Consumption-saving: :math:`u(c) = \\log(c)`, with :math:`a_{t+1} = m_t - c_t`
+      where :math:`m_t = R \\cdot a_t + y_t`. Transition gradient
+      :math:`\\partial a_{t+1}/\\partial c_t = -1` and pre-state gradient
+      :math:`\\partial m'/\\partial a' = R` combine to give :math:`-R`.
+      Euler equation becomes: :math:`u'(c_t) = \\beta R u'(c_{t+1})`
+    - With permanent income: :math:`u(c/P)` where :math:`P` evolves with shocks.
+      Multiple transition gradients are summed automatically.
+
+    Examples
+    --------
+    >>> # Euler equation adapts to your block's reward structure
+    >>> block = DBlock(
+    ...     shocks={"income": Normal(mu=1.0, sigma=0.1)},
+    ...     dynamics={
+    ...         "consumption": Control(iset=["wealth"]),
+    ...         "wealth": lambda wealth, income, consumption, R:
+    ...             R * (wealth - consumption) + income,
+    ...         "utility": lambda consumption: torch.log(consumption),
+    ...     },
+    ...     reward={"utility": "consumer"}
+    ... )
+    >>> bp = BellmanPeriod(block, parameters={"R": 1.04})
+    >>> loss_fn = EulerEquationLoss(bp, discount_factor=0.95, parameters={"R": 1.04})
+    >>>
+    >>> # Create input grid with two shock realizations
+    >>> input_grid = Grid.from_dict({
+    ...     "wealth": torch.linspace(1.0, 10.0, 50),
+    ...     "income_0": torch.ones(50),      # First shock realization
+    ...     "income_1": torch.ones(50) * 1.1 # Second independent realization
+    ... })
+    >>>
+    >>> # Compute loss for a decision function
+    >>> loss = loss_fn(my_decision_function, input_grid)
+    """
+
+    def __init__(
+        self, bellman_period, discount_factor, parameters=None, agent=None, weight=1.0
+    ):
+        self.bellman_period = bellman_period
+        self.parameters = parameters if parameters is not None else {}
+        self.arrival_variables = bellman_period.arrival_states
+
+        self.discount_factor = discount_factor
+        if callable(discount_factor):
+            raise ValueError(
+                "Currently only numerical, not state-dependent, discount factors are supported."
+            )
+
+        # Get shock variables
+        shock_vars = self.bellman_period.get_shocks()
+        self.shock_syms = list(shock_vars.keys())
+
+        self.agent = agent
+        self.weight = weight
+
+        # Test reward variables
+        reward_vars = [
+            sym
+            for sym in self.bellman_period.block.reward
+            if agent is None or self.bellman_period.block.reward[sym] == self.agent
+        ]
+        if len(reward_vars) == 0:
+            raise ValueError("No reward variables found in block")
+
+    def __call__(self, df, input_grid: Grid):
+        """
+        Euler equation loss function using the AiO expectation operator.
+
+        Parameters
+        ----------
+        df : callable
+            Decision function from policy network.
+            Signature: df(states_t, shocks_t, parameters) -> controls_t
+        input_grid : Grid
+            Grid containing current states and two independent shock realizations:
+            - {shock_sym}_0: shocks for transitions t → t+1
+            - {shock_sym}_1: shocks for transitions t+1 → t+2 (independent)
+
+        Returns
+        -------
+        torch.Tensor
+            Weighted squared Euler equation residual.
+            The residual is computed using two independent shock realizations
+            via the AiO expectation operator, then squared and weighted.
+
+        Notes
+        -----
+        The AiO operator approximates E[(E[f])²] ≈ E[f(ε₁) * f(ε₂)] where ε₁ and ε₂
+        are independent. This reduces the number of integration nodes from p^d
+        (tensor product) to just 2, regardless of the number of shocks.
+        """
+        given_vals = input_grid.to_dict()
+
+        # Extract current states and both shock realizations
+        states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
+
+        # Validate shock keys exist in grid
+        for sym in self.shock_syms:
+            if f"{sym}_0" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+            if f"{sym}_1" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+
+        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
+
+        # Use helper function to estimate Euler residual with combined shock object
+        euler_residual = estimate_euler_residual(
+            self.bellman_period,
+            self.discount_factor,
+            df,
+            states_t,
+            shocks,
+            self.parameters,
+            self.agent,
+        )
+
+        # Return squared residual as loss
+        # Each sample's residual is computed using two independent shock draws (ε₀, ε₁).
+        # Squaring and averaging across samples approximates E[f²] ≈ E[(E[f])²].
+        return self.weight * euler_residual**2

@@ -377,9 +377,11 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
         iset_vals = [post[isym].flatten() for isym in self.iset]
 
-        output = self.get_decision_rule(length=next(iter(post.values())).numel())[
-            self.control_sym
-        ](*iset_vals)
+        # Get length from one of the information set values (which are known to be tensors)
+        # rather than arbitrary post values (which may include scalar parameters)
+        length = iset_vals[0].numel() if iset_vals else 1
+
+        output = self.get_decision_rule(length=length)[self.control_sym](*iset_vals)
 
         # again, assuming only one for now...
         # decisions = dict(zip([control_sym], output))
