@@ -8,6 +8,13 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- Updated GitHub Actions workflows to use latest stable versions
+- Simplified CI workflow by consolidating dependency installation steps
+- Simplified docs deployment workflow by removing non-functional PR preview
+  feature
+
 ### Added
 
 - Initial release features
