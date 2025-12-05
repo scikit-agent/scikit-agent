@@ -140,9 +140,11 @@ class test_DBlock(unittest.TestCase):
 
     def test_visualize(self):
         """Test that the visualize method returns a PyDot with the correct label"""
-        graph = self.test_block_A.visualize(a_calibration)
+        viz = self.test_block_A.visualize(a_calibration)
 
-        self.assertEqual(graph.get_label(), "test block A")
+        self.test_block_A.display(a_calibration)
+
+        self.assertEqual(viz.create_graph().get_label(), "test block A")
 
 
 class test_RBlock(unittest.TestCase):
