@@ -285,6 +285,20 @@ class BellmanEquationLoss:
 
         # Extract current states and both shock realizations
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
+
+        # Validate shock keys exist in grid
+        for sym in self.shock_syms:
+            if f"{sym}_0" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+            if f"{sym}_1" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+
         shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
         shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
 
@@ -314,9 +328,12 @@ class EulerEquationLoss:
 
     .. math::
 
-        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[
+            \\frac{\\partial s_{t+1}}{\\partial c_t} \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
+        \\right]
 
-    where :math:`f` is the residual that equals zero at optimality.
+    where :math:`f` is the residual that equals zero at optimality, :math:`s_{t+1}` is
+    the next-period arrival state, and :math:`m'` is the pre-decision state.
 
     **Derivation:**
 
@@ -324,11 +341,19 @@ class EulerEquationLoss:
 
     .. math::
 
-        u'(c_t) = -\\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+        u'(c_t) = -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
 
-    For a consumption-saving model with :math:`A_{t+1} = R(A_t - c_t) + y_{t+1}`,
-    where :math:`\\frac{\\partial A_{t+1}}{\\partial c_t} = -R`, this becomes
-    :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
+    By the envelope theorem, :math:`V'(s') = u'(c') \\cdot \\frac{\\partial m'}{\\partial s'}`.
+
+    For a consumption-saving model with :math:`a_{t+1} = R(a_t - c_t) + y_{t+1}` and
+    pre-decision state :math:`m = R \\cdot a + y`:
+
+    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -R`
+    - Pre-state gradient: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} = R`
+    - Combined: :math:`R \\cdot (-R) = -R`
+
+    This gives :math:`f = u'(c_t) - \\beta R \\cdot u'(c_{t+1}) = 0` at optimality,
+    which is the standard Euler equation :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
 
     **Methodology:**
 
@@ -383,7 +408,14 @@ class EulerEquationLoss:
     This implementation follows Maliar, Maliar, and Winant (2021, JME) Section 2.2
     and Section 4.4 for the consumption-saving problem with Kuhn-Tucker conditions.
 
+    **Current Limitations:**
+
+    - Only single-control models are currently supported. Models with multiple
+      control variables will raise a ``NotImplementedError``.
+    - State-dependent discount factors are not yet supported.
+
     The Euler equation automatically adapts to your model's structure. For example:
+
     - Consumption-saving: u(c) = log(c), with A_{t+1} = R*(A_t - c_t) + y
       Transition gradient ∂A_{t+1}/∂c_t = -R is computed automatically
       Euler equation becomes: u'(c_t) = β * R * u'(c_{t+1})

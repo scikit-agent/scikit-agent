@@ -279,6 +279,37 @@ class BellmanPeriod:
 
         pre_state_vars = control_rule.iset
 
+        # Compute pre-state values using helper method
+        pre_state_values = self._compute_pre_state_values(
+            pre_state_vars, states_t, shocks_t, parameters
+        )
+
+        # Use utility function to compute gradients
+        return compute_gradients_for_tensors(pre_state_values, wrt)
+
+    def _compute_pre_state_values(self, pre_state_vars, states_t, shocks_t, parameters):
+        """
+        Compute pre-decision state variable values.
+
+        This is a helper method used by grad_pre_state_function and estimate_euler_residual
+        to compute pre-state values without duplication.
+
+        Parameters
+        ----------
+        pre_state_vars : list
+            List of pre-state variable names (from Control.iset)
+        states_t : dict
+            Arrival state variables
+        shocks_t : dict
+            Shock variables at time t
+        parameters : dict
+            Model parameters
+
+        Returns
+        -------
+        dict
+            Dictionary mapping pre-state variable names to their computed values
+        """
         # Build values dict with arrival states and parameters
         vals = {**states_t, **shocks_t, **parameters}
 
@@ -302,8 +333,7 @@ class BellmanPeriod:
                     f"Pre-state variable '{var_name}' not found in arrival_states or dynamics"
                 )
 
-        # Use utility function to compute gradients
-        return compute_gradients_for_tensors(pre_state_values, wrt)
+        return pre_state_values
 
 
 def estimate_discounted_lifetime_reward(
@@ -515,10 +545,14 @@ def estimate_euler_residual(
 
     .. math::
 
-        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[\\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[
+            \\frac{\\partial s_{t+1}}{\\partial c_t} \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
+        \\right]
 
-    where :math:`f` is the Euler equation residual. At optimality, :math:`f = 0`
-    represents the first-order condition being satisfied.
+    where :math:`f` is the Euler equation residual, :math:`s_{t+1}` is the next-period
+    arrival state, and :math:`m'` is the pre-decision state (information set for the
+    control). At optimality, :math:`f = 0` represents the first-order condition being
+    satisfied.
 
     **Derivation:**
 
@@ -527,29 +561,40 @@ def estimate_euler_residual(
 
     .. math::
 
-        u'(c_t) = -\\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+        u'(c_t) = -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+
+    By the envelope theorem, :math:`V'(s') = u'(c') \\cdot \\frac{\\partial m'}{\\partial s'}`,
+    where :math:`m'` is the pre-decision state. Substituting:
+
+    .. math::
+
+        u'(c_t) = -\\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
+            \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
 
     Rearranging to define the residual :math:`f`:
 
     .. math::
 
-        f = u'(c_t) + \\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right] = 0
+        f = u'(c_t) + \\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
+            \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right] = 0
 
     **Example:**
 
-    For a consumption-saving model with :math:`A_{t+1} = R(A_t - c_t) + y_{t+1}`:
+    For a consumption-saving model with :math:`a_{t+1} = R(a_t - c_t) + y_{t+1}` and
+    pre-decision state :math:`m = R \\cdot a + y`:
+
+    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -R`
+    - Pre-state gradient: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} = R`
+    - Combined: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} \\cdot \\frac{\\partial a_{t+1}}{\\partial c_t} = R \\cdot (-R) = -R`
+
+    Substituting into the residual:
 
     .. math::
 
-        \\frac{\\partial A_{t+1}}{\\partial c_t} = -R
+        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot (-R) = u'(c_t) - \\beta R \\cdot u'(c_{t+1})
 
-    The first-order condition becomes:
-
-    .. math::
-
-        u'(c_t) = -\\beta E[u'(c_{t+1}) \\cdot (-R)] = \\beta R E[u'(c_{t+1})]
-
-    And the residual :math:`f = u'(c_t) - \\beta R E[u'(c_{t+1})] = 0` at optimality.
+    At optimality, :math:`f = 0` gives the standard Euler equation
+    :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
 
     **Notation:**
 
@@ -786,7 +831,6 @@ def estimate_euler_residual(
             s = s.detach().requires_grad_(True)
         states_t_plus_1_grad[sym] = s
 
-    # Use grad_pre_state_function but we need to handle it carefully for training
     # Get the control's pre-state variables
     control_rule = bellman_period.block.dynamics.get(control_sym)
     if control_rule is not None and hasattr(control_rule, "iset"):
@@ -795,42 +839,15 @@ def estimate_euler_residual(
         # Fall back: assume control depends on arrival states directly
         pre_state_vars = list(bellman_period.arrival_states)
 
-    # Compute pre-state values with gradient tracking
-    vals = {**states_t_plus_1_grad, **shocks_t_plus_1, **parameters}
-    pre_state_values = {}
+    # Compute pre-state values using the helper method (avoids code duplication)
+    pre_state_values = bellman_period._compute_pre_state_values(
+        pre_state_vars, states_t_plus_1_grad, shocks_t_plus_1, parameters
+    )
 
-    for var_name in pre_state_vars:
-        if var_name in bellman_period.arrival_states:
-            pre_state_values[var_name] = states_t_plus_1_grad[var_name]
-        elif var_name in bellman_period.block.dynamics:
-            rule = bellman_period.block.dynamics[var_name]
-            if callable(rule):
-                sig = inspect.signature(rule)
-                args = {p: vals[p] for p in sig.parameters if p in vals}
-                pre_state_values[var_name] = rule(**args)
-            else:
-                pre_state_values[var_name] = rule
-        else:
-            raise ValueError(
-                f"Pre-state variable '{var_name}' not found in arrival_states or dynamics"
-            )
-
-    # Compute ∂(pre_state)/∂(arrival_state) for each combination
-    pre_state_gradients = {}
-    for pre_var, pre_val in pre_state_values.items():
-        pre_state_gradients[pre_var] = {}
-        for state_sym, state_val in states_t_plus_1_grad.items():
-            if pre_val.requires_grad:
-                ps_grad = grad(
-                    pre_val.sum(),
-                    state_val,
-                    create_graph=True,
-                    retain_graph=True,
-                    allow_unused=True,
-                )[0]
-                pre_state_gradients[pre_var][state_sym] = ps_grad
-            else:
-                pre_state_gradients[pre_var][state_sym] = None
+    # Compute ∂(pre_state)/∂(arrival_state) using utility function with create_graph=True
+    pre_state_gradients = compute_gradients_for_tensors(
+        pre_state_values, states_t_plus_1_grad, create_graph=True
+    )
 
     # Compute ∂(pre_state)/∂(arrival_state) * ∂(arrival_state)/∂c summed over states
     # This gives the total derivative of pre-state w.r.t. control through all paths

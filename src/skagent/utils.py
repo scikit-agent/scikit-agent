@@ -108,7 +108,7 @@ def compute_parameter_difference(params1, params2):
     return torch.norm(params1 - params2).item()
 
 
-def compute_gradients_for_tensors(tensors_dict, wrt):
+def compute_gradients_for_tensors(tensors_dict, wrt, create_graph=False):
     """
     Compute gradients for a dictionary of tensors with respect to variables.
 
@@ -123,6 +123,10 @@ def compute_gradients_for_tensors(tensors_dict, wrt):
     wrt : dict
         Dictionary of variables to compute gradients with respect to.
         Keys are variable names, values are tensors with requires_grad=True
+    create_graph : bool, optional
+        If True, graph of the derivative will be constructed, allowing
+        computation of higher order derivative products. Default: False.
+        Set to True for end-to-end training through gradient computations.
 
     Returns
     -------
@@ -153,6 +157,7 @@ def compute_gradients_for_tensors(tensors_dict, wrt):
                         target_tensor[i],
                         var_tensor,
                         retain_graph=True,
+                        create_graph=create_graph,
                         allow_unused=True,
                     )
                     if grad_result[0] is not None:
@@ -173,7 +178,11 @@ def compute_gradients_for_tensors(tensors_dict, wrt):
             else:
                 # Handle scalar case
                 grad_result = grad(
-                    target_tensor, var_tensor, retain_graph=True, allow_unused=True
+                    target_tensor,
+                    var_tensor,
+                    retain_graph=True,
+                    create_graph=create_graph,
+                    allow_unused=True,
                 )
                 gradients[tensor_sym][var_name] = (
                     grad_result[0] if grad_result[0] is not None else None

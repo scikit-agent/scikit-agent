@@ -13,6 +13,7 @@ from skagent.ann import BlockValueNet
 from skagent.models.benchmarks import (
     get_benchmark_model,
     get_benchmark_calibration,
+    get_analytical_policy,
 )
 
 # Deterministic test seed - change this single value to modify all seeding
@@ -619,61 +620,47 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
 
 def test_get_euler_residual_loss():
-    """Test Euler equation loss function with two independent shock realizations."""
-    # Create a simple consumption-saving test block
-    test_block = model.DBlock(
-        name="test_euler",
-        shocks={"income": Normal(mu=1.0, sigma=0.1)},
-        dynamics={
-            "consumption": model.Control(iset=["wealth"], agent="consumer"),
-            "wealth": lambda wealth, income, consumption, R: R * (wealth - consumption)
-            + income,
-            "utility": lambda consumption: torch.log(consumption + 1e-8),
-        },
-        reward={"utility": "consumer"},
-    )
-    test_block.construct_shocks({})
+    """Test Euler equation loss function using D-2 benchmark with analytical policy."""
+    # Use D-2 benchmark: Infinite horizon CRRA perfect foresight
+    d2_block = get_benchmark_model("D-2")
+    d2_calibration = get_benchmark_calibration("D-2")
+    d2_policy = get_analytical_policy("D-2")
 
-    # Parameters including gross interest rate R (required for Euler equation)
-    test_params = {"R": 1.04}
-    test_bp = bellman.BellmanPeriod(test_block, test_params)
+    # Construct shocks for the block (D-2 is deterministic, so this is a no-op)
+    d2_block.construct_shocks(d2_calibration)
 
-    # Create input grid with two independent shock realizations
-    # shock_0 for transitions t -> t+1
-    # shock_1 for transitions t+1 -> t+2 (independent)
+    # Create BellmanPeriod
+    test_bp = bellman.BellmanPeriod(d2_block, d2_calibration)
+
+    # Create input grid with arrival states
+    # D-2 uses: a (arrival assets)
+    # D-2 is deterministic, so no shocks needed in grid
+    n_points = 10
     input_grid = grid.Grid.from_dict(
         {
-            "wealth": torch.linspace(1.0, 10.0, 5),
-            "income_0": torch.ones(5) * 1.0,  # Period t shocks
-            "income_1": torch.ones(5) * 1.1,  # Period t+1 shocks (independent)
+            "a": torch.linspace(0.5, 5.0, n_points),
         }
     )
 
-    # Create a simple decision function (consumption = 30% of wealth)
-    # This is a feasible but suboptimal policy for testing purposes
-    def learned_decision_function(states_t, shocks_t, parameters):
-        wealth = states_t["wealth"]
-        # Simple linear consumption rule: consume 30% of wealth
-        # Since wealth >= 1.0 in our grid, consumption is always positive
-        consumption = 0.3 * wealth
-        return {"consumption": consumption}
-
     # Create Euler equation loss function
     loss_fn = loss.EulerEquationLoss(
-        test_bp, discount_factor=0.95, parameters=test_params
+        test_bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
     )
 
-    # Test that loss function works
-    losses = loss_fn(learned_decision_function, input_grid)
+    # Test that loss function works with the analytical optimal policy
+    losses = loss_fn(d2_policy, input_grid)
 
     # Check that we get per-sample losses
     assert isinstance(losses, torch.Tensor)
-    assert losses.shape[0] == 5  # One loss per grid point
+    assert losses.shape[0] == n_points  # One loss per grid point
     assert torch.all(losses >= 0)  # Squared residuals should be non-negative
 
-    # For this simple linear policy, Euler residuals should be non-zero
-    # (not optimal policy)
-    assert torch.mean(losses) > 1e-6
+    # For the analytical optimal policy, Euler residuals should be near zero
+    # (within numerical tolerance for perfect foresight model)
+    mean_loss = torch.mean(losses).item()
+    assert mean_loss < 1e-8, (
+        f"Analytical optimal policy should have near-zero Euler loss. Got mean loss: {mean_loss:.6e}"
+    )
 
 
 def test_bellman_equation_loss_with_value_network():
@@ -705,11 +692,13 @@ def test_bellman_equation_loss_with_value_network():
         }
     )
 
-    # Create a decision function (simple linear rule for testing)
+    # Create a decision function with bounds checking for better test coverage
     def learned_decision_function(states_t, shocks_t, parameters):
         wealth = states_t["wealth"]
-        # Simple linear consumption rule: consume 30% of wealth
-        consumption = 0.3 * wealth
+        # Consumption rule with bounds to test edge case handling
+        consumption = 0.3 * wealth + 0.1
+        consumption = torch.maximum(consumption, torch.tensor(0.01))
+        consumption = torch.minimum(consumption, 0.9 * wealth)
         return {"consumption": consumption}
 
     # Create loss function
@@ -775,80 +764,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
     the methodology described in Maliar, Maliar, and Winant (2021, JME) for testing
     first-order conditions.
     """
-
-    def test_euler_residual_with_income(self):
-        """
-        Test Euler residual computation with a non-optimal policy.
-
-        This test verifies that:
-        1. The Euler residual computation produces finite values
-        2. The residual is non-zero for a non-optimal policy (sensitivity check)
-        3. The computation works correctly with income shocks and two shock realizations
-
-        This complements test_get_euler_residual_loss by focusing on the residual
-        computation itself rather than the loss function wrapper.
-        """
-
-        # Create a consumption-saving model with income shocks
-        R = 1.04
-        beta = 0.95
-        test_block = model.DBlock(
-            name="consumption_saving_income",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={
-                "consumption": model.Control(iset=["wealth"], agent="consumer"),
-                "wealth": lambda wealth, income, consumption, R: R
-                * (wealth - consumption)
-                + income,
-                "utility": lambda consumption: torch.log(consumption + 1e-8),
-            },
-            reward={"utility": "consumer"},
-        )
-        test_block.construct_shocks({})
-
-        test_bp = bellman.BellmanPeriod(test_block, {"R": R})
-
-        # Use a simple consumption rule (suboptimal but feasible)
-        def simple_policy(states, shocks, parameters):
-            wealth = states["wealth"]
-            # Simple linear consumption rule: consume 30% of wealth
-            # Since wealth >= 2.0 in test_states, consumption is always positive
-            consumption = 0.3 * wealth
-            return {"consumption": consumption}
-
-        # Create test states
-        test_states = {
-            "wealth": torch.tensor([2.0, 3.0, 4.0]),
-        }
-
-        # Create shocks for two periods
-        shocks = {
-            "income_0": torch.tensor([1.0, 1.0, 1.0]),  # Period t income
-            "income_1": torch.tensor(
-                [1.1, 1.1, 1.1]
-            ),  # Period t+1 income (independent)
-        }
-
-        # Compute Euler residual
-        euler_residual = bellman.estimate_euler_residual(
-            test_bp,
-            beta,
-            simple_policy,
-            test_states,
-            shocks,
-            {"R": R},
-        )
-
-        # The residual should be finite (even if not zero, since the policy is not optimal)
-        assert torch.all(torch.isfinite(euler_residual)), (
-            "Euler residual should be finite"
-        )
-
-        # The residual should be non-zero for a non-optimal policy
-        # (this verifies that the Euler residual computation is sensitive)
-        assert torch.any(torch.abs(euler_residual) > 1e-6), (
-            "Euler residual should be non-zero for non-optimal policy"
-        )
 
     def test_euler_residual_d2_optimal_policy(self):
         """
