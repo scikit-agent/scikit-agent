@@ -108,6 +108,38 @@ def compute_parameter_difference(params1, params2):
     return torch.norm(params1 - params2).item()
 
 
+def _compute_jacobian_diagonal(target_tensor, var_tensor, create_graph=False):
+    """
+    Compute diagonal of Jacobian: ∂target[i]/∂var[i] for each batch element.
+
+    Uses vectorized backward pass for efficiency.
+    """
+    from torch.autograd import grad
+
+    batch_size = target_tensor.shape[0]
+
+    # Use vectorized gradient computation with identity matrix as grad_outputs
+    # This computes all diagonal elements in one backward pass
+    grad_result = grad(
+        outputs=target_tensor,
+        inputs=var_tensor,
+        grad_outputs=torch.eye(batch_size, device=target_tensor.device),
+        retain_graph=True,
+        create_graph=create_graph,
+        allow_unused=True,
+        is_grads_batched=True,
+    )
+
+    if grad_result[0] is None:
+        return None
+
+    # Extract diagonal: result[i] = ∂target[i]/∂var[i]
+    jacobian = grad_result[0]  # Shape: (batch_size, batch_size) or (batch_size,)
+    if jacobian.dim() > 1:
+        return torch.diagonal(jacobian)
+    return jacobian
+
+
 def compute_gradients_for_tensors(tensors_dict, wrt, create_graph=False):
     """
     Compute gradients for a dictionary of tensors with respect to variables.
@@ -115,6 +147,9 @@ def compute_gradients_for_tensors(tensors_dict, wrt, create_graph=False):
     This function computes gradients using PyTorch's autograd, handling both
     scalar and batched tensor cases. It is used by grad_reward_function and
     grad_transition_function in BellmanPeriod.
+
+    For batched inputs, this computes the diagonal of the Jacobian: for each
+    batch element i, we compute ∂target[i]/∂var[i].
 
     Parameters
     ----------
@@ -137,46 +172,20 @@ def compute_gradients_for_tensors(tensors_dict, wrt, create_graph=False):
     from torch.autograd import grad
 
     gradients = {}
-    for tensor_sym in tensors_dict:
+    for tensor_sym, target_tensor in tensors_dict.items():
         gradients[tensor_sym] = {}
         for var_name, var_tensor in wrt.items():
-            # Skip if variable doesn't require gradients
             if not var_tensor.requires_grad:
                 gradients[tensor_sym][var_name] = None
                 continue
 
-            # Compute gradient of this tensor with respect to this variable
-            target_tensor = tensors_dict[tensor_sym]
-
-            # For batched computations, we need to compute gradients for each element
+            # Batched case: compute diagonal Jacobian elements
             if target_tensor.dim() > 0 and target_tensor.numel() > 1:
-                # Handle batched case: compute gradients for each element in the batch
-                batch_gradients = []
-                for i in range(target_tensor.shape[0]):
-                    grad_result = grad(
-                        target_tensor[i],
-                        var_tensor,
-                        retain_graph=True,
-                        create_graph=create_graph,
-                        allow_unused=True,
-                    )
-                    if grad_result[0] is not None:
-                        g = grad_result[0]
-                        if g.dim() > 0 and g.shape[0] > i:
-                            batch_gradients.append(g[i])
-                        else:
-                            # Scalar or non-matching shape - use as-is
-                            batch_gradients.append(g)
-                    else:
-                        batch_gradients.append(None)
-
-                # Stack the gradients if they're not None
-                if all(g is not None for g in batch_gradients):
-                    gradients[tensor_sym][var_name] = torch.stack(batch_gradients)
-                else:
-                    gradients[tensor_sym][var_name] = None
+                gradients[tensor_sym][var_name] = _compute_jacobian_diagonal(
+                    target_tensor, var_tensor, create_graph
+                )
             else:
-                # Handle scalar case
+                # Scalar case
                 grad_result = grad(
                     target_tensor,
                     var_tensor,

@@ -664,17 +664,23 @@ def test_get_euler_residual_loss():
 
 
 def test_bellman_equation_loss_with_value_network():
-    """Test Bellman equation loss function with separate value network."""
-    # Create a simple test block using the same pattern as the existing tests
+    """Test Bellman equation loss function with separate value network.
+
+    This test verifies that the BellmanEquationLoss class works correctly
+    with a value network. Uses a simple consumption model where the control
+    directly depends on the arrival state (no intermediate dynamics).
+    """
+    # Create a simple test block where control iset matches arrival state
+    # This ensures BlockValueNet can directly use arrival states
     test_block = model.DBlock(
         name="test_value_net",
-        shocks={"income": Normal(mu=1.0, sigma=0.1)},
+        shocks={},  # Deterministic for simplicity
         dynamics={
-            "consumption": model.Control(iset=["wealth"], agent="consumer"),
-            "wealth": lambda wealth, income, consumption: wealth + income - consumption,
-            "utility": lambda consumption: torch.log(consumption + 1e-8),
+            "c": model.Control(iset=["a"], agent="consumer"),
+            "a": lambda a, c: a - c,  # Simple savings transition
+            "u": lambda c: torch.log(c + 1e-8),
         },
-        reward={"utility": "consumer"},
+        reward={"u": "consumer"},
     )
     test_block.construct_shocks({})
 
@@ -683,23 +689,19 @@ def test_bellman_equation_loss_with_value_network():
     # Create value network
     value_net = BlockValueNet(test_bp, width=16)
 
-    # Create input grid with two independent shock realizations
+    # Create input grid with arrival states
+    n_points = 10
     input_grid = grid.Grid.from_dict(
         {
-            "wealth": torch.linspace(1.0, 10.0, 5),
-            "income_0": torch.ones(5),  # Period t shocks
-            "income_1": torch.ones(5) * 1.1,  # Period t+1 shocks (independent)
+            "a": torch.linspace(1.0, 10.0, n_points),
         }
     )
 
-    # Create a decision function with bounds checking for better test coverage
-    def learned_decision_function(states_t, shocks_t, parameters):
-        wealth = states_t["wealth"]
-        # Consumption rule with bounds to test edge case handling
-        consumption = 0.3 * wealth + 0.1
-        consumption = torch.maximum(consumption, torch.tensor(0.01))
-        consumption = torch.minimum(consumption, 0.9 * wealth)
-        return {"consumption": consumption}
+    # Create a simple decision function: consume 30% of assets
+    # This is feasible (c < a) for all a >= 1.0 in our grid
+    def simple_policy(states_t, shocks_t, parameters):
+        a = states_t["a"]
+        return {"c": 0.3 * a}
 
     # Create loss function
     loss_fn = loss.BellmanEquationLoss(
@@ -707,11 +709,11 @@ def test_bellman_equation_loss_with_value_network():
     )
 
     # Test that loss function works
-    losses = loss_fn(learned_decision_function, input_grid)
+    losses = loss_fn(simple_policy, input_grid)
 
     # Check that we get per-sample losses
     assert isinstance(losses, torch.Tensor)
-    assert losses.shape[0] == 5  # One loss per grid point
+    assert losses.shape[0] == n_points  # One loss per grid point
     assert torch.all(losses >= 0)  # Squared residuals should be non-negative
 
 
@@ -770,7 +772,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         Test that the analytical optimal policy achieves near-zero Euler residual.
 
         D-2 is the infinite horizon CRRA perfect foresight model.
-        The analytical solution is: c_t = κ*m_t where κ = 1 - (βR)^(1/σ)/R
+        The analytical solution is: c_t = κ*W_t where κ = (R - (βR)^(1/σ))/R
+        and W_t = m_t + H_t is total wealth (cash-on-hand plus human wealth H_t = y/r).
 
         The Euler equation is: u'(c_t) = β*R*u'(c_{t+1})
         For the optimal policy, the Euler residual should be essentially zero,

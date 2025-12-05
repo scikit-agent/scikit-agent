@@ -580,12 +580,12 @@ def estimate_euler_residual(
 
     **Example:**
 
-    For a consumption-saving model with :math:`a_{t+1} = R(a_t - c_t) + y_{t+1}` and
-    pre-decision state :math:`m = R \\cdot a + y`:
+    For a consumption-saving model with :math:`a_{t+1} = m_t - c_t` where
+    :math:`m_t = R \\cdot a_t + y_t` (cash-on-hand):
 
-    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -R`
+    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -1`
     - Pre-state gradient: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} = R`
-    - Combined: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} \\cdot \\frac{\\partial a_{t+1}}{\\partial c_t} = R \\cdot (-R) = -R`
+    - Combined: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} \\cdot \\frac{\\partial a_{t+1}}{\\partial c_t} = R \\cdot (-1) = -R`
 
     Substituting into the residual:
 

@@ -345,12 +345,12 @@ class EulerEquationLoss:
 
     By the envelope theorem, :math:`V'(s') = u'(c') \\cdot \\frac{\\partial m'}{\\partial s'}`.
 
-    For a consumption-saving model with :math:`a_{t+1} = R(a_t - c_t) + y_{t+1}` and
-    pre-decision state :math:`m = R \\cdot a + y`:
+    For a consumption-saving model with :math:`a_{t+1} = m_t - c_t` where
+    :math:`m_t = R \\cdot a_t + y_t` (cash-on-hand):
 
-    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -R`
+    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -1`
     - Pre-state gradient: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} = R`
-    - Combined: :math:`R \\cdot (-R) = -R`
+    - Combined: :math:`R \\cdot (-1) = -R`
 
     This gives :math:`f = u'(c_t) - \\beta R \\cdot u'(c_{t+1}) = 0` at optimality,
     which is the standard Euler equation :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
@@ -416,11 +416,13 @@ class EulerEquationLoss:
 
     The Euler equation automatically adapts to your model's structure. For example:
 
-    - Consumption-saving: u(c) = log(c), with A_{t+1} = R*(A_t - c_t) + y
-      Transition gradient ∂A_{t+1}/∂c_t = -R is computed automatically
-      Euler equation becomes: u'(c_t) = β * R * u'(c_{t+1})
-    - With permanent income: u(c/P) where P evolves with shocks
-      Multiple transition gradients are summed automatically
+    - Consumption-saving: :math:`u(c) = \\log(c)`, with :math:`a_{t+1} = m_t - c_t`
+      where :math:`m_t = R \\cdot a_t + y_t`. Transition gradient
+      :math:`\\partial a_{t+1}/\\partial c_t = -1` and pre-state gradient
+      :math:`\\partial m'/\\partial a' = R` combine to give :math:`-R`.
+      Euler equation becomes: :math:`u'(c_t) = \\beta R u'(c_{t+1})`
+    - With permanent income: :math:`u(c/P)` where :math:`P` evolves with shocks.
+      Multiple transition gradients are summed automatically.
 
     Examples
     --------
