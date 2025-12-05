@@ -538,5 +538,6 @@ class EulerEquationLoss:
         )
 
         # Return squared residual as loss
-        # The AiO operator squares this to approximate E[(E[f])²]
+        # Each sample's residual is computed using two independent shock draws (ε₀, ε₁).
+        # Squaring and averaging across samples approximates E[f²] ≈ E[(E[f])²].
         return self.weight * euler_residual**2

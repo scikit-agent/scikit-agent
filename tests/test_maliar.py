@@ -776,8 +776,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         For the optimal policy, the Euler residual should be essentially zero,
         validating that estimate_euler_residual correctly implements the FOC.
         """
-        from skagent.models.benchmarks import get_analytical_policy
-
         # Get D-2 benchmark model and calibration
         d2_block = get_benchmark_model("D-2")
         d2_calibration = get_benchmark_calibration("D-2")
