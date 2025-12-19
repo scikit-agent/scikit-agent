@@ -904,3 +904,91 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             f"Trained policy should have small Euler residual MSE. "
             f"Got MSE = {mse_residual:.6e}"
         )
+
+    def test_maliar_training_loop_with_euler_loss_and_shocks(self):
+        """
+        Test that maliar_training_loop works with EulerEquationLoss on a model with shocks.
+
+        This test verifies the full integration of the Maliar training loop with
+        Euler equation loss on a stochastic model. It specifically tests that:
+        1. The shock suffix handling (_0, _1) works correctly
+        2. generate_givens_from_states produces correctly formatted grids
+        3. EulerEquationLoss can consume the grid with shock suffixes
+        4. Training completes without errors and produces reasonable results
+
+        Uses U-2 benchmark model: Log utility with geometric random walk income.
+        This model has permanent income shocks (psi ~ MeanOneLogNormal) and tests
+        the case where some arrival states (p) don't depend on the control (c).
+        """
+        # Get U-2 benchmark model with permanent income shocks
+        u2_block = get_benchmark_model("U-2")
+        u2_calibration = get_benchmark_calibration("U-2")
+
+        # Construct shocks for the block
+        rng = np.random.default_rng(TEST_SEED)
+        u2_block.construct_shocks(u2_calibration, rng=rng)
+
+        # Create BellmanPeriod
+        bp = bellman.BellmanPeriod(u2_block, u2_calibration)
+
+        # Create initial states grid
+        # U-2 arrival states are: A (assets), p (permanent income level)
+        states_0_n = grid.Grid.from_config(
+            {
+                "A": {"min": 0.5, "max": 3.0, "count": 5},
+                "p": {"min": 0.8, "max": 1.2, "count": 3},
+            }
+        )
+
+        # Create Euler equation loss
+        euler_loss_fn = loss.EulerEquationLoss(
+            bp,
+            discount_factor=u2_calibration["DiscFac"],
+            parameters=u2_calibration,
+        )
+
+        # Run maliar_training_loop with EulerEquationLoss
+        # This tests the full integration:
+        # 1. generate_givens_from_states creates psi_0 and psi_1 shocks
+        # 2. EulerEquationLoss extracts them correctly
+        # 3. Training completes (including handling states that don't depend on control)
+        trained_net, final_states = maliar.maliar_training_loop(
+            bp,
+            euler_loss_fn,
+            states_0_n,
+            u2_calibration,
+            shock_copies=2,  # Required for EulerEquationLoss
+            max_iterations=3,
+            tolerance=1e-4,
+            random_seed=TEST_SEED,
+            simulation_steps=1,
+        )
+
+        # Verify training completed successfully
+        self.assertIsNotNone(trained_net)
+        self.assertIsNotNone(final_states)
+
+        # Verify final states are valid
+        final_states_dict = final_states.to_dict()
+        self.assertIn("A", final_states_dict)
+        self.assertTrue(torch.all(torch.isfinite(final_states_dict["A"])))
+
+        # Get the trained decision function and verify it produces valid output
+        decision_fn = trained_net.get_decision_function()
+
+        # Test the decision function with sample arrival states and shocks
+        test_states = {
+            "A": torch.tensor([1.0, 2.0, 3.0], device=device),
+            "p": torch.tensor([1.0, 1.0, 1.0], device=device),
+        }
+        test_shocks = {"psi": torch.tensor([1.0, 1.0, 1.0], device=device)}
+        controls = decision_fn(test_states, test_shocks, u2_calibration)
+
+        self.assertIn("c", controls)
+        # Consumption should be positive
+        self.assertTrue(torch.all(controls["c"] > 0))
+        # Compute expected m = A*R + p*psi for bounds checking
+        R = u2_calibration["R"]
+        expected_m = test_states["A"] * R + test_states["p"] * test_shocks["psi"]
+        # Consumption should be less than cash on hand (m)
+        self.assertTrue(torch.all(controls["c"] < expected_m))

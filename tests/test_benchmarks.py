@@ -462,7 +462,8 @@ class TestDynamicOptimalityChecks:
                 for t in range(T):
                     # Compute cash-on-hand (standard timing)
                     m_path[t] = A_path[t] * R + p_path[t]
-                    states = {"m": m_path[t : t + 1], "p": p_path[t : t + 1]}
+                    # Pass arrival states (A, p) - the policy computes m internally
+                    states = {"A": A_path[t : t + 1], "p": p_path[t : t + 1]}
                     result = policy(states, {}, calibration)
                     c_path[t] = result["c"][0]
 

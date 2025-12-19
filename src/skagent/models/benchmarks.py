@@ -485,7 +485,11 @@ def u2_analytical_policy(states, shocks, parameters):
     """
     U-2: PIH with Geometric Random Walk Income using standard timing.
 
-    Uses standard timing m_t = R*A_{t-1} + p_t for consistency.
+    This is a proper decision function that:
+    1. Takes arrival states (A, p) and shocks (psi) as input
+    2. Computes information set variables (p_t, m_t) from arrivals and shocks
+    3. Returns optimal consumption based on information set
+
     With ρ=1, income follows p_t = p_{t-1} * ψ_t (geometric random walk).
     Human wealth: H_t = p_t / r (present value of geometric random walk income).
 
@@ -501,9 +505,18 @@ def u2_analytical_policy(states, shocks, parameters):
             f"Model requires ρ=1 for analytical tractability, got ρ={rho_p}"
         )
 
-    # STANDARD TIMING: Use cash-on-hand from states (computed by DBlock)
-    m_t = states["m"]  # Cash-on-hand m_t = R*A_{t-1} + p_t
-    p_t = states["p"]  # Current permanent income level
+    # Extract arrival states
+    A = states["A"]  # Assets from previous period
+    p_prev = states["p"]  # Permanent income from previous period
+
+    # Get shock realization (default to 1.0 if not provided - mean of MeanOneLogNormal)
+    psi = shocks.get("psi", 1.0)
+
+    # Compute current permanent income: p_t = p_{t-1} * ψ_t
+    p_t = p_prev * psi
+
+    # Compute cash-on-hand: m_t = R * A_{t-1} + p_t
+    m_t = A * R + p_t
 
     # Human wealth for Geometric Random Walk (ρ=1)
     r = R - 1
@@ -559,18 +572,17 @@ def _generate_u1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
 
 
 def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-2 model with STANDARD TIMING: m (cash-on-hand), p (permanent income)"""
-    # For standard timing, policy expects m (computed from A*R + p)
+    """Generate test states for U-2 model: A (arrival assets), p (permanent income level), m (cash-on-hand)"""
+    # Arrival states are A (assets from previous period) and p (permanent income level)
     A = torch.linspace(0.5, 3.0, test_points)
     p = torch.ones(test_points)
-    # Use default R=1.03 for test state generation to avoid coupling to global calibration
-    # Actual policy evaluation uses the calibration-specific R value
+    # Use default R=1.03 for test state generation
     R = 1.03
-
+    # Include m for test validation (policy computes it internally but tests may need it)
     return {
-        "A": A,  # Keep for reference but policy uses m
-        "p": p,  # Permanent income level
-        "m": A * R + p,  # Cash-on-hand that policy expects under standard timing
+        "A": A,  # Assets from previous period
+        "p": p,  # Permanent income level from previous period
+        "m": A * R + p,  # Pre-computed cash-on-hand for test validation (assumes psi=1)
     }
 
 

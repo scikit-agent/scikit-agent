@@ -809,14 +809,21 @@ def estimate_euler_residual(
     transition_gradients = {}
     for state_sym in bellman_period.arrival_states:
         next_state = next_states[state_sym]
-        trans_grad = grad(
-            next_state.sum(),
-            c_t,
-            create_graph=True,
-            retain_graph=True,
-            allow_unused=True,
-        )[0]
-        transition_gradients[state_sym] = trans_grad
+        # Check if this state depends on the control at all
+        # If next_state doesn't have requires_grad, it means it doesn't depend on c_t
+        # (e.g., permanent income p' = p * psi doesn't depend on consumption c)
+        if not next_state.requires_grad:
+            # State doesn't depend on control, gradient is zero
+            transition_gradients[state_sym] = None
+        else:
+            trans_grad = grad(
+                next_state.sum(),
+                c_t,
+                create_graph=True,
+                retain_graph=True,
+                allow_unused=True,
+            )[0]
+            transition_gradients[state_sym] = trans_grad
 
     # Compute the return factor from the dynamics: ∂m'/∂s' (how pre-state depends on arrival state)
     # By the envelope theorem: V'(s') = u'(c') * ∂m'/∂s'
