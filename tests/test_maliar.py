@@ -933,10 +933,11 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         # Create initial states grid
         # U-2 arrival states are: A (assets), p (permanent income level)
+        # Use larger grid for better training coverage
         states_0_n = grid.Grid.from_config(
             {
-                "A": {"min": 0.5, "max": 3.0, "count": 5},
-                "p": {"min": 0.8, "max": 1.2, "count": 3},
+                "A": {"min": 0.5, "max": 3.0, "count": 10},
+                "p": {"min": 0.9, "max": 1.1, "count": 5},
             }
         )
 
@@ -958,8 +959,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             states_0_n,
             u2_calibration,
             shock_copies=2,  # Required for EulerEquationLoss
-            max_iterations=3,
-            tolerance=1e-4,
+            max_iterations=8,  # More iterations for better convergence
+            tolerance=1e-6,
             random_seed=TEST_SEED,
             simulation_steps=1,
         )
@@ -973,22 +974,64 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         self.assertIn("A", final_states_dict)
         self.assertTrue(torch.all(torch.isfinite(final_states_dict["A"])))
 
-        # Get the trained decision function and verify it produces valid output
+        # Get the trained decision function and analytical policy for comparison
         decision_fn = trained_net.get_decision_function()
+        analytical_policy = get_analytical_policy("U-2")
 
-        # Test the decision function with sample arrival states and shocks
-        test_states = {
-            "A": torch.tensor([1.0, 2.0, 3.0], device=device),
-            "p": torch.tensor([1.0, 1.0, 1.0], device=device),
-        }
-        test_shocks = {"psi": torch.tensor([1.0, 1.0, 1.0], device=device)}
-        controls = decision_fn(test_states, test_shocks, u2_calibration)
+        # Test on the same grid used for training (avoid extrapolation errors)
+        # Use the middle of the training range for p
+        n_test = 25
+        test_A = torch.linspace(
+            0.5, 3.0, n_test, device=device
+        )  # Same range as training
+        test_p = torch.ones(
+            n_test, device=device
+        )  # p=1 is in training range [0.8, 1.2]
+        test_states = {"A": test_A, "p": test_p}
+        # Use psi=1 (no shock realization) for deterministic comparison
+        test_shocks = {"psi": torch.ones(n_test, device=device)}
 
-        self.assertIn("c", controls)
-        # Consumption should be positive
-        self.assertTrue(torch.all(controls["c"] > 0))
+        # Get trained policy consumption
+        trained_controls = decision_fn(test_states, test_shocks, u2_calibration)
+        trained_c = trained_controls["c"]
+
+        # Get analytical policy consumption
+        analytical_controls = analytical_policy(
+            test_states, test_shocks, u2_calibration
+        )
+        analytical_c = analytical_controls["c"]
+
+        # Basic sanity checks
+        self.assertIn("c", trained_controls)
+        self.assertTrue(
+            torch.all(trained_c > 0), "Trained consumption should be positive"
+        )
+
         # Compute expected m = A*R + p*psi for bounds checking
         R = u2_calibration["R"]
         expected_m = test_states["A"] * R + test_states["p"] * test_shocks["psi"]
-        # Consumption should be less than cash on hand (m)
-        self.assertTrue(torch.all(controls["c"] < expected_m))
+        self.assertTrue(
+            torch.all(trained_c < expected_m),
+            "Trained consumption should be less than cash on hand",
+        )
+
+        # Compare trained policy against analytical policy
+        # The trained policy should closely match the analytical solution
+        abs_error = torch.abs(trained_c - analytical_c)
+        rel_error = abs_error / (analytical_c + 1e-8)
+
+        mean_abs_error = torch.mean(abs_error).item()
+        mean_rel_error = torch.mean(rel_error).item()
+        max_rel_error = torch.max(rel_error).item()
+
+        # For stochastic models with minimal training, allow higher tolerance
+        # This test primarily validates the integration works end-to-end
+        # The trained policy should be in the right ballpark (within 25%)
+        self.assertLess(
+            mean_rel_error,
+            0.25,
+            f"Trained policy should approximate analytical policy. "
+            f"Mean relative error: {mean_rel_error:.4f}, "
+            f"Max relative error: {max_rel_error:.4f}, "
+            f"Mean absolute error: {mean_abs_error:.6f}",
+        )
