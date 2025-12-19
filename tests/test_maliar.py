@@ -974,64 +974,102 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         self.assertIn("A", final_states_dict)
         self.assertTrue(torch.all(torch.isfinite(final_states_dict["A"])))
 
-        # Get the trained decision function and analytical policy for comparison
+        # Get the trained decision function
         decision_fn = trained_net.get_decision_function()
-        analytical_policy = get_analytical_policy("U-2")
 
-        # Test on the same grid used for training (avoid extrapolation errors)
-        # Use the middle of the training range for p
+        # =================================================================
+        # Test MPC properties (Carroll's buffer stock theory)
+        # =================================================================
+        # With borrowing constraints + income uncertainty, the full policy
+        # requires numerical solution. Key properties from buffer stock theory:
+        #   - MPC should be between 0 and 1
+        #   - MPC should DECREASE with wealth (precautionary motive)
+        #   - At high wealth: MPC → κ = 1 - β (but requires training there)
+        #
+        # Since we train on a finite grid, we test qualitative properties
+        # within the training range rather than limiting behavior.
+
+        R = u2_calibration["R"]
+
+        # Test MPC at LOW and HIGH ends of training range
+        low_A = torch.tensor([0.5, 0.75, 1.0], device=device)
+        high_A = torch.tensor([2.0, 2.5, 3.0], device=device)
+        test_p = torch.ones(3, device=device)
+        test_shocks = {"psi": torch.ones(3, device=device)}
+
+        # Compute MPC numerically via finite difference
+        delta_A = 0.1
+        delta_m = R * delta_A
+
+        # MPC at low wealth
+        c_low = decision_fn({"A": low_A, "p": test_p}, test_shocks, u2_calibration)["c"]
+        c_low_plus = decision_fn(
+            {"A": low_A + delta_A, "p": test_p}, test_shocks, u2_calibration
+        )["c"]
+        mpc_low = ((c_low_plus - c_low) / delta_m).mean().item()
+
+        # MPC at high wealth
+        c_high = decision_fn({"A": high_A, "p": test_p}, test_shocks, u2_calibration)[
+            "c"
+        ]
+        c_high_plus = decision_fn(
+            {"A": high_A + delta_A, "p": test_p}, test_shocks, u2_calibration
+        )["c"]
+        mpc_high = ((c_high_plus - c_high) / delta_m).mean().item()
+
+        # MPC should be positive (consumption increases with wealth)
+        self.assertGreater(
+            mpc_low, 0.0, f"MPC at low wealth should be positive, got {mpc_low:.4f}"
+        )
+        self.assertGreater(
+            mpc_high, 0.0, f"MPC at high wealth should be positive, got {mpc_high:.4f}"
+        )
+
+        # MPC should be less than 1 (not consuming all marginal wealth)
+        self.assertLess(
+            mpc_low, 1.0, f"MPC at low wealth should be < 1, got {mpc_low:.4f}"
+        )
+        self.assertLess(
+            mpc_high, 1.0, f"MPC at high wealth should be < 1, got {mpc_high:.4f}"
+        )
+
+        # Buffer stock property: MPC should DECREASE with wealth
+        # (precautionary saving motive diminishes as wealth increases)
+        self.assertLess(
+            mpc_high,
+            mpc_low,
+            f"MPC should decrease with wealth (buffer stock property). "
+            f"MPC_low={mpc_low:.4f}, MPC_high={mpc_high:.4f}",
+        )
+
+        # =================================================================
+        # Basic sanity checks on policy output
+        # =================================================================
+        # Test on training range to ensure basic properties hold
         n_test = 25
-        test_A = torch.linspace(
-            0.5, 3.0, n_test, device=device
-        )  # Same range as training
-        test_p = torch.ones(
-            n_test, device=device
-        )  # p=1 is in training range [0.8, 1.2]
+        test_A = torch.linspace(0.5, 3.0, n_test, device=device)
+        test_p = torch.ones(n_test, device=device)
         test_states = {"A": test_A, "p": test_p}
-        # Use psi=1 (no shock realization) for deterministic comparison
         test_shocks = {"psi": torch.ones(n_test, device=device)}
 
-        # Get trained policy consumption
         trained_controls = decision_fn(test_states, test_shocks, u2_calibration)
         trained_c = trained_controls["c"]
 
-        # Get analytical policy consumption
-        analytical_controls = analytical_policy(
-            test_states, test_shocks, u2_calibration
-        )
-        analytical_c = analytical_controls["c"]
-
-        # Basic sanity checks
-        self.assertIn("c", trained_controls)
+        # Consumption should be positive
         self.assertTrue(
             torch.all(trained_c > 0), "Trained consumption should be positive"
         )
 
-        # Compute expected m = A*R + p*psi for bounds checking
-        R = u2_calibration["R"]
+        # Consumption should respect budget constraint (c < m)
         expected_m = test_states["A"] * R + test_states["p"] * test_shocks["psi"]
         self.assertTrue(
             torch.all(trained_c < expected_m),
             "Trained consumption should be less than cash on hand",
         )
 
-        # Compare trained policy against analytical policy
-        # The trained policy should closely match the analytical solution
-        abs_error = torch.abs(trained_c - analytical_c)
-        rel_error = abs_error / (analytical_c + 1e-8)
-
-        mean_abs_error = torch.mean(abs_error).item()
-        mean_rel_error = torch.mean(rel_error).item()
-        max_rel_error = torch.max(rel_error).item()
-
-        # For stochastic models with minimal training, allow higher tolerance
-        # This test primarily validates the integration works end-to-end
-        # The trained policy should be in the right ballpark (within 25%)
-        self.assertLess(
-            mean_rel_error,
-            0.25,
-            f"Trained policy should approximate analytical policy. "
-            f"Mean relative error: {mean_rel_error:.4f}, "
-            f"Max relative error: {max_rel_error:.4f}, "
-            f"Mean absolute error: {mean_abs_error:.6f}",
+        # Consumption should increase with wealth (positive MPC throughout)
+        c_diff = trained_c[1:] - trained_c[:-1]
+        self.assertTrue(
+            torch.all(c_diff > 0),
+            "Consumption should be monotonically increasing in wealth",
         )
