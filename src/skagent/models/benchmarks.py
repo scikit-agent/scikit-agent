@@ -467,7 +467,8 @@ u2_block = DBlock(
         },
         "dynamics": {
             # Normalized cash-on-hand: m = R*a/ψ + 1 (computed from arrival state a)
-            "m": lambda a, R, psi: R * a / psi + 1,
+            # Note: psi is strictly positive from MeanOneLogNormal, but we add epsilon for safety
+            "m": lambda a, R, psi: R * a / torch.clamp(psi, min=1e-8) + 1,
             # Normalized consumption - depends ONLY on m
             # For PIH: c = MPC*(m+h) ≈ 0.04*(m+33) ≈ 1.5 for typical m
             # Bound c ≤ m ensures non-negative savings (a' = m - c ≥ 0)
@@ -548,7 +549,7 @@ def u2_analytical_policy(states, shocks, parameters):
 # well-known LIMITING MPC properties that can be tested:
 #   - MPC is between 0 and 1
 #   - MPC DECREASES with wealth (precautionary saving diminishes)
-#   - As wealth → ∞: MPC → κ = 1 - (βR)^(1/γ) / R
+#   - As wealth → ∞: MPC → κ = (R - (βR)^(1/γ)) / R  (same as perfect foresight)
 
 u3_calibration = {
     "DiscFac": 0.96,
@@ -571,7 +572,8 @@ u3_block = DBlock(
         },
         "dynamics": {
             # Normalized cash-on-hand: m = R*a/ψ + θ
-            "m": lambda a, R, psi, theta: R * a / psi + theta,
+            # Note: psi is strictly positive from MeanOneLogNormal, but we add epsilon for safety
+            "m": lambda a, R, psi, theta: R * a / torch.clamp(psi, min=1e-8) + theta,
             # Normalized consumption - depends ONLY on m
             # Lower bound ensures c > 0 for CRRA utility
             # Upper bound is borrowing constraint: c ≤ m
@@ -761,10 +763,20 @@ def get_benchmark_calibration(model_id: str) -> Dict[str, Any]:
 
 
 def get_analytical_policy(model_id: str) -> Callable:
-    """Get analytical policy function by model ID"""
+    """Get analytical policy function by model ID.
+
+    Raises ValueError if the model does not have an analytical policy
+    (e.g., U-3 buffer stock model requires numerical solution).
+    """
     if model_id not in BENCHMARK_MODELS:
         available = list(BENCHMARK_MODELS.keys())
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    if "analytical_policy" not in BENCHMARK_MODELS[model_id]:
+        raise ValueError(
+            f"Model '{model_id}' does not have an analytical policy. "
+            "This model requires numerical solution (e.g., via Euler equation training)."
+        )
 
     return BENCHMARK_MODELS[model_id]["analytical_policy"]
 
@@ -789,7 +801,11 @@ def get_custom_validation(model_id: str) -> Callable | None:
 
 
 def list_benchmark_models() -> Dict[str, str]:
-    """List all analytically solvable discrete-time benchmark models"""
+    """List all discrete-time benchmark models.
+
+    Note: Most models have analytical solutions, but some (e.g., U-3 buffer stock)
+    require numerical solution due to borrowing constraints + income uncertainty.
+    """
     return {
         model_id: model_info["calibration"]["description"]
         for model_id, model_info in BENCHMARK_MODELS.items()
