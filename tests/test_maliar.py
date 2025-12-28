@@ -975,10 +975,13 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         rel_error = torch.abs(trained_c - analytical_c) / (analytical_c + 1e-8)
         mean_rel_error = rel_error.mean().item()
 
-        # Trained policy should be reasonably close to analytical (within 20%)
-        # Note: Euler equation determines policy SHAPE but not absolute LEVEL.
-        # Any scalar multiple k*c^* satisfies Euler. Transversality pins the level.
-        # Euler-only training may find correct shape but different level.
+        # Trained policy should be reasonably close to analytical (within 20%).
+        # Note: with CRRA utility, the Euler equation pins down both the shape and
+        # the level of the optimal consumption policy; arbitrary rescalings k * c*
+        # do NOT satisfy the Euler equation unless k = 1. The 20% tolerance here
+        # reflects numerical approximation error (finite training iterations,
+        # stochastic optimization, and function-approximation error), not any
+        # theoretical indeterminacy in the Euler condition.
         self.assertLess(
             mean_rel_error,
             0.20,
@@ -1177,15 +1180,17 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             f"perfect foresight = {kappa_pf:.4f}"
         )
 
-        # MPC should be positive and less than 1 (basic sanity for a consumption function)
-        # Note: With limited training, MPC may not match the perfect foresight value
+        # MPC should be strictly between 0 and 1 for a valid consumption function.
+        # With the constrained=True Euler loss, training should converge to
+        # economically sensible policies. We use tight bounds (0.0, 1.0) that
+        # reflect the theoretical requirement for buffer stock models.
         self.assertGreater(
             mpc_high,
-            -0.5,  # Allow some tolerance for training noise
-            f"MPC should be close to positive at high wealth. Got MPC = {mpc_high:.4f}",
+            0.0,  # MPC must be positive (saving decreases with wealth)
+            f"MPC should be positive at high wealth. Got MPC = {mpc_high:.4f}",
         )
         self.assertLess(
             mpc_high,
-            1.5,  # Allow some tolerance for training noise
-            f"MPC should be close to less than 1 at high wealth. Got MPC = {mpc_high:.4f}",
+            1.0,  # MPC must be less than 1 (some saving at high wealth)
+            f"MPC should be less than 1 at high wealth. Got MPC = {mpc_high:.4f}",
         )

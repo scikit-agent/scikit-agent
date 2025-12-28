@@ -428,26 +428,33 @@ def u1_analytical_policy(states, shocks, parameters):
     return {"c": c_optimal}
 
 
-# U-2: Log Utility with Geometric Random Walk Income (ρ=1) - NO BORROWING CONSTRAINT
-# ------------------------------------------------------------------------------------
+# U-2: Log Utility with Permanent Income Shocks (Normalized)
+# ------------------------------------------------------------
 # Uses NORMALIZED variables for proper handling of permanent income.
-# All variables are expressed as ratios to permanent income p:
-#   m = market_resources / p  (normalized cash-on-hand)
-#   c = consumption / p       (normalized consumption)
-#   a = assets / p            (normalized assets)
+# All variables are expressed as ratios to permanent income P:
+#   m = M/P  (normalized cash-on-hand)
+#   c = C/P  (normalized consumption)
+#   a = A/P  (normalized assets)
 #
 # This normalization is essential because:
-# 1. The PIH solution depends only on normalized m, not on m and p separately
-# 2. The network learns a 1D function c(m) instead of 2D c(m,p)
+# 1. The PIH solution depends only on normalized m, not on m and P separately
+# 2. The network learns a 1D function c(m) instead of 2D c(m,P)
 # 3. This is the standard formulation in the buffer stock literature (Carroll, HARK)
 #
-# IMPORTANT: This model has NO borrowing constraint, which makes the PIH
-# analytical solution valid. For the buffer stock model with constraints, see U-3.
+# Model has technical constraint c ≤ m to prevent degenerate network equilibria,
+# but this constraint is typically NON-BINDING for the analytical PIH solution
+# since c = (1-β)(m+h) < m when β > 0 and h > 0 for reasonable calibrations.
+# For the TRUE buffer stock model with BINDING constraints, see U-3.
+#
+# When σ_ψ = 0, the permanent shock ψ ≡ 1 and the model becomes deterministic.
+# This is the default calibration, making the PIH analytical solution exact.
 
 # Mathematical foundation (NORMALIZED):
 #   u(c) = ln c  (log utility of normalized consumption)
-#   Transition: a = m - c, then m' = R*a/ψ + 1 where ψ is permanent shock
-#   Human wealth (normalized): h = 1/r  (constant)
+#   Transition: a = m - c, then m' = R*a/ψ + θ
+#   - ψ is the permanent income shock (= 1 when σ_ψ = 0)
+#   - θ is normalized transitory income (here θ ≡ 1, i.e., E[θ] = 1)
+#   Human wealth (normalized): h = 1/r  (constant when income is deterministic)
 
 # Closed-form solution (NORMALIZED):
 #   c = (1-β)(m + 1/r)
@@ -455,28 +462,30 @@ def u1_analytical_policy(states, shocks, parameters):
 u2_calibration = {
     "DiscFac": 0.96,
     "R": 1.03,
-    "sigma_p": 0.0,  # No permanent shocks - deterministic model where PIH is exact
-    "description": "U-2: Log utility (normalized), no borrowing constraint, deterministic",
+    "sigma_psi": 0.0,  # No permanent shocks - PIH solution is exact when σ_ψ=0
+    "description": "U-2: Log utility (normalized), no borrowing constraint, σ_ψ=0",
 }
 
 u2_block = DBlock(
     **{
         "name": "u2_log_permanent_normalized",
         "shocks": {
-            "psi": (MeanOneLogNormal, {"sigma": "sigma_p"}),  # Permanent income shock
+            "psi": (MeanOneLogNormal, {"sigma": "sigma_psi"}),  # Permanent income shock
         },
         "dynamics": {
-            # Normalized cash-on-hand: m = R*a/ψ + 1 (computed from arrival state a)
-            # Note: psi is strictly positive from MeanOneLogNormal, but we add epsilon for safety
+            # Normalized cash-on-hand: m = R*a/ψ + θ where θ ≡ 1 (normalized income)
+            # The "+1" represents E[θ] = 1, the mean of normalized transitory income.
+            # In full buffer stock models (U-3), θ would be a shock; here it's deterministic.
+            # Note: psi is strictly positive from MeanOneLogNormal, but we clamp for safety.
             "m": lambda a, R, psi: R * a / torch.clamp(psi, min=1e-8) + 1,
             # Normalized consumption - depends ONLY on m
-            # For PIH: c = MPC*(m+h) ≈ 0.04*(m+33) ≈ 1.5 for typical m
-            # Bound c ≤ m ensures non-negative savings (a' = m - c ≥ 0)
-            # This prevents the network from finding degenerate high-consumption equilibria
+            # Technical bound c ≤ m prevents degenerate network equilibria.
+            # This constraint is typically NON-BINDING for PIH: c = (1-β)(m+h) < m
+            # when β > 0 and human wealth h = 1/r > 0.
             "c": Control(
                 ["m"],  # Control depends ONLY on normalized m
                 lower_bound=lambda m: 0.01,  # Ensure c > 0 for log utility
-                upper_bound=lambda m: m,  # c ≤ m ensures a' ≥ 0
+                upper_bound=lambda m: m,  # Technical bound (typically non-binding for PIH)
                 agent="consumer",
             ),
             # Normalized assets (for transition to next period)
@@ -506,8 +515,8 @@ def u2_analytical_policy(states, shocks, parameters):
     # Extract arrival state (normalized assets from previous period)
     a = states["a"]
 
-    # Get shock realization (default to 1.0 if not provided)
-    psi = shocks.get("psi", 1.0)
+    # Get shock realization (default to ones tensor for type consistency)
+    psi = shocks.get("psi", torch.ones_like(a))
 
     # Compute normalized cash-on-hand: m = R*a/ψ + 1
     m = R * a / psi + 1
@@ -585,7 +594,7 @@ u3_block = DBlock(
             ),
             # Normalized assets (for transition)
             "a": lambda m, c: m - c,
-            # CRRA utility of normalized consumption
+            # CRRA utility of normalized consumption (wrapper needed for param name mapping)
             "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},

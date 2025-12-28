@@ -400,9 +400,10 @@ class TestDynamicOptimalityChecks:
         # Test that consumption is positive
         assert torch.all(result["c"] > 0), "U-2 consumption should be positive"
 
-        # With human wealth h > 0, consumption can exceed m in theory,
-        # but for typical calibrations (1-β < 1) and m > 0, c < m + h
-        # Just verify consumption is reasonable relative to total wealth
+        # In the unconstrained PIH model, human wealth h > 0 would allow
+        # consumption to be backed by both m and h. In this implementation,
+        # consumption is constrained by c ≤ m, so we just verify that it
+        # remains reasonable relative to total wealth m + h.
         total_wealth = m + h
         assert torch.all(result["c"] < total_wealth), (
             "U-2 consumption should be less than total wealth (m + h)"
