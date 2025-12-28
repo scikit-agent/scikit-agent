@@ -355,6 +355,20 @@ class EulerEquationLoss:
     This gives :math:`f = u'(c_t) - \\beta R \\cdot u'(c_{t+1}) = 0` at optimality,
     which is the standard Euler equation :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
 
+    **Handling Borrowing Constraints:**
+
+    When a borrowing constraint is present (e.g., :math:`c \\leq m`), the Euler
+    equation becomes an **inequality** at constrained points:
+
+    .. math::
+
+        u'(c_t) \\geq \\beta R E[u'(c_{t+1})]
+
+    This means the Euler residual :math:`f > 0` is optimal when the constraint binds.
+    Set ``constrained=True`` to use a one-sided loss that only penalizes negative
+    residuals (overconsumption/undersaving), which is the appropriate formulation
+    for buffer stock models with borrowing constraints.
+
     **Methodology:**
 
     This follows the Maliar et al. (2021) methodology (Definition 2.7, equations 9-12)
@@ -369,6 +383,14 @@ class EulerEquationLoss:
         L(\\theta) = E[f^2]
 
     where :math:`f` is the Euler equation residual computed with both shock realizations.
+
+    For constrained problems, the loss uses the one-sided formulation:
+
+    .. math::
+
+        L(\\theta) = E[\\max(0, -f)^2]
+
+    which only penalizes negative residuals (undersaving).
 
     **Notation:**
 
@@ -396,6 +418,11 @@ class EulerEquationLoss:
     weight : float, optional
         Exogenous weight for combining multiple optimality conditions (default: 1.0)
         This corresponds to the vector v in equation (12) of the paper.
+    constrained : bool, optional
+        If True, use one-sided loss for borrowing-constrained models (default: False).
+        When True, only negative Euler residuals (undersaving) are penalized.
+        Positive residuals are not penalized because they indicate the borrowing
+        constraint is binding, which is optimal behavior.
 
     Returns
     -------
@@ -449,10 +476,21 @@ class EulerEquationLoss:
     >>>
     >>> # Compute loss for a decision function
     >>> loss = loss_fn(my_decision_function, input_grid)
+    >>>
+    >>> # For a borrowing-constrained model (buffer stock):
+    >>> loss_fn_constrained = EulerEquationLoss(
+    ...     bp, discount_factor=0.95, parameters={"R": 1.04}, constrained=True
+    ... )
     """
 
     def __init__(
-        self, bellman_period, discount_factor, parameters=None, agent=None, weight=1.0
+        self,
+        bellman_period,
+        discount_factor,
+        parameters=None,
+        agent=None,
+        weight=1.0,
+        constrained=False,
     ):
         self.bellman_period = bellman_period
         self.parameters = parameters if parameters is not None else {}
@@ -470,6 +508,7 @@ class EulerEquationLoss:
 
         self.agent = agent
         self.weight = weight
+        self.constrained = constrained
 
         # Test reward variables
         reward_vars = [
@@ -542,4 +581,13 @@ class EulerEquationLoss:
         # Return squared residual as loss
         # Each sample's residual is computed using two independent shock draws (ε₀, ε₁).
         # Squaring and averaging across samples approximates E[f²] ≈ E[(E[f])²].
-        return self.weight * euler_residual**2
+        if self.constrained:
+            # One-sided loss for borrowing-constrained models:
+            # Only penalize NEGATIVE residuals (undersaving/overconsumption).
+            # Positive residuals indicate the borrowing constraint is binding,
+            # which is optimal behavior (u'(c) > βR E[u'(c')]) at the constraint.
+            # Using ReLU on -residual ensures we only penalize when residual < 0.
+            return self.weight * torch.relu(-euler_residual) ** 2
+        else:
+            # Standard two-sided loss for unconstrained models
+            return self.weight * euler_residual**2

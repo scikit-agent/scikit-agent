@@ -1022,11 +1022,16 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             }
         )
 
-        # Create Euler equation loss
+        # Create Euler equation loss with constrained=True for buffer stock model
+        # The borrowing constraint (c <= m) means the Euler equation becomes an
+        # inequality at constrained points: u'(c) >= βR E[u'(c')].
+        # Using constrained=True enables one-sided loss that only penalizes
+        # negative residuals (overconsumption), not positive ones (constraint binding).
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
             discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
+            constrained=True,  # Key fix: use one-sided loss for borrowing constraint
         )
 
         # Train the policy with more iterations for better convergence
