@@ -484,8 +484,8 @@ u2_block = DBlock(
             # U-2 is UNCONSTRAINED PIH: agent can borrow against human wealth h = 1/r.
             # At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33.
             # The analytical c ≈ (1-β)(m+h) ≈ 0.04*m + 1.33, which is always < 0.1*m + 2
-            # for m in the training range. We use a tight bound to prevent Ponzi schemes
-            # (over-borrowing solutions that satisfy Euler but violate transversality).
+            # for m in the training range. The bound is loose enough for the analytical
+            # solution but prevents Ponzi schemes (over-borrowing that violates transversality).
             "c": Control(
                 ["m"],  # Control depends ONLY on m (network input)
                 lower_bound=lambda m: 0.01,  # Ensure c > 0 for log utility

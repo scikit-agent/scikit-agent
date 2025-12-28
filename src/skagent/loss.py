@@ -580,7 +580,7 @@ class EulerEquationLoss:
 
         # Return squared residual as loss
         # Each sample's residual is computed using two independent shock draws (ε₀, ε₁).
-        # Squaring and averaging across samples approximates E[f²] ≈ E[(E[f])²].
+        # The AiO method approximates E[(E[f])²] (not E[f²], which is larger by Jensen).
         if self.constrained:
             # One-sided loss for borrowing-constrained models:
             # Only penalize NEGATIVE residuals (undersaving/overconsumption).
