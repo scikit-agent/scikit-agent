@@ -490,7 +490,7 @@ u2_block = DBlock(
                 ["m"],  # Control depends ONLY on m (network input)
                 lower_bound=lambda m: 0.01,  # Ensure c > 0 for log utility
                 upper_bound=lambda m: 0.1 * m
-                + 2,  # Tight bound: analytical c < 0.05*m + 1.4
+                + 2,  # Loose bound; analytical c ≈ 0.04*m + 1.33
                 agent="consumer",
             ),
             # Normalized assets (for transition to next period)

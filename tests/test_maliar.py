@@ -1194,3 +1194,142 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             1.0,  # MPC must be less than 1 (some saving at high wealth)
             f"MPC should be less than 1 at high wealth. Got MPC = {mpc_high:.4f}",
         )
+
+
+class TestOneSidedEulerLoss(unittest.TestCase):
+    """Test the one-sided Euler loss formula for borrowing-constrained models."""
+
+    def test_one_sided_loss_formula_math(self):
+        """Test the mathematical correctness of one-sided Euler loss.
+
+        The constrained=True path uses: loss = torch.relu(-residual)**2
+        - When residual > 0 (constraint binding): loss = 0
+        - When residual < 0 (undersaving): loss = residual**2
+        """
+        # Test with positive residuals (constraint binding - should produce zero loss)
+        positive_residual = torch.tensor([0.1, 0.5, 1.0, 2.0])
+        constrained_loss_positive = torch.relu(-positive_residual) ** 2
+
+        self.assertTrue(
+            torch.allclose(constrained_loss_positive, torch.zeros(4)),
+            f"Positive residuals should produce zero constrained loss. "
+            f"Got: {constrained_loss_positive}",
+        )
+
+        # Test with negative residuals (undersaving - should produce squared loss)
+        negative_residual = torch.tensor([-0.1, -0.5, -1.0, -2.0])
+        constrained_loss_negative = torch.relu(-negative_residual) ** 2
+        expected_loss_negative = negative_residual**2
+
+        self.assertTrue(
+            torch.allclose(constrained_loss_negative, expected_loss_negative),
+            f"Negative residuals should have squared loss. "
+            f"Got: {constrained_loss_negative}, expected: {expected_loss_negative}",
+        )
+
+        # Test with mixed residuals
+        mixed_residual = torch.tensor([0.5, -0.3, 1.0, -0.8])
+        constrained_loss_mixed = torch.relu(-mixed_residual) ** 2
+        expected_mixed = torch.tensor([0.0, 0.09, 0.0, 0.64])
+
+        self.assertTrue(
+            torch.allclose(constrained_loss_mixed, expected_mixed, atol=1e-6),
+            f"Mixed residuals not handled correctly. "
+            f"Got: {constrained_loss_mixed}, expected: {expected_mixed}",
+        )
+
+    def test_one_sided_vs_two_sided_loss(self):
+        """Test that one-sided loss differs from two-sided loss appropriately."""
+        # Two-sided loss always penalizes deviation from zero
+        residuals = torch.tensor([0.5, -0.3, 1.0, -0.8])
+
+        two_sided_loss = residuals**2
+        one_sided_loss = torch.relu(-residuals) ** 2
+
+        # For positive residuals, one-sided should be less than two-sided
+        self.assertLess(
+            one_sided_loss[0].item(),
+            two_sided_loss[0].item(),
+            "One-sided loss should be less than two-sided for positive residual",
+        )
+        self.assertLess(
+            one_sided_loss[2].item(),
+            two_sided_loss[2].item(),
+            "One-sided loss should be less than two-sided for positive residual",
+        )
+
+        # For negative residuals, one-sided should equal two-sided
+        self.assertAlmostEqual(
+            one_sided_loss[1].item(),
+            two_sided_loss[1].item(),
+            places=6,
+            msg="One-sided loss should equal two-sided for negative residual",
+        )
+        self.assertAlmostEqual(
+            one_sided_loss[3].item(),
+            two_sided_loss[3].item(),
+            places=6,
+            msg="One-sided loss should equal two-sided for negative residual",
+        )
+
+
+class TestU2BorrowingAgainstHumanWealth(unittest.TestCase):
+    """Test that U-2 allows borrowing against human wealth (c > m)."""
+
+    def test_u2_allows_borrowing_at_low_wealth(self):
+        """Test U-2: At low wealth, consumption can exceed cash-on-hand.
+
+        The key feature of U-2 (vs U-3) is that the agent can borrow against
+        human wealth h = 1/r. At m = 0, the analytical solution is:
+        c = (1-β)/r ≈ 1.33 > 0 = m
+
+        This test verifies that the analytical policy correctly produces
+        consumption exceeding cash-on-hand at low asset levels.
+        """
+        calibration = get_benchmark_calibration("U-2")
+        policy = get_analytical_policy("U-2")
+
+        beta = calibration["DiscFac"]
+        R = calibration["R"]
+        r = R - 1
+        h = 1 / r  # Normalized human wealth ≈ 33.33
+
+        # Test at very low arrival assets where borrowing is needed
+        test_states = {"a": torch.tensor([0.0, 0.1, 0.5])}
+        test_shocks = {"psi": torch.ones(3)}  # Mean shock = 1
+
+        result = policy(test_states, test_shocks, calibration)
+
+        # Compute m for these states
+        m = R * test_states["a"] / test_shocks["psi"] + 1
+
+        # At a = 0: m = 1.0, analytical c = (1-0.96)*(1.0 + 33.33) ≈ 1.37
+        # Since 1.37 > 1.0, this demonstrates borrowing against human wealth
+        expected_c = (1 - beta) * (m + h)
+
+        # Verify analytical formula is correct
+        self.assertTrue(
+            torch.allclose(result["c"], expected_c, atol=1e-6),
+            f"Analytical policy should match formula. Got: {result['c']}, "
+            f"expected: {expected_c}",
+        )
+
+        # The key test: at low wealth, consumption EXCEEDS cash-on-hand m
+        # This is only possible by borrowing against human wealth
+        self.assertTrue(
+            torch.any(result["c"] > m),
+            f"U-2 should allow borrowing: c > m for low wealth. "
+            f"Got c = {result['c']}, m = {m}. "
+            f"The agent should borrow against human wealth h = {h:.2f}",
+        )
+
+        # Specifically check at a = 0 where m = 1.0
+        c_at_zero_assets = result["c"][0].item()
+        m_at_zero_assets = m[0].item()
+
+        self.assertGreater(
+            c_at_zero_assets,
+            m_at_zero_assets,
+            f"At zero assets, consumption should exceed cash-on-hand. "
+            f"c = {c_at_zero_assets:.4f}, m = {m_at_zero_assets:.4f}",
+        )
