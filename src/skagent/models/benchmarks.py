@@ -441,10 +441,12 @@ def u1_analytical_policy(states, shocks, parameters):
 # 2. The network learns a 1D function c(m) instead of 2D c(m,P)
 # 3. This is the standard formulation in the buffer stock literature (Carroll, HARK)
 #
-# Model has technical constraint c ≤ m to prevent degenerate network equilibria,
-# but this constraint is typically NON-BINDING for the analytical PIH solution
-# since c = (1-β)(m+h) < m when β > 0 and h > 0 for reasonable calibrations.
-# For the TRUE buffer stock model with BINDING constraints, see U-3.
+# U-2 is UNCONSTRAINED: agent can borrow against human wealth h = 1/r.
+# At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33 (borrowing against h).
+# The upper bound is tightened to prevent Ponzi scheme solutions that satisfy
+# the Euler equation but violate transversality. The analytical solution
+# c = (1-β)(m+h) ≈ 0.04*m + 1.33 is well within the bound 0.1*m + 2.
+# For the TRUE buffer stock model with BINDING borrowing constraint c ≤ m, see U-3.
 #
 # When σ_ψ = 0, the permanent shock ψ ≡ 1 and the model becomes deterministic.
 # This is the default calibration, making the PIH analytical solution exact.
@@ -478,14 +480,17 @@ u2_block = DBlock(
             # In full buffer stock models (U-3), θ would be a shock; here it's deterministic.
             # Note: psi is strictly positive from MeanOneLogNormal, but we clamp for safety.
             "m": lambda a, R, psi: R * a / torch.clamp(psi, min=1e-8) + 1,
-            # Normalized consumption - depends ONLY on m
-            # Technical bound c ≤ m prevents degenerate network equilibria.
-            # This constraint is typically NON-BINDING for PIH: c = (1-β)(m+h) < m
-            # when β > 0 and human wealth h = 1/r > 0.
+            # Normalized consumption - network sees only m
+            # U-2 is UNCONSTRAINED PIH: agent can borrow against human wealth h = 1/r.
+            # At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33.
+            # The analytical c ≈ (1-β)(m+h) ≈ 0.04*m + 1.33, which is always < 0.1*m + 2
+            # for m in the training range. We use a tight bound to prevent Ponzi schemes
+            # (over-borrowing solutions that satisfy Euler but violate transversality).
             "c": Control(
-                ["m"],  # Control depends ONLY on normalized m
+                ["m"],  # Control depends ONLY on m (network input)
                 lower_bound=lambda m: 0.01,  # Ensure c > 0 for log utility
-                upper_bound=lambda m: m,  # Technical bound (typically non-binding for PIH)
+                upper_bound=lambda m: 0.1 * m
+                + 2,  # Tight bound: analytical c < 0.05*m + 1.4
                 agent="consumer",
             ),
             # Normalized assets (for transition to next period)
