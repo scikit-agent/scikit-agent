@@ -644,13 +644,31 @@ class DBlock(Block):
         """
         Creates a deep copy of the block with new shocks, dynamics, and rewards dictionaries.
         These dictionaries will have updated values based on the inputs.
+
+        Parameters
+        ----------
+        name : str | None, optional
+            New name for the block. If None, keeps the original name.
+        description : str | None, optional
+            New description. If None, keeps the original description.
+        shocks : dict | None, optional
+            Dictionary of shocks to merge with existing shocks.
+        dynamics : dict | None, optional
+            Dictionary of dynamics to merge with existing dynamics.
+        reward : dict | None, optional
+            Dictionary of rewards to merge with existing rewards.
+
+        Returns
+        -------
+        DBlock
+            A new DBlock instance with the merged values.
         """
         new_name = self.name if name is None else name
         new_description = self.description if description is None else description
 
-        new_shocks = self.shocks | ({} if shocks is None else {})
-        new_dynamics = self.dynamics | ({} if dynamics is None else {})
-        new_reward = self.reward | ({} if reward is None else {})
+        new_shocks = self.shocks | (shocks or {})
+        new_dynamics = self.dynamics | (dynamics or {})
+        new_reward = self.reward | (reward or {})
 
         replacement = replace(
             self,
