@@ -383,7 +383,7 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
                     return value.numel()
                 elif hasattr(value, "size"):  # NumPy array or other array-like
                     return value.size
-            return None  # No tensors found
+            return 1  # No tensors found
 
         print(post.values())
 

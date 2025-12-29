@@ -9,6 +9,21 @@ scikit-agent requires:
 - SciPy
 - Matplotlib
 - PyTorch
+- Cairo
+
+### macOS
+
+To install system dependencies:
+
+```bash
+brew install cairo libffi
+```
+
+And link Cairo by setting the environment variable:
+
+```
+DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH
+```
 
 ## Install from PyPI
 

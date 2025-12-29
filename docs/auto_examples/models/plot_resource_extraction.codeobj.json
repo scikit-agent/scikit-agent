@@ -1,0 +1,690 @@
+{
+ "Normal": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Normal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Normal"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Distribution"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Distribution"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "abc",
+   "module_short": "abc",
+   "name": "ABC"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.distributions",
+   "module_short": "skagent.distributions",
+   "name": "Normal"
+  }
+ ],
+ "S_star": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  }
+ ],
+ "_": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  }
+ ],
+ "c_0": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  }
+ ],
+ "decision_rule": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "delta": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  }
+ ],
+ "dr_u": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  }
+ ],
+ "img": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "initial_conditions": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "np.linspace": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "linspace"
+  }
+ ],
+ "np.percentile": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "percentile"
+  }
+ ],
+ "p": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  }
+ ],
+ "param": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "plt.axhline": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "axhline"
+  }
+ ],
+ "plt.axis": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "axis"
+  }
+ ],
+ "plt.axvline": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "axvline"
+  }
+ ],
+ "plt.figure": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "figure"
+  }
+ ],
+ "plt.fill_between": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "fill_between"
+  }
+ ],
+ "plt.grid": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "grid"
+  }
+ ],
+ "plt.imshow": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "imshow"
+  }
+ ],
+ "plt.legend": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "legend"
+  }
+ ],
+ "plt.plot": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "plot"
+  }
+ ],
+ "plt.show": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "show"
+  }
+ ],
+ "plt.tight_layout": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "tight_layout"
+  }
+ ],
+ "plt.title": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "title"
+  }
+ ],
+ "plt.xlabel": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "xlabel"
+  }
+ ],
+ "plt.ylabel": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "ylabel"
+  }
+ ],
+ "r": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  }
+ ],
+ "rex.calibration": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.models.resource_extraction",
+   "module_short": "skagent.models.resource_extraction",
+   "name": "calibration"
+  }
+ ],
+ "rex.calibration.items": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.models.resource_extraction.calibration",
+   "module_short": "skagent.models.resource_extraction.calibration",
+   "name": "items"
+  }
+ ],
+ "rex.make_optimal_decision_rule": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.models.resource_extraction",
+   "module_short": "skagent.models.resource_extraction",
+   "name": "make_optimal_decision_rule"
+  }
+ ],
+ "rex.resource_extraction_block": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.block",
+   "module_short": "skagent",
+   "name": "DBlock"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.models.resource_extraction",
+   "module_short": "skagent.models.resource_extraction",
+   "name": "resource_extraction_block"
+  }
+ ],
+ "rex.resource_extraction_block.display": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.block",
+   "module_short": "skagent",
+   "name": "DBlock.display"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock.display"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.block",
+   "module_short": "skagent.block",
+   "name": "Block.display"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Block.display"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.models.resource_extraction.resource_extraction_block",
+   "module_short": "skagent.models.resource_extraction.resource_extraction_block",
+   "name": "display"
+  }
+ ],
+ "rex.resource_extraction_block.display_formulas": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.block",
+   "module_short": "skagent",
+   "name": "DBlock.display_formulas"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "DBlock.display_formulas"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.block",
+   "module_short": "skagent.block",
+   "name": "Block.display_formulas"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Block.display_formulas"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.models.resource_extraction.resource_extraction_block",
+   "module_short": "skagent.models.resource_extraction.resource_extraction_block",
+   "name": "display_formulas"
+  }
+ ],
+ "simulator": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "Simulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "Simulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Simulator"
+  }
+ ],
+ "simulator.T_sim": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "simulator.history": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "dict"
+  }
+ ],
+ "simulator.initialize_sim": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "Simulator.initialize_sim"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "Simulator.initialize_sim"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Simulator.initialize_sim"
+  }
+ ],
+ "simulator.simulate": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "Simulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "Simulator.simulate"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Simulator.simulate"
+  }
+ ],
+ "ska.MonteCarloSimulator": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.simulation.monte_carlo",
+   "module_short": "skagent.simulation.monte_carlo",
+   "name": "Simulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent.simulation",
+   "module_short": "skagent.simulation",
+   "name": "Simulator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "Simulator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skagent",
+   "module_short": "skagent",
+   "name": "MonteCarloSimulator"
+  }
+ ],
+ "u_optimal": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "value": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  }
+ ],
+ "x_range": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ]
+}
