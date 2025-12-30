@@ -619,7 +619,7 @@ def test_get_euler_residual_loss():
     d2_block.construct_shocks(d2_calibration)
 
     # Create BellmanPeriod
-    test_bp = bellman.BellmanPeriod(d2_block, d2_calibration)
+    test_bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
 
     # Create input grid with arrival states
     # D-2 uses: a (arrival assets)
@@ -777,7 +777,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         d2_block.construct_shocks(d2_calibration)
 
         # Create BellmanPeriod
-        bp = bellman.BellmanPeriod(d2_block, d2_calibration)
+        bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
 
         # Create test states
         n_samples = 100
@@ -829,7 +829,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         d2_block.construct_shocks(d2_calibration)
 
         # Create BellmanPeriod
-        bp = bellman.BellmanPeriod(d2_block, d2_calibration)
+        bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
 
         # Create policy network using scikit-agent's BlockPolicyNet
         torch.manual_seed(TEST_SEED)
