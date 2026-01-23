@@ -637,6 +637,108 @@ class BlockPolicyValueNet(Net):
         return self.get_policy_and_value_functions(length)
 
 
+class BlockQNet(BellmanPeriodMixin, Net):
+    """
+    A neural network for approximating the action-value function, or Q function, of a dynamic problems.
+
+    This network takes action and state variables as input and outputs value estimates.
+    Inherits from Net to provide configurable architecture.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The Bellman Period
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    control_sym : string
+        Control variable symbol.
+    **kwargs
+        Additional keyword arguments passed to Net. See Net class
+        documentation for all available options including activation, transform, init_seed, copy_weights_from, etc.
+    """
+
+    def __init__(self, bellman_period, control_sym=None, width: int = 32, **kwargs):
+        """
+        Initialize the BlockValueNet.
+        """
+        self._init_bellman_period(bellman_period, control_sym)
+
+        # Use the same information set as the policy network
+        self.state_variables = sorted(list(self.cobj.iset))
+
+        # Value function takes state variables as input and outputs a scalar value
+        super().__init__(
+            n_inputs=len(self.state_variables), n_outputs=1, width=width, **kwargs
+        )
+
+    def value_function(self, action_t, states_t, shocks_t={}, parameters={}):
+        """
+        Compute value function estimates for given action and state variables.
+
+        The value function takes the same information as the policy function
+        (the control's information set) but doesn't need to compute transitions.
+
+        Parameters
+        ----------
+        action_t : dict
+            State variables as dict (e.g., {"wealth": tensor(...)})
+        states_t : dict
+            State variables as dict (e.g., {"wealth": tensor(...)})
+        shocks_t : dict, optional
+            Shock variables as dict (not used but kept for interface consistency)
+        parameters : dict, optional
+            Model parameters (not used but kept for interface consistency)
+
+        Returns
+        -------
+        torch.Tensor
+            Value function estimates
+        """
+        # The inputs to the network are the actions and
+        # TODO should this specify arrival states?
+        all_vars = action_t | states_t | shocks_t
+        # this was the information set
+        all_vals = [all_vars[isym].flatten() for isym in all_vars]
+
+        input_tensor = torch.stack(all_vals).T
+
+        # Keep tensor on same device as input (don't force to CUDA device)
+        if hasattr(all_vals[0], "device"):
+            input_tensor = input_tensor.to(all_vals[0].device)
+            # Also move network to same device
+            self.to(all_vals[0].device)
+        else:
+            input_tensor = input_tensor.to(device)
+
+        # Forward pass through network
+        output = self(input_tensor)
+
+        return output.flatten()
+
+    def get_value_function(self):
+        """
+        Get a callable value function for use with loss functions.
+
+        This follows the same pattern as BlockPolicyNet.get_decision_function()
+
+        Returns
+        -------
+        callable
+            A function that takes states, shocks, and parameters and returns value estimates
+        """
+
+        def vf(actions_t, states_t, shocks_t={}, parameters={}):
+            return self.value_function(actions_t, states_t, shocks_t, parameters)
+
+        return vf
+
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_value_function()
+
+
 ###########
 # Training Nets
 
