@@ -31,7 +31,7 @@ class BellmanPeriod:
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
-    def get_arrival_states(self, calibration):
+    def get_arrival_states(self, calibration=None):
         return self.block.get_arrival_states(
             calibration if calibration else self.calibration
         )
@@ -41,6 +41,13 @@ class BellmanPeriod:
 
     def get_shocks(self):
         return self.block.get_shocks()
+
+    def get_action_dim(self):
+        return len(self.get_controls())
+
+    def get_states_dim(self):
+        """Returns the number of arrival states"""
+        return len(self.get_arrival_states(self.calibration))
 
     def transition_function(
         self, states_t, shocks_t, controls_t, parameters=None, decision_rules=None
