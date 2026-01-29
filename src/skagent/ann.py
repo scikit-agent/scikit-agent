@@ -468,6 +468,17 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
                     )
                 input_tensor = torch.empty(batch_size, 0, device=device)
 
+            """
+            This code pattern was suggested elsewhere; useful here?
+
+            self.actor.eval()
+            with torch.no_grad():
+                ## TODO: This is going to need to go from arrival_state to information set!
+                ## -- but that will require a shocks realization.
+                action = self.actor(state).cpu().numpy()[0]
+            self.actor.train()
+            """
+
             return self(input_tensor).flatten()  # application of network
 
         return {self.control_sym: decision_rule}

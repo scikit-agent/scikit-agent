@@ -11,6 +11,7 @@ import random
 from skagent.ann import BlockPolicyNet, BlockQNet
 from skagent.bellman import BellmanPeriod
 from skagent.simulation.monte_carlo import draw_shocks
+from skagent.distributions import MeanOneLogNormal
 
 
 class ReplayBuffer:
@@ -104,27 +105,25 @@ class DDPG:
         self.replay_buffer = ReplayBuffer()
         self.noise = OUNoise(action_dim)
 
-    def select_action(self, arrival_state, add_noise=True):
-        """Select action using current policy with optional exploration noise"""
+    def get_decision_rule(self, add_noise=True):
+        """Produce the decision rule using current policy with optional exploration noise"""
+        dr_basic = self.actor.get_decision_rule()
 
-        print(arrival_state)
+        def decision_rule(*information):
+            action = dr_basic[self.actor.control_sym](*information)
 
-        arrival_state = torch.FloatTensor(arrival_state).unsqueeze(0).to(self.device)
-        self.actor.eval()
+            if add_noise:
+                for csym in action:
+                    action[csym] = action[csym] + self.noise.sample()
 
-        with torch.no_grad():
-            ## TODO: This is going to need to go from arrival_state to information set!
-            ## -- but that will require a shocks realization.
-            action = self.actor(state).cpu().numpy()[0]
-        self.actor.train()
+                    ## TODO: need to deal with the bounds as provided by the BP
+                    action[csym] = np.clip(
+                        action[csym], -self.max_action, self.max_action
+                    )
 
-        if add_noise:
-            action += self.noise.sample()
+            return action
 
-            ## TODO: need to deal with the bounds as provided by the BP
-            action = np.clip(action, -self.max_action, self.max_action)
-
-        return action
+        return {self.actor.control_sym: decision_rule}
 
     def train(self, batch_size=64):
         """Train the agent on a batch of experiences"""
@@ -219,24 +218,39 @@ class Environment:
 
         return initial_vals
 
-    def step(self, action):
+    def step(self, decision_rule):
         # TODO implement
         shocks = bp.draw_shocks()
 
-        self.state, reward = self.bp.step(self.state, shocks, action)
-        return self.state, reward
+        post = bp.forward_function(self.state, shocks, {}, decision_rules=decision_rule)
+
+        state_t = self.state
+        action = {csym: post[csym] for csym in decision_rule}
+        reward = {
+            rsym: post[rsym]
+            for rsym in self.bp.block.reward
+            # if agent is None or self.block.reward[rsym] == agent # TODO deal with multiple cagents
+        }
+        state_t_plus = {a_sym: post[a_sym] for a_sym in self.bp.get_arrival_states()}
+
+        self.state = state_t_plus
+
+        return state_t, action, reward, state_t_plus
 
 
 # Example usage
 if __name__ == "__main__":
     from skagent.models.benchmarks import d2_calibration, d2_block
 
-    # TODO
-    initial = {}  # this is a dictionary of distributions for the initial values of the state variables.
+    bp = BellmanPeriod(d2_block, d2_calibration)
+
+    print("arrival states:", bp.get_arrival_states())
+
+    initial = {
+        "a": MeanOneLogNormal(sigma=1)
+    }  # this is a dictionary of distributions for the initial values of the state variables.
     # this gets passed in to something...
     # combined with the BellmanPeriod it is the environment.
-
-    bp = BellmanPeriod(d2_block, d2_calibration)
 
     env = Environment(bp, initial)
 
@@ -268,9 +282,14 @@ if __name__ == "__main__":
 
         for step in range(max_steps):
             # Select action
-            action = agent.select_action(state, add_noise=True)
+            print("state:", state)
 
-            next_state, reward = env.step(action)
+            state, action, reward, next_state = env.step(agent.get_decision_rule())
+
+            print("action:", action)
+            print("reward:", reward)
+            print("next_state:", next_state)
+
             done = step == max_steps - 1
 
             # Store transition

@@ -15,6 +15,7 @@ import torch
 from torch.autograd import grad
 
 from skagent.utils import compute_gradients_for_tensors
+from skagent.simulation.monte_carlo import draw_shocks
 
 
 class BellmanPeriod:
@@ -48,6 +49,31 @@ class BellmanPeriod:
     def get_states_dim(self):
         """Returns the number of arrival states"""
         return len(self.get_arrival_states(self.calibration))
+
+    def draw_shocks(self, n=None, rng: np.random.Generator | None = None):
+        """
+        Draw values of exogenous shock variables from the underlying block.
+        """
+        shocks = draw_shocks(self.block.get_shocks(), n=n, rng=rng)
+
+        return shocks
+
+    def forward_function(
+        self, states_t, shocks_t, controls_t, parameters=None, decision_rules=None
+    ):
+        decision_rules = (
+            decision_rules
+            if decision_rules
+            else (self.decision_rules if self.decision_rules else {})
+        )
+        parameters = (
+            parameters if parameters else (self.calibration if self.calibration else {})
+        )
+
+        vals = parameters | states_t | shocks_t | controls_t
+        post = self.block.transition(vals, decision_rules, fix=list(controls_t.keys()))
+
+        return post
 
     def transition_function(
         self, states_t, shocks_t, controls_t, parameters=None, decision_rules=None
