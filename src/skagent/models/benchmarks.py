@@ -524,7 +524,7 @@ def u2_analytical_policy(states, shocks, parameters):
     psi = shocks.get("psi", torch.ones_like(a))
 
     # Compute normalized cash-on-hand: m = R*a/ψ + 1
-    m = R * a / psi + 1
+    m = R * a / torch.clamp(psi, min=1e-8) + 1
 
     # Human wealth (normalized): h = 1/r
     r = R - 1
@@ -599,7 +599,7 @@ u3_block = DBlock(
             ),
             # Normalized assets (for transition)
             "a": lambda m, c: m - c,
-            # CRRA utility of normalized consumption (wrapper needed for param name mapping)
+            # Lambda needed: DBlock passes CRRA from calibration, crra_utility expects gamma
             "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},
@@ -789,7 +789,9 @@ def get_analytical_policy(model_id: str) -> Callable:
     if "analytical_policy" not in BENCHMARK_MODELS[model_id]:
         raise ValueError(
             f"Model '{model_id}' does not have an analytical policy. "
-            "This model requires numerical solution (e.g., via Euler equation training)."
+            "This model requires numerical solution via Euler equation training. "
+            "Use EulerEquationLoss with maliar_training_loop (constrained=True for "
+            "borrowing-constrained models). See tests/test_maliar.py for examples."
         )
 
     return BENCHMARK_MODELS[model_id]["analytical_policy"]
@@ -896,7 +898,7 @@ def validate_analytical_solution(
             ).item(),
         }
 
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError) as e:
         return {
             "success": False,
             "validation": "FAILED",

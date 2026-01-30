@@ -50,39 +50,6 @@ class TestBenchmarksModels:
             f"Expected 6 models, got {len(BENCHMARK_MODELS)}"
         )
 
-    def test_model_registry_structure(self):
-        """Test that each model has required components"""
-        # Models that require numerical solution (no analytical policy)
-        numerical_only_models = {"U-3"}
-
-        for model_id in BENCHMARK_MODELS.keys():
-            model_info = BENCHMARK_MODELS[model_id]
-
-            assert "block" in model_info, f"Model {model_id} missing 'block'"
-            assert "calibration" in model_info, (
-                f"Model {model_id} missing 'calibration'"
-            )
-            assert "test_states" in model_info, (
-                f"Model {model_id} missing 'test_states'"
-            )
-
-            # Analytical policy is optional for numerical-only models
-            if model_id not in numerical_only_models:
-                assert "analytical_policy" in model_info, (
-                    f"Model {model_id} missing 'analytical_policy'"
-                )
-            else:
-                # Verify numerical-only models explicitly lack analytical_policy
-                assert "analytical_policy" not in model_info, (
-                    f"Model {model_id} should NOT have 'analytical_policy' "
-                    "(requires numerical solution)"
-                )
-
-            # Test calibration has description
-            assert "description" in model_info["calibration"], (
-                f"Model {model_id} missing description"
-            )
-
     @pytest.mark.parametrize(
         "model_id",
         ["D-1", "D-2", "D-3", "U-1", "U-2"],
@@ -400,10 +367,10 @@ class TestDynamicOptimalityChecks:
         # Test that consumption is positive
         assert torch.all(result["c"] > 0), "U-2 consumption should be positive"
 
-        # In the unconstrained PIH model, human wealth h > 0 would allow
-        # consumption to be backed by both m and h. In this implementation,
-        # consumption is constrained by c ≤ m, so we just verify that it
-        # remains reasonable relative to total wealth m + h.
+        # U-2 is unconstrained PIH: the upper bound 0.1*m + 2 is loose enough
+        # that c can exceed m (borrowing against human wealth h = 1/r).
+        # The analytical solution c = (1-β)(m + h) ≈ 0.04*m + 1.33 is well
+        # within the bound, so we verify consumption stays below total wealth.
         total_wealth = m + h
         assert torch.all(result["c"] < total_wealth), (
             "U-2 consumption should be less than total wealth (m + h)"

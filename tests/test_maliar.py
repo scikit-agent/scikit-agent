@@ -905,7 +905,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         Analytical solution: c = (1-β)(m + 1/r) where 1/r is normalized human wealth.
         """
-        # Get U-2 benchmark model (no borrowing constraint - has analytical solution)
+        # Get U-2 benchmark model (unconstrained PIH - upper bound is non-binding,
+        # so constrained=False is appropriate). See future gallery page for details.
         u2_block = get_benchmark_model("U-2")
         u2_calibration = get_benchmark_calibration("U-2")
         analytical_policy = get_analytical_policy("U-2")
@@ -915,7 +916,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         u2_block.construct_shocks(u2_calibration, rng=rng)
 
         # Create BellmanPeriod
-        bp = bellman.BellmanPeriod(u2_block, u2_calibration)
+        bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration)
 
         # Create initial states grid (normalized assets)
         states_0_n = grid.Grid.from_config(
@@ -925,6 +926,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         )
 
         # Create Euler equation loss
+        # Note: after PR #168, discount_factor will come from BellmanPeriod
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
             discount_factor=u2_calibration["DiscFac"],
@@ -938,7 +940,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             states_0_n,
             u2_calibration,
             shock_copies=2,
-            max_iterations=8,
+            max_iterations=12,
             tolerance=1e-6,
             random_seed=TEST_SEED,
             simulation_steps=1,
@@ -964,16 +966,16 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         rel_error = torch.abs(trained_c - analytical_c) / (analytical_c + 1e-8)
         mean_rel_error = rel_error.mean().item()
 
-        # Trained policy should be reasonably close to analytical (within 20%).
+        # Trained policy should be reasonably close to analytical (within 15%).
         # Note: with CRRA utility, the Euler equation pins down both the shape and
         # the level of the optimal consumption policy; arbitrary rescalings k * c*
-        # do NOT satisfy the Euler equation unless k = 1. The 20% tolerance here
+        # do NOT satisfy the Euler equation unless k = 1. The 15% tolerance here
         # reflects numerical approximation error (finite training iterations,
         # stochastic optimization, and function-approximation error), not any
         # theoretical indeterminacy in the Euler condition.
         self.assertLess(
             mean_rel_error,
-            0.20,
+            0.15,
             f"Trained policy should approximately match analytical PIH solution. "
             f"Mean relative error: {mean_rel_error:.4f}",
         )
@@ -1004,7 +1006,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         u3_block.construct_shocks(u3_calibration, rng=rng)
 
         # Create BellmanPeriod
-        bp = bellman.BellmanPeriod(u3_block, u3_calibration)
+        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
 
         # Create initial states grid (normalized assets)
         # Use wider range to test both constrained and unconstrained regions
@@ -1046,7 +1048,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # Get decision function and parameters
         decision_fn = trained_net.get_decision_function()
         R = u3_calibration["R"]
-        beta = u3_calibration["DiscFac"]
+        beta = u3_calibration["DiscFac"]  # β ≡ DiscFac (standard economics notation)
         gamma = u3_calibration["CRRA"]
 
         # =================================================================
@@ -1090,15 +1092,16 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             f"Got c(high) - c(low) = {c_range.item():.4f}",
         )
 
-        # Most differences should be positive (allow up to 20% violations)
+        # Most differences should be positive (allow up to 10% violations for NN noise)
         positive_diffs = torch.sum(c_diff > 0).item()
         total_diffs = len(c_diff)
         positive_ratio = positive_diffs / total_diffs
         self.assertGreater(
             positive_ratio,
-            0.8,
-            f"At least 80% of consumption differences should be positive. "
-            f"Got {positive_ratio:.2%} ({positive_diffs}/{total_diffs}).",
+            0.9,
+            f"At least 90% of consumption differences should be positive. "
+            f"Got {positive_ratio:.2%} ({positive_diffs}/{total_diffs}). "
+            f"100% is unrealistic for NN approximations due to local non-monotonicity.",
         )
 
         # =================================================================
@@ -1132,7 +1135,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # In the unconstrained region, Euler residual should be small
         self.assertLess(
             mean_euler_residual,
-            0.5,
+            0.3,
             f"Euler residual should be small at high wealth (unconstrained). "
             f"Got mean |residual| = {mean_euler_residual:.4f}",
         )
@@ -1337,7 +1340,7 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         u3_block = get_benchmark_model("U-3")
         u3_calibration = get_benchmark_calibration("U-3")
 
-        bp = bellman.BellmanPeriod(u3_block, u3_calibration)
+        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
 
         # Create loss functions with both settings
         loss_unconstrained = loss.EulerEquationLoss(
@@ -1401,7 +1404,7 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         u3_block = get_benchmark_model("U-3")
         u3_calibration = get_benchmark_calibration("U-3")
 
-        bp = bellman.BellmanPeriod(u3_block, u3_calibration)
+        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
 
         loss_constrained = loss.EulerEquationLoss(
             bp,
@@ -1462,7 +1465,7 @@ class TestU3ConstrainedRegionBehavior(unittest.TestCase):
         rng = np.random.default_rng(TEST_SEED)
         u3_block.construct_shocks(u3_calibration, rng=rng)
 
-        bp = bellman.BellmanPeriod(u3_block, u3_calibration)
+        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
 
         # Create initial states grid focused on LOW wealth (constrained region)
         states_0_n = grid.Grid.from_config(

@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 from skagent.bellman import (
     estimate_bellman_residual,
@@ -6,6 +7,8 @@ from skagent.bellman import (
 )
 from skagent.grid import Grid
 import torch
+
+logger = logging.getLogger(__name__)
 
 
 def static_reward(
@@ -309,13 +312,14 @@ class EulerEquationLoss:
     Creates an Euler equation loss function for the Maliar method.
 
     The Euler equation is the first-order condition from the Bellman equation,
-    relating marginal utilities across periods. This loss function computes the
-    Euler equation **residual**:
+    relating marginal rewards across periods. For a DSOP with control :math:`x_t`,
+    arrival states :math:`s_t`, and pre-decision states :math:`m_t`, this loss
+    function computes the Euler equation **residual**:
 
     .. math::
 
-        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[
-            \\frac{\\partial s_{t+1}}{\\partial c_t} \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
+        f = u'(x_t) + \\beta \\cdot u'(x_{t+1}) \\cdot \\sum_s \\left[
+            \\frac{\\partial s_{t+1}}{\\partial x_t} \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
         \\right]
 
     where :math:`f` is the residual that equals zero at optimality, :math:`s_{t+1}` is
@@ -327,11 +331,11 @@ class EulerEquationLoss:
 
     .. math::
 
-        u'(c_t) = -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
+        u'(x_t) = -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial x_t}\\right]
 
-    By the envelope theorem, :math:`V'(s') = u'(c') \\cdot \\frac{\\partial m'}{\\partial s'}`.
+    By the envelope theorem, :math:`V'(s') = u'(x') \\cdot \\frac{\\partial m'}{\\partial s'}`.
 
-    For a consumption-saving model with :math:`a_{t+1} = m_t - c_t` where
+    **Example (consumption-saving):** For :math:`a_{t+1} = m_t - c_t` where
     :math:`m_t = R \\cdot a_t + y_t` (cash-on-hand):
 
     - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -1`
@@ -341,19 +345,28 @@ class EulerEquationLoss:
     This gives :math:`f = u'(c_t) - \\beta R \\cdot u'(c_{t+1}) = 0` at optimality,
     which is the standard Euler equation :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
 
-    **Handling Borrowing Constraints:**
+    **Handling Inequality Constraints:**
 
-    When a borrowing constraint is present (e.g., :math:`c \\leq m`), the Euler
-    equation becomes an **inequality** at constrained points:
+    When the control has an **upper-bound** constraint (e.g., :math:`x \\leq \\bar{x}`),
+    the Euler equation becomes an inequality at constrained points:
 
     .. math::
 
-        u'(c_t) \\geq \\beta R E[u'(c_{t+1})]
+        u'(x_t) \\geq -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial x_t}\\right]
 
-    This means the Euler residual :math:`f > 0` is optimal when the constraint binds.
-    Set ``constrained=True`` to use a one-sided loss that only penalizes negative
-    residuals (overconsumption/undersaving), which is the appropriate formulation
-    for buffer stock models with borrowing constraints.
+    At the upper bound, the residual :math:`f > 0` is optimal. Set ``constrained=True``
+    to use a one-sided loss :math:`L = E[\\max(0, -f)^2]` that only penalizes negative
+    residuals, which is the appropriate formulation for upper-bound constrained controls.
+
+    For example, in a buffer stock consumption model with :math:`c \\leq m`, the agent
+    cannot consume more than cash-on-hand. At the constraint, :math:`u'(c) > \\beta R E[u'(c')]`,
+    so the residual is positive and should not be penalized.
+
+    .. note::
+        The current implementation handles **upper-bound** constraints on the control
+        (residual > 0 at the constraint, penalize via :math:`\\text{relu}(-f)^2`).
+        **Lower-bound** constraints (where the residual would be < 0 at the constraint,
+        requiring :math:`\\text{relu}(f)^2`) are not yet supported.
 
     **Methodology:**
 
@@ -376,7 +389,7 @@ class EulerEquationLoss:
 
         L(\\theta) = E[\\max(0, -f)^2]
 
-    which only penalizes negative residuals (undersaving).
+    which only penalizes negative residuals.
 
     **Notation:**
 
@@ -396,7 +409,12 @@ class EulerEquationLoss:
     bellman_period : BellmanPeriod
         The model block containing dynamics, rewards, and shocks
     discount_factor : float
-        The discount factor β (time preference parameter)
+        The discount factor β (time preference parameter).
+
+        .. note::
+            In a future version (see PR #168), the discount factor will be obtained
+            from the BellmanPeriod object directly rather than passed as a parameter.
+
     parameters : dict, optional
         Model parameters for calibration
     agent : str, optional
@@ -405,10 +423,10 @@ class EulerEquationLoss:
         Exogenous weight for combining multiple optimality conditions (default: 1.0)
         This corresponds to the vector v in equation (12) of the paper.
     constrained : bool, optional
-        If True, use one-sided loss for borrowing-constrained models (default: False).
-        When True, only negative Euler residuals (undersaving) are penalized.
-        Positive residuals are not penalized because they indicate the borrowing
-        constraint is binding, which is optimal behavior.
+        If True, use one-sided loss for upper-bound constrained controls (default: False).
+        When True, only negative Euler residuals are penalized. Positive residuals
+        are not penalized because they indicate the control is at its upper bound,
+        which is optimal behavior under the Kuhn-Tucker conditions.
 
     Returns
     -------
@@ -463,7 +481,7 @@ class EulerEquationLoss:
     >>> # Compute loss for a decision function
     >>> loss = loss_fn(my_decision_function, input_grid)
     >>>
-    >>> # For a borrowing-constrained model (buffer stock):
+    >>> # For a model with upper-bound constrained control (e.g., buffer stock c <= m):
     >>> loss_fn_constrained = EulerEquationLoss(
     ...     bp, discount_factor=0.95, parameters={"R": 1.04}, constrained=True
     ... )
@@ -495,6 +513,20 @@ class EulerEquationLoss:
         self.agent = agent
         self.weight = weight
         self.constrained = constrained
+
+        # Warn if constrained=True but no control has an upper_bound
+        if self.constrained:
+            has_upper_bound = any(
+                hasattr(rule, "upper_bound") and rule.upper_bound is not None
+                for rule in bellman_period.block.dynamics.values()
+                if hasattr(rule, "iset")
+            )
+            if not has_upper_bound:
+                logger.warning(
+                    "constrained=True but no Control in the block has an upper_bound. "
+                    "The one-sided loss is intended for models with upper-bound "
+                    "constraints on controls (e.g., c <= m)."
+                )
 
         # Test reward variables
         reward_vars = [
@@ -568,10 +600,10 @@ class EulerEquationLoss:
         # Each sample's residual is computed using two independent shock draws (ε₀, ε₁).
         # The AiO method approximates E[(E[f])²] (not E[f²], which is larger by Jensen).
         if self.constrained:
-            # One-sided loss for borrowing-constrained models:
-            # Only penalize NEGATIVE residuals (undersaving/overconsumption).
-            # Positive residuals indicate the borrowing constraint is binding,
-            # which is optimal behavior (u'(c) > βR E[u'(c')]) at the constraint.
+            # One-sided loss for upper-bound constrained controls:
+            # Only penalize NEGATIVE residuals (control exceeding its optimal level).
+            # Positive residuals indicate the control is at its upper bound,
+            # which is optimal behavior under the Kuhn-Tucker conditions.
             # Using ReLU on -residual ensures we only penalize when residual < 0.
             return self.weight * torch.relu(-euler_residual) ** 2
         else:

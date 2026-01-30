@@ -866,7 +866,7 @@ def estimate_euler_residual(
         # Check if this state depends on the control by attempting to compute ∂s_{t+1}/∂c_t.
         # Using allow_unused=True ensures grad returns None (not an error) when there's no
         # dependency, which is more robust than checking requires_grad. A tensor can have
-        # requires_grad=False even when computed from gradients (e.g., after certain ops).
+        # requires_grad=False even when computed from gradients (e.g., after detach(), indexing, or in-place operations).
         trans_grad = grad(
             next_state.sum(),
             c_t,
