@@ -656,6 +656,15 @@ class TestDynamicOptimalityChecks:
             )
 
 
+def test_calibration_descriptions():
+    """Verify all benchmark models have a description in calibration."""
+    for model_id in BENCHMARK_MODELS.keys():
+        calibration = get_benchmark_calibration(model_id)
+        assert "description" in calibration, (
+            f"Model {model_id} missing 'description' in calibration"
+        )
+
+
 def test_benchmark_functionality():
     """Integration test: verify all benchmark models are functional"""
 

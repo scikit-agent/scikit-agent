@@ -1551,3 +1551,57 @@ class TestU3ConstrainedRegionBehavior(unittest.TestCase):
             f"Consumption ratio should be < 1.0 (respecting constraint). "
             f"Got c/m = {consumption_ratio}",
         )
+
+
+class TestConstrainedWarning(unittest.TestCase):
+    """Test that EulerEquationLoss warns on misuse of constrained=True."""
+
+    def test_constrained_warns_without_upper_bound(self):
+        """constrained=True should warn when no Control has an upper_bound."""
+        import logging
+
+        # D-1 has a Control with upper_bound, but build a minimal block without one
+        no_bound_block = model.DBlock(
+            **{
+                "name": "test_no_upper_bound",
+                "shocks": {},
+                "dynamics": {
+                    "c": model.Control(["a"]),  # No upper_bound
+                    "a": lambda a, c: a - c,
+                    "u": lambda c: torch.log(c),
+                },
+                "reward": {"u": "consumer"},
+            }
+        )
+        calibration = {"DiscFac": 0.96}
+        bp = bellman.BellmanPeriod(no_bound_block, "DiscFac", calibration)
+
+        with self.assertLogs("skagent.loss", level=logging.WARNING) as cm:
+            loss.EulerEquationLoss(
+                bp,
+                discount_factor=calibration["DiscFac"],
+                parameters=calibration,
+                constrained=True,
+            )
+
+        self.assertTrue(
+            any("constrained=True but no Control" in msg for msg in cm.output),
+            f"Expected warning about constrained=True, got: {cm.output}",
+        )
+
+    def test_constrained_no_warn_with_upper_bound(self):
+        """constrained=True should NOT warn when a Control has upper_bound."""
+        import logging
+
+        u3_block = get_benchmark_model("U-3")
+        u3_calibration = get_benchmark_calibration("U-3")
+        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
+
+        logger = logging.getLogger("skagent.loss")
+        with self.assertNoLogs(logger, level=logging.WARNING):
+            loss.EulerEquationLoss(
+                bp,
+                discount_factor=u3_calibration["DiscFac"],
+                parameters=u3_calibration,
+                constrained=True,
+            )

@@ -33,10 +33,13 @@ TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality co
 
 from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
 from skagent.block import Control, DBlock
+import logging
 import torch
 from torch import as_tensor
 import numpy as np
 from typing import Dict, Any, Callable
+
+logger = logging.getLogger(__name__)
 
 
 # UTILITY FUNCTIONS
@@ -524,7 +527,14 @@ def u2_analytical_policy(states, shocks, parameters):
     psi = shocks.get("psi", torch.ones_like(a))
 
     # Compute normalized cash-on-hand: m = R*a/ψ + 1
-    m = R * a / torch.clamp(psi, min=1e-8) + 1
+    clamped_psi = torch.clamp(psi, min=1e-8)
+    if not torch.equal(psi, clamped_psi):
+        logger.debug(
+            "Clamped near-zero psi values in u2_analytical_policy: min(psi)=%g -> %g",
+            psi.min().item(),
+            clamped_psi.min().item(),
+        )
+    m = R * a / clamped_psi + 1
 
     # Human wealth (normalized): h = 1/r
     r = R - 1
@@ -599,7 +609,7 @@ u3_block = DBlock(
             ),
             # Normalized assets (for transition)
             "a": lambda m, c: m - c,
-            # Lambda needed: DBlock passes CRRA from calibration, crra_utility expects gamma
+            # Lambda maps calibration key CRRA to crra_utility's gamma parameter
             "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},
@@ -791,7 +801,7 @@ def get_analytical_policy(model_id: str) -> Callable:
             f"Model '{model_id}' does not have an analytical policy. "
             "This model requires numerical solution via Euler equation training. "
             "Use EulerEquationLoss with maliar_training_loop (constrained=True for "
-            "borrowing-constrained models). See tests/test_maliar.py for examples."
+            "models with upper-bound constrained controls). See tests/test_maliar.py for examples."
         )
 
     return BENCHMARK_MODELS[model_id]["analytical_policy"]
@@ -898,7 +908,7 @@ def validate_analytical_solution(
             ).item(),
         }
 
-    except (ValueError, KeyError, RuntimeError) as e:
+    except (ValueError, KeyError, RuntimeError, TypeError, AttributeError) as e:
         return {
             "success": False,
             "validation": "FAILED",
