@@ -1,4 +1,5 @@
 import inspect
+import logging
 from skagent.grid import Grid
 import torch
 from skagent.utils import create_vectorized_function_wrapper_with_mapping
@@ -385,8 +386,6 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
                     return value.size
             return 1  # No tensors found
 
-        print(post.values())
-
         output = self.get_decision_rule(length=get_tensor_size(post))[self.control_sym](
             *iset_vals
         )
@@ -662,10 +661,44 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
     return losses.mean()
 
 
-def train_block_nn(block_policy_nn, inputs: Grid, loss_function: Callable, epochs=50):
-    # to change
-    # criterion = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=0.01)  # Using Adam
+def train_block_nn(
+    block_policy_nn,
+    inputs: Grid,
+    loss_function: Callable,
+    epochs=50,
+    learning_rate=0.01,
+    gradient_clip_norm=None,
+):
+    """
+    Train a block policy neural network by minimizing a loss function.
+
+    Parameters
+    ----------
+    block_policy_nn : BlockPolicyNet or similar
+        The neural network to train. Must have ``parameters()`` and
+        ``get_core_function(length=...)`` methods.
+    inputs : Grid
+        Input grid containing states and (optionally) shock realizations.
+    loss_function : callable
+        Loss function with signature ``(decision_function, input_grid) -> tensor``.
+    epochs : int, optional
+        Number of gradient descent epochs. Must be positive. Default is 50.
+    learning_rate : float, optional
+        Learning rate for the Adam optimizer. Default is 0.01.
+    gradient_clip_norm : float or None, optional
+        If not None, clips the total gradient norm to this value before each
+        optimizer step. Useful for stabilizing training when gradients explode.
+
+    Returns
+    -------
+    tuple
+        ``(trained_network, final_loss)`` where ``final_loss`` is the scalar
+        loss value from the last epoch.
+    """
+    if epochs <= 0:
+        raise ValueError(f"epochs must be positive, got {epochs}")
+
+    optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=learning_rate)
 
     final_loss = None
     for epoch in range(epochs):
@@ -675,6 +708,17 @@ def train_block_nn(block_policy_nn, inputs: Grid, loss_function: Callable, epoch
             inputs, block_policy_nn.get_core_function(length=inputs.n()), loss_function
         )
         loss.backward()
+        if gradient_clip_norm is not None:
+            total_norm = torch.nn.utils.clip_grad_norm_(
+                block_policy_nn.parameters(), gradient_clip_norm
+            )
+            if total_norm > gradient_clip_norm:
+                logging.debug(
+                    "Gradient norm clipped: %.2e -> %.2e (epoch %d)",
+                    total_norm.item(),
+                    gradient_clip_norm,
+                    epoch,
+                )
         optimizer.step()
         running_loss += loss.item()
         final_loss = loss.item()  # Store the final loss value
@@ -692,6 +736,8 @@ def train_block_value_and_policy_nn(
     policy_loss_function,
     value_loss_function,
     epochs=50,
+    learning_rate=0.01,
+    gradient_clip_norm=None,
 ):
     """
     Train both BlockPolicyNet and BlockValueNet jointly for value function iteration.
@@ -713,20 +759,21 @@ def train_block_value_and_policy_nn(
         Loss function for value training (takes value_function, input_grid)
     epochs : int, optional
         Number of training epochs, by default 50
+    learning_rate : float, optional
+        Learning rate for Adam optimizer, by default 0.01
+    gradient_clip_norm : float or None, optional
+        If not None, clips gradient norm to this value before each optimizer step.
 
     Returns
     -------
     tuple
         (trained_policy_nn, trained_value_nn)
     """
-    # to change
-    # criterion = torch.nn.MSELoss()
-    policy_optimizer = torch.optim.Adam(
-        block_policy_nn.parameters(), lr=0.01
-    )  # Using Adam
-    value_optimizer = torch.optim.Adam(
-        block_value_nn.parameters(), lr=0.01
-    )  # Using Adam
+    if epochs <= 0:
+        raise ValueError(f"epochs must be positive, got {epochs}")
+
+    policy_optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=learning_rate)
+    value_optimizer = torch.optim.Adam(block_value_nn.parameters(), lr=learning_rate)
 
     for epoch in range(epochs):
         # Train policy network
@@ -735,6 +782,17 @@ def train_block_value_and_policy_nn(
             inputs, block_policy_nn.get_decision_function(), policy_loss_function
         )
         policy_loss.backward()
+        if gradient_clip_norm is not None:
+            policy_norm = torch.nn.utils.clip_grad_norm_(
+                block_policy_nn.parameters(), gradient_clip_norm
+            )
+            if policy_norm > gradient_clip_norm:
+                logging.debug(
+                    "Policy gradient norm clipped: %.2e -> %.2e (epoch %d)",
+                    policy_norm.item(),
+                    gradient_clip_norm,
+                    epoch,
+                )
         policy_optimizer.step()
 
         # Train value network
@@ -743,6 +801,17 @@ def train_block_value_and_policy_nn(
             inputs, block_value_nn.get_value_function(), value_loss_function
         )
         value_loss.backward()
+        if gradient_clip_norm is not None:
+            value_norm = torch.nn.utils.clip_grad_norm_(
+                block_value_nn.parameters(), gradient_clip_norm
+            )
+            if value_norm > gradient_clip_norm:
+                logging.debug(
+                    "Value gradient norm clipped: %.2e -> %.2e (epoch %d)",
+                    value_norm.item(),
+                    gradient_clip_norm,
+                    epoch,
+                )
         value_optimizer.step()
 
         if epoch % 100 == 0:

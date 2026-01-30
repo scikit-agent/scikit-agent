@@ -9,6 +9,7 @@ and framing them in terms of arrival states, shocks, and decisions.
 """
 
 import inspect
+import logging
 
 import numpy as np
 import torch
@@ -48,9 +49,23 @@ class BellmanPeriod:
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
+    def _resolve_params(self, parameters=None, decision_rules=None):
+        """Resolve parameters and decision_rules, falling back to instance defaults."""
+        params = (
+            parameters
+            if parameters is not None
+            else (self.calibration if self.calibration is not None else {})
+        )
+        dr = (
+            decision_rules
+            if decision_rules is not None
+            else (self.decision_rules if self.decision_rules is not None else {})
+        )
+        return params, dr
+
     def get_arrival_states(self, calibration):
         return self.block.get_arrival_states(
-            calibration if calibration else self.calibration
+            calibration if calibration is not None else self.calibration
         )
 
     def get_controls(self):
@@ -65,14 +80,7 @@ class BellmanPeriod:
         """
         TODO: refactor with post-function
         """
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
-        )
+        parameters, decision_rules = self._resolve_params(parameters, decision_rules)
 
         vals = parameters | states_t | shocks_t | controls_t
         post = self.block.transition(vals, decision_rules, fix=list(controls_t.keys()))
@@ -85,14 +93,7 @@ class BellmanPeriod:
         """
         TODO: refactor with post-function
         """
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
-        )
+        parameters, decision_rules = self._resolve_params(parameters, decision_rules)
 
         vals = parameters | states_t | shocks_t
         post = self.block.transition(vals, decision_rules)
@@ -110,14 +111,7 @@ class BellmanPeriod:
         """
         TODO: refactor with post-function
         """
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
-        )
+        parameters, decision_rules = self._resolve_params(parameters, decision_rules)
 
         vals_t = parameters | states_t | shocks_t | controls_t
         post = self.block.transition(
@@ -142,14 +136,7 @@ class BellmanPeriod:
         Returns the full ex post variables for the period, given initial states,
         shocks, controls, and parameters.
         """
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
-        )
+        parameters, decision_rules = self._resolve_params(parameters, decision_rules)
 
         vals_t = parameters | states_t | shocks_t | controls_t
         post = self.block.transition(
@@ -194,14 +181,7 @@ class BellmanPeriod:
             Nested dictionary of gradients for each reward symbol and variable:
             {reward_sym: {var_name: gradient}}
         """
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
-        )
+        parameters, decision_rules = self._resolve_params(parameters, decision_rules)
 
         # Combine all variables for block evaluation
         vals_t = parameters | states_t | shocks_t | controls_t
@@ -397,7 +377,7 @@ def estimate_discounted_lifetime_reward(
     states_0,
     big_t,
     shocks_by_t=None,
-    parameters={},
+    parameters=None,
     agent=None,
 ):
     """
@@ -460,11 +440,11 @@ def estimate_discounted_lifetime_reward(
             if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
                 torch.isnan(reward_t[rsym])
             ):
-                raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+                raise ValueError(f"Calculated reward {rsym} is NaN: {reward_t}")
             if isinstance(reward_t[rsym], np.ndarray) and np.any(
                 np.isnan(reward_t[rsym])
             ):
-                raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+                raise ValueError(f"Calculated reward {rsym} is NaN: {reward_t}")
             period_reward += reward_t[rsym]
 
         total_discounted_reward += period_reward * discount_factor**t
@@ -483,7 +463,7 @@ def estimate_bellman_residual(
     df,
     states_t,
     shocks,
-    parameters={},
+    parameters=None,
     agent=None,
 ):
     r"""
@@ -545,7 +525,7 @@ def estimate_bellman_residual(
         if agent is None or bellman_period.block.reward[sym] == agent
     ]
     if len(reward_vars) == 0:
-        raise Exception("No reward variables found in block")
+        raise ValueError("No reward variables found in block")
     reward_sym = reward_vars[0]  # Assume single reward for now
 
     # Get current value estimates (using period t shocks)
@@ -807,6 +787,15 @@ def estimate_euler_residual(
     controls_t_grad = {**controls_t, control_sym: c_t}
     controls_t_plus_1_grad = {**controls_t_plus_1, control_sym: c_t_plus_1}
 
+    # Validate inputs before reward computation to surface NaN early
+    for label, d in [("controls_t", controls_t_grad), ("states_t", states_t)]:
+        for sym, val in d.items():
+            if isinstance(val, torch.Tensor) and torch.any(torch.isnan(val)):
+                raise ValueError(
+                    f"NaN detected in {label}['{sym}'] before reward computation at t. "
+                    f"This usually indicates the policy network is producing invalid outputs."
+                )
+
     # Compute reward at t and get marginal utility u'(c_t)
     rewards_t = bellman_period.reward_function(
         states_t, shocks_t, controls_t_grad, parameters, agent=agent
@@ -828,6 +817,19 @@ def estimate_euler_residual(
             f"Could not compute marginal utility: reward '{reward_sym}' "
             f"does not depend on control '{control_sym}'"
         )
+
+    # Clamp marginal utility to prevent numerical explosion near zero consumption
+    _MU_EPSILON = 1e-8
+    _needs_clamp = marginal_utility_t < _MU_EPSILON
+    if torch.any(_needs_clamp):
+        logging.debug(
+            "Marginal utility clamping at t: %d/%d values below %.0e (min=%.2e)",
+            torch.sum(_needs_clamp).item(),
+            _needs_clamp.numel(),
+            _MU_EPSILON,
+            torch.min(marginal_utility_t).item(),
+        )
+    marginal_utility_t = torch.clamp(marginal_utility_t, min=_MU_EPSILON)
 
     # Compute reward at t+1 and get marginal utility u'(c_{t+1})
     rewards_t_plus_1 = bellman_period.reward_function(
@@ -852,6 +854,17 @@ def estimate_euler_residual(
             f"Could not compute marginal utility at t+1: reward '{reward_sym}' "
             f"does not depend on control '{control_sym}'"
         )
+
+    _needs_clamp_tp1 = marginal_utility_t_plus_1 < _MU_EPSILON
+    if torch.any(_needs_clamp_tp1):
+        logging.debug(
+            "Marginal utility clamping at t+1: %d/%d values below %.0e (min=%.2e)",
+            torch.sum(_needs_clamp_tp1).item(),
+            _needs_clamp_tp1.numel(),
+            _MU_EPSILON,
+            torch.min(marginal_utility_t_plus_1).item(),
+        )
+    marginal_utility_t_plus_1 = torch.clamp(marginal_utility_t_plus_1, min=_MU_EPSILON)
 
     # Compute transition gradients: ∂s_{t+1}/∂c_t for all arrival states
     # This captures how today's control affects tomorrow's state (e.g., ∂a'/∂c = -1)

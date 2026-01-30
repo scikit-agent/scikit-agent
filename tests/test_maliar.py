@@ -115,7 +115,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         # Use fixed random seed for deterministic training
-        ann, states = maliar.maliar_training_loop(
+        ann, states, converged = maliar.maliar_training_loop(
             case_4["bp"],
             edlrl,
             states_0_n,
@@ -153,7 +153,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         # Test 1: High tolerance (should converge quickly)
-        ann_high_tol, states_high_tol = maliar.maliar_training_loop(
+        ann_high_tol, states_high_tol, _ = maliar.maliar_training_loop(
             case_4["bp"],
             edlrl,
             states_0_n,
@@ -165,7 +165,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         # Test 2: Low tolerance (should require more iterations or hit max_iterations)
-        ann_low_tol, states_low_tol = maliar.maliar_training_loop(
+        ann_low_tol, states_low_tol, _ = maliar.maliar_training_loop(
             case_4["bp"],
             edlrl,
             states_0_n,
@@ -223,7 +223,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         # Test with very high tolerance to ensure early convergence
-        ann, states = maliar.maliar_training_loop(
+        ann, states, converged = maliar.maliar_training_loop(
             case_4["bp"],
             edlrl,
             states_0_n,
@@ -268,7 +268,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         # Test 1: Strict tolerance (should require more iterations)
-        ann_strict, states_strict = maliar.maliar_training_loop(
+        ann_strict, states_strict, _ = maliar.maliar_training_loop(
             case_4["bp"],
             edlrl,
             states_0_n,
@@ -280,7 +280,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         )
 
         # Test 2: Relaxed tolerance (should converge faster)
-        ann_relaxed, states_relaxed = maliar.maliar_training_loop(
+        ann_relaxed, states_relaxed, _ = maliar.maliar_training_loop(
             case_4["bp"],
             edlrl,
             states_0_n,
@@ -515,7 +515,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.decision_function,
             states_t,
             shocks_identical,
-            parameters={},
+            parameters=self.parameters,
         )
 
         residual_independent = bellman.estimate_bellman_residual(
@@ -524,7 +524,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.decision_function,
             states_t,
             shocks_independent,
-            parameters={},
+            parameters=self.parameters,
         )
 
         # Results should be different when using independent vs identical shocks
@@ -694,7 +694,7 @@ def test_bellman_equation_loss_with_value_network():
 
     # Create loss function
     loss_fn = loss.BellmanEquationLoss(
-        test_bp, value_net.get_value_function(), parameters={}
+        test_bp, value_net.get_value_function(), parameters={"beta": 0.95}
     )
 
     # Test that loss function works
@@ -893,3 +893,450 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             f"Trained policy should have small Euler residual MSE. "
             f"Got MSE = {mse_residual:.6e}"
         )
+
+
+class TestSimulateForward(unittest.TestCase):
+    """Tests for the simulate_forward function."""
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+
+    def test_simulate_forward_big_t_zero_grid(self):
+        """Test that simulate_forward with big_t=0 returns initial states unchanged (Grid input)."""
+        states_grid = grid.Grid.from_config(
+            {
+                "m": {"min": -5, "max": 5, "count": 5},
+                "g": {"min": -5, "max": 5, "count": 5},
+            }
+        )
+
+        def dummy_df(states_t, shocks_t, parameters):
+            return {"c": states_t["m"] * 0.5}
+
+        result = maliar.simulate_forward(
+            states_grid,
+            case_4["bp"],
+            dummy_df,
+            case_4["calibration"],
+            big_t=0,
+        )
+
+        # Should return a dict (from Grid.to_dict())
+        self.assertIsInstance(result, dict)
+        # Values should match the original grid
+        expected = states_grid.to_dict()
+        for key in expected:
+            self.assertTrue(
+                torch.allclose(result[key], expected[key]),
+                f"Key '{key}' differs after big_t=0 simulate_forward",
+            )
+
+    def test_simulate_forward_big_t_zero_dict(self):
+        """Test that simulate_forward with big_t=0 returns initial states unchanged (dict input)."""
+        states_dict = {
+            "m": torch.tensor([1.0, 2.0, 3.0]),
+            "g": torch.tensor([4.0, 5.0, 6.0]),
+        }
+
+        def dummy_df(states_t, shocks_t, parameters):
+            return {"c": states_t["m"] * 0.5}
+
+        result = maliar.simulate_forward(
+            states_dict,
+            case_4["bp"],
+            dummy_df,
+            case_4["calibration"],
+            big_t=0,
+        )
+
+        # Should return the same dict object
+        self.assertIs(result, states_dict)
+
+
+class TestAiOMode(unittest.TestCase):
+    """Tests for the AiO expectation operator in loss functions."""
+
+    def setUp(self):
+        """Set up a stochastic consumption-savings model for AiO testing."""
+        self.block = model.DBlock(
+            name="aio_test",
+            shocks={"income": Normal(mu=1.0, sigma=0.1)},
+            dynamics={
+                "consumption": model.Control(
+                    iset=["wealth"],
+                    lower_bound=lambda wealth: 0.0,
+                    upper_bound=lambda wealth: wealth,
+                    agent="consumer",
+                ),
+                "wealth": lambda wealth, income, consumption: wealth
+                + income
+                - consumption,
+                "utility": lambda consumption: torch.log(consumption + 1e-8),
+            },
+            reward={"utility": "consumer"},
+        )
+        self.block.construct_shocks({})
+
+        self.parameters = {"beta": 0.95}
+        self.bp = bellman.BellmanPeriod(self.block, "beta", self.parameters)
+
+        def simple_df(states_t, shocks_t, parameters):
+            return {"consumption": 0.5 * states_t["wealth"]}
+
+        self.decision_function = simple_df
+
+    def test_euler_aio_requires_3_shock_copies(self):
+        """Test that aio=True raises KeyError with only 2 shock copies."""
+        loss_fn = loss.EulerEquationLoss(
+            self.bp,
+            discount_factor=0.95,
+            parameters=self.parameters,
+            aio=True,
+        )
+
+        # Grid with only 2 shock copies
+        test_grid = grid.Grid.from_dict(
+            {
+                "wealth": torch.linspace(0.5, 5.0, 5),
+                "income_0": torch.ones(5),
+                "income_1": torch.ones(5) * 1.1,
+            }
+        )
+
+        with self.assertRaises(KeyError):
+            loss_fn(self.decision_function, test_grid)
+
+    def test_euler_aio_works_with_3_shock_copies(self):
+        """Test that aio=True works correctly with 3 shock copies."""
+        loss_fn = loss.EulerEquationLoss(
+            self.bp,
+            discount_factor=0.95,
+            parameters=self.parameters,
+            aio=True,
+        )
+
+        # Grid with 3 shock copies
+        test_grid = grid.Grid.from_dict(
+            {
+                "wealth": torch.linspace(0.5, 5.0, 5),
+                "income_0": torch.ones(5),
+                "income_1": torch.ones(5) * 1.1,
+                "income_2": torch.ones(5) * 0.9,
+            }
+        )
+
+        result = loss_fn(self.decision_function, test_grid)
+        self.assertIsInstance(result, torch.Tensor)
+        self.assertEqual(result.shape[0], 5)
+        self.assertTrue(torch.all(torch.isfinite(result)))
+
+    def test_bellman_aio_and_standard_produce_different_results(self):
+        """Test that BellmanEquationLoss AiO and standard mode produce different results.
+
+        Uses the Bellman loss because the value network explicitly uses shocks,
+        guaranteeing the residual depends on t+1 shock realizations.
+        """
+
+        def shock_dependent_value_network(states_t, shocks_t, parameters):
+            wealth = states_t["wealth"]
+            income = shocks_t.get("income", torch.zeros_like(wealth))
+            return 10.0 * wealth + 5.0 * income
+
+        loss_fn_standard = loss.BellmanEquationLoss(
+            self.bp,
+            shock_dependent_value_network,
+            parameters=self.parameters,
+            aio=False,
+        )
+        loss_fn_aio = loss.BellmanEquationLoss(
+            self.bp,
+            shock_dependent_value_network,
+            parameters=self.parameters,
+            aio=True,
+        )
+
+        test_grid_standard = grid.Grid.from_dict(
+            {
+                "wealth": torch.linspace(0.5, 5.0, 5),
+                "income_0": torch.tensor([0.8, 0.9, 1.0, 1.1, 1.2]),
+                "income_1": torch.tensor([1.3, 1.4, 1.5, 1.6, 1.7]),
+            }
+        )
+        test_grid_aio = grid.Grid.from_dict(
+            {
+                "wealth": torch.linspace(0.5, 5.0, 5),
+                "income_0": torch.tensor([0.8, 0.9, 1.0, 1.1, 1.2]),
+                "income_1": torch.tensor([1.3, 1.4, 1.5, 1.6, 1.7]),
+                "income_2": torch.tensor([0.3, 0.4, 0.5, 0.6, 0.7]),
+            }
+        )
+
+        result_standard = loss_fn_standard(self.decision_function, test_grid_standard)
+        result_aio = loss_fn_aio(self.decision_function, test_grid_aio)
+
+        # Both should be valid tensors
+        self.assertTrue(torch.all(torch.isfinite(result_standard)))
+        self.assertTrue(torch.all(torch.isfinite(result_aio)))
+
+        # Results should differ (standard squares, AiO multiplies two residuals
+        # from different shock realizations)
+        self.assertFalse(torch.allclose(result_standard, result_aio))
+
+    def test_bellman_aio_requires_3_shock_copies(self):
+        """Test that BellmanEquationLoss with aio=True raises KeyError with only 2 shock copies."""
+
+        def simple_value_network(states_t, shocks_t, parameters):
+            return 10.0 * states_t["wealth"]
+
+        loss_fn = loss.BellmanEquationLoss(
+            self.bp,
+            simple_value_network,
+            parameters=self.parameters,
+            aio=True,
+        )
+
+        # Grid with only 2 shock copies
+        test_grid = grid.Grid.from_dict(
+            {
+                "wealth": torch.linspace(0.5, 5.0, 5),
+                "income_0": torch.ones(5),
+                "income_1": torch.ones(5) * 1.1,
+            }
+        )
+
+        with self.assertRaises(KeyError):
+            loss_fn(self.decision_function, test_grid)
+
+    def test_bellman_aio_works_with_3_shock_copies(self):
+        """Test that BellmanEquationLoss with aio=True works with 3 shock copies."""
+
+        def simple_value_network(states_t, shocks_t, parameters):
+            return 10.0 * states_t["wealth"]
+
+        loss_fn = loss.BellmanEquationLoss(
+            self.bp,
+            simple_value_network,
+            parameters=self.parameters,
+            aio=True,
+        )
+
+        # Grid with 3 shock copies
+        test_grid = grid.Grid.from_dict(
+            {
+                "wealth": torch.linspace(0.5, 5.0, 5),
+                "income_0": torch.ones(5),
+                "income_1": torch.ones(5) * 1.1,
+                "income_2": torch.ones(5) * 0.9,
+            }
+        )
+
+        result = loss_fn(self.decision_function, test_grid)
+        self.assertIsInstance(result, torch.Tensor)
+        self.assertEqual(result.shape[0], 5)
+        self.assertTrue(torch.all(torch.isfinite(result)))
+
+
+class TestConvergenceFlag(unittest.TestCase):
+    """Test that maliar_training_loop returns a convergence flag."""
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+
+    def test_returns_three_values(self):
+        """maliar_training_loop should return (network, states, converged)."""
+        states_0_n = grid.Grid.from_config(
+            {
+                "m": {"min": 0, "max": 5, "count": 3},
+                "g": {"min": 0, "max": 5, "count": 3},
+            }
+        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
+            case_4["bp"], 2, case_4["calibration"]
+        )
+
+        result = maliar.maliar_training_loop(
+            case_4["bp"],
+            edlrl,
+            states_0_n,
+            case_4["calibration"],
+            simulation_steps=1,
+            random_seed=TEST_SEED,
+            max_iterations=2,
+        )
+
+        self.assertEqual(len(result), 3)
+        bpn, states, converged = result
+        self.assertIsInstance(converged, bool)
+
+    def test_high_tolerance_converges(self):
+        """With very high tolerance, the loop should converge (converged=True)."""
+        states_0_n = grid.Grid.from_config(
+            {
+                "m": {"min": 0, "max": 5, "count": 3},
+                "g": {"min": 0, "max": 5, "count": 3},
+            }
+        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
+            case_4["bp"], 2, case_4["calibration"]
+        )
+
+        _, _, converged = maliar.maliar_training_loop(
+            case_4["bp"],
+            edlrl,
+            states_0_n,
+            case_4["calibration"],
+            simulation_steps=1,
+            random_seed=TEST_SEED,
+            max_iterations=100,
+            tolerance=1e6,  # Extremely high tolerance
+        )
+
+        self.assertTrue(converged)
+
+
+class TestSimulateForwardValidation(unittest.TestCase):
+    """Test simulate_forward input validation."""
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+
+    def test_negative_big_t_raises(self):
+        """simulate_forward should raise ValueError for negative big_t."""
+        states = grid.Grid.from_config(
+            {
+                "m": {"min": 0, "max": 5, "count": 3},
+                "g": {"min": 0, "max": 5, "count": 3},
+            }
+        )
+
+        def dummy_df(states_t, shocks_t, parameters):
+            return {"c": states_t["m"] * 0.5}
+
+        with self.assertRaises(ValueError):
+            maliar.simulate_forward(
+                states,
+                case_4["bp"],
+                dummy_df,
+                case_4["calibration"],
+                big_t=-1,
+            )
+
+
+class TestGradientClipping(unittest.TestCase):
+    """Test gradient clipping in training functions."""
+
+    def test_train_block_nn_with_gradient_clipping(self):
+        """Verify training completes with gradient clipping enabled."""
+        from skagent.ann import BlockPolicyNet, train_block_nn
+
+        # Use a simple block to avoid device-mismatch issues with benchmark models
+        test_block = model.DBlock(
+            name="clip_test",
+            shocks={},
+            dynamics={
+                "c": model.Control(iset=["a"], agent="consumer"),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        test_block.construct_shocks({})
+        bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
+
+        torch.manual_seed(TEST_SEED)
+        policy_net = BlockPolicyNet(bp, width=16, init_seed=TEST_SEED)
+
+        # Use a simple static reward loss to avoid Euler residual device issues
+        loss_fn = loss.StaticRewardLoss(bp, {"beta": 0.95})
+
+        train_grid = grid.Grid.from_dict(
+            {"a": torch.linspace(1.0, 5.0, 10, device=device)}
+        )
+
+        # Training with gradient clipping should complete without error
+        trained_net, final_loss = train_block_nn(
+            policy_net,
+            train_grid,
+            loss_fn,
+            epochs=5,
+            gradient_clip_norm=1.0,
+        )
+
+        self.assertIsNotNone(final_loss)
+        self.assertTrue(np.isfinite(final_loss))
+
+    def test_train_block_nn_zero_epochs_raises(self):
+        """train_block_nn should raise ValueError for epochs <= 0."""
+        from skagent.ann import BlockPolicyNet, train_block_nn
+
+        d2_block = get_benchmark_model("D-2")
+        d2_calibration = get_benchmark_calibration("D-2")
+        d2_block.construct_shocks(d2_calibration)
+
+        bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
+        policy_net = BlockPolicyNet(bp, width=16)
+
+        train_grid = grid.Grid.from_dict({"a": torch.linspace(0.5, 5.0, 10)})
+
+        with self.assertRaises(ValueError):
+            train_block_nn(
+                policy_net, train_grid, lambda df, g: torch.tensor(0.0), epochs=0
+            )
+
+
+class TestMutableDefaults(unittest.TestCase):
+    """Test that mutable default arguments are not shared across instances."""
+
+    def test_custom_loss_separate_other_dr(self):
+        """CustomLoss instances should have independent other_dr dicts."""
+        block = case_1["block"]
+        block.construct_shocks(
+            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
+        )
+
+        loss1 = loss.CustomLoss(
+            loss_function=lambda *a, **kw: torch.tensor(0.0),
+            block=case_1["bp"],
+        )
+        loss2 = loss.CustomLoss(
+            loss_function=lambda *a, **kw: torch.tensor(0.0),
+            block=case_1["bp"],
+        )
+
+        # Mutating one instance's other_dr should not affect the other
+        loss1.other_dr["test_key"] = "test_value"
+        self.assertNotIn("test_key", loss2.other_dr)
+
+    def test_static_reward_loss_separate_other_dr(self):
+        """StaticRewardLoss instances should have independent other_dr dicts."""
+        block = model.DBlock(
+            name="test",
+            shocks={},
+            dynamics={
+                "c": model.Control(iset=["a"], agent="consumer"),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        block.construct_shocks({})
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.95})
+
+        loss1 = loss.StaticRewardLoss(bp, {"beta": 0.95})
+        loss2 = loss.StaticRewardLoss(bp, {"beta": 0.95})
+
+        loss1.other_dr["test_key"] = "test_value"
+        self.assertNotIn("test_key", loss2.other_dr)

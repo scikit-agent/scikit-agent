@@ -52,9 +52,9 @@ def static_reward(
 
     # Maybe this can be less complicated because of unified array API
     if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):
-        raise Exception(f"Calculated reward {[rsym]} is NaN: {reward}")
+        raise ValueError(f"Calculated reward {[rsym]} is NaN: {reward}")
     if isinstance(reward[rsym], np.ndarray) and np.any(np.isnan(reward[rsym])):
-        raise Exception(f"Calculated reward {[rsym]} is NaN: {reward}")
+        raise ValueError(f"Calculated reward {[rsym]} is NaN: {reward}")
 
     return reward[rsym]
 
@@ -67,11 +67,11 @@ class CustomLoss:
     TODO: leaving this as ambiguously about Blocks and BellmanPeriods for now
     """
 
-    def __init__(self, loss_function, block, parameters=None, other_dr=dict()):
+    def __init__(self, loss_function, block, parameters=None, other_dr=None):
         self.block = block
         self.parameters = parameters
         self.state_variables = self.block.arrival_states
-        self.other_dr = other_dr
+        self.other_dr = other_dr if other_dr is not None else {}
         self.loss_function = loss_function
 
     def __call__(self, new_dr, input_grid: Grid):
@@ -107,11 +107,11 @@ class StaticRewardLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, bellman_period, parameters, other_dr=dict()):
+    def __init__(self, bellman_period, parameters, other_dr=None):
         self.bellman_period = bellman_period
         self.parameters = parameters
         self.state_variables = self.bellman_period.arrival_states
-        self.other_dr = other_dr
+        self.other_dr = other_dr if other_dr is not None else {}
 
     def __call__(self, new_dr, input_grid: Grid):
         """
@@ -203,12 +203,14 @@ class BellmanEquationLoss:
     where s' = f(s,c,ε) is the next state given current state s, control c, and shock ε,
     and the expectation E_ε' is taken over future shock realizations ε'.
 
-    This follows the same pattern as get_estimated_discounted_lifetime_reward_loss
-    and is designed for use with the Maliar all-in-one approach.
+    Supports two modes:
 
-    This function expects the input grid to contain two independent shock realizations:
-    - {shock_sym}_0: shocks for period t (used for immediate reward and transitions)
-    - {shock_sym}_1: shocks for period t+1 (used for continuation value evaluation)
+    - Standard mode (aio=False): Uses 2 shock copies ({shock_sym}_0 and {shock_sym}_1).
+      Returns f^2 where f is the Bellman residual.
+    - AiO mode (aio=True): Uses 3 shock copies ({shock_sym}_0, {shock_sym}_1, {shock_sym}_2).
+      Computes two residuals f1 and f2 sharing period-t shocks (_0) but with independent
+      period t+1 shocks (_1 and _2). Returns f1 * f2, providing an unbiased estimate of
+      E[(E[f])^2] per Maliar et al. (2021, Definition 2.7).
 
     Parameters
     ----------
@@ -220,20 +222,20 @@ class BellmanEquationLoss:
         Model parameters for calibration
     agent : str, optional
         Agent identifier for rewards
-
-    Returns
-    -------
-    callable
-        A loss function that takes (decision_function, input_grid) and returns
-        the Bellman equation residual loss
+    aio : bool, optional
+        If True, use the all-in-one (AiO) expectation operator with 3 shock copies.
+        Default is False (standard squared-residual loss with 2 shock copies).
     """
 
-    def __init__(self, bellman_period, value_network, parameters={}, agent=None):
+    def __init__(
+        self, bellman_period, value_network, parameters=None, agent=None, aio=False
+    ):
         self.bellman_period = bellman_period
-        self.parameters = parameters
+        self.parameters = parameters if parameters is not None else {}
         self.arrival_variables = bellman_period.arrival_states
 
         self.value_network = value_network
+        self.aio = aio
 
         # Get shock variables
         shock_vars = self.bellman_period.get_shocks()
@@ -259,49 +261,91 @@ class BellmanEquationLoss:
         df : callable
             Decision function from policy network
         input_grid : Grid
-            Grid containing current states and two independent shock realizations:
-            - {shock_sym}_0: period t shocks
-            - {shock_sym}_1: period t+1 shocks (independent of period t)
+            Grid containing current states and shock realizations:
+            - Standard mode (aio=False): requires {shock_sym}_0 and {shock_sym}_1
+            - AiO mode (aio=True): requires {shock_sym}_0, {shock_sym}_1, and {shock_sym}_2
 
         Returns
         -------
         torch.Tensor
-            Bellman equation residual loss (squared)
+            Bellman equation residual loss.
+            Standard mode: f^2 (squared residual)
+            AiO mode: f1 * f2 (product of two residuals with independent shocks)
         """
         given_vals = input_grid.to_dict()
 
-        # Extract current states and both shock realizations
+        # Extract current states
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
 
         # Validate shock keys exist in grid
+        required_copies = 3 if self.aio else 2
         for sym in self.shock_syms:
-            if f"{sym}_0" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
-            if f"{sym}_1" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
+            for i in range(required_copies):
+                key = f"{sym}_{i}"
+                if key not in given_vals:
+                    expected = [f"{sym}_{j}" for j in range(required_copies)]
+                    found = [k for k in given_vals if k.startswith(f"{sym}_")]
+                    raise KeyError(
+                        f"Missing '{key}' in input_grid. "
+                        f"{'AiO mode requires 3' if self.aio else 'Standard mode requires 2'} "
+                        f"independent shock realizations per shock symbol. "
+                        f"Expected keys: {expected}, found: {found}. "
+                        f"Use generate_givens_from_states(states, block, shock_copies={required_copies}) "
+                        f"to create the input grid."
+                    )
 
-        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
-        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
+        if not self.aio:
+            # Standard mode: 2 shock copies, return f^2
+            shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+            shocks.update(
+                {f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms}
+            )
 
-        # Use helper function to estimate Bellman residual with combined shock object
-        bellman_residual = estimate_bellman_residual(
-            self.bellman_period,
-            self.value_network,
-            df,
-            states_t,
-            shocks,
-            self.parameters,
-            self.agent,
-        )
+            bellman_residual = estimate_bellman_residual(
+                self.bellman_period,
+                self.value_network,
+                df,
+                states_t,
+                shocks,
+                self.parameters,
+                self.agent,
+            )
+            return bellman_residual**2
+        else:
+            # AiO mode: 3 shock copies, compute two residuals sharing _0, return f1 * f2
+            # Residual 1 uses shocks _0 (period t) and _1 (period t+1)
+            shocks_1 = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+            shocks_1.update(
+                {f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms}
+            )
 
-        # Return squared residual as loss
-        return bellman_residual**2
+            # Residual 2 uses shocks _0 (period t) and _2 (period t+1, independent)
+            shocks_2 = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+            shocks_2.update(
+                {f"{sym}_1": given_vals[f"{sym}_2"] for sym in self.shock_syms}
+            )
+
+            residual_1 = estimate_bellman_residual(
+                self.bellman_period,
+                self.value_network,
+                df,
+                states_t,
+                shocks_1,
+                self.parameters,
+                self.agent,
+            )
+
+            residual_2 = estimate_bellman_residual(
+                self.bellman_period,
+                self.value_network,
+                df,
+                states_t,
+                shocks_2,
+                self.parameters,
+                self.agent,
+            )
+
+            return residual_1 * residual_2
 
 
 class EulerEquationLoss:
@@ -438,7 +482,13 @@ class EulerEquationLoss:
     """
 
     def __init__(
-        self, bellman_period, discount_factor, parameters=None, agent=None, weight=1.0
+        self,
+        bellman_period,
+        discount_factor,
+        parameters=None,
+        agent=None,
+        weight=1.0,
+        aio=False,
     ):
         self.bellman_period = bellman_period
         self.parameters = parameters if parameters is not None else {}
@@ -456,6 +506,7 @@ class EulerEquationLoss:
 
         self.agent = agent
         self.weight = weight
+        self.aio = aio
 
         # Test reward variables
         reward_vars = [
@@ -468,7 +519,7 @@ class EulerEquationLoss:
 
     def __call__(self, df, input_grid: Grid):
         """
-        Euler equation loss function using the AiO expectation operator.
+        Euler equation loss function.
 
         Parameters
         ----------
@@ -476,56 +527,98 @@ class EulerEquationLoss:
             Decision function from policy network.
             Signature: df(states_t, shocks_t, parameters) -> controls_t
         input_grid : Grid
-            Grid containing current states and two independent shock realizations:
-            - {shock_sym}_0: shocks for transitions t → t+1
-            - {shock_sym}_1: shocks for transitions t+1 → t+2 (independent)
+            Grid containing current states and shock realizations:
+            - Standard mode (aio=False): requires {shock_sym}_0 and {shock_sym}_1
+            - AiO mode (aio=True): requires {shock_sym}_0, {shock_sym}_1, and {shock_sym}_2
 
         Returns
         -------
         torch.Tensor
-            Weighted squared Euler equation residual.
-            The residual is computed using two independent shock realizations
-            via the AiO expectation operator, then squared and weighted.
+            Standard mode: weight * f^2 (squared residual)
+            AiO mode: weight * f1 * f2 (product of two residuals with independent shocks)
 
         Notes
         -----
-        The AiO operator approximates E[(E[f])²] ≈ E[f(ε₁) * f(ε₂)] where ε₁ and ε₂
-        are independent. This reduces the number of integration nodes from p^d
-        (tensor product) to just 2, regardless of the number of shocks.
+        Standard mode computes a single Euler residual f using shock copies _0 and _1,
+        then returns weight * f^2.
+
+        AiO mode (all-in-one expectation operator from Maliar et al. 2021, Definition 2.7)
+        computes two Euler residuals f1 and f2 that share the period-t shocks (_0) but
+        use independent period t+1 shocks (_1 and _2 respectively). The loss is
+        weight * f1 * f2, which provides an unbiased estimate of E[(E[f])^2].
         """
         given_vals = input_grid.to_dict()
 
-        # Extract current states and both shock realizations
+        # Extract current states
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
 
         # Validate shock keys exist in grid
+        required_copies = 3 if self.aio else 2
         for sym in self.shock_syms:
-            if f"{sym}_0" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
-            if f"{sym}_1" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
+            for i in range(required_copies):
+                key = f"{sym}_{i}"
+                if key not in given_vals:
+                    expected = [f"{sym}_{j}" for j in range(required_copies)]
+                    found = [k for k in given_vals if k.startswith(f"{sym}_")]
+                    raise KeyError(
+                        f"Missing '{key}' in input_grid. "
+                        f"{'AiO mode requires 3' if self.aio else 'Standard mode requires 2'} "
+                        f"independent shock realizations per shock symbol. "
+                        f"Expected keys: {expected}, found: {found}. "
+                        f"Use generate_givens_from_states(states, block, shock_copies={required_copies}) "
+                        f"to create the input grid."
+                    )
 
-        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
-        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
+        if not self.aio:
+            # Standard mode: 2 shock copies, return weight * f^2
+            shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+            shocks.update(
+                {f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms}
+            )
 
-        # Use helper function to estimate Euler residual with combined shock object
-        euler_residual = estimate_euler_residual(
-            self.bellman_period,
-            self.discount_factor,
-            df,
-            states_t,
-            shocks,
-            self.parameters,
-            self.agent,
-        )
+            euler_residual = estimate_euler_residual(
+                self.bellman_period,
+                self.discount_factor,
+                df,
+                states_t,
+                shocks,
+                self.parameters,
+                self.agent,
+            )
 
-        # Return squared residual as loss
-        # Each sample's residual is computed using two independent shock draws (ε₀, ε₁).
-        # Squaring and averaging across samples approximates E[f²] ≈ E[(E[f])²].
-        return self.weight * euler_residual**2
+            return self.weight * euler_residual**2
+        else:
+            # AiO mode: 3 shock copies, compute two residuals sharing _0, return weight * f1 * f2
+            # Residual 1 uses shocks _0 (period t) and _1 (period t+1)
+            shocks_1 = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+            shocks_1.update(
+                {f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms}
+            )
+
+            # Residual 2 uses shocks _0 (period t) and _2 (period t+1, independent)
+            shocks_2 = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
+            shocks_2.update(
+                {f"{sym}_1": given_vals[f"{sym}_2"] for sym in self.shock_syms}
+            )
+
+            residual_1 = estimate_euler_residual(
+                self.bellman_period,
+                self.discount_factor,
+                df,
+                states_t,
+                shocks_1,
+                self.parameters,
+                self.agent,
+            )
+
+            residual_2 = estimate_euler_residual(
+                self.bellman_period,
+                self.discount_factor,
+                df,
+                states_t,
+                shocks_2,
+                self.parameters,
+                self.agent,
+            )
+
+            return self.weight * residual_1 * residual_2

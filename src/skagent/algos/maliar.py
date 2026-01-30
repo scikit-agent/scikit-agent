@@ -50,6 +50,15 @@ def simulate_forward(
     big_t,
     # state_syms,
 ):
+    if big_t < 0:
+        raise ValueError(f"big_t must be non-negative, got {big_t}")
+
+    # When no forward simulation is requested, return initial states unchanged.
+    if big_t == 0:
+        if isinstance(states_t, Grid):
+            return states_t.to_dict()
+        return states_t
+
     if isinstance(states_t, Grid):
         n = states_t.n()
         states_t = states_t.to_dict()
@@ -90,6 +99,10 @@ def maliar_training_loop(
     tolerance=1e-6,
     random_seed=None,
     simulation_steps=1,
+    nn_width=16,
+    training_epochs=250,
+    learning_rate=0.01,
+    gradient_clip_norm=None,
 ):
     """
     bellman_period - a model definition
@@ -106,17 +119,27 @@ def maliar_training_loop(
     max_iterations: int
         Number of times to perform the training loop, if there is no convergence.
     tolerance: float
-        Convergence tolerance. Training stops when either the L2 norm of parameter changes
-        or the absolute difference in loss is below this threshold.
+        Convergence tolerance. Training stops when both the L2 norm of parameter changes
+        and the absolute difference in loss are below this threshold. Requiring both
+        criteria prevents premature termination when parameters stabilize but loss
+        continues improving, or vice versa.
     simulation_steps : int
         The number of time steps to simulate forward when determining the next omega set for training
+    nn_width : int
+        Width of the hidden layers in the policy neural network. Default is 16.
+    training_epochs : int
+        Number of gradient descent epochs per outer iteration. Default is 250.
+    learning_rate : float
+        Learning rate for the Adam optimizer. Default is 0.01.
+    gradient_clip_norm : float or None
+        If not None, clips gradient norm to this value during training.
     """
 
     # Step 1. Initialize the algorithm:
 
     # i). construct theoretical risk Xi(θ ) = Eω [ξ (ω; θ )] (lifetime reward, Euler/Bellmanequations);
     # ii). deﬁne empirical risk Xi^n (θ ) = 1n ni=1 ξ (ωi ; θ );
-    loss_function  # This is provided as an argument.
+    # loss_function is provided as an argument.
 
     # iii). deﬁne a topology of neural network ϕ (·, θ );
     # iv). ﬁx initial vector of the coeﬃcients θ .
@@ -124,7 +147,7 @@ def maliar_training_loop(
     if random_seed is not None:
         torch.manual_seed(random_seed)
 
-    bpn = ann.BlockPolicyNet(bellman_period, width=16)
+    bpn = ann.BlockPolicyNet(bellman_period, width=nn_width)
 
     states = states_0_n  # V) Create initial panel of agents/starting states.
 
@@ -140,14 +163,18 @@ def maliar_training_loop(
         # i). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
         # TODO: this breaks the bellman period abstraction slightly. consider refactoring generate-givens
         # to use BP instead.
-        givens = generate_givens_from_states(
-            states_0_n, bellman_period.block, shock_copies
-        )
+        givens = generate_givens_from_states(states, bellman_period.block, shock_copies)
 
         # ii). construct the gradient ∇ Xi^n (θ ) = 1n ni=1 ∇ ξ (ωi ; θ );
         # iii). update the coeﬃcients θ_hat = θ − λk ∇ Xi^n (θ ) and go to step 2.i);
-        # TODO how many epochs? What Adam scale? Passing through variables
-        bpn, current_loss = ann.train_block_nn(bpn, givens, loss_function, epochs=250)
+        bpn, current_loss = ann.train_block_nn(
+            bpn,
+            givens,
+            loss_function,
+            epochs=training_epochs,
+            learning_rate=learning_rate,
+            gradient_clip_norm=gradient_clip_norm,
+        )
 
         # Extract parameters after training
         curr_params = extract_parameters(bpn)
@@ -156,14 +183,15 @@ def maliar_training_loop(
         param_diff = compute_parameter_difference(prev_params, curr_params)
         param_converged = param_diff < tolerance
 
-        # Check for loss convergence
-        loss_converged = False
+        # Check for loss convergence (skip on first iteration when no prior loss exists)
         if prev_loss is not None:
             loss_diff = abs(current_loss - prev_loss)
             loss_converged = loss_diff < tolerance
+        else:
+            loss_converged = True
 
-        # Convergence if either parameter or loss criteria are met
-        converged = param_converged or loss_converged
+        # Convergence requires both parameter and loss criteria to be met
+        converged = param_converged and loss_converged
 
         # Logging
         if converged:
@@ -171,7 +199,7 @@ def maliar_training_loop(
                 logging.info(
                     f"Converged after {iteration + 1} iterations by parameters. Parameter difference: {param_diff:.2e}"
                 )
-            if loss_converged:
+            if loss_converged and prev_loss is not None:
                 logging.info(
                     f"Converged after {iteration + 1} iterations by loss. Loss difference: {loss_diff:.2e}"
                 )
@@ -194,13 +222,23 @@ def maliar_training_loop(
             simulation_steps,
         )
 
-        states = Grid.from_dict(next_states)
+        # Detach tensors from the computation graph so each outer iteration trains
+        # fresh, without gradient dependencies on previous iterations' forward passes.
+        # Without this, PyTorch would attempt to backpropagate through the entire
+        # simulation history, causing "backward through the graph a second time" errors.
+        detached_states = {
+            k: v.detach() if isinstance(v, torch.Tensor) else v
+            for k, v in next_states.items()
+        }
+        states = Grid.from_dict(detached_states)
         iteration += 1
 
     if not converged:
         logging.warning(
-            f"Training completed without convergence after {max_iterations} iterations."
+            f"Training completed without convergence after {max_iterations} iterations. "
+            f"Final parameter difference: {param_diff:.2e}, "
+            f"Final loss: {current_loss:.2e} (tolerance: {tolerance:.2e})."
         )
 
     # Step 3. Assess the accuracy of constructed approximation ϕ (·, θ ) on a new sample.
-    return bpn, states
+    return bpn, states, converged
