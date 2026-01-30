@@ -12,7 +12,7 @@ TEST_SEED = 10077693
 # Device selection (but no global state modification at import time)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-parameters = {"q": 1.1}
+parameters = {"q": 1.1, "beta": 0.9}
 
 block_data = {
     "name": "test block - maliar",
@@ -37,7 +37,7 @@ decisions = {"c": 0.5}
 
 class TestBellmanPeriodFunctions(unittest.TestCase):
     def setUp(self):
-        self.bp = bellman.BellmanPeriod(model.DBlock(**block_data), parameters)
+        self.bp = bellman.BellmanPeriod(model.DBlock(**block_data), "beta", parameters)
 
     def test_transition_function(self):
         states_1 = self.bp.transition_function(states_0, {}, decisions)
@@ -62,7 +62,6 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
     def test_estimate_discounted_lifetime_reward(self):
         dlr_0 = bellman.estimate_discounted_lifetime_reward(
             self.bp,
-            0.9,
             decision_rules,
             states_0,
             0,
@@ -73,7 +72,6 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
 
         dlr_1 = bellman.estimate_discounted_lifetime_reward(
             self.bp,
-            0.9,
             decision_rules,
             states_0,
             1,
@@ -84,7 +82,6 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
 
         dlr_2 = bellman.estimate_discounted_lifetime_reward(
             self.bp,
-            0.9,
             decision_rules,
             states_0,
             2,
@@ -131,8 +128,7 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
 
         # Estimate Bellman residual
         residual = bellman.estimate_bellman_residual(
-            bellman.BellmanPeriod(test_block, {}),
-            0.95,  # discount factor
+            bellman.BellmanPeriod(test_block, "beta", {"beta": 0.9}),
             simple_value_network,
             simple_decision_function,
             states_t,
@@ -157,8 +153,7 @@ class TestLifetimeReward(unittest.TestCase):
 
     def test_block_1(self):
         dlr_1 = bellman.estimate_discounted_lifetime_reward(
-            bellman.BellmanPeriod(case_1["block"], {}),
-            0.9,
+            bellman.BellmanPeriod(case_1["block"], "beta", {"beta": 0.9}),
             case_1["optimal_dr"],
             self.states_0,
             1,
@@ -169,8 +164,7 @@ class TestLifetimeReward(unittest.TestCase):
 
         # big_t is 2
         dlr_1_2 = bellman.estimate_discounted_lifetime_reward(
-            bellman.BellmanPeriod(case_1["block"], {}),
-            0.9,
+            bellman.BellmanPeriod(case_1["block"], "beta", {"beta": 0.9}),
             case_1["optimal_dr"],
             self.states_0,
             2,
@@ -181,8 +175,7 @@ class TestLifetimeReward(unittest.TestCase):
 
     def test_block_2(self):
         dlr_2 = bellman.estimate_discounted_lifetime_reward(
-            bellman.BellmanPeriod(case_2["block"], {}),
-            0.9,
+            bellman.BellmanPeriod(case_2["block"], "beta", {"beta": 0.9}),
             case_2["optimal_dr"],
             self.states_0,
             1,
@@ -213,7 +206,7 @@ class TestGradRewardFunction(unittest.TestCase):
             reward={"u": "consumer"},
         )
 
-        self.simple_bp = bellman.BellmanPeriod(self.simple_block, {})
+        self.simple_bp = bellman.BellmanPeriod(self.simple_block, "beta", {"beta": 0.9})
 
         # Block with multiple rewards
         self.multi_reward_block = model.DBlock(
@@ -228,7 +221,9 @@ class TestGradRewardFunction(unittest.TestCase):
             reward={"u1": "consumer1", "u2": "consumer2"},
         )
 
-        self.multi_reward_bp = bellman.BellmanPeriod(self.multi_reward_block, {})
+        self.multi_reward_bp = bellman.BellmanPeriod(
+            self.multi_reward_block, "beta", {"beta": 0.9}
+        )
 
         # Block with shocks and parameters
         self.shock_block = model.DBlock(
@@ -243,7 +238,7 @@ class TestGradRewardFunction(unittest.TestCase):
         )
         self.shock_block.construct_shocks({})
 
-        self.shock_bp = bellman.BellmanPeriod(self.shock_block, {})
+        self.shock_bp = bellman.BellmanPeriod(self.shock_block, "beta", {"beta": 0.9})
 
     def test_get_grad_reward_function_basic(self):
         """Test basic functionality of get_grad_reward_function."""
