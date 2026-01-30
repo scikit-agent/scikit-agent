@@ -159,3 +159,8 @@ Thumbs.db
 uv.lock
 
 *.orig
+
+# Sphinx build artifacts
+docs/_build/
+docs/auto_examples/
+**/sg_execution_times.rst

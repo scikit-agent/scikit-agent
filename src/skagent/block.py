@@ -17,7 +17,6 @@ from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
-from IPython.display import SVG, display
 from skagent.rule import Rule, format_rule
 
 
@@ -321,10 +320,9 @@ class Block:
         analyzer = ModelAnalyzer(self, calibration)
         analyzer.analyze()
 
-        viz = ModelVisualizer(analyzer.to_dict())
-        graph = viz.create_graph(title=self.name)
+        viz = ModelVisualizer(analyzer.to_dict(), title=self.name)
 
-        return graph
+        return viz
 
     def display(self, calibration):
         """
@@ -337,10 +335,19 @@ class Block:
 
         calibration: dict
             A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
-        """
-        graph = self.visualize(calibration)
 
-        display(SVG(graph.create_svg()))
+
+        Returns
+        -----------
+
+        img : matplotlib.image.mpimg
+        svg_content : str
+        """
+        viz = self.visualize(calibration)
+
+        viz.display()
+
+        return viz.get_image()
 
     def formulas(self, calibration: dict):
         """

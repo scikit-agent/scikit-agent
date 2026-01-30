@@ -3,6 +3,10 @@ import yaml
 import pydot
 import colorsys
 import random
+import matplotlib.image as mpimg
+from io import BytesIO
+from IPython.display import SVG, display
+
 
 # 1) Load config
 _CONFIG_FILE = os.path.join(
@@ -13,12 +17,13 @@ with open(_CONFIG_FILE, "r") as f:
 
 
 class ModelVisualizer:
-    def __init__(self, analysis):
+    def __init__(self, analysis, title=None):
         """
         analysis = {
           node_meta, edges, plates, formulas
         }
         """
+        self.title = title
         self.meta = analysis["node_meta"]
         self.edges = analysis["edges"]
         self.plates = analysis["plates"]
@@ -119,7 +124,12 @@ class ModelVisualizer:
         gconf = self.gc
         graph = pydot.Dot(graph_type=gconf["graph_type"])
         # title
-        graph.set_label(gconf["title"] if title is None else title)
+        if title is None:
+            if self.title is not None:
+                title = self.title
+            else:
+                title = gconf["title"]
+        graph.set_label(title)
         graph.set_labelloc("t")
         # layout
         graph.set("rankdir", self.gl["rankdir"])
@@ -190,3 +200,29 @@ class ModelVisualizer:
             add_edge(prev, tgt, "previous_period")
 
         return graph
+
+    def display(self):
+        display(SVG(self.create_graph().create_svg()))
+
+    def get_image(self):
+        graph = self.create_graph()
+        svg_content = graph.create_svg()
+
+        # Convert SVG to PNG in memory
+        if isinstance(svg_content, str):
+            svg_content = svg_content.encode("utf-8")
+
+        try:
+            import cairosvg
+
+            png_data = cairosvg.svg2png(bytestring=svg_content)
+
+            # Load PNG into matplotlib
+            img = mpimg.imread(BytesIO(png_data), format="png")
+        except (ImportError, OSError):
+            print(
+                "Unable to import cairosvg. This is likely because Cairo is not installed. If using windows, install GTK runtime."
+            )
+            img = None
+
+        return img, svg_content

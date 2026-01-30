@@ -59,7 +59,9 @@ jobs:
 
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
-        run: brew install graphviz cairo libffi
+        run: |
+          brew install graphviz cairo libffi
+          echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
@@ -70,12 +72,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[test]"
 
-      - name: Test package
+      - name: Test package (Linux/macOS)
         run: >-
           python -m pytest -ra --cov --cov-report=xml --cov-report=term
           --durations=20
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@v5.5.1
+        uses: codecov/codecov-action@v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

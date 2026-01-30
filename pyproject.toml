@@ -30,7 +30,9 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
+  "cairosvg",
   "ipython",
+  "matplotlib",
   "numba",
   "numpy",
   "pydot",

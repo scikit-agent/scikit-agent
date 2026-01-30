@@ -16,8 +16,7 @@ utils
 
 The scikit-agent API is organized into several main modules:
 
-- {doc}`blocks` - Building blocks -- modular componentst out of which to build
-  models
+- {doc}`blocks` - Building blocks -- modular model components
 - {doc}`models` - Canonical models from scientific literature
 - {doc}`algorithms` - Solution algorithms and optimization methods
 - {doc}`simulation` - Simulation tools and analysis functions

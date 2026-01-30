@@ -10,6 +10,11 @@ import torch
 import unittest
 from skagent.distributions import Normal
 from skagent.ann import BlockValueNet
+from skagent.models.benchmarks import (
+    get_benchmark_model,
+    get_benchmark_calibration,
+    get_analytical_policy,
+)
 
 # Deterministic test seed - change this single value to modify all seeding
 TEST_SEED = 10077693
@@ -105,7 +110,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -144,7 +148,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -215,7 +218,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -261,7 +263,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
             case_4["bp"],
-            0.9,
             big_t,
             case_4["calibration"],
         )
@@ -334,9 +335,8 @@ class TestBellmanLossFunctions(unittest.TestCase):
         self.block.construct_shocks({})
 
         # Parameters
-        self.discount_factor = 0.95
-        self.parameters = {}
-        self.bp = bellman.BellmanPeriod(self.block, self.parameters)
+        self.parameters = {"beta": 0.95}
+        self.bp = bellman.BellmanPeriod(self.block, "beta", self.parameters)
         self.state_variables = ["wealth"]  # Endogenous state variables
 
         # Create a simple decision function for testing
@@ -409,10 +409,10 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
         no_reward_block.construct_shocks({})
 
-        nrbp = bellman.BellmanPeriod(no_reward_block, {})
+        nrbp = bellman.BellmanPeriod(no_reward_block, "beta", {"beta": 0.95})
 
         with self.assertRaises(Exception) as context:
-            loss.BellmanEquationLoss(nrbp, self.discount_factor, dummy_value_network)
+            loss.BellmanEquationLoss(nrbp, dummy_value_network)
         self.assertIn("No reward variables found in block", str(context.exception))
 
     def test_bellman_loss_function_integration(self):
@@ -435,7 +435,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         loss_function = loss.BellmanEquationLoss(
             self.bp,
-            self.discount_factor,
             simple_value_network,
             self.parameters,
         )
@@ -469,7 +468,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Test that it works with the training infrastructure
         loss_function = loss.BellmanEquationLoss(
             self.bp,
-            self.discount_factor,
             simple_value_network,
             self.parameters,
         )
@@ -513,7 +511,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         residual_identical = bellman.estimate_bellman_residual(
             self.bp,
-            0.95,
             simple_value_network,
             self.decision_function,
             states_t,
@@ -523,7 +520,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         residual_independent = bellman.estimate_bellman_residual(
             self.bp,
-            0.95,
             simple_value_network,
             self.decision_function,
             states_t,
@@ -550,7 +546,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         loss_function = loss.BellmanEquationLoss(
             self.bp,
-            self.discount_factor,
             simple_value_network,
             self.parameters,
         )
@@ -605,7 +600,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         with self.assertRaises(KeyError):
             bellman.estimate_bellman_residual(
                 self.bp,
-                0.95,
                 simple_value_network,
                 self.decision_function,
                 states_t,
@@ -615,58 +609,100 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
 
 def test_get_euler_residual_loss():
-    """Test function placeholder - not implemented yet."""
-    pass
+    """Test Euler equation loss function using D-2 benchmark with analytical policy."""
+    # Use D-2 benchmark: Infinite horizon CRRA perfect foresight
+    d2_block = get_benchmark_model("D-2")
+    d2_calibration = get_benchmark_calibration("D-2")
+    d2_policy = get_analytical_policy("D-2")
+
+    # Construct shocks for the block (D-2 is deterministic, so this is a no-op)
+    d2_block.construct_shocks(d2_calibration)
+
+    # Create BellmanPeriod
+    test_bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
+
+    # Create input grid with arrival states
+    # D-2 uses: a (arrival assets)
+    # D-2 is deterministic, so no shocks needed in grid
+    n_points = 10
+    input_grid = grid.Grid.from_dict(
+        {
+            "a": torch.linspace(0.5, 5.0, n_points),
+        }
+    )
+
+    # Create Euler equation loss function
+    loss_fn = loss.EulerEquationLoss(
+        test_bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
+    )
+
+    # Test that loss function works with the analytical optimal policy
+    losses = loss_fn(d2_policy, input_grid)
+
+    # Check that we get per-sample losses
+    assert isinstance(losses, torch.Tensor)
+    assert losses.shape[0] == n_points  # One loss per grid point
+    assert torch.all(losses >= 0)  # Squared residuals should be non-negative
+
+    # For the analytical optimal policy, Euler residuals should be near zero
+    # (within numerical tolerance for perfect foresight model)
+    mean_loss = torch.mean(losses).item()
+    assert mean_loss < 1e-8, (
+        f"Analytical optimal policy should have near-zero Euler loss. Got mean loss: {mean_loss:.6e}"
+    )
 
 
 def test_bellman_equation_loss_with_value_network():
-    """Test Bellman equation loss function with separate value network."""
-    # Create a simple test block using the same pattern as the existing tests
+    """Test Bellman equation loss function with separate value network.
+
+    This test verifies that the BellmanEquationLoss class works correctly
+    with a value network. Uses a simple consumption model where the control
+    directly depends on the arrival state (no intermediate dynamics).
+    """
+    # Create a simple test block where control iset matches arrival state
+    # This ensures BlockValueNet can directly use arrival states
     test_block = model.DBlock(
         name="test_value_net",
-        shocks={"income": Normal(mu=1.0, sigma=0.1)},
+        shocks={},  # Deterministic for simplicity
         dynamics={
-            "consumption": model.Control(iset=["wealth"], agent="consumer"),
-            "wealth": lambda wealth, income, consumption: wealth + income - consumption,
-            "utility": lambda consumption: torch.log(consumption + 1e-8),
+            "c": model.Control(iset=["a"], agent="consumer"),
+            "a": lambda a, c: a - c,  # Simple savings transition
+            "u": lambda c: torch.log(c + 1e-8),
         },
-        reward={"utility": "consumer"},
+        reward={"u": "consumer"},
     )
     test_block.construct_shocks({})
 
-    test_bp = bellman.BellmanPeriod(test_block, {})
+    test_bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
 
     # Create value network
     value_net = BlockValueNet(test_bp, width=16)
 
-    # Create input grid with two independent shock realizations
+    # Create input grid with arrival states
+    n_points = 10
     input_grid = grid.Grid.from_dict(
         {
-            "wealth": torch.linspace(1.0, 10.0, 5),
-            "income_0": torch.ones(5),  # Period t shocks
-            "income_1": torch.ones(5) * 1.1,  # Period t+1 shocks (independent)
+            "a": torch.linspace(1.0, 10.0, n_points),
         }
     )
 
-    # Create a decision function
-    def learned_decision_function(states_t, shocks_t, parameters):
-        wealth = states_t["wealth"]
-        consumption = 0.3 * wealth + 0.1
-        consumption = torch.maximum(consumption, torch.tensor(0.01))
-        consumption = torch.minimum(consumption, 0.9 * wealth)
-        return {"consumption": consumption}
+    # Create a simple decision function: consume 30% of assets
+    # This is feasible (c < a) for all a >= 1.0 in our grid
+    def simple_policy(states_t, shocks_t, parameters):
+        a = states_t["a"]
+        return {"c": 0.3 * a}
 
     # Create loss function
     loss_fn = loss.BellmanEquationLoss(
-        test_bp, 0.95, value_net.get_value_function(), parameters={}
+        test_bp, value_net.get_value_function(), parameters={}
     )
 
     # Test that loss function works
-    losses = loss_fn(learned_decision_function, input_grid)
+    losses = loss_fn(simple_policy, input_grid)
 
     # Check that we get per-sample losses
     assert isinstance(losses, torch.Tensor)
-    assert losses.shape[0] == 5  # One loss per grid point
+    assert losses.shape[0] == n_points  # One loss per grid point
     assert torch.all(losses >= 0)  # Squared residuals should be non-negative
 
 
@@ -687,7 +723,7 @@ def test_block_value_net():
     )
     test_block.construct_shocks({})
 
-    test_bp = bellman.BellmanPeriod(test_block, {})
+    test_bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
 
     # Create value network - now takes block instead of state_variables
     value_net = BlockValueNet(test_bp, width=16)
@@ -708,3 +744,152 @@ def test_block_value_net():
 
     # Should give same results
     assert torch.allclose(values, values2)
+
+
+class TestEulerResidualsBenchmarks(unittest.TestCase):
+    """
+    Test Euler residuals using consumption-saving models.
+
+    These tests verify that the Euler equation residual computation works correctly
+    and produces sensible results for various model specifications. The tests follow
+    the methodology described in Maliar, Maliar, and Winant (2021, JME) for testing
+    first-order conditions.
+    """
+
+    def test_euler_residual_d2_optimal_policy(self):
+        """
+        Test that the analytical optimal policy achieves near-zero Euler residual.
+
+        D-2 is the infinite horizon CRRA perfect foresight model.
+        The analytical solution is: c_t = κ*W_t where κ = (R - (βR)^(1/σ))/R
+        and W_t = m_t + H_t is total wealth (cash-on-hand plus human wealth H_t = y/r).
+
+        The Euler equation is: u'(c_t) = β*R*u'(c_{t+1})
+        For the optimal policy, the Euler residual should be essentially zero,
+        validating that estimate_euler_residual correctly implements the FOC.
+        """
+        # Get D-2 benchmark model and calibration
+        d2_block = get_benchmark_model("D-2")
+        d2_calibration = get_benchmark_calibration("D-2")
+        d2_policy = get_analytical_policy("D-2")
+
+        # Construct shocks for the block (needed even though D-2 is deterministic)
+        d2_block.construct_shocks(d2_calibration)
+
+        # Create BellmanPeriod
+        bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
+
+        # Create test states
+        n_samples = 100
+        test_states = {"a": torch.linspace(0.1, 10.0, n_samples)}
+        shocks = {}
+
+        # Compute Euler residual with analytical optimal policy
+        optimal_residual = bellman.estimate_euler_residual(
+            bp,
+            d2_calibration["DiscFac"],
+            d2_policy,
+            test_states,
+            shocks,
+            d2_calibration,
+        )
+
+        # For optimal policy, residual should be essentially zero (machine precision)
+        mean_residual = torch.mean(torch.abs(optimal_residual)).item()
+        mse_residual = torch.mean(optimal_residual**2).item()
+
+        # Tolerance accounts for numerical precision in autograd
+        assert mean_residual < 1e-5, (
+            f"Analytical optimal policy should have near-zero Euler residual. "
+            f"Got mean |residual| = {mean_residual:.6e}"
+        )
+
+        assert mse_residual < 1e-10, (
+            f"Analytical optimal policy should have near-zero Euler MSE. "
+            f"Got MSE = {mse_residual:.6e}"
+        )
+
+    def test_euler_equation_training(self):
+        """
+        Test that a policy can be trained via Euler equation loss to achieve near-zero residual.
+
+        This is the key validation test for the Maliar et al. (2021) methodology:
+        train a neural network policy by minimizing squared Euler residuals,
+        and verify the trained policy satisfies the first-order conditions.
+
+        Uses scikit-agent's BlockPolicyNet and train_block_nn for proper integration.
+        """
+        from skagent.ann import BlockPolicyNet, train_block_nn
+
+        # Get D-2 benchmark model and calibration
+        d2_block = get_benchmark_model("D-2")
+        d2_calibration = get_benchmark_calibration("D-2")
+
+        # Construct shocks for the block
+        d2_block.construct_shocks(d2_calibration)
+
+        # Create BellmanPeriod
+        bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
+
+        # Create policy network using scikit-agent's BlockPolicyNet
+        torch.manual_seed(TEST_SEED)
+        policy_net = BlockPolicyNet(bp, width=32, init_seed=TEST_SEED)
+
+        # Create Euler equation loss
+        euler_loss_fn = loss.EulerEquationLoss(
+            bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
+        )
+
+        # Create training grid with states (D-2 is deterministic, no shocks needed)
+        n_grid_points = 64
+        train_grid = grid.Grid.from_dict(
+            {
+                "a": torch.rand(n_grid_points, device=device) * 9.9
+                + 0.1,  # a in [0.1, 10]
+            }
+        )
+
+        # Train using scikit-agent's train_block_nn
+        trained_net, final_loss = train_block_nn(
+            policy_net, train_grid, euler_loss_fn, epochs=300
+        )
+
+        # Verify training achieved small loss
+        assert final_loss < 0.01, (
+            f"Training should achieve small Euler loss. Got final loss: {final_loss:.6e}"
+        )
+
+        # Evaluate on test grid using the trained policy
+        test_states = {"a": torch.linspace(0.1, 10.0, 100, device=device)}
+        shocks = {}
+
+        # Get decision function from trained network
+        decision_fn = trained_net.get_decision_function()
+
+        # Compute final Euler residual
+        final_residual = bellman.estimate_euler_residual(
+            bp,
+            d2_calibration["DiscFac"],
+            decision_fn,
+            test_states,
+            shocks,
+            d2_calibration,
+        )
+        final_residual = final_residual.detach()
+
+        # The trained policy should achieve small Euler residual
+        mean_residual = torch.mean(torch.abs(final_residual)).item()
+        mse_residual = torch.mean(final_residual**2).item()
+
+        # Tolerance: trained policy should have mean |residual| < 0.1
+        # (Training loss was ~0.0002, but evaluation on different grid points may be higher)
+        assert mean_residual < 0.1, (
+            f"Trained policy should have small Euler residual. "
+            f"Got mean |residual| = {mean_residual:.6e}"
+        )
+
+        # Verify MSE is reasonably small (< 0.05)
+        assert mse_residual < 0.05, (
+            f"Trained policy should have small Euler residual MSE. "
+            f"Got MSE = {mse_residual:.6e}"
+        )
