@@ -46,6 +46,7 @@ jobs:
         run: |
           cd docs
           python -m sphinx -b html -W --keep-going . _build
+          # Prevent Jekyll from ignoring Sphinx directories like _static/ and _modules/
           touch _build/.nojekyll
 
       - name: Setup Pages

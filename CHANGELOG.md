@@ -10,10 +10,9 @@ and this project adheres to
 
 ### Changed
 
-- Updated GitHub Actions workflows to use latest stable versions
-- Simplified CI workflow by consolidating dependency installation steps
-- Simplified docs deployment workflow by removing non-functional PR preview
-  feature
+- Removed broken PR documentation preview from docs-deploy workflow
+- Consolidated CI dependency installation steps per platform
+- Simplified CD workflow triggers and conditional logic
 
 ### Added
 
