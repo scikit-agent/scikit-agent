@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Many color libraries just need this to be set to any value, but at least
-  # one distinguishes color depth, where "3" -> "256-bit color".
+  # Enable colored output in CI. Level 3 = truecolor (24-bit).
+  # See: https://force-color.org/
   FORCE_COLOR: 3
 
 jobs:
@@ -30,10 +30,6 @@ jobs:
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --hook-stage manual --all-files
-      #- name: Install package
-      #  run: python -m pip install .
-      #- name: Run PyLint
-      #  run: pipx run nox -s pylint -- --output-format=github
 
   checks:
     name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
@@ -53,37 +49,23 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
 
-      - name: Install OpenBLAS on Ubuntu
+      - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y libopenblas-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas-dev llvm-14 llvm-14-dev graphviz graphviz-dev
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
 
-      - name: Install LLVM 14
-        if: runner.os == 'Linux'
-        run: sudo apt-get install llvm-14 llvm-14-dev
-
-      - name: Configure LLVM 14
-        if: runner.os == 'Linux'
-        run: echo "LLVM_CONFIG=/usr/bin/llvm-config-14" >> $GITHUB_ENV
-
-      - name: Graphviz install (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install graphviz graphviz-dev
-
-      - name: Graphviz install (macOS)
-        if: runner.os == 'macOS'
-        run: brew install graphviz
-
-      - name: Graphviz install (Windows)
-        if: runner.os == 'Windows'
-        run: choco install graphviz
-
-      - name: Cairo install (macOS)
+      - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: |
-          brew install cairo libffi
+          brew install graphviz cairo libffi
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
+        run: choco install graphviz
 
       - name: Install dependencies
         run: |

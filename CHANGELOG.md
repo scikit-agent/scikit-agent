@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- Removed broken PR documentation preview from docs-deploy workflow
+- Consolidated CI dependency installation steps per platform
+- Simplified CD workflow triggers and conditional logic
+
 ### Added
 
 - Initial release features
