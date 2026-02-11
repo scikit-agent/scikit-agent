@@ -863,6 +863,10 @@ def estimate_euler_residual(
     transition_gradients = {}
     for state_sym in bellman_period.arrival_states:
         next_state = next_states[state_sym]
+        # Check if this state depends on the control by attempting to compute ∂s_{t+1}/∂c_t.
+        # Using allow_unused=True ensures grad returns None (not an error) when there's no
+        # dependency, which is more robust than checking requires_grad. A tensor can have
+        # requires_grad=False even when computed from gradients (e.g., after detach(), indexing, or in-place operations).
         trans_grad = grad(
             next_state.sum(),
             c_t,
@@ -870,6 +874,7 @@ def estimate_euler_residual(
             retain_graph=True,
             allow_unused=True,
         )[0]
+        # If grad returns None, the state doesn't depend on control (e.g., p' = p * psi)
         transition_gradients[state_sym] = trans_grad
 
     # Compute the return factor from the dynamics: ∂m'/∂s' (how pre-state depends on arrival state)
