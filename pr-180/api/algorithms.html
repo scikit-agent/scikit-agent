@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation" href="simulation.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev470+ga4939d6d3</title>
+        <title>Algorithms - scikit-agent 0.1.dev472+g331c44b7c</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev470+ga4939d6d3</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev472+g331c44b7c</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -390,6 +390,14 @@ based on the Grid passed in.</p>
 <p id="module-skagent.algos.maliar">Tools for the implementation of the Maliar, Maliar, and Winant (JME ‘21) method.</p>
 <p>This method relies on a simpler problem representation than that elaborated
 by the skagent Block system.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">generate_givens_from_states</span></code> currently accesses <code class="docutils literal notranslate"><span class="pre">bellman_period.block</span></code>
+directly rather than working through the BellmanPeriod interface. A future
+refactoring could route shock generation through BellmanPeriod itself.
+Similarly, shock draws are currently Monte Carlo only; structured draws
+(e.g. exact discretizations) could be supported via BellmanPeriod.</p>
+</div>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.maliar.generate_givens_from_states">
 <span class="sig-prename descclassname"><span class="pre">skagent.algos.maliar.</span></span><span class="sig-name descname"><span class="pre">generate_givens_from_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_copies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.maliar.generate_givens_from_states" title="Link to this definition">¶</a></dt>
@@ -399,7 +407,7 @@ by the skagent Block system.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>states</strong> (<a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><em>Grid</em></a>) – A grid of starting state values (exogenous and endogenous).</p></li>
 <li><p><strong>model_block</strong> (<em>block.Block</em>) – Block information (used to get the shock names).</p></li>
-<li><p><strong>shock_copies</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of copies of the shocks to be included.</p></li>
+<li><p><strong>shock_copies</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of copies of the shocks to be included. Must be &gt;= 1.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -416,39 +424,53 @@ by the skagent Block system.</p>
 <span class="sig-prename descclassname"><span class="pre">skagent.algos.maliar.</span></span><span class="sig-name descname"><span class="pre">maliar_training_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_0_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_copies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simulation_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">network_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs_per_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">250</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.maliar.maliar_training_loop" title="Link to this definition">¶</a></dt>
 <dd><p>Run the Maliar, Maliar, and Winant (JME ‘21) training loop.</p>
 <p>This implements the machine learning method for solving dynamic economic models
-by training a neural network policy to minimize empirical risk (loss).</p>
+by training a neural network policy to minimize empirical risk (loss). The
+network architecture (width, training epochs per iteration) is configurable
+via optional parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bellman_period</strong> (<em>BellmanPeriod</em>) – A model definition containing block dynamics and transitions.</p></li>
-<li><p><strong>loss_function</strong> (<em>Callable</em>) – The empirical risk function Xi^n from MMW JME’21.
-Signature: (decision_function, input_grid) -&gt; loss_vector.</p></li>
-<li><p><strong>states_0_n</strong> (<a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><em>Grid</em></a>) – A panel of starting states for training.</p></li>
+<li><p><strong>loss_function</strong> (<em>Callable</em>) – The empirical risk function Xi^n from MMW JME’21. This function is
+passed to the neural network training routine as
+<code class="docutils literal notranslate"><span class="pre">loss_function(decision_function,</span> <span class="pre">input_grid)</span> <span class="pre">-&gt;</span> <span class="pre">loss_tensor</span></code>.</p></li>
+<li><p><strong>states_0_n</strong> (<a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><em>Grid</em></a>) – A panel of starting states for training. Must contain at least one state.</p></li>
 <li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Given parameters for the model.</p></li>
 <li><p><strong>shock_copies</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of copies of shocks to include in the training set omega.
 Must match expected number of shock copies in the loss function.
-Default is 2.</p></li>
+Must be &gt;= 1. Default is 2.</p></li>
 <li><p><strong>max_iterations</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Maximum number of training loop iterations before stopping.
-Default is 5.</p></li>
+Must be &gt;= 1. Default is 5.</p></li>
 <li><p><strong>tolerance</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Convergence tolerance. Training stops when either the L2 norm of
 parameter changes or the absolute difference in loss is below this
-threshold. Default is 1e-6.</p></li>
+threshold. Satisfying either criterion alone is sufficient.
+Must be &gt; 0. Default is 1e-6.</p></li>
 <li><p><strong>random_seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Random seed for reproducibility. Default is None.</p></li>
 <li><p><strong>simulation_steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of time steps to simulate forward when determining the next
-omega set for training. Default is 1.</p></li>
-<li><p><strong>network_width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Width of hidden layers in the policy neural network. Default is 16.</p></li>
-<li><p><strong>epochs_per_iteration</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of training epochs per iteration. Default is 250.</p></li>
+omega set for training. Higher values let the training states
+explore more of the state space at higher computational cost.
+Must be &gt;= 1. Default is 1.</p></li>
+<li><p><strong>network_width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Width of hidden layers in the policy neural network.
+Must be &gt;= 1. Default is 16.</p></li>
+<li><p><strong>epochs_per_iteration</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of training epochs per iteration.
+Must be &gt;= 1. Default is 250.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>(trained_policy_network, final_states) where trained_policy_network is
-the BlockPolicyNet and final_states is the Grid of states after simulation.</p>
+<dd class="field-even"><p>(trained_policy_network, training_states) where trained_policy_network
+is the BlockPolicyNet and training_states is the Grid of states from
+the last training iteration (or the convergence point if reached early).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If any input parameters are invalid.</p>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If max_iterations &lt; 1, tolerance &lt;= 0, shock_copies &lt; 1,
+    simulation_steps &lt; 1, network_width &lt; 1, epochs_per_iteration &lt; 1,
+    or states_0_n contains no states.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.14)"><strong>TypeError</strong></a> – If bellman_period is None or loss_function is not callable.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -464,7 +486,8 @@ the BlockPolicyNet and final_states is the Grid of states after simulation.</p>
 <li><p><strong>bellman_period</strong> (<em>BellmanPeriod</em>) – The Bellman period containing model dynamics.</p></li>
 <li><p><strong>decision_function</strong> (<em>Callable</em>) – Function mapping (states, shocks, parameters) to controls.</p></li>
 <li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Model parameters.</p></li>
-<li><p><strong>big_t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of time periods to simulate forward.</p></li>
+<li><p><strong>big_t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of time periods to simulate forward. If 0, returns the
+initial states unchanged.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -881,7 +904,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=0451992a"></script>
+</div><script src="../_static/documentation_options.js?v=d4f3adaf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
