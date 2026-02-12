@@ -4,11 +4,19 @@ Tools for the implementation of the Maliar, Maliar, and Winant (JME '21) method.
 This method relies on a simpler problem representation than that elaborated
 by the skagent Block system.
 
+.. note::
+   ``generate_givens_from_states`` currently accesses ``bellman_period.block``
+   directly rather than working through the BellmanPeriod interface. A future
+   refactoring could route shock generation through BellmanPeriod itself.
+   Similarly, shock draws are currently Monte Carlo only; structured draws
+   (e.g. exact discretizations) could be supported via BellmanPeriod.
+
 """
 
 from __future__ import annotations
+
 import logging
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import torch
 
@@ -18,6 +26,9 @@ import skagent.utils as utils
 from skagent.grid import Grid
 from skagent.simulation.monte_carlo import draw_shocks
 from skagent.utils import compute_parameter_difference, extract_parameters
+
+if TYPE_CHECKING:
+    from skagent.bellman import BellmanPeriod
 
 
 def generate_givens_from_states(
@@ -33,7 +44,7 @@ def generate_givens_from_states(
     model_block : block.Block
         Block information (used to get the shock names).
     shock_copies : int
-        Number of copies of the shocks to be included.
+        Number of copies of the shocks to be included. Must be >= 1.
 
     Returns
     -------
@@ -56,7 +67,7 @@ def generate_givens_from_states(
 
 def simulate_forward(
     states_t: Grid | dict,
-    bellman_period,
+    bellman_period: BellmanPeriod,
     decision_function: Callable,
     parameters: dict,
     big_t: int,
@@ -75,7 +86,8 @@ def simulate_forward(
     parameters : dict
         Model parameters.
     big_t : int
-        Number of time periods to simulate forward.
+        Number of time periods to simulate forward. If 0, returns the
+        initial states unchanged.
 
     Returns
     -------
@@ -98,14 +110,13 @@ def simulate_forward(
             raise ValueError("states_t cannot be an empty dict")
         n = len(states_t[next(iter(states_t.keys()))])
 
-    # Handle edge case where no simulation is needed
     if big_t == 0:
         return states_t
 
     for t in range(big_t):
         shocks_t = draw_shocks(bellman_period.block.shocks, n=n)
 
-        # Reconcile shock shapes with state shapes
+        # Reconcile shock dimensions with state dimensions (see Grid.from_dict())
         states_template = states_t[next(iter(states_t.keys()))]
         shocks_t = {
             sym: utils.reconcile(states_template, shocks_t[sym]) for sym in shocks_t
@@ -121,7 +132,7 @@ def simulate_forward(
 
 
 def maliar_training_loop(
-    bellman_period,
+    bellman_period: BellmanPeriod,
     loss_function: Callable,
     states_0_n: Grid,
     parameters: dict,
@@ -137,52 +148,77 @@ def maliar_training_loop(
     Run the Maliar, Maliar, and Winant (JME '21) training loop.
 
     This implements the machine learning method for solving dynamic economic models
-    by training a neural network policy to minimize empirical risk (loss).
+    by training a neural network policy to minimize empirical risk (loss). The
+    network architecture (width, training epochs per iteration) is configurable
+    via optional parameters.
 
     Parameters
     ----------
     bellman_period : BellmanPeriod
         A model definition containing block dynamics and transitions.
     loss_function : Callable
-        The empirical risk function Xi^n from MMW JME'21.
-        Signature: (decision_function, input_grid) -> loss_vector.
+        The empirical risk function Xi^n from MMW JME'21. This function is
+        passed to the neural network training routine as
+        ``loss_function(decision_function, input_grid) -> loss_tensor``.
     states_0_n : Grid
-        A panel of starting states for training.
+        A panel of starting states for training. Must contain at least one state.
     parameters : dict
         Given parameters for the model.
     shock_copies : int, optional
         Number of copies of shocks to include in the training set omega.
         Must match expected number of shock copies in the loss function.
-        Default is 2.
+        Must be >= 1. Default is 2.
     max_iterations : int, optional
         Maximum number of training loop iterations before stopping.
-        Default is 5.
+        Must be >= 1. Default is 5.
     tolerance : float, optional
         Convergence tolerance. Training stops when either the L2 norm of
         parameter changes or the absolute difference in loss is below this
-        threshold. Default is 1e-6.
+        threshold. Satisfying either criterion alone is sufficient.
+        Must be > 0. Default is 1e-6.
     random_seed : int, optional
         Random seed for reproducibility. Default is None.
     simulation_steps : int, optional
         Number of time steps to simulate forward when determining the next
-        omega set for training. Default is 1.
+        omega set for training. Higher values let the training states
+        explore more of the state space at higher computational cost.
+        Must be >= 1. Default is 1.
     network_width : int, optional
-        Width of hidden layers in the policy neural network. Default is 16.
+        Width of hidden layers in the policy neural network.
+        Must be >= 1. Default is 16.
     epochs_per_iteration : int, optional
-        Number of training epochs per iteration. Default is 250.
+        Number of training epochs per iteration.
+        Must be >= 1. Default is 250.
 
     Returns
     -------
     tuple
-        (trained_policy_network, final_states) where trained_policy_network is
-        the BlockPolicyNet and final_states is the Grid of states after simulation.
+        (trained_policy_network, training_states) where trained_policy_network
+        is the BlockPolicyNet and training_states is the Grid of states from
+        the last training iteration (or the convergence point if reached early).
 
     Raises
     ------
     ValueError
-        If any input parameters are invalid.
+        If max_iterations < 1, tolerance <= 0, shock_copies < 1,
+        simulation_steps < 1, network_width < 1, epochs_per_iteration < 1,
+        or states_0_n contains no states.
+    TypeError
+        If bellman_period is None or loss_function is not callable.
     """
-    # Input validation
+    # Validate object-type parameters
+    if bellman_period is None:
+        raise TypeError("bellman_period cannot be None")
+    if not callable(loss_function):
+        raise TypeError(
+            f"loss_function must be callable, got {type(loss_function).__name__}"
+        )
+    if parameters is None:
+        raise TypeError(
+            "parameters cannot be None; pass an empty dict if no parameters are needed"
+        )
+
+    # Validate numeric parameters
     if max_iterations < 1:
         raise ValueError(f"max_iterations must be >= 1, got {max_iterations}")
     if tolerance <= 0:
@@ -221,9 +257,7 @@ def maliar_training_loop(
         prev_params = extract_parameters(bpn)
 
         # i). Simulate model to produce data {ω_i}_{i=1}^n using decision rule ϕ(·,θ)
-        givens = generate_givens_from_states(
-            states_0_n, bellman_period.block, shock_copies
-        )
+        givens = generate_givens_from_states(states, bellman_period.block, shock_copies)
 
         # ii). Construct gradient ∇Xi^n(θ) and update coefficients
         bpn, current_loss = ann.train_block_nn(
@@ -279,7 +313,10 @@ def maliar_training_loop(
             simulation_steps,
         )
 
-        states = Grid.from_dict(next_states)
+        # Detach from the computational graph so the next iteration's
+        # backward pass does not attempt to traverse a freed graph.
+        detached = {k: v.detach() for k, v in next_states.items()}
+        states = Grid.from_dict(detached)
         iteration += 1
 
     if not converged:
