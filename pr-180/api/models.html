@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Blocks" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.dev452+g89f4dd340</title>
+        <title>Models - scikit-agent 0.1.dev470+ga4939d6d3</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev452+g89f4dd340</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev470+ga4939d6d3</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -449,7 +449,9 @@ where κ_eff uses β_eff = s*β in place of β.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.get_analytical_policy">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_analytical_policy" title="Link to this definition">¶</a></dt>
-<dd><p>Get analytical policy function by model ID</p>
+<dd><p>Get analytical policy function by model ID.</p>
+<p>Raises ValueError if the model does not have an analytical policy
+(e.g., U-3 buffer stock model requires numerical solution).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
@@ -477,7 +479,7 @@ where κ_eff uses β_eff = s*β in place of β.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.get_benchmark_model">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_benchmark_model" title="Link to this definition">¶</a></dt>
-<dd><p>Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2) - 5 models remain</p>
+<dd><p>Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2, U-3) - 6 models</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
@@ -522,7 +524,9 @@ where κ_eff uses β_eff = s*β in place of β.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.list_benchmark_models">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">list_benchmark_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.list_benchmark_models" title="Link to this definition">¶</a></dt>
-<dd><p>List all analytically solvable discrete-time benchmark models</p>
+<dd><p>List all discrete-time benchmark models.</p>
+<p>Note: Most models have analytical solutions, but some (e.g., U-3 buffer stock)
+require numerical solution due to borrowing constraints + income uncertainty.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
@@ -542,11 +546,12 @@ The martingale property E[c_{t+1}] = c_t is a consequence of this optimal policy
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.u2_analytical_policy">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">u2_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.u2_analytical_policy" title="Link to this definition">¶</a></dt>
-<dd><p>U-2: PIH with Geometric Random Walk Income using standard timing.</p>
-<p>Uses standard timing m_t = R*A_{t-1} + p_t for consistency.
-With ρ=1, income follows p_t = p_{t-1} * ψ_t (geometric random walk).
-Human wealth: H_t = p_t / r (present value of geometric random walk income).</p>
-<p>Standard timing analytical solution: c_t = (1-β)(m_t + H_t)</p>
+<dd><p>U-2: PIH with Geometric Random Walk Income (NORMALIZED).</p>
+<p>In normalized terms (all variables divided by permanent income p):
+- m = market_resources / p (normalized cash-on-hand)
+- c = consumption / p (normalized consumption)
+- h = 1/r (normalized human wealth, constant)</p>
+<p>Analytical solution: c = (1-β)(m + h) = (1-β)(m + 1/r)</p>
 </dd></dl>
 
 <dl class="py function">
@@ -674,7 +679,7 @@ Human wealth: H_t = p_t / r (present value of geometric random walk income).</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=cfc4b692"></script>
+</div><script src="../_static/documentation_options.js?v=0451992a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
