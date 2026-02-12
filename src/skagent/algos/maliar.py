@@ -25,7 +25,6 @@ import skagent.block as block
 import skagent.utils as utils
 from skagent.grid import Grid
 from skagent.simulation.monte_carlo import draw_shocks
-from skagent.utils import compute_parameter_difference, extract_parameters
 
 if TYPE_CHECKING:
     from skagent.bellman import BellmanPeriod
@@ -254,7 +253,7 @@ def maliar_training_loop(
 
     while iteration < max_iterations and not converged:
         # Store current parameters before training
-        prev_params = extract_parameters(bpn)
+        prev_params = utils.extract_parameters(bpn)
 
         # i). Simulate model to produce data {ω_i}_{i=1}^n using decision rule ϕ(·,θ)
         givens = generate_givens_from_states(states, bellman_period.block, shock_copies)
@@ -265,10 +264,10 @@ def maliar_training_loop(
         )
 
         # Extract parameters after training
-        curr_params = extract_parameters(bpn)
+        curr_params = utils.extract_parameters(bpn)
 
         # Check for parameter convergence
-        param_diff = compute_parameter_difference(prev_params, curr_params)
+        param_diff = utils.compute_parameter_difference(prev_params, curr_params)
         param_converged = param_diff < tolerance
 
         # Check for loss convergence
