@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Test suite for analytically solvable benchmark models with research-grade robustness"""
+"""Test suite for benchmark models with research-grade robustness.
+
+Most models have analytical solutions, but U-3 (buffer stock) requires numerical solution.
+"""
 
 import pytest
 import torch
@@ -16,44 +19,36 @@ from skagent.models.benchmarks import (
 )
 
 
+def has_analytical_policy(model_id: str) -> bool:
+    """Check if a model has an analytical policy."""
+    return "analytical_policy" in BENCHMARK_MODELS.get(model_id, {})
+
+
 class TestBenchmarksModels:
-    """Test suite for all 5 analytically solvable consumption-savings models"""
+    """Test suite for all 6 consumption-savings benchmark models.
+
+    5 models have analytical solutions (D-1, D-2, D-3, U-1, U-2).
+    1 model requires numerical solution (U-3 buffer stock).
+    """
 
     def test_benchmark_models_exist(self):
-        """Test that all 5 benchmark models are present"""
+        """Test that all 6 benchmark models are present"""
         expected_models = [
             "D-1",
             "D-2",
             "D-3",
             "U-1",
             "U-2",
+            "U-3",  # Buffer stock - no analytical solution
         ]
         actual_models = list(BENCHMARK_MODELS.keys())
 
         assert set(expected_models) == set(actual_models), (
             f"Expected {expected_models}, got {actual_models}"
         )
-        assert len(BENCHMARK_MODELS) == 5, (
-            f"Expected 5 models, got {len(BENCHMARK_MODELS)}"
+        assert len(BENCHMARK_MODELS) == 6, (
+            f"Expected 6 models, got {len(BENCHMARK_MODELS)}"
         )
-
-    def test_model_registry_structure(self):
-        """Test that each model has required components"""
-        for model_id in BENCHMARK_MODELS.keys():
-            model_info = BENCHMARK_MODELS[model_id]
-
-            assert "block" in model_info, f"Model {model_id} missing 'block'"
-            assert "calibration" in model_info, (
-                f"Model {model_id} missing 'calibration'"
-            )
-            assert "analytical_policy" in model_info, (
-                f"Model {model_id} missing 'analytical_policy'"
-            )
-
-            # Test calibration has description
-            assert "description" in model_info["calibration"], (
-                f"Model {model_id} missing description"
-            )
 
     @pytest.mark.parametrize(
         "model_id",
@@ -108,7 +103,7 @@ class TestBenchmarksModels:
         # Note: With human wealth, consumption can exceed arrival assets
 
     def test_stochastic_models(self):
-        """Test key stochastic models (U-1, U-2)"""
+        """Test key stochastic models (U-1, U-2 with analytical solutions)"""
 
         # U-1: PIH with βR=1
         policy_u1 = get_analytical_policy("U-1")
@@ -119,14 +114,34 @@ class TestBenchmarksModels:
         assert "c" in result_u1
         assert torch.all(result_u1["c"] > 0), "U-1 consumption should be positive"
 
-        # U-2: Log utility with permanent income
+        # U-2: Log utility with permanent income (normalized)
         policy_u2 = get_analytical_policy("U-2")
         parameters_u2 = get_benchmark_calibration("U-2")
         test_states_u2 = get_test_states("U-2", test_points=3)
-        result_u2 = policy_u2(test_states_u2, {}, parameters_u2)
+        # U-2 uses normalized arrival state 'a', needs shock for policy
+        test_shocks_u2 = {"psi": torch.ones(3)}  # Mean shock = 1
+        result_u2 = policy_u2(test_states_u2, test_shocks_u2, parameters_u2)
 
         assert "c" in result_u2
         assert torch.all(result_u2["c"] > 0), "U-2 consumption should be positive"
+
+    def test_u3_buffer_stock_structure(self):
+        """Test U-3 buffer stock model structure (no analytical solution)"""
+        # U-3 does not have an analytical policy
+        with pytest.raises(ValueError, match="does not have an analytical policy"):
+            get_analytical_policy("U-3")
+
+        # But it should have other components
+        calibration = get_benchmark_calibration("U-3")
+        test_states = get_test_states("U-3", test_points=5)
+        block = get_benchmark_model("U-3")
+
+        assert "DiscFac" in calibration
+        assert "R" in calibration
+        assert "CRRA" in calibration
+        assert "a" in test_states
+        assert test_states["a"].shape == (5,)
+        assert hasattr(block, "name")
 
     def test_model_descriptions(self):
         """Test that model descriptions match expected patterns"""
@@ -137,12 +152,13 @@ class TestBenchmarksModels:
             "D-2": "Infinite horizon CRRA perfect foresight",
             "D-3": "Blanchard discrete-time mortality",
             "U-1": "Hall random walk consumption",
-            "U-2": "Log utility with permanent income",
+            "U-2": "Log utility normalized",
+            "U-3": "Buffer stock",
         }
 
         for model_id, description in models.items():
             assert any(
-                expected in description
+                expected.lower() in description.lower()
                 for expected in expected_descriptions[model_id].split()
             ), (
                 f"Model {model_id} description '{description}' doesn't match expected pattern"
@@ -151,13 +167,18 @@ class TestBenchmarksModels:
     def test_analytical_policy_functions(self):
         """Test that analytical policy functions work correctly"""
 
-        # Test that all models can generate policies
+        # Test that models with analytical solutions can generate policies
         for model_id in BENCHMARK_MODELS.keys():
-            try:
-                policy = get_analytical_policy(model_id)
-                assert callable(policy), f"Policy for {model_id} is not callable"
-            except Exception as e:
-                pytest.fail(f"Failed to get analytical policy for {model_id}: {e}")
+            if has_analytical_policy(model_id):
+                try:
+                    policy = get_analytical_policy(model_id)
+                    assert callable(policy), f"Policy for {model_id} is not callable"
+                except Exception as e:
+                    pytest.fail(f"Failed to get analytical policy for {model_id}: {e}")
+            else:
+                # Models without analytical solutions should raise ValueError
+                with pytest.raises(ValueError):
+                    get_analytical_policy(model_id)
 
     def test_model_access_functions(self):
         """Test the main access functions work correctly"""
@@ -273,69 +294,87 @@ class TestStaticIdentityVerification:
             f"U-1 PIH formula violated: got {result['c']}, expected {expected_c}"
         )
 
-    def test_u2_log_permanent_income_rule(self):
-        """Test U-2: c_t = (1-β)*(m_t + H_t) with geometric random walk income"""
+    def test_u2_normalized_pih_rule(self):
+        """Test U-2: c = (1-β)*(m + h) with normalized variables.
+
+        U-2 uses normalized variables (all divided by permanent income P):
+        - a = A/P (normalized arrival assets)
+        - m = R*a/ψ + 1 (normalized cash-on-hand)
+        - h = 1/r (normalized human wealth, constant)
+        - c = C/P (normalized consumption)
+
+        Analytical solution: c = (1-β)(m + h)
+        """
         calibration = get_benchmark_calibration("U-2")
         policy = get_analytical_policy("U-2")
 
         beta = calibration["DiscFac"]
         R = calibration["R"]
-        rho_p = calibration["rho_p"]
         r = R - 1
 
-        # Verify ρ=1 for analytical tractability
-        assert rho_p == 1.0, f"U-2 requires ρ_p=1.0, got {rho_p}"
-
         test_states = get_test_states("U-2", test_points=5)
-        result = policy(test_states, {}, calibration)
+        test_shocks = {"psi": torch.ones(5)}  # Mean shock = 1
 
-        # Human wealth for geometric random walk: H_t = p_t / r
-        human_wealth = test_states["p"] / r
-        total_wealth = test_states["m"] + human_wealth
-        expected_c = (1 - beta) * total_wealth
+        result = policy(test_states, test_shocks, calibration)
+
+        # Normalized: m = R*a/psi + 1, h = 1/r
+        m = R * test_states["a"] / test_shocks["psi"] + 1
+        h = 1 / r
+        expected_c = (1 - beta) * (m + h)
 
         assert torch.allclose(result["c"], expected_c, atol=EPS_STATIC), (
-            f"U-2 permanent income rule violated: got {result['c']}, expected {expected_c}"
+            f"U-2 normalized PIH rule violated: got {result['c']}, expected {expected_c}"
         )
 
 
 class TestDynamicOptimalityChecks:
     """Layer 3: Euler equation and budget evolution tests on simulated paths"""
 
-    def test_u2_log_permanent_income_consistency(self):
-        """Test U-2 log utility with geometric random walk income policy consistency"""
+    def test_u2_normalized_policy_consistency(self):
+        """Test U-2 normalized policy consistency.
+
+        U-2 uses normalized variables:
+        - a = A/P (normalized assets, arrival state)
+        - m = R*a/ψ + 1 (normalized cash-on-hand)
+        - c = C/P (normalized consumption)
+
+        The analytical solution c = (1-β)(m + h) satisfies:
+        1. Consumption is positive
+        2. Consumption respects budget constraint (c < m when h > 0 contributes)
+        3. The Euler equation is satisfied by construction
+        """
         calibration = get_benchmark_calibration("U-2")
         policy = get_analytical_policy("U-2")
 
         beta = calibration["DiscFac"]
         R = calibration["R"]
-        rho_p = calibration["rho_p"]
         r = R - 1
 
-        # Verify ρ=1 for analytical tractability
-        assert rho_p == 1.0, f"U-2 requires ρ_p=1.0, got {rho_p}"
-
-        # Test that the policy satisfies the permanent income formula with correct states
+        # Test that the policy satisfies the normalized PIH formula
         test_states = get_test_states("U-2", test_points=5)
-        result = policy(test_states, {}, calibration)
+        test_shocks = {"psi": torch.ones(5)}
+        result = policy(test_states, test_shocks, calibration)
 
-        # Human wealth calculation for geometric random walk: H_t = p_t / r
-        human_wealth = test_states["p"] / r
-        total_wealth = test_states["m"] + human_wealth
-        expected_c = (1 - beta) * total_wealth
+        # Normalized: m = R*a + 1, h = 1/r
+        m = R * test_states["a"] / test_shocks["psi"] + 1
+        h = 1 / r
+        expected_c = (1 - beta) * (m + h)
 
         assert torch.allclose(result["c"], expected_c, atol=EPS_STATIC), (
-            f"U-2 permanent income formula violated: got {result['c']}, expected {expected_c}"
+            f"U-2 normalized PIH formula violated: got {result['c']}, expected {expected_c}"
         )
 
-        # Test that consumption is positive and feasible
+        # Test that consumption is positive
         assert torch.all(result["c"] > 0), "U-2 consumption should be positive"
-        assert torch.all(result["c"] < test_states["m"]), (
-            "U-2 consumption should be less than cash-on-hand"
-        )
 
-        # For the analytical solution, the Euler equation is satisfied by construction
-        # through the permanent income hypothesis
+        # U-2 is unconstrained PIH: the upper bound 0.1*m + 2 is loose enough
+        # that c can exceed m (borrowing against human wealth h = 1/r).
+        # The analytical solution c = (1-β)(m + h) ≈ 0.04*m + 1.33 is well
+        # within the bound, so we verify consumption stays below total wealth.
+        total_wealth = m + h
+        assert torch.all(result["c"] < total_wealth), (
+            "U-2 consumption should be less than total wealth (m + h)"
+        )
 
     def test_budget_evolution_consistency(self):
         """Test that simulated paths satisfy budget constraints for all models"""
@@ -348,7 +387,7 @@ class TestDynamicOptimalityChecks:
             "D-2": {"initial_states": {"a": 1.0}, "T": 3},
             "D-3": {"initial_states": {"a": 1.0}, "T": 3},
             "U-1": {"initial_states": {"A": 1.0, "y": 1.0}, "T": 3},
-            "U-2": {"initial_states": {"A": 1.0, "p": 1.0}, "T": 3},
+            "U-2": {"initial_states": {"a": 1.0}, "T": 3},  # Normalized arrival assets
         }
 
         for model_id, config in test_cases.items():
@@ -450,39 +489,37 @@ class TestDynamicOptimalityChecks:
                     assert c_path[t] > 0, f"U-1 consumption should be positive at t={t}"
 
             elif model_id == "U-2":
-                # Log utility with geometric random walk income
-                A_path = torch.zeros(T)
-                p_path = torch.zeros(T)
+                # Log utility with normalized variables
+                # a = A/P (normalized arrival assets)
+                # m = R*a/psi + 1 (normalized cash-on-hand)
+                a_path = torch.zeros(T)
                 m_path = torch.zeros(T)
                 c_path = torch.zeros(T)
 
-                A_path[0] = config["initial_states"]["A"]
-                p_path[0] = config["initial_states"]["p"]
+                a_path[0] = config["initial_states"]["a"]
 
                 for t in range(T):
-                    # Compute cash-on-hand (standard timing)
-                    m_path[t] = A_path[t] * R + p_path[t]
-                    states = {"m": m_path[t : t + 1], "p": p_path[t : t + 1]}
-                    result = policy(states, {}, calibration)
+                    # Normalized cash-on-hand: m = R*a + 1 (psi=1 in test)
+                    m_path[t] = a_path[t] * R + 1
+                    # Pass normalized arrival state
+                    states = {"a": a_path[t : t + 1]}
+                    shocks = {"psi": torch.ones(1)}  # Mean shock
+                    result = policy(states, shocks, calibration)
                     c_path[t] = result["c"][0]
 
                     if t < T - 1:
-                        # Asset evolution: A_{t+1} = m_t - c_t
-                        A_path[t + 1] = m_path[t] - c_path[t]
-                        # Permanent income evolution: p_{t+1} = p_t (ρ=1, no shocks in test)
-                        p_path[t + 1] = p_path[t]
+                        # Normalized asset evolution: a' = m - c
+                        a_path[t + 1] = m_path[t] - c_path[t]
 
                 # Check that consumption is positive and feasible
+                r = calibration["R"] - 1
+                h = 1 / r  # Normalized human wealth
+
                 for t in range(T):
                     assert c_path[t] > 0, f"U-2 consumption should be positive at t={t}"
 
-                    # U-2 also has human wealth from geometric random walk income
                     # Check that consumption doesn't exceed total wealth
-                    r = calibration["R"] - 1
-                    human_wealth = (
-                        p_path[t] / r
-                    )  # Present value of geometric random walk income
-                    total_wealth = m_path[t] + human_wealth
+                    total_wealth = m_path[t] + h
                     assert c_path[t] <= total_wealth + 1e-10, (
                         f"U-2 consumption should not exceed total wealth at t={t}: "
                         f"c={c_path[t]}, total_wealth={total_wealth}"
@@ -619,16 +656,28 @@ class TestDynamicOptimalityChecks:
             )
 
 
+def test_calibration_descriptions():
+    """Verify all benchmark models have a description in calibration."""
+    for model_id in BENCHMARK_MODELS.keys():
+        calibration = get_benchmark_calibration(model_id)
+        assert "description" in calibration, (
+            f"Model {model_id} missing 'description' in calibration"
+        )
+
+
 def test_benchmark_functionality():
     """Integration test: verify all benchmark models are functional"""
 
-    print("\n=== ANALYTICALLY SOLVABLE BENCHMARK MODELS ===")
-    print("Testing well-known benchmark problems")
+    print("\n=== BENCHMARK MODELS ===")
+    print("Testing well-known consumption-savings problems")
     print("=" * 55)
 
     models = list_benchmark_models()
     for model_id, description in models.items():
-        print(f"{model_id:4s}: {description}")
+        has_analytical = (
+            "analytical" if has_analytical_policy(model_id) else "numerical"
+        )
+        print(f"{model_id:4s}: {description} [{has_analytical}]")
 
     print(f"\nTotal: {len(models)} models")
 
@@ -639,8 +688,17 @@ def test_benchmark_functionality():
         "D-3",
         "U-1",
         "U-2",
+        "U-3",  # Buffer stock - numerical only
     ]
     assert set(models.keys()) == set(expected_models)
-    assert len(models) == 5
+    assert len(models) == 6
 
-    print("\n✓ All 5 benchmark models are implemented")
+    # Verify analytical vs numerical classification
+    analytical_models = [m for m in expected_models if has_analytical_policy(m)]
+    numerical_models = [m for m in expected_models if not has_analytical_policy(m)]
+
+    assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2"}
+    assert set(numerical_models) == {"U-3"}
+
+    print(f"\n✓ {len(analytical_models)} models with analytical solutions")
+    print(f"✓ {len(numerical_models)} models requiring numerical solution")

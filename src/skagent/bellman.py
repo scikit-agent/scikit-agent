@@ -34,6 +34,8 @@ class BellmanPeriod:
     ----------
     block : Block
         The underlying block model containing dynamics, shocks, and reward definitions.
+    discount_variable : str
+        A variable name which represents the discount factor for future value streams.
     calibration : dict[str, Any]
         Dictionary of calibration parameters for the model.
     decision_rules : dict[str, Callable] | None, optional
@@ -43,6 +45,8 @@ class BellmanPeriod:
     ----------
     block : Block
         The underlying block model.
+    discount_variable : str
+        The name of the discount factor variable.
     calibration : dict[str, Any]
         The calibration parameters.
     decision_rules : dict[str, Callable] | None
@@ -57,6 +61,7 @@ class BellmanPeriod:
     """
 
     block: Block
+    discount_variable: str
     calibration: dict[str, Any]
     decision_rules: dict[str, Callable] | None
     arrival_states: set[str]
@@ -64,11 +69,13 @@ class BellmanPeriod:
     def __init__(
         self,
         block: Block,
+        discount_variable: str,
         calibration: dict[str, Any],
         decision_rules: dict[str, Callable] | None = None,
     ) -> None:
         self.block = block
         self.calibration = calibration
+        self.discount_variable = discount_variable
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
@@ -219,6 +226,47 @@ class BellmanPeriod:
             if agent is None or self.block.reward[sym] == agent
         }
 
+    def post_function(
+        self,
+        states_t: dict[str, Any],
+        shocks_t: dict[str, Any],
+        controls_t: dict[str, Any],
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Return the full ex post variables for the period.
+
+        Parameters
+        ----------
+        states_t : dict[str, Any]
+            Current state variables.
+        shocks_t : dict[str, Any]
+            Current shock realizations.
+        controls_t : dict[str, Any]
+            Current control variable values.
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        agent : str | None, optional
+            Agent identifier (currently unused, reserved for future use).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules (defaults to instance decision_rules).
+
+        Returns
+        -------
+        dict[str, Any]
+            All computed variables from the block transition.
+        """
+        decision_rules = self._resolve_decision_rules(decision_rules)
+        parameters = self._resolve_parameters(parameters)
+
+        vals_t = parameters | states_t | shocks_t | controls_t
+        post = self.block.transition(
+            vals_t, decision_rules, fix=list(controls_t.keys())
+        )
+        return post
+
     def grad_reward_function(
         self,
         states_t: dict[str, Any],
@@ -267,6 +315,7 @@ class BellmanPeriod:
         post = self.block.transition(
             vals_t, decision_rules, fix=list(controls_t.keys())
         )
+        # TODO: refactor with post-function
 
         # Filter rewards by agent
         rewards = {
@@ -457,7 +506,6 @@ class BellmanPeriod:
 
 def estimate_discounted_lifetime_reward(
     bellman_period: BellmanPeriod,
-    discount_factor: float,
     dr: dict[str, Callable] | Callable,
     states_0: dict[str, Any],
     big_t: int,
@@ -473,10 +521,8 @@ def estimate_discounted_lifetime_reward(
     Parameters
     ----------
     bellman_period : BellmanPeriod
-        The Bellman period object containing the model.
-    discount_factor : float
-        The discount factor β. Must be a numerical value (state-dependent
-        discount factors are not yet supported).
+        The Bellman period object containing the model. The discount factor is
+        extracted from the post-transition variables via ``bellman_period.discount_variable``.
     dr : dict[str, Callable] | Callable
         Decision rules (dict of functions), or a decision function that
         returns the decisions given states, shocks, and parameters.
@@ -497,11 +543,6 @@ def estimate_discounted_lifetime_reward(
     -------
     float | torch.Tensor
         The total discounted lifetime reward.
-
-    Raises
-    ------
-    NotImplementedError
-        If discount_factor is callable (state-dependent).
     """
     if parameters is None:
         parameters = {}
@@ -515,12 +556,6 @@ def estimate_discounted_lifetime_reward(
         for sym in bellman_period.block.reward
         if agent is None or bellman_period.block.reward[sym] == agent
     }
-
-    if callable(discount_factor):
-        raise NotImplementedError(
-            "State-dependent discount factors are not yet supported. "
-            "Please pass a numerical discount factor."
-        )
 
     for t in range(big_t):
         if shocks_by_t is not None:
@@ -537,6 +572,14 @@ def estimate_discounted_lifetime_reward(
                 states_t, shocks_t, parameters, decision_rules=dr
             )
 
+        post = bellman_period.post_function(
+            states_t, shocks_t, controls_t, parameters, agent=agent
+        )
+
+        discount_factor = post[bellman_period.discount_variable]
+
+        # TODO: can improve performance by consolidating multiple calls
+        #       that simulation forward.
         reward_t = bellman_period.reward_function(
             states_t, shocks_t, controls_t, parameters, agent=agent
         )
@@ -567,7 +610,6 @@ def estimate_discounted_lifetime_reward(
 
 def estimate_bellman_residual(
     bellman_period: BellmanPeriod,
-    discount_factor: float,
     value_function: Callable,
     df: Callable,
     states_t: dict[str, Any],
@@ -575,7 +617,7 @@ def estimate_bellman_residual(
     parameters: dict[str, Any] | None = None,
     agent: str | None = None,
 ) -> torch.Tensor:
-    """
+    r"""
     Computes the Bellman equation residual for given states and shocks.
 
     The Bellman equation is:
@@ -596,9 +638,8 @@ def estimate_bellman_residual(
     Parameters
     ----------
     bellman_period : BellmanPeriod
-        The Bellman period with transitions, rewards, etc.
-    discount_factor : float
-        The discount factor β. Must be numerical (state-dependent not supported).
+        The Bellman period with transitions, rewards, etc. The discount factor is
+        extracted from the post-transition variables via ``bellman_period.discount_variable``.
     value_function : Callable
         A value function that takes state variables and returns value estimates.
     df : Callable
@@ -621,19 +662,11 @@ def estimate_bellman_residual(
 
     Raises
     ------
-    NotImplementedError
-        If discount_factor is callable (state-dependent).
     ValueError
         If no reward variables are found in the block.
     """
     if parameters is None:
         parameters = {}
-
-    if callable(discount_factor):
-        raise NotImplementedError(
-            "State-dependent discount factors are not yet supported. "
-            "Please pass a numerical discount factor."
-        )
 
     # Get shock variable names
     shock_vars = bellman_period.get_shocks()
@@ -675,6 +708,11 @@ def estimate_bellman_residual(
 
     # Compute continuation value using value network (using period t+1 shocks)
     continuation_values = value_function(next_states, shocks_t_plus_1, parameters)
+
+    # TODO: this is all calling the forward simulation multiple times;
+    #       can be made more efficient
+    post = bellman_period.post_function(states_t, shocks_t, controls_t, parameters)
+    discount_factor = post[bellman_period.discount_variable]
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
@@ -983,6 +1021,10 @@ def estimate_euler_residual(
     transition_gradients = {}
     for state_sym in bellman_period.arrival_states:
         next_state = next_states[state_sym]
+        # Check if this state depends on the control by attempting to compute ∂s_{t+1}/∂c_t.
+        # Using allow_unused=True ensures grad returns None (not an error) when there's no
+        # dependency, which is more robust than checking requires_grad. A tensor can have
+        # requires_grad=False even when computed from gradients (e.g., after detach(), indexing, or in-place operations).
         trans_grad = grad(
             next_state.sum(),
             c_t,
@@ -990,6 +1032,7 @@ def estimate_euler_residual(
             retain_graph=True,
             allow_unused=True,
         )[0]
+        # If grad returns None, the state doesn't depend on control (e.g., p' = p * psi)
         transition_gradients[state_sym] = trans_grad
 
     # Compute the return factor from the dynamics: ∂m'/∂s' (how pre-state depends on arrival state)
