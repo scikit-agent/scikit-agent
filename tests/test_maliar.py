@@ -1605,3 +1605,229 @@ class TestConstrainedWarning(unittest.TestCase):
                 parameters=u3_calibration,
                 constrained=True,
             )
+
+
+class TestSimulateForwardValidation(unittest.TestCase):
+    """Test input validation in simulate_forward."""
+
+    def setUp(self):
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+        self.bp = case_4["bp"]
+        self.policy = lambda s, sh, p: {
+            "c": s.get("m", s.get("a", next(iter(s.values())))) * 0.5
+        }
+
+    def test_negative_big_t_raises(self):
+        states = {"m": torch.tensor([1.0, 2.0])}
+        with self.assertRaises(ValueError, msg="big_t must be non-negative"):
+            maliar.simulate_forward(states, self.bp, self.policy, {}, big_t=-1)
+
+    def test_empty_dict_raises(self):
+        with self.assertRaises(ValueError, msg="states_t cannot be an empty dict"):
+            maliar.simulate_forward({}, self.bp, self.policy, {}, big_t=5)
+
+    def test_big_t_zero_returns_unchanged(self):
+        states = {"m": torch.tensor([1.0, 2.0])}
+        result = maliar.simulate_forward(states, self.bp, self.policy, {}, big_t=0)
+        self.assertIs(result, states)
+
+    def test_big_t_zero_with_grid_returns_dict(self):
+        states = grid.Grid.from_dict({"m": torch.tensor([1.0, 2.0])})
+        result = maliar.simulate_forward(states, self.bp, self.policy, {}, big_t=0)
+        self.assertIsInstance(result, dict)
+        self.assertTrue(torch.allclose(result["m"], torch.tensor([1.0, 2.0])))
+
+
+class TestMaliarTrainingLoopValidation(unittest.TestCase):
+    """Test input validation in maliar_training_loop."""
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+
+        self.bp = case_4["bp"]
+        self.states = grid.Grid.from_config(
+            {
+                "m": {"min": 0, "max": 5, "count": 3},
+                "g": {"min": 0, "max": 5, "count": 3},
+            }
+        )
+        self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
+            self.bp, 2, case_4["calibration"]
+        )
+        self.calibration = case_4["calibration"]
+
+    def test_max_iterations_zero_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                max_iterations=0,
+                random_seed=TEST_SEED,
+            )
+
+    def test_max_iterations_negative_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                max_iterations=-5,
+                random_seed=TEST_SEED,
+            )
+
+    def test_tolerance_zero_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                tolerance=0,
+                random_seed=TEST_SEED,
+            )
+
+    def test_tolerance_negative_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                tolerance=-1e-6,
+                random_seed=TEST_SEED,
+            )
+
+    def test_shock_copies_zero_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                shock_copies=0,
+                random_seed=TEST_SEED,
+            )
+
+    def test_simulation_steps_zero_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                simulation_steps=0,
+                random_seed=TEST_SEED,
+            )
+
+    def test_network_width_zero_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                network_width=0,
+                random_seed=TEST_SEED,
+            )
+
+    def test_epochs_per_iteration_zero_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                epochs_per_iteration=0,
+                random_seed=TEST_SEED,
+            )
+
+    def test_none_bellman_period_raises(self):
+        with self.assertRaises(TypeError):
+            maliar.maliar_training_loop(
+                None,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                random_seed=TEST_SEED,
+            )
+
+    def test_non_callable_loss_raises(self):
+        with self.assertRaises(TypeError):
+            maliar.maliar_training_loop(
+                self.bp,
+                "not_a_function",
+                self.states,
+                self.calibration,
+                random_seed=TEST_SEED,
+            )
+
+    def test_none_parameters_raises(self):
+        with self.assertRaises(TypeError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                None,
+                random_seed=TEST_SEED,
+            )
+
+
+class TestMaliarHyperparameters(unittest.TestCase):
+    """Test that network_width and epochs_per_iteration affect training."""
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+
+        self.bp = case_4["bp"]
+        self.states = grid.Grid.from_config(
+            {
+                "m": {"min": 0, "max": 5, "count": 3},
+                "g": {"min": 0, "max": 5, "count": 3},
+            }
+        )
+        self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
+            self.bp, 2, case_4["calibration"]
+        )
+        self.calibration = case_4["calibration"]
+
+    def test_network_width_affects_parameter_count(self):
+        net_narrow, _ = maliar.maliar_training_loop(
+            self.bp,
+            self.loss_fn,
+            self.states,
+            self.calibration,
+            network_width=8,
+            max_iterations=1,
+            random_seed=TEST_SEED,
+        )
+        net_wide, _ = maliar.maliar_training_loop(
+            self.bp,
+            self.loss_fn,
+            self.states,
+            self.calibration,
+            network_width=32,
+            max_iterations=1,
+            random_seed=TEST_SEED,
+        )
+
+        params_narrow = sum(p.numel() for p in net_narrow.parameters())
+        params_wide = sum(p.numel() for p in net_wide.parameters())
+        self.assertGreater(
+            params_wide,
+            params_narrow,
+            "Wider network should have more parameters",
+        )
