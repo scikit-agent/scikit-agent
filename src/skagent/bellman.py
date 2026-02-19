@@ -83,17 +83,17 @@ class BellmanPeriod:
         self, decision_rules: dict[str, Callable] | None
     ) -> dict[str, Callable]:
         """Resolve decision rules with fallback to instance attribute then empty dict."""
-        if decision_rules is not None:
+        if decision_rules:
             return decision_rules
-        if self.decision_rules is not None:
+        if self.decision_rules:
             return self.decision_rules
         return {}
 
     def _resolve_parameters(self, parameters: dict[str, Any] | None) -> dict[str, Any]:
         """Resolve parameters with fallback to instance calibration then empty dict."""
-        if parameters is not None:
+        if parameters:
             return parameters
-        if self.calibration is not None:
+        if self.calibration:
             return self.calibration
         return {}
 
