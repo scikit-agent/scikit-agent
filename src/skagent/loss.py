@@ -198,16 +198,76 @@ class EstimatedDiscountedLifetimeRewardLoss:
         return -edlr
 
 
-class BellmanEquationLoss:
+class _EquationLossBase:
+    """
+    Private base class for Bellman and Euler equation losses.
+
+    Stores shared setup (bellman_period, arrival_variables, shock_syms, reward
+    validation) and provides ``_extract_states_and_shocks`` to avoid duplicate
+    grid-extraction logic in subclass ``__call__`` methods.
+    """
+
+    def __init__(self, bellman_period, parameters=None, agent=None):
+        self.bellman_period = bellman_period
+        self.parameters = parameters
+        self.arrival_variables = bellman_period.arrival_states
+
+        shock_vars = self.bellman_period.get_shocks()
+        self.shock_syms = list(shock_vars.keys())
+
+        self.agent = agent
+
+        # Validate that reward variables exist (raises ValueError with agent context)
+        bellman_period.get_reward_sym(agent)
+
+    def _extract_states_and_shocks(self, input_grid: Grid):
+        """Extract states and two-period shocks from *input_grid*.
+
+        Returns
+        -------
+        states_t : dict
+        shocks : dict  (keys ``{sym}_0`` and ``{sym}_1``)
+        """
+        given_vals = input_grid.to_dict()
+
+        missing_states = [
+            sym for sym in self.arrival_variables if sym not in given_vals
+        ]
+        if missing_states:
+            raise KeyError(
+                f"Missing arrival state variable(s) {missing_states} in input_grid. "
+                f"Expected: {sorted(self.arrival_variables)}."
+            )
+        states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
+
+        for sym in self.shock_syms:
+            if f"{sym}_0" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+            if f"{sym}_1" not in given_vals:
+                raise KeyError(
+                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
+                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
+                )
+
+        shocks = {
+            f"{sym}_{i}": given_vals[f"{sym}_{i}"]
+            for sym in self.shock_syms
+            for i in (0, 1)
+        }
+
+        return states_t, shocks
+
+
+class BellmanEquationLoss(_EquationLossBase):
     """
     Creates a Bellman equation loss function for the Maliar method.
 
     The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
     where s' = f(s,c,ε) is the next state given current state s, control c, and shock ε,
     and the expectation E_ε' is taken over future shock realizations ε'.
-
-    This follows the same pattern as get_estimated_discounted_lifetime_reward_loss
-    and is designed for use with the Maliar all-in-one approach.
 
     This function expects the input grid to contain two independent shock realizations:
     - {shock_sym}_0: shocks for period t (used for immediate reward and transitions)
@@ -223,35 +283,11 @@ class BellmanEquationLoss:
         Model parameters for calibration
     agent : str, optional
         Agent identifier for rewards
-
-    Returns
-    -------
-    callable
-        A loss function that takes (decision_function, input_grid) and returns
-        the Bellman equation residual loss
     """
 
-    def __init__(self, bellman_period, value_network, parameters={}, agent=None):
-        self.bellman_period = bellman_period
-        self.parameters = parameters
-        self.arrival_variables = bellman_period.arrival_states
-
+    def __init__(self, bellman_period, value_network, parameters=None, agent=None):
+        super().__init__(bellman_period, parameters=parameters, agent=agent)
         self.value_network = value_network
-
-        # Get shock variables
-        shock_vars = self.bellman_period.get_shocks()
-        self.shock_syms = list(shock_vars.keys())
-
-        self.agent = agent
-        # Test reward variables
-        # TODO: move this to BP
-        reward_vars = [
-            sym
-            for sym in self.bellman_period.block.reward
-            if agent is None or self.bellman_period.block.reward[sym] == self.agent
-        ]
-        if len(reward_vars) == 0:
-            raise ValueError("No reward variables found in block")
 
     def __call__(self, df, input_grid: Grid):
         """
@@ -271,28 +307,8 @@ class BellmanEquationLoss:
         torch.Tensor
             Bellman equation residual loss (squared)
         """
-        given_vals = input_grid.to_dict()
+        states_t, shocks = self._extract_states_and_shocks(input_grid)
 
-        # Extract current states and both shock realizations
-        states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
-
-        # Validate shock keys exist in grid
-        for sym in self.shock_syms:
-            if f"{sym}_0" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
-            if f"{sym}_1" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
-
-        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
-        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
-
-        # Use helper function to estimate Bellman residual with combined shock object
         bellman_residual = estimate_bellman_residual(
             self.bellman_period,
             self.value_network,
@@ -303,11 +319,10 @@ class BellmanEquationLoss:
             self.agent,
         )
 
-        # Return squared residual as loss
         return bellman_residual**2
 
 
-class EulerEquationLoss:
+class EulerEquationLoss(_EquationLossBase):
     """
     Creates an Euler equation loss function for the Maliar method.
 
@@ -412,8 +427,8 @@ class EulerEquationLoss:
         The discount factor β (time preference parameter).
 
         .. note::
-            In a future version (see PR #168), the discount factor will be obtained
-            from the BellmanPeriod object directly rather than passed as a parameter.
+            In a future version, the discount factor may be obtained from the
+            BellmanPeriod object directly rather than passed as a parameter.
 
     parameters : dict, optional
         Model parameters for calibration
@@ -496,25 +511,18 @@ class EulerEquationLoss:
         weight=1.0,
         constrained=False,
     ):
-        self.bellman_period = bellman_period
-        self.parameters = parameters if parameters is not None else {}
-        self.arrival_variables = bellman_period.arrival_states
-
-        self.discount_factor = discount_factor
         if callable(discount_factor):
             raise ValueError(
                 "Currently only numerical, not state-dependent, discount factors are supported."
             )
 
-        # Get shock variables
-        shock_vars = self.bellman_period.get_shocks()
-        self.shock_syms = list(shock_vars.keys())
+        super().__init__(bellman_period, parameters=parameters, agent=agent)
 
-        self.agent = agent
+        self.discount_factor = discount_factor
+
         self.weight = weight
         self.constrained = constrained
 
-        # Warn if constrained=True but no control has an upper_bound
         if self.constrained:
             has_upper_bound = any(
                 hasattr(rule, "upper_bound") and rule.upper_bound is not None
@@ -527,15 +535,6 @@ class EulerEquationLoss:
                     "The one-sided loss is intended for models with upper-bound "
                     "constraints on controls (e.g., c <= m)."
                 )
-
-        # Test reward variables
-        reward_vars = [
-            sym
-            for sym in self.bellman_period.block.reward
-            if agent is None or self.bellman_period.block.reward[sym] == self.agent
-        ]
-        if len(reward_vars) == 0:
-            raise ValueError("No reward variables found in block")
 
     def __call__(self, df, input_grid: Grid):
         """
@@ -564,28 +563,8 @@ class EulerEquationLoss:
         are independent. This reduces the number of integration nodes from p^d
         (tensor product) to just 2, regardless of the number of shocks.
         """
-        given_vals = input_grid.to_dict()
+        states_t, shocks = self._extract_states_and_shocks(input_grid)
 
-        # Extract current states and both shock realizations
-        states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
-
-        # Validate shock keys exist in grid
-        for sym in self.shock_syms:
-            if f"{sym}_0" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
-            if f"{sym}_1" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
-
-        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in self.shock_syms}
-        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in self.shock_syms})
-
-        # Use helper function to estimate Euler residual with combined shock object
         euler_residual = estimate_euler_residual(
             self.bellman_period,
             self.discount_factor,

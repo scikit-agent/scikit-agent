@@ -515,7 +515,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.decision_function,
             states_t,
             shocks_identical,
-            parameters={},
+            parameters=None,
         )
 
         residual_independent = bellman.estimate_bellman_residual(
@@ -524,7 +524,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.decision_function,
             states_t,
             shocks_independent,
-            parameters={},
+            parameters=None,
         )
 
         # Results should be different when using independent vs identical shocks
@@ -604,7 +604,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
                 self.decision_function,
                 states_t,
                 shocks_missing_t1,
-                parameters={},
+                parameters=None,
             )
 
 
@@ -694,7 +694,7 @@ def test_bellman_equation_loss_with_value_network():
 
     # Create loss function
     loss_fn = loss.BellmanEquationLoss(
-        test_bp, value_net.get_value_function(), parameters={}
+        test_bp, value_net.get_value_function(), parameters=None
     )
 
     # Test that loss function works

@@ -83,17 +83,17 @@ class BellmanPeriod:
         self, decision_rules: dict[str, Callable] | None
     ) -> dict[str, Callable]:
         """Resolve decision rules with fallback to instance attribute then empty dict."""
-        if decision_rules:
+        if decision_rules is not None:
             return decision_rules
-        if self.decision_rules:
+        if self.decision_rules is not None:
             return self.decision_rules
         return {}
 
     def _resolve_parameters(self, parameters: dict[str, Any] | None) -> dict[str, Any]:
         """Resolve parameters with fallback to instance calibration then empty dict."""
-        if parameters:
+        if parameters is not None:
             return parameters
-        if self.calibration:
+        if self.calibration is not None:
             return self.calibration
         return {}
 
@@ -110,6 +110,30 @@ class BellmanPeriod:
     def get_shocks(self) -> dict[str, Any]:
         """Get shock distributions from the block."""
         return self.block.get_shocks()
+
+    def get_reward_sym(self, agent: str | None = None) -> str:
+        """Return the first reward symbol for *agent* (or any agent if *agent* is None).
+
+        If multiple reward symbols match, only the first is returned.
+        Models with multiple rewards per agent are not currently supported.
+
+        Raises
+        ------
+        ValueError
+            If no reward variables match the given agent.
+        """
+        reward_vars = [
+            sym
+            for sym in self.block.reward
+            if agent is None or self.block.reward[sym] == agent
+        ]
+        if not reward_vars:
+            raise ValueError(
+                f"No reward variables found in block for agent '{agent}'"
+                if agent is not None
+                else "No reward variables found in block"
+            )
+        return reward_vars[0]
 
     def transition_function(
         self,
@@ -504,6 +528,79 @@ class BellmanPeriod:
         return pre_state_values
 
 
+def _compute_marginal_utility(
+    bellman_period: BellmanPeriod,
+    states: dict[str, Any],
+    shocks: dict[str, Any],
+    controls: dict[str, Any],
+    control_sym: str,
+    reward_sym: str,
+    parameters: dict[str, Any],
+    agent: str | None = None,
+    period_label: str = "t",
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute marginal utility of *control_sym* through *reward_sym*.
+
+    Ensures the control tensor requires gradients, computes the reward, and
+    differentiates with ``create_graph=True`` so the policy network stays in
+    the computation graph for end-to-end training.
+
+    Returns
+    -------
+    c : torch.Tensor
+        The (possibly detached-and-re-attached) control tensor used for
+        gradient computation.  Callers need this to chain further derivatives
+        (e.g. transition gradients).
+    marginal_utility : torch.Tensor
+        :math:`\\partial u / \\partial c`, with the computation graph retained.
+    """
+    c = controls[control_sym]
+    if not c.requires_grad:
+        c = c.detach().requires_grad_(True)
+
+    controls_grad = {**controls, control_sym: c}
+
+    reward = bellman_period.reward_function(
+        states, shocks, controls_grad, parameters, agent=agent
+    )[reward_sym]
+
+    mu = grad(
+        reward.sum(),
+        c,
+        create_graph=True,
+        retain_graph=True,
+        allow_unused=True,
+    )[0]
+
+    if mu is None:
+        raise ValueError(
+            f"Could not compute marginal utility at period {period_label}: "
+            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+        )
+
+    return c, mu
+
+
+def _resolve_df(
+    df: dict[str, Callable] | Callable,
+    bellman_period: BellmanPeriod,
+    states: dict[str, Any],
+    shocks: dict[str, Any],
+    parameters: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Return controls by calling *df* (callable) or using decision rules (dict)."""
+    if callable(df):
+        return df(states, shocks, parameters if parameters is not None else {})
+    if not isinstance(df, dict):
+        raise TypeError(
+            f"df must be a callable decision function or a dict of decision rules, "
+            f"got {type(df).__name__!r}"
+        )
+    return bellman_period.decision_function(
+        states, shocks, parameters, decision_rules=df
+    )
+
+
 def estimate_discounted_lifetime_reward(
     bellman_period: BellmanPeriod,
     dr: dict[str, Callable] | Callable,
@@ -544,9 +641,6 @@ def estimate_discounted_lifetime_reward(
     float | torch.Tensor
         The total discounted lifetime reward.
     """
-    if parameters is None:
-        parameters = {}
-
     states_t = states_0
     total_discounted_reward = 0
 
@@ -563,14 +657,7 @@ def estimate_discounted_lifetime_reward(
         else:
             shocks_t = {}
 
-        if callable(dr):
-            # assume a full decision function has been passed in
-            controls_t = dr(states_t, shocks_t, parameters)
-        else:
-            # create a decision function from the decision rule
-            controls_t = bellman_period.decision_function(
-                states_t, shocks_t, parameters, decision_rules=dr
-            )
+        controls_t = _resolve_df(dr, bellman_period, states_t, shocks_t, parameters)
 
         post = bellman_period.post_function(
             states_t, shocks_t, controls_t, parameters, agent=agent
@@ -665,9 +752,6 @@ def estimate_bellman_residual(
     ValueError
         If no reward variables are found in the block.
     """
-    if parameters is None:
-        parameters = {}
-
     # Get shock variable names
     shock_vars = bellman_period.get_shocks()
     shock_syms = list(shock_vars.keys())
@@ -676,25 +760,16 @@ def estimate_bellman_residual(
     shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
     shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
 
-    # Get reward variables (filter by agent if specified)
-    reward_vars = [
-        sym
-        for sym in bellman_period.block.reward
-        if agent is None or bellman_period.block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
-        raise ValueError(
-            f"No reward variables found in block for agent '{agent}'"
-            if agent
-            else "No reward variables found in block"
-        )
-    reward_sym = reward_vars[0]  # Assume single reward for now
+    reward_sym = bellman_period.get_reward_sym(agent)
+
+    # External callables may not handle None, so default to {}
+    params_ext = parameters if parameters is not None else {}
 
     # Get current value estimates (using period t shocks)
-    current_values = value_function(states_t, shocks_t, parameters)
+    current_values = value_function(states_t, shocks_t, params_ext)
 
     # Get controls from decision function (using period t shocks)
-    controls_t = df(states_t, shocks_t, parameters)
+    controls_t = df(states_t, shocks_t, params_ext)
 
     # Compute immediate reward (using period t shocks)
     immediate_reward = bellman_period.reward_function(
@@ -707,7 +782,7 @@ def estimate_bellman_residual(
     )
 
     # Compute continuation value using value network (using period t+1 shocks)
-    continuation_values = value_function(next_states, shocks_t_plus_1, parameters)
+    continuation_values = value_function(next_states, shocks_t_plus_1, params_ext)
 
     # TODO: this is all calling the forward simulation multiple times;
     #       can be made more efficient
@@ -865,9 +940,6 @@ def estimate_euler_residual(
     ...     states_t, shocks, parameters
     ... )
     """
-    if parameters is None:
-        parameters = {}
-
     if callable(discount_factor):
         raise ValueError(
             "State-dependent discount factors not yet supported for Euler residuals. "
@@ -896,26 +968,10 @@ def estimate_euler_residual(
     shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
     shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
 
-    # Get reward variables (should have exactly one for standard Euler equation)
-    reward_vars = [
-        sym
-        for sym in bellman_period.block.reward
-        if agent is None or bellman_period.block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
-        raise ValueError("No reward variables found in block for the specified agent")
-
-    reward_sym = reward_vars[0]
+    reward_sym = bellman_period.get_reward_sym(agent)
 
     # Get controls from decision function for period t
-    if callable(df):
-        # Full decision function provided
-        controls_t = df(states_t, shocks_t, parameters)
-    else:
-        # Dictionary of decision rules provided
-        controls_t = bellman_period.decision_function(
-            states_t, shocks_t, parameters, decision_rules=df
-        )
+    controls_t = _resolve_df(df, bellman_period, states_t, shocks_t, parameters)
 
     # Compute next period states (t+1) using first shock realization
     states_t_plus_1 = bellman_period.transition_function(
@@ -923,12 +979,9 @@ def estimate_euler_residual(
     )
 
     # Get controls for period t+1 using second independent shock realization
-    if callable(df):
-        controls_t_plus_1 = df(states_t_plus_1, shocks_t_plus_1, parameters)
-    else:
-        controls_t_plus_1 = bellman_period.decision_function(
-            states_t_plus_1, shocks_t_plus_1, parameters, decision_rules=df
-        )
+    controls_t_plus_1 = _resolve_df(
+        df, bellman_period, states_t_plus_1, shocks_t_plus_1, parameters
+    )
 
     # Get control symbols to compute gradients with respect to
     control_syms = list(controls_t.keys())
@@ -940,80 +993,38 @@ def estimate_euler_residual(
             f"Found controls: {control_syms}"
         )
 
-    control_sym = control_syms[0]  # Assume single control for now
+    control_sym = control_syms[0]
 
-    # For training, we need to compute marginal utilities while keeping the policy
-    # in the computation graph. We use create_graph=True to allow backprop through
-    # the gradient computation itself.
-    #
-    # The approach:
-    # 1. Compute reward with controls that require grad
-    # 2. Use autograd to get u'(c) w.r.t. c, with create_graph=True
-    # 3. This keeps the policy network in the graph for end-to-end training
-
-    # Enable gradients on the original controls (not detached copies)
-    c_t = controls_t[control_sym]
-    c_t_plus_1 = controls_t_plus_1[control_sym]
-
-    # Ensure controls require gradients for computing marginal utility
-    if not c_t.requires_grad:
-        c_t = c_t.detach().requires_grad_(True)
-    if not c_t_plus_1.requires_grad:
-        c_t_plus_1 = c_t_plus_1.detach().requires_grad_(True)
-
-    # Build controls dicts with grad-enabled tensors
-    controls_t_grad = {**controls_t, control_sym: c_t}
-    controls_t_plus_1_grad = {**controls_t_plus_1, control_sym: c_t_plus_1}
-
-    # Compute reward at t and get marginal utility u'(c_t)
-    rewards_t = bellman_period.reward_function(
-        states_t, shocks_t, controls_t_grad, parameters, agent=agent
+    # Marginal utilities at t and t+1.
+    # See _compute_marginal_utility for the create_graph=True approach that keeps
+    # the policy network in the computation graph for end-to-end training.
+    c_t, marginal_utility_t = _compute_marginal_utility(
+        bellman_period,
+        states_t,
+        shocks_t,
+        controls_t,
+        control_sym,
+        reward_sym,
+        parameters,
+        agent,
+        period_label="t",
     )
-    reward_t = rewards_t[reward_sym]
-
-    # Compute marginal utility at t: u'(c_t) = ∂u/∂c
-    # Use create_graph=True to keep policy in computation graph for training
-    marginal_utility_t = grad(
-        reward_t.sum(),
-        c_t,
-        create_graph=True,
-        retain_graph=True,
-        allow_unused=True,
-    )[0]
-
-    if marginal_utility_t is None:
-        raise ValueError(
-            f"Could not compute marginal utility: reward '{reward_sym}' "
-            f"does not depend on control '{control_sym}'"
-        )
-
-    # Compute reward at t+1 and get marginal utility u'(c_{t+1})
-    rewards_t_plus_1 = bellman_period.reward_function(
+    _, marginal_utility_t_plus_1 = _compute_marginal_utility(
+        bellman_period,
         states_t_plus_1,
         shocks_t_plus_1,
-        controls_t_plus_1_grad,
+        controls_t_plus_1,
+        control_sym,
+        reward_sym,
         parameters,
-        agent=agent,
+        agent,
+        period_label="t+1",
     )
-    reward_t_plus_1 = rewards_t_plus_1[reward_sym]
-
-    marginal_utility_t_plus_1 = grad(
-        reward_t_plus_1.sum(),
-        c_t_plus_1,
-        create_graph=True,
-        retain_graph=True,
-        allow_unused=True,
-    )[0]
-
-    if marginal_utility_t_plus_1 is None:
-        raise ValueError(
-            f"Could not compute marginal utility at t+1: reward '{reward_sym}' "
-            f"does not depend on control '{control_sym}'"
-        )
 
     # Compute transition gradients: ∂s_{t+1}/∂c_t for all arrival states
     # This captures how today's control affects tomorrow's state (e.g., ∂a'/∂c = -1)
     # We need create_graph=True here too for end-to-end training
+    controls_t_grad = {**controls_t, control_sym: c_t}
     next_states = bellman_period.transition_function(
         states_t, shocks_t, controls_t_grad, parameters
     )
@@ -1092,7 +1103,6 @@ def estimate_euler_residual(
     # For consumption-saving: ∂a'/∂c = -1, ∂m'/∂a' = R
     # So: f = u'(c) + β * u'(c') * (-1) * R = u'(c) - βR*u'(c')
 
-    # return_factor_sum already contains (∂a'/∂c * ∂m'/∂a') summed over states
     euler_residual = (
         marginal_utility_t
         + discount_factor * marginal_utility_t_plus_1 * return_factor_sum
