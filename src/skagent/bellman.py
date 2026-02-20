@@ -89,12 +89,8 @@ class BellmanPeriod:
         return {}
 
     def _resolve_parameters(self, parameters: dict[str, Any] | None) -> dict[str, Any]:
-        """Resolve parameters with fallback to instance calibration then empty dict."""
-        if parameters is not None:
-            return parameters
-        if self.calibration is not None:
-            return self.calibration
-        return {}
+        """Resolve parameters with fallback to instance calibration."""
+        return parameters if parameters is not None else self.calibration
 
     def get_arrival_states(self, calibration: dict[str, Any] | None = None) -> set[str]:
         """Get arrival state variable names for given calibration."""
@@ -185,7 +181,7 @@ class BellmanPeriod:
             If *df* is neither callable nor a dict.
         """
         if callable(df):
-            params = parameters if parameters is not None else {}
+            params = self._resolve_parameters(parameters)
             return df(states_t, shocks_t, params)
         if not isinstance(df, dict):
             raise TypeError(
@@ -303,11 +299,7 @@ class BellmanPeriod:
         post = self.block.transition(
             vals_t, decision_rules, fix=list(controls_t.keys())
         )
-        return {
-            sym: post[sym]
-            for sym in self.block.reward
-            if agent is None or self.block.reward[sym] == agent
-        }
+        return {sym: post[sym] for sym in self.get_reward_syms(agent)}
 
     def post_function(
         self,
@@ -356,6 +348,7 @@ class BellmanPeriod:
         shocks_t: dict[str, Any],
         controls_t: dict[str, Any],
         wrt: dict[str, torch.Tensor],
+        *,
         parameters: dict[str, Any] | None = None,
         agent: str | None = None,
         decision_rules: dict[str, Callable] | None = None,
@@ -402,7 +395,8 @@ class BellmanPeriod:
         post = self.block.transition(
             vals_t, decision_rules, fix=list(controls_t.keys())
         )
-        # TODO: refactor with post-function
+        # Calls block.transition directly (rather than post_function) to keep
+        # the exact computation graph needed for autograd differentiation.
 
         # Filter rewards by agent
         rewards = {sym: post[sym] for sym in self.get_reward_syms(agent)}
@@ -416,6 +410,7 @@ class BellmanPeriod:
         shocks_t: dict[str, Any],
         controls_t: dict[str, Any],
         wrt: dict[str, torch.Tensor],
+        *,
         parameters: dict[str, Any] | None = None,
         decision_rules: dict[str, Callable] | None = None,
         create_graph: bool = False,
@@ -425,7 +420,8 @@ class BellmanPeriod:
 
         This computes ∂s_{t+1}/∂x for each arrival state s_{t+1} and each variable x
         specified in wrt. This is needed for Euler equations where the gradient of
-        future states with respect to current controls appears (e.g., ∂A_{t+1}/∂c_t = -R).
+        future states with respect to current controls appears (e.g., ∂a_{t+1}/∂c_t = -1
+        for the budget constraint a_{t+1} = m_t - c_t).
 
         Parameters
         ----------
@@ -467,6 +463,7 @@ class BellmanPeriod:
         states_t: dict[str, Any],
         shocks_t: dict[str, Any],
         wrt: dict[str, torch.Tensor],
+        *,
         parameters: dict[str, Any] | None = None,
         control_sym: str | None = None,
         create_graph: bool = False,
@@ -529,11 +526,14 @@ class BellmanPeriod:
             raise ValueError("No control with pre-state found in block dynamics")
 
         control_rule = self.block.dynamics.get(control_sym)
-        if control_rule is not None and hasattr(control_rule, "iset"):
-            pre_state_vars = control_rule.iset
-        else:
-            # Fall back: assume control depends on arrival states directly
-            pre_state_vars = list(self.arrival_states)
+        if control_rule is None or not hasattr(control_rule, "iset"):
+            raise ValueError(
+                f"Control '{control_sym}' has no pre-state (iset) attribute defined. "
+                f"Ensure the Control object in block.dynamics['{control_sym}'] is "
+                "constructed with an explicit 'iset' argument specifying which "
+                "variables the control depends on."
+            )
+        pre_state_vars = control_rule.iset
 
         # Compute pre-state values using helper method
         pre_state_values = self._compute_pre_state_values(
@@ -590,7 +590,15 @@ class BellmanPeriod:
                 rule = self.block.dynamics[var_name]
                 if callable(rule):
                     sig = inspect.signature(rule)
-                    args = {p: vals[p] for p in sig.parameters if p in vals}
+                    missing = [p for p in sig.parameters if p not in vals]
+                    if missing:
+                        raise KeyError(
+                            f"Pre-state dynamics rule for '{var_name}' requires "
+                            f"parameter(s) {missing} which are not available in "
+                            f"states, shocks, or parameters. "
+                            f"Available keys: {sorted(vals.keys())}"
+                        )
+                    args = {p: vals[p] for p in sig.parameters}
                     pre_state_values[var_name] = rule(**args)
                 else:
                     pre_state_values[var_name] = rule
@@ -624,6 +632,11 @@ def _extract_period_shocks(
     ------
     KeyError
         If a required shock key is missing.
+
+    Notes
+    -----
+    For deterministic models with no shocks, ``shock_syms`` is empty,
+    no keys are required in *shocks*, and both returned dicts are empty.
     """
     shock_syms = list(bellman_period.get_shocks())
     for sym in shock_syms:
@@ -656,6 +669,11 @@ def _ensure_grad(
     Returns the (possibly new) tensor and an updated copy of *controls*.
     """
     c = controls[sym]
+    if not isinstance(c, torch.Tensor):
+        raise TypeError(
+            f"Control '{sym}' must be a torch.Tensor for gradient computation, "
+            f"got {type(c).__name__}"
+        )
     if not c.requires_grad:
         c = c.detach().requires_grad_(True)
     return c, {**controls, sym: c}
@@ -670,7 +688,7 @@ def estimate_discounted_lifetime_reward(
     parameters: dict[str, Any] | None = None,
     agent: str | None = None,
 ) -> float | torch.Tensor:
-    """
+    r"""
     Compute the discounted lifetime reward for a model given a fixed T of periods to simulate forward.
 
     Based on Maliar, Maliar, and Winant (2021, JME).
@@ -690,7 +708,8 @@ def estimate_discounted_lifetime_reward(
         Number of time steps to simulate forward.
     shocks_by_t : dict[str, Any] | None, optional
         Dictionary mapping shock symbols to arrays of shock values at each
-        time period. Shape should be (big_t, ...) for each shock.
+        time period. The first axis must have length ``big_t``; remaining
+        axes are batch dimensions (e.g., shape ``(big_t, n_samples)``).
     parameters : dict[str, Any] | None, optional
         Calibration parameters (defaults to empty dict).
     agent : str | None, optional
@@ -702,8 +721,8 @@ def estimate_discounted_lifetime_reward(
         The total discounted lifetime reward.
     """
     states_t = states_0
-    total_discounted_reward = 0
-    cumulative_discount = 1  # Π_{τ=0}^{t-1} β_τ
+    total_discounted_reward = 0.0
+    cumulative_discount = 1.0  # Π_{τ=0}^{t-1} β_τ
 
     reward_syms = bellman_period.get_reward_syms(agent)
 
@@ -720,6 +739,14 @@ def estimate_discounted_lifetime_reward(
         post = bellman_period.post_function(
             states_t, shocks_t, controls_t, parameters, agent=agent
         )
+        if bellman_period.discount_variable not in post:
+            raise KeyError(
+                f"Discount variable '{bellman_period.discount_variable}' not found "
+                f"in post-transition output. "
+                f"Available variables: {sorted(post.keys())}. "
+                "Ensure the discount variable is defined in block.dynamics "
+                "or passed in calibration."
+            )
         discount_factor = post[bellman_period.discount_variable]
 
         reward_t = bellman_period.reward_function(
@@ -838,6 +865,14 @@ def estimate_bellman_residual(
     # TODO: this is all calling the forward simulation multiple times;
     #       can be made more efficient
     post = bellman_period.post_function(states_t, shocks_t, controls_t, parameters)
+    if bellman_period.discount_variable not in post:
+        raise KeyError(
+            f"Discount variable '{bellman_period.discount_variable}' not found "
+            f"in post-transition output. "
+            f"Available variables: {sorted(post.keys())}. "
+            "Ensure the discount variable is defined in block.dynamics "
+            "or passed in calibration."
+        )
     discount_factor = post[bellman_period.discount_variable]
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
@@ -987,8 +1022,7 @@ def estimate_euler_residual(
     --------
     >>> # Euler equation automatically adapts to your model's reward structure
     >>> residual = estimate_euler_residual(
-    ...     bp, discount_factor=0.95, df=my_policy,
-    ...     states_t, shocks, parameters
+    ...     bp, 0.95, my_policy, states_t, shocks, parameters
     ... )
     """
     if callable(discount_factor):
@@ -1116,8 +1150,19 @@ def estimate_euler_residual(
             if pre_state_grad is not None:
                 return_factor_sum = return_factor_sum + pre_state_grad * trans_grad
 
+    # Verify that at least one chain-rule path contributed
+    if not torch.any(return_factor_sum != 0):
+        raise ValueError(
+            "Euler residual: return_factor_sum is zero for all arrival states. "
+            "No arrival state depends on the control through the transition "
+            "and pre-state gradients. Check that the block dynamics correctly "
+            f"connect the control '{control_sym}' to the arrival states "
+            f"{sorted(bellman_period.arrival_states)} and that the Control "
+            "object has a properly defined 'iset'."
+        )
+
     # Euler equation residual.
-    # FOC: u'(c_t) = -β * V'(s') * ∂s'/∂c
+    # FOC: u'(c_t) = -β * Σ_s [V'(s') * ∂s'/∂c_t]
     # Envelope: V'(s') = u'(c') * ∂m'/∂s'
     # Residual: f = u'(c_t) + β * u'(c_{t+1}) * Σ_s [∂m'/∂s' * ∂s'/∂c] = 0
     #

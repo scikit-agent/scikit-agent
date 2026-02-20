@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import numpy as np
@@ -123,9 +125,10 @@ def compute_gradients_for_tensors(
     For batched inputs, this computes the diagonal of the Jacobian: for each
     batch element *i*, we compute ∂target[i]/∂var[i]. The implementation
     uses ``grad(target.sum(), var)``, which yields the correct diagonal
-    whenever target[i] depends only on var[i] (agent-independence). This
-    assumption holds in the Bellman context because each agent's
-    state and reward are computed independently.
+    whenever target[i] depends only on var[i] (sample-independence). This
+    assumption holds when each batch element is computed independently,
+    which is the case for element-wise reward and transition functions in
+    this library.
 
     For scalar inputs, ``.sum()`` is a no-op, so the same code path handles
     both cases without branching.
@@ -145,8 +148,12 @@ def compute_gradients_for_tensors(
     -------
     dict[str, dict[str, torch.Tensor | None]]
         Nested dictionary of gradients for each tensor symbol and variable:
-        ``{tensor_sym: {var_name: gradient}}``. Gradient is ``None`` if the
-        variable does not require gradients or the target does not depend on it.
+        ``{tensor_sym: {var_name: gradient}}``. Gradient is ``None`` if and
+        only if the variable does not require gradients or no computational
+        graph path exists from the variable to the target tensor. A zero
+        tensor is returned when the dependency exists but evaluates to zero.
+        Callers should treat ``None`` as structural independence, not as a
+        zero gradient.
     """
     from torch.autograd import grad
 

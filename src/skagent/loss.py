@@ -1,12 +1,21 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
+import torch
+
 from skagent.bellman import (
+    _extract_period_shocks,
     estimate_bellman_residual,
     estimate_discounted_lifetime_reward,
     estimate_euler_residual,
 )
 from skagent.grid import Grid
-import torch
+
+if TYPE_CHECKING:
+    from skagent.bellman import BellmanPeriod
 
 logger = logging.getLogger(__name__)
 
@@ -21,43 +30,39 @@ def static_reward(
 ):
     """
     Returns the reward for an agent for a block, given a decision rule, states, shocks, and calibration.
-    bellman_period
-    dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
-    states - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
-    shocks- dict - sym : vector of shock values
-        # TODO: Here the shocks are given. We will want to streamline a way of sampling here.
-    parameters - optional - calibration parameters
-    other_dr - dict - decision rules for other controls to pass through.
-    agent - optional - name of reference agent for rewards
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The Bellman period object containing the model.
+    dr : dict or callable
+        Decision rules (dict of functions), or a decision function.
+    states : dict
+        Initial states, symbols to values.
+    shocks : dict, optional
+        Shock variable values.
+    parameters : dict, optional
+        Calibration parameters.
+    agent : str or None, optional
+        Name of reference agent for rewards.
     """
     if callable(dr):
-        # assume a full decision function has been passed in
         controls = dr(states, shocks, parameters)
     else:
         controls = bellman_period.decision_function(
             states, shocks, parameters, decision_rules=dr
         )
 
-    # this assumes only one reward is given.
-    # can be generalized in the future.
-    # move this logic to BellmanPeriod
-    rsym = list(
-        {
-            sym
-            for sym in bellman_period.block.reward
-            if agent is None or bellman_period.block.reward[sym] == agent
-        }
-    )[0]
+    rsym = bellman_period.get_reward_sym(agent)
 
     reward = bellman_period.reward_function(
         states, shocks, controls, parameters, agent=agent, decision_rules=dr
     )
 
-    # Maybe this can be less complicated because of unified array API
     if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):
-        raise Exception(f"Calculated reward {[rsym]} is NaN: {reward}")
+        raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
     if isinstance(reward[rsym], np.ndarray) and np.any(np.isnan(reward[rsym])):
-        raise Exception(f"Calculated reward {[rsym]} is NaN: {reward}")
+        raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
 
     return reward[rsym]
 
@@ -91,7 +96,6 @@ class CustomLoss:
         # override any decision rules if necessary
         fresh_dr = {**self.other_dr, **new_dr}
 
-        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         neg_loss = self.loss_function(
             self.block,
             fresh_dr,  # useful
@@ -129,7 +133,6 @@ class StaticRewardLoss:
         # override any decision rules if necessary
         fresh_dr = {**self.other_dr, **new_dr}
 
-        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         r = static_reward(
             self.bellman_period,
             fresh_dr,
@@ -184,7 +187,6 @@ class EstimatedDiscountedLifetimeRewardLoss:
             for sym in shock_vars
         }
 
-        # bellman_period, discount_factor, dr, states_0, big_t, parameters={}, agent=None
         edlr = estimate_discounted_lifetime_reward(
             self.bellman_period,
             df,
@@ -207,7 +209,18 @@ class _EquationLossBase:
     grid-extraction logic in subclass ``__call__`` methods.
     """
 
-    def __init__(self, bellman_period, parameters=None, agent=None):
+    bellman_period: BellmanPeriod
+    parameters: dict[str, Any] | None
+    arrival_variables: set[str]
+    shock_syms: list[str]
+    agent: str | None
+
+    def __init__(
+        self,
+        bellman_period: BellmanPeriod,
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+    ) -> None:
         self.bellman_period = bellman_period
         self.parameters = parameters
         self.arrival_variables = bellman_period.arrival_states
@@ -220,13 +233,17 @@ class _EquationLossBase:
         # Validate that reward variables exist (raises ValueError with agent context)
         bellman_period.get_reward_sym(agent)
 
-    def _extract_states_and_shocks(self, input_grid: Grid):
+    def _extract_states_and_shocks(
+        self, input_grid: Grid
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Extract states and two-period shocks from *input_grid*.
 
         Returns
         -------
         states_t : dict
-        shocks : dict  (keys ``{sym}_0`` and ``{sym}_1``)
+            Arrival state variables extracted from the grid.
+        shocks : dict
+            Combined shock dict with keys ``{sym}_0`` and ``{sym}_1``.
         """
         given_vals = input_grid.to_dict()
 
@@ -240,18 +257,17 @@ class _EquationLossBase:
             )
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
 
-        for sym in self.shock_syms:
-            if f"{sym}_0" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_0' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
-            if f"{sym}_1" not in given_vals:
-                raise KeyError(
-                    f"Missing '{sym}_1' in input_grid. For models with shocks, "
-                    f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-                )
+        # Build the combined shock dict and validate keys via _extract_period_shocks
+        shocks = {
+            f"{sym}_{i}": given_vals[f"{sym}_{i}"]
+            for sym in self.shock_syms
+            for i in (0, 1)
+            if f"{sym}_{i}" in given_vals
+        }
+        # Delegate validation to the canonical shock-extraction function
+        _extract_period_shocks(self.bellman_period, shocks)
 
+        # Re-build the full shock dict (including any keys that passed validation)
         shocks = {
             f"{sym}_{i}": given_vals[f"{sym}_{i}"]
             for sym in self.shock_syms
@@ -443,12 +459,6 @@ class EulerEquationLoss(_EquationLossBase):
         are not penalized because they indicate the control is at its upper bound,
         which is optimal behavior under the Kuhn-Tucker conditions.
 
-    Returns
-    -------
-    callable
-        A loss function that takes (decision_function, input_grid) and returns
-        the Euler equation residual loss
-
     Notes
     -----
     This implementation follows Maliar, Maliar, and Winant (2021, JME) Section 2.2
@@ -483,8 +493,8 @@ class EulerEquationLoss(_EquationLossBase):
     ...     },
     ...     reward={"utility": "consumer"}
     ... )
-    >>> bp = BellmanPeriod(block, parameters={"R": 1.04})
-    >>> loss_fn = EulerEquationLoss(bp, discount_factor=0.95, parameters={"R": 1.04})
+    >>> bp = BellmanPeriod(block, "beta", calibration={"R": 1.04, "beta": 0.95})
+    >>> loss_fn = EulerEquationLoss(bp, discount_factor=0.95, parameters={"R": 1.04, "beta": 0.95})
     >>>
     >>> # Create input grid with two shock realizations
     >>> input_grid = Grid.from_dict({
@@ -559,9 +569,10 @@ class EulerEquationLoss(_EquationLossBase):
 
         Notes
         -----
-        The AiO operator approximates E[(E[f])²] ≈ E[f(ε₁) * f(ε₂)] where ε₁ and ε₂
-        are independent. This reduces the number of integration nodes from p^d
-        (tensor product) to just 2, regardless of the number of shocks.
+        The residual f is computed using two independent shock realizations:
+        ε₀ for transitions from t to t+1, and ε₁ for transitions from t+1
+        to t+2 (following Maliar et al. 2021, Definition 2.7). The loss is
+        the squared residual, L = f(ε₀, ε₁)².
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
@@ -575,16 +586,11 @@ class EulerEquationLoss(_EquationLossBase):
             self.agent,
         )
 
-        # Return squared residual as loss
-        # Each sample's residual is computed using two independent shock draws (ε₀, ε₁).
-        # The AiO method approximates E[(E[f])²] (not E[f²], which is larger by Jensen).
         if self.constrained:
             # One-sided loss for upper-bound constrained controls:
-            # Only penalize NEGATIVE residuals (control exceeding its optimal level).
-            # Positive residuals indicate the control is at its upper bound,
-            # which is optimal behavior under the Kuhn-Tucker conditions.
-            # Using ReLU on -residual ensures we only penalize when residual < 0.
+            # only penalize negative residuals (control exceeding its optimal level).
+            # Positive residuals indicate the constraint is binding, which is optimal
+            # under the Kuhn-Tucker conditions.
             return self.weight * torch.relu(-euler_residual) ** 2
-        else:
-            # Standard two-sided loss for unconstrained models
-            return self.weight * euler_residual**2
+
+        return self.weight * euler_residual**2
