@@ -108,70 +108,49 @@ def compute_parameter_difference(params1, params2):
     return torch.norm(params1 - params2).item()
 
 
-def _compute_jacobian_diagonal(target_tensor, var_tensor, create_graph=False):
-    """
-    Compute diagonal of Jacobian: ∂target[i]/∂var[i] for each batch element.
-
-    Uses vectorized backward pass for efficiency.
-    """
-    from torch.autograd import grad
-
-    batch_size = target_tensor.shape[0]
-
-    # Use vectorized gradient computation with identity matrix as grad_outputs
-    # This computes all diagonal elements in one backward pass
-    grad_result = grad(
-        outputs=target_tensor,
-        inputs=var_tensor,
-        grad_outputs=torch.eye(batch_size, device=target_tensor.device),
-        retain_graph=True,
-        create_graph=create_graph,
-        allow_unused=True,
-        is_grads_batched=True,
-    )
-
-    if grad_result[0] is None:
-        return None
-
-    # Extract diagonal: result[i] = ∂target[i]/∂var[i]
-    jacobian = grad_result[0]  # Shape: (batch_size, batch_size) or (batch_size,)
-    if jacobian.dim() > 1:
-        return torch.diagonal(jacobian)
-    return jacobian
-
-
-def compute_gradients_for_tensors(tensors_dict, wrt, create_graph=False):
+def compute_gradients_for_tensors(
+    tensors_dict: dict[str, torch.Tensor],
+    wrt: dict[str, torch.Tensor],
+    create_graph: bool = False,
+) -> dict[str, dict[str, torch.Tensor | None]]:
     """
     Compute gradients for a dictionary of tensors with respect to variables.
 
-    This function computes gradients using PyTorch's autograd, handling both
-    scalar and batched tensor cases. It is used by grad_reward_function and
-    grad_transition_function in BellmanPeriod.
+    This function computes gradients using PyTorch's autograd. It is used by
+    the gradient methods on BellmanPeriod (``grad_reward_function``,
+    ``grad_transition_function``, and ``grad_pre_state_function``).
 
     For batched inputs, this computes the diagonal of the Jacobian: for each
-    batch element i, we compute ∂target[i]/∂var[i].
+    batch element *i*, we compute ∂target[i]/∂var[i]. The implementation
+    uses ``grad(target.sum(), var)``, which yields the correct diagonal
+    whenever target[i] depends only on var[i] (agent-independence). This
+    assumption holds in the Bellman context because each agent's
+    state and reward are computed independently.
+
+    For scalar inputs, ``.sum()`` is a no-op, so the same code path handles
+    both cases without branching.
 
     Parameters
     ----------
-    tensors_dict : dict
-        Dictionary mapping symbol names to tensors to compute gradients for
-    wrt : dict
+    tensors_dict : dict[str, torch.Tensor]
+        Dictionary mapping symbol names to tensors to compute gradients for.
+    wrt : dict[str, torch.Tensor]
         Dictionary of variables to compute gradients with respect to.
-        Keys are variable names, values are tensors with requires_grad=True
+        Keys are variable names, values are tensors with ``requires_grad=True``.
     create_graph : bool, optional
-        If True, graph of the derivative will be constructed, allowing
-        computation of higher order derivative products. Default: False.
-        Set to True for end-to-end training through gradient computations.
+        If True, the graph of the derivative is constructed, allowing
+        higher-order derivatives and end-to-end training. Default: False.
 
     Returns
     -------
-    dict
+    dict[str, dict[str, torch.Tensor | None]]
         Nested dictionary of gradients for each tensor symbol and variable:
-        {tensor_sym: {var_name: gradient}}
+        ``{tensor_sym: {var_name: gradient}}``. Gradient is ``None`` if the
+        variable does not require gradients or the target does not depend on it.
     """
     from torch.autograd import grad
 
-    gradients = {}
+    gradients: dict[str, dict[str, torch.Tensor | None]] = {}
     for tensor_sym, target_tensor in tensors_dict.items():
         gradients[tensor_sym] = {}
         for var_name, var_tensor in wrt.items():
@@ -179,22 +158,13 @@ def compute_gradients_for_tensors(tensors_dict, wrt, create_graph=False):
                 gradients[tensor_sym][var_name] = None
                 continue
 
-            # Batched case: compute diagonal Jacobian elements
-            if target_tensor.dim() > 0 and target_tensor.numel() > 1:
-                gradients[tensor_sym][var_name] = _compute_jacobian_diagonal(
-                    target_tensor, var_tensor, create_graph
-                )
-            else:
-                # Scalar case
-                grad_result = grad(
-                    target_tensor,
-                    var_tensor,
-                    retain_graph=True,
-                    create_graph=create_graph,
-                    allow_unused=True,
-                )
-                gradients[tensor_sym][var_name] = (
-                    grad_result[0] if grad_result[0] is not None else None
-                )
+            grad_result = grad(
+                target_tensor.sum(),
+                var_tensor,
+                retain_graph=True,
+                create_graph=create_graph,
+                allow_unused=True,
+            )
+            gradients[tensor_sym][var_name] = grad_result[0]
 
     return gradients
