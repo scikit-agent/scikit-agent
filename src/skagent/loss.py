@@ -50,13 +50,18 @@ def static_reward(
         controls = dr(states, shocks, parameters)
     else:
         controls = bellman_period.decision_function(
-            states, shocks, parameters, decision_rules=dr
+            states, shocks=shocks, parameters=parameters, decision_rules=dr
         )
 
     rsym = bellman_period.get_reward_sym(agent)
 
     reward = bellman_period.reward_function(
-        states, shocks, controls, parameters, agent=agent, decision_rules=dr
+        states,
+        controls,
+        shocks=shocks,
+        parameters=parameters,
+        agent=agent,
+        decision_rules=dr,
     )
 
     if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):

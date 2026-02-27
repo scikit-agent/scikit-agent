@@ -124,7 +124,7 @@ def simulate_forward(
         controls_t = decision_function(states_t, shocks_t, parameters)
 
         states_t = bellman_period.transition_function(
-            states_t, shocks_t, controls_t, parameters
+            states_t, controls_t, shocks=shocks_t, parameters=parameters
         )
 
     return states_t

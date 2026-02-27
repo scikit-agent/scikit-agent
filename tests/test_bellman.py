@@ -40,22 +40,20 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
         self.bp = bellman.BellmanPeriod(model.DBlock(**block_data), "beta", parameters)
 
     def test_transition_function(self):
-        states_1 = self.bp.transition_function(states_0, {}, decisions)
+        states_1 = self.bp.transition_function(states_0, decisions)
 
         self.assertAlmostEqual(states_1["a"], 0.7)
         self.assertEqual(states_1["e"], 0.1)
 
     def test_decision_function(self):
         decisions_0 = self.bp.decision_function(
-            states_0, {}, parameters=parameters, decision_rules=decision_rules
+            states_0, parameters=parameters, decision_rules=decision_rules
         )
 
         self.assertEqual(decisions_0["c"], 0.5)
 
     def test_reward_function(self):
-        reward_0 = self.bp.reward_function(
-            states_0, {}, decisions, parameters=parameters
-        )
+        reward_0 = self.bp.reward_function(states_0, decisions, parameters=parameters)
 
         self.assertAlmostEqual(reward_0["u"], -0.69314718)
 
@@ -250,7 +248,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c}  # Compute gradient w.r.t. consumption
 
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # For u = log(c), du/dc = 1/c = 1/0.5 = 2.0
         expected_grad = 1.0 / c
@@ -269,7 +267,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Compute gradients w.r.t. both variables
 
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # For u = log(c), du/dc = 1/c, du/da = 0 (unused variable)
         expected_grad_c = 1.0 / c
@@ -292,9 +290,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c1": c1, "c2": c2}
         wrt = {"c1": c1, "c2": c2}
 
-        gradients = self.multi_reward_bp.grad_reward_function(
-            states_t, {}, controls_t, wrt
-        )
+        gradients = self.multi_reward_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # For u1 = log(c1), du1/dc1 = 1/c1, du1/dc2 = 0
         # For u2 = -0.5*c2^2, du2/dc1 = 0, du2/dc2 = -c2
@@ -327,7 +323,7 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c1": c1}
 
         gradients = self.multi_reward_bp.grad_reward_function(
-            states_t, {}, controls_t, wrt, agent="consumer1"
+            states_t, controls_t, wrt, agent="consumer1"
         )
 
         # Should only contain u1 (consumer1's reward)
@@ -351,7 +347,7 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c": c, "theta": theta}
 
         gradients = self.shock_bp.grad_reward_function(
-            states_t, shocks_t, controls_t, wrt, parameters=parameters
+            states_t, controls_t, wrt, shocks=shocks_t, parameters=parameters
         )
 
         # For u = log(c + theta + eps), du/dc = 1/(c + theta + eps), du/dtheta = 1/(c + theta + eps)
@@ -380,7 +376,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Gradients needed for envelope condition
 
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # Check that we get gradients for the full batch
         self.assertEqual(gradients["u"]["c"].shape, (batch_size,))
@@ -401,7 +397,7 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c": c_no_grad}  # This should handle gracefully
 
         # This should work but return None gradients
-        gradients = self.simple_bp.grad_reward_function(states_t, {}, controls_t, wrt)
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
         self.assertIn("u", gradients)
         self.assertIn("c", gradients["u"])
         # Gradient should be None for tensor without requires_grad=True
@@ -497,7 +493,7 @@ class TestGradTransitionFunction(unittest.TestCase):
         c = torch.tensor(0.5, requires_grad=True)
 
         grads = bp.grad_transition_function(
-            {"a": a}, {}, {"c": c}, {"c": c}, create_graph=True
+            {"a": a}, {"c": c}, {"c": c}, create_graph=True
         )
 
         # ∂a_next/∂c = -1
@@ -527,7 +523,6 @@ class TestGradPreStateFunction(unittest.TestCase):
 
         grads = bp.grad_pre_state_function(
             {"a": a},
-            {},
             {"a": a},
             parameters={"beta": 0.9, "R": R_val},
             control_sym="c",
@@ -552,7 +547,7 @@ class TestGradPreStateFunction(unittest.TestCase):
         a = torch.tensor(1.0, requires_grad=True)
 
         with self.assertRaises(ValueError, msg="No control with pre-state found"):
-            bp.grad_pre_state_function({"a": a}, {}, {"a": a})
+            bp.grad_pre_state_function({"a": a}, {"a": a})
 
 
 class TestEulerResidualErrorHandling(unittest.TestCase):
@@ -622,7 +617,7 @@ class TestComputeControlsTypeError(unittest.TestCase):
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
 
         with self.assertRaises(TypeError, msg="callable decision function or a dict"):
-            bp.compute_controls(42, {"a": torch.tensor(1.0)}, {})
+            bp.compute_controls(42, {"a": torch.tensor(1.0)})
 
 
 class TestGetRewardSymsErrors(unittest.TestCase):

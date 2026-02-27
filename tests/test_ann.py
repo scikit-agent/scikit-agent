@@ -390,8 +390,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         rewards = case_10["bp"].reward_function(
             {"a": case_10["givens"]["a"]},
             {},
-            {},
-            case_10["calibration"],
+            parameters=case_10["calibration"],
             decision_rules=dict_of_decision_rules,
         )
 
