@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Simulation" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Utils - scikit-agent 0.1.dev478+ge8944e4e7</title>
+        <title>Utils - scikit-agent 0.1.dev479+ge745534a2</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev478+ge8944e4e7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev479+ge745534a2</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -357,9 +357,10 @@ the gradient methods on BellmanPeriod (<code class="docutils literal notranslate
 <p>For batched inputs, this computes the diagonal of the Jacobian: for each
 batch element <em>i</em>, we compute ∂target[i]/∂var[i]. The implementation
 uses <code class="docutils literal notranslate"><span class="pre">grad(target.sum(),</span> <span class="pre">var)</span></code>, which yields the correct diagonal
-whenever target[i] depends only on var[i] (agent-independence). This
-assumption holds in the Bellman context because each agent’s
-state and reward are computed independently.</p>
+whenever target[i] depends only on var[i] (sample-independence). This
+assumption holds when each batch element is computed independently,
+which is the case for element-wise reward and transition functions in
+this library.</p>
 <p>For scalar inputs, <code class="docutils literal notranslate"><span class="pre">.sum()</span></code> is a no-op, so the same code path handles
 both cases without branching.</p>
 <dl class="field-list simple">
@@ -374,8 +375,12 @@ higher-order derivatives and end-to-end training. Default: False.</p></li>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Nested dictionary of gradients for each tensor symbol and variable:
-<code class="docutils literal notranslate"><span class="pre">{tensor_sym:</span> <span class="pre">{var_name:</span> <span class="pre">gradient}}</span></code>. Gradient is <code class="docutils literal notranslate"><span class="pre">None</span></code> if the
-variable does not require gradients or the target does not depend on it.</p>
+<code class="docutils literal notranslate"><span class="pre">{tensor_sym:</span> <span class="pre">{var_name:</span> <span class="pre">gradient}}</span></code>. Gradient is <code class="docutils literal notranslate"><span class="pre">None</span></code> if and
+only if the variable does not require gradients or no computational
+graph path exists from the variable to the target tensor. A zero
+tensor is returned when the dependency exists but evaluates to zero.
+Callers should treat <code class="docutils literal notranslate"><span class="pre">None</span></code> as structural independence, not as a
+zero gradient.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a> | None]]</p>
@@ -563,7 +568,7 @@ the object type and shape of vec_a.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d24e08b6"></script>
+</div><script src="../_static/documentation_options.js?v=473eda26"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
