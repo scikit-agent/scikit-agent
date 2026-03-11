@@ -938,6 +938,74 @@ def estimate_bellman_residual(
     return bellman_residual
 
 
+def _marginal_utility(
+    bellman_period: BellmanPeriod,
+    reward_sym: str,
+    control_sym: str,
+    control_tensor: torch.Tensor,
+    states: dict[str, Any],
+    controls: dict[str, Any],
+    shocks: dict[str, Any],
+    parameters: dict[str, Any] | None,
+    agent: str | None,
+    period_label: str,
+) -> torch.Tensor:
+    """Compute the marginal utility ∂u/∂c for a given period.
+
+    Raises ``ValueError`` if the reward does not depend on the control.
+    """
+    grads = bellman_period.grad_reward_function(
+        states,
+        controls,
+        wrt={control_sym: control_tensor},
+        shocks=shocks,
+        parameters=parameters,
+        agent=agent,
+        create_graph=True,
+    )
+    mu = grads[reward_sym][control_sym]
+    if mu is None:
+        raise ValueError(
+            f"Could not compute marginal utility at {period_label}: "
+            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+        )
+    return mu
+
+
+def _chain_rule_return_factor(
+    bellman_period: BellmanPeriod,
+    control_sym: str,
+    transition_gradients: dict[str, torch.Tensor | None],
+    pre_state_gradients: dict[str, dict[str, torch.Tensor | None]],
+    like: torch.Tensor,
+) -> torch.Tensor:
+    r"""Sum the chain-rule product :math:`\sum_s \partial m'/\partial s' \cdot \partial s'/\partial c`.
+
+    Raises ``ValueError`` if no chain-rule path contributes.
+    """
+    total = torch.zeros_like(like)
+
+    for state_sym in bellman_period.arrival_states:
+        trans_grad = transition_gradients[state_sym]
+        if trans_grad is None:
+            continue
+        for state_grads in pre_state_gradients.values():
+            pre_state_grad = state_grads.get(state_sym)
+            if pre_state_grad is not None:
+                total = total + pre_state_grad * trans_grad
+
+    if not torch.any(total != 0):
+        raise ValueError(
+            "Euler residual: return_factor_sum is zero for all arrival states. "
+            "No arrival state depends on the control through the transition "
+            "and pre-state gradients. Check that the block dynamics correctly "
+            f"connect the control '{control_sym}' to the arrival states "
+            f"{sorted(bellman_period.arrival_states)} and that the Control "
+            "object has a properly defined 'iset'."
+        )
+    return total
+
+
 def _euler_residual_single_control(
     bellman_period: BellmanPeriod,
     discount_factor: Any,
@@ -957,42 +1025,33 @@ def _euler_residual_single_control(
     This is the inner workhorse called once per control by
     ``estimate_euler_residual``.  Factored out to support multi-control models.
     """
-    # Ensure requires_grad on control tensors for gradient computation.
     c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
     c_t1, controls_t1_grad = _ensure_grad(controls_t_plus_1, control_sym)
 
-    # Marginal utilities at t and t+1 via grad_reward_function.
-    reward_grads_t = bellman_period.grad_reward_function(
+    marginal_utility_t = _marginal_utility(
+        bellman_period,
+        reward_sym,
+        control_sym,
+        c_t,
         states_t,
         controls_t_grad,
-        wrt={control_sym: c_t},
-        shocks=shocks_t,
-        parameters=parameters,
-        agent=agent,
-        create_graph=True,
+        shocks_t,
+        parameters,
+        agent,
+        "period t",
     )
-    marginal_utility_t = reward_grads_t[reward_sym][control_sym]
-    if marginal_utility_t is None:
-        raise ValueError(
-            f"Could not compute marginal utility at period t: "
-            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
-        )
-
-    reward_grads_t1 = bellman_period.grad_reward_function(
+    marginal_utility_t1 = _marginal_utility(
+        bellman_period,
+        reward_sym,
+        control_sym,
+        c_t1,
         states_t_plus_1,
         controls_t1_grad,
-        wrt={control_sym: c_t1},
-        shocks=shocks_t_plus_1,
-        parameters=parameters,
-        agent=agent,
-        create_graph=True,
+        shocks_t_plus_1,
+        parameters,
+        agent,
+        "period t+1",
     )
-    marginal_utility_t_plus_1 = reward_grads_t1[reward_sym][control_sym]
-    if marginal_utility_t_plus_1 is None:
-        raise ValueError(
-            f"Could not compute marginal utility at period t+1: "
-            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
-        )
 
     # Transition gradients: ∂s_{t+1}/∂c_t for all arrival states.
     trans_grads_nested = bellman_period.grad_transition_function(
@@ -1009,53 +1068,31 @@ def _euler_residual_single_control(
     }
 
     # Pre-state gradients: ∂m'/∂s' (envelope condition).
-    states_t_plus_1_grad = {}
-    for sym in bellman_period.arrival_states:
-        s = states_t_plus_1[sym]
-        if not s.requires_grad:
-            s = s.detach().requires_grad_(True)
-        states_t_plus_1_grad[sym] = s
+    states_t1_grad = {
+        sym: s if s.requires_grad else s.detach().requires_grad_(True)
+        for sym, s in states_t_plus_1.items()
+        if sym in bellman_period.arrival_states
+    }
 
     pre_state_gradients = bellman_period.grad_pre_state_function(
-        states_t_plus_1_grad,
-        wrt=states_t_plus_1_grad,
+        states_t1_grad,
+        wrt=states_t1_grad,
         shocks=shocks_t_plus_1,
         parameters=parameters,
         control_sym=control_sym,
         create_graph=True,
     )
 
-    # Chain rule: ∂m'/∂c = Σ_s [∂m'/∂s' * ∂s'/∂c]
-    return_factor_sum = torch.zeros_like(marginal_utility_t_plus_1)
-
-    for state_sym in bellman_period.arrival_states:
-        trans_grad = transition_gradients[state_sym]
-        if trans_grad is None:
-            continue
-
-        for _pre_state_var, state_grads in pre_state_gradients.items():
-            pre_state_grad = state_grads.get(state_sym)
-            if pre_state_grad is not None:
-                return_factor_sum = return_factor_sum + pre_state_grad * trans_grad
-
-    # Verify that at least one chain-rule path contributed
-    if not torch.any(return_factor_sum != 0):
-        raise ValueError(
-            "Euler residual: return_factor_sum is zero for all arrival states. "
-            "No arrival state depends on the control through the transition "
-            "and pre-state gradients. Check that the block dynamics correctly "
-            f"connect the control '{control_sym}' to the arrival states "
-            f"{sorted(bellman_period.arrival_states)} and that the Control "
-            "object has a properly defined 'iset'."
-        )
-
-    # f = u'(c_t) + β * u'(c_{t+1}) * Σ_s [∂m'/∂s' * ∂s'/∂c] = 0
-    euler_residual = (
-        marginal_utility_t
-        + discount_factor * marginal_utility_t_plus_1 * return_factor_sum
+    return_factor = _chain_rule_return_factor(
+        bellman_period,
+        control_sym,
+        transition_gradients,
+        pre_state_gradients,
+        like=marginal_utility_t1,
     )
 
-    return euler_residual
+    # f = u'(c_t) + β * u'(c_{t+1}) * Σ_s [∂m'/∂s' * ∂s'/∂c] = 0
+    return marginal_utility_t + discount_factor * marginal_utility_t1 * return_factor
 
 
 def estimate_euler_residual(
