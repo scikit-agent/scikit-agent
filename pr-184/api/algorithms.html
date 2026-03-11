@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation" href="simulation.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev489+gc8c91153d</title>
+        <title>Algorithms - scikit-agent 0.1.dev490+geb9c22cb4</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev489+gc8c91153d</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev490+geb9c22cb4</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -432,6 +432,13 @@ trains the policy and value networks jointly using
 <code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_value_and_policy_nn()</span></code>.  This is the
 Bellman-equation approach where both a policy and a value approximation are
 updated simultaneously (Maliar et al. 2021, Section 2.3).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In joint training mode, <code class="docutils literal notranslate"><span class="pre">train_block_value_and_policy_nn</span></code> does not
+return a scalar loss, so loss-based convergence checking is disabled.
+Convergence is assessed by parameter change only. Monitor training
+logs for the <code class="docutils literal notranslate"><span class="pre">[joint:</span> <span class="pre">loss</span> <span class="pre">convergence</span> <span class="pre">disabled]</span></code> annotation.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -459,7 +466,7 @@ Must be &gt;= 1. Default is 1.</p></li>
 Must be &gt;= 1. Default is 16.</p></li>
 <li><p><strong>epochs_per_iteration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of training epochs per iteration.
 Must be &gt;= 1. Default is 250.</p></li>
-<li><p><strong>value_network</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a>]</span>) – A pre-constructed value network for joint training. When provided
+<li><p><strong>value_network</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span>) – A pre-constructed value network for joint training. When provided
 together with <code class="docutils literal notranslate"><span class="pre">value_loss_function</span></code>, the loop trains both
 networks simultaneously.</p></li>
 <li><p><strong>value_loss_function</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span>) – Loss function for the value network. Signature matches
@@ -916,7 +923,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=bd611939"></script>
+</div><script src="../_static/documentation_options.js?v=d2e22083"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
