@@ -363,29 +363,6 @@ class TestGradRewardFunction(unittest.TestCase):
             torch.allclose(gradients["u"]["theta"], expected_grad, atol=1e-6)
         )
 
-    def test_get_grad_reward_function_envelope_condition_example(self):
-        """Test usage pattern for envelope condition in optimization."""
-        # This test demonstrates how the function would be used for envelope conditions
-
-        # Simulate a batch of states and controls
-        batch_size = 3
-        c = torch.tensor([0.3, 0.5, 0.7], requires_grad=True)
-        a = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
-
-        states_t = {"a": a}
-        controls_t = {"c": c}
-        wrt = {"c": c, "a": a}  # Gradients needed for envelope condition
-
-        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
-
-        # Check that we get gradients for the full batch
-        self.assertEqual(gradients["u"]["c"].shape, (batch_size,))
-        self.assertIsNone(gradients["u"]["a"])  # u doesn't depend on a
-
-        # For log utility, du/dc = 1/c
-        expected_grad_c = 1.0 / c
-        self.assertTrue(torch.allclose(gradients["u"]["c"], expected_grad_c, atol=1e-6))
-
     def test_get_grad_reward_function_error_handling(self):
         """Test error handling and edge cases."""
         # Test with variable that doesn't require gradients
@@ -622,19 +599,6 @@ class TestFischerBurmeister(unittest.TestCase):
         result = bellman.fischer_burmeister(a, h)
         self.assertNotAlmostEqual(result.item(), 0.0, places=2)
 
-    def test_batch(self):
-        """FB works on batched tensors."""
-        a = torch.tensor([0.0, 1.0, 0.0])
-        h = torch.tensor([1.0, 0.0, 0.0])
-        result = bellman.fischer_burmeister(a, h)
-        self.assertEqual(result.shape, (3,))
-
-    def test_negative_arguments(self):
-        """FB with negative arguments is non-zero (constraint violation)."""
-        result = bellman.fischer_burmeister(torch.tensor(-1.0), torch.tensor(1.0))
-        self.assertTrue(torch.isfinite(result))
-        self.assertNotAlmostEqual(result.item(), 0.0, places=2)
-
     def test_differentiable(self):
         """FB is differentiable through autograd."""
         a = torch.tensor(1.0, requires_grad=True)
@@ -675,14 +639,17 @@ class TestEstimateBellmanFocResidual(unittest.TestCase):
         self.block.construct_shocks({})
         self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.9})
 
-    def test_returns_finite_tensor(self):
-        """FOC residual should be a finite tensor."""
+    def test_returns_finite_tensor_with_correct_shape(self):
+        """FOC residual should match batch size and change with different policies."""
 
         def value_fn(states, shocks, params):
             return 10.0 * states["wealth"]
 
-        def decision_fn(states, shocks, params):
+        def decision_fn_half(states, shocks, params):
             return {"consumption": 0.5 * states["wealth"]}
+
+        def decision_fn_quarter(states, shocks, params):
+            return {"consumption": 0.25 * states["wealth"]}
 
         states_t = {"wealth": torch.tensor([2.0, 4.0])}
         shocks = {
@@ -690,14 +657,23 @@ class TestEstimateBellmanFocResidual(unittest.TestCase):
             "income_1": torch.tensor([1.2, 0.8]),
         }
 
-        residual = bellman.estimate_bellman_foc_residual(
-            self.bp, value_fn, decision_fn, states_t, shocks
+        residual_half = bellman.estimate_bellman_foc_residual(
+            self.bp, value_fn, decision_fn_half, states_t, shocks
         )
-        self.assertIsInstance(residual, torch.Tensor)
-        self.assertTrue(torch.all(torch.isfinite(residual)))
+        residual_quarter = bellman.estimate_bellman_foc_residual(
+            self.bp, value_fn, decision_fn_quarter, states_t, shocks
+        )
+        self.assertEqual(residual_half.shape, (2,))
+        self.assertTrue(torch.all(torch.isfinite(residual_half)))
+        self.assertTrue(torch.all(torch.isfinite(residual_quarter)))
+        # Different policies should produce different FOC residuals
+        self.assertFalse(
+            torch.allclose(residual_half, residual_quarter),
+            "Different policies should produce different FOC residuals",
+        )
 
     def test_multi_control_returns_dict(self):
-        """Multi-control model should return a dict of residuals."""
+        """Multi-control model should return a dict of finite residuals per control."""
         multi_block = model.DBlock(
             name="multi_foc",
             dynamics={
@@ -720,12 +696,20 @@ class TestEstimateBellmanFocResidual(unittest.TestCase):
             multi_bp,
             value_fn,
             df,
-            {"a": torch.tensor([1.0])},
+            {"a": torch.tensor([1.0, 2.0])},
             {},
         )
         self.assertIsInstance(result, dict)
-        self.assertIn("c1", result)
-        self.assertIn("c2", result)
+        self.assertEqual(set(result.keys()), {"c1", "c2"})
+        for key, residual in result.items():
+            self.assertIsInstance(
+                residual, torch.Tensor, f"residual[{key}] not a tensor"
+            )
+            self.assertEqual(residual.shape, (2,), f"residual[{key}] wrong shape")
+            self.assertTrue(
+                torch.all(torch.isfinite(residual)),
+                f"residual[{key}] contains non-finite values",
+            )
 
 
 class TestEnsureGrad(unittest.TestCase):

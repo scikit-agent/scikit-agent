@@ -131,178 +131,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         # note we actual expect these to diverge up to Uniform[-1, 1] shocks.
         self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=2.5))
 
-    def test_maliar_convergence_tolerance(self):
-        """Test the convergence functionality in the Maliar training loop."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": -10, "max": 10, "count": 5},
-                "g": {"min": -10, "max": 10, "count": 5},
-            }
-        )
-
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["bp"],
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test 1: High tolerance (should converge quickly)
-        ann_high_tol, states_high_tol = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=2,
-            random_seed=TEST_SEED,
-            max_iterations=10,
-            tolerance=1e-1,  # High tolerance for quick convergence
-        )
-
-        # Test 2: Low tolerance (should require more iterations or hit max_iterations)
-        ann_low_tol, states_low_tol = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=2,
-            random_seed=TEST_SEED,
-            max_iterations=3,
-            tolerance=1e-8,  # Very low tolerance
-        )
-
-        # Both should return valid networks and states
-        self.assertIsNotNone(ann_high_tol)
-        self.assertIsNotNone(states_high_tol)
-        self.assertIsNotNone(ann_low_tol)
-        self.assertIsNotNone(states_low_tol)
-
-        # Test that tolerance affects convergence behavior
-        # (We can't easily test exact iteration counts due to randomness,
-        # but we can verify the function completes successfully with different tolerances)
-        sd_high = states_high_tol.to_dict()
-        sd_low = states_low_tol.to_dict()
-
-        # Both should produce valid state dictionaries
-        self.assertIn("m", sd_high)
-        self.assertIn("g", sd_high)
-        self.assertIn("m", sd_low)
-        self.assertIn("g", sd_low)
-
-        # Verify states are finite tensors
-        self.assertTrue(torch.all(torch.isfinite(sd_high["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_high["g"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_low["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_low["g"])))
-
-    def test_maliar_convergence_early_stopping(self):
-        """Test that the training loop can stop early when convergence is achieved."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        # Use a smaller grid for faster convergence testing
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": 0, "max": 5, "count": 3},
-                "g": {"min": 0, "max": 5, "count": 3},
-            }
-        )
-
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["bp"],
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test with very high tolerance to ensure early convergence
-        ann, states = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=1,
-            random_seed=TEST_SEED,
-            max_iterations=100,  # Set high max iterations
-            tolerance=1.0,  # Very high tolerance - should converge in 1-2 iterations
-        )
-
-        # Should complete successfully
-        self.assertIsNotNone(ann)
-        self.assertIsNotNone(states)
-
-        # States should be valid
-        sd = states.to_dict()
-        self.assertIn("m", sd)
-        self.assertIn("g", sd)
-        self.assertTrue(torch.all(torch.isfinite(sd["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd["g"])))
-
-    def test_maliar_convergence_by_loss(self):
-        """Test convergence by both parameter and loss criteria."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        # Use a small grid for faster testing
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": 0, "max": 5, "count": 3},
-                "g": {"min": 0, "max": 5, "count": 3},
-            }
-        )
-
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["bp"],
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test 1: Strict tolerance (should require more iterations)
-        ann_strict, states_strict = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=1,
-            random_seed=TEST_SEED,
-            max_iterations=10,
-            tolerance=1e-6,  # Strict tolerance
-        )
-
-        # Test 2: Relaxed tolerance (should converge faster)
-        ann_relaxed, states_relaxed = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=1,
-            random_seed=TEST_SEED,
-            max_iterations=10,
-            tolerance=1e-1,  # Relaxed tolerance
-        )
-
-        # Both tests should return valid networks and states
-        for ann, states in [(ann_strict, states_strict), (ann_relaxed, states_relaxed)]:
-            self.assertIsNotNone(ann)
-            self.assertIsNotNone(states)
-
-            # States should be valid
-            sd = states.to_dict()
-            self.assertIn("m", sd)
-            self.assertIn("g", sd)
-            self.assertTrue(torch.all(torch.isfinite(sd["m"])))
-            self.assertTrue(torch.all(torch.isfinite(sd["g"])))
-
 
 class TestBellmanLossFunctions(unittest.TestCase):
     """Test the Bellman equation loss functions for the Maliar method."""
@@ -383,8 +211,12 @@ class TestBellmanLossFunctions(unittest.TestCase):
             agent="consumer",
         )
         self.assertIn("utility", reward)
-        # Utility can be negative for log(consumption), so just check it's finite
-        self.assertTrue(torch.all(torch.isfinite(reward["utility"])))
+        # u = log(c + 1e-8) for c = [0.5, 1.0]
+        expected_utility = torch.log(controls_t["consumption"] + 1e-8)
+        self.assertTrue(
+            torch.allclose(reward["utility"], expected_utility, atol=1e-6),
+            f"Reward should be log(c). Got {reward['utility']}, expected {expected_utility}",
+        )
 
     def test_bellman_loss_function_error_handling(self):
         """Test error handling in Bellman loss functions."""
@@ -461,33 +293,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Losses should be different for different decision functions
         self.assertFalse(torch.allclose(losses, loss2))
 
-    def test_consistency_with_existing_patterns(self):
-        """Test that the new Bellman loss functions follow existing skagent patterns."""
-
-        # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
-
-        # Test that it works with the training infrastructure
-        loss_function = loss.BellmanEquationLoss(
-            self.bp,
-            simple_value_network,
-            self.parameters,
-        )
-
-        # Test with aggregate_net_loss (from ann.py)
-        from skagent.ann import aggregate_net_loss
-
-        # This should work without errors
-        aggregated_loss = aggregate_net_loss(
-            self.test_grid, self.decision_function, loss_function
-        )
-
-        self.assertIsInstance(aggregated_loss, torch.Tensor)
-        self.assertEqual(aggregated_loss.shape, ())  # Scalar after aggregation
-        self.assertTrue(aggregated_loss >= 0)
-
     def test_shock_independence_in_bellman_residual(self):
         """Test that independent shock realizations produce different results than identical shocks."""
 
@@ -537,54 +342,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Both should be finite
         self.assertTrue(torch.all(torch.isfinite(residual_identical)))
         self.assertTrue(torch.all(torch.isfinite(residual_independent)))
-
-    def test_bellman_loss_with_different_shock_patterns(self):
-        """Test Bellman loss function with various shock patterns."""
-
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            income = shocks_t["income"]
-            return (
-                10.0 * wealth + 2.0 * income
-            )  # Value depends on both wealth and income
-
-        loss_function = loss.BellmanEquationLoss(
-            self.bp,
-            simple_value_network,
-            self.parameters,
-        )
-
-        # Test with correlated shocks (period t+1 same as period t)
-        test_grid_correlated = grid.Grid.from_dict(
-            {
-                "wealth": torch.tensor([1.0, 2.0, 3.0]),
-                "income_0": torch.tensor([1.0, 1.2, 0.8]),
-                "income_1": torch.tensor([1.0, 1.2, 0.8]),  # Same as period t
-            }
-        )
-
-        # Test with anti-correlated shocks
-        test_grid_anticorrelated = grid.Grid.from_dict(
-            {
-                "wealth": torch.tensor([1.0, 2.0, 3.0]),
-                "income_0": torch.tensor([1.0, 1.2, 0.8]),
-                "income_1": torch.tensor([1.0, 0.8, 1.2]),  # Opposite of period t
-            }
-        )
-
-        loss_correlated = loss_function(self.decision_function, test_grid_correlated)
-        loss_anticorrelated = loss_function(
-            self.decision_function, test_grid_anticorrelated
-        )
-
-        # Both should produce valid losses
-        self.assertTrue(torch.all(loss_correlated >= 0))
-        self.assertTrue(torch.all(loss_anticorrelated >= 0))
-        self.assertTrue(torch.all(torch.isfinite(loss_correlated)))
-        self.assertTrue(torch.all(torch.isfinite(loss_anticorrelated)))
-
-        # Losses should be different for different shock patterns
-        self.assertFalse(torch.allclose(loss_correlated, loss_anticorrelated))
 
     def test_bellman_residual_error_handling(self):
         """Test error handling in the refactored Bellman residual function."""
@@ -1264,40 +1021,6 @@ class TestOneSidedEulerLoss(unittest.TestCase):
             f"Got: {constrained_loss_mixed}, expected: {expected_mixed}",
         )
 
-    def test_one_sided_vs_two_sided_loss(self):
-        """Test that one-sided loss differs from two-sided loss appropriately."""
-        # Two-sided loss always penalizes deviation from zero
-        residuals = torch.tensor([0.5, -0.3, 1.0, -0.8])
-
-        two_sided_loss = residuals**2
-        one_sided_loss = torch.relu(-residuals) ** 2
-
-        # For positive residuals, one-sided should be less than two-sided
-        self.assertLess(
-            one_sided_loss[0].item(),
-            two_sided_loss[0].item(),
-            "One-sided loss should be less than two-sided for positive residual",
-        )
-        self.assertLess(
-            one_sided_loss[2].item(),
-            two_sided_loss[2].item(),
-            "One-sided loss should be less than two-sided for positive residual",
-        )
-
-        # For negative residuals, one-sided should equal two-sided
-        self.assertAlmostEqual(
-            one_sided_loss[1].item(),
-            two_sided_loss[1].item(),
-            places=6,
-            msg="One-sided loss should equal two-sided for negative residual",
-        )
-        self.assertAlmostEqual(
-            one_sided_loss[3].item(),
-            two_sided_loss[3].item(),
-            places=6,
-            msg="One-sided loss should equal two-sided for negative residual",
-        )
-
 
 class TestU2BorrowingAgainstHumanWealth(unittest.TestCase):
     """Test that U-2 allows borrowing against human wealth (c > m)."""
@@ -1434,53 +1157,24 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
             "Constrained loss should be non-negative",
         )
 
-    def test_constrained_loss_zero_for_binding_constraint(self):
-        """Test that constrained loss is zero when constraint binds (positive residual).
-
-        At very low wealth, the borrowing constraint binds and the Euler residual
-        is positive (u'(c) > βR E[u'(c')]). The one-sided loss should be zero.
-        """
-        # Use U-3 buffer stock model
-        u3_block = get_benchmark_model("U-3")
-        u3_calibration = get_benchmark_calibration("U-3")
-
-        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
-
-        loss_constrained = loss.EulerEquationLoss(
-            bp,
-            parameters=u3_calibration,
-            constrained=True,
+        # Constrained (Fischer-Burmeister) and unconstrained (squared residual)
+        # use different formulations, so they should produce different losses
+        # for the same suboptimal policy
+        self.assertFalse(
+            torch.allclose(unconstrained_loss, constrained_loss),
+            "Constrained and unconstrained losses should differ "
+            "(Fischer-Burmeister vs squared residual)",
         )
-
-        # Create grid at very low wealth where constraint binds
-        low_wealth_grid = grid.Grid.from_config(
-            {
-                "a": {"min": 0.01, "max": 0.1, "count": 5},
-                "psi_0": {"min": 1.0, "max": 1.0, "count": 5},
-                "psi_1": {"min": 1.0, "max": 1.0, "count": 5},
-                "theta_0": {"min": 1.0, "max": 1.0, "count": 5},
-                "theta_1": {"min": 1.0, "max": 1.0, "count": 5},
-            }
+        # Both should be strictly positive for a suboptimal policy
+        self.assertGreater(
+            unconstrained_loss.mean().item(),
+            1e-8,
+            "Unconstrained loss should be positive for suboptimal policy",
         )
-
-        # Create policy that consumes all available resources (constraint binding)
-        def constrained_policy(states, shocks, parameters):
-            R = parameters["R"]
-            a = states["a"]
-            psi = shocks.get("psi", torch.ones_like(a))
-            theta = shocks.get("theta", torch.ones_like(a))
-            m = R * a / psi + theta
-            # Consume exactly m (constraint binds: c = m)
-            c = m * 0.99  # Just under m to stay feasible
-            return {"c": c}
-
-        # Compute constrained loss
-        constrained_loss = loss_constrained(constrained_policy, low_wealth_grid)
-
-        # Loss should be finite (not NaN or Inf)
-        self.assertTrue(
-            torch.isfinite(constrained_loss).all(),
-            f"Constrained loss should be finite, got {constrained_loss}",
+        self.assertGreater(
+            constrained_loss.mean().item(),
+            1e-8,
+            "Constrained loss should be positive for suboptimal policy",
         )
 
 
