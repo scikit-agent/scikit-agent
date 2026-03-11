@@ -412,7 +412,7 @@ class BellmanPeriod:
         # Filter rewards by agent
         rewards = {sym: post[sym] for sym in self.get_reward_syms(agent)}
 
-        # Use utility function to compute gradients
+        # Compute gradients of reward w.r.t. requested variables
         return compute_gradients_for_tensors(rewards, wrt, create_graph=create_graph)
 
     def grad_transition_function(
@@ -468,7 +468,7 @@ class BellmanPeriod:
             decision_rules=decision_rules,
         )
 
-        # Use utility function to compute gradients
+        # Compute gradients of reward w.r.t. requested variables
         return compute_gradients_for_tensors(
             next_states, wrt, create_graph=create_graph
         )
@@ -556,7 +556,7 @@ class BellmanPeriod:
             pre_state_vars, states, shocks=shocks, parameters=parameters
         )
 
-        # Use utility function to compute gradients
+        # Compute gradients of reward w.r.t. requested variables
         return compute_gradients_for_tensors(
             pre_state_values, wrt, create_graph=create_graph
         )
@@ -627,6 +627,34 @@ class BellmanPeriod:
 
         return pre_state_values
 
+    def resolve_discount_factor(self, post: dict[str, Any]) -> Any:
+        """Extract the discount factor from post-transition variables.
+
+        Parameters
+        ----------
+        post : dict[str, Any]
+            Output of :meth:`post_function`.
+
+        Returns
+        -------
+        Any
+            The discount factor value.
+
+        Raises
+        ------
+        KeyError
+            If :attr:`discount_variable` is not present in *post*.
+        """
+        dv = self.discount_variable
+        if dv not in post:
+            raise KeyError(
+                f"Discount variable '{dv}' not found in post-transition output. "
+                f"Available variables: {sorted(post.keys())}. "
+                "Ensure the discount variable is defined in block.dynamics "
+                "or passed in calibration."
+            )
+        return post[dv]
+
 
 def fischer_burmeister(
     a: torch.Tensor, h: torch.Tensor, eps: float = 1e-12
@@ -664,25 +692,6 @@ def fischer_burmeister(
         complementarity conditions are satisfied.
     """
     return a + h - torch.sqrt(a**2 + h**2 + eps)
-
-
-def _resolve_discount_factor(
-    bellman_period: BellmanPeriod, post: dict[str, Any]
-) -> Any:
-    """Extract the discount factor from post-transition variables.
-
-    Raises ``KeyError`` with a descriptive message if the discount variable
-    is not present in *post*.
-    """
-    dv = bellman_period.discount_variable
-    if dv not in post:
-        raise KeyError(
-            f"Discount variable '{dv}' not found in post-transition output. "
-            f"Available variables: {sorted(post.keys())}. "
-            "Ensure the discount variable is defined in block.dynamics "
-            "or passed in calibration."
-        )
-    return post[dv]
 
 
 def _extract_period_shocks(
@@ -816,7 +825,7 @@ def estimate_discounted_lifetime_reward(
         post = bellman_period.post_function(
             states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
         )
-        discount_factor = _resolve_discount_factor(bellman_period, post)
+        discount_factor = bellman_period.resolve_discount_factor(post)
 
         reward_t = bellman_period.reward_function(
             states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
@@ -938,7 +947,7 @@ def estimate_bellman_residual(
     post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
-    discount_factor = _resolve_discount_factor(bellman_period, post)
+    discount_factor = bellman_period.resolve_discount_factor(post)
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
@@ -955,40 +964,6 @@ def estimate_bellman_residual(
         )
 
     return bellman_residual
-
-
-def _marginal_utility(
-    bellman_period: BellmanPeriod,
-    reward_sym: str,
-    control_sym: str,
-    control_tensor: torch.Tensor,
-    states: dict[str, Any],
-    controls: dict[str, Any],
-    shocks: dict[str, Any],
-    parameters: dict[str, Any] | None,
-    agent: str | None,
-    period_label: str,
-) -> torch.Tensor:
-    """Compute the marginal utility ∂u/∂c for a given period.
-
-    Raises ``ValueError`` if the reward does not depend on the control.
-    """
-    grads = bellman_period.grad_reward_function(
-        states,
-        controls,
-        wrt={control_sym: control_tensor},
-        shocks=shocks,
-        parameters=parameters,
-        agent=agent,
-        create_graph=True,
-    )
-    mu = grads[reward_sym][control_sym]
-    if mu is None:
-        raise ValueError(
-            f"Could not compute marginal utility at {period_label}: "
-            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
-        )
-    return mu
 
 
 def _chain_rule_return_factor(
@@ -1054,30 +1029,39 @@ def _euler_residual_single_control(
     c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
     c_t1, controls_t1_grad = _ensure_grad(controls_t_plus_1, control_sym)
 
-    marginal_utility_t = _marginal_utility(
-        bellman_period,
-        reward_sym,
-        control_sym,
-        c_t,
+    # ∂u/∂c at period t
+    grads_t = bellman_period.grad_reward_function(
         states_t,
         controls_t_grad,
-        shocks_t,
-        parameters,
-        agent,
-        "period t",
+        wrt={control_sym: c_t},
+        shocks=shocks_t,
+        parameters=parameters,
+        agent=agent,
+        create_graph=True,
     )
-    marginal_utility_t1 = _marginal_utility(
-        bellman_period,
-        reward_sym,
-        control_sym,
-        c_t1,
+    marginal_reward_t = grads_t[reward_sym][control_sym]
+    if marginal_reward_t is None:
+        raise ValueError(
+            f"Could not compute marginal reward at period t: "
+            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+        )
+
+    # ∂u/∂c at period t+1
+    grads_t1 = bellman_period.grad_reward_function(
         states_t_plus_1,
         controls_t1_grad,
-        shocks_t_plus_1,
-        parameters,
-        agent,
-        "period t+1",
+        wrt={control_sym: c_t1},
+        shocks=shocks_t_plus_1,
+        parameters=parameters,
+        agent=agent,
+        create_graph=True,
     )
+    marginal_reward_t1 = grads_t1[reward_sym][control_sym]
+    if marginal_reward_t1 is None:
+        raise ValueError(
+            f"Could not compute marginal reward at period t+1: "
+            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+        )
 
     # Transition gradients: ∂s_{t+1}/∂c_t for all arrival states.
     trans_grads_nested = bellman_period.grad_transition_function(
@@ -1114,11 +1098,11 @@ def _euler_residual_single_control(
         control_sym,
         transition_gradients,
         pre_state_gradients,
-        like=marginal_utility_t1,
+        like=marginal_reward_t1,
     )
 
     # f = u'(c_t) + β * u'(c_{t+1}) * Σ_s [∂m'/∂s' * ∂s'/∂c] = 0
-    return marginal_utility_t + discount_factor * marginal_utility_t1 * return_factor
+    return marginal_reward_t + discount_factor * marginal_reward_t1 * return_factor
 
 
 def estimate_euler_residual(
@@ -1132,7 +1116,7 @@ def estimate_euler_residual(
     r"""Compute the Euler equation residual for given states and shocks.
 
     The Euler equation is the first-order condition from the Bellman equation,
-    relating marginal utilities across periods.  For each control variable
+    relating marginal rewards across periods.  For each control variable
     :math:`c_j`, this function computes the residual:
 
     .. math::
@@ -1201,7 +1185,7 @@ def estimate_euler_residual(
     post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
-    discount_factor = _resolve_discount_factor(bellman_period, post)
+    discount_factor = bellman_period.resolve_discount_factor(post)
 
     # Compute Euler residual for each control
     residuals = {}
@@ -1291,7 +1275,7 @@ def estimate_bellman_foc_residual(
     post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
-    discount_factor = _resolve_discount_factor(bellman_period, post)
+    discount_factor = bellman_period.resolve_discount_factor(post)
 
     params_ext = parameters if parameters is not None else {}
 
@@ -1299,7 +1283,7 @@ def estimate_bellman_foc_residual(
     for control_sym in control_syms:
         c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
 
-        # u'(c_t) — marginal utility at period t
+        # u'(c_t) — marginal reward at period t
         reward_grads = bellman_period.grad_reward_function(
             states_t,
             controls_t_grad,
@@ -1309,10 +1293,10 @@ def estimate_bellman_foc_residual(
             agent=agent,
             create_graph=True,
         )
-        mu_t = reward_grads[reward_sym][control_sym]
-        if mu_t is None:
+        mr_t = reward_grads[reward_sym][control_sym]
+        if mr_t is None:
             raise ValueError(
-                f"Could not compute marginal utility: "
+                f"Could not compute marginal reward: "
                 f"reward '{reward_sym}' does not depend on control '{control_sym}'"
             )
 
@@ -1340,7 +1324,7 @@ def estimate_bellman_foc_residual(
             )
 
         # FOC: u'(c) + β * ∂V(s',ε')/∂c = 0
-        residuals[control_sym] = mu_t + discount_factor * dv_dc
+        residuals[control_sym] = mr_t + discount_factor * dv_dc
 
     if len(residuals) == 1:
         return next(iter(residuals.values()))
