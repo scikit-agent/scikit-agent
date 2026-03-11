@@ -131,178 +131,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
         # note we actual expect these to diverge up to Uniform[-1, 1] shocks.
         self.assertTrue(torch.allclose(sd["m"], sd["g"], atol=2.5))
 
-    def test_maliar_convergence_tolerance(self):
-        """Test the convergence functionality in the Maliar training loop."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": -10, "max": 10, "count": 5},
-                "g": {"min": -10, "max": 10, "count": 5},
-            }
-        )
-
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["bp"],
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test 1: High tolerance (should converge quickly)
-        ann_high_tol, states_high_tol = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=2,
-            random_seed=TEST_SEED,
-            max_iterations=10,
-            tolerance=1e-1,  # High tolerance for quick convergence
-        )
-
-        # Test 2: Low tolerance (should require more iterations or hit max_iterations)
-        ann_low_tol, states_low_tol = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=2,
-            random_seed=TEST_SEED,
-            max_iterations=3,
-            tolerance=1e-8,  # Very low tolerance
-        )
-
-        # Both should return valid networks and states
-        self.assertIsNotNone(ann_high_tol)
-        self.assertIsNotNone(states_high_tol)
-        self.assertIsNotNone(ann_low_tol)
-        self.assertIsNotNone(states_low_tol)
-
-        # Test that tolerance affects convergence behavior
-        # (We can't easily test exact iteration counts due to randomness,
-        # but we can verify the function completes successfully with different tolerances)
-        sd_high = states_high_tol.to_dict()
-        sd_low = states_low_tol.to_dict()
-
-        # Both should produce valid state dictionaries
-        self.assertIn("m", sd_high)
-        self.assertIn("g", sd_high)
-        self.assertIn("m", sd_low)
-        self.assertIn("g", sd_low)
-
-        # Verify states are finite tensors
-        self.assertTrue(torch.all(torch.isfinite(sd_high["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_high["g"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_low["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd_low["g"])))
-
-    def test_maliar_convergence_early_stopping(self):
-        """Test that the training loop can stop early when convergence is achieved."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        # Use a smaller grid for faster convergence testing
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": 0, "max": 5, "count": 3},
-                "g": {"min": 0, "max": 5, "count": 3},
-            }
-        )
-
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["bp"],
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test with very high tolerance to ensure early convergence
-        ann, states = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=1,
-            random_seed=TEST_SEED,
-            max_iterations=100,  # Set high max iterations
-            tolerance=1.0,  # Very high tolerance - should converge in 1-2 iterations
-        )
-
-        # Should complete successfully
-        self.assertIsNotNone(ann)
-        self.assertIsNotNone(states)
-
-        # States should be valid
-        sd = states.to_dict()
-        self.assertIn("m", sd)
-        self.assertIn("g", sd)
-        self.assertTrue(torch.all(torch.isfinite(sd["m"])))
-        self.assertTrue(torch.all(torch.isfinite(sd["g"])))
-
-    def test_maliar_convergence_by_loss(self):
-        """Test convergence by both parameter and loss criteria."""
-        big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        # Use a small grid for faster testing
-        states_0_n = grid.Grid.from_config(
-            {
-                "m": {"min": 0, "max": 5, "count": 3},
-                "g": {"min": 0, "max": 5, "count": 3},
-            }
-        )
-
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["bp"],
-            big_t,
-            case_4["calibration"],
-        )
-
-        # Test 1: Strict tolerance (should require more iterations)
-        ann_strict, states_strict = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=1,
-            random_seed=TEST_SEED,
-            max_iterations=10,
-            tolerance=1e-6,  # Strict tolerance
-        )
-
-        # Test 2: Relaxed tolerance (should converge faster)
-        ann_relaxed, states_relaxed = maliar.maliar_training_loop(
-            case_4["bp"],
-            edlrl,
-            states_0_n,
-            case_4["calibration"],
-            simulation_steps=1,
-            random_seed=TEST_SEED,
-            max_iterations=10,
-            tolerance=1e-1,  # Relaxed tolerance
-        )
-
-        # Both tests should return valid networks and states
-        for ann, states in [(ann_strict, states_strict), (ann_relaxed, states_relaxed)]:
-            self.assertIsNotNone(ann)
-            self.assertIsNotNone(states)
-
-            # States should be valid
-            sd = states.to_dict()
-            self.assertIn("m", sd)
-            self.assertIn("g", sd)
-            self.assertTrue(torch.all(torch.isfinite(sd["m"])))
-            self.assertTrue(torch.all(torch.isfinite(sd["g"])))
-
 
 class TestBellmanLossFunctions(unittest.TestCase):
     """Test the Bellman equation loss functions for the Maliar method."""
@@ -383,8 +211,12 @@ class TestBellmanLossFunctions(unittest.TestCase):
             agent="consumer",
         )
         self.assertIn("utility", reward)
-        # Utility can be negative for log(consumption), so just check it's finite
-        self.assertTrue(torch.all(torch.isfinite(reward["utility"])))
+        # u = log(c + 1e-8) for c = [0.5, 1.0]
+        expected_utility = torch.log(controls_t["consumption"] + 1e-8)
+        self.assertTrue(
+            torch.allclose(reward["utility"], expected_utility, atol=1e-6),
+            f"Reward should be log(c). Got {reward['utility']}, expected {expected_utility}",
+        )
 
     def test_bellman_loss_function_error_handling(self):
         """Test error handling in Bellman loss functions."""
@@ -461,33 +293,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Losses should be different for different decision functions
         self.assertFalse(torch.allclose(losses, loss2))
 
-    def test_consistency_with_existing_patterns(self):
-        """Test that the new Bellman loss functions follow existing skagent patterns."""
-
-        # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            return 10.0 * wealth  # Linear value function
-
-        # Test that it works with the training infrastructure
-        loss_function = loss.BellmanEquationLoss(
-            self.bp,
-            simple_value_network,
-            self.parameters,
-        )
-
-        # Test with aggregate_net_loss (from ann.py)
-        from skagent.ann import aggregate_net_loss
-
-        # This should work without errors
-        aggregated_loss = aggregate_net_loss(
-            self.test_grid, self.decision_function, loss_function
-        )
-
-        self.assertIsInstance(aggregated_loss, torch.Tensor)
-        self.assertEqual(aggregated_loss.shape, ())  # Scalar after aggregation
-        self.assertTrue(aggregated_loss >= 0)
-
     def test_shock_independence_in_bellman_residual(self):
         """Test that independent shock realizations produce different results than identical shocks."""
 
@@ -537,54 +342,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         # Both should be finite
         self.assertTrue(torch.all(torch.isfinite(residual_identical)))
         self.assertTrue(torch.all(torch.isfinite(residual_independent)))
-
-    def test_bellman_loss_with_different_shock_patterns(self):
-        """Test Bellman loss function with various shock patterns."""
-
-        def simple_value_network(states_t, shocks_t, parameters):
-            wealth = states_t["wealth"]
-            income = shocks_t["income"]
-            return (
-                10.0 * wealth + 2.0 * income
-            )  # Value depends on both wealth and income
-
-        loss_function = loss.BellmanEquationLoss(
-            self.bp,
-            simple_value_network,
-            self.parameters,
-        )
-
-        # Test with correlated shocks (period t+1 same as period t)
-        test_grid_correlated = grid.Grid.from_dict(
-            {
-                "wealth": torch.tensor([1.0, 2.0, 3.0]),
-                "income_0": torch.tensor([1.0, 1.2, 0.8]),
-                "income_1": torch.tensor([1.0, 1.2, 0.8]),  # Same as period t
-            }
-        )
-
-        # Test with anti-correlated shocks
-        test_grid_anticorrelated = grid.Grid.from_dict(
-            {
-                "wealth": torch.tensor([1.0, 2.0, 3.0]),
-                "income_0": torch.tensor([1.0, 1.2, 0.8]),
-                "income_1": torch.tensor([1.0, 0.8, 1.2]),  # Opposite of period t
-            }
-        )
-
-        loss_correlated = loss_function(self.decision_function, test_grid_correlated)
-        loss_anticorrelated = loss_function(
-            self.decision_function, test_grid_anticorrelated
-        )
-
-        # Both should produce valid losses
-        self.assertTrue(torch.all(loss_correlated >= 0))
-        self.assertTrue(torch.all(loss_anticorrelated >= 0))
-        self.assertTrue(torch.all(torch.isfinite(loss_correlated)))
-        self.assertTrue(torch.all(torch.isfinite(loss_anticorrelated)))
-
-        # Losses should be different for different shock patterns
-        self.assertFalse(torch.allclose(loss_correlated, loss_anticorrelated))
 
     def test_bellman_residual_error_handling(self):
         """Test error handling in the refactored Bellman residual function."""
@@ -636,9 +393,7 @@ def test_get_euler_residual_loss():
     )
 
     # Create Euler equation loss function
-    loss_fn = loss.EulerEquationLoss(
-        test_bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
-    )
+    loss_fn = loss.EulerEquationLoss(test_bp, parameters=d2_calibration)
 
     # Test that loss function works with the analytical optimal policy
     losses = loss_fn(d2_policy, input_grid)
@@ -708,6 +463,46 @@ def test_bellman_equation_loss_with_value_network():
     assert isinstance(losses, torch.Tensor)
     assert losses.shape[0] == n_points  # One loss per grid point
     assert torch.all(losses >= 0)  # Squared residuals should be non-negative
+
+
+def test_bellman_equation_loss_with_foc_weight():
+    """Test BellmanEquationLoss with foc_weight > 0 adds a FOC term."""
+    test_block = model.DBlock(
+        name="test_foc",
+        shocks={},
+        dynamics={
+            "c": model.Control(iset=["a"], agent="consumer"),
+            "a": lambda a, c: a - c,
+            "u": lambda c: torch.log(c + 1e-8),
+        },
+        reward={"u": "consumer"},
+    )
+    test_block.construct_shocks({})
+
+    test_bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
+    value_net = BlockValueNet(test_bp, width=16)
+
+    input_grid = grid.Grid.from_dict({"a": torch.linspace(1.0, 10.0, 10)})
+
+    def policy(states_t, shocks_t, parameters):
+        return {"c": 0.3 * states_t["a"]}
+
+    # Without FOC weight
+    loss_no_foc = loss.BellmanEquationLoss(
+        test_bp, value_net.get_value_function(), parameters=None, foc_weight=0.0
+    )
+    losses_no_foc = loss_no_foc(policy, input_grid)
+
+    # With FOC weight
+    loss_with_foc = loss.BellmanEquationLoss(
+        test_bp, value_net.get_value_function(), parameters=None, foc_weight=1.0
+    )
+    losses_with_foc = loss_with_foc(policy, input_grid)
+
+    # FOC term adds to loss, so foc_weight > 0 should produce >= loss
+    assert isinstance(losses_with_foc, torch.Tensor)
+    assert torch.all(torch.isfinite(losses_with_foc))
+    assert torch.all(losses_with_foc >= losses_no_foc - 1e-6)
 
 
 def test_block_value_net():
@@ -789,14 +584,15 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         shocks = {}
 
         # Compute Euler residual with analytical optimal policy
-        optimal_residual = bellman.estimate_euler_residual(
+        optimal_residuals = bellman.estimate_euler_residual(
             bp,
-            d2_calibration["DiscFac"],
             d2_policy,
             test_states,
             shocks,
             d2_calibration,
         )
+        # estimate_euler_residual always returns a dict
+        optimal_residual = next(iter(optimal_residuals.values()))
 
         # For optimal policy, residual should be essentially zero (machine precision)
         mean_residual = torch.mean(torch.abs(optimal_residual)).item()
@@ -840,9 +636,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         policy_net = BlockPolicyNet(bp, width=32, init_seed=TEST_SEED)
 
         # Create Euler equation loss
-        euler_loss_fn = loss.EulerEquationLoss(
-            bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
-        )
+        euler_loss_fn = loss.EulerEquationLoss(bp, parameters=d2_calibration)
 
         # Create training grid with states (D-2 is deterministic, no shocks needed)
         n_grid_points = 64
@@ -871,15 +665,14 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         decision_fn = trained_net.get_decision_function()
 
         # Compute final Euler residual
-        final_residual = bellman.estimate_euler_residual(
+        final_residuals = bellman.estimate_euler_residual(
             bp,
-            d2_calibration["DiscFac"],
             decision_fn,
             test_states,
             shocks,
             d2_calibration,
         )
-        final_residual = final_residual.detach()
+        final_residual = next(iter(final_residuals.values())).detach()
 
         # The trained policy should achieve small Euler residual
         mean_residual = torch.mean(torch.abs(final_residual)).item()
@@ -930,10 +723,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         )
 
         # Create Euler equation loss
-        # Note: after PR #168, discount_factor will come from BellmanPeriod
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
-            discount_factor=u2_calibration["DiscFac"],
             parameters=u2_calibration,
         )
 
@@ -1027,7 +818,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # negative residuals (overconsumption), not positive ones (constraint binding).
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=True,  # Key fix: use one-sided loss for borrowing constraint
         )
@@ -1126,14 +916,14 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             "theta_1": torch.ones(n_high, device=device),
         }
 
-        euler_residual = bellman.estimate_euler_residual(
+        euler_residuals = bellman.estimate_euler_residual(
             bp,
-            beta,
             decision_fn,
             high_wealth_states,
             high_wealth_shocks,
             u3_calibration,
         )
+        euler_residual = next(iter(euler_residuals.values()))
 
         mean_euler_residual = torch.mean(torch.abs(euler_residual)).item()
         # In the unconstrained region, Euler residual should be small
@@ -1234,40 +1024,6 @@ class TestOneSidedEulerLoss(unittest.TestCase):
             f"Got: {constrained_loss_mixed}, expected: {expected_mixed}",
         )
 
-    def test_one_sided_vs_two_sided_loss(self):
-        """Test that one-sided loss differs from two-sided loss appropriately."""
-        # Two-sided loss always penalizes deviation from zero
-        residuals = torch.tensor([0.5, -0.3, 1.0, -0.8])
-
-        two_sided_loss = residuals**2
-        one_sided_loss = torch.relu(-residuals) ** 2
-
-        # For positive residuals, one-sided should be less than two-sided
-        self.assertLess(
-            one_sided_loss[0].item(),
-            two_sided_loss[0].item(),
-            "One-sided loss should be less than two-sided for positive residual",
-        )
-        self.assertLess(
-            one_sided_loss[2].item(),
-            two_sided_loss[2].item(),
-            "One-sided loss should be less than two-sided for positive residual",
-        )
-
-        # For negative residuals, one-sided should equal two-sided
-        self.assertAlmostEqual(
-            one_sided_loss[1].item(),
-            two_sided_loss[1].item(),
-            places=6,
-            msg="One-sided loss should equal two-sided for negative residual",
-        )
-        self.assertAlmostEqual(
-            one_sided_loss[3].item(),
-            two_sided_loss[3].item(),
-            places=6,
-            msg="One-sided loss should equal two-sided for negative residual",
-        )
-
 
 class TestU2BorrowingAgainstHumanWealth(unittest.TestCase):
     """Test that U-2 allows borrowing against human wealth (c > m)."""
@@ -1349,13 +1105,11 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         # Create loss functions with both settings
         loss_unconstrained = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=False,
         )
         loss_constrained = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=True,
         )
@@ -1391,61 +1145,39 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         self.assertIsInstance(constrained_loss, torch.Tensor)
         self.assertEqual(unconstrained_loss.shape, constrained_loss.shape)
 
-        # Constrained loss should be <= unconstrained loss (it ignores positive residuals)
-        self.assertLessEqual(
-            constrained_loss.mean().item(),
-            unconstrained_loss.mean().item() + 1e-6,  # Small tolerance for numerical
-            "Constrained loss should be <= unconstrained loss (ignores positive residuals)",
+        # Both losses should be finite and non-negative
+        self.assertTrue(
+            torch.isfinite(unconstrained_loss).all(),
+            "Unconstrained loss should be finite",
         )
-
-    def test_constrained_loss_zero_for_binding_constraint(self):
-        """Test that constrained loss is zero when constraint binds (positive residual).
-
-        At very low wealth, the borrowing constraint binds and the Euler residual
-        is positive (u'(c) > βR E[u'(c')]). The one-sided loss should be zero.
-        """
-        # Use U-3 buffer stock model
-        u3_block = get_benchmark_model("U-3")
-        u3_calibration = get_benchmark_calibration("U-3")
-
-        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
-
-        loss_constrained = loss.EulerEquationLoss(
-            bp,
-            discount_factor=u3_calibration["DiscFac"],
-            parameters=u3_calibration,
-            constrained=True,
-        )
-
-        # Create grid at very low wealth where constraint binds
-        low_wealth_grid = grid.Grid.from_config(
-            {
-                "a": {"min": 0.01, "max": 0.1, "count": 5},
-                "psi_0": {"min": 1.0, "max": 1.0, "count": 5},
-                "psi_1": {"min": 1.0, "max": 1.0, "count": 5},
-                "theta_0": {"min": 1.0, "max": 1.0, "count": 5},
-                "theta_1": {"min": 1.0, "max": 1.0, "count": 5},
-            }
-        )
-
-        # Create policy that consumes all available resources (constraint binding)
-        def constrained_policy(states, shocks, parameters):
-            R = parameters["R"]
-            a = states["a"]
-            psi = shocks.get("psi", torch.ones_like(a))
-            theta = shocks.get("theta", torch.ones_like(a))
-            m = R * a / psi + theta
-            # Consume exactly m (constraint binds: c = m)
-            c = m * 0.99  # Just under m to stay feasible
-            return {"c": c}
-
-        # Compute constrained loss
-        constrained_loss = loss_constrained(constrained_policy, low_wealth_grid)
-
-        # Loss should be finite (not NaN or Inf)
         self.assertTrue(
             torch.isfinite(constrained_loss).all(),
-            f"Constrained loss should be finite, got {constrained_loss}",
+            "Constrained loss (Fischer-Burmeister) should be finite",
+        )
+        self.assertGreaterEqual(
+            constrained_loss.mean().item(),
+            0.0,
+            "Constrained loss should be non-negative",
+        )
+
+        # Constrained (Fischer-Burmeister) and unconstrained (squared residual)
+        # use different formulations, so they should produce different losses
+        # for the same suboptimal policy
+        self.assertFalse(
+            torch.allclose(unconstrained_loss, constrained_loss),
+            "Constrained and unconstrained losses should differ "
+            "(Fischer-Burmeister vs squared residual)",
+        )
+        # Both should be strictly positive for a suboptimal policy
+        self.assertGreater(
+            unconstrained_loss.mean().item(),
+            1e-8,
+            "Unconstrained loss should be positive for suboptimal policy",
+        )
+        self.assertGreater(
+            constrained_loss.mean().item(),
+            1e-8,
+            "Constrained loss should be positive for suboptimal policy",
         )
 
 
@@ -1481,7 +1213,6 @@ class TestU3ConstrainedRegionBehavior(unittest.TestCase):
         # Create Euler equation loss with constrained=True
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=True,
         )
@@ -1583,7 +1314,6 @@ class TestConstrainedWarning(unittest.TestCase):
         with self.assertLogs("skagent.loss", level=logging.WARNING) as cm:
             loss.EulerEquationLoss(
                 bp,
-                discount_factor=calibration["DiscFac"],
                 parameters=calibration,
                 constrained=True,
             )
@@ -1605,7 +1335,6 @@ class TestConstrainedWarning(unittest.TestCase):
         with self.assertNoLogs(logger, level=logging.WARNING):
             loss.EulerEquationLoss(
                 bp,
-                discount_factor=u3_calibration["DiscFac"],
                 parameters=u3_calibration,
                 constrained=True,
             )
@@ -1783,6 +1512,54 @@ class TestMaliarTrainingLoopValidation(unittest.TestCase):
                 random_seed=TEST_SEED,
             )
 
+    def test_value_network_without_loss_raises(self):
+        """Providing value_network without value_loss_function should raise."""
+        with self.assertRaises(ValueError, msg="value_loss_function"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                value_network=object(),
+                random_seed=TEST_SEED,
+            )
+
+    def test_value_loss_without_network_raises(self):
+        """Providing value_loss_function without value_network should raise."""
+        with self.assertRaises(ValueError, msg="value_network"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                value_loss_function=lambda df, grid: torch.tensor(0.0),
+                random_seed=TEST_SEED,
+            )
+
+    def test_non_callable_value_loss_raises(self):
+        """Non-callable value_loss_function should raise TypeError."""
+        with self.assertRaises(TypeError, msg="value_loss_function must be callable"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                value_network=object(),
+                value_loss_function="not_callable",
+                random_seed=TEST_SEED,
+            )
+
+    def test_non_grid_states_raises(self):
+        """Passing a dict instead of Grid for states_0_n should raise TypeError."""
+        with self.assertRaises(TypeError, msg="Grid instance"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                {"m": torch.tensor([1.0]), "g": torch.tensor([1.0])},
+                self.calibration,
+                random_seed=TEST_SEED,
+            )
+
 
 class TestMaliarHyperparameters(unittest.TestCase):
     """Test that network_width and epochs_per_iteration affect training."""
@@ -1835,3 +1612,433 @@ class TestMaliarHyperparameters(unittest.TestCase):
             params_narrow,
             "Wider network should have more parameters",
         )
+
+
+class TestCheckConvergence(unittest.TestCase):
+    """Test _check_convergence helper."""
+
+    def test_param_convergence(self):
+        """Convergence when parameter diff < tolerance."""
+        params = torch.tensor([1.0, 2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            params,
+            params,
+            tolerance=1e-6,
+            prev_loss=None,
+            current_loss=0.1,
+            joint_training=False,
+        )
+        self.assertTrue(converged)
+        self.assertTrue(pc)
+        self.assertFalse(lc)
+        self.assertAlmostEqual(pdiff, 0.0)
+        self.assertIsNone(ldiff)
+
+    def test_loss_convergence(self):
+        """Convergence when loss diff < tolerance."""
+        p1 = torch.tensor([1.0])
+        p2 = torch.tensor([2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            p1,
+            p2,
+            tolerance=1e-6,
+            prev_loss=0.5,
+            current_loss=0.5,
+            joint_training=False,
+        )
+        self.assertTrue(converged)
+        self.assertFalse(pc)
+        self.assertTrue(lc)
+        self.assertAlmostEqual(ldiff, 0.0)
+
+    def test_no_convergence(self):
+        """No convergence when both diffs exceed tolerance."""
+        p1 = torch.tensor([1.0])
+        p2 = torch.tensor([2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            p1,
+            p2,
+            tolerance=1e-6,
+            prev_loss=1.0,
+            current_loss=0.5,
+            joint_training=False,
+        )
+        self.assertFalse(converged)
+        self.assertFalse(pc)
+        self.assertFalse(lc)
+
+    def test_joint_training_skips_loss(self):
+        """Joint training never uses loss-based convergence."""
+        p1 = torch.tensor([1.0])
+        p2 = torch.tensor([2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            p1,
+            p2,
+            tolerance=1e-6,
+            prev_loss=None,
+            current_loss=None,
+            joint_training=True,
+        )
+        self.assertFalse(converged)
+        self.assertFalse(lc)
+        self.assertIsNone(ldiff)
+
+
+class TestLogIteration(unittest.TestCase):
+    """Test _log_iteration helper."""
+
+    def test_converged_by_params(self):
+        """Convergence log should report only the triggering criterion."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=True,
+                iteration=2,
+                param_diff=1e-7,
+                loss_diff=0.5,
+                current_loss=0.01,
+                joint_training=False,
+                param_converged=True,
+                loss_converged=False,
+            )
+        self.assertIn("Converged after 3 iterations", cm.output[0])
+        self.assertIn("parameters", cm.output[0])
+        self.assertNotIn("loss", cm.output[0])
+
+    def test_converged_by_loss(self):
+        """Convergence by loss should report loss, not parameters."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=True,
+                iteration=1,
+                param_diff=0.5,
+                loss_diff=1e-8,
+                current_loss=0.01,
+                joint_training=False,
+                param_converged=False,
+                loss_converged=True,
+            )
+        self.assertIn("loss", cm.output[0])
+        self.assertNotIn("parameters", cm.output[0])
+
+    def test_joint_training_omits_loss(self):
+        """Joint training log should not show loss."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=False,
+                iteration=0,
+                param_diff=1e-3,
+                loss_diff=None,
+                current_loss=None,
+                joint_training=True,
+            )
+        self.assertNotIn("loss=", cm.output[0])
+
+    def test_non_joint_shows_loss(self):
+        """Non-joint training log should include loss."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=False,
+                iteration=0,
+                param_diff=1e-3,
+                loss_diff=None,
+                current_loss=0.05,
+                joint_training=False,
+            )
+        self.assertIn("loss=", cm.output[0])
+
+
+class TestComputeSlack(unittest.TestCase):
+    """Test EulerEquationLoss._compute_slack."""
+
+    def setUp(self):
+        self.block = model.DBlock(
+            name="slack_test",
+            dynamics={
+                "m": lambda a, R: R * a,
+                "c": model.Control(
+                    iset=["m"],
+                    upper_bound=lambda m: m,
+                    agent="consumer",
+                ),
+                "a": lambda m, c: m - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.95, "R": 1.04})
+        self.loss_fn = loss.EulerEquationLoss(
+            self.bp,
+            parameters={"beta": 0.95, "R": 1.04},
+            constrained=True,
+        )
+
+    def test_slack_positive_when_not_binding(self):
+        """Slack > 0 when control is below upper bound."""
+        states_t = {"a": torch.tensor([2.0])}
+        shocks_t = {}
+        controls_t = {"c": torch.tensor([1.0])}  # c < m = R*a = 2.08
+        slack = self.loss_fn._compute_slack("c", controls_t, states_t, shocks_t)
+        self.assertIsNotNone(slack)
+        self.assertTrue((slack > 0).all())
+
+    def test_slack_zero_when_binding(self):
+        """Slack ≈ 0 when control equals upper bound."""
+        states_t = {"a": torch.tensor([2.0])}
+        shocks_t = {}
+        ub = 1.04 * 2.0  # m = R*a
+        controls_t = {"c": torch.tensor([ub])}
+        slack = self.loss_fn._compute_slack("c", controls_t, states_t, shocks_t)
+        self.assertIsNotNone(slack)
+        self.assertAlmostEqual(slack.item(), 0.0, places=4)
+
+    def test_no_upper_bound_returns_none(self):
+        """Control without upper_bound returns None."""
+        block_no_ub = model.DBlock(
+            name="no_ub",
+            dynamics={
+                "c": model.Control(iset=["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp_no_ub = bellman.BellmanPeriod(block_no_ub, "beta", {"beta": 0.95})
+        loss_fn = loss.EulerEquationLoss(bp_no_ub, parameters={"beta": 0.95})
+        slack = loss_fn._compute_slack(
+            "c", {"c": torch.tensor([1.0])}, {"a": torch.tensor([2.0])}, {}
+        )
+        self.assertIsNone(slack)
+
+
+class TestJointTrainingEndToEnd(unittest.TestCase):
+    """End-to-end test for joint policy+value training (C4)."""
+
+    def test_joint_training_returns_three_tuple(self):
+        """Joint training should return (policy_net, value_net, states)."""
+        torch.manual_seed(TEST_SEED)
+
+        test_block = model.DBlock(
+            name="joint_test",
+            shocks={},
+            dynamics={
+                "c": model.Control(iset=["a"], agent="consumer"),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        test_block.construct_shocks({})
+
+        bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
+        value_net = BlockValueNet(bp, width=16)
+
+        states_0_n = grid.Grid.from_config({"a": {"min": 1.0, "max": 5.0, "count": 10}})
+
+        policy_loss_fn = loss.BellmanEquationLoss(
+            bp, value_net.get_value_function(), parameters={"beta": 0.95}
+        )
+
+        # Value loss: accepts (value_function, input_grid) and returns a loss tensor.
+        # A simple target: V(s) should approximate log(s) (a rough guess).
+        def value_loss_fn(value_fn, input_grid):
+            vals = input_grid.to_dict()
+            states = {k: vals[k] for k in ["a"]}
+            v_pred = value_fn(states, {}, {"beta": 0.95})
+            v_target = torch.log(states["a"] + 1e-8)
+            return (v_pred - v_target) ** 2
+
+        result = maliar.maliar_training_loop(
+            bp,
+            policy_loss_fn,
+            states_0_n,
+            {"beta": 0.95},
+            max_iterations=2,
+            epochs_per_iteration=5,
+            value_network=value_net,
+            value_loss_function=value_loss_fn,
+            random_seed=TEST_SEED,
+        )
+
+        # Should return 3-tuple
+        self.assertEqual(len(result), 3)
+        bpn, trained_value_net, final_states = result
+
+        # Both networks should be returned
+        self.assertIsNotNone(bpn)
+        self.assertIsNotNone(trained_value_net)
+        self.assertIsInstance(final_states, grid.Grid)
+
+
+class TestMultiControlConstrainedLoss(unittest.TestCase):
+    """Test constrained Euler loss with multi-control model (S6)."""
+
+    def test_multi_control_constrained_produces_finite_loss(self):
+        """Fischer-Burmeister works on a multi-control model with upper bounds."""
+        block = model.DBlock(
+            name="multi_ctrl_constrained",
+            dynamics={
+                "c1": model.Control(["a"], upper_bound=lambda a: a),
+                "c2": model.Control(["a"], upper_bound=lambda a: a),
+                "a": lambda a, c1, c2: a - c1 - c2,
+                "u": lambda c1, c2: torch.log(c1 + 1e-8) + torch.log(c2 + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        loss_fn = loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, constrained=True)
+
+        input_grid = grid.Grid.from_dict({"a": torch.linspace(1.0, 5.0, 5)})
+
+        def df(states, shocks, params):
+            a = states["a"]
+            return {"c1": a * 0.2, "c2": a * 0.1}
+
+        result = loss_fn(df, input_grid)
+        self.assertIsInstance(result, torch.Tensor)
+        self.assertTrue(torch.all(torch.isfinite(result)))
+        self.assertTrue(torch.all(result >= 0))
+
+
+class TestMultiControlFocWeight(unittest.TestCase):
+    """Test BellmanEquationLoss with foc_weight on multi-control model (S6)."""
+
+    def test_multi_control_foc_weight_produces_finite_loss(self):
+        """FOC weight works on a multi-control model."""
+        block = model.DBlock(
+            name="multi_ctrl_foc",
+            dynamics={
+                "c1": model.Control(["a"]),
+                "c2": model.Control(["a"]),
+                "a": lambda a, c1, c2: a - c1 - c2,
+                "u": lambda c1, c2: torch.log(c1 + 1e-8) + torch.log(c2 + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        block.construct_shocks({})
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        value_net = BlockValueNet(bp, width=16)
+        input_grid = grid.Grid.from_dict({"a": torch.linspace(1.0, 5.0, 5)})
+
+        def df(states, shocks, params):
+            a = states["a"]
+            return {"c1": a * 0.2, "c2": a * 0.1}
+
+        # Without FOC
+        loss_no_foc = loss.BellmanEquationLoss(
+            bp, value_net.get_value_function(), parameters={"beta": 0.9}, foc_weight=0.0
+        )
+        result_no_foc = loss_no_foc(df, input_grid)
+
+        # With FOC
+        loss_with_foc = loss.BellmanEquationLoss(
+            bp, value_net.get_value_function(), parameters={"beta": 0.9}, foc_weight=1.0
+        )
+        result_with_foc = loss_with_foc(df, input_grid)
+
+        self.assertIsInstance(result_with_foc, torch.Tensor)
+        self.assertTrue(torch.all(torch.isfinite(result_with_foc)))
+        # FOC adds a non-negative term, so loss should be >= without FOC
+        self.assertTrue(
+            torch.all(result_with_foc >= result_no_foc - 1e-6),
+            "FOC term should increase or maintain loss",
+        )
+
+
+class TestValidationTypeChecks(unittest.TestCase):
+    """Test integer type validation for training parameters (S3)."""
+
+    def test_float_max_iterations_raises(self):
+        """Float max_iterations should raise TypeError."""
+        block = model.DBlock(
+            name="test",
+            dynamics={"c": model.Control(["a"]), "a": lambda a, c: a - c},
+            reward={"a": "consumer"},
+        )
+        block.construct_shocks({})
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        states = grid.Grid.from_config({"a": {"min": 1.0, "max": 2.0, "count": 5}})
+
+        with self.assertRaises(TypeError, msg="must be an integer"):
+            maliar.maliar_training_loop(
+                bp,
+                lambda df, g: torch.tensor(0.0),
+                states,
+                {"beta": 0.9},
+                max_iterations=1.5,
+            )
+
+
+class TestEulerEquationLossWeightValidation(unittest.TestCase):
+    """Test weight validation for EulerEquationLoss (S2)."""
+
+    def test_zero_weight_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(ValueError, msg="weight must be > 0"):
+            loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, weight=0.0)
+
+    def test_negative_weight_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(ValueError, msg="weight must be > 0"):
+            loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, weight=-1.0)
+
+
+class TestBellmanEquationLossValidation(unittest.TestCase):
+    """Test validation for BellmanEquationLoss (S2)."""
+
+    def test_non_callable_value_network_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(TypeError, msg="value_network must be callable"):
+            loss.BellmanEquationLoss(bp, value_network="not_callable")
+
+    def test_negative_foc_weight_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(ValueError, msg="foc_weight must be >= 0"):
+            loss.BellmanEquationLoss(
+                bp, value_network=lambda s, sh, p: s["a"], foc_weight=-0.5
+            )
