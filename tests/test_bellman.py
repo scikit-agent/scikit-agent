@@ -647,12 +647,15 @@ class TestEstimateBellmanFocResidual(unittest.TestCase):
             "income_1": torch.tensor([1.2, 0.8]),
         }
 
-        residual_half = bellman.estimate_bellman_foc_residual(
+        result_half = bellman.estimate_bellman_foc_residual(
             self.bp, value_fn, decision_fn_half, states_t, shocks
         )
-        residual_quarter = bellman.estimate_bellman_foc_residual(
+        result_quarter = bellman.estimate_bellman_foc_residual(
             self.bp, value_fn, decision_fn_quarter, states_t, shocks
         )
+        self.assertIsInstance(result_half, dict)
+        residual_half = next(iter(result_half.values()))
+        residual_quarter = next(iter(result_quarter.values()))
         self.assertEqual(residual_half.shape, (2,))
         self.assertTrue(torch.all(torch.isfinite(residual_half)))
         self.assertTrue(torch.all(torch.isfinite(residual_quarter)))
@@ -711,3 +714,117 @@ class TestEnsureGrad(unittest.TestCase):
         c = torch.tensor(0.5, requires_grad=False)
         result, controls = bellman._ensure_grad({"c": c}, "c")
         self.assertTrue(result.requires_grad)
+
+
+class TestResolveDiscountFactor(unittest.TestCase):
+    """Test resolve_discount_factor error handling."""
+
+    def test_missing_discount_variable_raises(self):
+        """KeyError when discount variable is not in post dict."""
+        block = model.DBlock(
+            name="test",
+            dynamics={"c": model.Control(["a"]), "a": lambda a, c: a - c},
+            reward={},
+        )
+        bp = bellman.BellmanPeriod(block, "nonexistent_var", {"beta": 0.9})
+        post = {"a": torch.tensor(1.0)}
+
+        with self.assertRaises(KeyError, msg="nonexistent_var"):
+            bp.resolve_discount_factor(post)
+
+    def test_resolves_scalar(self):
+        """Resolves a scalar discount factor from post dict."""
+        block = model.DBlock(
+            name="test",
+            dynamics={"c": model.Control(["a"]), "a": lambda a, c: a - c},
+            reward={},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        post = {"beta": 0.95, "a": torch.tensor(1.0)}
+
+        result = bp.resolve_discount_factor(post)
+        self.assertEqual(result, 0.95)
+
+
+class TestEstimateBellmanResidualNaN(unittest.TestCase):
+    """Test NaN/Inf handling in estimate_bellman_residual."""
+
+    def setUp(self):
+        self.block, self.bp = _make_consumption_savings_bp()
+
+    def test_nan_value_function_raises(self):
+        """ValueError when value function returns NaN."""
+
+        def nan_value_fn(states, shocks, params):
+            return torch.full_like(states["wealth"], float("nan"))
+
+        def df(states, shocks, params):
+            return {"consumption": 0.5 * states["wealth"]}
+
+        states_t = {"wealth": torch.tensor([2.0])}
+        shocks = {
+            "income_0": torch.tensor([1.0]),
+            "income_1": torch.tensor([1.0]),
+        }
+
+        with self.assertRaises(ValueError, msg="NaN or Inf"):
+            bellman.estimate_bellman_residual(
+                self.bp, nan_value_fn, df, states_t, shocks
+            )
+
+    def test_inf_value_function_raises(self):
+        """ValueError when value function returns Inf."""
+
+        def inf_value_fn(states, shocks, params):
+            return torch.full_like(states["wealth"], float("inf"))
+
+        def df(states, shocks, params):
+            return {"consumption": 0.5 * states["wealth"]}
+
+        states_t = {"wealth": torch.tensor([2.0])}
+        shocks = {
+            "income_0": torch.tensor([1.0]),
+            "income_1": torch.tensor([1.0]),
+        }
+
+        with self.assertRaises(ValueError, msg="NaN or Inf"):
+            bellman.estimate_bellman_residual(
+                self.bp, inf_value_fn, df, states_t, shocks
+            )
+
+
+class TestSingleControlEulerReturnsDict(unittest.TestCase):
+    """estimate_euler_residual should always return a dict."""
+
+    def test_single_control_returns_dict(self):
+        _, bp = _make_consumption_savings_bp()
+
+        def df(s, sh, p):
+            return {"consumption": 0.5 * s["wealth"]}
+
+        result = bellman.estimate_euler_residual(
+            bp,
+            df,
+            {"wealth": torch.tensor([2.0])},
+            {"income_0": torch.tensor([1.0]), "income_1": torch.tensor([1.0])},
+            {"beta": 0.9},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertIn("consumption", result)
+        self.assertIsInstance(result["consumption"], torch.Tensor)
+
+
+class TestFischerBurmeisterEpsValidation(unittest.TestCase):
+    """Test eps parameter validation."""
+
+    def test_zero_eps_raises(self):
+        a = torch.tensor(1.0)
+        h = torch.tensor(1.0)
+        with self.assertRaises(ValueError, msg="eps must be > 0"):
+            bellman.fischer_burmeister(a, h, eps=0.0)
+
+    def test_negative_eps_raises(self):
+        a = torch.tensor(1.0)
+        h = torch.tensor(1.0)
+        with self.assertRaises(ValueError, msg="eps must be > 0"):
+            bellman.fischer_burmeister(a, h, eps=-1e-12)

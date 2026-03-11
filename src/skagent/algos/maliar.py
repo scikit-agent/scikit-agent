@@ -192,6 +192,8 @@ def _validate_training_inputs(
         ("network_width", network_width, 1),
         ("epochs_per_iteration", epochs_per_iteration, 1),
     ]:
+        if not isinstance(val, int):
+            raise TypeError(f"{name} must be an integer, got {type(val).__name__}")
         if val < lo:
             raise ValueError(f"{name} must be >= {lo}, got {val}")
     if tolerance <= 0:
@@ -210,6 +212,12 @@ def _check_convergence(
     prev_params, curr_params, tolerance, prev_loss, current_loss, joint_training
 ):
     """Return ``(converged, param_diff, loss_diff, param_converged, loss_converged)``."""
+    if current_loss is not None and not isinstance(current_loss, (int, float)):
+        raise TypeError(
+            f"current_loss must be a Python scalar (int or float), "
+            f"got {type(current_loss).__name__}. "
+            "Ensure the loss function returns a scalar via .item()."
+        )
     param_diff = utils.compute_parameter_difference(prev_params, curr_params)
     param_converged = param_diff < tolerance
 
@@ -245,12 +253,13 @@ def _log_iteration(
             reasons.append(f"parameters (diff={param_diff:.2e})")
         if loss_converged:
             reasons.append(f"loss (diff={loss_diff:.2e})")
-        logging.info(
-            f"Converged after {iteration + 1} iterations by {', '.join(reasons)}"
-        )
+        reason_str = ", ".join(reasons) if reasons else "unknown criterion"
+        logging.info(f"Converged after {iteration + 1} iterations by {reason_str}")
     else:
         msg = f"Iteration {iteration + 1}: param_diff={param_diff:.2e}"
-        if current_loss is not None:
+        if joint_training:
+            msg += " [joint: loss convergence disabled]"
+        elif current_loss is not None:
             msg += f", loss={current_loss:.2e}"
             if loss_diff is not None:
                 msg += f" (loss_diff={loss_diff:.2e})"
@@ -269,7 +278,7 @@ def maliar_training_loop(
     simulation_steps: int = 1,
     network_width: int = 16,
     epochs_per_iteration: int = 250,
-    value_network: Optional[object] = None,
+    value_network: Optional[Callable] = None,
     value_loss_function: Optional[Callable] = None,
 ) -> tuple:
     """
@@ -285,6 +294,13 @@ def maliar_training_loop(
     :func:`~skagent.ann.train_block_value_and_policy_nn`.  This is the
     Bellman-equation approach where both a policy and a value approximation are
     updated simultaneously (Maliar et al. 2021, Section 2.3).
+
+    .. note::
+
+       In joint training mode, ``train_block_value_and_policy_nn`` does not
+       return a scalar loss, so loss-based convergence checking is disabled.
+       Convergence is assessed by parameter change only. Monitor training
+       logs for the ``[joint: loss convergence disabled]`` annotation.
 
     Parameters
     ----------
@@ -370,6 +386,13 @@ def maliar_training_loop(
     bpn = ann.BlockPolicyNet(bellman_period, width=network_width)
     states = states_0_n
     prev_loss = None
+
+    if joint_training:
+        logging.info(
+            "Joint training enabled: convergence is assessed by parameter "
+            "change only (loss-based convergence check is unavailable because "
+            "train_block_value_and_policy_nn does not return a scalar loss)."
+        )
 
     for iteration in range(max_iterations):
         prev_params = utils.extract_parameters(bpn)

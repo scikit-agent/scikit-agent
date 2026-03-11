@@ -11,6 +11,7 @@ and framing them in terms of arrival states, shocks, and decisions.
 from __future__ import annotations
 
 import inspect
+import logging
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
@@ -691,6 +692,8 @@ def fischer_burmeister(
         Fischer-Burmeister residual. Approximately zero when the
         complementarity conditions are satisfied.
     """
+    if eps <= 0:
+        raise ValueError(f"eps must be > 0, got {eps}")
     return a + h - torch.sqrt(a**2 + h**2 + eps)
 
 
@@ -955,12 +958,21 @@ def estimate_bellman_residual(
     # Return residual: V(s) - [u(s,c,ε) + β V(s')]
     bellman_residual = current_values - bellman_rhs
 
-    if torch.any(torch.isnan(bellman_residual)):
+    if torch.any(torch.isnan(bellman_residual)) or torch.any(
+        torch.isinf(bellman_residual)
+    ):
+        # Provide detailed diagnostics to help locate the source
+        def _range_str(t):
+            if not isinstance(t, torch.Tensor):
+                return str(t)
+            return f"[{t.min().item():.2e}, {t.max().item():.2e}]"
+
         raise ValueError(
-            "Bellman residual contains NaN. Check value_function outputs "
-            f"(current_values NaN: {torch.any(torch.isnan(current_values)).item()}, "
-            f"continuation_values NaN: {torch.any(torch.isnan(continuation_values)).item()}, "
-            f"immediate_reward NaN: {torch.any(torch.isnan(immediate_reward)).item()})."
+            "Bellman residual contains NaN or Inf. "
+            f"immediate_reward range: {_range_str(immediate_reward)}, "
+            f"discount_factor: {_range_str(discount_factor)}, "
+            f"continuation_values range: {_range_str(continuation_values)}, "
+            f"current_values range: {_range_str(current_values)}."
         )
 
     return bellman_residual
@@ -977,20 +989,40 @@ def _chain_rule_return_factor(
 
     Raises ``ValueError`` if no chain-rule path contributes.
     """
+    if torch.any(torch.isnan(like)) or torch.any(torch.isinf(like)):
+        raise ValueError(
+            f"Euler residual: marginal_reward_t1 contains NaN or Inf for "
+            f"control '{control_sym}'. Cannot compute chain-rule return factor."
+        )
+
     total = torch.zeros_like(like)
 
     for state_sym in bellman_period.arrival_states:
         trans_grad = transition_gradients[state_sym]
         if trans_grad is None:
+            logging.debug(
+                "Transition gradient d(%s)/d(%s) is None (no computational path). "
+                "If unexpected, check that control '%s' tensors require_grad.",
+                state_sym,
+                control_sym,
+                control_sym,
+            )
             continue
         for state_grads in pre_state_gradients.values():
             pre_state_grad = state_grads.get(state_sym)
             if pre_state_grad is not None:
                 total = total + pre_state_grad * trans_grad
 
-    if torch.any(torch.isnan(total)) or torch.any(torch.isinf(total)):
+    if torch.any(torch.isnan(total)):
         raise ValueError(
-            f"Euler residual: return_factor_sum contains NaN or Inf for "
+            f"Euler residual: return_factor_sum contains NaN for "
+            f"control '{control_sym}'. This indicates ill-conditioned "
+            "transition or pre-state gradients. Check block dynamics for "
+            "numerical stability."
+        )
+    if torch.any(torch.isinf(total)):
+        raise ValueError(
+            f"Euler residual: return_factor_sum contains Inf for "
             f"control '{control_sym}'. This indicates ill-conditioned "
             "transition or pre-state gradients. Check block dynamics for "
             "numerical stability."
@@ -1112,7 +1144,8 @@ def estimate_euler_residual(
     shocks: dict[str, Any],
     parameters: dict[str, Any] | None = None,
     agent: str | None = None,
-) -> torch.Tensor | dict[str, torch.Tensor]:
+    controls_t: dict[str, Any] | None = None,
+) -> dict[str, torch.Tensor]:
     r"""Compute the Euler equation residual for given states and shocks.
 
     The Euler equation is the first-order condition from the Bellman equation,
@@ -1130,9 +1163,6 @@ def estimate_euler_residual(
 
     The discount factor :math:`\beta` is obtained from the model via
     ``bellman_period.discount_variable``.
-
-    For single-control models, a single tensor is returned.  For multi-control
-    models, a dict mapping each control symbol to its Euler residual is returned.
 
     Following Maliar et al. (2021, JME) Definition 2.7, this function uses two
     independent shock realizations (AiO expectation operator).
@@ -1153,21 +1183,26 @@ def estimate_euler_residual(
         Model parameters for calibration.
     agent : str | None, optional
         Agent identifier for rewards.
+    controls_t : dict[str, Any] | None, optional
+        Pre-computed period-t controls. When provided, the function skips its
+        internal ``compute_controls`` call for period t.  This is used by
+        ``EulerEquationLoss`` to share the same control tensors between the
+        residual computation and the constraint slack computation.
 
     Returns
     -------
-    torch.Tensor | dict[str, torch.Tensor]
-        Single-control models return a tensor.  Multi-control models return
-        ``{control_sym: residual_tensor}``.
+    dict[str, torch.Tensor]
+        Mapping from each control symbol to its Euler residual tensor.
     """
     shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
 
     reward_sym = bellman_period.get_reward_sym(agent)
 
     # Period-t controls and transition
-    controls_t = bellman_period.compute_controls(
-        df, states_t, shocks=shocks_t, parameters=parameters
-    )
+    if controls_t is None:
+        controls_t = bellman_period.compute_controls(
+            df, states_t, shocks=shocks_t, parameters=parameters
+        )
     states_t_plus_1 = bellman_period.transition_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
@@ -1205,8 +1240,6 @@ def estimate_euler_residual(
             agent,
         )
 
-    if len(residuals) == 1:
-        return next(iter(residuals.values()))
     return residuals
 
 
@@ -1218,7 +1251,7 @@ def estimate_bellman_foc_residual(
     shocks: dict[str, Any],
     parameters: dict[str, Any] | None = None,
     agent: str | None = None,
-) -> torch.Tensor | dict[str, torch.Tensor]:
+) -> dict[str, torch.Tensor]:
     r"""Compute the first-order condition (FOC) residual from the Bellman equation.
 
     The Bellman equation is:
@@ -1261,8 +1294,8 @@ def estimate_bellman_foc_residual(
 
     Returns
     -------
-    torch.Tensor | dict[str, torch.Tensor]
-        Single-control: tensor.  Multi-control: ``{control_sym: residual}``.
+    dict[str, torch.Tensor]
+        Mapping from each control symbol to its FOC residual tensor.
     """
     shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
     reward_sym = bellman_period.get_reward_sym(agent)
@@ -1314,18 +1347,25 @@ def estimate_bellman_foc_residual(
             c_t,
             create_graph=True,
             retain_graph=True,
+            allow_unused=True,
         )[0]
 
-        if dv_dc is None or torch.any(torch.isnan(dv_dc)):
+        if dv_dc is None:
             raise ValueError(
-                f"Autograd gradient dV/dc for control '{control_sym}' is "
-                f"{'None' if dv_dc is None else 'NaN'}. "
-                "Check that value_function is differentiable and properly initialized."
+                f"Autograd returned None for dV/d{control_sym}. "
+                f"The value function has no differentiable path to control "
+                f"'{control_sym}'. Ensure the value network does not detach "
+                "the computation graph (avoid .detach(), .item(), or "
+                "torch.no_grad() inside value_function)."
+            )
+        if torch.any(torch.isnan(dv_dc)):
+            raise ValueError(
+                f"Autograd gradient dV/d{control_sym} is NaN. "
+                "Check that value_function is properly initialized and "
+                "numerically stable."
             )
 
         # FOC: u'(c) + β * ∂V(s',ε')/∂c = 0
         residuals[control_sym] = mr_t + discount_factor * dv_dc
 
-    if len(residuals) == 1:
-        return next(iter(residuals.values()))
     return residuals

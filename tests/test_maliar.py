@@ -584,13 +584,15 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         shocks = {}
 
         # Compute Euler residual with analytical optimal policy
-        optimal_residual = bellman.estimate_euler_residual(
+        optimal_residuals = bellman.estimate_euler_residual(
             bp,
             d2_policy,
             test_states,
             shocks,
             d2_calibration,
         )
+        # estimate_euler_residual always returns a dict
+        optimal_residual = next(iter(optimal_residuals.values()))
 
         # For optimal policy, residual should be essentially zero (machine precision)
         mean_residual = torch.mean(torch.abs(optimal_residual)).item()
@@ -663,14 +665,14 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         decision_fn = trained_net.get_decision_function()
 
         # Compute final Euler residual
-        final_residual = bellman.estimate_euler_residual(
+        final_residuals = bellman.estimate_euler_residual(
             bp,
             decision_fn,
             test_states,
             shocks,
             d2_calibration,
         )
-        final_residual = final_residual.detach()
+        final_residual = next(iter(final_residuals.values())).detach()
 
         # The trained policy should achieve small Euler residual
         mean_residual = torch.mean(torch.abs(final_residual)).item()
@@ -914,13 +916,14 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             "theta_1": torch.ones(n_high, device=device),
         }
 
-        euler_residual = bellman.estimate_euler_residual(
+        euler_residuals = bellman.estimate_euler_residual(
             bp,
             decision_fn,
             high_wealth_states,
             high_wealth_shocks,
             u3_calibration,
         )
+        euler_residual = next(iter(euler_residuals.values()))
 
         mean_euler_residual = torch.mean(torch.abs(euler_residual)).item()
         # In the unconstrained region, Euler residual should be small
@@ -1813,3 +1816,229 @@ class TestComputeSlack(unittest.TestCase):
             "c", {"c": torch.tensor([1.0])}, {"a": torch.tensor([2.0])}, {}
         )
         self.assertIsNone(slack)
+
+
+class TestJointTrainingEndToEnd(unittest.TestCase):
+    """End-to-end test for joint policy+value training (C4)."""
+
+    def test_joint_training_returns_three_tuple(self):
+        """Joint training should return (policy_net, value_net, states)."""
+        torch.manual_seed(TEST_SEED)
+
+        test_block = model.DBlock(
+            name="joint_test",
+            shocks={},
+            dynamics={
+                "c": model.Control(iset=["a"], agent="consumer"),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        test_block.construct_shocks({})
+
+        bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
+        value_net = BlockValueNet(bp, width=16)
+
+        states_0_n = grid.Grid.from_config({"a": {"min": 1.0, "max": 5.0, "count": 10}})
+
+        policy_loss_fn = loss.BellmanEquationLoss(
+            bp, value_net.get_value_function(), parameters={"beta": 0.95}
+        )
+
+        # Value loss: accepts (value_function, input_grid) and returns a loss tensor.
+        # A simple target: V(s) should approximate log(s) (a rough guess).
+        def value_loss_fn(value_fn, input_grid):
+            vals = input_grid.to_dict()
+            states = {k: vals[k] for k in ["a"]}
+            v_pred = value_fn(states, {}, {"beta": 0.95})
+            v_target = torch.log(states["a"] + 1e-8)
+            return (v_pred - v_target) ** 2
+
+        result = maliar.maliar_training_loop(
+            bp,
+            policy_loss_fn,
+            states_0_n,
+            {"beta": 0.95},
+            max_iterations=2,
+            epochs_per_iteration=5,
+            value_network=value_net,
+            value_loss_function=value_loss_fn,
+            random_seed=TEST_SEED,
+        )
+
+        # Should return 3-tuple
+        self.assertEqual(len(result), 3)
+        bpn, trained_value_net, final_states = result
+
+        # Both networks should be returned
+        self.assertIsNotNone(bpn)
+        self.assertIsNotNone(trained_value_net)
+        self.assertIsInstance(final_states, grid.Grid)
+
+
+class TestMultiControlConstrainedLoss(unittest.TestCase):
+    """Test constrained Euler loss with multi-control model (S6)."""
+
+    def test_multi_control_constrained_produces_finite_loss(self):
+        """Fischer-Burmeister works on a multi-control model with upper bounds."""
+        block = model.DBlock(
+            name="multi_ctrl_constrained",
+            dynamics={
+                "c1": model.Control(["a"], upper_bound=lambda a: a),
+                "c2": model.Control(["a"], upper_bound=lambda a: a),
+                "a": lambda a, c1, c2: a - c1 - c2,
+                "u": lambda c1, c2: torch.log(c1 + 1e-8) + torch.log(c2 + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        loss_fn = loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, constrained=True)
+
+        input_grid = grid.Grid.from_dict({"a": torch.linspace(1.0, 5.0, 5)})
+
+        def df(states, shocks, params):
+            a = states["a"]
+            return {"c1": a * 0.2, "c2": a * 0.1}
+
+        result = loss_fn(df, input_grid)
+        self.assertIsInstance(result, torch.Tensor)
+        self.assertTrue(torch.all(torch.isfinite(result)))
+        self.assertTrue(torch.all(result >= 0))
+
+
+class TestMultiControlFocWeight(unittest.TestCase):
+    """Test BellmanEquationLoss with foc_weight on multi-control model (S6)."""
+
+    def test_multi_control_foc_weight_produces_finite_loss(self):
+        """FOC weight works on a multi-control model."""
+        block = model.DBlock(
+            name="multi_ctrl_foc",
+            dynamics={
+                "c1": model.Control(["a"]),
+                "c2": model.Control(["a"]),
+                "a": lambda a, c1, c2: a - c1 - c2,
+                "u": lambda c1, c2: torch.log(c1 + 1e-8) + torch.log(c2 + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        block.construct_shocks({})
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        value_net = BlockValueNet(bp, width=16)
+        input_grid = grid.Grid.from_dict({"a": torch.linspace(1.0, 5.0, 5)})
+
+        def df(states, shocks, params):
+            a = states["a"]
+            return {"c1": a * 0.2, "c2": a * 0.1}
+
+        # Without FOC
+        loss_no_foc = loss.BellmanEquationLoss(
+            bp, value_net.get_value_function(), parameters={"beta": 0.9}, foc_weight=0.0
+        )
+        result_no_foc = loss_no_foc(df, input_grid)
+
+        # With FOC
+        loss_with_foc = loss.BellmanEquationLoss(
+            bp, value_net.get_value_function(), parameters={"beta": 0.9}, foc_weight=1.0
+        )
+        result_with_foc = loss_with_foc(df, input_grid)
+
+        self.assertIsInstance(result_with_foc, torch.Tensor)
+        self.assertTrue(torch.all(torch.isfinite(result_with_foc)))
+        # FOC adds a non-negative term, so loss should be >= without FOC
+        self.assertTrue(
+            torch.all(result_with_foc >= result_no_foc - 1e-6),
+            "FOC term should increase or maintain loss",
+        )
+
+
+class TestValidationTypeChecks(unittest.TestCase):
+    """Test integer type validation for training parameters (S3)."""
+
+    def test_float_max_iterations_raises(self):
+        """Float max_iterations should raise TypeError."""
+        block = model.DBlock(
+            name="test",
+            dynamics={"c": model.Control(["a"]), "a": lambda a, c: a - c},
+            reward={"a": "consumer"},
+        )
+        block.construct_shocks({})
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        states = grid.Grid.from_config({"a": {"min": 1.0, "max": 2.0, "count": 5}})
+
+        with self.assertRaises(TypeError, msg="must be an integer"):
+            maliar.maliar_training_loop(
+                bp,
+                lambda df, g: torch.tensor(0.0),
+                states,
+                {"beta": 0.9},
+                max_iterations=1.5,
+            )
+
+
+class TestEulerEquationLossWeightValidation(unittest.TestCase):
+    """Test weight validation for EulerEquationLoss (S2)."""
+
+    def test_zero_weight_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(ValueError, msg="weight must be > 0"):
+            loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, weight=0.0)
+
+    def test_negative_weight_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(ValueError, msg="weight must be > 0"):
+            loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, weight=-1.0)
+
+
+class TestBellmanEquationLossValidation(unittest.TestCase):
+    """Test validation for BellmanEquationLoss (S2)."""
+
+    def test_non_callable_value_network_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(TypeError, msg="value_network must be callable"):
+            loss.BellmanEquationLoss(bp, value_network="not_callable")
+
+    def test_negative_foc_weight_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        with self.assertRaises(ValueError, msg="foc_weight must be >= 0"):
+            loss.BellmanEquationLoss(
+                bp, value_network=lambda s, sh, p: s["a"], foc_weight=-0.5
+            )

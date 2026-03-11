@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import torch
@@ -27,8 +28,8 @@ def static_reward(
     bellman_period,
     dr,
     states,
-    shocks={},
-    parameters={},
+    shocks=None,
+    parameters=None,
     agent=None,
 ):
     """
@@ -49,6 +50,10 @@ def static_reward(
     agent : str or None, optional
         Name of reference agent for rewards.
     """
+    if shocks is None:
+        shocks = {}
+    if parameters is None:
+        parameters = {}
     if callable(dr):
         controls = dr(states, shocks, parameters)
     else:
@@ -75,8 +80,17 @@ def static_reward(
     return reward[rsym]
 
 
-def _prepare_loss_inputs(model_obj, input_grid, state_variables, other_dr, new_dr):
-    """Extract states, shocks, and merged decision rules from an input grid."""
+def _prepare_loss_inputs(
+    model_obj,
+    input_grid: Grid,
+    state_variables: set[str],
+    other_dr: dict,
+    new_dr: dict,
+) -> tuple[dict, dict, dict]:
+    """Extract states, shocks, and merged decision rules from an input grid.
+
+    *new_dr* takes precedence over *other_dr* for any overlapping keys.
+    """
     given_vals = input_grid.to_dict()
     shock_vals = {sym: input_grid[sym] for sym in model_obj.get_shocks()}
     states = {sym: given_vals[sym] for sym in state_variables}
@@ -92,11 +106,11 @@ class CustomLoss:
     TODO: leaving this as ambiguously about Blocks and BellmanPeriods for now
     """
 
-    def __init__(self, loss_function, block, parameters=None, other_dr=dict()):
+    def __init__(self, loss_function, block, parameters=None, other_dr=None):
         self.block = block
         self.parameters = parameters
-        self.state_variables = self.block.arrival_states
-        self.other_dr = other_dr
+        self.arrival_variables = self.block.arrival_states
+        self.other_dr = other_dr if other_dr is not None else {}
         self.loss_function = loss_function
 
     def __call__(self, new_dr, input_grid: Grid):
@@ -104,7 +118,7 @@ class CustomLoss:
         new_dr : dict of callable
         """
         states, shock_vals, fresh_dr = _prepare_loss_inputs(
-            self.block, input_grid, self.state_variables, self.other_dr, new_dr
+            self.block, input_grid, self.arrival_variables, self.other_dr, new_dr
         )
 
         neg_loss = self.loss_function(
@@ -123,11 +137,11 @@ class StaticRewardLoss:
     assuming it is executed just once (a non-dynamic model)
     """
 
-    def __init__(self, bellman_period, parameters, other_dr=dict()):
+    def __init__(self, bellman_period, parameters, other_dr=None):
         self.bellman_period = bellman_period
         self.parameters = parameters
-        self.state_variables = self.bellman_period.arrival_states
-        self.other_dr = other_dr
+        self.arrival_variables = self.bellman_period.arrival_states
+        self.other_dr = other_dr if other_dr is not None else {}
 
     def __call__(self, new_dr, input_grid: Grid):
         """
@@ -136,7 +150,7 @@ class StaticRewardLoss:
         states, shock_vals, fresh_dr = _prepare_loss_inputs(
             self.bellman_period,
             input_grid,
-            self.state_variables,
+            self.arrival_variables,
             self.other_dr,
             new_dr,
         )
@@ -168,10 +182,10 @@ class EstimatedDiscountedLifetimeRewardLoss:
     def __init__(self, bellman_period, big_t, parameters):
         self.bellman_period = bellman_period
         self.parameters = parameters
-        self.state_variables = self.bellman_period.arrival_states
+        self.arrival_variables = self.bellman_period.arrival_states
         self.big_t = big_t
 
-    def __call__(self, df: callable, input_grid: Grid):
+    def __call__(self, df: Callable, input_grid: Grid):
         # convoluted
         shock_vars = self.bellman_period.get_shocks()
         big_t_shock_syms = sum(
@@ -197,7 +211,7 @@ class EstimatedDiscountedLifetimeRewardLoss:
         edlr = estimate_discounted_lifetime_reward(
             self.bellman_period,
             df,
-            {sym: given_vals[sym] for sym in self.state_variables},
+            {sym: given_vals[sym] for sym in self.arrival_variables},
             self.big_t,
             parameters=self.parameters,
             agent=None,  # TODO: Pass through the agent?
@@ -207,7 +221,7 @@ class EstimatedDiscountedLifetimeRewardLoss:
         return -edlr
 
 
-class _EquationLossBase:
+class _EquationLossBase(ABC):
     """
     Private base class for Bellman and Euler equation losses.
 
@@ -216,29 +230,34 @@ class _EquationLossBase:
     grid-extraction logic in subclass ``__call__`` methods.
     """
 
-    bellman_period: BellmanPeriod
-    parameters: dict[str, Any] | None
-    arrival_variables: set[str]
-    shock_syms: list[str]
-    agent: str | None
-
     def __init__(
         self,
         bellman_period: BellmanPeriod,
         parameters: dict[str, Any] | None = None,
         agent: str | None = None,
     ) -> None:
+        from skagent.bellman import BellmanPeriod as _BellmanPeriod
+
+        if not isinstance(bellman_period, _BellmanPeriod):
+            raise TypeError(
+                f"bellman_period must be a BellmanPeriod, "
+                f"got {type(bellman_period).__name__}"
+            )
         self.bellman_period = bellman_period
         self.parameters = parameters
-        self.arrival_variables = bellman_period.arrival_states
+        # Defensive copy to prevent external mutation of arrival_states
+        self.arrival_variables: set[str] = set(bellman_period.arrival_states)
 
         shock_vars = self.bellman_period.get_shocks()
-        self.shock_syms = list(shock_vars.keys())
+        self.shock_syms: list[str] = list(shock_vars.keys())
 
-        self.agent = agent
+        self.agent: str | None = agent
 
         # Validate that reward variables exist (raises ValueError with agent context)
         bellman_period.get_reward_sym(agent)
+
+    @abstractmethod
+    def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor: ...
 
     def _extract_states_and_shocks(
         self, input_grid: Grid
@@ -264,13 +283,17 @@ class _EquationLossBase:
             )
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
 
-        # Build the combined shock dict — _extract_period_shocks validates keys
-        shocks = {
-            f"{sym}_{i}": given_vals[f"{sym}_{i}"]
-            for sym in self.shock_syms
-            for i in (0, 1)
-        }
-        _extract_period_shocks(self.bellman_period, shocks)
+        # Build the combined shock dict — let _extract_period_shocks validate
+        # and produce informative error messages for missing keys
+        shock_keys = [f"{sym}_{i}" for sym in self.shock_syms for i in (0, 1)]
+        missing_shocks = [k for k in shock_keys if k not in given_vals]
+        if missing_shocks:
+            raise KeyError(
+                f"Missing shock variable(s) {missing_shocks} in input_grid. "
+                f"Expected two independent realizations per shock: "
+                f"{shock_keys}."
+            )
+        shocks = {k: given_vals[k] for k in shock_keys}
 
         return states_t, shocks
 
@@ -313,13 +336,24 @@ class BellmanEquationLoss(_EquationLossBase):
     """
 
     def __init__(
-        self, bellman_period, value_network, parameters=None, agent=None, foc_weight=0.0
-    ):
+        self,
+        bellman_period: BellmanPeriod,
+        value_network: Callable,
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+        foc_weight: float = 0.0,
+    ) -> None:
         super().__init__(bellman_period, parameters=parameters, agent=agent)
+        if not callable(value_network):
+            raise TypeError(
+                f"value_network must be callable, got {type(value_network).__name__}"
+            )
+        if foc_weight < 0:
+            raise ValueError(f"foc_weight must be >= 0, got {foc_weight}")
         self.value_network = value_network
         self.foc_weight = foc_weight
 
-    def __call__(self, df, input_grid: Grid):
+    def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor:
         """
         Bellman equation loss function.
 
@@ -352,7 +386,7 @@ class BellmanEquationLoss(_EquationLossBase):
         loss = bellman_residual**2
 
         if self.foc_weight > 0:
-            foc_residual = estimate_bellman_foc_residual(
+            foc_residuals = estimate_bellman_foc_residual(
                 self.bellman_period,
                 self.value_network,
                 df,
@@ -361,10 +395,7 @@ class BellmanEquationLoss(_EquationLossBase):
                 self.parameters,
                 self.agent,
             )
-            if isinstance(foc_residual, dict):
-                foc_loss = sum(r**2 for r in foc_residual.values())
-            else:
-                foc_loss = foc_residual**2
+            foc_loss = sum((r**2 for r in foc_residuals.values()), torch.tensor(0.0))
             loss = loss + self.foc_weight * foc_loss
 
         return loss
@@ -439,14 +470,16 @@ class EulerEquationLoss(_EquationLossBase):
 
     def __init__(
         self,
-        bellman_period,
-        parameters=None,
-        agent=None,
-        weight=1.0,
-        constrained=False,
-    ):
+        bellman_period: BellmanPeriod,
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+        weight: float = 1.0,
+        constrained: bool = False,
+    ) -> None:
         super().__init__(bellman_period, parameters=parameters, agent=agent)
 
+        if weight <= 0:
+            raise ValueError(f"weight must be > 0, got {weight}")
         self.weight = weight
         self.constrained = constrained
 
@@ -465,7 +498,7 @@ class EulerEquationLoss(_EquationLossBase):
                 )
 
     def _compute_slack(
-        self, control_sym, controls_t, states_t, shocks_t
+        self, control_sym: str, controls_t: dict, states_t: dict, shocks_t: dict
     ) -> torch.Tensor | None:
         """Compute constraint slack for a control with an upper bound.
 
@@ -493,7 +526,7 @@ class EulerEquationLoss(_EquationLossBase):
 
         return ub_value - controls_t[control_sym]
 
-    def __call__(self, df, input_grid: Grid):
+    def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor:
         """
         Euler equation loss function using the AiO expectation operator.
 
@@ -511,7 +544,36 @@ class EulerEquationLoss(_EquationLossBase):
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
-        euler_residual = estimate_euler_residual(
+        if self.constrained:
+            # Compute controls once and share them between the residual
+            # computation and the slack computation so both use the same
+            # autograd graph.
+            shocks_t, _ = _extract_period_shocks(self.bellman_period, shocks)
+            controls_t = self.bellman_period.compute_controls(
+                df, states_t, shocks=shocks_t, parameters=self.parameters
+            )
+
+            euler_residuals = estimate_euler_residual(
+                self.bellman_period,
+                df,
+                states_t,
+                shocks,
+                self.parameters,
+                self.agent,
+                controls_t=controls_t,
+            )
+
+            total = torch.tensor(0.0)
+            for ctrl_sym, residual in euler_residuals.items():
+                slack = self._compute_slack(ctrl_sym, controls_t, states_t, shocks_t)
+                if slack is not None:
+                    total = total + fischer_burmeister(residual, slack) ** 2
+                else:
+                    total = total + torch.relu(-residual) ** 2
+            return self.weight * total
+
+        # Unconstrained loss
+        euler_residuals = estimate_euler_residual(
             self.bellman_period,
             df,
             states_t,
@@ -519,34 +581,6 @@ class EulerEquationLoss(_EquationLossBase):
             self.parameters,
             self.agent,
         )
-
-        if self.constrained:
-            # Recomputes controls (already computed inside estimate_euler_residual)
-            # to get slack values; acceptable cost for API clarity.
-            shocks_t, _ = _extract_period_shocks(self.bellman_period, shocks)
-            controls_t = self.bellman_period.compute_controls(
-                df, states_t, shocks=shocks_t, parameters=self.parameters
-            )
-
-            if isinstance(euler_residual, dict):
-                total = torch.tensor(0.0)
-                for ctrl_sym, residual in euler_residual.items():
-                    slack = self._compute_slack(
-                        ctrl_sym, controls_t, states_t, shocks_t
-                    )
-                    if slack is not None:
-                        total = total + fischer_burmeister(residual, slack) ** 2
-                    else:
-                        total = total + torch.relu(-residual) ** 2
-                return self.weight * total
-            else:
-                ctrl_sym = next(iter(self.bellman_period.get_controls()))
-                slack = self._compute_slack(ctrl_sym, controls_t, states_t, shocks_t)
-                if slack is not None:
-                    return self.weight * fischer_burmeister(euler_residual, slack) ** 2
-                return self.weight * torch.relu(-euler_residual) ** 2
-
-        # Unconstrained loss
-        if isinstance(euler_residual, dict):
-            return self.weight * sum(r**2 for r in euler_residual.values())
-        return self.weight * euler_residual**2
+        return self.weight * sum(
+            (r**2 for r in euler_residuals.values()), torch.tensor(0.0)
+        )
