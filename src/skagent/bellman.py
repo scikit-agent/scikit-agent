@@ -469,7 +469,7 @@ class BellmanPeriod:
             decision_rules=decision_rules,
         )
 
-        # Compute gradients of reward w.r.t. requested variables
+        # Compute gradients of next-state outputs w.r.t. requested variables
         return compute_gradients_for_tensors(
             next_states, wrt, create_graph=create_graph
         )
@@ -557,7 +557,7 @@ class BellmanPeriod:
             pre_state_vars, states, shocks=shocks, parameters=parameters
         )
 
-        # Compute gradients of reward w.r.t. requested variables
+        # Compute gradients of pre-decision state values w.r.t. requested variables
         return compute_gradients_for_tensors(
             pre_state_values, wrt, create_graph=create_graph
         )
