@@ -369,14 +369,18 @@ class TestBellmanLossFunctions(unittest.TestCase):
         controls_t = {"consumption": torch.tensor([0.5, 1.0])}
 
         next_states = self.bp.transition_function(
-            states_t, shocks_t, controls_t, self.parameters
+            states_t, controls_t, shocks=shocks_t, parameters=self.parameters
         )
         self.assertIn("wealth", next_states)
         self.assertTrue(torch.allclose(next_states["wealth"], torch.tensor([1.5, 2.0])))
 
         # Test reward function
         reward = self.bp.reward_function(
-            states_t, shocks_t, controls_t, self.parameters, agent="consumer"
+            states_t,
+            controls_t,
+            shocks=shocks_t,
+            parameters=self.parameters,
+            agent="consumer",
         )
         self.assertIn("utility", reward)
         # Utility can be negative for log(consumption), so just check it's finite
@@ -515,7 +519,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.decision_function,
             states_t,
             shocks_identical,
-            parameters={},
+            parameters=None,
         )
 
         residual_independent = bellman.estimate_bellman_residual(
@@ -524,7 +528,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             self.decision_function,
             states_t,
             shocks_independent,
-            parameters={},
+            parameters=None,
         )
 
         # Results should be different when using independent vs identical shocks
@@ -604,7 +608,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
                 self.decision_function,
                 states_t,
                 shocks_missing_t1,
-                parameters={},
+                parameters=None,
             )
 
 
@@ -694,7 +698,7 @@ def test_bellman_equation_loss_with_value_network():
 
     # Create loss function
     loss_fn = loss.BellmanEquationLoss(
-        test_bp, value_net.get_value_function(), parameters={}
+        test_bp, value_net.get_value_function(), parameters=None
     )
 
     # Test that loss function works

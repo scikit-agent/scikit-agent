@@ -40,22 +40,20 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
         self.bp = bellman.BellmanPeriod(model.DBlock(**block_data), "beta", parameters)
 
     def test_transition_function(self):
-        states_1 = self.bp.transition_function(states_0, {}, decisions)
+        states_1 = self.bp.transition_function(states_0, decisions)
 
         self.assertAlmostEqual(states_1["a"], 0.7)
         self.assertEqual(states_1["e"], 0.1)
 
     def test_decision_function(self):
         decisions_0 = self.bp.decision_function(
-            states_0, {}, parameters=parameters, decision_rules=decision_rules
+            states_0, parameters=parameters, decision_rules=decision_rules
         )
 
         self.assertEqual(decisions_0["c"], 0.5)
 
     def test_reward_function(self):
-        reward_0 = self.bp.reward_function(
-            states_0, {}, decisions, parameters=parameters
-        )
+        reward_0 = self.bp.reward_function(states_0, decisions, parameters=parameters)
 
         self.assertAlmostEqual(reward_0["u"], -0.69314718)
 
@@ -250,9 +248,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c}  # Compute gradient w.r.t. consumption
 
-        gradients = self.simple_bp.grad_reward_function(
-            states_t, {}, controls_t, {}, wrt
-        )
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # For u = log(c), du/dc = 1/c = 1/0.5 = 2.0
         expected_grad = 1.0 / c
@@ -271,9 +267,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Compute gradients w.r.t. both variables
 
-        gradients = self.simple_bp.grad_reward_function(
-            states_t, {}, controls_t, {}, wrt
-        )
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # For u = log(c), du/dc = 1/c, du/da = 0 (unused variable)
         expected_grad_c = 1.0 / c
@@ -296,9 +290,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c1": c1, "c2": c2}
         wrt = {"c1": c1, "c2": c2}
 
-        gradients = self.multi_reward_bp.grad_reward_function(
-            states_t, {}, controls_t, {}, wrt
-        )
+        gradients = self.multi_reward_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # For u1 = log(c1), du1/dc1 = 1/c1, du1/dc2 = 0
         # For u2 = -0.5*c2^2, du2/dc1 = 0, du2/dc2 = -c2
@@ -331,7 +323,7 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c1": c1}
 
         gradients = self.multi_reward_bp.grad_reward_function(
-            states_t, {}, controls_t, {}, wrt, agent="consumer1"
+            states_t, controls_t, wrt, agent="consumer1"
         )
 
         # Should only contain u1 (consumer1's reward)
@@ -355,7 +347,7 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c": c, "theta": theta}
 
         gradients = self.shock_bp.grad_reward_function(
-            states_t, shocks_t, controls_t, parameters, wrt
+            states_t, controls_t, wrt, shocks=shocks_t, parameters=parameters
         )
 
         # For u = log(c + theta + eps), du/dc = 1/(c + theta + eps), du/dtheta = 1/(c + theta + eps)
@@ -384,9 +376,7 @@ class TestGradRewardFunction(unittest.TestCase):
         controls_t = {"c": c}
         wrt = {"c": c, "a": a}  # Gradients needed for envelope condition
 
-        gradients = self.simple_bp.grad_reward_function(
-            states_t, {}, controls_t, {}, wrt
-        )
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
 
         # Check that we get gradients for the full batch
         self.assertEqual(gradients["u"]["c"].shape, (batch_size,))
@@ -407,10 +397,227 @@ class TestGradRewardFunction(unittest.TestCase):
         wrt = {"c": c_no_grad}  # This should handle gracefully
 
         # This should work but return None gradients
-        gradients = self.simple_bp.grad_reward_function(
-            states_t, {}, controls_t, {}, wrt
-        )
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
         self.assertIn("u", gradients)
         self.assertIn("c", gradients["u"])
         # Gradient should be None for tensor without requires_grad=True
         self.assertIsNone(gradients["u"]["c"])
+
+
+class TestGradTransitionFunction(unittest.TestCase):
+    """Direct tests for grad_transition_function."""
+
+    def test_transition_gradient_simple(self):
+        """For a_next = a - c, ∂a_next/∂c should be -1."""
+        block = model.DBlock(
+            name="simple_savings",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+            },
+            reward={"a": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        a = torch.tensor(2.0, requires_grad=True)
+        c = torch.tensor(0.5, requires_grad=True)
+
+        grads = bp.grad_transition_function(
+            {"a": a}, {"c": c}, {"c": c}, create_graph=True
+        )
+
+        # ∂a_next/∂c = -1
+        self.assertIn("a", grads)
+        self.assertIn("c", grads["a"])
+        self.assertTrue(torch.allclose(grads["a"]["c"], torch.tensor(-1.0), atol=1e-6))
+
+
+class TestGradPreStateFunction(unittest.TestCase):
+    """Direct tests for grad_pre_state_function."""
+
+    def test_pre_state_gradient_simple(self):
+        """For m = R*a + y, ∂m/∂a should be R."""
+        R_val = 1.04
+        block = model.DBlock(
+            name="pre_state_test",
+            dynamics={
+                "m": lambda a, R: R * a,
+                "c": model.Control(["m"]),
+                "a": lambda m, c: m - c,
+            },
+            reward={"a": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9, "R": R_val})
+
+        a = torch.tensor(2.0, requires_grad=True)
+
+        grads = bp.grad_pre_state_function(
+            {"a": a},
+            {"a": a},
+            parameters={"beta": 0.9, "R": R_val},
+            control_sym="c",
+            create_graph=True,
+        )
+
+        # ∂m/∂a = R = 1.04
+        self.assertIn("m", grads)
+        self.assertIn("a", grads["m"])
+        self.assertTrue(torch.allclose(grads["m"]["a"], torch.tensor(R_val), atol=1e-6))
+
+    def test_missing_iset_raises(self):
+        """grad_pre_state_function should raise when control has no iset."""
+        block = model.DBlock(
+            name="no_iset",
+            dynamics={
+                "x": lambda a: a * 2,  # not a Control, no iset
+            },
+            reward={},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        a = torch.tensor(1.0, requires_grad=True)
+
+        with self.assertRaises(ValueError, msg="No control with pre-state found"):
+            bp.grad_pre_state_function({"a": a}, {"a": a})
+
+
+class TestEulerResidualErrorHandling(unittest.TestCase):
+    """Test error branches in estimate_euler_residual."""
+
+    def setUp(self):
+        self.block = model.DBlock(
+            name="simple",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c),
+            },
+            reward={"u": "consumer"},
+        )
+        self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.9})
+
+    def test_callable_discount_factor_raises(self):
+        """Callable discount factor should raise ValueError."""
+
+        def df(s, sh, p):
+            return {"c": s["a"] * 0.5}
+
+        with self.assertRaises(ValueError, msg="State-dependent discount factors"):
+            bellman.estimate_euler_residual(
+                self.bp,
+                lambda x: 0.9,
+                df,
+                {"a": torch.tensor([1.0])},
+                {},
+                {"beta": 0.9},
+            )
+
+    def test_multi_control_raises(self):
+        """Multiple controls should raise NotImplementedError."""
+        multi_block = model.DBlock(
+            name="multi_control",
+            dynamics={
+                "c1": model.Control(["a"]),
+                "c2": model.Control(["a"]),
+                "a": lambda a, c1, c2: a - c1 - c2,
+                "u": lambda c1: torch.log(c1),
+            },
+            reward={"u": "consumer"},
+        )
+        multi_bp = bellman.BellmanPeriod(multi_block, "beta", {"beta": 0.9})
+
+        def df(s, sh, p):
+            a = s["a"]
+            return {"c1": a * 0.3, "c2": a * 0.2}
+
+        with self.assertRaises(NotImplementedError, msg="single-control"):
+            bellman.estimate_euler_residual(
+                multi_bp, 0.9, df, {"a": torch.tensor([1.0])}, {}, {"beta": 0.9}
+            )
+
+
+class TestComputeControlsTypeError(unittest.TestCase):
+    """Test compute_controls error handling."""
+
+    def test_invalid_df_type_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={"c": model.Control(["a"]), "a": lambda a, c: a - c},
+            reward={},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        with self.assertRaises(TypeError, msg="callable decision function or a dict"):
+            bp.compute_controls(42, {"a": torch.tensor(1.0)})
+
+
+class TestGetRewardSymsErrors(unittest.TestCase):
+    """Test get_reward_syms error handling."""
+
+    def test_invalid_agent_raises(self):
+        block = model.DBlock(
+            name="test",
+            dynamics={"u": lambda c: c},
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        with self.assertRaises(ValueError, msg="No reward variables found"):
+            bp.get_reward_syms(agent="nonexistent_agent")
+
+    def test_no_rewards_raises(self):
+        block = model.DBlock(name="test", dynamics={"x": lambda a: a}, reward={})
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        with self.assertRaises(ValueError, msg="No reward variables found"):
+            bp.get_reward_syms()
+
+
+class TestExtractPeriodShocksErrors(unittest.TestCase):
+    """Test _extract_period_shocks error handling."""
+
+    def setUp(self):
+        self.block = model.DBlock(
+            name="with_shocks",
+            shocks={"income": Normal(mu=1.0, sigma=0.1)},
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c, income: a - c + income,
+                "u": lambda c: torch.log(c),
+            },
+            reward={"u": "consumer"},
+        )
+        self.block.construct_shocks({})
+        self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.9})
+
+    def test_missing_period_0_shock_raises(self):
+        """Missing _0 shock key should raise KeyError."""
+        shocks = {"income_1": torch.tensor([1.0])}
+        with self.assertRaises(KeyError, msg="income_0"):
+            bellman._extract_period_shocks(self.bp, shocks)
+
+    def test_missing_period_1_shock_raises(self):
+        """Missing _1 shock key should raise KeyError."""
+        shocks = {"income_0": torch.tensor([1.0])}
+        with self.assertRaises(KeyError, msg="income_1"):
+            bellman._extract_period_shocks(self.bp, shocks)
+
+
+class TestEnsureGrad(unittest.TestCase):
+    """Test _ensure_grad helper."""
+
+    def test_non_tensor_raises(self):
+        """Non-tensor values should raise TypeError."""
+        with self.assertRaises(TypeError, msg="must be a torch.Tensor"):
+            bellman._ensure_grad({"c": 0.5}, "c")
+
+    def test_already_has_grad(self):
+        """Tensor with requires_grad should be returned unchanged."""
+        c = torch.tensor(0.5, requires_grad=True)
+        result, controls = bellman._ensure_grad({"c": c}, "c")
+        self.assertIs(result, c)
+
+    def test_adds_grad(self):
+        """Tensor without requires_grad should be detached and reattached."""
+        c = torch.tensor(0.5, requires_grad=False)
+        result, controls = bellman._ensure_grad({"c": c}, "c")
+        self.assertTrue(result.requires_grad)

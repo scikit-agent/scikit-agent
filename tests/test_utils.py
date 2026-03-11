@@ -1,5 +1,8 @@
+import unittest
+
 import skagent.utils as utils
 import torch
+from skagent.utils import compute_gradients_for_tensors
 
 
 def test_utils_apply_fun_to_vals():
@@ -55,3 +58,61 @@ def test_compute_parameter_difference():
 
     # Should have non-zero difference
     assert diff_modified > 0
+
+
+class TestComputeGradientsForTensors(unittest.TestCase):
+    """Direct tests for the compute_gradients_for_tensors utility."""
+
+    def test_batched_gradient(self):
+        """Batched input: target[i] = x[i]**2 should give gradient 2*x[i]."""
+        x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
+        target = x**2
+        grads = compute_gradients_for_tensors({"y": target}, {"x": x})
+        expected = 2.0 * x
+        self.assertTrue(torch.allclose(grads["y"]["x"], expected, atol=1e-6))
+
+    def test_scalar_gradient(self):
+        """Scalar input: target = x**2 should give gradient 2*x."""
+        x = torch.tensor(3.0, requires_grad=True)
+        target = x**2
+        grads = compute_gradients_for_tensors({"y": target}, {"x": x})
+        self.assertTrue(torch.allclose(grads["y"]["x"], 2.0 * x, atol=1e-6))
+
+    def test_no_grad_returns_none(self):
+        """Variable without requires_grad should produce None."""
+        x = torch.tensor(3.0, requires_grad=False)
+        y = torch.tensor(5.0, requires_grad=True)
+        target = y**2
+        grads = compute_gradients_for_tensors({"t": target}, {"x": x, "y": y})
+        self.assertIsNone(grads["t"]["x"])
+        self.assertIsNotNone(grads["t"]["y"])
+
+    def test_unused_variable_returns_none(self):
+        """Variable not used in computation should produce None."""
+        x = torch.tensor(3.0, requires_grad=True)
+        y = torch.tensor(5.0, requires_grad=True)
+        target = x**2  # y is unused
+        grads = compute_gradients_for_tensors({"t": target}, {"x": x, "y": y})
+        self.assertIsNotNone(grads["t"]["x"])
+        self.assertIsNone(grads["t"]["y"])
+
+    def test_create_graph_enables_higher_order(self):
+        """create_graph=True should allow second-order derivatives."""
+        x = torch.tensor(3.0, requires_grad=True)
+        target = x**3  # d/dx = 3x^2, d2/dx2 = 6x
+        grads = compute_gradients_for_tensors(
+            {"t": target}, {"x": x}, create_graph=True
+        )
+        first_deriv = grads["t"]["x"]
+        # Verify first derivative is correct: 3 * 3^2 = 27
+        self.assertTrue(torch.allclose(first_deriv, torch.tensor(27.0), atol=1e-5))
+        # Verify we can take second derivative
+        second_deriv = torch.autograd.grad(first_deriv, x)[0]
+        # 6 * 3 = 18
+        self.assertTrue(torch.allclose(second_deriv, torch.tensor(18.0), atol=1e-5))
+
+    def test_empty_tensors_dict(self):
+        """Empty tensors_dict should return empty dict."""
+        x = torch.tensor(3.0, requires_grad=True)
+        grads = compute_gradients_for_tensors({}, {"x": x})
+        self.assertEqual(grads, {})
