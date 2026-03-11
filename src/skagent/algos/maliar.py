@@ -130,6 +130,32 @@ def simulate_forward(
     return states_t
 
 
+def _validate_joint_training(value_network, value_loss_function):
+    """Check that value_network and value_loss_function are both-or-neither.
+
+    Returns ``True`` if joint training should be used.
+    """
+    joint = value_network is not None or value_loss_function is not None
+    if not joint:
+        return False
+    if value_network is None:
+        raise ValueError(
+            "value_loss_function provided without value_network. "
+            "Both must be specified for joint training."
+        )
+    if value_loss_function is None:
+        raise ValueError(
+            "value_network provided without value_loss_function. "
+            "Both must be specified for joint training."
+        )
+    if not callable(value_loss_function):
+        raise TypeError(
+            "value_loss_function must be callable, "
+            f"got {type(value_loss_function).__name__}"
+        )
+    return True
+
+
 def _validate_training_inputs(
     bellman_period,
     loss_function,
@@ -159,24 +185,6 @@ def _validate_training_inputs(
             "parameters cannot be None; pass an empty dict if no parameters are needed"
         )
 
-    joint_training = value_network is not None or value_loss_function is not None
-    if joint_training:
-        if value_network is None:
-            raise ValueError(
-                "value_loss_function provided without value_network. "
-                "Both must be specified for joint training."
-            )
-        if value_loss_function is None:
-            raise ValueError(
-                "value_network provided without value_loss_function. "
-                "Both must be specified for joint training."
-            )
-        if not callable(value_loss_function):
-            raise TypeError(
-                "value_loss_function must be callable, "
-                f"got {type(value_loss_function).__name__}"
-            )
-
     for name, val, lo in [
         ("max_iterations", max_iterations, 1),
         ("shock_copies", shock_copies, 1),
@@ -195,7 +203,7 @@ def _validate_training_inputs(
     if states_0_n.n() < 1:
         raise ValueError("states_0_n must contain at least one state")
 
-    return joint_training
+    return _validate_joint_training(value_network, value_loss_function)
 
 
 def _check_convergence(

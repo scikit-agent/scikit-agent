@@ -75,6 +75,15 @@ def static_reward(
     return reward[rsym]
 
 
+def _prepare_loss_inputs(model_obj, input_grid, state_variables, other_dr, new_dr):
+    """Extract states, shocks, and merged decision rules from an input grid."""
+    given_vals = input_grid.to_dict()
+    shock_vals = {sym: input_grid[sym] for sym in model_obj.get_shocks()}
+    states = {sym: given_vals[sym] for sym in state_variables}
+    fresh_dr = {**other_dr, **new_dr}
+    return states, shock_vals, fresh_dr
+
+
 class CustomLoss:
     """
     A custom loss function that computes the negative reward for a block,
@@ -94,22 +103,14 @@ class CustomLoss:
         """
         new_dr : dict of callable
         """
-        ## includes the values of state_0 variables, and shocks.
-        given_vals = input_grid.to_dict()
-
-        ## most variable part -- many uses of double shocks
-        shock_vars = self.block.get_shocks()
-        shock_vals = {sym: input_grid[sym] for sym in shock_vars}
-
-        # override any decision rules if necessary
-        fresh_dr = {**self.other_dr, **new_dr}
+        states, shock_vals, fresh_dr = _prepare_loss_inputs(
+            self.block, input_grid, self.state_variables, self.other_dr, new_dr
+        )
 
         neg_loss = self.loss_function(
             self.block,
-            fresh_dr,  # useful
-            {
-                sym: given_vals[sym] for sym in self.state_variables
-            },  # replace with arrival states
+            fresh_dr,
+            states,
             parameters=self.parameters,
             shocks=shock_vals,
         )
@@ -132,23 +133,21 @@ class StaticRewardLoss:
         """
         new_dr : dict of callable
         """
-        ## includes the values of state_0 variables, and shocks.
-        given_vals = input_grid.to_dict()
-
-        shock_vars = self.bellman_period.get_shocks()
-        shock_vals = {sym: input_grid[sym] for sym in shock_vars}
-
-        # override any decision rules if necessary
-        fresh_dr = {**self.other_dr, **new_dr}
+        states, shock_vals, fresh_dr = _prepare_loss_inputs(
+            self.bellman_period,
+            input_grid,
+            self.state_variables,
+            self.other_dr,
+            new_dr,
+        )
 
         r = static_reward(
             self.bellman_period,
             fresh_dr,
-            {sym: given_vals[sym] for sym in self.state_variables},
+            states,
             parameters=self.parameters,
             agent=None,  ## TODO: Pass through the agent?
             shocks=shock_vals,
-            ## Handle multiple decision rules?
         )
         return -r
 

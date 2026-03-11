@@ -14,6 +14,38 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parameters = {"q": 1.1, "beta": 0.9}
 
+
+def _make_consumption_savings_bp():
+    """Consumption-savings block used by several test classes."""
+    block = model.DBlock(
+        name="consumption_savings",
+        shocks={"income": Normal(mu=1.0, sigma=0.1)},
+        dynamics={
+            "wealth": lambda wealth, income, consumption: wealth + income - consumption,
+            "consumption": model.Control(iset=["wealth"], agent="consumer"),
+            "utility": lambda consumption: torch.log(consumption + 1e-8),
+        },
+        reward={"utility": "consumer"},
+    )
+    block.construct_shocks({})
+    return block, bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+
+def _make_multi_control_bp():
+    """Two-control block used by Euler and FOC residual tests."""
+    block = model.DBlock(
+        name="multi_control",
+        dynamics={
+            "c1": model.Control(["a"]),
+            "c2": model.Control(["a"]),
+            "a": lambda a, c1, c2: a - c1 - c2,
+            "u": lambda c1, c2: torch.log(c1 + 1e-8) + torch.log(c2 + 1e-8),
+        },
+        reward={"u": "consumer"},
+    )
+    return block, bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+
 block_data = {
     "name": "test block - maliar",
     "dynamics": {
@@ -102,20 +134,7 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
             consumption = 0.5 * wealth
             return {"consumption": consumption}
 
-        # Create a simple test block
-        test_block = model.DBlock(
-            name="test_bellman_residual",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={
-                "wealth": lambda wealth, income, consumption: wealth
-                + income
-                - consumption,
-                "consumption": model.Control(iset=["wealth"], agent="consumer"),
-                "utility": lambda consumption: torch.log(consumption + 1e-8),
-            },
-            reward={"utility": "consumer"},
-        )
-        test_block.construct_shocks({})
+        _, test_bp = _make_consumption_savings_bp()
 
         # Test states and shocks - need combined object with both periods
         states_t = {"wealth": torch.tensor([2.0, 4.0])}
@@ -126,7 +145,7 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
 
         # Estimate Bellman residual
         residual = bellman.estimate_bellman_residual(
-            bellman.BellmanPeriod(test_block, "beta", {"beta": 0.9}),
+            test_bp,
             simple_value_network,
             simple_decision_function,
             states_t,
@@ -238,17 +257,28 @@ class TestGradRewardFunction(unittest.TestCase):
 
         self.shock_bp = bellman.BellmanPeriod(self.shock_block, "beta", {"beta": 0.9})
 
-    def test_get_grad_reward_function_basic(self):
-        """Test basic functionality of get_grad_reward_function."""
-        # Create test inputs with requires_grad=True
+    def _simple_inputs(self):
+        """Create standard (c, a) inputs for the simple block."""
         c = torch.tensor(0.5, requires_grad=True)
         a = torch.tensor(1.0, requires_grad=True)
-
         states_t = {"a": a}
         controls_t = {"c": c}
-        wrt = {"c": c}  # Compute gradient w.r.t. consumption
+        return states_t, controls_t, c, a
 
-        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
+    def _multi_reward_inputs(self):
+        """Create standard (c1, c2, w) inputs for the multi-reward block."""
+        c1 = torch.tensor(0.3, requires_grad=True)
+        c2 = torch.tensor(0.2, requires_grad=True)
+        w = torch.tensor(1.0, requires_grad=True)
+        states_t = {"w": w}
+        controls_t = {"c1": c1, "c2": c2}
+        return states_t, controls_t, c1, c2, w
+
+    def test_get_grad_reward_function_basic(self):
+        """Test basic functionality of get_grad_reward_function."""
+        states_t, controls_t, c, a = self._simple_inputs()
+
+        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, {"c": c})
 
         # For u = log(c), du/dc = 1/c = 1/0.5 = 2.0
         expected_grad = 1.0 / c
@@ -259,15 +289,11 @@ class TestGradRewardFunction(unittest.TestCase):
 
     def test_get_grad_reward_function_multiple_variables(self):
         """Test gradients with respect to multiple variables."""
-        # Create test inputs
-        c = torch.tensor(0.5, requires_grad=True)
-        a = torch.tensor(1.0, requires_grad=True)
+        states_t, controls_t, c, a = self._simple_inputs()
 
-        states_t = {"a": a}
-        controls_t = {"c": c}
-        wrt = {"c": c, "a": a}  # Compute gradients w.r.t. both variables
-
-        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
+        gradients = self.simple_bp.grad_reward_function(
+            states_t, controls_t, {"c": c, "a": a}
+        )
 
         # For u = log(c), du/dc = 1/c, du/da = 0 (unused variable)
         expected_grad_c = 1.0 / c
@@ -281,16 +307,11 @@ class TestGradRewardFunction(unittest.TestCase):
 
     def test_get_grad_reward_function_multiple_rewards(self):
         """Test gradients for multiple rewards."""
-        # Create test inputs
-        c1 = torch.tensor(0.3, requires_grad=True)
-        c2 = torch.tensor(0.2, requires_grad=True)
-        w = torch.tensor(1.0, requires_grad=True)
+        states_t, controls_t, c1, c2, w = self._multi_reward_inputs()
 
-        states_t = {"w": w}
-        controls_t = {"c1": c1, "c2": c2}
-        wrt = {"c1": c1, "c2": c2}
-
-        gradients = self.multi_reward_bp.grad_reward_function(states_t, controls_t, wrt)
+        gradients = self.multi_reward_bp.grad_reward_function(
+            states_t, controls_t, {"c1": c1, "c2": c2}
+        )
 
         # For u1 = log(c1), du1/dc1 = 1/c1, du1/dc2 = 0
         # For u2 = -0.5*c2^2, du2/dc1 = 0, du2/dc2 = -c2
@@ -312,18 +333,10 @@ class TestGradRewardFunction(unittest.TestCase):
 
     def test_get_grad_reward_function_with_agent_filter(self):
         """Test agent filtering in grad_reward_function."""
-        # Test with agent filter for consumer1 only
-
-        c1 = torch.tensor(0.3, requires_grad=True)
-        c2 = torch.tensor(0.2, requires_grad=True)
-        w = torch.tensor(1.0, requires_grad=True)
-
-        states_t = {"w": w}
-        controls_t = {"c1": c1, "c2": c2}
-        wrt = {"c1": c1}
+        states_t, controls_t, c1, c2, w = self._multi_reward_inputs()
 
         gradients = self.multi_reward_bp.grad_reward_function(
-            states_t, controls_t, wrt, agent="consumer1"
+            states_t, controls_t, {"c1": c1}, agent="consumer1"
         )
 
         # Should only contain u1 (consumer1's reward)
@@ -474,17 +487,7 @@ class TestEulerResidualErrorHandling(unittest.TestCase):
 
     def test_multi_control_returns_dict(self):
         """Multiple controls should return a dict of residuals."""
-        multi_block = model.DBlock(
-            name="multi_control",
-            dynamics={
-                "c1": model.Control(["a"]),
-                "c2": model.Control(["a"]),
-                "a": lambda a, c1, c2: a - c1 - c2,
-                "u": lambda c1, c2: torch.log(c1) + torch.log(c2),
-            },
-            reward={"u": "consumer"},
-        )
-        multi_bp = bellman.BellmanPeriod(multi_block, "beta", {"beta": 0.9})
+        _, multi_bp = _make_multi_control_bp()
 
         def df(s, sh, p):
             a = s["a"]
@@ -624,20 +627,7 @@ class TestEstimateBellmanFocResidual(unittest.TestCase):
     """Test estimate_bellman_foc_residual."""
 
     def setUp(self):
-        self.block = model.DBlock(
-            name="foc_test",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={
-                "wealth": lambda wealth, income, consumption: wealth
-                + income
-                - consumption,
-                "consumption": model.Control(iset=["wealth"], agent="consumer"),
-                "utility": lambda consumption: torch.log(consumption + 1e-8),
-            },
-            reward={"utility": "consumer"},
-        )
-        self.block.construct_shocks({})
-        self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.9})
+        self.block, self.bp = _make_consumption_savings_bp()
 
     def test_returns_finite_tensor_with_correct_shape(self):
         """FOC residual should match batch size and change with different policies."""
@@ -674,17 +664,7 @@ class TestEstimateBellmanFocResidual(unittest.TestCase):
 
     def test_multi_control_returns_dict(self):
         """Multi-control model should return a dict of finite residuals per control."""
-        multi_block = model.DBlock(
-            name="multi_foc",
-            dynamics={
-                "c1": model.Control(["a"]),
-                "c2": model.Control(["a"]),
-                "a": lambda a, c1, c2: a - c1 - c2,
-                "u": lambda c1, c2: torch.log(c1 + 1e-8) + torch.log(c2 + 1e-8),
-            },
-            reward={"u": "consumer"},
-        )
-        multi_bp = bellman.BellmanPeriod(multi_block, "beta", {"beta": 0.9})
+        _, multi_bp = _make_multi_control_bp()
 
         def value_fn(states, shocks, params):
             return 5.0 * states["a"]
