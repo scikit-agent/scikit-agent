@@ -188,6 +188,10 @@ def _validate_training_inputs(
             raise ValueError(f"{name} must be >= {lo}, got {val}")
     if tolerance <= 0:
         raise ValueError(f"tolerance must be > 0, got {tolerance}")
+    if not isinstance(states_0_n, Grid):
+        raise TypeError(
+            f"states_0_n must be a Grid instance, got {type(states_0_n).__name__}"
+        )
     if states_0_n.n() < 1:
         raise ValueError("states_0_n must contain at least one state")
 
@@ -197,39 +201,51 @@ def _validate_training_inputs(
 def _check_convergence(
     prev_params, curr_params, tolerance, prev_loss, current_loss, joint_training
 ):
-    """Return ``(converged, param_diff, loss_diff)``."""
+    """Return ``(converged, param_diff, loss_diff, param_converged, loss_converged)``."""
     param_diff = utils.compute_parameter_difference(prev_params, curr_params)
     param_converged = param_diff < tolerance
 
     loss_diff = None
     loss_converged = False
-    if prev_loss is not None and not joint_training:
+    if prev_loss is not None and current_loss is not None and not joint_training:
         loss_diff = abs(current_loss - prev_loss)
         loss_converged = loss_diff < tolerance
 
-    return param_converged or loss_converged, param_diff, loss_diff
+    return (
+        param_converged or loss_converged,
+        param_diff,
+        loss_diff,
+        param_converged,
+        loss_converged,
+    )
 
 
 def _log_iteration(
-    converged, iteration, param_diff, loss_diff, current_loss, joint_training
+    converged,
+    iteration,
+    param_diff,
+    loss_diff,
+    current_loss,
+    joint_training,
+    param_converged=False,
+    loss_converged=False,
 ):
     """Emit a single log line for the current iteration."""
     if converged:
         reasons = []
-        if param_diff is not None:
+        if param_converged:
             reasons.append(f"parameters (diff={param_diff:.2e})")
-        if loss_diff is not None:
+        if loss_converged:
             reasons.append(f"loss (diff={loss_diff:.2e})")
         logging.info(
             f"Converged after {iteration + 1} iterations by {', '.join(reasons)}"
         )
     else:
-        msg = (
-            f"Iteration {iteration + 1}: "
-            f"param_diff={param_diff:.2e}, loss={current_loss:.2e}"
-        )
-        if loss_diff is not None:
-            msg += f" (loss_diff={loss_diff:.2e})"
+        msg = f"Iteration {iteration + 1}: param_diff={param_diff:.2e}"
+        if current_loss is not None:
+            msg += f", loss={current_loss:.2e}"
+            if loss_diff is not None:
+                msg += f" (loss_diff={loss_diff:.2e})"
         logging.info(msg)
 
 
@@ -361,19 +377,33 @@ def maliar_training_loop(
                 value_loss_function,
                 epochs=epochs_per_iteration,
             )
-            current_loss = 0.0
+            current_loss = None
         else:
             bpn, current_loss = ann.train_block_nn(
                 bpn, givens, loss_function, epochs=epochs_per_iteration
             )
 
         curr_params = utils.extract_parameters(bpn)
-        converged, param_diff, loss_diff = _check_convergence(
-            prev_params, curr_params, tolerance, prev_loss, current_loss, joint_training
+        converged, param_diff, loss_diff, param_converged, loss_converged = (
+            _check_convergence(
+                prev_params,
+                curr_params,
+                tolerance,
+                prev_loss,
+                current_loss,
+                joint_training,
+            )
         )
 
         _log_iteration(
-            converged, iteration, param_diff, loss_diff, current_loss, joint_training
+            converged,
+            iteration,
+            param_diff,
+            loss_diff,
+            current_loss,
+            joint_training,
+            param_converged,
+            loss_converged,
         )
         prev_loss = current_loss
 

@@ -265,22 +265,13 @@ class _EquationLossBase:
             )
         states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
 
-        # Build the combined shock dict and validate keys via _extract_period_shocks
+        # Build the combined shock dict — _extract_period_shocks validates keys
         shocks = {
             f"{sym}_{i}": given_vals[f"{sym}_{i}"]
             for sym in self.shock_syms
             for i in (0, 1)
-            if f"{sym}_{i}" in given_vals
         }
-        # Delegate validation to the canonical shock-extraction function
         _extract_period_shocks(self.bellman_period, shocks)
-
-        # Re-build the full shock dict (including any keys that passed validation)
-        shocks = {
-            f"{sym}_{i}": given_vals[f"{sym}_{i}"]
-            for sym in self.shock_syms
-            for i in (0, 1)
-        }
 
         return states_t, shocks
 
@@ -483,9 +474,11 @@ class EulerEquationLoss(_EquationLossBase):
         has no upper bound defined.
         """
         control_obj = self.bellman_period.block.dynamics.get(control_sym)
-        if control_obj is None or not hasattr(control_obj, "upper_bound"):
-            return None
-        if control_obj.upper_bound is None:
+        if (
+            control_obj is None
+            or not hasattr(control_obj, "upper_bound")
+            or control_obj.upper_bound is None
+        ):
             return None
 
         pre_state = self.bellman_period._compute_pre_state_values(
@@ -529,6 +522,8 @@ class EulerEquationLoss(_EquationLossBase):
         )
 
         if self.constrained:
+            # Recomputes controls (already computed inside estimate_euler_residual)
+            # to get slack values; acceptable cost for API clarity.
             shocks_t, _ = _extract_period_shocks(self.bellman_period, shocks)
             controls_t = self.bellman_period.compute_controls(
                 df, states_t, shocks=shocks_t, parameters=self.parameters

@@ -708,6 +708,46 @@ def test_bellman_equation_loss_with_value_network():
     assert torch.all(losses >= 0)  # Squared residuals should be non-negative
 
 
+def test_bellman_equation_loss_with_foc_weight():
+    """Test BellmanEquationLoss with foc_weight > 0 adds a FOC term."""
+    test_block = model.DBlock(
+        name="test_foc",
+        shocks={},
+        dynamics={
+            "c": model.Control(iset=["a"], agent="consumer"),
+            "a": lambda a, c: a - c,
+            "u": lambda c: torch.log(c + 1e-8),
+        },
+        reward={"u": "consumer"},
+    )
+    test_block.construct_shocks({})
+
+    test_bp = bellman.BellmanPeriod(test_block, "beta", {"beta": 0.95})
+    value_net = BlockValueNet(test_bp, width=16)
+
+    input_grid = grid.Grid.from_dict({"a": torch.linspace(1.0, 10.0, 10)})
+
+    def policy(states_t, shocks_t, parameters):
+        return {"c": 0.3 * states_t["a"]}
+
+    # Without FOC weight
+    loss_no_foc = loss.BellmanEquationLoss(
+        test_bp, value_net.get_value_function(), parameters=None, foc_weight=0.0
+    )
+    losses_no_foc = loss_no_foc(policy, input_grid)
+
+    # With FOC weight
+    loss_with_foc = loss.BellmanEquationLoss(
+        test_bp, value_net.get_value_function(), parameters=None, foc_weight=1.0
+    )
+    losses_with_foc = loss_with_foc(policy, input_grid)
+
+    # FOC term adds to loss, so foc_weight > 0 should produce >= loss
+    assert isinstance(losses_with_foc, torch.Tensor)
+    assert torch.all(torch.isfinite(losses_with_foc))
+    assert torch.all(losses_with_foc >= losses_no_foc - 1e-6)
+
+
 def test_block_value_net():
     """Test BlockValueNet functionality."""
     # Create a test block with multiple state variables
@@ -1775,6 +1815,54 @@ class TestMaliarTrainingLoopValidation(unittest.TestCase):
                 random_seed=TEST_SEED,
             )
 
+    def test_value_network_without_loss_raises(self):
+        """Providing value_network without value_loss_function should raise."""
+        with self.assertRaises(ValueError, msg="value_loss_function"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                value_network=object(),
+                random_seed=TEST_SEED,
+            )
+
+    def test_value_loss_without_network_raises(self):
+        """Providing value_loss_function without value_network should raise."""
+        with self.assertRaises(ValueError, msg="value_network"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                value_loss_function=lambda df, grid: torch.tensor(0.0),
+                random_seed=TEST_SEED,
+            )
+
+    def test_non_callable_value_loss_raises(self):
+        """Non-callable value_loss_function should raise TypeError."""
+        with self.assertRaises(TypeError, msg="value_loss_function must be callable"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                value_network=object(),
+                value_loss_function="not_callable",
+                random_seed=TEST_SEED,
+            )
+
+    def test_non_grid_states_raises(self):
+        """Passing a dict instead of Grid for states_0_n should raise TypeError."""
+        with self.assertRaises(TypeError, msg="Grid instance"):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                {"m": torch.tensor([1.0]), "g": torch.tensor([1.0])},
+                self.calibration,
+                random_seed=TEST_SEED,
+            )
+
 
 class TestMaliarHyperparameters(unittest.TestCase):
     """Test that network_width and epochs_per_iteration affect training."""
@@ -1827,3 +1915,207 @@ class TestMaliarHyperparameters(unittest.TestCase):
             params_narrow,
             "Wider network should have more parameters",
         )
+
+
+class TestCheckConvergence(unittest.TestCase):
+    """Test _check_convergence helper."""
+
+    def test_param_convergence(self):
+        """Convergence when parameter diff < tolerance."""
+        params = torch.tensor([1.0, 2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            params,
+            params,
+            tolerance=1e-6,
+            prev_loss=None,
+            current_loss=0.1,
+            joint_training=False,
+        )
+        self.assertTrue(converged)
+        self.assertTrue(pc)
+        self.assertFalse(lc)
+        self.assertAlmostEqual(pdiff, 0.0)
+        self.assertIsNone(ldiff)
+
+    def test_loss_convergence(self):
+        """Convergence when loss diff < tolerance."""
+        p1 = torch.tensor([1.0])
+        p2 = torch.tensor([2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            p1,
+            p2,
+            tolerance=1e-6,
+            prev_loss=0.5,
+            current_loss=0.5,
+            joint_training=False,
+        )
+        self.assertTrue(converged)
+        self.assertFalse(pc)
+        self.assertTrue(lc)
+        self.assertAlmostEqual(ldiff, 0.0)
+
+    def test_no_convergence(self):
+        """No convergence when both diffs exceed tolerance."""
+        p1 = torch.tensor([1.0])
+        p2 = torch.tensor([2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            p1,
+            p2,
+            tolerance=1e-6,
+            prev_loss=1.0,
+            current_loss=0.5,
+            joint_training=False,
+        )
+        self.assertFalse(converged)
+        self.assertFalse(pc)
+        self.assertFalse(lc)
+
+    def test_joint_training_skips_loss(self):
+        """Joint training never uses loss-based convergence."""
+        p1 = torch.tensor([1.0])
+        p2 = torch.tensor([2.0])
+        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+            p1,
+            p2,
+            tolerance=1e-6,
+            prev_loss=None,
+            current_loss=None,
+            joint_training=True,
+        )
+        self.assertFalse(converged)
+        self.assertFalse(lc)
+        self.assertIsNone(ldiff)
+
+
+class TestLogIteration(unittest.TestCase):
+    """Test _log_iteration helper."""
+
+    def test_converged_by_params(self):
+        """Convergence log should report only the triggering criterion."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=True,
+                iteration=2,
+                param_diff=1e-7,
+                loss_diff=0.5,
+                current_loss=0.01,
+                joint_training=False,
+                param_converged=True,
+                loss_converged=False,
+            )
+        self.assertIn("Converged after 3 iterations", cm.output[0])
+        self.assertIn("parameters", cm.output[0])
+        self.assertNotIn("loss", cm.output[0])
+
+    def test_converged_by_loss(self):
+        """Convergence by loss should report loss, not parameters."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=True,
+                iteration=1,
+                param_diff=0.5,
+                loss_diff=1e-8,
+                current_loss=0.01,
+                joint_training=False,
+                param_converged=False,
+                loss_converged=True,
+            )
+        self.assertIn("loss", cm.output[0])
+        self.assertNotIn("parameters", cm.output[0])
+
+    def test_joint_training_omits_loss(self):
+        """Joint training log should not show loss."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=False,
+                iteration=0,
+                param_diff=1e-3,
+                loss_diff=None,
+                current_loss=None,
+                joint_training=True,
+            )
+        self.assertNotIn("loss=", cm.output[0])
+
+    def test_non_joint_shows_loss(self):
+        """Non-joint training log should include loss."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=False,
+                iteration=0,
+                param_diff=1e-3,
+                loss_diff=None,
+                current_loss=0.05,
+                joint_training=False,
+            )
+        self.assertIn("loss=", cm.output[0])
+
+
+class TestComputeSlack(unittest.TestCase):
+    """Test EulerEquationLoss._compute_slack."""
+
+    def setUp(self):
+        self.block = model.DBlock(
+            name="slack_test",
+            dynamics={
+                "m": lambda a, R: R * a,
+                "c": model.Control(
+                    iset=["m"],
+                    upper_bound=lambda m: m,
+                    agent="consumer",
+                ),
+                "a": lambda m, c: m - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.95, "R": 1.04})
+        self.loss_fn = loss.EulerEquationLoss(
+            self.bp,
+            parameters={"beta": 0.95, "R": 1.04},
+            constrained=True,
+        )
+
+    def test_slack_positive_when_not_binding(self):
+        """Slack > 0 when control is below upper bound."""
+        states_t = {"a": torch.tensor([2.0])}
+        shocks_t = {}
+        controls_t = {"c": torch.tensor([1.0])}  # c < m = R*a = 2.08
+        slack = self.loss_fn._compute_slack("c", controls_t, states_t, shocks_t)
+        self.assertIsNotNone(slack)
+        self.assertTrue((slack > 0).all())
+
+    def test_slack_zero_when_binding(self):
+        """Slack ≈ 0 when control equals upper bound."""
+        states_t = {"a": torch.tensor([2.0])}
+        shocks_t = {}
+        ub = 1.04 * 2.0  # m = R*a
+        controls_t = {"c": torch.tensor([ub])}
+        slack = self.loss_fn._compute_slack("c", controls_t, states_t, shocks_t)
+        self.assertIsNotNone(slack)
+        self.assertAlmostEqual(slack.item(), 0.0, places=4)
+
+    def test_no_upper_bound_returns_none(self):
+        """Control without upper_bound returns None."""
+        block_no_ub = model.DBlock(
+            name="no_ub",
+            dynamics={
+                "c": model.Control(iset=["a"]),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        bp_no_ub = bellman.BellmanPeriod(block_no_ub, "beta", {"beta": 0.95})
+        loss_fn = loss.EulerEquationLoss(bp_no_ub, parameters={"beta": 0.95})
+        slack = loss_fn._compute_slack(
+            "c", {"c": torch.tensor([1.0])}, {"a": torch.tensor([2.0])}, {}
+        )
+        self.assertIsNone(slack)

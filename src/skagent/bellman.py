@@ -628,7 +628,9 @@ class BellmanPeriod:
         return pre_state_values
 
 
-def fischer_burmeister(a: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
+def fischer_burmeister(
+    a: torch.Tensor, h: torch.Tensor, eps: float = 1e-12
+) -> torch.Tensor:
     r"""Compute the Fischer-Burmeister function for smooth complementarity.
 
     The Fischer-Burmeister function replaces the complementarity conditions
@@ -648,14 +650,39 @@ def fischer_burmeister(a: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
         First argument (e.g., slack variable :math:`1 - c/w`).
     h : torch.Tensor
         Second argument (e.g., unit-free Lagrange multiplier).
+    eps : float, optional
+        Regularization constant added inside the square root to keep the
+        gradient finite at the origin. At the default ``eps=1e-12``,
+        ``FB(0, 0) = -sqrt(eps) ≈ -1e-6`` rather than exactly zero.
+        This is below typical convergence tolerances but should be
+        accounted for in tests or with very tight tolerances.
 
     Returns
     -------
     torch.Tensor
-        Fischer-Burmeister residual. Equals zero when the complementarity
-        conditions are satisfied.
+        Fischer-Burmeister residual. Approximately zero when the
+        complementarity conditions are satisfied.
     """
-    return a + h - torch.sqrt(a**2 + h**2 + 1e-12)
+    return a + h - torch.sqrt(a**2 + h**2 + eps)
+
+
+def _resolve_discount_factor(
+    bellman_period: BellmanPeriod, post: dict[str, Any]
+) -> Any:
+    """Extract the discount factor from post-transition variables.
+
+    Raises ``KeyError`` with a descriptive message if the discount variable
+    is not present in *post*.
+    """
+    dv = bellman_period.discount_variable
+    if dv not in post:
+        raise KeyError(
+            f"Discount variable '{dv}' not found in post-transition output. "
+            f"Available variables: {sorted(post.keys())}. "
+            "Ensure the discount variable is defined in block.dynamics "
+            "or passed in calibration."
+        )
+    return post[dv]
 
 
 def _extract_period_shocks(
@@ -789,15 +816,7 @@ def estimate_discounted_lifetime_reward(
         post = bellman_period.post_function(
             states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
         )
-        if bellman_period.discount_variable not in post:
-            raise KeyError(
-                f"Discount variable '{bellman_period.discount_variable}' not found "
-                f"in post-transition output. "
-                f"Available variables: {sorted(post.keys())}. "
-                "Ensure the discount variable is defined in block.dynamics "
-                "or passed in calibration."
-            )
-        discount_factor = post[bellman_period.discount_variable]
+        discount_factor = _resolve_discount_factor(bellman_period, post)
 
         reward_t = bellman_period.reward_function(
             states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
@@ -919,21 +938,21 @@ def estimate_bellman_residual(
     post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
-    if bellman_period.discount_variable not in post:
-        raise KeyError(
-            f"Discount variable '{bellman_period.discount_variable}' not found "
-            f"in post-transition output. "
-            f"Available variables: {sorted(post.keys())}. "
-            "Ensure the discount variable is defined in block.dynamics "
-            "or passed in calibration."
-        )
-    discount_factor = post[bellman_period.discount_variable]
+    discount_factor = _resolve_discount_factor(bellman_period, post)
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
 
     # Return residual: V(s) - [u(s,c,ε) + β V(s')]
     bellman_residual = current_values - bellman_rhs
+
+    if torch.any(torch.isnan(bellman_residual)):
+        raise ValueError(
+            "Bellman residual contains NaN. Check value_function outputs "
+            f"(current_values NaN: {torch.any(torch.isnan(current_values)).item()}, "
+            f"continuation_values NaN: {torch.any(torch.isnan(continuation_values)).item()}, "
+            f"immediate_reward NaN: {torch.any(torch.isnan(immediate_reward)).item()})."
+        )
 
     return bellman_residual
 
@@ -994,6 +1013,13 @@ def _chain_rule_return_factor(
             if pre_state_grad is not None:
                 total = total + pre_state_grad * trans_grad
 
+    if torch.any(torch.isnan(total)) or torch.any(torch.isinf(total)):
+        raise ValueError(
+            f"Euler residual: return_factor_sum contains NaN or Inf for "
+            f"control '{control_sym}'. This indicates ill-conditioned "
+            "transition or pre-state gradients. Check block dynamics for "
+            "numerical stability."
+        )
     if not torch.any(total != 0):
         raise ValueError(
             "Euler residual: return_factor_sum is zero for all arrival states. "
@@ -1175,15 +1201,7 @@ def estimate_euler_residual(
     post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
-    if bellman_period.discount_variable not in post:
-        raise KeyError(
-            f"Discount variable '{bellman_period.discount_variable}' not found "
-            f"in post-transition output. "
-            f"Available variables: {sorted(post.keys())}. "
-            "Ensure the discount variable is defined in block.dynamics "
-            "or passed in calibration."
-        )
-    discount_factor = post[bellman_period.discount_variable]
+    discount_factor = _resolve_discount_factor(bellman_period, post)
 
     # Compute Euler residual for each control
     residuals = {}
@@ -1273,15 +1291,7 @@ def estimate_bellman_foc_residual(
     post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
-    if bellman_period.discount_variable not in post:
-        raise KeyError(
-            f"Discount variable '{bellman_period.discount_variable}' not found "
-            f"in post-transition output. "
-            f"Available variables: {sorted(post.keys())}. "
-            "Ensure the discount variable is defined in block.dynamics "
-            "or passed in calibration."
-        )
-    discount_factor = post[bellman_period.discount_variable]
+    discount_factor = _resolve_discount_factor(bellman_period, post)
 
     params_ext = parameters if parameters is not None else {}
 
@@ -1321,6 +1331,13 @@ def estimate_bellman_foc_residual(
             create_graph=True,
             retain_graph=True,
         )[0]
+
+        if dv_dc is None or torch.any(torch.isnan(dv_dc)):
+            raise ValueError(
+                f"Autograd gradient dV/dc for control '{control_sym}' is "
+                f"{'None' if dv_dc is None else 'NaN'}. "
+                "Check that value_function is differentiable and properly initialized."
+            )
 
         # FOC: u'(c) + β * ∂V(s',ε')/∂c = 0
         residuals[control_sym] = mu_t + discount_factor * dv_dc

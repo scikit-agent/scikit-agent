@@ -629,6 +629,104 @@ class TestFischerBurmeister(unittest.TestCase):
         result = bellman.fischer_burmeister(a, h)
         self.assertEqual(result.shape, (3,))
 
+    def test_negative_arguments(self):
+        """FB with negative arguments is non-zero (constraint violation)."""
+        result = bellman.fischer_burmeister(torch.tensor(-1.0), torch.tensor(1.0))
+        self.assertTrue(torch.isfinite(result))
+        self.assertNotAlmostEqual(result.item(), 0.0, places=2)
+
+    def test_differentiable(self):
+        """FB is differentiable through autograd."""
+        a = torch.tensor(1.0, requires_grad=True)
+        h = torch.tensor(2.0, requires_grad=True)
+        result = bellman.fischer_burmeister(a, h)
+        result.backward()
+        self.assertIsNotNone(a.grad)
+        self.assertIsNotNone(h.grad)
+        self.assertTrue(torch.isfinite(a.grad))
+        self.assertTrue(torch.isfinite(h.grad))
+
+    def test_differentiable_at_zero(self):
+        """FB gradient is finite near zero due to epsilon safeguard."""
+        a = torch.tensor(0.0, requires_grad=True)
+        h = torch.tensor(0.0, requires_grad=True)
+        result = bellman.fischer_burmeister(a, h)
+        result.backward()
+        self.assertTrue(torch.isfinite(a.grad))
+        self.assertTrue(torch.isfinite(h.grad))
+
+
+class TestEstimateBellmanFocResidual(unittest.TestCase):
+    """Test estimate_bellman_foc_residual."""
+
+    def setUp(self):
+        self.block = model.DBlock(
+            name="foc_test",
+            shocks={"income": Normal(mu=1.0, sigma=0.1)},
+            dynamics={
+                "wealth": lambda wealth, income, consumption: wealth
+                + income
+                - consumption,
+                "consumption": model.Control(iset=["wealth"], agent="consumer"),
+                "utility": lambda consumption: torch.log(consumption + 1e-8),
+            },
+            reward={"utility": "consumer"},
+        )
+        self.block.construct_shocks({})
+        self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.9})
+
+    def test_returns_finite_tensor(self):
+        """FOC residual should be a finite tensor."""
+
+        def value_fn(states, shocks, params):
+            return 10.0 * states["wealth"]
+
+        def decision_fn(states, shocks, params):
+            return {"consumption": 0.5 * states["wealth"]}
+
+        states_t = {"wealth": torch.tensor([2.0, 4.0])}
+        shocks = {
+            "income_0": torch.tensor([1.0, 1.0]),
+            "income_1": torch.tensor([1.2, 0.8]),
+        }
+
+        residual = bellman.estimate_bellman_foc_residual(
+            self.bp, value_fn, decision_fn, states_t, shocks
+        )
+        self.assertIsInstance(residual, torch.Tensor)
+        self.assertTrue(torch.all(torch.isfinite(residual)))
+
+    def test_multi_control_returns_dict(self):
+        """Multi-control model should return a dict of residuals."""
+        multi_block = model.DBlock(
+            name="multi_foc",
+            dynamics={
+                "c1": model.Control(["a"]),
+                "c2": model.Control(["a"]),
+                "a": lambda a, c1, c2: a - c1 - c2,
+                "u": lambda c1, c2: torch.log(c1 + 1e-8) + torch.log(c2 + 1e-8),
+            },
+            reward={"u": "consumer"},
+        )
+        multi_bp = bellman.BellmanPeriod(multi_block, "beta", {"beta": 0.9})
+
+        def value_fn(states, shocks, params):
+            return 5.0 * states["a"]
+
+        def df(s, sh, p):
+            return {"c1": s["a"] * 0.3, "c2": s["a"] * 0.2}
+
+        result = bellman.estimate_bellman_foc_residual(
+            multi_bp,
+            value_fn,
+            df,
+            {"a": torch.tensor([1.0])},
+            {},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertIn("c1", result)
+        self.assertIn("c2", result)
+
 
 class TestEnsureGrad(unittest.TestCase):
     """Test _ensure_grad helper."""
