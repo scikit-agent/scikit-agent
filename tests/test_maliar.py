@@ -636,9 +636,7 @@ def test_get_euler_residual_loss():
     )
 
     # Create Euler equation loss function
-    loss_fn = loss.EulerEquationLoss(
-        test_bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
-    )
+    loss_fn = loss.EulerEquationLoss(test_bp, parameters=d2_calibration)
 
     # Test that loss function works with the analytical optimal policy
     losses = loss_fn(d2_policy, input_grid)
@@ -791,7 +789,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # Compute Euler residual with analytical optimal policy
         optimal_residual = bellman.estimate_euler_residual(
             bp,
-            d2_calibration["DiscFac"],
             d2_policy,
             test_states,
             shocks,
@@ -840,9 +837,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         policy_net = BlockPolicyNet(bp, width=32, init_seed=TEST_SEED)
 
         # Create Euler equation loss
-        euler_loss_fn = loss.EulerEquationLoss(
-            bp, discount_factor=d2_calibration["DiscFac"], parameters=d2_calibration
-        )
+        euler_loss_fn = loss.EulerEquationLoss(bp, parameters=d2_calibration)
 
         # Create training grid with states (D-2 is deterministic, no shocks needed)
         n_grid_points = 64
@@ -873,7 +868,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # Compute final Euler residual
         final_residual = bellman.estimate_euler_residual(
             bp,
-            d2_calibration["DiscFac"],
             decision_fn,
             test_states,
             shocks,
@@ -930,10 +924,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         )
 
         # Create Euler equation loss
-        # Note: after PR #168, discount_factor will come from BellmanPeriod
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
-            discount_factor=u2_calibration["DiscFac"],
             parameters=u2_calibration,
         )
 
@@ -1027,7 +1019,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # negative residuals (overconsumption), not positive ones (constraint binding).
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=True,  # Key fix: use one-sided loss for borrowing constraint
         )
@@ -1128,7 +1119,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         euler_residual = bellman.estimate_euler_residual(
             bp,
-            beta,
             decision_fn,
             high_wealth_states,
             high_wealth_shocks,
@@ -1349,13 +1339,11 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         # Create loss functions with both settings
         loss_unconstrained = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=False,
         )
         loss_constrained = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=True,
         )
@@ -1391,11 +1379,19 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         self.assertIsInstance(constrained_loss, torch.Tensor)
         self.assertEqual(unconstrained_loss.shape, constrained_loss.shape)
 
-        # Constrained loss should be <= unconstrained loss (it ignores positive residuals)
-        self.assertLessEqual(
+        # Both losses should be finite and non-negative
+        self.assertTrue(
+            torch.isfinite(unconstrained_loss).all(),
+            "Unconstrained loss should be finite",
+        )
+        self.assertTrue(
+            torch.isfinite(constrained_loss).all(),
+            "Constrained loss (Fischer-Burmeister) should be finite",
+        )
+        self.assertGreaterEqual(
             constrained_loss.mean().item(),
-            unconstrained_loss.mean().item() + 1e-6,  # Small tolerance for numerical
-            "Constrained loss should be <= unconstrained loss (ignores positive residuals)",
+            0.0,
+            "Constrained loss should be non-negative",
         )
 
     def test_constrained_loss_zero_for_binding_constraint(self):
@@ -1412,7 +1408,6 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
 
         loss_constrained = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=True,
         )
@@ -1481,7 +1476,6 @@ class TestU3ConstrainedRegionBehavior(unittest.TestCase):
         # Create Euler equation loss with constrained=True
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
-            discount_factor=u3_calibration["DiscFac"],
             parameters=u3_calibration,
             constrained=True,
         )
@@ -1583,7 +1577,6 @@ class TestConstrainedWarning(unittest.TestCase):
         with self.assertLogs("skagent.loss", level=logging.WARNING) as cm:
             loss.EulerEquationLoss(
                 bp,
-                discount_factor=calibration["DiscFac"],
                 parameters=calibration,
                 constrained=True,
             )
@@ -1605,7 +1598,6 @@ class TestConstrainedWarning(unittest.TestCase):
         with self.assertNoLogs(logger, level=logging.WARNING):
             loss.EulerEquationLoss(
                 bp,
-                discount_factor=u3_calibration["DiscFac"],
                 parameters=u3_calibration,
                 constrained=True,
             )

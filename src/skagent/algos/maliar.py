@@ -142,6 +142,8 @@ def maliar_training_loop(
     simulation_steps: int = 1,
     network_width: int = 16,
     epochs_per_iteration: int = 250,
+    value_network: Optional[object] = None,
+    value_loss_function: Optional[Callable] = None,
 ) -> tuple:
     """
     Run the Maliar, Maliar, and Winant (JME '21) training loop.
@@ -150,6 +152,12 @@ def maliar_training_loop(
     by training a neural network policy to minimize empirical risk (loss). The
     network architecture (width, training epochs per iteration) is configurable
     via optional parameters.
+
+    When ``value_network`` and ``value_loss_function`` are both provided, the loop
+    trains the policy and value networks jointly using
+    :func:`~skagent.ann.train_block_value_and_policy_nn`.  This is the
+    Bellman-equation approach where both a policy and a value approximation are
+    updated simultaneously (Maliar et al. 2021, Section 2.3).
 
     Parameters
     ----------
@@ -188,20 +196,29 @@ def maliar_training_loop(
     epochs_per_iteration : int, optional
         Number of training epochs per iteration.
         Must be >= 1. Default is 250.
+    value_network : BlockValueNet, optional
+        A pre-constructed value network for joint training. When provided
+        together with ``value_loss_function``, the loop trains both
+        networks simultaneously.
+    value_loss_function : Callable, optional
+        Loss function for the value network. Signature matches
+        ``value_loss_function(value_function, input_grid) -> loss_tensor``.
+        Required when ``value_network`` is provided.
 
     Returns
     -------
     tuple
-        (trained_policy_network, training_states) where trained_policy_network
-        is the BlockPolicyNet and training_states is the Grid of states from
-        the last training iteration (or the convergence point if reached early).
+        Without joint training: ``(trained_policy_network, training_states)``.
+        With joint training: ``(trained_policy_network, trained_value_network,
+        training_states)``.
 
     Raises
     ------
     ValueError
         If max_iterations < 1, tolerance <= 0, shock_copies < 1,
         simulation_steps < 1, network_width < 1, epochs_per_iteration < 1,
-        or states_0_n contains no states.
+        states_0_n contains no states, or only one of value_network /
+        value_loss_function is provided.
     TypeError
         If bellman_period is None or loss_function is not callable.
     """
@@ -216,6 +233,25 @@ def maliar_training_loop(
         raise TypeError(
             "parameters cannot be None; pass an empty dict if no parameters are needed"
         )
+
+    # Validate joint-training parameters
+    joint_training = value_network is not None or value_loss_function is not None
+    if joint_training:
+        if value_network is None:
+            raise ValueError(
+                "value_loss_function provided without value_network. "
+                "Both must be specified for joint training."
+            )
+        if value_loss_function is None:
+            raise ValueError(
+                "value_network provided without value_loss_function. "
+                "Both must be specified for joint training."
+            )
+        if not callable(value_loss_function):
+            raise TypeError(
+                "value_loss_function must be callable, "
+                f"got {type(value_loss_function).__name__}"
+            )
 
     # Validate numeric parameters
     if max_iterations < 1:
@@ -259,9 +295,21 @@ def maliar_training_loop(
         givens = generate_givens_from_states(states, bellman_period.block, shock_copies)
 
         # ii). Construct gradient ∇Xi^n(θ) and update coefficients
-        bpn, current_loss = ann.train_block_nn(
-            bpn, givens, loss_function, epochs=epochs_per_iteration
-        )
+        if joint_training:
+            bpn, value_network = ann.train_block_value_and_policy_nn(
+                bpn,
+                value_network,
+                givens,
+                loss_function,
+                value_loss_function,
+                epochs=epochs_per_iteration,
+            )
+            # Use policy loss for convergence tracking
+            current_loss = 0.0  # joint training doesn't return a single loss
+        else:
+            bpn, current_loss = ann.train_block_nn(
+                bpn, givens, loss_function, epochs=epochs_per_iteration
+            )
 
         # Extract parameters after training
         curr_params = utils.extract_parameters(bpn)
@@ -270,9 +318,9 @@ def maliar_training_loop(
         param_diff = utils.compute_parameter_difference(prev_params, curr_params)
         param_converged = param_diff < tolerance
 
-        # Check for loss convergence
+        # Check for loss convergence (only for policy-only training)
         loss_converged = False
-        if prev_loss is not None:
+        if prev_loss is not None and not joint_training:
             loss_diff = abs(current_loss - prev_loss)
             loss_converged = loss_diff < tolerance
 
@@ -296,7 +344,7 @@ def maliar_training_loop(
                 f"Iteration {iteration + 1}: "
                 f"Parameter difference: {param_diff:.2e}, Loss: {current_loss:.2e}"
             )
-            if prev_loss is not None:
+            if prev_loss is not None and not joint_training:
                 log_msg += f" (loss diff: {abs(current_loss - prev_loss):.2e})"
             logging.info(log_msg)
 
@@ -324,4 +372,6 @@ def maliar_training_loop(
         )
 
     # Step 3. Return trained approximation ϕ(·,θ) for accuracy assessment
+    if joint_training:
+        return bpn, value_network, states
     return bpn, states

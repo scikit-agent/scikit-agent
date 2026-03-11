@@ -495,31 +495,15 @@ class TestEulerResidualErrorHandling(unittest.TestCase):
         )
         self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.9})
 
-    def test_callable_discount_factor_raises(self):
-        """Callable discount factor should raise ValueError."""
-
-        def df(s, sh, p):
-            return {"c": s["a"] * 0.5}
-
-        with self.assertRaises(ValueError, msg="State-dependent discount factors"):
-            bellman.estimate_euler_residual(
-                self.bp,
-                lambda x: 0.9,
-                df,
-                {"a": torch.tensor([1.0])},
-                {},
-                {"beta": 0.9},
-            )
-
-    def test_multi_control_raises(self):
-        """Multiple controls should raise NotImplementedError."""
+    def test_multi_control_returns_dict(self):
+        """Multiple controls should return a dict of residuals."""
         multi_block = model.DBlock(
             name="multi_control",
             dynamics={
                 "c1": model.Control(["a"]),
                 "c2": model.Control(["a"]),
                 "a": lambda a, c1, c2: a - c1 - c2,
-                "u": lambda c1: torch.log(c1),
+                "u": lambda c1, c2: torch.log(c1) + torch.log(c2),
             },
             reward={"u": "consumer"},
         )
@@ -529,10 +513,18 @@ class TestEulerResidualErrorHandling(unittest.TestCase):
             a = s["a"]
             return {"c1": a * 0.3, "c2": a * 0.2}
 
-        with self.assertRaises(NotImplementedError, msg="single-control"):
-            bellman.estimate_euler_residual(
-                multi_bp, 0.9, df, {"a": torch.tensor([1.0])}, {}, {"beta": 0.9}
-            )
+        result = bellman.estimate_euler_residual(
+            multi_bp,
+            df,
+            {"a": torch.tensor([1.0])},
+            {},
+            {"beta": 0.9},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertIn("c1", result)
+        self.assertIn("c2", result)
+        for v in result.values():
+            self.assertIsInstance(v, torch.Tensor)
 
 
 class TestComputeControlsTypeError(unittest.TestCase):
@@ -600,6 +592,42 @@ class TestExtractPeriodShocksErrors(unittest.TestCase):
         shocks = {"income_0": torch.tensor([1.0])}
         with self.assertRaises(KeyError, msg="income_1"):
             bellman._extract_period_shocks(self.bp, shocks)
+
+
+class TestFischerBurmeister(unittest.TestCase):
+    """Test the Fischer-Burmeister complementarity function."""
+
+    def test_both_zero(self):
+        """FB(0, 0) = 0."""
+        a = torch.tensor(0.0)
+        h = torch.tensor(0.0)
+        result = bellman.fischer_burmeister(a, h)
+        self.assertAlmostEqual(result.item(), 0.0, places=5)
+
+    def test_complementary_slackness(self):
+        """FB(0, s) ≈ 0 for s > 0 and FB(f, 0) ≈ 0 for f > 0."""
+        # When one is zero and the other is positive, FB should be ≈ 0
+        s = torch.tensor(2.0)
+        result = bellman.fischer_burmeister(torch.tensor(0.0), s)
+        self.assertAlmostEqual(result.item(), 0.0, places=4)
+
+        f = torch.tensor(3.0)
+        result = bellman.fischer_burmeister(f, torch.tensor(0.0))
+        self.assertAlmostEqual(result.item(), 0.0, places=4)
+
+    def test_violation_nonzero(self):
+        """FB(a, h) != 0 when both a > 0 and h > 0."""
+        a = torch.tensor(1.0)
+        h = torch.tensor(1.0)
+        result = bellman.fischer_burmeister(a, h)
+        self.assertNotAlmostEqual(result.item(), 0.0, places=2)
+
+    def test_batch(self):
+        """FB works on batched tensors."""
+        a = torch.tensor([0.0, 1.0, 0.0])
+        h = torch.tensor([1.0, 0.0, 0.0])
+        result = bellman.fischer_burmeister(a, h)
+        self.assertEqual(result.shape, (3,))
 
 
 class TestEnsureGrad(unittest.TestCase):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -8,9 +9,11 @@ import torch
 
 from skagent.bellman import (
     _extract_period_shocks,
+    estimate_bellman_foc_residual,
     estimate_bellman_residual,
     estimate_discounted_lifetime_reward,
     estimate_euler_residual,
+    fischer_burmeister,
 )
 from skagent.grid import Grid
 
@@ -290,6 +293,16 @@ class BellmanEquationLoss(_EquationLossBase):
     where s' = f(s,c,ε) is the next state given current state s, control c, and shock ε,
     and the expectation E_ε' is taken over future shock realizations ε'.
 
+    When ``foc_weight > 0``, the loss includes a first-order condition (FOC) term
+    derived from the Bellman equation (equation 14 of Maliar et al. 2021):
+
+    .. math::
+
+        L = f_{\\text{Bellman}}^2 + v \\cdot f_{\\text{FOC}}^2
+
+    where :math:`f_{\\text{FOC}}` is the FOC residual
+    :math:`u'(c) + \\beta \\, \\partial V(s')/\\partial c = 0`.
+
     This function expects the input grid to contain two independent shock realizations:
     - {shock_sym}_0: shocks for period t (used for immediate reward and transitions)
     - {shock_sym}_1: shocks for period t+1 (used for continuation value evaluation)
@@ -304,11 +317,17 @@ class BellmanEquationLoss(_EquationLossBase):
         Model parameters for calibration
     agent : str, optional
         Agent identifier for rewards
+    foc_weight : float, optional
+        Weight :math:`v` on the FOC residual term (default: 0.0, pure Bellman).
+        Positive values add the FOC loss to improve convergence.
     """
 
-    def __init__(self, bellman_period, value_network, parameters=None, agent=None):
+    def __init__(
+        self, bellman_period, value_network, parameters=None, agent=None, foc_weight=0.0
+    ):
         super().__init__(bellman_period, parameters=parameters, agent=agent)
         self.value_network = value_network
+        self.foc_weight = foc_weight
 
     def __call__(self, df, input_grid: Grid):
         """
@@ -326,7 +345,7 @@ class BellmanEquationLoss(_EquationLossBase):
         Returns
         -------
         torch.Tensor
-            Bellman equation residual loss (squared)
+            Bellman equation residual loss (squared), optionally with FOC term.
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
@@ -340,7 +359,25 @@ class BellmanEquationLoss(_EquationLossBase):
             self.agent,
         )
 
-        return bellman_residual**2
+        loss = bellman_residual**2
+
+        if self.foc_weight > 0:
+            foc_residual = estimate_bellman_foc_residual(
+                self.bellman_period,
+                self.value_network,
+                df,
+                states_t,
+                shocks,
+                self.parameters,
+                self.agent,
+            )
+            if isinstance(foc_residual, dict):
+                foc_loss = sum(r**2 for r in foc_residual.values())
+            else:
+                foc_loss = foc_residual**2
+            loss = loss + self.foc_weight * foc_loss
+
+        return loss
 
 
 class EulerEquationLoss(_EquationLossBase):
@@ -361,179 +398,64 @@ class EulerEquationLoss(_EquationLossBase):
     where :math:`f` is the residual that equals zero at optimality, :math:`s_{t+1}` is
     the next-period arrival state, and :math:`m'` is the pre-decision state.
 
-    **Derivation:**
+    The discount factor :math:`\\beta` is obtained from the ``BellmanPeriod`` via
+    ``bellman_period.discount_variable``, so it adapts to the model's calibration.
 
-    The first-order condition from the Bellman equation is:
+    **Multi-control support:**
 
-    .. math::
+    For models with :math:`J` control variables, a separate Euler residual is
+    computed per control.  The loss sums over all controls:
+    :math:`L = \\sum_j w \\cdot f_j^2`.
 
-        u'(x_t) = -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial x_t}\\right]
+    **Handling Inequality Constraints (Fischer-Burmeister):**
 
-    By the envelope theorem, :math:`V'(s') = u'(x') \\cdot \\frac{\\partial m'}{\\partial s'}`.
-
-    **Example (consumption-saving):** For :math:`a_{t+1} = m_t - c_t` where
-    :math:`m_t = R \\cdot a_t + y_t` (cash-on-hand):
-
-    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -1`
-    - Pre-state gradient: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} = R`
-    - Combined: :math:`R \\cdot (-1) = -R`
-
-    This gives :math:`f = u'(c_t) - \\beta R \\cdot u'(c_{t+1}) = 0` at optimality,
-    which is the standard Euler equation :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
-
-    **Handling Inequality Constraints:**
-
-    When the control has an **upper-bound** constraint (e.g., :math:`x \\leq \\bar{x}`),
-    the Euler equation becomes an inequality at constrained points:
+    When ``constrained=True`` and a control has an ``upper_bound`` defined on its
+    ``Control`` object, the complementarity conditions
 
     .. math::
 
-        u'(x_t) \\geq -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial x_t}\\right]
+        f \\geq 0, \\quad s \\geq 0, \\quad f \\cdot s = 0
 
-    At the upper bound, the residual :math:`f > 0` is optimal. Set ``constrained=True``
-    to use a one-sided loss :math:`L = E[\\max(0, -f)^2]` that only penalizes negative
-    residuals, which is the appropriate formulation for upper-bound constrained controls.
-
-    For example, in a buffer stock consumption model with :math:`c \\leq m`, the agent
-    cannot consume more than cash-on-hand. At the constraint, :math:`u'(c) > \\beta R E[u'(c')]`,
-    so the residual is positive and should not be penalized.
-
-    .. note::
-        The current implementation handles **upper-bound** constraints on the control
-        (residual > 0 at the constraint, penalize via :math:`\\text{relu}(-f)^2`).
-        **Lower-bound** constraints (where the residual would be < 0 at the constraint,
-        requiring :math:`\\text{relu}(f)^2`) are not yet supported.
-
-    **Methodology:**
-
-    This follows the Maliar et al. (2021) methodology (Definition 2.7, equations 9-12)
-    and is designed for use with the all-in-one (AiO) expectation operator.
-
-    The implementation computes the Euler residual using two independent shock
-    realizations (:math:`\\varepsilon_0` for period :math:`t` and :math:`\\varepsilon_1`
-    for period :math:`t+1`), then squares it. The loss is:
+    (where :math:`s` is the constraint slack) are replaced by the smooth
+    Fischer-Burmeister equation (Maliar et al. 2021, equation 25):
 
     .. math::
 
-        L(\\theta) = E[f^2]
+        \\text{FB}(f, s) = f + s - \\sqrt{f^2 + s^2} = 0
 
-    where :math:`f` is the Euler equation residual computed with both shock realizations.
-
-    For constrained problems, the loss uses the one-sided formulation:
-
-    .. math::
-
-        L(\\theta) = E[\\max(0, -f)^2]
-
-    which only penalizes negative residuals.
-
-    **Notation:**
-
-    We use :math:`\\varepsilon` (epsilon) to denote exogenous shocks, following standard
-    convention for stochastic disturbances. This is functionally equivalent to the shock
-    notation in Maliar et al. (2021).
-
-    **Input Grid Structure:**
-
-    This function expects the input grid to contain two independent shock realizations:
-
-    - ``{shock_sym}_0``: shocks for transitions from t to t+1
-    - ``{shock_sym}_1``: shocks for transitions from t+1 to t+2 (independent of period t)
+    For controls without an explicit ``upper_bound``, the loss falls back to the
+    one-sided :math:`\\text{relu}(-f)^2` formulation.
 
     Parameters
     ----------
     bellman_period : BellmanPeriod
-        The model block containing dynamics, rewards, and shocks
-    discount_factor : float
-        The discount factor β (time preference parameter).
-
-        .. note::
-            In a future version, the discount factor may be obtained from the
-            BellmanPeriod object directly rather than passed as a parameter.
-
+        The model block containing dynamics, rewards, and shocks.
     parameters : dict, optional
-        Model parameters for calibration
+        Model parameters for calibration.
     agent : str, optional
-        Agent identifier for rewards
+        Agent identifier for rewards.
     weight : float, optional
-        Exogenous weight for combining multiple optimality conditions (default: 1.0)
-        This corresponds to the vector v in equation (12) of the paper.
+        Exogenous weight for combining multiple optimality conditions (default: 1.0).
+        This corresponds to the vector :math:`v` in equation (12) of the paper.
     constrained : bool, optional
-        If True, use one-sided loss for upper-bound constrained controls (default: False).
-        When True, only negative Euler residuals are penalized. Positive residuals
-        are not penalized because they indicate the control is at its upper bound,
-        which is optimal behavior under the Kuhn-Tucker conditions.
-
-    Notes
-    -----
-    This implementation follows Maliar, Maliar, and Winant (2021, JME) Section 2.2
-    and Section 4.4 for the consumption-saving problem with Kuhn-Tucker conditions.
-
-    **Current Limitations:**
-
-    - Only single-control models are currently supported. Models with multiple
-      control variables will raise a ``NotImplementedError``.
-    - State-dependent discount factors are not yet supported.
-
-    The Euler equation automatically adapts to your model's structure. For example:
-
-    - Consumption-saving: :math:`u(c) = \\log(c)`, with :math:`a_{t+1} = m_t - c_t`
-      where :math:`m_t = R \\cdot a_t + y_t`. Transition gradient
-      :math:`\\partial a_{t+1}/\\partial c_t = -1` and pre-state gradient
-      :math:`\\partial m'/\\partial a' = R` combine to give :math:`-R`.
-      Euler equation becomes: :math:`u'(c_t) = \\beta R u'(c_{t+1})`
-    - With permanent income: :math:`u(c/P)` where :math:`P` evolves with shocks.
-      Multiple transition gradients are summed automatically.
+        If True, use Fischer-Burmeister or one-sided loss for upper-bound
+        constrained controls (default: False).
 
     Examples
     --------
-    >>> # Euler equation adapts to your block's reward structure
-    >>> block = DBlock(
-    ...     shocks={"income": Normal(mu=1.0, sigma=0.1)},
-    ...     dynamics={
-    ...         "consumption": Control(iset=["wealth"]),
-    ...         "wealth": lambda wealth, income, consumption, R:
-    ...             R * (wealth - consumption) + income,
-    ...         "utility": lambda consumption: torch.log(consumption),
-    ...     },
-    ...     reward={"utility": "consumer"}
-    ... )
     >>> bp = BellmanPeriod(block, "beta", calibration={"R": 1.04, "beta": 0.95})
-    >>> loss_fn = EulerEquationLoss(bp, discount_factor=0.95, parameters={"R": 1.04, "beta": 0.95})
-    >>>
-    >>> # Create input grid with two shock realizations
-    >>> input_grid = Grid.from_dict({
-    ...     "wealth": torch.linspace(1.0, 10.0, 50),
-    ...     "income_0": torch.ones(50),      # First shock realization
-    ...     "income_1": torch.ones(50) * 1.1 # Second independent realization
-    ... })
-    >>>
-    >>> # Compute loss for a decision function
-    >>> loss = loss_fn(my_decision_function, input_grid)
-    >>>
-    >>> # For a model with upper-bound constrained control (e.g., buffer stock c <= m):
-    >>> loss_fn_constrained = EulerEquationLoss(
-    ...     bp, discount_factor=0.95, parameters={"R": 1.04}, constrained=True
-    ... )
+    >>> loss_fn = EulerEquationLoss(bp, parameters={"R": 1.04, "beta": 0.95})
     """
 
     def __init__(
         self,
         bellman_period,
-        discount_factor,
         parameters=None,
         agent=None,
         weight=1.0,
         constrained=False,
     ):
-        if callable(discount_factor):
-            raise ValueError(
-                "Currently only numerical, not state-dependent, discount factors are supported."
-            )
-
         super().__init__(bellman_period, parameters=parameters, agent=agent)
-
-        self.discount_factor = discount_factor
 
         self.weight = weight
         self.constrained = constrained
@@ -547,9 +469,37 @@ class EulerEquationLoss(_EquationLossBase):
             if not has_upper_bound:
                 logger.warning(
                     "constrained=True but no Control in the block has an upper_bound. "
-                    "The one-sided loss is intended for models with upper-bound "
-                    "constraints on controls (e.g., c <= m)."
+                    "The one-sided loss will use relu(-f)^2 as a fallback. "
+                    "Define upper_bound on Control objects to enable the "
+                    "Fischer-Burmeister formulation."
                 )
+
+    def _compute_slack(
+        self, control_sym, controls_t, states_t, shocks_t
+    ) -> torch.Tensor | None:
+        """Compute constraint slack for a control with an upper bound.
+
+        Returns ``upper_bound - control_value``, or ``None`` if the control
+        has no upper bound defined.
+        """
+        control_obj = self.bellman_period.block.dynamics.get(control_sym)
+        if control_obj is None or not hasattr(control_obj, "upper_bound"):
+            return None
+        if control_obj.upper_bound is None:
+            return None
+
+        pre_state = self.bellman_period._compute_pre_state_values(
+            control_obj.iset,
+            states_t,
+            shocks=shocks_t,
+            parameters=self.parameters,
+        )
+
+        sig = inspect.signature(control_obj.upper_bound)
+        ub_args = {k: pre_state[k] for k in sig.parameters if k in pre_state}
+        ub_value = control_obj.upper_bound(**ub_args)
+
+        return ub_value - controls_t[control_sym]
 
     def __call__(self, df, input_grid: Grid):
         """
@@ -559,31 +509,18 @@ class EulerEquationLoss(_EquationLossBase):
         ----------
         df : callable
             Decision function from policy network.
-            Signature: df(states_t, shocks_t, parameters) -> controls_t
         input_grid : Grid
-            Grid containing current states and two independent shock realizations:
-            - {shock_sym}_0: shocks for transitions t → t+1
-            - {shock_sym}_1: shocks for transitions t+1 → t+2 (independent)
+            Grid containing current states and two independent shock realizations.
 
         Returns
         -------
         torch.Tensor
             Weighted squared Euler equation residual.
-            The residual is computed using two independent shock realizations
-            via the AiO expectation operator, then squared and weighted.
-
-        Notes
-        -----
-        The residual f is computed using two independent shock realizations:
-        ε₀ for transitions from t to t+1, and ε₁ for transitions from t+1
-        to t+2 (following Maliar et al. 2021, Definition 2.7). The loss is
-        the squared residual, L = f(ε₀, ε₁)².
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
         euler_residual = estimate_euler_residual(
             self.bellman_period,
-            self.discount_factor,
             df,
             states_t,
             shocks,
@@ -592,10 +529,30 @@ class EulerEquationLoss(_EquationLossBase):
         )
 
         if self.constrained:
-            # One-sided loss for upper-bound constrained controls:
-            # only penalize negative residuals (control exceeding its optimal level).
-            # Positive residuals indicate the constraint is binding, which is optimal
-            # under the Kuhn-Tucker conditions.
-            return self.weight * torch.relu(-euler_residual) ** 2
+            shocks_t, _ = _extract_period_shocks(self.bellman_period, shocks)
+            controls_t = self.bellman_period.compute_controls(
+                df, states_t, shocks=shocks_t, parameters=self.parameters
+            )
 
+            if isinstance(euler_residual, dict):
+                total = torch.tensor(0.0)
+                for ctrl_sym, residual in euler_residual.items():
+                    slack = self._compute_slack(
+                        ctrl_sym, controls_t, states_t, shocks_t
+                    )
+                    if slack is not None:
+                        total = total + fischer_burmeister(residual, slack) ** 2
+                    else:
+                        total = total + torch.relu(-residual) ** 2
+                return self.weight * total
+            else:
+                ctrl_sym = next(iter(self.bellman_period.get_controls()))
+                slack = self._compute_slack(ctrl_sym, controls_t, states_t, shocks_t)
+                if slack is not None:
+                    return self.weight * fischer_burmeister(euler_residual, slack) ** 2
+                return self.weight * torch.relu(-euler_residual) ** 2
+
+        # Unconstrained loss
+        if isinstance(euler_residual, dict):
+            return self.weight * sum(r**2 for r in euler_residual.values())
         return self.weight * euler_residual**2
