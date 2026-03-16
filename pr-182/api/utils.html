@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Simulation" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Utils - scikit-agent 0.1.dev474+g6586d8bb3</title>
+        <title>Utils - scikit-agent 0.1.dev484+gd47030a8d</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev474+g6586d8bb3</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev484+gd47030a8d</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -351,28 +351,39 @@ of <cite>fun</cite>.</p>
 <dt class="sig sig-object py" id="skagent.utils.compute_gradients_for_tensors">
 <span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">compute_gradients_for_tensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensors_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.compute_gradients_for_tensors" title="Link to this definition">¶</a></dt>
 <dd><p>Compute gradients for a dictionary of tensors with respect to variables.</p>
-<p>This function computes gradients using PyTorch’s autograd, handling both
-scalar and batched tensor cases. It is used by grad_reward_function and
-grad_transition_function in BellmanPeriod.</p>
+<p>This function computes gradients using PyTorch’s autograd. It is used by
+the gradient methods on BellmanPeriod (<code class="docutils literal notranslate"><span class="pre">grad_reward_function</span></code>,
+<code class="docutils literal notranslate"><span class="pre">grad_transition_function</span></code>, and <code class="docutils literal notranslate"><span class="pre">grad_pre_state_function</span></code>).</p>
 <p>For batched inputs, this computes the diagonal of the Jacobian: for each
-batch element i, we compute ∂target[i]/∂var[i].</p>
+batch element <em>i</em>, we compute ∂target[i]/∂var[i]. The implementation
+uses <code class="docutils literal notranslate"><span class="pre">grad(target.sum(),</span> <span class="pre">var)</span></code>, which yields the correct diagonal
+whenever target[i] depends only on var[i] (sample-independence). This
+assumption holds when each batch element is computed independently,
+which is the case for element-wise reward and transition functions in
+this library.</p>
+<p>For scalar inputs, <code class="docutils literal notranslate"><span class="pre">.sum()</span></code> is a no-op, so the same code path handles
+both cases without branching.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>tensors_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Dictionary mapping symbol names to tensors to compute gradients for</p></li>
-<li><p><strong>wrt</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Dictionary of variables to compute gradients with respect to.
-Keys are variable names, values are tensors with requires_grad=True</p></li>
-<li><p><strong>create_graph</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, graph of the derivative will be constructed, allowing
-computation of higher order derivative products. Default: False.
-Set to True for end-to-end training through gradient computations.</p></li>
+<li><p><strong>tensors_dict</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span>) – Dictionary mapping symbol names to tensors to compute gradients for.</p></li>
+<li><p><strong>wrt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span>) – Dictionary of variables to compute gradients with respect to.
+Keys are variable names, values are tensors with <code class="docutils literal notranslate"><span class="pre">requires_grad=True</span></code>.</p></li>
+<li><p><strong>create_graph</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If True, the graph of the derivative is constructed, allowing
+higher-order derivatives and end-to-end training. Default: False.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Nested dictionary of gradients for each tensor symbol and variable:
-{tensor_sym: {var_name: gradient}}</p>
+<code class="docutils literal notranslate"><span class="pre">{tensor_sym:</span> <span class="pre">{var_name:</span> <span class="pre">gradient}}</span></code>. Gradient is <code class="docutils literal notranslate"><span class="pre">None</span></code> if and
+only if the variable does not require gradients or no computational
+graph path exists from the variable to the target tensor. A zero
+tensor is returned when the dependency exists but evaluates to zero.
+Callers should treat <code class="docutils literal notranslate"><span class="pre">None</span></code> as structural independence, not as a
+zero gradient.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -557,7 +568,7 @@ the object type and shape of vec_a.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=fc5525f4"></script>
+</div><script src="../_static/documentation_options.js?v=a1611b87"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

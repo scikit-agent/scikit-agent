@@ -200,7 +200,7 @@ We'll create a DBlock that represents one period of the model
 
 
     ✓ Created model block with 9 state variables
-    ✓ Control variables: {'c': <skagent.block.Control object at 0x7f1bb1388740>, 'alpha': <skagent.block.Control object at 0x7f1bb1388590>}
+    ✓ Control variables: {'c': <skagent.block.Control object at 0x7f3532303740>, 'alpha': <skagent.block.Control object at 0x7f35323013a0>}
     ✓ Shock variables: ['theta', 'psi', 'risky_return']
 
 
