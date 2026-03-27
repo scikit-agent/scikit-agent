@@ -150,6 +150,61 @@ class BellmanPeriod:
         """
         return self.get_reward_syms(agent)[0]
 
+    def compute_pre_decision_state(
+        self,
+        states: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Compute the pre-decision state from arrival states and shocks.
+
+        If the control's information set variables (e.g. cash-on-hand ``m``)
+        are not already present in *states*, runs block dynamics from arrival
+        states up to the control to produce them. If they are already present
+        (the control operates directly on arrival states), returns the merged
+        inputs unchanged.
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            Arrival state variables (e.g., ``{"a": tensor}``).
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+
+        Returns
+        -------
+        dict[str, Any]
+            Merged dict of parameters, arrival states, shocks, and any
+            computed pre-decision variables.
+        """
+        shocks = self._resolve_shocks(shocks)
+        params = self._resolve_parameters(parameters)
+        collision = set(params) & set(states)
+        if collision:
+            raise ValueError(
+                f"compute_pre_decision_state: parameter keys conflict with state keys: "
+                f"{sorted(collision)}. Rename either the parameters or the state "
+                "variables to avoid shadowing."
+            )
+        vals = params | states | shocks
+
+        control_sym = next(iter(self.get_controls()))
+        iset = self.block.dynamics[control_sym].iset
+
+        # If the control's iset variables are already available, no
+        # pre-decision computation needed (control operates directly
+        # on arrival states).
+        if all(isym in vals for isym in iset):
+            return vals
+
+        # Compute pre-decision dynamics (e.g. m = R*a/ψ + 1 for U-2)
+        drs = {cs: (lambda: 1) for cs in self.get_controls()}
+        post = self.block.transition(vals, drs, until=control_sym)
+        return post
+
     def compute_controls(
         self,
         df: dict[str, Callable] | Callable,
@@ -924,8 +979,15 @@ def estimate_bellman_residual(
     # value_function is an external callable that may not handle None
     params_ext = parameters if parameters is not None else {}
 
-    # Get current value estimates (using period t shocks)
-    current_values = value_function(states_t, shocks_t, params_ext)
+    # Compute pre-decision state from arrival states + shocks so that
+    # the value function sees the variables it expects (e.g. cash-on-hand
+    # m computed from arrival assets a and shocks).
+    pre_decision_t = bellman_period.compute_pre_decision_state(
+        states_t, shocks=shocks_t, parameters=parameters
+    )
+
+    # Get current value estimates (using pre-decision state)
+    current_values = value_function(pre_decision_t, shocks_t, params_ext)
 
     # Get controls from decision function (using period t shocks)
     controls_t = bellman_period.compute_controls(
@@ -942,8 +1004,13 @@ def estimate_bellman_residual(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
 
-    # Compute continuation value using value network (using period t+1 shocks)
-    continuation_values = value_function(next_states, shocks_t_plus_1, params_ext)
+    # Compute pre-decision state for next period (arrival states + next shocks)
+    pre_decision_t1 = bellman_period.compute_pre_decision_state(
+        next_states, shocks=shocks_t_plus_1, parameters=parameters
+    )
+
+    # Compute continuation value using value network (using pre-decision state of t+1)
+    continuation_values = value_function(pre_decision_t1, shocks_t_plus_1, params_ext)
 
     # TODO: this is all calling the forward simulation multiple times;
     #       can be made more efficient
@@ -1338,8 +1405,14 @@ def estimate_bellman_foc_residual(
             states_t, controls_t_grad, shocks=shocks_t, parameters=parameters
         )
 
+        # Compute pre-decision state for next period so the value function
+        # sees the variables it expects (e.g. m' from a' and shocks).
+        pre_decision_t1 = bellman_period.compute_pre_decision_state(
+            next_states, shocks=shocks_t_plus_1, parameters=parameters
+        )
+
         # V(s', ε₁) — continuation value with second independent shock draw
-        v_next = value_function(next_states, shocks_t_plus_1, params_ext)
+        v_next = value_function(pre_decision_t1, shocks_t_plus_1, params_ext)
 
         # ∂V/∂c via autograd chain rule: ∂V/∂s' * ∂s'/∂c
         dv_dc = torch.autograd.grad(

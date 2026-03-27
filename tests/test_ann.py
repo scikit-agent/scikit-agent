@@ -712,14 +712,99 @@ class test_block_policy_value_net(unittest.TestCase):
         self.assertEqual(value_estimates.shape, (1,))
 
     def test_block_policy_value_net__case_11(self):
-        """Test comprehensive joint training that mirrors policy training patterns."""
+        """BlockPolicyValueNet forward pass returns (policy, value) 2-tuple with correct shapes."""
+        pvnet = ann.BlockPolicyValueNet(case_11["bp"])
 
-        # Create networks
-        policy_value_net = ann.BlockPolicyValueNet(case_11["bp"])
+        # Build an input tensor matching the iset size on the same device as the network
+        n_samples = 5
+        n_iset = len(pvnet.iset)
+        x = torch.randn(n_samples, n_iset, device=device)
 
-        ## This case has a non-trivial continuation value function
-        ## and so is a good one to test policy/value training on.
+        policy, value = pvnet(x)
 
-        policy_value_net
+        self.assertEqual(policy.shape, (n_samples, 1))
+        self.assertEqual(value.shape, (n_samples, 1))
+        self.assertIsInstance(policy, torch.Tensor)
+        self.assertIsInstance(value, torch.Tensor)
 
-        ## That hasn't been implemented yet :(
+
+class TestTrainBlockNNValidation(unittest.TestCase):
+    """Test input validation in train_block_nn."""
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        self.bpn = ann.BlockPolicyNet(case_0["bp"], width=8)
+        self.inputs = case_0["givens"]
+        # Loss function that produces gradients: mean-square of the network output
+        self.loss_fn = lambda df, g: df["c"](*[g[k].flatten() for k in ["a"]]) ** 2
+
+    def test_zero_epochs_raises(self):
+        with self.assertRaises(ValueError, msg="epochs must be a positive integer"):
+            ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, epochs=0)
+
+    def test_negative_epochs_raises(self):
+        with self.assertRaises(ValueError):
+            ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, epochs=-1)
+
+    def test_zero_lr_raises(self):
+        with self.assertRaises(ValueError, msg="lr must be > 0"):
+            ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, lr=0.0)
+
+    def test_negative_lr_raises(self):
+        with self.assertRaises(ValueError):
+            ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, lr=-0.001)
+
+    def test_zero_grad_clip_raises(self):
+        with self.assertRaises(ValueError, msg="grad_clip must be > 0 or None"):
+            ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, grad_clip=0.0)
+
+    def test_none_grad_clip_allowed(self):
+        _, loss = ann.train_block_nn(
+            self.bpn, self.inputs, self.loss_fn, epochs=1, grad_clip=None
+        )
+        self.assertIsNotNone(loss)
+
+
+class TestTrainBlockValueAndPolicyNN(unittest.TestCase):
+    """Direct unit tests for train_block_value_and_policy_nn."""
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        np.random.seed(TEST_SEED)
+        # case_0: Control(["a"]), no shocks, simple iset
+        self.bpn = ann.BlockPolicyNet(case_0["bp"], width=8)
+        self.bvn = ann.BlockValueNet(case_0["bp"], width=8)
+        self.inputs = case_0["givens"]
+        # Losses that produce gradients through the networks.
+        # train_block_value_and_policy_nn passes get_decision_function() (a callable
+        # returning a decisions dict) and get_value_function() (a callable returning a tensor).
+        self.policy_loss = lambda df, g: df({"a": g["a"].flatten()}, {}, {})["c"] ** 2
+        self.value_loss = lambda vf, g: vf({"a": g["a"].flatten()}, {}, {}) ** 2
+
+    def test_returns_two_networks(self):
+        """Function returns (trained_policy_nn, trained_value_nn) 2-tuple."""
+        result = ann.train_block_value_and_policy_nn(
+            self.bpn, self.bvn, self.inputs, self.policy_loss, self.value_loss, epochs=2
+        )
+        self.assertEqual(len(result), 2)
+        trained_policy, trained_value = result
+        self.assertIsInstance(trained_policy, ann.BlockPolicyNet)
+        self.assertIsInstance(trained_value, ann.BlockValueNet)
+
+    def test_training_runs_without_error(self):
+        """Training both networks together should complete without error."""
+        ann.train_block_value_and_policy_nn(
+            self.bpn, self.bvn, self.inputs, self.policy_loss, self.value_loss, epochs=3
+        )
+
+    def test_grad_clip_none_does_not_raise(self):
+        """grad_clip=None should disable clipping without error."""
+        ann.train_block_value_and_policy_nn(
+            self.bpn,
+            self.bvn,
+            self.inputs,
+            self.policy_loss,
+            self.value_loss,
+            epochs=2,
+            grad_clip=None,
+        )

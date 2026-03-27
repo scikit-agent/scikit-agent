@@ -131,9 +131,10 @@ def simulate_forward(
 
 
 def _validate_joint_training(value_network, value_loss_function):
-    """Check that value_network and value_loss_function are both-or-neither.
+    """Validate that value_network and value_loss_function are either both provided or both omitted.
 
-    Returns ``True`` if joint training should be used.
+    Raises ``ValueError`` if exactly one is supplied.
+    Returns ``True`` if joint training should be used, ``False`` otherwise.
     """
     joint = value_network is not None or value_loss_function is not None
     if not joint:
@@ -384,6 +385,7 @@ def maliar_training_loop(
         torch.manual_seed(random_seed)
 
     bpn = ann.BlockPolicyNet(bellman_period, width=network_width)
+    optimizer = torch.optim.Adam(bpn.parameters(), lr=0.001)
     states = states_0_n
     prev_loss = None
 
@@ -410,8 +412,12 @@ def maliar_training_loop(
             )
             current_loss = None
         else:
-            bpn, current_loss = ann.train_block_nn(
-                bpn, givens, loss_function, epochs=epochs_per_iteration
+            bpn, current_loss, optimizer = ann.train_block_nn(
+                bpn,
+                givens,
+                loss_function,
+                epochs=epochs_per_iteration,
+                optimizer=optimizer,
             )
 
         curr_params = utils.extract_parameters(bpn)

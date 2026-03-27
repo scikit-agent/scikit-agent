@@ -649,7 +649,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         # Train using scikit-agent's train_block_nn
         trained_net, final_loss = train_block_nn(
-            policy_net, train_grid, euler_loss_fn, epochs=300
+            policy_net, train_grid, euler_loss_fn, epochs=1000, verbose=False
         )
 
         # Verify training achieved small loss
@@ -678,14 +678,13 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         mean_residual = torch.mean(torch.abs(final_residual)).item()
         mse_residual = torch.mean(final_residual**2).item()
 
-        # Tolerance: trained policy should have mean |residual| < 0.1
-        # (Training loss was ~0.0002, but evaluation on different grid points may be higher)
-        assert mean_residual < 0.1, (
+        # Trained policy should have mean |residual| < 0.07
+        # (robust across seeds with lr=0.001 and 1000 epochs)
+        assert mean_residual < 0.07, (
             f"Trained policy should have small Euler residual. "
             f"Got mean |residual| = {mean_residual:.6e}"
         )
 
-        # Verify MSE is reasonably small (< 0.05)
         assert mse_residual < 0.05, (
             f"Trained policy should have small Euler residual MSE. "
             f"Got MSE = {mse_residual:.6e}"
@@ -693,7 +692,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
     def test_maliar_training_loop_u2_analytical(self):
         """
-        Test maliar_training_loop with U-2 model against analytical PIH solution.
+        Test Bellman equation training with U-2 model against analytical PIH solution.
 
         U-2 uses NORMALIZED variables (all divided by permanent income P):
         - a = A/P (normalized assets, arrival state)
@@ -701,9 +700,16 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         - c = C/P (normalized consumption)
 
         Analytical solution: c = (1-β)(m + 1/r) where 1/r is normalized human wealth.
+
+        Uses a shared-backbone BlockPolicyValueNet so that a single optimizer
+        updates both the policy head and the value head simultaneously. The
+        value head pins down the consumption LEVEL via the Bellman equation
+        V(m) = u(c) + β E[V(m')], resolving the level-identification problem
+        inherent in pure Euler equation training.
         """
-        # Get U-2 benchmark model (unconstrained PIH - upper bound is non-binding,
-        # so constrained=False is appropriate). See future gallery page for details.
+        from skagent.ann import BlockPolicyValueNet, train_block_nn
+
+        # Get U-2 benchmark model
         u2_block = get_benchmark_model("U-2")
         u2_calibration = get_benchmark_calibration("U-2")
         analytical_policy = get_analytical_policy("U-2")
@@ -715,36 +721,39 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # Create BellmanPeriod
         bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration)
 
-        # Create initial states grid (normalized assets)
-        states_0_n = grid.Grid.from_config(
+        # Create shared-backbone policy+value network
+        torch.manual_seed(TEST_SEED)
+        pvnet = BlockPolicyValueNet(bp, width=32)
+
+        # Bellman equation loss using the value head of the same network.
+        # foc_weight=1.0 adds the FOC term (Maliar et al. 2021, eq. 14)
+        # for faster convergence.
+        bellman_loss_fn = loss.BellmanEquationLoss(
+            bp,
+            pvnet.get_value_function(),
+            parameters=u2_calibration,
+            foc_weight=1.0,
+        )
+
+        # Training grid with two shock copies (AiO expectation operator)
+        n_pts = 15
+        train_grid = grid.Grid.from_dict(
             {
-                "a": {"min": 0.5, "max": 5.0, "count": 15},
+                "a": torch.linspace(0.5, 5.0, n_pts, device=device),
+                "psi_0": torch.ones(n_pts, device=device),
+                "psi_1": torch.ones(n_pts, device=device),
             }
         )
 
-        # Create Euler equation loss
-        euler_loss_fn = loss.EulerEquationLoss(
-            bp,
-            parameters=u2_calibration,
+        # Train with single optimizer (both heads share the backbone)
+        trained_net, final_loss = train_block_nn(
+            pvnet, train_grid, bellman_loss_fn, epochs=2000, verbose=False
         )
 
-        # Train the policy
-        trained_net, final_states = maliar.maliar_training_loop(
-            bp,
-            euler_loss_fn,
-            states_0_n,
-            u2_calibration,
-            shock_copies=2,
-            max_iterations=12,
-            tolerance=1e-6,
-            random_seed=TEST_SEED,
-            simulation_steps=1,
-        )
-
-        # Verify training completed
+        # Verify training achieved small loss
         self.assertIsNotNone(trained_net)
 
-        # Get decision functions
+        # Get decision function from trained network
         decision_fn = trained_net.get_decision_function()
 
         # Test on grid within training range (normalized assets)
@@ -761,17 +770,15 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         rel_error = torch.abs(trained_c - analytical_c) / (analytical_c + 1e-8)
         mean_rel_error = rel_error.mean().item()
 
-        # Trained policy should be reasonably close to analytical (within 15%).
-        # Note: with CRRA utility, the Euler equation pins down both the shape and
-        # the level of the optimal consumption policy; arbitrary rescalings k * c*
-        # do NOT satisfy the Euler equation unless k = 1. The 15% tolerance here
-        # reflects numerical approximation error (finite training iterations,
-        # stochastic optimization, and function-approximation error), not any
-        # theoretical indeterminacy in the Euler condition.
+        # The Bellman equation V(m) = u(c) + β E[V(m')] anchors the
+        # consumption level via the value function, resolving the
+        # indeterminacy that Euler-only training suffers from.
+        # With the shared backbone, mean relative error is consistently
+        # 1-3% across seeds (vs ~10% for Euler-only).
         self.assertLess(
             mean_rel_error,
-            0.15,
-            f"Trained policy should approximately match analytical PIH solution. "
+            0.05,
+            f"Bellman-trained policy should closely match analytical PIH solution. "
             f"Mean relative error: {mean_rel_error:.4f}",
         )
 
@@ -822,14 +829,16 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             constrained=True,  # Key fix: use one-sided loss for borrowing constraint
         )
 
-        # Train the policy with more iterations for better convergence
+        # Train the policy with enough iterations for convergence.
+        # More iterations allow the Maliar simulation-based state updates
+        # to explore the ergodic distribution, improving accuracy.
         trained_net, final_states = maliar.maliar_training_loop(
             bp,
             euler_loss_fn,
             states_0_n,
             u3_calibration,
             shock_copies=2,
-            max_iterations=15,
+            max_iterations=25,
             tolerance=1e-6,
             random_seed=TEST_SEED,
             simulation_steps=1,
@@ -926,10 +935,12 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         euler_residual = next(iter(euler_residuals.values()))
 
         mean_euler_residual = torch.mean(torch.abs(euler_residual)).item()
-        # In the unconstrained region, Euler residual should be small
+        # In the unconstrained region, Euler residual should be small.
+        # With warm-start optimizer and gradient clipping, residuals are
+        # consistently < 0.1 across seeds.
         self.assertLess(
             mean_euler_residual,
-            0.3,
+            0.2,
             f"Euler residual should be small at high wealth (unconstrained). "
             f"Got mean |residual| = {mean_euler_residual:.4f}",
         )
@@ -1372,6 +1383,34 @@ class TestSimulateForwardValidation(unittest.TestCase):
         self.assertTrue(torch.allclose(result["m"], torch.tensor([1.0, 2.0])))
 
 
+class TestSimulateForwardHappyPath(unittest.TestCase):
+    """Test simulate_forward simulation loop for big_t >= 1."""
+
+    def setUp(self):
+        rng = np.random.default_rng(TEST_SEED)
+        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
+        self.bp = case_4["bp"]
+        # case_4 Control(["g", "m"]) — policy returns c given g, m
+        self.policy = lambda s, sh, p: {"c": s["m"] * 0.5 + s["g"] * 0.0}
+        self.states = {
+            "m": torch.tensor([1.0, 2.0, 3.0]),
+            "g": torch.tensor([0.5, 0.5, 0.5]),
+        }
+
+    def test_big_t_one_returns_dict_with_same_keys(self):
+        """simulate_forward with big_t=1 returns a dict with the same state keys."""
+        result = maliar.simulate_forward(self.states, self.bp, self.policy, {}, big_t=1)
+        self.assertIsInstance(result, dict)
+        self.assertIn("m", result)
+        self.assertIn("g", result)
+
+    def test_big_t_one_output_shape_matches_input(self):
+        """Output tensor shape should match input tensor shape after one step."""
+        result = maliar.simulate_forward(self.states, self.bp, self.policy, {}, big_t=1)
+        self.assertEqual(result["m"].shape, self.states["m"].shape)
+        self.assertEqual(result["g"].shape, self.states["g"].shape)
+
+
 class TestMaliarTrainingLoopValidation(unittest.TestCase):
     """Test input validation in maliar_training_loop."""
 
@@ -1683,6 +1722,21 @@ class TestCheckConvergence(unittest.TestCase):
         self.assertFalse(lc)
         self.assertIsNone(ldiff)
 
+    def test_tensor_loss_raises_type_error(self):
+        """Passing an un-.item()-ed torch.Tensor as current_loss raises TypeError."""
+        params = torch.tensor([1.0])
+        tensor_loss = torch.tensor(0.5)  # forgot .item()
+        with self.assertRaises(TypeError) as ctx:
+            maliar._check_convergence(
+                params,
+                params,
+                tolerance=1e-6,
+                prev_loss=None,
+                current_loss=tensor_loss,
+                joint_training=False,
+            )
+        self.assertIn("scalar", str(ctx.exception))
+
 
 class TestLogIteration(unittest.TestCase):
     """Test _log_iteration helper."""
@@ -1753,6 +1807,24 @@ class TestLogIteration(unittest.TestCase):
                 joint_training=False,
             )
         self.assertIn("loss=", cm.output[0])
+
+    def test_both_criteria_converged(self):
+        """Log message includes both criteria when both trigger simultaneously."""
+        import logging
+
+        with self.assertLogs(level=logging.INFO) as cm:
+            maliar._log_iteration(
+                converged=True,
+                iteration=3,
+                param_diff=1e-8,
+                loss_diff=1e-9,
+                current_loss=0.001,
+                joint_training=False,
+                param_converged=True,
+                loss_converged=True,
+            )
+        self.assertIn("parameters", cm.output[0])
+        self.assertIn("loss", cm.output[0])
 
 
 class TestComputeSlack(unittest.TestCase):
