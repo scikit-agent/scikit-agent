@@ -14,9 +14,9 @@ from skagent.bellman import (
     estimate_bellman_residual,
     estimate_discounted_lifetime_reward,
     estimate_euler_residual,
-    fischer_burmeister,
 )
 from skagent.grid import Grid
+from skagent.utils import fischer_burmeister
 
 if TYPE_CHECKING:
     from skagent.bellman import BellmanPeriod
@@ -395,7 +395,7 @@ class BellmanEquationLoss(_EquationLossBase):
                 self.parameters,
                 self.agent,
             )
-            foc_loss = sum((r**2 for r in foc_residuals.values()), torch.tensor(0.0))
+            foc_loss = sum((r**2 for r in foc_residuals.values()), 0.0)
             loss = loss + self.foc_weight * foc_loss
 
         return loss
@@ -563,7 +563,7 @@ class EulerEquationLoss(_EquationLossBase):
                 controls_t=controls_t,
             )
 
-            total = torch.tensor(0.0)
+            total = 0.0
             for ctrl_sym, residual in euler_residuals.items():
                 slack = self._compute_slack(ctrl_sym, controls_t, states_t, shocks_t)
                 if slack is not None:
@@ -581,6 +581,4 @@ class EulerEquationLoss(_EquationLossBase):
             self.parameters,
             self.agent,
         )
-        return self.weight * sum(
-            (r**2 for r in euler_residuals.values()), torch.tensor(0.0)
-        )
+        return self.weight * sum((r**2 for r in euler_residuals.values()), 0.0)

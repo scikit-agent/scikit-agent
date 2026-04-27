@@ -712,46 +712,6 @@ class BellmanPeriod:
         return post[dv]
 
 
-def fischer_burmeister(
-    a: torch.Tensor, h: torch.Tensor, eps: float = 1e-12
-) -> torch.Tensor:
-    r"""Compute the Fischer-Burmeister function for smooth complementarity.
-
-    The Fischer-Burmeister function replaces the complementarity conditions
-    :math:`a \geq 0,\; h \geq 0,\; ah = 0` with the equivalent smooth equation:
-
-    .. math::
-
-        \text{FB}(a, h) = a + h - \sqrt{a^2 + h^2} = 0
-
-    This is differentiable everywhere, unlike :math:`\min(a, h) = 0`.
-
-    Following Maliar et al. (2021, JME) equation (25).
-
-    Parameters
-    ----------
-    a : torch.Tensor
-        First argument (e.g., slack variable :math:`1 - c/w`).
-    h : torch.Tensor
-        Second argument (e.g., unit-free Lagrange multiplier).
-    eps : float, optional
-        Regularization constant added inside the square root to keep the
-        gradient finite at the origin. At the default ``eps=1e-12``,
-        ``FB(0, 0) = -sqrt(eps) ≈ -1e-6`` rather than exactly zero.
-        This is below typical convergence tolerances but should be
-        accounted for in tests or with very tight tolerances.
-
-    Returns
-    -------
-    torch.Tensor
-        Fischer-Burmeister residual. Approximately zero when the
-        complementarity conditions are satisfied.
-    """
-    if eps <= 0:
-        raise ValueError(f"eps must be > 0, got {eps}")
-    return a + h - torch.sqrt(a**2 + h**2 + eps)
-
-
 def _extract_period_shocks(
     bellman_period: BellmanPeriod,
     shocks: dict[str, Any],
@@ -1424,13 +1384,15 @@ def estimate_bellman_foc_residual(
         )[0]
 
         if dv_dc is None:
-            raise ValueError(
-                f"Autograd returned None for dV/d{control_sym}. "
-                f"The value function has no differentiable path to control "
-                f"'{control_sym}'. Ensure the value network does not detach "
-                "the computation graph (avoid .detach(), .item(), or "
-                "torch.no_grad() inside value_function)."
+            # Continuation value has no differentiable dependence on this
+            # control; with allow_unused=True this is a legitimate outcome
+            # for multi-control models where only some controls affect V(s').
+            # Treat it as a zero gradient and continue.
+            logging.debug(
+                "Autograd returned None for dV/d%s — treating as zero gradient.",
+                control_sym,
             )
+            dv_dc = torch.zeros_like(c_t)
         if torch.any(torch.isnan(dv_dc)):
             raise ValueError(
                 f"Autograd gradient dV/d{control_sym} is NaN. "
