@@ -10,6 +10,10 @@ These examples show how to generate synthetic data, run Monte Carlo simulations,
 and analyze the results.
 
 
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
+
 
 .. raw:: html
 

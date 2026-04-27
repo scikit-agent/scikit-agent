@@ -6,11 +6,11 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Simulation" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Utils - scikit-agent 0.1.dev484+gb09e11490</title>
+        <title>Utils - scikit-agent 0.1.dev485+g9238691ac</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=fd6457a4" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev484+gb09e11490</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev485+g9238691ac</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -416,6 +416,40 @@ to correct tensor columns based on a parameter-to-column mapping.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="skagent.utils.fischer_burmeister">
+<span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">fischer_burmeister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.fischer_burmeister" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the Fischer-Burmeister function for smooth complementarity.</p>
+<p>The Fischer-Burmeister function replaces the complementarity conditions
+<span class="math notranslate nohighlight">\(a \geq 0,\; h \geq 0,\; ah = 0\)</span> with the equivalent smooth equation:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\text{FB}(a, h) = a + h - \sqrt{a^2 + h^2} = 0\]</div>
+</div>
+<p>This is differentiable everywhere, unlike <span class="math notranslate nohighlight">\(\min(a, h) = 0\)</span>.</p>
+<p>Following Maliar et al. (2021, JME) equation (25).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>) – First argument (e.g., slack variable <span class="math notranslate nohighlight">\(1 - c/w\)</span>).</p></li>
+<li><p><strong>h</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>) – Second argument (e.g., unit-free Lagrange multiplier).</p></li>
+<li><p><strong>eps</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Regularization constant added inside the square root to keep the
+gradient finite at the origin. At the default <code class="docutils literal notranslate"><span class="pre">eps=1e-12</span></code>,
+<code class="docutils literal notranslate"><span class="pre">FB(0,</span> <span class="pre">0)</span> <span class="pre">=</span> <span class="pre">-sqrt(eps)</span> <span class="pre">≈</span> <span class="pre">-1e-6</span></code> rather than exactly zero.
+This is below typical convergence tolerances but should be
+accounted for in tests or with very tight tolerances.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fischer-Burmeister residual. Approximately zero when the
+complementarity conditions are satisfied.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="skagent.utils.reconcile">
 <span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">reconcile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vec_b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.reconcile" title="Link to this definition">¶</a></dt>
 <dd><p>Returns a new vector with the values of vec_b but with
@@ -549,6 +583,7 @@ the object type and shape of vec_a.</p>
 <li><a class="reference internal" href="#skagent.utils.compute_parameter_difference"><code class="docutils literal notranslate"><span class="pre">compute_parameter_difference()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.create_vectorized_function_wrapper_with_mapping"><code class="docutils literal notranslate"><span class="pre">create_vectorized_function_wrapper_with_mapping()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.extract_parameters"><code class="docutils literal notranslate"><span class="pre">extract_parameters()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.utils.fischer_burmeister"><code class="docutils literal notranslate"><span class="pre">fischer_burmeister()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.reconcile"><code class="docutils literal notranslate"><span class="pre">reconcile()</span></code></a></li>
 </ul>
 </li>
@@ -568,12 +603,15 @@ the object type and shape of vec_a.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=7f76a8bb"></script>
+</div><script src="../_static/documentation_options.js?v=6c103b19"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"tex": {"packages": {"[+]": ["amsmath", "amssymb"]}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
 </html>
