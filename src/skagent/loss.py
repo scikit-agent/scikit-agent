@@ -223,11 +223,26 @@ class EstimatedDiscountedLifetimeRewardLoss:
 
 class _EquationLossBase(ABC):
     """
-    Private base class for Bellman and Euler equation losses.
+    Private base class for losses defined as squared residuals of the
+    Bellman period's optimality conditions.
 
-    Stores shared setup (bellman_period, arrival_variables, shock_syms, reward
-    validation) and provides ``_extract_states_and_shocks`` to avoid duplicate
-    grid-extraction logic in subclass ``__call__`` methods.
+    Both subclasses (:class:`BellmanEquationLoss`, :class:`EulerEquationLoss`)
+    take input grids that follow the AiO contract from Maliar et al. (2021,
+    Definition 2.7): arrival states plus two independent shock realizations
+    per period, encoded as ``{sym}_0`` (period t) and ``{sym}_1`` (period
+    t+1). The base class:
+
+    - validates that the given agent has at least one reward variable
+      defined in ``bellman_period``;
+    - centralizes storage of ``bellman_period``, ``parameters``, ``agent``,
+      ``arrival_variables``, and ``shock_syms``; and
+    - provides :meth:`_extract_states_and_shocks` to deduplicate
+      grid-extraction logic in subclass ``__call__`` methods.
+
+    Subclasses differ in what optimality condition they evaluate (Bellman
+    residual vs Euler residual), whether they require a value callable, and
+    whether they support inequality constraints; they share the input
+    contract above.
     """
 
     def __init__(
@@ -323,13 +338,18 @@ class BellmanEquationLoss(_EquationLossBase):
     Parameters
     ----------
     bellman_period : BellmanPeriod
-        The model block containing dynamics, rewards, and shocks
-    value_network : callable
-        A value function that takes state variables and returns value estimates
+        The model block containing dynamics, rewards, and shocks.
+    value_function : dict[str, Callable] | Callable
+        Value function ``vf(states_t, shocks_t, parameters) -> tensor``
+        on arrival states, or a dict mapping agent name to such a
+        callable for multi-agent models. Any pre-decision (iset)
+        computation the underlying approximator needs is the callable's
+        responsibility.
     parameters : dict, optional
-        Model parameters for calibration
+        Model parameters for calibration.
     agent : str, optional
-        Agent identifier for rewards
+        Agent identifier for rewards. Required when ``value_function`` is
+        a dict.
     foc_weight : float, optional
         Weight :math:`v` on the FOC residual term (default: 0.0, pure Bellman).
         Positive values add the FOC loss to improve convergence.
@@ -338,19 +358,20 @@ class BellmanEquationLoss(_EquationLossBase):
     def __init__(
         self,
         bellman_period: BellmanPeriod,
-        value_network: Callable,
+        value_function: dict[str, Callable] | Callable,
         parameters: dict[str, Any] | None = None,
         agent: str | None = None,
         foc_weight: float = 0.0,
     ) -> None:
         super().__init__(bellman_period, parameters=parameters, agent=agent)
-        if not callable(value_network):
+        if not callable(value_function) and not isinstance(value_function, dict):
             raise TypeError(
-                f"value_network must be callable, got {type(value_network).__name__}"
+                "value_function must be a callable or a dict mapping agent "
+                f"name to a callable, got {type(value_function).__name__}"
             )
         if foc_weight < 0:
             raise ValueError(f"foc_weight must be >= 0, got {foc_weight}")
-        self.value_network = value_network
+        self.value_function = value_function
         self.foc_weight = foc_weight
 
     def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor:
@@ -375,7 +396,7 @@ class BellmanEquationLoss(_EquationLossBase):
 
         bellman_residual = estimate_bellman_residual(
             self.bellman_period,
-            self.value_network,
+            self.value_function,
             df,
             states_t,
             shocks,
@@ -388,7 +409,7 @@ class BellmanEquationLoss(_EquationLossBase):
         if self.foc_weight > 0:
             foc_residuals = estimate_bellman_foc_residual(
                 self.bellman_period,
-                self.value_network,
+                self.value_function,
                 df,
                 states_t,
                 shocks,
@@ -447,6 +468,15 @@ class EulerEquationLoss(_EquationLossBase):
     For controls without an explicit ``upper_bound``, the loss falls back to the
     one-sided :math:`\\text{relu}(-f)^2` formulation.
 
+    **Scope: upper bounds only.**
+    The constrained mode currently models the upper-bound side of the
+    complementarity condition: :math:`f \\geq 0`, :math:`s = ub - c \\geq
+    0`, :math:`f \\cdot s = 0`. Although ``Control`` accepts both
+    ``lower_bound`` and ``upper_bound``, lower-bound constraints are not
+    yet handled here; bilateral support requires also flipping the
+    residual sign for lower-binding cases (``FB(-f, c - lb)``) and is
+    left as a follow-up.
+
     Parameters
     ----------
     bellman_period : BellmanPeriod
@@ -500,10 +530,12 @@ class EulerEquationLoss(_EquationLossBase):
     def _compute_slack(
         self, control_sym: str, controls_t: dict, states_t: dict, shocks_t: dict
     ) -> torch.Tensor | None:
-        """Compute constraint slack for a control with an upper bound.
+        """Compute upper-bound slack ``upper_bound - control_value``.
 
-        Returns ``upper_bound - control_value``, or ``None`` if the control
-        has no upper bound defined.
+        Returns ``None`` if the control has no upper bound defined. This
+        helper currently handles only the upper-bound side of the
+        complementarity condition; see the class-level docstring for the
+        scope rationale and the lower-bound follow-up.
         """
         control_obj = self.bellman_period.block.dynamics.get(control_sym)
         if (
@@ -513,11 +545,8 @@ class EulerEquationLoss(_EquationLossBase):
         ):
             return None
 
-        pre_state = self.bellman_period._compute_pre_state_values(
-            control_obj.iset,
-            states_t,
-            shocks=shocks_t,
-            parameters=self.parameters,
+        pre_state = self.bellman_period.compute_pre_state(
+            control_sym, states_t, shocks=shocks_t, parameters=self.parameters
         )
 
         sig = inspect.signature(control_obj.upper_bound)

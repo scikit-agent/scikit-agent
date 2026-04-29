@@ -123,12 +123,10 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
     def test_estimate_bellman_residual(self):
         """Test the Bellman residual helper function."""
 
-        # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
+        def simple_value_function(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
-        # Create a simple decision function
         def simple_decision_function(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             consumption = 0.5 * wealth
@@ -146,10 +144,10 @@ class TestBellmanPeriodFunctions(unittest.TestCase):
         # Estimate Bellman residual
         residual = bellman.estimate_bellman_residual(
             test_bp,
-            simple_value_network,
+            simple_value_function,
             simple_decision_function,
             states_t,
-            shocks,  # Now passing combined shock object,
+            shocks,
         )
 
         # Check that we get a tensor with the right shape

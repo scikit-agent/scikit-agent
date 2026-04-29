@@ -180,7 +180,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         no_control_block.construct_shocks({})
 
         # Create a dummy value network for error testing
-        def dummy_value_network(wealth):
+        def dummy_value_function(wealth):
             return 10.0 * wealth
 
         # Test with block that has no rewards
@@ -198,7 +198,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         nrbp = bellman.BellmanPeriod(no_reward_block, "beta", {"beta": 0.95})
 
         with self.assertRaises(Exception) as context:
-            loss.BellmanEquationLoss(nrbp, dummy_value_network)
+            loss.BellmanEquationLoss(nrbp, dummy_value_function)
         self.assertIn("No reward variables found in block", str(context.exception))
 
     def test_bellman_loss_function_integration(self):
@@ -215,13 +215,13 @@ class TestBellmanLossFunctions(unittest.TestCase):
             return {"consumption": consumption}
 
         # Create a simple value network with correct interface
-        def simple_value_network(states_t, shocks_t, parameters):
+        def simple_value_function(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             return 10.0 * wealth  # Linear value function
 
         loss_function = loss.BellmanEquationLoss(
             self.bp,
-            simple_value_network,
+            simple_value_function,
             self.parameters,
         )
 
@@ -247,7 +247,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         """Test that independent shock realizations produce different results than identical shocks."""
 
         # Create a simple value network that depends on income
-        def simple_value_network(states_t, shocks_t, parameters):
+        def simple_value_function(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             income = shocks_t["income"]
             return (
@@ -270,7 +270,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         residual_identical = bellman.estimate_bellman_residual(
             self.bp,
-            simple_value_network,
+            simple_value_function,
             self.decision_function,
             states_t,
             shocks_identical,
@@ -279,7 +279,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
         residual_independent = bellman.estimate_bellman_residual(
             self.bp,
-            simple_value_network,
+            simple_value_function,
             self.decision_function,
             states_t,
             shocks_independent,
@@ -296,7 +296,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
     def test_bellman_residual_error_handling(self):
         """Test error handling in the refactored Bellman residual function."""
 
-        def simple_value_network(states_t, shocks_t, parameters):
+        def simple_value_function(states_t, shocks_t, parameters):
             wealth = states_t["wealth"]
             return 10.0 * wealth
 
@@ -311,7 +311,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         with self.assertRaises(KeyError):
             bellman.estimate_bellman_residual(
                 self.bp,
-                simple_value_network,
+                simple_value_function,
                 self.decision_function,
                 states_t,
                 shocks_missing_t1,
@@ -801,7 +801,7 @@ class TestEulerEquationLossWeightValidation(unittest.TestCase):
 class TestBellmanEquationLossValidation(unittest.TestCase):
     """Test validation for BellmanEquationLoss (S2)."""
 
-    def test_non_callable_value_network_raises(self):
+    def test_non_callable_value_function_raises(self):
         block = model.DBlock(
             name="test",
             dynamics={
@@ -812,8 +812,10 @@ class TestBellmanEquationLossValidation(unittest.TestCase):
             reward={"u": "consumer"},
         )
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
-        with self.assertRaises(TypeError, msg="value_network must be callable"):
-            loss.BellmanEquationLoss(bp, value_network="not_callable")
+        with self.assertRaises(
+            TypeError, msg="value_function must be a callable or a dict"
+        ):
+            loss.BellmanEquationLoss(bp, value_function="not_callable")
 
     def test_negative_foc_weight_raises(self):
         block = model.DBlock(
@@ -828,5 +830,7 @@ class TestBellmanEquationLossValidation(unittest.TestCase):
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
         with self.assertRaises(ValueError, msg="foc_weight must be >= 0"):
             loss.BellmanEquationLoss(
-                bp, value_network=lambda s, sh, p: s["a"], foc_weight=-0.5
+                bp,
+                value_function=lambda s, sh, p: s["a"],
+                foc_weight=-0.5,
             )
