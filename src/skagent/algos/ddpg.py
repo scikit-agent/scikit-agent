@@ -26,12 +26,22 @@ class ReplayBuffer:
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
         states, actions, rewards, next_states, dones = zip(*batch)
+
+        states = {key: torch.cat([d[key] for d in states]) for key in states[0]}
+        actions = {key: torch.cat([d[key] for d in actions]) for key in actions[0]}
+        rewards = {key: torch.cat([d[key] for d in rewards]) for key in rewards[0]}
+        next_states = {
+            key: torch.cat([d[key] for d in next_states]) for key in next_states[0]
+        }
+
+        # import pdb; pdb.set_trace()
+
         return (
-            np.array(states),
-            np.array(actions),
-            np.array(rewards),
-            np.array(next_states),
-            np.array(dones),
+            states,  # np.array(states),
+            actions,  # np.array(actions),
+            rewards,  # np.array(rewards),
+            next_states,  # np.array(next_states),
+            dones,  # np.array(dones),
         )
 
     def __len__(self):
@@ -50,7 +60,7 @@ class OUNoise:
         self.reset()
 
     def reset(self):
-        self.state = np.ones(self.action_dim) * self.mu
+        self.state = torch.Tensor(np.ones(self.action_dim) * self.mu)
 
     def sample(self):
         dx = self.theta * (self.mu - self.state) + self.sigma * np.random.randn(
@@ -70,7 +80,7 @@ class DDPG:
         hidden_dim=256,
         lr_actor=1e-4,
         lr_critic=1e-3,
-        gamma=0.99,
+        gamma=0.99,  ## will need to update with dynamic discounting
         tau=0.005,
         device="cpu",
     ):
@@ -112,14 +122,21 @@ class DDPG:
         def decision_rule(*information):
             action = dr_basic[self.actor.control_sym](*information)
 
-            if add_noise:
-                for csym in action:
-                    action[csym] = action[csym] + self.noise.sample()
+            action = action.cpu()
 
-                    ## TODO: need to deal with the bounds as provided by the BP
-                    action[csym] = np.clip(
-                        action[csym], -self.max_action, self.max_action
-                    )
+            print("dr action before noise:", action)
+
+            if add_noise:
+                noise = self.noise.sample()
+
+                action = action + noise
+
+                print("todo -- clip to bounds")
+
+                ## TODO: need to deal with the bounds as provided by the BP
+                # action = np.clip(
+                #    action, -self.max_action, self.max_action
+                # )
 
             return action
 
@@ -135,16 +152,28 @@ class DDPG:
             batch_size
         )
 
-        states = torch.FloatTensor(states).to(self.device)
-        actions = torch.FloatTensor(actions).to(self.device)
-        rewards = torch.FloatTensor(rewards).unsqueeze(1).to(self.device)
-        next_states = torch.FloatTensor(next_states).to(self.device)
+        print(states, actions, rewards, next_states)
+
+        states = torch.FloatTensor(torch.stack(list(states.values()))).to(self.device)
+        actions = torch.FloatTensor(torch.stack(list(actions.values()))).to(self.device)
+        rewards = (
+            torch.FloatTensor(torch.stack(list(rewards.values())))
+            .unsqueeze(1)
+            .to(self.device)
+        )
+        next_states = torch.FloatTensor(torch.stack(list(next_states.values()))).to(
+            self.device
+        )
         dones = torch.FloatTensor(dones).unsqueeze(1).to(self.device)
 
         # Update Critic
         with torch.no_grad():
+            ## TODO: this is going to need to depend on shocks, and involves sampling forward
             next_actions = self.actor_target(next_states)
+
+            # this does not depend on shocks, because it's the critic value
             target_q = self.critic_target(next_states, next_actions)
+
             target_q = rewards + (1 - dones) * self.gamma * target_q
 
         current_q = self.critic(states, actions)
@@ -213,6 +242,9 @@ class Environment:
             [0],  # only one agent
             rng=self.rng,
         )
+
+        # ok this is pretty annoying
+        initial_vals = {sym: torch.Tensor(initial_vals[sym]) for sym in initial_vals}
 
         self.state = initial_vals
 
@@ -299,7 +331,7 @@ if __name__ == "__main__":
             actor_loss, critic_loss = agent.train(batch_size=64)
 
             state = next_state
-            episode_reward += reward
+            episode_reward += sum([reward[rsym] for rsym in reward])
 
             if done:
                 break
