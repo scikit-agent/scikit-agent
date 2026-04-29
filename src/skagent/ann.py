@@ -340,9 +340,8 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
 
     def decision_function(self, states_t, shocks_t, parameters):
         """
-        A decision function, from arrival states, shocks, and parameters,
-        to control variable values. Accepts inputs that already contain
-        the control's iset (no transition is run in that case).
+        A decision function, from states, shocks, and parameters,
+        to control variable values.
 
         Parameters
         ----------
@@ -510,24 +509,24 @@ class BlockValueNet(BellmanPeriodMixin, Net):
 
     def value_function(self, states_t, shocks_t={}, parameters={}):
         """
-        Compute value function estimates from arrival states. Accepts
-        inputs that already contain the control's iset (no transition
-        is run in that case).
+        Compute value function estimates for given state variables.
+
+        The value function takes the same information as the policy function
+        (the control's information set) but doesn't need to compute transitions.
 
         Parameters
         ----------
         states_t : dict
-            Arrival state variables (or, equivalently, a dict already
-            containing the control's iset variables).
+            State variables as dict (e.g., {"wealth": tensor(...)})
         shocks_t : dict, optional
-            Shock realizations for the period.
+            Shock variables as dict (not used but kept for interface consistency)
         parameters : dict, optional
-            Model parameters.
+            Model parameters (not used but kept for interface consistency)
 
         Returns
         -------
         torch.Tensor
-            Value function estimates.
+            Value function estimates
         """
         iset_dict = self.bellman_period.compute_pre_state(
             self.control_sym, states_t, shocks=shocks_t, parameters=parameters

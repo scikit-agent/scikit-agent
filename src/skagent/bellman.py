@@ -47,19 +47,40 @@ if TYPE_CHECKING:
 
 
 class BellmanPeriod:
-    """A period of a Bellman / DSOP, wrapping a Block with calibration
-    and decision rules. See module docstring for the timing convention.
+    """
+    A class representing a period of a Bellman or Dynamic Stochastic Optimization Problem.
+
+    This class wraps a Block model with calibration parameters and decision rules,
+    providing methods for computing transitions, decisions, rewards, and their gradients.
 
     Parameters
     ----------
     block : Block
+        The underlying block model containing dynamics, shocks, and reward definitions.
+    discount_variable : str
+        A variable name which represents the discount factor for future value streams.
+    calibration : dict[str, Any]
+        Dictionary of calibration parameters for the model.
+    decision_rules : dict[str, Callable] | None, optional
+        Dictionary mapping control variable names to decision rule functions.
+
+    Attributes
+    ----------
+    block : Block
         The underlying block model.
     discount_variable : str
-        Name of the variable holding the discount factor.
+        The name of the discount factor variable.
     calibration : dict[str, Any]
-        Calibration parameters.
-    decision_rules : dict[str, Callable] | None, optional
-        Mapping from control symbol to decision rule callable.
+        The calibration parameters.
+    decision_rules : dict[str, Callable] | None
+        The decision rules for control variables.
+    arrival_states : set[str]
+        The set of arrival state variable names.
+
+    Notes
+    -----
+    Future versions may introduce an abstract base class to support different
+    block types beyond DBlock/RBlock.
     """
 
     block: Block
@@ -192,11 +213,32 @@ class BellmanPeriod:
         parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
-        Compute control values at *states*.
+        Compute control variable values from a decision function or decision rules.
 
-        Accepts a callable (invoked directly as ``df(states, shocks, params)``)
-        or a dict of decision rules keyed by control symbol (passed through
-        to :meth:`decision_function`).
+        This generalises ``decision_function`` to also accept an external callable
+        with signature ``df(states, shocks, parameters) -> controls``.
+
+        Parameters
+        ----------
+        df : dict[str, Callable] | Callable
+            A callable decision function, or a dict of decision rules passed
+            through to ``decision_function``.
+        states : dict[str, Any]
+            Current state variables.
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+
+        Returns
+        -------
+        dict[str, Any]
+            Control variable values.
+
+        Raises
+        ------
+        TypeError
+            If *df* is neither callable nor a dict.
         """
         shocks = shocks if shocks is not None else {}
         params = parameters if parameters is not None else self.calibration
@@ -376,9 +418,28 @@ class BellmanPeriod:
         agent: str | None = None,
         decision_rules: dict[str, Callable] | None = None,
     ) -> dict[str, Any]:
-        """Return the post-transition output for the period (every
-        variable realized by ``block.transition``). The ``agent``
-        parameter is reserved for future per-agent filtering.
+        """
+        Return the full ex post variables for the period.
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            Current state variables.
+        controls : dict[str, Any]
+            Current control variable values.
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        agent : str | None, optional
+            Agent identifier (currently unused, reserved for future use).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules (defaults to instance decision_rules).
+
+        Returns
+        -------
+        dict[str, Any]
+            All computed variables from the block transition.
         """
         shocks, decision_rules, parameters = self._resolve_inputs(
             shocks, decision_rules, parameters
@@ -435,11 +496,18 @@ class BellmanPeriod:
             shocks, decision_rules, parameters
         )
 
+        # Combine all variables for block evaluation
         vals = parameters | states | shocks | controls
+
+        # Compute rewards using block transition
+        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
         # Calls block.transition directly (rather than post_function) to keep
         # the exact computation graph needed for autograd differentiation.
-        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
+
+        # Filter rewards by agent
         rewards = {sym: post[sym] for sym in self.get_reward_syms(agent)}
+
+        # Use utility function to compute gradients
         return compute_gradients_for_tensors(rewards, wrt, create_graph=create_graph)
 
     def grad_transition_function(
@@ -453,10 +521,40 @@ class BellmanPeriod:
         decision_rules: dict[str, Callable] | None = None,
         create_graph: bool = False,
     ) -> dict[str, dict[str, torch.Tensor | None]]:
-        """Gradients ∂s_{t+1}/∂x for each next-period arrival state and
-        each tensor in *wrt*. ``create_graph=True`` enables higher-order
-        derivatives.
         """
+        Compute gradients of transition function with respect to specified variables.
+
+        This computes ∂s_{t+1}/∂x for each arrival state s_{t+1} and each variable x
+        specified in wrt. This is needed for Euler equations where the gradient of
+        future states with respect to current controls appears (e.g., ∂a_{t+1}/∂c_t = -1
+        for the budget constraint a_{t+1} = m_t - c_t).
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            State variables.
+        controls : dict[str, Any]
+            Control variables.
+        wrt : dict[str, torch.Tensor]
+            Dictionary of variables to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True.
+        shocks : dict[str, Any] | None, optional
+            Shock variables (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules of control variables that will _not_ be given to the function.
+        create_graph : bool, optional
+            If True, the graph of the derivative is constructed, allowing higher-order
+            derivatives and end-to-end training through the gradient computation.
+
+        Returns
+        -------
+        dict[str, dict[str, torch.Tensor | None]]
+            Nested dictionary of gradients for each arrival state and variable:
+            {state_sym: {var_name: gradient}}.
+        """
+        # Use the existing transition_function method to compute next states
         next_states = self.transition_function(
             states,
             controls,
@@ -464,6 +562,8 @@ class BellmanPeriod:
             parameters=parameters,
             decision_rules=decision_rules,
         )
+
+        # Use utility function to compute gradients
         return compute_gradients_for_tensors(
             next_states, wrt, create_graph=create_graph
         )
@@ -478,14 +578,53 @@ class BellmanPeriod:
         control_sym: str | None = None,
         create_graph: bool = False,
     ) -> dict[str, dict[str, torch.Tensor | None]]:
-        """Gradients ∂m/∂s of pre-decision state variables m with respect
-        to arrival states s in *wrt*. Used for the envelope condition
-
-            V'(s) = u'(c) · ∂m/∂s.
-
-        If *control_sym* is None, uses the first control with an iset.
         """
+        Compute gradients of pre-decision state variables with respect to arrival states.
+
+        This computes ∂m/∂s for each pre-decision state variable m and each arrival
+        state s specified in wrt. This is needed for the envelope condition in dynamic
+        programming, where the marginal value of an arrival state depends on how
+        that state transforms through the dynamics before reaching the control.
+
+        The "pre-decision state" (or "pre-state") is the state that exists immediately
+        before the control decision is made. For example, cash-on-hand m = Ra + y is
+        the pre-state before consumption c is chosen.
+
+        By the envelope theorem:
+            V'(s) = u'(c) * ∂m/∂s
+
+        where m is the pre-decision state variable that the control depends on.
+
+        For example, in a consumption-saving model with m = a*R + y:
+            ∂m/∂a = R (the return on assets)
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            Arrival state variables (with requires_grad=True for gradient computation).
+        wrt : dict[str, torch.Tensor]
+            Dictionary of arrival states to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True.
+        shocks : dict[str, Any] | None, optional
+            Shock variables (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        control_sym : str | None, optional
+            Name of the control variable whose info-set we want gradients for.
+            If None, uses the first control found in the block.
+        create_graph : bool, optional
+            If True, the graph of the derivative is constructed, allowing higher-order
+            derivatives and end-to-end training through the gradient computation.
+
+        Returns
+        -------
+        dict[str, dict[str, torch.Tensor | None]]
+            Nested dictionary of gradients for each pre-state variable and arrival state:
+            {pre_state_var: {state_sym: gradient}}.
+        """
+        # Get the control's pre-state variables (stored as iset in the Control)
         if control_sym is None:
+            # Find the first control in dynamics
             for sym, rule in self.block.dynamics.items():
                 if hasattr(rule, "iset"):
                     control_sym = sym
@@ -505,6 +644,7 @@ class BellmanPeriod:
             control_sym, states, shocks=shocks, parameters=parameters
         )
 
+        # Use utility function to compute gradients
         return compute_gradients_for_tensors(
             pre_state_values, wrt, create_graph=create_graph
         )

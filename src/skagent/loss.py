@@ -162,6 +162,7 @@ class StaticRewardLoss:
             parameters=self.parameters,
             agent=None,  ## TODO: Pass through the agent?
             shocks=shock_vals,
+            ## Handle multiple decision rules?
         )
         return -r
 
@@ -223,26 +224,11 @@ class EstimatedDiscountedLifetimeRewardLoss:
 
 class _EquationLossBase(ABC):
     """
-    Private base class for losses defined as squared residuals of the
-    Bellman period's optimality conditions.
+    Private base class for Bellman and Euler equation losses.
 
-    Both subclasses (:class:`BellmanEquationLoss`, :class:`EulerEquationLoss`)
-    take input grids that follow the AiO contract from Maliar et al. (2021,
-    Definition 2.7): arrival states plus two independent shock realizations
-    per period, encoded as ``{sym}_0`` (period t) and ``{sym}_1`` (period
-    t+1). The base class:
-
-    - validates that the given agent has at least one reward variable
-      defined in ``bellman_period``;
-    - centralizes storage of ``bellman_period``, ``parameters``, ``agent``,
-      ``arrival_variables``, and ``shock_syms``; and
-    - provides :meth:`_extract_states_and_shocks` to deduplicate
-      grid-extraction logic in subclass ``__call__`` methods.
-
-    Subclasses differ in what optimality condition they evaluate (Bellman
-    residual vs Euler residual), whether they require a value callable, and
-    whether they support inequality constraints; they share the input
-    contract above.
+    Stores shared setup (bellman_period, arrival_variables, shock_syms, reward
+    validation) and provides ``_extract_states_and_shocks`` to avoid duplicate
+    grid-extraction logic in subclass ``__call__`` methods.
     """
 
     def __init__(
@@ -321,16 +307,6 @@ class BellmanEquationLoss(_EquationLossBase):
     where s' = f(s,c,ε) is the next state given current state s, control c, and shock ε,
     and the expectation E_ε' is taken over future shock realizations ε'.
 
-    When ``foc_weight > 0``, the loss includes a first-order condition (FOC) term
-    derived from the Bellman equation (equation 14 of Maliar et al. 2021):
-
-    .. math::
-
-        L = f_{\\text{Bellman}}^2 + v \\cdot f_{\\text{FOC}}^2
-
-    where :math:`f_{\\text{FOC}}` is the FOC residual
-    :math:`u'(c) + \\beta \\, \\partial V(s')/\\partial c = 0`.
-
     This function expects the input grid to contain two independent shock realizations:
     - {shock_sym}_0: shocks for period t (used for immediate reward and transitions)
     - {shock_sym}_1: shocks for period t+1 (used for continuation value evaluation)
@@ -338,21 +314,13 @@ class BellmanEquationLoss(_EquationLossBase):
     Parameters
     ----------
     bellman_period : BellmanPeriod
-        The model block containing dynamics, rewards, and shocks.
-    value_function : dict[str, Callable] | Callable
-        Value function ``vf(states_t, shocks_t, parameters) -> tensor``
-        on arrival states, or a dict mapping agent name to such a
-        callable for multi-agent models. Any pre-decision (iset)
-        computation the underlying approximator needs is the callable's
-        responsibility.
+        The model block containing dynamics, rewards, and shocks
+    value_function : callable
+        A value function that takes state variables and returns value estimates
     parameters : dict, optional
-        Model parameters for calibration.
+        Model parameters for calibration
     agent : str, optional
-        Agent identifier for rewards. Required when ``value_function`` is
-        a dict.
-    foc_weight : float, optional
-        Weight :math:`v` on the FOC residual term (default: 0.0, pure Bellman).
-        Positive values add the FOC loss to improve convergence.
+        Agent identifier for rewards
     """
 
     def __init__(
@@ -390,7 +358,7 @@ class BellmanEquationLoss(_EquationLossBase):
         Returns
         -------
         torch.Tensor
-            Bellman equation residual loss (squared), optionally with FOC term.
+            Bellman equation residual loss (squared)
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
@@ -512,14 +480,18 @@ class EulerEquationLoss(_EquationLossBase):
             raise ValueError(f"weight must be > 0, got {weight}")
         self.weight = weight
         self.constrained = constrained
-
+        # Cache upper_bound parameter names so _compute_slack does not call
+        # inspect.signature on every forward pass.
+        self._upper_bound_params: dict[str, list[str]] = {}
         if self.constrained:
-            has_upper_bound = any(
-                hasattr(rule, "upper_bound") and rule.upper_bound is not None
-                for rule in bellman_period.block.dynamics.values()
-                if hasattr(rule, "iset")
-            )
-            if not has_upper_bound:
+            for sym, rule in bellman_period.block.dynamics.items():
+                if not hasattr(rule, "iset"):
+                    continue
+                ub = getattr(rule, "upper_bound", None)
+                if ub is None:
+                    continue
+                self._upper_bound_params[sym] = list(inspect.signature(ub).parameters)
+            if not self._upper_bound_params:
                 logger.warning(
                     "constrained=True but no Control in the block has an upper_bound. "
                     "The one-sided loss will use relu(-f)^2 as a fallback. "
@@ -537,20 +509,15 @@ class EulerEquationLoss(_EquationLossBase):
         complementarity condition; see the class-level docstring for the
         scope rationale and the lower-bound follow-up.
         """
-        control_obj = self.bellman_period.block.dynamics.get(control_sym)
-        if (
-            control_obj is None
-            or not hasattr(control_obj, "upper_bound")
-            or control_obj.upper_bound is None
-        ):
+        param_names = self._upper_bound_params.get(control_sym)
+        if param_names is None:
             return None
 
+        control_obj = self.bellman_period.block.dynamics[control_sym]
         pre_state = self.bellman_period.compute_pre_state(
             control_sym, states_t, shocks=shocks_t, parameters=self.parameters
         )
-
-        sig = inspect.signature(control_obj.upper_bound)
-        ub_args = {k: pre_state[k] for k in sig.parameters if k in pre_state}
+        ub_args = {k: pre_state[k] for k in param_names if k in pre_state}
         ub_value = control_obj.upper_bound(**ub_args)
 
         return ub_value - controls_t[control_sym]
@@ -563,13 +530,25 @@ class EulerEquationLoss(_EquationLossBase):
         ----------
         df : callable
             Decision function from policy network.
+            Signature: df(states_t, shocks_t, parameters) -> controls_t
         input_grid : Grid
-            Grid containing current states and two independent shock realizations.
+            Grid containing current states and two independent shock realizations:
+            - {shock_sym}_0: shocks for transitions t → t+1
+            - {shock_sym}_1: shocks for transitions t+1 → t+2 (independent)
 
         Returns
         -------
         torch.Tensor
             Weighted squared Euler equation residual.
+            The residual is computed using two independent shock realizations
+            via the AiO expectation operator, then squared and weighted.
+
+        Notes
+        -----
+        The residual f is computed using two independent shock realizations:
+        ε₀ for transitions from t to t+1, and ε₁ for transitions from t+1
+        to t+2 (following Maliar et al. 2021, Definition 2.7). The loss is
+        the squared residual, L = f(ε₀, ε₁)².
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
