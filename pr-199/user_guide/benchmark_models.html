@@ -1,0 +1,1254 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Science" href="science.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Benchmark Models - scikit-agent 0.1.dev493+gfb2a523f8</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=fd6457a4" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=b485e546" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev493+gfb2a523f8</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Benchmark Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="science.html">Science</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/user_guide/benchmark_models.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/user_guide/benchmark_models.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section class="tex2jax_ignore mathjax_ignore" id="benchmark-models">
+<h1>Benchmark Models<a class="headerlink" href="#benchmark-models" title="Link to this heading">¶</a></h1>
+<p>The <a class="reference internal" href="../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a> registry collects dynamic programming
+problems whose optimal policies are known in closed form. Each entry pairs a
+working <a class="reference internal" href="../api/blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> with an analytical decision function,
+and the registry serves three purposes.</p>
+<p><strong>Validation.</strong> A numerical solver can be checked against the closed-form policy
+on a set of test states. The function
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.validate_analytical_solution" title="skagent.models.benchmarks.validate_analytical_solution"><code class="xref py py-func docutils literal notranslate"><span class="pre">validate_analytical_solution()</span></code></a> compares the
+two and reports the maximum residual.</p>
+<p><strong>Regression testing.</strong> The same comparison runs in the test suite, so any
+regression that breaks an analytical identity is caught early.</p>
+<p><strong>Pedagogy.</strong> Working through the closed forms, from finite-horizon log utility
+through Hall’s random walk, retraces the development of dynamic consumption
+theory in roughly the order it was discovered.</p>
+<p>This page assumes familiarity with discrete-time stochastic dynamic programming.
+Readers new to the topic can start with Carroll (2024),
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">perfect_foresight_normalized</span></code> for the workhorse
+formulation, and the <a class="reference internal" href="../auto_examples/index.html"><span class="doc">Examples</span></a> for runnable code.</p>
+<section id="standard-timing-convention">
+<h2>Standard Timing Convention<a class="headerlink" href="#standard-timing-convention" title="Link to this heading">¶</a></h2>
+<p>Throughout this page and in the <a class="reference internal" href="../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">benchmarks</span></code></a> module,
+periods are indexed by <span class="math notranslate nohighlight">\(t \in \{0, 1, 2, \ldots\}\)</span> and the following symbols
+carry fixed meaning.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Symbol</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(A_{t-1}\)</span></p></td>
+<td><p>Beginning-of-period assets (arrival state, before interest)</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(R\)</span></p></td>
+<td><p>Gross return on assets, <span class="math notranslate nohighlight">\(R = 1 + r &gt; 1\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(y_t\)</span></p></td>
+<td><p>Non-capital income realized in period <span class="math notranslate nohighlight">\(t\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(m_t = R\, A_{t-1} + y_t\)</span></p></td>
+<td><p>Cash-on-hand (market resources)</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(c_t\)</span></p></td>
+<td><p>Consumption (the control)</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(A_t = m_t - c_t\)</span></p></td>
+<td><p>End-of-period assets</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(H_t = \mathbb{E}_t \sum_{s\geq 1} R^{-s}\, y_{t+s}\)</span></p></td>
+<td><p>Human wealth</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(W_t = m_t + H_t\)</span></p></td>
+<td><p>Total wealth</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(u(c)\)</span></p></td>
+<td><p>Period utility</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\beta\)</span></p></td>
+<td><p>Discount factor</p></td>
+</tr>
+<tr class="row-even"><td><p>TVC</p></td>
+<td><p><span class="math notranslate nohighlight">\(\lim_{T\to\infty} \mathbb{E}_0\, \beta^T u'(c_T)\, A_T = 0\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Normalized models additionally use lowercase <span class="math notranslate nohighlight">\(m, c, a\)</span> for ratios to permanent
+income <span class="math notranslate nohighlight">\(P_t\)</span>.</p>
+</section>
+<section id="roster">
+<h2>Roster<a class="headerlink" href="#roster" title="Link to this heading">¶</a></h2>
+<p>The seven models below split into two groups. The first six are registered in
+<code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code> and accessible by ID through the helpers in
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.list_benchmark_models" title="skagent.models.benchmarks.list_benchmark_models"><code class="xref py py-func docutils literal notranslate"><span class="pre">list_benchmark_models()</span></code></a>. The remaining
+models ship as standalone modules.</p>
+<p><strong>Registry (lookup by ID via
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.get_benchmark_model" title="skagent.models.benchmarks.get_benchmark_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_benchmark_model()</span></code></a>):</strong></p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Problem</p></th>
+<th class="head"><p>Utility</p></th>
+<th class="head"><p>Income</p></th>
+<th class="head"><p>Closed form</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>D-1</strong></p></td>
+<td><p>Finite-horizon</p></td>
+<td><p>Log</p></td>
+<td><p>Wealth only</p></td>
+<td><p>Remaining-horizon MPC</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>D-2</strong></p></td>
+<td><p>Infinite-horizon perfect foresight</p></td>
+<td><p>CRRA</p></td>
+<td><p>Constant <span class="math notranslate nohighlight">\(y\)</span></p></td>
+<td><p>Linear in total wealth</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>D-3</strong></p></td>
+<td><p>Blanchard mortality</p></td>
+<td><p>CRRA</p></td>
+<td><p>Constant <span class="math notranslate nohighlight">\(y\)</span></p></td>
+<td><p>Same with <span class="math notranslate nohighlight">\(s\beta\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>U-1</strong></p></td>
+<td><p>Hall random walk</p></td>
+<td><p>Quadratic</p></td>
+<td><p>Stochastic, <span class="math notranslate nohighlight">\(\beta R = 1\)</span></p></td>
+<td><p>PIH annuity rule</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>U-2</strong></p></td>
+<td><p>Log + permanent shocks (normalized)</p></td>
+<td><p>Log</p></td>
+<td><p>Geometric random walk</p></td>
+<td><p><span class="math notranslate nohighlight">\(c = (1-\beta)(m + h)\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>U-3</strong></p></td>
+<td><p>Buffer stock</p></td>
+<td><p>CRRA</p></td>
+<td><p>Geometric random walk</p></td>
+<td><p>None (numerical only)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Standalone modules (not in <code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code>):</strong></p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Problem</p></th>
+<th class="head"><p>Closed form</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">fisher</span></code></p></td>
+<td><p>Fisher two-period</p></td>
+<td><p>CRRA Euler + budget</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.perfect_foresight" title="skagent.models.perfect_foresight"><code class="xref py py-mod docutils literal notranslate"><span class="pre">perfect_foresight</span></code></a></p></td>
+<td><p>PF with mortality and growth</p></td>
+<td><p>Linear in total wealth</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">perfect_foresight_normalized</span></code></p></td>
+<td><p>Same, normalized variables</p></td>
+<td><p>Linear in normalized wealth</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">resource_extraction</span></code></p></td>
+<td><p>Reed (1979) renewable resource</p></td>
+<td><p>Constant escapement</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="deterministic-benchmarks">
+<h2>Deterministic Benchmarks<a class="headerlink" href="#deterministic-benchmarks" title="Link to this heading">¶</a></h2>
+<section id="d-1-finite-horizon-log-utility">
+<h3>D-1: Finite-Horizon Log Utility<a class="headerlink" href="#d-1-finite-horizon-log-utility" title="Link to this heading">¶</a></h3>
+<p>The remaining-horizon MPC <span class="math notranslate nohighlight">\((1 - \beta) / (1 - \beta^{T-t})\)</span> is the cleanest
+illustration of <em>time non-stationarity from a fixed terminal date</em>. The
+infinite-horizon limit recovers the constant-MPC rule <span class="math notranslate nohighlight">\(c_t = (1 - \beta)\, W_t\)</span>,
+which is the <span class="math notranslate nohighlight">\(\sigma = 1\)</span> special case of D-2.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d1_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Optimal policy for D-1: finite-horizon log-utility consumption.</p>
+<p>With log utility and a deterministic <span class="math notranslate nohighlight">\(T\)</span>-period horizon, the agent
+solves</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[V_T(W_T) = \log W_T,
+\qquad
+V_t(W_t) = \max_{c_t \in (0,\, W_t]} \, \log c_t
++ \beta \, V_{t+1}\bigl((W_t - c_t)\, R\bigr),\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(W_t\)</span> is wealth at the start of period <span class="math notranslate nohighlight">\(t\)</span>, <span class="math notranslate nohighlight">\(R\)</span>
+is the gross return, and <span class="math notranslate nohighlight">\(\beta &lt; 1\)</span> is the discount factor. The
+value function takes the form <span class="math notranslate nohighlight">\(V_t(W) = \alpha_t + \log W\)</span> for a
+time-varying additive constant <span class="math notranslate nohighlight">\(\alpha_t\)</span>, and the first-order
+condition gives the remaining-horizon rule</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t \;=\; \frac{1 - \beta}{\,1 - \beta^{T - t}\,} \, W_t.\]</div>
+</div>
+<p>In the terminal period (<span class="math notranslate nohighlight">\(T - t = 1\)</span>) the formula simplifies to
+<span class="math notranslate nohighlight">\(c_t = W_t\)</span> since <span class="math notranslate nohighlight">\((1-\beta)/(1-\beta) = 1\)</span>; the
+implementation handles this case directly to avoid the <span class="math notranslate nohighlight">\(0/0\)</span>
+form that would arise once <span class="math notranslate nohighlight">\(T - t = 0\)</span>. As <span class="math notranslate nohighlight">\(T - t \to
+\infty\)</span>, the rule converges to the infinite-horizon constant-MPC
+policy <span class="math notranslate nohighlight">\(c_t = (1 - \beta) W_t\)</span>, the <span class="math notranslate nohighlight">\(\sigma = 1\)</span> special
+case of D-2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Arrival states. Must contain <code class="docutils literal notranslate"><span class="pre">&quot;W&quot;</span></code> (wealth) and <code class="docutils literal notranslate"><span class="pre">&quot;t&quot;</span></code> (time
+index, defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code>).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Unused; the model is deterministic.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> (<span class="math notranslate nohighlight">\(\beta\)</span>) and <code class="docutils literal notranslate"><span class="pre">&quot;T&quot;</span></code> (horizon).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code> whose dtype matches the input wealth.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <span class="math notranslate nohighlight">\(\beta \geq 1\)</span>, since the closed form is undefined.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="d-2-infinite-horizon-crra-perfect-foresight">
+<h3>D-2: Infinite-Horizon CRRA Perfect Foresight<a class="headerlink" href="#d-2-infinite-horizon-crra-perfect-foresight" title="Link to this heading">¶</a></h3>
+<p>D-2 is the workhorse model for almost everything that follows. The MPC
+<span class="math notranslate nohighlight">\(\kappa = (R - (\beta R)^{1/\sigma}) / R\)</span> collapses to <span class="math notranslate nohighlight">\(1 - \beta\)</span> under log
+utility (<span class="math notranslate nohighlight">\(\sigma = 1\)</span>), and to <span class="math notranslate nohighlight">\(r/R\)</span> whenever <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, regardless of
+<span class="math notranslate nohighlight">\(\sigma\)</span>. The latter limit coincides with U-1’s PIH MPC out of total wealth: in
+U-1 the same value <span class="math notranslate nohighlight">\(r/R\)</span> arises from a quite different model (quadratic utility,
+stochastic income), and the two derivations meet at the same number through the
+algebraic identity <span class="math notranslate nohighlight">\((\beta R)^{1/\sigma} = 1\)</span>. Human wealth <span class="math notranslate nohighlight">\(H = y / r\)</span> converts
+the infinite stream of future income into a single number that the linear rule
+can act on.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d2_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Optimal policy for D-2: infinite-horizon CRRA perfect foresight.</p>
+<p>The canonical perfect-foresight consumption problem solves</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\max_{\{c_t\}} \, \sum_{t=0}^{\infty} \beta^t \,
+\frac{c_t^{\,1-\sigma}}{1 - \sigma}
+\quad \text{s.t.} \quad A_{t+1} = (A_t + y - c_t)\, R,\]</div>
+</div>
+<p>with constant labor income <span class="math notranslate nohighlight">\(y &gt; 0\)</span>, gross return <span class="math notranslate nohighlight">\(R &gt; 1\)</span>,
+and the transversality condition
+<span class="math notranslate nohighlight">\(\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0\)</span>. Under
+return-impatience <span class="math notranslate nohighlight">\((\beta R)^{1/\sigma} &lt; R\)</span>, the closed-form
+policy is linear in total wealth,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t \;=\; \kappa \, W_t,
+\qquad
+\kappa \;=\; \frac{R - (\beta R)^{1/\sigma}}{R},
+\qquad
+W_t \;=\; m_t + H,\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(m_t = R\, A_{t-1} + y\)</span> is cash-on-hand at time <span class="math notranslate nohighlight">\(t\)</span>,
+<span class="math notranslate nohighlight">\(H = y / r\)</span> is human wealth (the present value of the constant
+future income stream), and <span class="math notranslate nohighlight">\(r = R - 1\)</span>. The marginal propensity
+to consume <span class="math notranslate nohighlight">\(\kappa\)</span> depends only on deep parameters, not on the
+state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (arrival assets).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Unused.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> (<span class="math notranslate nohighlight">\(\beta\)</span>), <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>
+(<span class="math notranslate nohighlight">\(\sigma\)</span>), and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If return-impatience is violated, or if <span class="math notranslate nohighlight">\(R \leq 1\)</span>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="../api/models.html#skagent.models.benchmarks.d3_analytical_policy" title="skagent.models.benchmarks.d3_analytical_policy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">d3_analytical_policy</span></code></a></dt><dd><p>Same model with i.i.d. survival risk.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+</section>
+<section id="d-3-blanchard-discrete-time-mortality">
+<h3>D-3: Blanchard Discrete-Time Mortality<a class="headerlink" href="#d-3-blanchard-discrete-time-mortality" title="Link to this heading">¶</a></h3>
+<p>Adding i.i.d. survival risk does not break tractability: it scales the effective
+discount factor from <span class="math notranslate nohighlight">\(\beta\)</span> to <span class="math notranslate nohighlight">\(s\beta\)</span>. The resulting MPC <span class="math notranslate nohighlight">\(\kappa_s\)</span> strictly
+exceeds the no-mortality MPC <span class="math notranslate nohighlight">\(\kappa\)</span>, formalizing the intuition that a lower
+survival probability erodes patience.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d3_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Optimal policy for D-3: Blanchard (1985) discrete-time mortality.</p>
+<p>Extends D-2 by giving the agent i.i.d. survival probability
+<span class="math notranslate nohighlight">\(s \in (0, 1)\)</span> per period. The objective becomes</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\max \, \sum_{t=0}^{\infty} (s\beta)^t \,
+\frac{c_t^{\,1-\sigma}}{1 - \sigma},\]</div>
+</div>
+<p>with the same budget constraint as D-2. Mortality is observationally
+equivalent to scaling the discount factor from <span class="math notranslate nohighlight">\(\beta\)</span> to
+<span class="math notranslate nohighlight">\(s\beta\)</span>, so the linear consumption rule survives:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t \;=\; \kappa_s \, (m_t + H),
+\qquad
+\kappa_s \;=\; \frac{R - (s\beta R)^{1/\sigma}}{R},\]</div>
+</div>
+<p>with <span class="math notranslate nohighlight">\(H = y / r\)</span> as before. The MPC <span class="math notranslate nohighlight">\(\kappa_s &gt; \kappa\)</span>
+because mortality erodes effective patience: the agent consumes a
+larger share of wealth each period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (arrival assets). The <code class="docutils literal notranslate"><span class="pre">&quot;liv&quot;</span></code> alive
+indicator is part of the DBlock simulator dynamics but is not read
+by the analytical policy.</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;live&quot;</span></code> (Bernoulli survival shock); unused for the
+analytical policy itself.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">&quot;SurvivalProb&quot;</span></code> (<span class="math notranslate nohighlight">\(s\)</span>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If mortality-adjusted return-impatience is violated, or if
+    <span class="math notranslate nohighlight">\(R \leq 1\)</span>.</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Blanchard, O.J. (1985). “Debt, deficits, and finite horizons.”
+<em>Journal of Political Economy</em>, 93(2), 223-247.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="../api/models.html#skagent.models.benchmarks.d2_analytical_policy" title="skagent.models.benchmarks.d2_analytical_policy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">d2_analytical_policy</span></code></a></dt><dd><p>Underlying perfect-foresight model without mortality.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+</section>
+<section id="fisher-two-period-model">
+<h3>Fisher Two-Period Model<a class="headerlink" href="#fisher-two-period-model" title="Link to this heading">¶</a></h3>
+<p>The simplest dynamic-programming problem with a closed-form solution. Useful as
+a numerical sanity check in two dimensions and as the example that connects the
+intertemporal-choice diagram in introductory macroeconomics to the
+infinite-horizon machinery used throughout the rest of this page.</p>
+<p>Fisher (1930) two-period intertemporal consumption.</p>
+<p>The simplest dynamic programming problem with a closed-form solution. An
+agent receives income <span class="math notranslate nohighlight">\(y_0\)</span> in period 0 and <span class="math notranslate nohighlight">\(y_1\)</span> in period 1,
+borrows or saves at gross rate <span class="math notranslate nohighlight">\(R\)</span>, and chooses consumption
+<span class="math notranslate nohighlight">\(c_0, c_1\)</span> to maximize</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u(c_0) + \beta \, u(c_1)\]</div>
+</div>
+<p>subject to the lifetime budget constraint
+<span class="math notranslate nohighlight">\(c_0 + c_1/R = m_0 + y_1/R\)</span>, with <span class="math notranslate nohighlight">\(m_0 = R\, a_{-1} + y_0\)</span>. With
+CRRA utility <span class="math notranslate nohighlight">\(u(c) = c^{1-\sigma}/(1-\sigma)\)</span>, the Euler equation
+<span class="math notranslate nohighlight">\(u'(c_0) = \beta R \, u'(c_1)\)</span> together with the budget constraint
+gives the closed form</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_0 \;=\; \frac{m_0 + y_1/R}{\,1 + (\beta R)^{1/\sigma}/R\,},
+\qquad
+c_1 \;=\; (\beta R)^{1/\sigma} \, c_0.\]</div>
+</div>
+<p>The two-period horizon makes the model an exact analogue of the
+intertemporal-choice diagram in introductory macroeconomics, while the
+recursive form is the simplest non-trivial test case for value-function
+iteration and Euler-equation solvers in <code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent</span></code>.</p>
+<p class="rubric">Notes</p>
+<p>The math above uses <span class="math notranslate nohighlight">\(R\)</span> for the gross return; the block parameter
+key is <code class="docutils literal notranslate"><span class="pre">Rfree</span></code>.</p>
+<p class="rubric">References</p>
+<p>Fisher, I. (1930). <em>The Theory of Interest</em>. New York: Macmillan.</p>
+<p>The block is exposed as <code class="xref py py-data docutils literal notranslate"><span class="pre">skagent.models.fisher.block</span></code> with calibration
+<code class="xref py py-data docutils literal notranslate"><span class="pre">skagent.models.fisher.calibration</span></code>.</p>
+</section>
+<section id="perfect-foresight-level-variables">
+<h3>Perfect Foresight (Level Variables)<a class="headerlink" href="#perfect-foresight-level-variables" title="Link to this heading">¶</a></h3>
+<p>Adds permanent income growth <span class="math notranslate nohighlight">\(G\)</span> and i.i.d. survival to D-2. The closed-form
+solution remains linear in total wealth, but the human-wealth term now reflects
+growing income: <span class="math notranslate nohighlight">\(H_t = G\, P_t / (R - G)\)</span>.</p>
+<p>Perfect-foresight consumption-savings with stochastic survival and
+permanent income growth.</p>
+<p>Block representation of the canonical perfect-foresight problem with
+i.i.d. survival probability <span class="math notranslate nohighlight">\(s \in (0, 1)\)</span> and gross permanent
+income growth <span class="math notranslate nohighlight">\(G\)</span>. The agent solves</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\max \, \sum_{t=0}^{\infty} (s\beta)^t \,
+\frac{c_t^{\,1-\sigma}}{1 - \sigma}
+\quad \text{s.t.} \quad
+m_{t+1} = R \, (m_t - c_t) + y_{t+1},
+\qquad y_{t+1} = G \, P_t,\]</div>
+</div>
+<p>with permanent income growing as <span class="math notranslate nohighlight">\(P_{t+1} = G\, P_t\)</span>. Two
+conditions are needed for the closed form: mortality-adjusted
+return-impatience <span class="math notranslate nohighlight">\((s\beta R)^{1/\sigma} &lt; R\)</span> (so consumption does
+not explode), and <span class="math notranslate nohighlight">\(R &gt; G\)</span> (so human wealth is finite). Under both,
+the consumption rule is linear in total wealth <span class="math notranslate nohighlight">\(W_t = m_t + H_t\)</span>,
+with human wealth <span class="math notranslate nohighlight">\(H_t = G\, P_t / (R - G)\)</span> and MPC
+<span class="math notranslate nohighlight">\(\kappa_s = (R - (s\beta R)^{1/\sigma})/R\)</span>. The companion module
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.perfect_foresight_normalized</span></code> solves the same
+problem in variables divided by <span class="math notranslate nohighlight">\(P_t\)</span>, which collapses the state
+space and is the form used in the buffer-stock literature.</p>
+<p class="rubric">Notes</p>
+<p>The math above uses <span class="math notranslate nohighlight">\(R\)</span>, <span class="math notranslate nohighlight">\(G\)</span>, and <span class="math notranslate nohighlight">\(s\)</span> for the gross
+return, permanent income growth, and survival probability; the
+corresponding block parameter keys are <code class="docutils literal notranslate"><span class="pre">Rfree</span></code>, <code class="docutils literal notranslate"><span class="pre">PermGroFac</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">LivPrb</span></code>.</p>
+<p class="rubric">References</p>
+<p>Carroll, C.D. (2024). <em>Solution Methods for Solving Microeconomic Dynamic
+Stochastic Optimization Problems</em>.
+<a class="reference external" href="https://llorracc.github.io/SolvingMicroDSOPs/">https://llorracc.github.io/SolvingMicroDSOPs/</a></p>
+<p>Two blocks are exposed: <code class="xref py py-data docutils literal notranslate"><span class="pre">skagent.models.perfect_foresight.block</span></code> (with
+the survival shock) and
+<code class="xref py py-data docutils literal notranslate"><span class="pre">skagent.models.perfect_foresight.block_no_shock</span></code> (deterministic).</p>
+</section>
+<section id="perfect-foresight-normalized">
+<h3>Perfect Foresight (Normalized)<a class="headerlink" href="#perfect-foresight-normalized" title="Link to this heading">¶</a></h3>
+<p>The same problem expressed in variables divided by permanent income. The state
+space collapses from <span class="math notranslate nohighlight">\((M, P)\)</span> to the single ratio <span class="math notranslate nohighlight">\(m\)</span>, which is what makes both
+analytical and neural-network solutions practical for richer models.</p>
+<p>Perfect-foresight consumption-savings in normalized variables.</p>
+<p>The same problem as <a class="reference internal" href="../api/models.html#module-skagent.models.perfect_foresight" title="skagent.models.perfect_foresight"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.perfect_foresight</span></code></a>, but with
+every level variable divided by permanent income <span class="math notranslate nohighlight">\(P_t\)</span>. Lowercase
+ratios <span class="math notranslate nohighlight">\(m = M/P\)</span>, <span class="math notranslate nohighlight">\(c = C/P\)</span>, <span class="math notranslate nohighlight">\(a = A/P\)</span> evolve via the
+effective return <span class="math notranslate nohighlight">\(R_{\text{eff}} = R / G\)</span>,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[b_{t+1} = R_{\text{eff}} \, a_t,
+\qquad
+m_{t+1} = b_{t+1} + 1,
+\qquad
+a_{t+1} = m_{t+1} - c_{t+1},\]</div>
+</div>
+<p>with normalized income identically equal to one. Normalization reduces
+the state space from <span class="math notranslate nohighlight">\((M, P)\)</span> to the single ratio <span class="math notranslate nohighlight">\(m\)</span>, which
+matters both for analytical tractability and for neural-network solvers,
+where the network learns a one-dimensional function <span class="math notranslate nohighlight">\(c(m)\)</span> instead
+of a two-dimensional <span class="math notranslate nohighlight">\(c(M, P)\)</span>.</p>
+<p>The closed-form normalized policy is <span class="math notranslate nohighlight">\(c_t = \kappa_s\, (m_t + h)\)</span>
+with <span class="math notranslate nohighlight">\(\kappa_s = (R - (s\beta R)^{1/\sigma})/R\)</span> and
+<span class="math notranslate nohighlight">\(h = 1 / (R_{\text{eff}} - 1)\)</span>. Although the normalized Bellman
+discounts future utility by <span class="math notranslate nohighlight">\(s\beta G^{1-\sigma}\)</span> rather than
+<span class="math notranslate nohighlight">\(s\beta\)</span>, the algebra collapses
+<span class="math notranslate nohighlight">\((s\beta G^{1-\sigma} R_{\text{eff}})^{1/\sigma}\)</span> to
+<span class="math notranslate nohighlight">\((s\beta R)^{1/\sigma}/G\)</span>, so the level and normalized MPCs agree.</p>
+<p class="rubric">Notes</p>
+<p>The math above uses <span class="math notranslate nohighlight">\(R\)</span>, <span class="math notranslate nohighlight">\(G\)</span>, and <span class="math notranslate nohighlight">\(s\)</span> for the gross
+return, permanent income growth, and survival probability; the
+corresponding block parameter keys are <code class="docutils literal notranslate"><span class="pre">Rfree</span></code>, <code class="docutils literal notranslate"><span class="pre">PermGroFac</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">LivPrb</span></code>.</p>
+<p class="rubric">References</p>
+<p>Carroll, C.D. (2024). <em>Solution Methods for Solving Microeconomic Dynamic
+Stochastic Optimization Problems</em>.
+<a class="reference external" href="https://llorracc.github.io/SolvingMicroDSOPs/">https://llorracc.github.io/SolvingMicroDSOPs/</a></p>
+</section>
+</section>
+<section id="stochastic-benchmarks-with-closed-forms">
+<h2>Stochastic Benchmarks with Closed Forms<a class="headerlink" href="#stochastic-benchmarks-with-closed-forms" title="Link to this heading">¶</a></h2>
+<section id="u-1-hall-1978-random-walk">
+<h3>U-1: Hall (1978) Random Walk<a class="headerlink" href="#u-1-hall-1978-random-walk" title="Link to this heading">¶</a></h3>
+<p>The historically pivotal observation: under quadratic utility and the neutral
+SDF <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, the Euler equation forces consumption to be a martingale,
+regardless of how complicated the income process is. This result motivated the
+empirical PIH literature, which tested whether <span class="math notranslate nohighlight">\(\Delta c_{t+1}\)</span> is
+unforecastable from period-<span class="math notranslate nohighlight">\(t\)</span> information.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">u1_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Optimal policy for U-1: Hall (1978) random-walk consumption.</p>
+<p>With quadratic utility <span class="math notranslate nohighlight">\(u(c) = ac - bc^2/2\)</span> and the neutral
+stochastic discount factor <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, the Euler equation
+collapses to the martingale property</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\mathbb{E}_t[c_{t+1}] = c_t,\]</div>
+</div>
+<p>so consumption follows a random walk regardless of the income process.
+Hall’s contribution was to derive this implication and confront it
+with consumption data.</p>
+<p>The decision rule consistent with this Euler equation, plus
+transversality, is the Permanent Income Hypothesis: consume the
+annuity value of total wealth,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t \;=\; \frac{r}{R} \, (m_t + H),\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(m_t = R \, A_{t-1} + y_t\)</span> is cash-on-hand,
+<span class="math notranslate nohighlight">\(H = \mathbb{E}_t y / r\)</span> is the present value of the expected
+future income stream, and <span class="math notranslate nohighlight">\(r = R - 1\)</span>. The martingale property
+is a <em>consequence</em> of this PIH policy, not the policy itself.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;A&quot;</span></code> (arrival assets) and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code> (current income
+realization).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;eta&quot;</span></code> (mean-zero income innovation); unused once
+<span class="math notranslate nohighlight">\(y_t\)</span> is known.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;y_mean&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Logs a warning via the module logger if <span class="math notranslate nohighlight">\(|\beta R - 1| &gt; 10^{-6}\)</span>,
+since the PIH derivation hinges on <span class="math notranslate nohighlight">\(\beta R = 1\)</span> exactly. With
+high income variance, transversality may also fail.</p>
+<p class="rubric">References</p>
+<p>Hall, R.E. (1978). “Stochastic implications of the life cycle-permanent
+income hypothesis: Theory and evidence.” <em>Journal of Political
+Economy</em>, 86(6), 971-987.</p>
+</dd></dl>
+
+</section>
+<section id="u-2-log-utility-with-permanent-income-shocks">
+<h3>U-2: Log Utility with Permanent Income Shocks<a class="headerlink" href="#u-2-log-utility-with-permanent-income-shocks" title="Link to this heading">¶</a></h3>
+<p>Geometric random-walk permanent income looks intractable in level variables. The
+normalization <span class="math notranslate nohighlight">\(m = M/P\)</span>, <span class="math notranslate nohighlight">\(c = C/P\)</span> collapses the state space, and the closed
+form <span class="math notranslate nohighlight">\(c = (1 - \beta)(m + 1/r)\)</span> falls out cleanly. The same normalization
+applied to the borrowing-constrained CRRA case (U-3) yields a problem with <em>no</em>
+closed form: the constraint plus uncertainty break the linearity.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">u2_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Optimal policy for U-2: log utility with permanent income shocks
+(normalized).</p>
+<p>The buffer-stock problem with log utility, geometric random-walk
+permanent income, and no borrowing constraint admits a closed-form
+policy in <em>normalized</em> variables. Dividing every level variable by
+permanent income <span class="math notranslate nohighlight">\(P_t\)</span> yields the lowercase ratios
+<span class="math notranslate nohighlight">\(m = M/P\)</span>, <span class="math notranslate nohighlight">\(c = C/P\)</span>, <span class="math notranslate nohighlight">\(a = A/P\)</span>, with normalized
+transition</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[m_{t+1} = \frac{R}{\psi_{t+1}} \, a_t + 1,\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\psi_{t+1}\)</span> is the mean-one permanent income shock. The
+constant <code class="docutils literal notranslate"><span class="pre">+1</span></code> represents normalized transitory income, which is
+identically one in U-2; the more general two-shock case (with a
+stochastic transitory component) is U-3. Under log utility the closed
+form is</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t \;=\; (1 - \beta) \, (m_t + h),
+\qquad
+h \;=\; 1/r,\]</div>
+</div>
+<p>independent of the realized shock path. The MPC <span class="math notranslate nohighlight">\((1 - \beta)\)</span>
+is the limiting MPC for any unconstrained CRRA agent; log utility (the
+<span class="math notranslate nohighlight">\(\sigma = 1\)</span> case) makes it exact rather than asymptotic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (normalized arrival assets).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;psi&quot;</span></code> (permanent income shock, defaults to ones).</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code> (normalized consumption).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">&quot;sigma_psi&quot;:</span> <span class="pre">0</span></code> makes <span class="math notranslate nohighlight">\(\psi \equiv 1\)</span>, so the PIH
+analytical solution holds exactly. The <code class="docutils literal notranslate"><span class="pre">Control</span></code> upper bound
+<span class="math notranslate nohighlight">\(0.1\, m + 2\)</span> is loose enough for the analytical policy
+<span class="math notranslate nohighlight">\(c \approx 0.04\, m + 1.33\)</span> but rules out Ponzi-scheme solutions
+that satisfy the Euler equation while violating transversality.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">u3_block</span></code></dt><dd><p>Same problem with a binding borrowing constraint and CRRA utility, which has no closed form.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+</section>
+<section id="resource-extraction-reed-1979">
+<h3>Resource Extraction (Reed 1979)<a class="headerlink" href="#resource-extraction-reed-1979" title="Link to this heading">¶</a></h3>
+<p>The constant-escapement policy <span class="math notranslate nohighlight">\(u_t^{\ast} = \max(0, x_t - S^{\ast})\)</span> is the
+canonical closed-form solution in renewable-resource management. With
+multiplicative shocks and stock-dependent unit cost <span class="math notranslate nohighlight">\(c_0/x\)</span>, the optimal
+escapement <span class="math notranslate nohighlight">\(S^{\ast}\)</span> solves a single algebraic first-order condition rather
+than a Bellman equation:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+S^{\ast} \;=\; \frac{c_0\, (1 - \delta)}{p\, (1 - \delta r)},
+\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\delta\)</span> is the discount factor and <span class="math notranslate nohighlight">\(r\)</span> is the <em>mean biological growth
+rate</em> of the resource stock, not the net interest rate <span class="math notranslate nohighlight">\(R - 1\)</span> used elsewhere on
+this page. The model requires the impatience condition <span class="math notranslate nohighlight">\(\delta r &lt; 1\)</span>.</p>
+<section id="resource-extraction-with-optimal-escapement-reed-1979">
+<h4>Resource Extraction with Optimal Escapement (Reed 1979)<a class="headerlink" href="#resource-extraction-with-optimal-escapement-reed-1979" title="Link to this heading">¶</a></h4>
+<p>Resource extraction models analyze the optimal management of renewable or depletable resources over time. These models appear in:</p>
+<blockquote>
+<div><p>Fisheries management: Determining sustainable harvest rates for fish populations
+Forestry: Optimal timber harvesting schedules
+Environmental economics: Managing renewable natural resources (water, wildlife)
+Energy: Optimal depletion of oil fields and mineral deposits
+Finance: Portfolio liquidation and asset drawdown strategies</p>
+</div></blockquote>
+<p>The core problem involves balancing immediate extraction (profit now) against preserving the resource stock (profit later), accounting for natural growth dynamics and environmental uncertainty.</p>
+<p>This implementation follows the model from:</p>
+<blockquote>
+<div><p>Reed, W.J. (1979). “Optimal escapement levels in stochastic and deterministic
+harvesting models.” Journal of Environmental Economics and Management, 6(4), 350-363.</p>
+</div></blockquote>
+<p>Reed showed that under multiplicative environmental shocks and stock-dependent harvesting
+costs, the optimal policy has a simple “constant escapement” form: maintain a target stock
+level S* and harvest any surplus above it. This optimal escapement level S* can be computed
+analytically without solving the full dynamic programming problem, making it an excellent
+benchmark for testing reinforcement learning algorithms.</p>
+<section id="mathematical-model">
+<h5>Mathematical Model<a class="headerlink" href="#mathematical-model" title="Link to this heading">¶</a></h5>
+<p><strong>State</strong>: <span class="math notranslate nohighlight">\(x_t\)</span> = resource stock at time <span class="math notranslate nohighlight">\(t\)</span></p>
+<p><strong>Control</strong>: <span class="math notranslate nohighlight">\(u_t\)</span> = harvest, constrained by <span class="math notranslate nohighlight">\(0 \leq u_t \leq x_t\)</span></p>
+<p><strong>Dynamics</strong>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[x_{t+1} = r (x_t - u_t) \epsilon_t\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(r &gt; 1\)</span> is the growth rate, <span class="math notranslate nohighlight">\(\epsilon_t\)</span> is a mean-one
+log-normal shock, and <span class="math notranslate nohighlight">\((x_t - u_t)\)</span> is the escapement (remaining stock).</p>
+<p><strong>Profit</strong>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\pi(u_t, x_t) = \left(p - \frac{c_0}{x_t}\right) u_t\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(p\)</span> is price and <span class="math notranslate nohighlight">\(c_0/x_t\)</span> is the stock-dependent unit cost.</p>
+<p><strong>Objective</strong>: Maximize <span class="math notranslate nohighlight">\(\mathbb{E}\left[\sum_{t=0}^{\infty} \delta^t \pi(u_t, x_t)\right]\)</span></p>
+</section>
+<section id="optimal-policy">
+<h5>Optimal Policy<a class="headerlink" href="#optimal-policy" title="Link to this heading">¶</a></h5>
+<p>Reed (1979) <a class="reference internal" href="#reed1979" id="id1"><span>[Reed1979]</span></a> proved the optimal policy has constant escapement form:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u_t^* = \max(0, x_t - S^*)\]</div>
+</div>
+<p>where the optimal escapement level is:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}\]</div>
+</div>
+<p>This requires the impatience condition <span class="math notranslate nohighlight">\(\delta r &lt; 1\)</span>.</p>
+<p>This model provides an excellent benchmark for RL algorithms since <span class="math notranslate nohighlight">\(S^*\)</span>
+can be computed analytically without dynamic programming.</p>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="reed1979" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>Reed1979<span class="fn-bracket">]</span></span>
+<p>Reed, W.J. (1979). “Optimal escapement levels in stochastic and
+deterministic harvesting models.” Journal of Environmental Economics
+and Management, 6(4), 350-363.</p>
+</div>
+</div>
+</section>
+</section>
+<p>The optimal decision rule is constructed by
+<code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.models.resource_extraction.make_optimal_decision_rule()</span></code>.</p>
+</section>
+</section>
+<section id="beyond-closed-forms-u-3-buffer-stock">
+<h2>Beyond Closed Forms: U-3 Buffer Stock<a class="headerlink" href="#beyond-closed-forms-u-3-buffer-stock" title="Link to this heading">¶</a></h2>
+<p>The buffer-stock model U-3 (CRRA utility, permanent and transitory income
+shocks, binding borrowing constraint <span class="math notranslate nohighlight">\(c \leq m\)</span>) has no closed-form policy. Its
+limiting properties are nonetheless known: the MPC stays in <span class="math notranslate nohighlight">\((0, 1)\)</span>, decreases
+in wealth, and converges to the perfect-foresight <span class="math notranslate nohighlight">\(\kappa\)</span> as wealth grows
+large. These limits are what the test harness in
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.validate_analytical_solution" title="skagent.models.benchmarks.validate_analytical_solution"><code class="xref py py-func docutils literal notranslate"><span class="pre">validate_analytical_solution()</span></code></a> checks when a
+numerical solver claims to have solved U-3.</p>
+</section>
+<section id="validating-analytical-solutions">
+<h2>Validating Analytical Solutions<a class="headerlink" href="#validating-analytical-solutions" title="Link to this heading">¶</a></h2>
+<p>Each entry in the registry can be looked up by ID:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">list_benchmark_models</span><span class="p">,</span>
+    <span class="n">get_benchmark_model</span><span class="p">,</span>
+    <span class="n">get_benchmark_calibration</span><span class="p">,</span>
+    <span class="n">get_analytical_policy</span><span class="p">,</span>
+    <span class="n">validate_analytical_solution</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">list_benchmark_models</span><span class="p">())</span>
+<span class="c1"># {&#39;D-1&#39;: &#39;...&#39;, &#39;D-2&#39;: &#39;...&#39;, &#39;D-3&#39;: &#39;...&#39;,</span>
+<span class="c1">#  &#39;U-1&#39;: &#39;...&#39;, &#39;U-2&#39;: &#39;...&#39;, &#39;U-3&#39;: &#39;...&#39;}</span>
+
+<span class="n">block</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
+<span class="n">calib</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
+<span class="n">policy</span> <span class="o">=</span> <span class="n">get_analytical_policy</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">validate_analytical_solution</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;validation&quot;</span><span class="p">])</span>  <span class="c1"># &#39;PASSED&#39;</span>
+</pre></div>
+</div>
+<p>Requesting the analytical policy for U-3 raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>, since none
+exists; the error message points to <code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code>
+(combined with <a class="reference internal" href="../api/algorithms.html#skagent.algos.maliar.maliar_training_loop" title="skagent.algos.maliar.maliar_training_loop"><code class="xref py py-func docutils literal notranslate"><span class="pre">maliar_training_loop()</span></code></a>) as the
+recommended numerical alternative.</p>
+<p>The full registry helpers are documented below.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">list_benchmark_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>List all discrete-time benchmark models.</p>
+<p>Note: Most models have analytical solutions, but some (e.g., U-3 buffer stock)
+require numerical solution due to borrowing constraints + income uncertainty.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2, U-3) - 6 models</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="../api/blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Get benchmark calibration by model ID</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Get analytical policy function by model ID.</p>
+<p>Raises ValueError if the model does not have an analytical policy
+(e.g., U-3 buffer stock model requires numerical solution).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_test_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Get test states for model validation by model ID</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">validate_analytical_solution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Validate analytical solution satisfies optimality conditions and budget constraints</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+<li><p><strong>tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">euler_equation_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Test Euler equation satisfaction for stochastic analytical solutions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_analytical_lifetime_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Get analytical lifetime reward for a benchmark model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Model identifier (D-1, D-2, D-3, etc.)</p></li>
+<li><p><strong>*args</strong> – Arguments to pass to the specific analytical function</p></li>
+<li><p><strong>**kwargs</strong> – Arguments to pass to the specific analytical function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Analytical lifetime reward value</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="../auto_examples/index.html"><span class="doc">Examples</span></a> for runnable examples that solve and visualize
+benchmark models.</p></li>
+<li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> for the numerical methods used to solve models that do not
+have closed forms.</p></li>
+<li><p><a class="reference internal" href="../api/models.html"><span class="doc">Models</span></a> for the full API reference.</p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="science.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Science</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="algorithms.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Algorithms Guide</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, scikit-agent Team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link " href="https://github.com/scikit-agent/scikit-agent" aria-label="GitHub">
+                <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+                </svg>
+            </a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Benchmark Models</a><ul>
+<li><a class="reference internal" href="#standard-timing-convention">Standard Timing Convention</a></li>
+<li><a class="reference internal" href="#roster">Roster</a></li>
+<li><a class="reference internal" href="#deterministic-benchmarks">Deterministic Benchmarks</a><ul>
+<li><a class="reference internal" href="#d-1-finite-horizon-log-utility">D-1: Finite-Horizon Log Utility</a></li>
+<li><a class="reference internal" href="#d-2-infinite-horizon-crra-perfect-foresight">D-2: Infinite-Horizon CRRA Perfect Foresight</a></li>
+<li><a class="reference internal" href="#d-3-blanchard-discrete-time-mortality">D-3: Blanchard Discrete-Time Mortality</a></li>
+<li><a class="reference internal" href="#fisher-two-period-model">Fisher Two-Period Model</a></li>
+<li><a class="reference internal" href="#perfect-foresight-level-variables">Perfect Foresight (Level Variables)</a></li>
+<li><a class="reference internal" href="#perfect-foresight-normalized">Perfect Foresight (Normalized)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#stochastic-benchmarks-with-closed-forms">Stochastic Benchmarks with Closed Forms</a><ul>
+<li><a class="reference internal" href="#u-1-hall-1978-random-walk">U-1: Hall (1978) Random Walk</a></li>
+<li><a class="reference internal" href="#u-2-log-utility-with-permanent-income-shocks">U-2: Log Utility with Permanent Income Shocks</a></li>
+<li><a class="reference internal" href="#resource-extraction-reed-1979">Resource Extraction (Reed 1979)</a><ul>
+<li><a class="reference internal" href="#resource-extraction-with-optimal-escapement-reed-1979">Resource Extraction with Optimal Escapement (Reed 1979)</a><ul>
+<li><a class="reference internal" href="#mathematical-model">Mathematical Model</a></li>
+<li><a class="reference internal" href="#optimal-policy">Optimal Policy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#beyond-closed-forms-u-3-buffer-stock">Beyond Closed Forms: U-3 Buffer Stock</a></li>
+<li><a class="reference internal" href="#validating-analytical-solutions">Validating Analytical Solutions</a></li>
+<li><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=fe3999f3"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"tex": {"packages": {"[+]": ["amsmath", "amssymb"]}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    </body>
+</html>
