@@ -110,6 +110,46 @@ def compute_parameter_difference(params1, params2):
     return torch.norm(params1 - params2).item()
 
 
+def fischer_burmeister(
+    a: torch.Tensor, h: torch.Tensor, eps: float = 1e-12
+) -> torch.Tensor:
+    r"""Compute the Fischer-Burmeister function for smooth complementarity.
+
+    The Fischer-Burmeister function replaces the complementarity conditions
+    :math:`a \geq 0,\; h \geq 0,\; ah = 0` with the equivalent smooth equation:
+
+    .. math::
+
+        \text{FB}(a, h) = a + h - \sqrt{a^2 + h^2} = 0
+
+    This is differentiable everywhere, unlike :math:`\min(a, h) = 0`.
+
+    Following Maliar et al. (2021, JME) equation (25).
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        First argument (e.g., slack variable :math:`1 - c/w`).
+    h : torch.Tensor
+        Second argument (e.g., unit-free Lagrange multiplier).
+    eps : float, optional
+        Regularization constant added inside the square root to keep the
+        gradient finite at the origin. At the default ``eps=1e-12``,
+        ``FB(0, 0) = -sqrt(eps) ≈ -1e-6`` rather than exactly zero.
+        This is below typical convergence tolerances but should be
+        accounted for in tests or with very tight tolerances.
+
+    Returns
+    -------
+    torch.Tensor
+        Fischer-Burmeister residual. Approximately zero when the
+        complementarity conditions are satisfied.
+    """
+    if eps <= 0:
+        raise ValueError(f"eps must be > 0, got {eps}")
+    return a + h - torch.sqrt(a**2 + h**2 + eps)
+
+
 def compute_gradients_for_tensors(
     tensors_dict: dict[str, torch.Tensor],
     wrt: dict[str, torch.Tensor],
