@@ -2,7 +2,7 @@ from skagent.distributions import Lognormal
 import skagent.models.consumer as cons
 import skagent.models.perfect_foresight as pfm
 import skagent.models.perfect_foresight_normalized as pfnm
-from skagent.simulation.monte_carlo import AgentTypeMonteCarloSimulator
+from skagent.simulation.monte_carlo import Simulator
 
 
 import unittest
@@ -10,7 +10,7 @@ import unittest
 
 class test_pfm(unittest.TestCase):
     def setUp(self):
-        self.mcs = AgentTypeMonteCarloSimulator(
+        self.mcs = Simulator(
             pfm.calibration,
             pfm.block,
             {"c": lambda m: 0.5 * m},
@@ -32,7 +32,7 @@ class test_pfm(unittest.TestCase):
 
 class test_pfnm(unittest.TestCase):
     def setUp(self):
-        self.mcs = AgentTypeMonteCarloSimulator(  ### Use fm, blockified
+        self.mcs = Simulator(  ### Use fm, blockified
             pfnm.calibration,
             pfnm.block,
             {
@@ -55,7 +55,7 @@ class test_pfnm(unittest.TestCase):
 
 class test_consumer_models(unittest.TestCase):
     def setUp(self):
-        self.cs = AgentTypeMonteCarloSimulator(  ### Use fm, blockified
+        self.cs = Simulator(  ### Use fm, blockified
             cons.calibration,
             cons.cons_problem,  ### multiple cons blocks!
             {
@@ -71,7 +71,7 @@ class test_consumer_models(unittest.TestCase):
             T_sim=5,
         )
 
-        self.pcs = AgentTypeMonteCarloSimulator(  ### Use fm, blockified
+        self.pcs = Simulator(  ### Use fm, blockified
             cons.calibration,
             cons.cons_portfolio_problem,  ### multiple cons blocks!
             {
@@ -90,6 +90,15 @@ class test_consumer_models(unittest.TestCase):
             T_sim=5,
         )
 
+        self.mcs = Simulator(
+            cons.calibration,
+            cons.mortal_cons_problem,
+            {"c": lambda m: m / (3)},
+            {"k": Lognormal(-6, 0), "p": 1.0, "age": 0},
+            agent_count=2,
+            T_sim=5,
+        )
+
     def test_simulate(self):
         self.cs.initialize_sim()
         self.cs.simulate()
@@ -97,13 +106,23 @@ class test_consumer_models(unittest.TestCase):
         self.assertEqual(self.cs.calibration["R"], 1.03)
         self.assertFalse("R" in self.cs.history)
 
-        self.pcs.initialize_sim()
-        self.pcs.simulate()
-
         self.assertFalse("R" in self.cs.history)
 
         # test to see if the R value is
         # as calibrated for cons
         # and dynamic for the portfolio model
 
+        self.pcs.initialize_sim()
+        self.pcs.simulate()
+
         self.assertTrue(self.pcs.history["R"][0][0] != 1.03)
+
+        ##
+
+        self.mcs.initialize_sim()
+        self.mcs.simulate()
+
+        for t in range(1, 5):
+            self.assertTrue(
+                self.mcs.history["age"][t][0] > 0 or self.mcs.history["live"][t][0] == 0
+            )

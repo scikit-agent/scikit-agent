@@ -7,7 +7,6 @@ import unittest
 from skagent.distributions import Bernoulli, IndexDistribution, MeanOneLogNormal
 from skagent.block import Aggregate, Control, DBlock, simulate_dynamics
 from skagent.simulation.monte_carlo import (
-    AgentTypeMonteCarloSimulator,
     MonteCarloSimulator,
     draw_shocks,
 )
@@ -56,7 +55,7 @@ class test_simulate_dynamics(unittest.TestCase):
         self.assertAlmostEqual(post["cNrm"], 0.98388429)
 
 
-class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
+class test_MonteCarloSimulator_2(unittest.TestCase):
     def setUp(self):
         self.calibration = {  # TODO
             "G": 1.05,
@@ -82,7 +81,7 @@ class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
         self.dr = {"c": lambda m: m / 2}
 
     def test_simulate(self):
-        self.simulator = AgentTypeMonteCarloSimulator(
+        self.simulator = MonteCarloSimulator(
             self.calibration,
             self.block,
             self.dr,
@@ -102,69 +101,6 @@ class test_AgentTypeMonteCarloSimulator(unittest.TestCase):
 
         # Use allclose for numerical tolerance instead of exact equality
         self.assertTrue(np.allclose(a1, b1, rtol=1e-12, atol=1e-12))
-
-    def test_make_shock_history(self):
-        self.simulator = AgentTypeMonteCarloSimulator(
-            self.calibration,
-            self.block,
-            self.dr,
-            self.initial,
-            agent_count=3,
-        )
-
-        self.simulator.make_shock_history()
-
-        newborn_init_1 = self.simulator.newborn_init_history.copy()
-        shocks_1 = self.simulator.shock_history.copy()
-
-        self.simulator.initialize_sim()
-        self.simulator.simulate()
-
-        self.assertEqual(newborn_init_1, self.simulator.newborn_init_history)
-        self.assertTrue(np.all(self.simulator.history["theta"] == shocks_1["theta"]))
-
-
-class test_AgentTypeMonteCarloSimulatorAgeVariance(unittest.TestCase):
-    def setUp(self):
-        self.calibration = {  # TODO
-            "G": 1.05,
-        }
-        self.block = DBlock(
-            **{
-                "shocks": {
-                    "theta": MeanOneLogNormal(1),
-                    "agg_R": Aggregate(MeanOneLogNormal(1)),
-                    "live": Bernoulli(p=0.98),
-                    "psi": IndexDistribution(MeanOneLogNormal, {"sigma": [1.0, 1.1]}),
-                },
-                "dynamics": {
-                    "b": lambda agg_R, G, a: agg_R * G * a,
-                    "m": lambda b, theta: b + theta,
-                    "c": Control(["m"]),
-                    "a": lambda m, c: m - c,
-                },
-            }
-        )
-
-        self.initial = {"a": MeanOneLogNormal(1), "live": 1}
-        self.dr = {"c": [lambda m: m * 0.5, lambda m: m * 0.9]}
-
-    def test_simulate(self):
-        self.simulator = AgentTypeMonteCarloSimulator(
-            self.calibration,
-            self.block,
-            self.dr,
-            self.initial,
-            agent_count=3,
-        )
-
-        self.simulator.initialize_sim()
-        history = self.simulator.simulate(sim_periods=2)
-
-        a1 = history["a"][1]
-        b1 = history["m"][1] - self.dr["c"][1](history["m"][1])
-
-        self.assertTrue((a1 == b1).all())
 
 
 class test_MonteCarloSimulator(unittest.TestCase):
@@ -289,7 +225,7 @@ class test_MonteCarloSimulatorWithConsumerModel(unittest.TestCase):
         import skagent.models.consumer as cons
         from skagent.simulation.monte_carlo import MonteCarloSimulator
 
-        initial = {"a": MeanOneLogNormal(1), "live": 0}
+        initial = {"a": MeanOneLogNormal(1)}
         dr = {"c": lambda m: m / 2}
 
         simulator = MonteCarloSimulator(
