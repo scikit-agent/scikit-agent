@@ -1,14 +1,18 @@
 # Benchmark Models
 
-The {py:mod}`skagent.models.benchmarks` registry collects dynamic programming
-problems whose optimal policies are known in closed form. Each entry pairs a
-working {py:class}`~skagent.block.DBlock` with an analytical decision function,
-and the registry serves three purposes.
+The {py:mod}`skagent.models.benchmarks` registry collects benchmark dynamic
+programming problems. Most entries pair a working
+{py:class}`~skagent.block.DBlock` with an analytical decision function whose
+optimal policy is known in closed form; U-3 (the buffer-stock model) is included
+for numerical validation against its limiting MPC properties, even though it has
+no closed-form solution. The registry serves three purposes.
 
 **Validation.** A numerical solver can be checked against the closed-form policy
 on a set of test states. The function
-{py:func}`~skagent.models.benchmarks.validate_analytical_solution` compares the
-two and reports the maximum residual.
+{py:func}`~skagent.models.benchmarks.validate_analytical_solution` evaluates the
+analytical policy on a standard grid, checks feasibility together with any
+model-specific identities, and returns a `"PASSED"` or `"FAILED"` status
+alongside diagnostics on the consumption range.
 
 **Regression testing.** The same comparison runs in the test suite, so any
 regression that breaks an analytical identity is caught early.
@@ -47,9 +51,9 @@ income $P_t$.
 
 ## Roster
 
-The seven models below split into two groups. The first six are registered in
-`BENCHMARK_MODELS` and accessible by ID through the helpers in
-{py:func}`~skagent.models.benchmarks.list_benchmark_models`. The remaining
+The models below split into two groups. The six entries in `BENCHMARK_MODELS`
+are accessible by ID through the helpers in
+{py:func}`~skagent.models.benchmarks.list_benchmark_models`. The remaining four
 models ship as standalone modules.
 
 **Registry (lookup by ID via
