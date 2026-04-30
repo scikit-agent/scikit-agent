@@ -280,8 +280,12 @@ The full registry helpers are documented below.
 
 ## See Also
 
-- {doc}`../auto_examples/index` for runnable examples that solve and visualize
-  benchmark models.
+- {doc}`../auto_examples/models/plot_benchmark_models` is the runnable companion
+  to this page: a six-step pedagogical tour that loads each closed-form policy,
+  validates it on the standard test grid, and walks through the lessons each
+  model contributes (finite-horizon limits, the mortality wedge, Hall's
+  martingale, normalization, and why U-3 has no closed form).
+- {doc}`../auto_examples/index` for the full gallery of runnable examples.
 - {doc}`algorithms` for the numerical methods used to solve models that do not
   have closed forms.
 - {doc}`../api/models` for the full API reference.
