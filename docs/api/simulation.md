@@ -8,18 +8,6 @@ functions.
 The simulation module provides Monte Carlo simulation engines for economic
 models.
 
-### AgentTypeMonteCarloSimulator
-
-A Monte Carlo simulation engine inspired by agent-based modeling frameworks.
-This simulator includes aging and mortality assumptions.
-
-```{eval-rst}
-.. autoclass:: skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 ### MonteCarloSimulator
 
 A simplified Monte Carlo simulation engine that doesn't make assumptions about
