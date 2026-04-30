@@ -181,25 +181,19 @@ def d1_analytical_policy(states, shocks, parameters):
     W = states["W"]
     t = states.get("t", 0)
 
-    # Pick an output dtype: use float64 for scalars (Python's float64 is the
-    # most precise we can produce), and otherwise preserve the input tensor's
-    # dtype.
+    # Output dtype: float64 for scalar inputs, preserve the input tensor
+    # dtype otherwise.
     dtype = torch.float64 if not isinstance(W, torch.Tensor) else W.dtype
 
-    # Stay in tensor space so scalar Python ``t = T`` does not raise a
-    # ZeroDivisionError before the terminal branch can be masked. Clamping
-    # the horizon at 1 collapses the denominator at ``T - t <= 1`` to
-    # ``1 - beta``; the formula then evaluates to exactly ``W`` at the
-    # boundary, matching the consume-everything terminal rule without
-    # introducing a 0/0 form (or a masked NaN that would propagate through
-    # autograd).
-    #
-    # The intermediate computation runs at float64 to match the precision of
-    # the original Python-float path; without an explicit dtype here,
-    # ``as_tensor`` would round Python scalars to float32 and silently lose
-    # several digits of accuracy (visible at ``places=10`` in the test
-    # suite). Integer ``safe_horizon`` keeps ``beta ** safe_horizon`` on the
-    # fast integer-exponentiation path.
+    # Stay in tensor space so a scalar Python ``t = T`` cannot raise a
+    # ZeroDivisionError before the terminal branch is masked. Clamping the
+    # horizon at 1 collapses the denominator at ``T - t <= 1`` to
+    # ``1 - beta``, so the formula evaluates to exactly ``W`` at the
+    # boundary - no 0/0, no masked NaN that would poison autograd.
+    # Float64 throughout matches the original Python-float precision (a
+    # bare ``as_tensor`` would round scalars to float32). Integer
+    # ``safe_horizon`` keeps ``beta ** safe_horizon`` on torch's fast
+    # integer-exponentiation path.
     W_tensor = as_tensor(W, dtype=torch.float64)
     safe_horizon = torch.clamp(as_tensor(T - t), min=1)
     denominator = 1 - torch.tensor(beta, dtype=torch.float64) ** safe_horizon

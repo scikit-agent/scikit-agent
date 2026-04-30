@@ -43,7 +43,7 @@ import numpy as np
 import torch
 
 from skagent.models.benchmarks import (
-    BENCHMARK_MODELS,
+    EPS_VALIDATION,
     get_analytical_policy,
     get_benchmark_calibration,
     list_benchmark_models,
@@ -61,13 +61,22 @@ from skagent.models.benchmarks import (
 # helper still reports it as ``FAILED`` because no policy was found, not
 # because anything is wrong with the model.
 
-descriptions = list_benchmark_models()
-for model_id, description in descriptions.items():
-    has_closed_form = "analytical_policy" in BENCHMARK_MODELS[model_id]
-    marker = "closed form" if has_closed_form else "numerical only"
-    result = validate_analytical_solution(model_id, test_points=20, tolerance=1e-8)
-    status = result["validation"]
-    print(f"  {model_id} ({marker:14s}): {status:6s}  {description}")
+
+def _has_closed_form(model_id: str) -> bool:
+    """Check whether the registry exposes an analytical policy for ``model_id``."""
+    try:
+        get_analytical_policy(model_id)
+    except ValueError:
+        return False
+    return True
+
+
+for model_id, description in list_benchmark_models().items():
+    marker = "closed form" if _has_closed_form(model_id) else "numerical only"
+    result = validate_analytical_solution(
+        model_id, test_points=20, tolerance=EPS_VALIDATION
+    )
+    print(f"  {model_id} ({marker:14s}): {result['validation']:6s}  {description}")
 
 # %%
 # Step 2: Finite Horizons Fade Away (D-1 → D-2)
@@ -83,19 +92,14 @@ for model_id, description in descriptions.items():
 # wealth fixed at :math:`W = 5` and sweeping :math:`T`, the gap is already
 # below 1% of the limit by :math:`T = 30`.
 
-beta_d1 = 0.96
+beta_d1 = get_benchmark_calibration("D-1")["DiscFac"]
 W_fixed = 5.0
 horizons = np.arange(1, 81)
-c_finite = np.array(
-    [
-        get_analytical_policy("D-1")(
-            {"W": torch.tensor(W_fixed), "t": 0},
-            {},
-            {"DiscFac": beta_d1, "T": int(T_), "R": 1.03},
-        )["c"].item()
-        for T_ in horizons
-    ]
-)
+# c_t = (1-β) / (1 - β^{T-t}) * W_t is the D-1 closed form (see
+# ``d1_analytical_policy``). Sweeping T at t = 0 reduces to a single
+# vectorized expression; the registry policy is exercised in Steps 1, 3,
+# 4, and 6 below.
+c_finite = (1 - beta_d1) / (1 - beta_d1**horizons) * W_fixed
 c_infinite = (1 - beta_d1) * W_fixed
 
 fig, ax = plt.subplots(figsize=(8, 5))
@@ -133,26 +137,29 @@ fig.tight_layout()
 # the no-mortality limit at this scale, but life-cycle models that
 # aggregate over many decades pick up a measurable mortality wedge.
 
-shared = {"DiscFac": 0.96, "R": 1.03, "y": 1.0, "CRRA": 2.0}
+shared = get_benchmark_calibration("D-2")
 a_grid = torch.linspace(0.0, 6.0, 121)
-m_grid = a_grid * shared["R"] + shared["y"]
+m_grid_np = (a_grid * shared["R"] + shared["y"]).numpy()
+
+
+def _kappa(beta_eff: float) -> float:
+    """MPC out of total wealth at effective discount factor ``beta_eff``."""
+    return (shared["R"] - (beta_eff * shared["R"]) ** (1 / shared["CRRA"])) / shared[
+        "R"
+    ]
+
 
 fig, ax = plt.subplots(figsize=(8, 5))
 for s in [1.0, 0.95, 0.9, 0.8, 0.7]:
     if s == 1.0:
         c = get_analytical_policy("D-2")({"a": a_grid}, {}, shared)["c"]
-        kappa = (
-            shared["R"] - (shared["DiscFac"] * shared["R"]) ** (1 / shared["CRRA"])
-        ) / shared["R"]
-        label = rf"D-2: $s = 1.00$, $\kappa\;\,= {kappa:.4f}$"
+        label = rf"D-2: $s = 1.00$, $\kappa\;\,= {_kappa(shared['DiscFac']):.4f}$"
     else:
-        params = {**shared, "SurvivalProb": s}
-        c = get_analytical_policy("D-3")({"a": a_grid}, {}, params)["c"]
-        kappa_s = (
-            shared["R"] - (s * shared["DiscFac"] * shared["R"]) ** (1 / shared["CRRA"])
-        ) / shared["R"]
-        label = rf"D-3: $s = {s:.2f}$, $\kappa_s = {kappa_s:.4f}$"
-    ax.plot(m_grid.numpy(), c.numpy(), label=label, linewidth=2)
+        c = get_analytical_policy("D-3")(
+            {"a": a_grid}, {}, {**shared, "SurvivalProb": s}
+        )["c"]
+        label = rf"D-3: $s = {s:.2f}$, $\kappa_s = {_kappa(s * shared['DiscFac']):.4f}$"
+    ax.plot(m_grid_np, c.numpy(), label=label, linewidth=2)
 
 ax.set_xlabel("Cash-on-hand $m_t$", fontsize=11)
 ax.set_ylabel("Optimal consumption $c_t$", fontsize=11)
