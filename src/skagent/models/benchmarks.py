@@ -181,23 +181,31 @@ def d1_analytical_policy(states, shocks, parameters):
     W = states["W"]
     t = states.get("t", 0)
 
-    horizon = T - t
+    # Pick an output dtype: use float64 for scalars (Python's float64 is the
+    # most precise we can produce), and otherwise preserve the input tensor's
+    # dtype.
+    dtype = torch.float64 if not isinstance(W, torch.Tensor) else W.dtype
 
-    # Infer dtype from W: use float64 for scalars, preserve tensor dtype
-    W_tensor = as_tensor(W)
-    dtype = torch.float64 if not isinstance(W, torch.Tensor) else W_tensor.dtype
+    # Stay in tensor space so scalar Python ``t = T`` does not raise a
+    # ZeroDivisionError before the terminal branch can be masked. Clamping
+    # the horizon at 1 collapses the denominator at ``T - t <= 1`` to
+    # ``1 - beta``; the formula then evaluates to exactly ``W`` at the
+    # boundary, matching the consume-everything terminal rule without
+    # introducing a 0/0 form (or a masked NaN that would propagate through
+    # autograd).
+    #
+    # The intermediate computation runs at float64 to match the precision of
+    # the original Python-float path; without an explicit dtype here,
+    # ``as_tensor`` would round Python scalars to float32 and silently lose
+    # several digits of accuracy (visible at ``places=10`` in the test
+    # suite). Integer ``safe_horizon`` keeps ``beta ** safe_horizon`` on the
+    # fast integer-exponentiation path.
+    W_tensor = as_tensor(W, dtype=torch.float64)
+    safe_horizon = torch.clamp(as_tensor(T - t), min=1)
+    denominator = 1 - torch.tensor(beta, dtype=torch.float64) ** safe_horizon
+    c_optimal = (1 - beta) / denominator * W_tensor
 
-    # Terminal-period consume-everything branch handled per-element via
-    # torch.where so the policy works for both scalar and per-batch t.
-    numerator = 1 - beta
-    denominator = 1 - beta**horizon
-    c_optimal = torch.where(
-        as_tensor(horizon <= 1),
-        as_tensor(W, dtype=dtype),
-        as_tensor((numerator / denominator) * W, dtype=dtype),
-    )
-
-    return {"c": c_optimal}
+    return {"c": as_tensor(c_optimal, dtype=dtype)}
 
 
 # D-2: Infinite Horizon CRRA (Perfect Foresight)
@@ -208,7 +216,7 @@ def d1_analytical_policy(states, shocks, parameters):
 #
 # Mathematical formulation:
 #   max E₀ ∑_{t=0}^∞ β^t [c_t^{1-σ}/(1-σ)]
-#   s.t. A_{t+1} = (A_t + y_t - c_t)R
+#   s.t. A_t = R*A_{t-1} + y_t - c_t   (equivalently m_t = R*A_{t-1} + y_t, A_t = m_t - c_t)
 #       lim_{T→∞} E₀[β^T u'(c_T) A_T] = 0  (TVC)
 #
 # Key condition: Return-Impatience (βR)^{1/σ} < R
@@ -254,13 +262,15 @@ def d2_analytical_policy(states, shocks, parameters):
     .. math::
         \max_{\{c_t\}} \, \sum_{t=0}^{\infty} \beta^t \,
         \frac{c_t^{\,1-\sigma}}{1 - \sigma}
-        \quad \text{s.t.} \quad A_{t+1} = (A_t + y - c_t)\, R,
+        \quad \text{s.t.} \quad A_t = R\, A_{t-1} + y - c_t,
 
     with constant labor income :math:`y > 0`, gross return :math:`R > 1`,
     and the transversality condition
-    :math:`\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0`. Under
-    return-impatience :math:`(\beta R)^{1/\sigma} < R`, the closed-form
-    policy is linear in total wealth,
+    :math:`\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0`. Equivalently,
+    cash-on-hand :math:`m_t = R\, A_{t-1} + y` evolves with end-of-period
+    assets :math:`A_t = m_t - c_t`. Under return-impatience
+    :math:`(\beta R)^{1/\sigma} < R`, the closed-form policy is linear in
+    total wealth,
 
     .. math::
         c_t \;=\; \kappa \, W_t,
