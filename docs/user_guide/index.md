@@ -71,6 +71,7 @@ quickstart
 blocks
 simulation
 algorithms
+benchmark_models
 science
 ```
 

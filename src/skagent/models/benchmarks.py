@@ -56,6 +56,20 @@ def crra_utility(c, gamma):
     return c_tensor ** (1 - gamma) / (1 - gamma)
 
 
+def _human_wealth_rate(R):
+    """Return r = R - 1, raising ValueError if R <= 1.
+
+    Used by analytical policies that compute human wealth as a present-value
+    annuity y/r; R > 1 keeps that annuity well defined.
+    """
+    r = R - 1
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
+    return r
+
+
 # NUMERICAL TOLERANCE CONSTANTS
 # =============================
 EPS_STATIC = 1e-10  # Static identity verification (deterministic)
@@ -109,7 +123,55 @@ d1_block = DBlock(
 
 
 def d1_analytical_policy(states, shocks, parameters):
-    """D-1: c_t = (1-β)/(1-β^(T-t)) * W_t (remaining horizon formula)"""
+    r"""
+    Optimal policy for D-1: finite-horizon log-utility consumption.
+
+    With log utility and a deterministic :math:`T`-period horizon, the agent
+    solves
+
+    .. math::
+        V_T(W_T) = \log W_T,
+        \qquad
+        V_t(W_t) = \max_{c_t \in (0,\, W_t]} \, \log c_t
+        + \beta \, V_{t+1}\bigl((W_t - c_t)\, R\bigr),
+
+    where :math:`W_t` is wealth at the start of period :math:`t`, :math:`R`
+    is the gross return, and :math:`\beta < 1` is the discount factor. The
+    value function takes the form :math:`V_t(W) = \alpha_t + \log W` for a
+    time-varying additive constant :math:`\alpha_t`, and the first-order
+    condition gives the remaining-horizon rule
+
+    .. math::
+        c_t \;=\; \frac{1 - \beta}{\,1 - \beta^{T - t}\,} \, W_t.
+
+    In the terminal period (:math:`T - t = 1`) the formula simplifies to
+    :math:`c_t = W_t` since :math:`(1-\beta)/(1-\beta) = 1`; the
+    implementation handles this case directly to avoid the :math:`0/0`
+    form that would arise once :math:`T - t = 0`. As :math:`T - t \to
+    \infty`, the rule converges to the infinite-horizon constant-MPC
+    policy :math:`c_t = (1 - \beta) W_t`, the :math:`\sigma = 1` special
+    case of D-2.
+
+    Parameters
+    ----------
+    states : dict
+        Arrival states. Must contain ``"W"`` (wealth) and ``"t"`` (time
+        index, defaults to ``0``).
+    shocks : dict
+        Unused; the model is deterministic.
+    parameters : dict
+        Must contain ``"DiscFac"`` (:math:`\beta`) and ``"T"`` (horizon).
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}`` whose dtype matches the input wealth.
+
+    Raises
+    ------
+    ValueError
+        If :math:`\beta \geq 1`, since the closed form is undefined.
+    """
     beta = parameters["DiscFac"]
     if beta >= 1.0:
         raise ValueError(
@@ -119,27 +181,25 @@ def d1_analytical_policy(states, shocks, parameters):
     W = states["W"]
     t = states.get("t", 0)
 
-    # Remaining horizon consumption rule
-    remaining_periods = T - t
+    # Output dtype: float64 for scalar inputs, preserve the input tensor
+    # dtype otherwise.
+    dtype = torch.float64 if not isinstance(W, torch.Tensor) else W.dtype
 
-    # Terminal period: consume everything when remaining_periods <= 1
-    # (remaining==1 means one period left, which is the terminal period)
-    # Otherwise: c = (1-β)/(1-β^(T-t)) * W
-    numerator = 1 - beta
-    denominator = 1 - beta**remaining_periods
+    # Stay in tensor space so a scalar Python ``t = T`` cannot raise a
+    # ZeroDivisionError before the terminal branch is masked. Clamping the
+    # horizon at 1 collapses the denominator at ``T - t <= 1`` to
+    # ``1 - beta``, so the formula evaluates to exactly ``W`` at the
+    # boundary - no 0/0, no masked NaN that would poison autograd.
+    # Float64 throughout matches the original Python-float precision (a
+    # bare ``as_tensor`` would round scalars to float32). Integer
+    # ``safe_horizon`` keeps ``beta ** safe_horizon`` on torch's fast
+    # integer-exponentiation path.
+    W_tensor = as_tensor(W, dtype=torch.float64)
+    safe_horizon = torch.clamp(as_tensor(T - t), min=1)
+    denominator = 1 - torch.tensor(beta, dtype=torch.float64) ** safe_horizon
+    c_optimal = (1 - beta) / denominator * W_tensor
 
-    # Infer dtype from W: use float64 for scalars, preserve tensor dtype
-    W_tensor = as_tensor(W)
-    dtype = torch.float64 if not isinstance(W, torch.Tensor) else W_tensor.dtype
-
-    # Use torch.where to handle terminal period (works for both scalars and tensors)
-    c_optimal = torch.where(
-        as_tensor(remaining_periods <= 1),
-        as_tensor(W, dtype=dtype),
-        as_tensor((numerator / denominator) * W, dtype=dtype),
-    )
-
-    return {"c": c_optimal}
+    return {"c": as_tensor(c_optimal, dtype=dtype)}
 
 
 # D-2: Infinite Horizon CRRA (Perfect Foresight)
@@ -150,7 +210,7 @@ def d1_analytical_policy(states, shocks, parameters):
 #
 # Mathematical formulation:
 #   max E₀ ∑_{t=0}^∞ β^t [c_t^{1-σ}/(1-σ)]
-#   s.t. A_{t+1} = (A_t + y_t - c_t)R
+#   s.t. A_t = R*A_{t-1} + y_t - c_t   (equivalently m_t = R*A_{t-1} + y_t, A_t = m_t - c_t)
 #       lim_{T→∞} E₀[β^T u'(c_T) A_T] = 0  (TVC)
 #
 # Key condition: Return-Impatience (βR)^{1/σ} < R
@@ -188,14 +248,60 @@ d2_block = DBlock(
 
 
 def d2_analytical_policy(states, shocks, parameters):
-    """
-    D-2: c_t = κ*W_t where κ = (R - (βR)^(1/σ))/R and W_t = m_t + H_t
+    r"""
+    Optimal policy for D-2: infinite-horizon CRRA perfect foresight.
 
-    This is a proper decision function that:
-    1. Takes arrival states (a), shocks, and parameters as input
-    2. Computes information set variables (m) from arrival state and parameters
-    3. Computes total wealth (W = m + H) including human wealth
-    4. Returns optimal controls based on total wealth
+    The canonical perfect-foresight consumption problem solves
+
+    .. math::
+        \max_{\{c_t\}} \, \sum_{t=0}^{\infty} \beta^t \,
+        \frac{c_t^{\,1-\sigma}}{1 - \sigma}
+        \quad \text{s.t.} \quad A_t = R\, A_{t-1} + y - c_t,
+
+    with constant labor income :math:`y > 0`, gross return :math:`R > 1`,
+    and the transversality condition
+    :math:`\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0`. Equivalently,
+    cash-on-hand :math:`m_t = R\, A_{t-1} + y` evolves with end-of-period
+    assets :math:`A_t = m_t - c_t`. Under return-impatience
+    :math:`(\beta R)^{1/\sigma} < R`, the closed-form policy is linear in
+    total wealth,
+
+    .. math::
+        c_t \;=\; \kappa \, W_t,
+        \qquad
+        \kappa \;=\; \frac{R - (\beta R)^{1/\sigma}}{R},
+        \qquad
+        W_t \;=\; m_t + H,
+
+    where :math:`m_t = R\, A_{t-1} + y` is cash-on-hand at time :math:`t`,
+    :math:`H = y / r` is human wealth (the present value of the constant
+    future income stream), and :math:`r = R - 1`. The marginal propensity
+    to consume :math:`\kappa` depends only on deep parameters, not on the
+    state.
+
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"a"`` (arrival assets).
+    shocks : dict
+        Unused.
+    parameters : dict
+        Must contain ``"DiscFac"`` (:math:`\beta`), ``"R"``, ``"CRRA"``
+        (:math:`\sigma`), and ``"y"``.
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}``.
+
+    Raises
+    ------
+    ValueError
+        If return-impatience is violated, or if :math:`R \leq 1`.
+
+    See Also
+    --------
+    d3_analytical_policy : Same model with i.i.d. survival risk.
     """
     beta = parameters["DiscFac"]
     R = parameters["R"]
@@ -218,11 +324,7 @@ def d2_analytical_policy(states, shocks, parameters):
     m = a * R + y
 
     # Compute human wealth: present value of constant income stream
-    r = R - 1
-    if r <= 0:
-        raise ValueError(
-            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
-        )
+    r = _human_wealth_rate(R)
     human_wealth = y / r
 
     # Optimal consumption: c = κ * (market resources + human wealth)
@@ -282,13 +384,62 @@ d3_block = DBlock(
 
 
 def d3_analytical_policy(states, shocks, parameters):
-    """
-    D-3: c_t = κ_s*(m_t + H) where κ_s = (R - (sβR)^(1/σ))/R
+    r"""
+    Optimal policy for D-3: Blanchard (1985) discrete-time mortality.
 
-    This is a proper decision function that:
-    1. Takes arrival states (a), shocks, and parameters as input
-    2. Computes information set variables (m) from arrival state and parameters
-    3. Returns optimal controls based on information set
+    Extends D-2 by giving the agent i.i.d. survival probability
+    :math:`s \in (0, 1)` per period. The objective becomes
+
+    .. math::
+        \max \, \sum_{t=0}^{\infty} (s\beta)^t \,
+        \frac{c_t^{\,1-\sigma}}{1 - \sigma},
+
+    with the same budget constraint as D-2. Mortality is observationally
+    equivalent to scaling the discount factor from :math:`\beta` to
+    :math:`s\beta`, so the linear consumption rule survives:
+
+    .. math::
+        c_t \;=\; \kappa_s \, (m_t + H),
+        \qquad
+        \kappa_s \;=\; \frac{R - (s\beta R)^{1/\sigma}}{R},
+
+    with :math:`H = y / r` as before. The MPC :math:`\kappa_s > \kappa`
+    because mortality erodes effective patience: the agent consumes a
+    larger share of wealth each period.
+
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"a"`` (arrival assets). The ``"liv"`` alive
+        indicator is part of the DBlock simulator dynamics but is not read
+        by the analytical policy.
+    shocks : dict
+        May contain ``"live"`` (Bernoulli survival shock); unused for the
+        analytical policy itself.
+    parameters : dict
+        Must contain ``"DiscFac"``, ``"R"``, ``"CRRA"``, ``"y"``, and
+        ``"SurvivalProb"`` (:math:`s`).
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}``.
+
+    Raises
+    ------
+    ValueError
+        If mortality-adjusted return-impatience is violated, or if
+        :math:`R \leq 1`.
+
+    References
+    ----------
+    Blanchard, O.J. (1985). "Debt, deficits, and finite horizons."
+    *Journal of Political Economy*, 93(2), 223-247.
+
+    See Also
+    --------
+    d2_analytical_policy : Underlying perfect-foresight model without
+        mortality.
     """
     beta = parameters["DiscFac"]
     R = parameters["R"]
@@ -315,11 +466,7 @@ def d3_analytical_policy(states, shocks, parameters):
     m = a * R + y
 
     # Compute human wealth: present value of constant income stream
-    r = R - 1
-    if r <= 0:
-        raise ValueError(
-            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
-        )
+    r = _human_wealth_rate(R)
     human_wealth = y / r
 
     # Optimal consumption: c = κ_s * (market resources + human wealth)
@@ -328,7 +475,7 @@ def d3_analytical_policy(states, shocks, parameters):
 
 
 # Remarks: D-2 is the canonical perfect-foresight workhorse; D-3 shows that adding
-# i.i.d. survival risk does NOT break tractability—mortality just scales down patience.
+# i.i.d. survival risk does NOT break tractability; mortality just scales down patience.
 
 # STOCHASTIC MODELS WITH CLOSED FORM
 # ==================================
@@ -388,12 +535,59 @@ u1_block = DBlock(
 
 
 def u1_analytical_policy(states, shocks, parameters):
-    """
-    U-1: Permanent Income Hypothesis with β*R = 1
+    r"""
+    Optimal policy for U-1: Hall (1978) random-walk consumption.
 
-    This is a proper decision function that implements the PIH solution:
-    The agent consumes the annuity value of total wealth (financial + human).
-    The martingale property E[c_{t+1}] = c_t is a consequence of this optimal policy.
+    With quadratic utility :math:`u(c) = ac - bc^2/2` and the neutral
+    stochastic discount factor :math:`\beta R = 1`, the Euler equation
+    collapses to the martingale property
+
+    .. math::
+        \mathbb{E}_t[c_{t+1}] = c_t,
+
+    so consumption follows a random walk regardless of the income process.
+    Hall's contribution was to derive this implication and confront it
+    with consumption data.
+
+    The decision rule consistent with this Euler equation, plus
+    transversality, is the Permanent Income Hypothesis: consume the
+    annuity value of total wealth,
+
+    .. math::
+        c_t \;=\; \frac{r}{R} \, (m_t + H),
+
+    where :math:`m_t = R \, A_{t-1} + y_t` is cash-on-hand,
+    :math:`H = \mathbb{E}_t y / r` is the present value of the expected
+    future income stream, and :math:`r = R - 1`. The martingale property
+    is a *consequence* of this PIH policy, not the policy itself.
+
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"A"`` (arrival assets) and ``"y"`` (current income
+        realization).
+    shocks : dict
+        May contain ``"eta"`` (mean-zero income innovation); unused once
+        :math:`y_t` is known.
+    parameters : dict
+        Must contain ``"DiscFac"``, ``"R"``, and ``"y_mean"``.
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}``.
+
+    Notes
+    -----
+    Logs a warning via the module logger if :math:`|\beta R - 1| > 10^{-6}`,
+    since the PIH derivation hinges on :math:`\beta R = 1` exactly. With
+    high income variance, transversality may also fail.
+
+    References
+    ----------
+    Hall, R.E. (1978). "Stochastic implications of the life cycle-permanent
+    income hypothesis: Theory and evidence." *Journal of Political
+    Economy*, 86(6), 971-987.
     """
     beta = parameters["DiscFac"]
     R = parameters["R"]
@@ -401,12 +595,10 @@ def u1_analytical_policy(states, shocks, parameters):
     income_std = parameters.get("income_std", 0.0)
 
     if abs(beta * R - 1.0) > 1e-6:
-        print(f"Warning: β*R = {beta * R:.6f} ≠ 1, PIH conditions may not hold exactly")
+        logger.warning("β*R = %.6f ≠ 1; PIH conditions may not hold exactly", beta * R)
 
     if income_std > 0.5:
-        print(
-            f"Warning: With high income variance ({income_std}), verify TVC is satisfied"
-        )
+        logger.warning("high income variance (%g); verify TVC is satisfied", income_std)
 
     # Extract arrival states
     A = states["A"]  # Financial assets (arrival state)
@@ -416,11 +608,7 @@ def u1_analytical_policy(states, shocks, parameters):
     m = A * R + y_current  # Information set: cash-on-hand/market resources
 
     # PIH solution with βR=1: consume annuity value of TOTAL wealth
-    r = R - 1
-    if r <= 0:
-        raise ValueError(
-            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
-        )
+    r = _human_wealth_rate(R)
     human_wealth = y_mean / r
     total_wealth = m + human_wealth
 
@@ -507,15 +695,61 @@ u2_block = DBlock(
 
 
 def u2_analytical_policy(states, shocks, parameters):
-    """
-    U-2: PIH with Geometric Random Walk Income (NORMALIZED).
+    r"""
+    Optimal policy for U-2: log utility with permanent income shocks
+    (normalized).
 
-    In normalized terms (all variables divided by permanent income p):
-    - m = market_resources / p (normalized cash-on-hand)
-    - c = consumption / p (normalized consumption)
-    - h = 1/r (normalized human wealth, constant)
+    The buffer-stock problem with log utility, geometric random-walk
+    permanent income, and no borrowing constraint admits a closed-form
+    policy in *normalized* variables. Dividing every level variable by
+    permanent income :math:`P_t` yields the lowercase ratios
+    :math:`m = M/P`, :math:`c = C/P`, :math:`a = A/P`, with normalized
+    transition
 
-    Analytical solution: c = (1-β)(m + h) = (1-β)(m + 1/r)
+    .. math::
+        m_{t+1} = \frac{R}{\psi_{t+1}} \, a_t + 1,
+
+    where :math:`\psi_{t+1}` is the mean-one permanent income shock. The
+    constant ``+1`` represents normalized transitory income, which is
+    identically one in U-2; the more general two-shock case (with a
+    stochastic transitory component) is U-3. Under log utility the closed
+    form is
+
+    .. math::
+        c_t \;=\; (1 - \beta) \, (m_t + h),
+        \qquad
+        h \;=\; 1/r,
+
+    independent of the realized shock path. The MPC :math:`(1 - \beta)`
+    is the limiting MPC for any unconstrained CRRA agent; log utility (the
+    :math:`\sigma = 1` case) makes it exact rather than asymptotic.
+
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"a"`` (normalized arrival assets).
+    shocks : dict
+        May contain ``"psi"`` (permanent income shock, defaults to ones).
+    parameters : dict
+        Must contain ``"DiscFac"`` and ``"R"``.
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}`` (normalized consumption).
+
+    Notes
+    -----
+    Setting ``"sigma_psi": 0`` makes :math:`\psi \equiv 1`, so the PIH
+    analytical solution holds exactly. The ``Control`` upper bound
+    :math:`0.1\, m + 2` is loose enough for the analytical policy
+    :math:`c \approx 0.04\, m + 1.33` but rules out Ponzi-scheme solutions
+    that satisfy the Euler equation while violating transversality.
+
+    See Also
+    --------
+    u3_block : Same problem with a binding borrowing constraint and CRRA
+        utility, which has no closed form.
     """
     beta = parameters["DiscFac"]
     R = parameters["R"]
@@ -537,11 +771,7 @@ def u2_analytical_policy(states, shocks, parameters):
     m = R * a / clamped_psi + 1
 
     # Human wealth (normalized): h = 1/r
-    r = R - 1
-    if r <= 0:
-        raise ValueError(
-            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
-        )
+    r = _human_wealth_rate(R)
     h = 1 / r
 
     # PIH solution (normalized): c = (1-β)(m + h)
@@ -693,11 +923,7 @@ def _validate_d2_d3_solution(
     c = analytical_controls["c"]
 
     # Compute human wealth: present value of constant income stream
-    r = R - 1  # Net interest rate
-    if r <= 0:
-        raise ValueError(
-            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
-        )
+    r = _human_wealth_rate(R)
     human_wealth = y / r
 
     # Check that c_t = κ*(m_t + H) where H is human wealth
@@ -1016,11 +1242,7 @@ def d2_analytical_lifetime_reward(
         raise ValueError("Return-impatience condition violated")
 
     kappa = (R - growth_factor) / R
-    r = R - 1  # Net interest rate
-    if r <= 0:
-        raise ValueError(
-            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
-        )
+    r = _human_wealth_rate(R)
 
     # Calculate total wealth W = m + H (including human wealth)
     if y > 0:
@@ -1085,11 +1307,7 @@ def d3_analytical_lifetime_reward(
         raise ValueError("Return-impatience condition violated with mortality")
 
     kappa_eff = (R - growth_factor) / R
-    r = R - 1  # Net interest rate
-    if r <= 0:
-        raise ValueError(
-            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
-        )
+    r = _human_wealth_rate(R)
 
     # Calculate total wealth W = m + H (same as D-2)
     if y > 0:
