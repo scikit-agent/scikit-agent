@@ -19,6 +19,8 @@ and this project adheres to
 - Added shock resolution support in `BellmanPeriod` methods
 - Moved `compute_gradients_for_tensors` tests from `test_bellman.py` to
   `test_utils.py`
+- Removed `AgentTypeMonteCarloSimulator` and introduced `mortality_block` to
+  demonstrate how to encode mortality dynamics in a DBlock.
 
 ### Added
 
