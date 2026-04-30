@@ -22,7 +22,7 @@ from .grid import Grid, make_grid
 from .ann import Net, BlockPolicyNet
 
 # Simulation tools
-from .simulation.monte_carlo import AgentTypeMonteCarloSimulator, MonteCarloSimulator
+from .simulation.monte_carlo import MonteCarloSimulator
 
 # Algorithm imports
 from .algos import vbi

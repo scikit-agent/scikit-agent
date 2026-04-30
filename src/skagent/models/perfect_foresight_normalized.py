@@ -3,7 +3,7 @@ from skagent.block import Control, DBlock
 
 calibration = {
     "DiscFac": 0.96,
-    "CRRA": (2.0,),
+    "CRRA": 2.0,
     "Rfree": 1.03,
     "LivPrb": 0.98,
     "PermGroFac": 1.01,

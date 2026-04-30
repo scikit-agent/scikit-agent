@@ -17,10 +17,6 @@ class TestRuleDependencyExtraction:
 
     def test_shock_dependencies(self):
         """Test dependency extraction from shock definitions."""
-        # Test live shock: (Bernoulli, {"p": "LivPrb"})
-        live_shock = consumption_block.shocks["live"]
-        live_deps = extract_dependencies(live_shock)
-        assert "LivPrb" in live_deps, f"Expected 'LivPrb' in {live_deps}"
 
         # Test theta shock: (MeanOneLogNormal, {"sigma": "TranShkStd"})
         theta_shock = consumption_block.shocks["theta"]
@@ -82,7 +78,7 @@ class TestRuleDependencyExtraction:
             all_deps.update(extract_dependencies(rule))
 
         # These parameters should be detected in the model
-        expected_params = ["LivPrb", "TranShkStd", "PermGroFac", "CRRA"]
+        expected_params = ["TranShkStd", "PermGroFac", "CRRA"]
 
         for param in expected_params:
             assert param in all_deps, (
@@ -94,7 +90,6 @@ class TestRuleDependencyExtraction:
         # Expected dependencies for each variable
         expected_deps = {
             # Shocks
-            "live": {"LivPrb"},
             "theta": {"TranShkStd"},
             # Dynamics
             "b": {"k", "R"},

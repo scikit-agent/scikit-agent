@@ -19,13 +19,14 @@ calibration = {
     "BoroCnstArt": None,
     "TranShkStd": 0.1,
     "RiskyStd": 0.1,
+    "kInitStd": 1,
+    "pInitStd": 1,
 }
 
 consumption_block = DBlock(
     **{
         "name": "consumption",
         "shocks": {
-            "live": (Bernoulli, {"p": "LivPrb"}),  # Move to tick or mortality block?
             "theta": (MeanOneLogNormal, {"sigma": "TranShkStd"}),
         },
         "dynamics": {
@@ -47,7 +48,6 @@ consumption_block_normalized = DBlock(
     **{
         "name": "consumption normalized",
         "shocks": {
-            "live": (Bernoulli, {"p": "LivPrb"}),  # Move to tick or mortality block?
             "theta": (MeanOneLogNormal, {"sigma": "TranShkStd"}),
         },
         "dynamics": {
@@ -90,3 +90,22 @@ cons_problem = RBlock(blocks=[consumption_block_normalized, tick_block])
 cons_portfolio_problem = RBlock(
     blocks=[consumption_block_normalized, portfolio_block, tick_block]
 )
+
+# replaces tick block with stochastic mortality.
+mortality_block = DBlock(
+    **{
+        "name": "mortality",
+        "shocks": {
+            "live": (Bernoulli, {"p": "LivPrb"}),  # Move to tick or mortality block?
+            "k_init": (MeanOneLogNormal, {"sigma": "kInitStd"}),
+            "p_init": (MeanOneLogNormal, {"sigma": "pInitStd"}),
+        },
+        "dynamics": {
+            "k": lambda live, a, k_init: a * live + k_init * (1 - live),
+            "p": lambda live, p, p_init: p * live + p_init * (1 - live),
+            "age": lambda age, live: (age + 1) * live,
+        },
+    }
+)
+
+mortal_cons_problem = RBlock(blocks=[consumption_block_normalized, mortality_block])
