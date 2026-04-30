@@ -116,3 +116,68 @@ class TestComputeGradientsForTensors(unittest.TestCase):
         x = torch.tensor(3.0, requires_grad=True)
         grads = compute_gradients_for_tensors({}, {"x": x})
         self.assertEqual(grads, {})
+
+
+class TestFischerBurmeister(unittest.TestCase):
+    """Test the Fischer-Burmeister complementarity function."""
+
+    def test_both_zero(self):
+        """FB(0, 0) = 0."""
+        a = torch.tensor(0.0)
+        h = torch.tensor(0.0)
+        result = utils.fischer_burmeister(a, h)
+        self.assertAlmostEqual(result.item(), 0.0, places=5)
+
+    def test_complementary_slackness(self):
+        """FB(0, s) ≈ 0 for s > 0 and FB(f, 0) ≈ 0 for f > 0."""
+        # When one is zero and the other is positive, FB should be ≈ 0
+        s = torch.tensor(2.0)
+        result = utils.fischer_burmeister(torch.tensor(0.0), s)
+        self.assertAlmostEqual(result.item(), 0.0, places=4)
+
+        f = torch.tensor(3.0)
+        result = utils.fischer_burmeister(f, torch.tensor(0.0))
+        self.assertAlmostEqual(result.item(), 0.0, places=4)
+
+    def test_violation_nonzero(self):
+        """FB(a, h) != 0 when both a > 0 and h > 0."""
+        a = torch.tensor(1.0)
+        h = torch.tensor(1.0)
+        result = utils.fischer_burmeister(a, h)
+        self.assertNotAlmostEqual(result.item(), 0.0, places=2)
+
+    def test_differentiable(self):
+        """FB is differentiable through autograd."""
+        a = torch.tensor(1.0, requires_grad=True)
+        h = torch.tensor(2.0, requires_grad=True)
+        result = utils.fischer_burmeister(a, h)
+        result.backward()
+        self.assertIsNotNone(a.grad)
+        self.assertIsNotNone(h.grad)
+        self.assertTrue(torch.isfinite(a.grad))
+        self.assertTrue(torch.isfinite(h.grad))
+
+    def test_differentiable_at_zero(self):
+        """FB gradient is finite near zero due to epsilon safeguard."""
+        a = torch.tensor(0.0, requires_grad=True)
+        h = torch.tensor(0.0, requires_grad=True)
+        result = utils.fischer_burmeister(a, h)
+        result.backward()
+        self.assertTrue(torch.isfinite(a.grad))
+        self.assertTrue(torch.isfinite(h.grad))
+
+
+class TestFischerBurmeisterEpsValidation(unittest.TestCase):
+    """Test eps parameter validation."""
+
+    def test_zero_eps_raises(self):
+        a = torch.tensor(1.0)
+        h = torch.tensor(1.0)
+        with self.assertRaises(ValueError, msg="eps must be > 0"):
+            utils.fischer_burmeister(a, h, eps=0.0)
+
+    def test_negative_eps_raises(self):
+        a = torch.tensor(1.0)
+        h = torch.tensor(1.0)
+        with self.assertRaises(ValueError, msg="eps must be > 0"):
+            utils.fischer_burmeister(a, h, eps=-1e-12)

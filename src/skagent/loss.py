@@ -14,9 +14,9 @@ from skagent.bellman import (
     estimate_bellman_residual,
     estimate_discounted_lifetime_reward,
     estimate_euler_residual,
-    fischer_burmeister,
 )
 from skagent.grid import Grid
+from skagent.utils import fischer_burmeister
 
 if TYPE_CHECKING:
     from skagent.bellman import BellmanPeriod
@@ -162,6 +162,7 @@ class StaticRewardLoss:
             parameters=self.parameters,
             agent=None,  ## TODO: Pass through the agent?
             shocks=shock_vals,
+            ## Handle multiple decision rules?
         )
         return -r
 
@@ -306,16 +307,6 @@ class BellmanEquationLoss(_EquationLossBase):
     where s' = f(s,c,ε) is the next state given current state s, control c, and shock ε,
     and the expectation E_ε' is taken over future shock realizations ε'.
 
-    When ``foc_weight > 0``, the loss includes a first-order condition (FOC) term
-    derived from the Bellman equation (equation 14 of Maliar et al. 2021):
-
-    .. math::
-
-        L = f_{\\text{Bellman}}^2 + v \\cdot f_{\\text{FOC}}^2
-
-    where :math:`f_{\\text{FOC}}` is the FOC residual
-    :math:`u'(c) + \\beta \\, \\partial V(s')/\\partial c = 0`.
-
     This function expects the input grid to contain two independent shock realizations:
     - {shock_sym}_0: shocks for period t (used for immediate reward and transitions)
     - {shock_sym}_1: shocks for period t+1 (used for continuation value evaluation)
@@ -324,33 +315,31 @@ class BellmanEquationLoss(_EquationLossBase):
     ----------
     bellman_period : BellmanPeriod
         The model block containing dynamics, rewards, and shocks
-    value_network : callable
+    value_function : callable
         A value function that takes state variables and returns value estimates
     parameters : dict, optional
         Model parameters for calibration
     agent : str, optional
         Agent identifier for rewards
-    foc_weight : float, optional
-        Weight :math:`v` on the FOC residual term (default: 0.0, pure Bellman).
-        Positive values add the FOC loss to improve convergence.
     """
 
     def __init__(
         self,
         bellman_period: BellmanPeriod,
-        value_network: Callable,
+        value_function: dict[str, Callable] | Callable,
         parameters: dict[str, Any] | None = None,
         agent: str | None = None,
         foc_weight: float = 0.0,
     ) -> None:
         super().__init__(bellman_period, parameters=parameters, agent=agent)
-        if not callable(value_network):
+        if not callable(value_function) and not isinstance(value_function, dict):
             raise TypeError(
-                f"value_network must be callable, got {type(value_network).__name__}"
+                "value_function must be a callable or a dict mapping agent "
+                f"name to a callable, got {type(value_function).__name__}"
             )
         if foc_weight < 0:
             raise ValueError(f"foc_weight must be >= 0, got {foc_weight}")
-        self.value_network = value_network
+        self.value_function = value_function
         self.foc_weight = foc_weight
 
     def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor:
@@ -369,13 +358,13 @@ class BellmanEquationLoss(_EquationLossBase):
         Returns
         -------
         torch.Tensor
-            Bellman equation residual loss (squared), optionally with FOC term.
+            Bellman equation residual loss (squared)
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
         bellman_residual = estimate_bellman_residual(
             self.bellman_period,
-            self.value_network,
+            self.value_function,
             df,
             states_t,
             shocks,
@@ -388,14 +377,14 @@ class BellmanEquationLoss(_EquationLossBase):
         if self.foc_weight > 0:
             foc_residuals = estimate_bellman_foc_residual(
                 self.bellman_period,
-                self.value_network,
+                self.value_function,
                 df,
                 states_t,
                 shocks,
                 self.parameters,
                 self.agent,
             )
-            foc_loss = sum((r**2 for r in foc_residuals.values()), torch.tensor(0.0))
+            foc_loss = sum((r**2 for r in foc_residuals.values()), 0.0)
             loss = loss + self.foc_weight * foc_loss
 
         return loss
@@ -447,6 +436,15 @@ class EulerEquationLoss(_EquationLossBase):
     For controls without an explicit ``upper_bound``, the loss falls back to the
     one-sided :math:`\\text{relu}(-f)^2` formulation.
 
+    **Scope: upper bounds only.**
+    The constrained mode currently models the upper-bound side of the
+    complementarity condition: :math:`f \\geq 0`, :math:`s = ub - c \\geq
+    0`, :math:`f \\cdot s = 0`. Although ``Control`` accepts both
+    ``lower_bound`` and ``upper_bound``, lower-bound constraints are not
+    yet handled here; bilateral support requires also flipping the
+    residual sign for lower-binding cases (``FB(-f, c - lb)``) and is
+    left as a follow-up.
+
     Parameters
     ----------
     bellman_period : BellmanPeriod
@@ -482,14 +480,18 @@ class EulerEquationLoss(_EquationLossBase):
             raise ValueError(f"weight must be > 0, got {weight}")
         self.weight = weight
         self.constrained = constrained
-
+        # Cache upper_bound parameter names so _compute_slack does not call
+        # inspect.signature on every forward pass.
+        self._upper_bound_params: dict[str, list[str]] = {}
         if self.constrained:
-            has_upper_bound = any(
-                hasattr(rule, "upper_bound") and rule.upper_bound is not None
-                for rule in bellman_period.block.dynamics.values()
-                if hasattr(rule, "iset")
-            )
-            if not has_upper_bound:
+            for sym, rule in bellman_period.block.dynamics.items():
+                if not hasattr(rule, "iset"):
+                    continue
+                ub = getattr(rule, "upper_bound", None)
+                if ub is None:
+                    continue
+                self._upper_bound_params[sym] = list(inspect.signature(ub).parameters)
+            if not self._upper_bound_params:
                 logger.warning(
                     "constrained=True but no Control in the block has an upper_bound. "
                     "The one-sided loss will use relu(-f)^2 as a fallback. "
@@ -500,28 +502,22 @@ class EulerEquationLoss(_EquationLossBase):
     def _compute_slack(
         self, control_sym: str, controls_t: dict, states_t: dict, shocks_t: dict
     ) -> torch.Tensor | None:
-        """Compute constraint slack for a control with an upper bound.
+        """Compute upper-bound slack ``upper_bound - control_value``.
 
-        Returns ``upper_bound - control_value``, or ``None`` if the control
-        has no upper bound defined.
+        Returns ``None`` if the control has no upper bound defined. This
+        helper currently handles only the upper-bound side of the
+        complementarity condition; see the class-level docstring for the
+        scope rationale and the lower-bound follow-up.
         """
-        control_obj = self.bellman_period.block.dynamics.get(control_sym)
-        if (
-            control_obj is None
-            or not hasattr(control_obj, "upper_bound")
-            or control_obj.upper_bound is None
-        ):
+        param_names = self._upper_bound_params.get(control_sym)
+        if param_names is None:
             return None
 
-        pre_state = self.bellman_period._compute_pre_state_values(
-            control_obj.iset,
-            states_t,
-            shocks=shocks_t,
-            parameters=self.parameters,
+        control_obj = self.bellman_period.block.dynamics[control_sym]
+        pre_state = self.bellman_period.compute_pre_state(
+            control_sym, states_t, shocks=shocks_t, parameters=self.parameters
         )
-
-        sig = inspect.signature(control_obj.upper_bound)
-        ub_args = {k: pre_state[k] for k in sig.parameters if k in pre_state}
+        ub_args = {k: pre_state[k] for k in param_names if k in pre_state}
         ub_value = control_obj.upper_bound(**ub_args)
 
         return ub_value - controls_t[control_sym]
@@ -534,13 +530,25 @@ class EulerEquationLoss(_EquationLossBase):
         ----------
         df : callable
             Decision function from policy network.
+            Signature: df(states_t, shocks_t, parameters) -> controls_t
         input_grid : Grid
-            Grid containing current states and two independent shock realizations.
+            Grid containing current states and two independent shock realizations:
+            - {shock_sym}_0: shocks for transitions t → t+1
+            - {shock_sym}_1: shocks for transitions t+1 → t+2 (independent)
 
         Returns
         -------
         torch.Tensor
             Weighted squared Euler equation residual.
+            The residual is computed using two independent shock realizations
+            via the AiO expectation operator, then squared and weighted.
+
+        Notes
+        -----
+        The residual f is computed using two independent shock realizations:
+        ε₀ for transitions from t to t+1, and ε₁ for transitions from t+1
+        to t+2 (following Maliar et al. 2021, Definition 2.7). The loss is
+        the squared residual, L = f(ε₀, ε₁)².
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
@@ -563,7 +571,7 @@ class EulerEquationLoss(_EquationLossBase):
                 controls_t=controls_t,
             )
 
-            total = torch.tensor(0.0)
+            total = 0.0
             for ctrl_sym, residual in euler_residuals.items():
                 slack = self._compute_slack(ctrl_sym, controls_t, states_t, shocks_t)
                 if slack is not None:
@@ -581,6 +589,4 @@ class EulerEquationLoss(_EquationLossBase):
             self.parameters,
             self.agent,
         )
-        return self.weight * sum(
-            (r**2 for r in euler_residuals.values()), torch.tensor(0.0)
-        )
+        return self.weight * sum((r**2 for r in euler_residuals.values()), 0.0)

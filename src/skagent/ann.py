@@ -362,21 +362,12 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         decisions - dict
             symbols : values
         """
-        if parameters is None:
-            parameters = {}
-        vals = parameters | states_t | shocks_t
-
-        # Run the block transition up to (but not including) the control to compute
-        # any pre-decision state variables needed by the information set.
-        drs = {
-            control_sym: lambda: 1 for control_sym in self.bellman_period.get_controls()
-        }
-
-        post = self.bellman_period.block.transition(vals, drs, until=self.control_sym)
-
+        iset_dict = self.bellman_period.compute_pre_state(
+            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
+        )
         # Stack iset values as rows, then transpose to shape (n_samples, n_iset)
         # for batch matrix operations.
-        iset_vals = [post[isym].flatten() for isym in self.iset]
+        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
 
         def get_tensor_size(d):
             for value in d.values():
@@ -386,9 +377,9 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
                     return value.size
             return 1  # No tensors found
 
-        output = self.get_decision_rule(length=get_tensor_size(post))[self.control_sym](
-            *iset_vals
-        )
+        output = self.get_decision_rule(length=get_tensor_size(iset_dict))[
+            self.control_sym
+        ](*iset_vals)
 
         decisions = {self.control_sym: output}
         return decisions
@@ -580,14 +571,10 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
         """Decision function: states, shocks, parameters → controls dict."""
         if shocks_t is None:
             shocks_t = {}
-        if parameters is None:
-            parameters = {}
-        vals = parameters | states_t | shocks_t
-
-        drs = {cs: lambda: 1 for cs in self.bellman_period.get_controls()}
-        post = self.bellman_period.block.transition(vals, drs, until=self.control_sym)
-
-        iset_vals = [post[isym].flatten() for isym in self.iset]
+        iset_dict = self.bellman_period.compute_pre_state(
+            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
+        )
+        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
 
         def get_tensor_size(d):
             for value in d.values():
@@ -597,7 +584,7 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
                     return value.size
             return 1
 
-        dr = self.get_decision_rule(length=get_tensor_size(post))
+        dr = self.get_decision_rule(length=get_tensor_size(iset_dict))
         output = dr[self.control_sym](*iset_vals)
         return {self.control_sym: output}
 
@@ -632,8 +619,10 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
         """Evaluate V(s) using the value head."""
         if shocks_t is None:
             shocks_t = {}
-        all_vars = states_t | shocks_t
-        iset_vals = [all_vars[isym].flatten() for isym in self.iset]
+        iset_dict = self.bellman_period.compute_pre_state(
+            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
+        )
+        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
         input_tensor = torch.stack(iset_vals).T.to(device)
         _policy, value = self(input_tensor)
         return value.flatten()
