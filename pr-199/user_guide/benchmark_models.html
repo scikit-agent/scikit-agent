@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Science" href="science.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Models - scikit-agent 0.1.dev493+gfb2a523f8</title>
+        <title>Benchmark Models - scikit-agent 0.1.dev503+g2153c5b31</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev493+gfb2a523f8</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev503+g2153c5b31</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -211,6 +211,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
 </ul>
 </li>
@@ -273,14 +274,18 @@
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="benchmark-models">
 <h1>Benchmark Models<a class="headerlink" href="#benchmark-models" title="Link to this heading">¶</a></h1>
-<p>The <a class="reference internal" href="../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a> registry collects dynamic programming
-problems whose optimal policies are known in closed form. Each entry pairs a
-working <a class="reference internal" href="../api/blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> with an analytical decision function,
-and the registry serves three purposes.</p>
+<p>The <a class="reference internal" href="../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a> registry collects benchmark dynamic
+programming problems. Most entries pair a working
+<a class="reference internal" href="../api/blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> with an analytical decision function whose
+optimal policy is known in closed form; U-3 (the buffer-stock model) is included
+for numerical validation against its limiting MPC properties, even though it has
+no closed-form solution. The registry serves three purposes.</p>
 <p><strong>Validation.</strong> A numerical solver can be checked against the closed-form policy
 on a set of test states. The function
-<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.validate_analytical_solution" title="skagent.models.benchmarks.validate_analytical_solution"><code class="xref py py-func docutils literal notranslate"><span class="pre">validate_analytical_solution()</span></code></a> compares the
-two and reports the maximum residual.</p>
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.validate_analytical_solution" title="skagent.models.benchmarks.validate_analytical_solution"><code class="xref py py-func docutils literal notranslate"><span class="pre">validate_analytical_solution()</span></code></a> evaluates the
+analytical policy on a standard grid, checks feasibility together with any
+model-specific identities, and returns a <code class="docutils literal notranslate"><span class="pre">&quot;PASSED&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;FAILED&quot;</span></code> status
+alongside diagnostics on the consumption range.</p>
 <p><strong>Regression testing.</strong> The same comparison runs in the test suite, so any
 regression that breaks an analytical identity is caught early.</p>
 <p><strong>Pedagogy.</strong> Working through the closed forms, from finite-horizon log utility
@@ -344,9 +349,9 @@ income <span class="math notranslate nohighlight">\(P_t\)</span>.</p>
 </section>
 <section id="roster">
 <h2>Roster<a class="headerlink" href="#roster" title="Link to this heading">¶</a></h2>
-<p>The seven models below split into two groups. The first six are registered in
-<code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code> and accessible by ID through the helpers in
-<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.list_benchmark_models" title="skagent.models.benchmarks.list_benchmark_models"><code class="xref py py-func docutils literal notranslate"><span class="pre">list_benchmark_models()</span></code></a>. The remaining
+<p>The models below split into two groups. The six entries in <code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code>
+are accessible by ID through the helpers in
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.list_benchmark_models" title="skagent.models.benchmarks.list_benchmark_models"><code class="xref py py-func docutils literal notranslate"><span class="pre">list_benchmark_models()</span></code></a>. The remaining four
 models ship as standalone modules.</p>
 <p><strong>Registry (lookup by ID via
 <a class="reference internal" href="../api/models.html#skagent.models.benchmarks.get_benchmark_model" title="skagent.models.benchmarks.get_benchmark_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_benchmark_model()</span></code></a>):</strong></p>
@@ -509,13 +514,15 @@ can act on.</p>
 <div class="math notranslate nohighlight">
 \[\max_{\{c_t\}} \, \sum_{t=0}^{\infty} \beta^t \,
 \frac{c_t^{\,1-\sigma}}{1 - \sigma}
-\quad \text{s.t.} \quad A_{t+1} = (A_t + y - c_t)\, R,\]</div>
+\quad \text{s.t.} \quad A_t = R\, A_{t-1} + y - c_t,\]</div>
 </div>
 <p>with constant labor income <span class="math notranslate nohighlight">\(y &gt; 0\)</span>, gross return <span class="math notranslate nohighlight">\(R &gt; 1\)</span>,
 and the transversality condition
-<span class="math notranslate nohighlight">\(\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0\)</span>. Under
-return-impatience <span class="math notranslate nohighlight">\((\beta R)^{1/\sigma} &lt; R\)</span>, the closed-form
-policy is linear in total wealth,</p>
+<span class="math notranslate nohighlight">\(\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0\)</span>. Equivalently,
+cash-on-hand <span class="math notranslate nohighlight">\(m_t = R\, A_{t-1} + y\)</span> evolves with end-of-period
+assets <span class="math notranslate nohighlight">\(A_t = m_t - c_t\)</span>. Under return-impatience
+<span class="math notranslate nohighlight">\((\beta R)^{1/\sigma} &lt; R\)</span>, the closed-form policy is linear in
+total wealth,</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[c_t \;=\; \kappa \, W_t,
@@ -1130,8 +1137,12 @@ require numerical solution due to borrowing constraints + income uncertainty.</p
 <section id="see-also">
 <h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="../auto_examples/index.html"><span class="doc">Examples</span></a> for runnable examples that solve and visualize
-benchmark models.</p></li>
+<li><p><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html"><span class="doc">Benchmark Consumption Models</span></a> is the runnable companion
+to this page: a six-step pedagogical tour that loads each closed-form policy,
+validates it on the standard test grid, and walks through the lessons each
+model contributes (finite-horizon limits, the mortality wedge, Hall’s
+martingale, normalization, and why U-3 has no closed form).</p></li>
+<li><p><a class="reference internal" href="../auto_examples/index.html"><span class="doc">Examples</span></a> for the full gallery of runnable examples.</p></li>
 <li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> for the numerical methods used to solve models that do not
 have closed forms.</p></li>
 <li><p><a class="reference internal" href="../api/models.html"><span class="doc">Models</span></a> for the full API reference.</p></li>
@@ -1240,7 +1251,7 @@ have closed forms.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=fe3999f3"></script>
+</div><script src="../_static/documentation_options.js?v=885cd571"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

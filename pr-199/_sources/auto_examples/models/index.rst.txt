@@ -44,6 +44,23 @@ other computational methods.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of :pyskagent.models.benchmarks. The closed-form policies in this registry retrace dynamic consumption theory in roughly the order the field discovered them, and each model teaches a fact that the previous ones could not. Reading from top to bottom:">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_benchmark_models_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_benchmark_models`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Benchmark Consumption Models</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to build, solve, and simulate a consumption-portfolio choice model using scikit-agent. The model includes:">
 
 .. only:: html
@@ -70,5 +87,6 @@ other computational methods.
    :hidden:
 
    /auto_examples/models/plot_resource_extraction
+   /auto_examples/models/plot_benchmark_models
    /auto_examples/models/plot_consumption_portfolio_model
 

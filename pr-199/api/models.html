@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Blocks" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.dev493+gfb2a523f8</title>
+        <title>Models - scikit-agent 0.1.dev503+g2153c5b31</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev493+gfb2a523f8</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev503+g2153c5b31</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -211,6 +211,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
 </ul>
 </li>
@@ -415,13 +416,15 @@ Value function: V(W) = κ^(1-σ)/(1-σ) * W^(1-σ) / (1 - β*(βR)^((1-σ)/σ))<
 <div class="math notranslate nohighlight">
 \[\max_{\{c_t\}} \, \sum_{t=0}^{\infty} \beta^t \,
 \frac{c_t^{\,1-\sigma}}{1 - \sigma}
-\quad \text{s.t.} \quad A_{t+1} = (A_t + y - c_t)\, R,\]</div>
+\quad \text{s.t.} \quad A_t = R\, A_{t-1} + y - c_t,\]</div>
 </div>
 <p>with constant labor income <span class="math notranslate nohighlight">\(y &gt; 0\)</span>, gross return <span class="math notranslate nohighlight">\(R &gt; 1\)</span>,
 and the transversality condition
-<span class="math notranslate nohighlight">\(\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0\)</span>. Under
-return-impatience <span class="math notranslate nohighlight">\((\beta R)^{1/\sigma} &lt; R\)</span>, the closed-form
-policy is linear in total wealth,</p>
+<span class="math notranslate nohighlight">\(\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0\)</span>. Equivalently,
+cash-on-hand <span class="math notranslate nohighlight">\(m_t = R\, A_{t-1} + y\)</span> evolves with end-of-period
+assets <span class="math notranslate nohighlight">\(A_t = m_t - c_t\)</span>. Under return-impatience
+<span class="math notranslate nohighlight">\((\beta R)^{1/\sigma} &lt; R\)</span>, the closed-form policy is linear in
+total wealth,</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[c_t \;=\; \kappa \, W_t,
@@ -941,7 +944,7 @@ Stochastic Optimization Problems</em>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=fe3999f3"></script>
+</div><script src="../_static/documentation_options.js?v=885cd571"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
