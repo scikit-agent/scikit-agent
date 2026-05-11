@@ -35,7 +35,7 @@ and this project adheres to
   term to the Bellman loss (Maliar et al. 2021, equation 14)
 - `BlockPolicyValueNet` (shared-backbone single network with policy and value
   heads) for use with `BellmanEquationLoss` under a single optimizer
-- Initial release features
+- NumFOCUS Code of Conduct adopted
 
 ### Removed
 
