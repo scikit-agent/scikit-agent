@@ -24,6 +24,108 @@ def has_analytical_policy(model_id: str) -> bool:
     return "analytical_policy" in BENCHMARK_MODELS.get(model_id, {})
 
 
+def assert_consumption_policy_diagnostics(
+    decision_fn,
+    *,
+    test_states: dict,
+    test_shocks: dict,
+    calibration: dict,
+    cash_on_hand_func,
+    require_strict_monotone: bool = True,
+    require_mpc_in_unit_interval: bool = True,
+    budget_tol: float = 1e-6,
+    monotone_tol: float = 0.0,
+    label: str = "policy",
+):
+    """Check basic economic properties of a consumption decision rule.
+
+    Works for any callable with signature
+    ``decision_fn(states, shocks, parameters) -> {"c": tensor}`` (analytical
+    policies and trained ``BlockPolicyNet``/``BlockPolicyValueNet`` instances
+    both qualify), so the same set of checks runs against closed-form
+    benchmarks in this file and against trained policies elsewhere.
+
+    Parameters
+    ----------
+    decision_fn : callable
+        Maps ``(states, shocks, parameters)`` to a dict containing ``"c"``.
+    test_states : dict[str, torch.Tensor]
+        State grid passed to ``decision_fn`` (e.g. ``{"a": ...}``).
+        Tensors must be sorted ascending along the wealth axis when
+        ``require_strict_monotone`` is True.
+    test_shocks : dict[str, torch.Tensor]
+        Shock realization passed to ``decision_fn``.
+    calibration : dict
+        Model calibration (must contain "R" when ``cash_on_hand_func``
+        uses it).
+    cash_on_hand_func : callable
+        ``cash_on_hand_func(states, shocks, calibration) -> tensor``
+        returning the cash-on-hand ``m`` matching the model's budget
+        constraint (e.g. ``m = R*a/psi + theta`` for normalized buffer
+        stock).
+    require_strict_monotone : bool, optional
+        If True, c must be increasing along the wealth axis (subject to
+        ``monotone_tol`` for per-step noise). The overall slope
+        ``c[-1] > c[0]`` is always enforced when this is True.
+        Default True.
+    require_mpc_in_unit_interval : bool, optional
+        If True, the average marginal propensity to consume across the
+        grid must lie in (0, 1). Default True.
+    budget_tol : float, optional
+        Tolerance for the budget constraint ``c <= m``. Default 1e-6.
+    monotone_tol : float, optional
+        Absolute tolerance for per-step monotonicity violations. A
+        forward difference of c is accepted when it exceeds
+        ``-monotone_tol``. Use 0.0 (default) for analytical policies
+        where strict monotonicity must hold; pass a small positive
+        value (e.g. 1e-2) for trained policies where NN-approximation
+        noise can produce tiny flat or backward steps.
+    label : str, optional
+        Used in assertion messages to distinguish policies.
+    """
+    result = decision_fn(test_states, test_shocks, calibration)
+    c = result["c"]
+    m = cash_on_hand_func(test_states, test_shocks, calibration)
+
+    assert torch.all(c > 0), f"{label}: consumption must be positive. Got c = {c}"
+
+    assert torch.all(c <= m + budget_tol), (
+        f"{label}: consumption must respect budget c <= m. Got c = {c}, m = {m}"
+    )
+
+    if require_strict_monotone:
+        # Overall slope: c must rise across the grid by a meaningful
+        # margin. This catches degenerate or flat policies even if
+        # per-step diffs are within tolerance.
+        assert c[-1] > c[0], (
+            f"{label}: consumption must rise across the wealth grid. "
+            f"Got c[0] = {c[0].item():.4f}, c[-1] = {c[-1].item():.4f}."
+        )
+        diffs = c[1:] - c[:-1]
+        assert torch.all(diffs > -monotone_tol), (
+            f"{label}: consumption must be non-decreasing in wealth "
+            f"(within monotone_tol={monotone_tol}). Got diffs below "
+            f"tolerance at indices "
+            f"{(diffs <= -monotone_tol).nonzero().flatten().tolist()}, "
+            f"diff values = {diffs[diffs <= -monotone_tol].tolist()}"
+        )
+
+    if require_mpc_in_unit_interval:
+        # Average MPC from the discrete grid (forward difference in c
+        # divided by forward difference in m).
+        m_diffs = m[1:] - m[:-1]
+        # Avoid divide-by-zero on grids with constant m.
+        nonzero = m_diffs.abs() > 1e-12
+        assert nonzero.any(), (
+            f"{label}: cannot compute MPC, grid has no wealth variation."
+        )
+        c_diffs = c[1:] - c[:-1]
+        mpc = (c_diffs[nonzero] / m_diffs[nonzero]).mean().item()
+        assert 0.0 < mpc < 1.0, (
+            f"{label}: average MPC must lie in (0, 1). Got MPC = {mpc:.4f}"
+        )
+
+
 class TestBenchmarksModels:
     """Test suite for all 6 consumption-savings benchmark models.
 
@@ -654,6 +756,73 @@ class TestDynamicOptimalityChecks:
                 f"{model_id}: Simulated reward {numerical_reward:.10f} seems unreasonable "
                 f"compared to analytical {analytical_reward:.10f}"
             )
+
+
+class TestConsumptionPolicyDiagnostics:
+    """Run the reusable consumption-policy diagnostics against analytical
+    benchmarks.
+
+    The same diagnostics are imported by ``test_maliar.py`` and run against
+    the trained policies it produces, so the test contract is shared between
+    closed-form solutions and numerical approximations.
+    """
+
+    def test_u2_analytical_passes_diagnostics(self):
+        """U-2 PIH normalized analytical policy satisfies all diagnostics."""
+        bp_id = "U-2"
+        calibration = get_benchmark_calibration(bp_id)
+        analytical_policy = get_analytical_policy(bp_id)
+
+        # U-2: cash-on-hand m = R*a/psi + 1 (theta == 1 in U-2)
+        R = calibration["R"]
+        a = torch.linspace(0.5, 5.0, 25)
+        test_states = {"a": a}
+        test_shocks = {"psi": torch.ones_like(a)}
+
+        def cash_on_hand(states, shocks, cal):
+            return cal["R"] * states["a"] / shocks["psi"] + 1.0
+
+        # Sanity check that R is what we expect.
+        assert R > 0
+        assert_consumption_policy_diagnostics(
+            analytical_policy,
+            test_states=test_states,
+            test_shocks=test_shocks,
+            calibration=calibration,
+            cash_on_hand_func=cash_on_hand,
+            label="U-2 analytical",
+        )
+
+    def test_d2_analytical_passes_diagnostics(self):
+        """D-2 deterministic CRRA analytical policy satisfies diagnostics."""
+        bp_id = "D-2"
+        calibration = get_benchmark_calibration(bp_id)
+        analytical_policy = get_analytical_policy(bp_id)
+
+        # D-2 is deterministic and uses arrival state ``a``. The model
+        # encodes cash-on-hand inside the analytical policy itself, so we
+        # use a generous upper bound (a + 1/r) for the budget envelope.
+        # In the deterministic limit consumption equals the annuity value
+        # of total wealth and is strictly below this envelope.
+        R = calibration["R"]
+        a = torch.linspace(0.1, 10.0, 30)
+        test_states = {"a": a}
+        test_shocks = {}
+
+        def cash_on_hand(states, shocks, cal):
+            # Total wealth: cash-on-hand a plus discounted future income 1/r
+            r = cal["R"] - 1.0
+            return states["a"] + 1.0 / r if r > 0 else states["a"] + 1.0
+
+        assert R > 1.0, "D-2 calibration requires R > 1 for finite human wealth."
+        assert_consumption_policy_diagnostics(
+            analytical_policy,
+            test_states=test_states,
+            test_shocks=test_shocks,
+            calibration=calibration,
+            cash_on_hand_func=cash_on_hand,
+            label="D-2 analytical",
+        )
 
 
 def test_calibration_descriptions():

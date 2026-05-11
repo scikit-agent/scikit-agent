@@ -245,11 +245,14 @@ def maliar_training_loop(
     Run the Maliar, Maliar, and Winant (JME '21) training loop.
 
     Trains a single neural network policy to minimize empirical risk (loss)
-    on a panel of states drawn forward through the model dynamics.  When
-    value information is needed (e.g. for the Bellman residual), use a
-    shared-backbone :class:`~skagent.ann.BlockPolicyValueNet` and a value-
-    aware loss function such as :class:`~skagent.loss.BellmanEquationLoss`;
-    the single optimizer in this loop will then update both heads together.
+    on a panel of states drawn forward through the model dynamics. This
+    helper constructs and trains a :class:`~skagent.ann.BlockPolicyNet`
+    internally and does not currently accept a pre-built shared-backbone
+    :class:`~skagent.ann.BlockPolicyValueNet`. If value-aware training is
+    needed (e.g. for a Bellman residual loss with a value head), call
+    :func:`~skagent.ann.train_block_nn` directly on a
+    :class:`~skagent.ann.BlockPolicyValueNet`; a future refactor may add
+    value-network support here.
 
     Parameters
     ----------

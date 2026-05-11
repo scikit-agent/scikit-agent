@@ -25,6 +25,8 @@ and this project adheres to
   (equation 25) when controls have an `upper_bound` defined
 - `estimate_euler_residual` resolves the discount factor dynamically from the
   model and supports multi-control models (returns a dict for >1 controls)
+- Control bounds (`lower_bound`, `upper_bound`) must now be callables; numeric
+  values raise a clear `TypeError` instead of being silently ignored.
 
 ### Added
 

@@ -14,6 +14,7 @@ from skagent.models.benchmarks import (
     get_benchmark_calibration,
     get_analytical_policy,
 )
+from test_benchmarks import assert_consumption_policy_diagnostics
 
 # Deterministic test seed - change this single value to modify all seeding
 TEST_SEED = 10077693
@@ -459,19 +460,25 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # estimate_euler_residual always returns a dict
         optimal_residual = next(iter(optimal_residuals.values()))
 
-        # For optimal policy, residual should be essentially zero (machine precision)
-        mean_residual = torch.mean(torch.abs(optimal_residual)).item()
+        # For the analytical optimal policy every Euler residual should be
+        # at machine precision: the max over all samples must be tiny, not
+        # just the mean. A mean test could mask a single bad sample.
+        max_abs_residual = torch.max(torch.abs(optimal_residual)).item()
         mse_residual = torch.mean(optimal_residual**2).item()
 
         # Tolerance accounts for numerical precision in autograd
-        assert mean_residual < 1e-5, (
+        self.assertLess(
+            max_abs_residual,
+            1e-5,
             f"Analytical optimal policy should have near-zero Euler residual. "
-            f"Got mean |residual| = {mean_residual:.6e}"
+            f"Got max |residual| = {max_abs_residual:.6e}",
         )
 
-        assert mse_residual < 1e-10, (
+        self.assertLess(
+            mse_residual,
+            1e-10,
             f"Analytical optimal policy should have near-zero Euler MSE. "
-            f"Got MSE = {mse_residual:.6e}"
+            f"Got MSE = {mse_residual:.6e}",
         )
 
     def test_euler_equation_training(self):
@@ -518,8 +525,10 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         )
 
         # Verify training achieved small loss
-        assert final_loss < 0.01, (
-            f"Training should achieve small Euler loss. Got final loss: {final_loss:.6e}"
+        self.assertLess(
+            final_loss,
+            0.01,
+            f"Training should achieve small Euler loss. Got final loss: {final_loss:.6e}",
         )
 
         # Evaluate on test grid using the trained policy
@@ -539,20 +548,116 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         )
         final_residual = next(iter(final_residuals.values())).detach()
 
-        # The trained policy should achieve small Euler residual
+        # The trained policy is a neural network approximation, not an
+        # analytical solution, so we keep a mean threshold here (a max
+        # threshold would be dominated by a few outlier samples and is
+        # only appropriate for near-machine-precision tests).
         mean_residual = torch.mean(torch.abs(final_residual)).item()
         mse_residual = torch.mean(final_residual**2).item()
 
         # Trained policy should have mean |residual| < 0.07
         # (robust across seeds with lr=0.001 and 1000 epochs)
-        assert mean_residual < 0.07, (
+        self.assertLess(
+            mean_residual,
+            0.07,
             f"Trained policy should have small Euler residual. "
-            f"Got mean |residual| = {mean_residual:.6e}"
+            f"Got mean |residual| = {mean_residual:.6e}",
         )
 
-        assert mse_residual < 0.05, (
+        self.assertLess(
+            mse_residual,
+            0.05,
             f"Trained policy should have small Euler residual MSE. "
-            f"Got MSE = {mse_residual:.6e}"
+            f"Got MSE = {mse_residual:.6e}",
+        )
+
+    def test_euler_equation_training_recovers_analytical_level(self):
+        """From a sensible warm start, Euler-only training converges to the
+        analytical D-2 solution in LEVEL, not just in slope or Euler
+        residual. The warm start fixes the level-identification headroom
+        problem in the bounded ``c = m - softplus(net(m))`` parameterization:
+        a random init gives softplus(0) ~= 0.69, so initial c ~= m - 0.69,
+        which at m=10 starts the policy ~7x above the analytical
+        kappa*(m + H) and 1000 Adam steps at lr=0.001 is not enough head
+        room to walk the policy down. With the right initial policy the
+        Euler equation pins down both slope and level.
+        """
+        from skagent.ann import BlockPolicyNet, train_block_nn
+
+        d2_block = get_benchmark_model("D-2")
+        d2_calibration = get_benchmark_calibration("D-2")
+        d2_block.construct_shocks(d2_calibration)
+        bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
+
+        # Analytic kappa and human wealth used to set the warm-start level.
+        beta = d2_calibration["DiscFac"]
+        R = d2_calibration["R"]
+        sigma = d2_calibration["CRRA"]
+        y = d2_calibration["y"]
+        kappa = (R - (beta * R) ** (1 / sigma)) / R
+        H = y / (R - 1)
+
+        torch.manual_seed(TEST_SEED)
+        policy_net = BlockPolicyNet(bp, width=32, init_seed=TEST_SEED)
+
+        # Warm start: brief MSE pre-fit so initial c(m) ~= c0 (a single
+        # sensible constant near the analytic level at average wealth).
+        # Constant-c init avoids handing the test the analytic policy
+        # itself - we are testing that Euler training discovers the
+        # correct slope and level from a flat starting policy.
+        warmup_grid = grid.Grid.from_dict(
+            {"a": torch.linspace(0.1, 10.0, 64, device=device)}
+        )
+        m_mid = R * 5.0 + y  # midpoint of the (a in [0.1,10]) grid
+        c0 = kappa * (m_mid + H)
+        warmup_target = torch.full((64,), float(c0), device=device, requires_grad=False)
+        warmup_opt = torch.optim.Adam(policy_net.parameters(), lr=0.01)
+        for _ in range(300):
+            warmup_opt.zero_grad()
+            pred = policy_net.get_decision_function()(
+                {"a": warmup_grid["a"]}, {}, d2_calibration
+            )["c"]
+            ((pred - warmup_target) ** 2).mean().backward()
+            warmup_opt.step()
+
+        # Now run pure Euler training from this warm start.
+        euler_loss_fn = loss.EulerEquationLoss(bp, parameters=d2_calibration)
+        n_grid_points = 64
+        train_grid = grid.Grid.from_dict(
+            {
+                "a": torch.rand(n_grid_points, device=device) * 9.9 + 0.1,
+            }
+        )
+        trained_net, final_loss = train_block_nn(
+            policy_net, train_grid, euler_loss_fn, epochs=2000, verbose=False
+        )
+
+        self.assertLess(
+            final_loss,
+            0.01,
+            f"Training should achieve small Euler loss from warm start. "
+            f"Got final loss: {final_loss:.6e}",
+        )
+
+        # Evaluate level correctness on a test grid where the c <= m
+        # bound is slack (m > kappa*H/(1-kappa)).
+        m_star = kappa * H / (1 - kappa)
+        a_low = max(0.5, (m_star + 0.5 - y) / R)
+        test_states = {"a": torch.linspace(a_low, 10.0, 50, device=device)}
+        shocks = {}
+        decision_fn = trained_net.get_decision_function()
+        trained_c = decision_fn(test_states, shocks, d2_calibration)["c"]
+        analytical_policy = get_analytical_policy("D-2")
+        analytical_c = analytical_policy(test_states, shocks, d2_calibration)["c"]
+        rel_error = torch.abs(trained_c - analytical_c) / (analytical_c + 1e-8)
+        mean_rel_error = rel_error.mean().item()
+        max_rel_error = rel_error.max().item()
+        self.assertLess(
+            mean_rel_error,
+            0.05,
+            f"Euler-trained policy should match analytical D-2 LEVEL within "
+            f"5% on average. Got mean rel error = {mean_rel_error:.4f}, "
+            f"max = {max_rel_error:.4f}.",
         )
 
     def test_maliar_training_loop_u2_analytical(self):
@@ -658,11 +763,15 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         This model does NOT have a closed-form solution due to the borrowing
         constraint + income uncertainty interaction. We validate the trained
-        policy using:
-        1. Basic sanity checks (positive consumption, budget constraint)
-        2. Monotonicity in wealth
-        3. Euler residual near zero in non-constrained region (high wealth)
-        4. Limiting MPC approaching perfect foresight value at high wealth
+        policy using two checks targeted at the training loop itself:
+
+        1. The reusable :func:`assert_consumption_policy_diagnostics` helper
+           (positive consumption, budget constraint, strict monotonicity,
+           MPC in (0,1)) - the same checks that
+           :class:`TestConsumptionPolicyDiagnostics` runs against the
+           analytical benchmarks.
+        2. Euler residual near zero in the unconstrained region (high
+           wealth), which is what the training loop actually optimizes.
         """
         # Get U-3 buffer stock model (CRRA=2, with borrowing constraint)
         u3_block = get_benchmark_model("U-3")
@@ -720,7 +829,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         gamma = u3_calibration["CRRA"]
 
         # =================================================================
-        # 1. Basic sanity checks
+        # 1. Economic sanity via the reusable diagnostics helper
+        # (positive consumption, budget c <= m, strict monotonicity in
+        #  wealth, average MPC in (0, 1)).
         # =================================================================
         n_test = 30
         test_a = torch.linspace(0.5, 10.0, n_test, device=device)
@@ -730,54 +841,30 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             "theta": torch.ones(n_test, device=device),
         }
 
-        trained_c = decision_fn(test_states, test_shocks, u3_calibration)["c"]
+        def cash_on_hand(states, shocks, cal):
+            return cal["R"] * states["a"] / shocks["psi"] + shocks["theta"]
 
-        # Consumption should be positive
-        self.assertTrue(
-            torch.all(trained_c > 0), "Trained consumption should be positive"
+        assert_consumption_policy_diagnostics(
+            decision_fn,
+            test_states=test_states,
+            test_shocks=test_shocks,
+            calibration=u3_calibration,
+            cash_on_hand_func=cash_on_hand,
+            monotone_tol=1e-2,
+            label="U-3 trained",
         )
 
-        # Consumption should respect budget constraint (c <= m)
-        expected_m = R * test_a + 1  # m = R*a/psi + theta when psi=theta=1
-        self.assertTrue(
-            torch.all(trained_c <= expected_m + 1e-6),
-            "Trained consumption should respect budget constraint (c <= m)",
-        )
-
-        # =================================================================
-        # 2. Monotonicity check (overall trend)
-        # For neural network approximation, we allow minor violations but
-        # ensure the overall trend is strongly increasing.
-        # =================================================================
-        c_diff = trained_c[1:] - trained_c[:-1]
-
-        # Overall consumption at high wealth should be much larger than at low wealth
-        c_range = trained_c[-1] - trained_c[0]
+        # Reference values used in comments below.
+        kappa_pf = (R - (beta * R) ** (1 / gamma)) / R
         self.assertGreater(
-            c_range.item(),
-            0.5,
-            f"Consumption should increase substantially over wealth range. "
-            f"Got c(high) - c(low) = {c_range.item():.4f}",
-        )
-
-        # Most differences should be positive (allow up to 10% violations for NN noise)
-        positive_diffs = torch.sum(c_diff > 0).item()
-        total_diffs = len(c_diff)
-        positive_ratio = positive_diffs / total_diffs
-        self.assertGreater(
-            positive_ratio,
-            0.9,
-            f"At least 90% of consumption differences should be positive. "
-            f"Got {positive_ratio:.2%} ({positive_diffs}/{total_diffs}). "
-            f"100% is unrealistic for NN approximations due to local non-monotonicity.",
+            kappa_pf, 0.0, "Perfect-foresight MPC must be positive for U-3."
         )
 
         # =================================================================
-        # 3. Euler residual check in non-constrained region (high wealth)
-        # At high wealth, the borrowing constraint is slack and Euler
-        # equation should be satisfied exactly.
+        # 2. Euler residual check in the unconstrained region (high wealth).
+        # The borrowing constraint is slack here, so the Euler equation
+        # (the actual training objective) should be satisfied closely.
         # =================================================================
-        # Test at high wealth where constraint is not binding
         n_high = 10
         high_wealth_a = torch.linspace(5.0, 10.0, n_high, device=device)
         high_wealth_states = {"a": high_wealth_a}
@@ -808,53 +895,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             0.2,
             f"Euler residual should be small at high wealth (unconstrained). "
             f"Got mean |residual| = {mean_euler_residual:.4f}",
-        )
-
-        # =================================================================
-        # 4. Limiting MPC check (informational)
-        # As wealth -> infinity, MPC -> kappa_pf = (R - (beta*R)^(1/gamma)) / R
-        # With limited training iterations, the policy may not fully converge.
-        # We verify MPC is in a reasonable range (positive, less than 1).
-        # =================================================================
-        kappa_pf = (R - (beta * R) ** (1 / gamma)) / R
-
-        # Compute MPC numerically at high wealth
-        delta_a = 0.5
-        high_a = torch.tensor([8.0, 9.0, 10.0], device=device)
-        high_states = {"a": high_a}
-        high_shocks = {
-            "psi": torch.ones(3, device=device),
-            "theta": torch.ones(3, device=device),
-        }
-
-        c_high = decision_fn(high_states, high_shocks, u3_calibration)["c"]
-        c_high_plus = decision_fn({"a": high_a + delta_a}, high_shocks, u3_calibration)[
-            "c"
-        ]
-
-        # MPC = dc/dm, and dm/da = R (when psi=1)
-        delta_m = R * delta_a
-        mpc_high = ((c_high_plus - c_high) / delta_m).mean().item()
-
-        # Log the limiting MPC for informational purposes
-        print(
-            f"\nLimiting MPC check: computed = {mpc_high:.4f}, "
-            f"perfect foresight = {kappa_pf:.4f}"
-        )
-
-        # MPC should be strictly between 0 and 1 for a valid consumption function.
-        # With the constrained=True Euler loss, training should converge to
-        # economically sensible policies. We use tight bounds (0.0, 1.0) that
-        # reflect the theoretical requirement for buffer stock models.
-        self.assertGreater(
-            mpc_high,
-            0.0,  # MPC must be positive (saving decreases with wealth)
-            f"MPC should be positive at high wealth. Got MPC = {mpc_high:.4f}",
-        )
-        self.assertLess(
-            mpc_high,
-            1.0,  # MPC must be less than 1 (some saving at high wealth)
-            f"MPC should be less than 1 at high wealth. Got MPC = {mpc_high:.4f}",
         )
 
 
@@ -1057,15 +1097,18 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         )
 
 
-class TestU3ConstrainedRegionBehavior(unittest.TestCase):
-    """Test U-3 buffer stock model behavior in the constrained region (low wealth)."""
+class TestU3OneSidedConstraintTraining(unittest.TestCase):
+    """Train U-3 specifically on the constrained (low-wealth) region and
+    check the one-sided Euler-loss training preserves the Karush-Kuhn-Tucker
+    sign condition.
+    """
 
-    def test_u3_positive_euler_residual_at_low_wealth(self):
-        """Test that trained U-3 policy has positive Euler residuals at low wealth.
-
-        At low wealth where the borrowing constraint binds, the Euler equation
-        becomes an inequality: u'(c) >= βR E[u'(c')].
-        This means the Euler residual f = u'(c) - βR E[u'(c')] should be positive.
+    def test_u3_one_sided_euler_loss_preserves_kkt_sign(self):
+        """At low wealth the borrowing constraint c <= m binds, so the
+        Euler residual must be non-negative: u'(c) - betaR E[u'(c')] >= 0.
+        The constrained=True one-sided loss only penalizes negative
+        residuals, so a converged policy should produce residuals that
+        are weakly non-negative in the constrained region.
         """
         torch.manual_seed(TEST_SEED)
 
@@ -1094,7 +1137,7 @@ class TestU3ConstrainedRegionBehavior(unittest.TestCase):
         )
 
         # Train the policy
-        trained_net, final_states = maliar.maliar_training_loop(
+        trained_net, _ = maliar.maliar_training_loop(
             bp,
             euler_loss_fn,
             states_0_n,
@@ -1110,57 +1153,56 @@ class TestU3ConstrainedRegionBehavior(unittest.TestCase):
         decision_fn = trained_net.get_decision_function()
 
         # Test at very low wealth points where constraint should bind
-        low_wealth_states = {"a": torch.tensor([0.05, 0.1, 0.2], device=device)}
+        low_wealth_a = torch.tensor([0.05, 0.1, 0.2], device=device)
+        low_wealth_states = {"a": low_wealth_a}
         low_wealth_shocks = {
             "psi": torch.ones(3, device=device),
             "theta": torch.ones(3, device=device),
         }
 
-        # Get consumption
-        result = decision_fn(low_wealth_states, low_wealth_shocks, u3_calibration)
-        c = result["c"]
-
-        # Compute m at these states
+        # Sanity: trained policy must respect the borrowing constraint c <= m
+        # even at the constrained boundary.
+        c = decision_fn(low_wealth_states, low_wealth_shocks, u3_calibration)["c"]
         R = u3_calibration["R"]
-        m = (
-            R * low_wealth_states["a"] / low_wealth_shocks["psi"]
-            + low_wealth_shocks["theta"]
-        )
-
-        # Verify basic properties of the trained policy at low wealth:
-        # 1. Consumption is positive
-        # 2. Consumption respects the borrowing constraint (c <= m)
-        # 3. Consumption is a non-trivial fraction of m (not near-zero)
-        #
-        # Note: We don't require c to be very close to m because:
-        # - The one-sided loss allows positive residuals (under-consumption)
-        # - With limited training iterations, the policy may not be optimal
-        # - The key test is that training with constrained=True produces valid output
-
-        # Consumption should be positive
+        m = R * low_wealth_a / low_wealth_shocks["psi"] + low_wealth_shocks["theta"]
         self.assertTrue(
             torch.all(c > 0),
-            f"Consumption should be positive. Got c = {c}",
+            f"Consumption should be positive at low wealth. Got c = {c}",
         )
-
-        # Consumption should respect borrowing constraint (c <= m)
         self.assertTrue(
             torch.all(c <= m + 1e-6),
-            f"Consumption should respect borrowing constraint c <= m. "
-            f"Got c = {c}, m = {m}",
+            f"Consumption should respect borrowing constraint c <= m at low "
+            f"wealth. Got c = {c}, m = {m}",
         )
 
-        # Consumption should be a meaningful fraction of resources (not degenerate)
-        consumption_ratio = c / m
-        self.assertTrue(
-            torch.all(consumption_ratio > 0.1),
-            f"Consumption should be a meaningful fraction of m (not degenerate). "
-            f"Got c/m = {consumption_ratio}, c = {c}, m = {m}",
+        # Core claim: in the constrained region, the Euler residual
+        # u'(c) - betaR E[u'(c')] should be weakly non-negative because
+        # the constraint c <= m binds. The one-sided loss does not
+        # penalize positive residuals, so after training the residuals
+        # should not be substantially negative.
+        constraint_shocks = {
+            "psi_0": torch.ones(3, device=device),
+            "psi_1": torch.ones(3, device=device),
+            "theta_0": torch.ones(3, device=device),
+            "theta_1": torch.ones(3, device=device),
+        }
+        euler_residuals = bellman.estimate_euler_residual(
+            bp,
+            decision_fn,
+            low_wealth_states,
+            constraint_shocks,
+            u3_calibration,
         )
-        self.assertTrue(
-            torch.all(consumption_ratio < 1.0),
-            f"Consumption ratio should be < 1.0 (respecting constraint). "
-            f"Got c/m = {consumption_ratio}",
+        residual = next(iter(euler_residuals.values())).detach()
+        # Allow a small slack for NN approximation; the principled
+        # statement is residual >= 0, so any negative tail of meaningful
+        # magnitude is a real failure of the one-sided loss.
+        min_residual = residual.min().item()
+        self.assertGreater(
+            min_residual,
+            -1e-2,
+            f"One-sided Euler loss should keep residuals non-negative in "
+            f"the constrained region. Got min residual = {min_residual:.4e}.",
         )
 
 

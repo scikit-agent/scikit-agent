@@ -39,23 +39,35 @@ class BellmanPeriodMixin:
         self.iset = self.cobj.iset
 
     def _setup_bound(self, bound_func, bound_name):
-        """Set up a vectorized bound function from a callable or None."""
-        if bound_func:
-            sig = inspect.signature(bound_func)
-            param_names = list(sig.parameters.keys())
-            param_to_column = {}
-            for param_name in param_names:
-                if param_name in self.iset:
-                    param_to_column[param_name] = self.iset.index(param_name)
-                else:
-                    raise ValueError(
-                        f"{bound_name} parameter '{param_name}' not found in control.iset: {self.iset}"
-                    )
-            vec_func = create_vectorized_function_wrapper_with_mapping(
-                bound_func, param_to_column
+        """Set up a vectorized bound function from a callable or None.
+
+        Numeric bounds (e.g. ``lower_bound=0.0``) must be supplied as
+        zero-argument callables (e.g. ``lambda: 0.0``); a plain numeric value
+        is rejected so it cannot silently disable the bound through a
+        truthiness check.
+        """
+        if bound_func is None:
+            return None, None
+        if not callable(bound_func):
+            raise TypeError(
+                f"{bound_name} must be a callable or None; got "
+                f"{type(bound_func).__name__}. Wrap numeric constants in a "
+                f"zero-argument callable, e.g. `lambda: {bound_func}`."
             )
-            return vec_func, param_to_column
-        return None, None
+        sig = inspect.signature(bound_func)
+        param_names = list(sig.parameters.keys())
+        param_to_column = {}
+        for param_name in param_names:
+            if param_name in self.iset:
+                param_to_column[param_name] = self.iset.index(param_name)
+            else:
+                raise ValueError(
+                    f"{bound_name} parameter '{param_name}' not found in control.iset: {self.iset}"
+                )
+        vec_func = create_vectorized_function_wrapper_with_mapping(
+            bound_func, param_to_column
+        )
+        return vec_func, param_to_column
 
 
 ##########
@@ -394,9 +406,13 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         x1 = super().forward(x)
 
         if self.apply_open_bounds:
-            if not self.upper_bound and not self.lower_bound:
+            # Probe `is None` on the vec-funcs (not on the raw bound values)
+            # so numeric bounds like 0.0 are not falsely treated as absent.
+            has_upper = self.upper_bound_vec_func is not None
+            has_lower = self.lower_bound_vec_func is not None
+            if not has_upper and not has_lower:
                 x2 = x1
-            elif self.upper_bound and self.lower_bound:
+            elif has_upper and has_lower:
                 # Compute bounds from input using wrapped functions
                 upper_bound = self.upper_bound_vec_func(x)
                 lower_bound = self.lower_bound_vec_func(x)
@@ -406,11 +422,11 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
                     upper_bound - lower_bound
                 )
 
-            elif self.lower_bound and not self.upper_bound:
+            elif has_lower:
                 lower_bound = self.lower_bound_vec_func(x)
                 x2 = lower_bound + torch.nn.functional.softplus(x1)
 
-            elif not self.lower_bound and self.upper_bound:
+            else:  # has_upper only
                 upper_bound = self.upper_bound_vec_func(x)
                 x2 = upper_bound - torch.nn.functional.softplus(x1)
         else:
@@ -551,13 +567,17 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
         """Apply open bounds to policy output (same logic as BlockPolicyNet)."""
         if not self.apply_open_bounds:
             return x1
-        if not self.upper_bound and not self.lower_bound:
+        # Probe `is None` on the vec-funcs (not on the raw bound values)
+        # so numeric bounds like 0.0 are not falsely treated as absent.
+        has_upper = self.upper_bound_vec_func is not None
+        has_lower = self.lower_bound_vec_func is not None
+        if not has_upper and not has_lower:
             return x1
-        if self.upper_bound and self.lower_bound:
+        if has_upper and has_lower:
             ub = self.upper_bound_vec_func(x_input)
             lb = self.lower_bound_vec_func(x_input)
             return lb + torch.nn.functional.sigmoid(x1) * (ub - lb)
-        if self.lower_bound and not self.upper_bound:
+        if has_lower:
             lb = self.lower_bound_vec_func(x_input)
             return lb + torch.nn.functional.softplus(x1)
         # upper only
