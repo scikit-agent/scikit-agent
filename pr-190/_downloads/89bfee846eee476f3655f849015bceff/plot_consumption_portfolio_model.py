@@ -85,7 +85,7 @@ dynamics = {
     # === Decision Variables (Controls) ===
     "c": ska.Control(["m"], upper_bound=lambda m: 0.99 * m),  # Consumption choice
     "alpha": ska.Control(
-        ["a"], lower_bound=0.0, upper_bound=1.0
+        ["a"], lower_bound=lambda: 0.0, upper_bound=lambda: 1.0
     ),  # Portfolio share in risky asset
     # === End-of-Period States ===
     "a": lambda m, c: m - c,  # Assets saved

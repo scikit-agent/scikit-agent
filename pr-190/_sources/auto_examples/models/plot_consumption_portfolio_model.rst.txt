@@ -170,7 +170,7 @@ We'll create a DBlock that represents one period of the model
         # === Decision Variables (Controls) ===
         "c": ska.Control(["m"], upper_bound=lambda m: 0.99 * m),  # Consumption choice
         "alpha": ska.Control(
-            ["a"], lower_bound=0.0, upper_bound=1.0
+            ["a"], lower_bound=lambda: 0.0, upper_bound=lambda: 1.0
         ),  # Portfolio share in risky asset
         # === End-of-Period States ===
         "a": lambda m, c: m - c,  # Assets saved
@@ -200,7 +200,7 @@ We'll create a DBlock that represents one period of the model
 
 
     ✓ Created model block with 9 state variables
-    ✓ Control variables: {'c': <skagent.block.Control object at 0x7efeae05d6a0>, 'alpha': <skagent.block.Control object at 0x7efeae05d550>}
+    ✓ Control variables: {'c': <skagent.block.Control object at 0x7f4e10a71730>, 'alpha': <skagent.block.Control object at 0x7f4e10a72ba0>}
     ✓ Shock variables: ['theta', 'psi', 'risky_return']
 
 
@@ -680,7 +680,7 @@ Note on Solution Methods
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.045 seconds)
+   **Total running time of the script:** (0 minutes 0.046 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_consumption_portfolio_model.py:
