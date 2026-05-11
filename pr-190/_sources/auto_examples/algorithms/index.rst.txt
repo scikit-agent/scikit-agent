@@ -13,6 +13,10 @@ Examples include value function iteration, policy iteration, neural network
 training, and other computational approaches to solving economic models.
 
 
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
+
 
 .. raw:: html
 

@@ -12,6 +12,10 @@ The examples demonstrate real-world usage patterns and best practices for
 using scikit-agent in your research and applications.
 
 
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
+
 
 .. raw:: html
 
@@ -35,6 +39,10 @@ algorithms, and numerical techniques.
 Examples include value function iteration, policy iteration, neural network
 training, and other computational approaches to solving economic models.
 
+
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
 
 
 .. raw:: html
@@ -60,6 +68,10 @@ Examples include consumption-savings models, portfolio choice problems, and othe
 standard economic models that can be solved using reinforcement learning and
 other computational methods.
 
+
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
 
 
 .. raw:: html
@@ -115,6 +127,10 @@ This section demonstrates how to run simulations using scikit-agent models.
 These examples show how to generate synthetic data, run Monte Carlo simulations,
 and analyze the results.
 
+
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
 
 
 .. raw:: html
