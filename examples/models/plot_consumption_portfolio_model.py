@@ -1,449 +1,336 @@
+r"""
+##############################
+Consumption-Saving Model
+##############################
+
+The consumption-saving problem is one of the central models of modern
+macroeconomics and household finance. An agent with uncertain income must
+decide each period how much to consume and how much to save, trading off
+current utility against future resources.
+
+This example uses the model blocks defined in
+:mod:`skagent.models.consumer`, which implements Carroll's (2001) [1]_
+formulation of the normalized buffer-stock problem and extends it with a
+portfolio choice between a safe bond and a risky asset.
+
+Model Structure
+==================
+
+The model is built from three composable blocks:
+
+- :data:`~skagent.models.consumer.consumption_block_normalized` — one
+  period of the normalized consumption-saving problem
+- :data:`~skagent.models.consumer.portfolio_block` — risky portfolio
+  allocation that endogenizes the gross return :math:`R`
+- :data:`~skagent.models.consumer.tick_block` — state transition that
+  carries end-of-period assets into next period's capital
+
+The two complete recursive problems are:
+
+- :data:`~skagent.models.consumer.cons_problem` — pure saving (fixed
+  return)
+- :data:`~skagent.models.consumer.cons_portfolio_problem` — saving plus
+  portfolio choice
+
+Normalized Consumption Block
+-----------------------------
+
+**State Variable**: :math:`k_t` — normalized capital (assets divided by
+permanent income) carried into the period
+
+**Shocks**:
+
+- :math:`\theta_t` — transitory income shock, :math:`\mathbb{E}[\theta_t] = 1`
+
+**Dynamics**:
+
+.. math::
+
+    b_t = \frac{k_t R}{G}
+
+.. math::
+
+    m_t = b_t + \theta_t
+
+.. math::
+
+    c_t \in [0,\, m_t] \quad \text{(control)}
+
+.. math::
+
+    a_t = m_t - c_t
+
+where :math:`G` = ``PermGroFac`` is the permanent income growth factor and
+:math:`R` is the gross return on savings.
+
+**Utility**:
+
+.. math::
+
+    u(c_t) = \frac{c_t^{1-\rho}}{1-\rho}, \quad \rho = \text{CRRA}
+
+Portfolio Block
+---------------
+
+The portfolio block augments the saving problem with an endogenous asset
+return. The agent chooses the risky share :math:`\varsigma_t \in [0,1]`:
+
+.. math::
+
+    R_t = R_f + (R^{\text{risky}}_t - R_f)\,\varsigma_t
+
+where :math:`R^{\text{risky}}_t \sim \text{Lognormal}(R_f + \text{EqP},\,
+\text{RiskyStd})`.
+
+Parameters
+----------
+
+- :math:`\beta` (``DiscFac``) = 0.96: Discount factor
+- :math:`\rho` (``CRRA``) = 2.0: Coefficient of relative risk aversion
+- :math:`R` = 1.03: Gross safe return (3 % per period)
+- :math:`G` (``PermGroFac``) = 1.01: Permanent income growth factor
+- :math:`\sigma_\theta` (``TranShkStd``) = 0.1: Transitory income shock std
+- :math:`R_f` (``Rfree``) = 1.03: Risk-free rate
+- :math:`\text{EqP}` = 0.02: Equity premium
+- :math:`\sigma_R` (``RiskyStd``) = 0.1: Risky return std
+
+References
+----------
+
+.. [1] Carroll, C.D. (2001). "A Theory of the Consumption Function, With
+       and Without Liquidity Constraints." *Journal of Economic
+       Perspectives*, 15(3), 23–45.
+
 """
-Consumption-Portfolio Model
-===========================
 
-This example demonstrates how to build, solve, and simulate a consumption-portfolio
-choice model using scikit-agent. The model includes:
-
-- Stochastic labor income
-- Portfolio choice between safe and risky assets
-- Consumption-saving decisions
-- Monte Carlo simulation and analysis
-
-The model follows the approach of Merton (1969) and extends it with labor income risk.
-"""
-
+import matplotlib.pyplot as plt
 import numpy as np
 import skagent as ska
-from skagent.distributions import Lognormal, MeanOneLogNormal, DiscreteDistribution
+from skagent.distributions import Normal
+import skagent.models.consumer as cons
 
 # %%
-# Model Setup
-# -----------
+# Model Inspection
+# -----------------
 #
-# First, let's define the economic environment. We'll create a model where agents:
-# 1. Receive risky labor income
-# 2. Choose consumption each period
-# 3. Allocate savings between safe and risky assets
-# 4. Maximize expected utility over their lifetime
-
-print("=== Consumption-Portfolio Model with scikit-agent ===\n")
+# Load the predefined model elements and inspect them.
 
 # %%
-# Step 1: Define Model Parameters
+# Step 1: Show Model Parameters
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-calibration = {
-    # Preferences
-    "CRRA": 2.0,  # Coefficient of relative risk aversion
-    "DiscFac": 0.96,  # Discount factor
-    # Asset returns
-    "Rfree": 1.03,  # Risk-free rate (3% annually)
-    "EqP": 0.06,  # Equity premium (6% annually)
-    "RiskyStd": 0.20,  # Stock return volatility (20%)
-    # Income process
-    "PermGroFac": 1.01,  # Permanent income growth (1%)
-    "TranShkStd": 0.15,  # Transitory income shock volatility
-    "PermShkStd": 0.05,  # Permanent income shock volatility
-    # Initial conditions
-    "init_wealth": 1.0,  # Initial financial wealth
-    "init_perm": 1.0,  # Initial permanent income
-}
-
 print("Model Calibration:")
-for param, value in calibration.items():
+for param, value in cons.calibration.items():
     print(f"  {param}: {value}")
 
 # %%
-# Step 2: Build the Economic Model
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# We'll create a DBlock that represents one period of the model
+# Step 2a: Inspect the Consumption Block Formulas
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# Define stochastic shocks
-shocks = {
-    "theta": (MeanOneLogNormal, {"sigma": "TranShkStd"}),  # Transitory income shock
-    "psi": (MeanOneLogNormal, {"sigma": "PermShkStd"}),  # Permanent income shock
-    "risky_return": (
-        Lognormal,
-        {"mean": "1 + Rfree + EqP", "std": "RiskyStd"},
-    ),  # Risky asset return
-}
-
-# Define model dynamics (state transitions)
-dynamics = {
-    # === Income Process ===
-    "y": lambda p, theta: p * theta,  # Labor income this period
-    "p": lambda p, psi, PermGroFac: p * psi * PermGroFac,  # Permanent income evolution
-    # === Portfolio Returns ===
-    "R_portfolio": lambda alpha, Rfree, risky_return: (  # Portfolio return
-        Rfree + alpha * (risky_return - Rfree)
-    ),
-    # === Budget Constraint ===
-    "b": lambda a, R_portfolio: a * R_portfolio,  # Beginning-of-period wealth
-    "m": lambda b, y: b + y,  # Market resources
-    # === Decision Variables (Controls) ===
-    "c": ska.Control(["m"], upper_bound=lambda m: 0.99 * m),  # Consumption choice
-    "alpha": ska.Control(
-        ["a"], lower_bound=0.0, upper_bound=1.0
-    ),  # Portfolio share in risky asset
-    # === End-of-Period States ===
-    "a": lambda m, c: m - c,  # Assets saved
-    # === Utility ===
-    "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),  # CRRA utility function
-}
-
-# Create the model block
-consumption_portfolio_block = ska.DBlock(
-    name="consumption_portfolio",
-    shocks=shocks,
-    dynamics=dynamics,
-    reward={"u": lambda u: u},  # Household maximizes utility
-)
-
-print(f"\n✓ Created model block with {len(dynamics)} state variables")
-print(f"✓ Control variables: {consumption_portfolio_block.get_controls()}")
-print(f"✓ Shock variables: {list(shocks.keys())}")
+cons.cons_problem.display_formulas()
 
 # %%
-# Step 3: Construct Distributions
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Step 2b: Visualize the Consumption Block
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-consumption_portfolio_block.construct_shocks(calibration)
-print("✓ Constructed shock distributions from calibration")
+img, _ = cons.cons_problem.display(cons.calibration)
 
-# Examine the constructed distributions
-print("\nShock Distributions:")
-for shock_name, dist in consumption_portfolio_block.shocks.items():
-    print(f"  {shock_name}: {type(dist).__name__}")
-
-# %%
-# Step 4: Define Simple Decision Rules
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# For this example, we'll use simple rules rather than solving the full optimization.
-# In practice, you would use scikit-agent's solution algorithms.
-
-
-def consumption_rule(m, p):
-    """Simple consumption rule: consume a fraction of market resources"""
-    # More consumption when resources are high relative to permanent income
-    mpc = 0.1 + 0.05 * np.minimum(m / p, 5.0)  # MPC between 10-35%
-    return mpc * m
-
-
-def portfolio_rule(a, p):
-    """Simple portfolio rule: invest more in stocks when wealth is high"""
-    # Handle array inputs for all agents
-    risky_share = np.where(
-        a <= 0, 0.0, np.minimum(0.8, 0.3 + 0.1 * (a / p))
-    )  # 30-80% in stocks
-    return risky_share
-
-
-# Wrap rules in the format expected by simulator
-decision_rules = {"c": consumption_rule, "alpha": portfolio_rule}
-
-print("✓ Defined behavioral decision rules")
+plt.figure(figsize=(10, 8))
+plt.imshow(img)
+plt.axis("off")
+plt.tight_layout()
 
 # %%
-# Step 5: Run Monte Carlo Simulation
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# Initial conditions (must be distributions, not scalar values)
-# Use the tracked variable names 'a' and 'p', not 'a_prev' and 'p_prev'
-initial_conditions = {
-    "a": DiscreteDistribution(
-        [calibration["init_wealth"]], [1.0]
-    ),  # Start with some wealth
-    "p": DiscreteDistribution(
-        [calibration["init_perm"]], [1.0]
-    ),  # Initial permanent income
-}
-
-# Create and run simulator
-simulator = ska.MonteCarloSimulator(
-    calibration=calibration,
-    block=consumption_portfolio_block,
-    dr=decision_rules,
-    initial=initial_conditions,
-    agent_count=5000,  # Simulate 5000 agents
-    T_sim=100,  # For 100 periods
-    seed=42,  # For reproducibility
-)
-
-print(
-    f"✓ Created simulator with {simulator.agent_count} agents over {simulator.T_sim} periods"
-)
-
-# Run the simulation
-print("Running simulation...")
-simulator.initialize_sim()  # Initialize simulation variables
-
-print("WILL FIX THIS AFTER BENCHMARKS ARE SETTLED")
-# simulator.simulate()
-
-# print("✓ Simulation completed successfully")
-
-# %%
-# Step 6: Analyze and Visualize Results
+# Step 3a: Inspect and visualize the Portfolio Block
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# Extract simulation history
-# history = simulator.history
-# print(f"\nSimulation generated data for variables: {list(history.keys())}")
-
-
-# Convert to numpy arrays for analysis
-# def extract_var(var_name):
-#    ""Extract a variable from simulation history as numpy array""
-#    if var_name in history:
-#        return np.array(history[var_name])
-#    else:
-#        return None
-
-
-# Extract key variables
-# consumption = extract_var("c")
-# assets = extract_var("a")
-# income = extract_var("y")
-# portfolio_share = extract_var("alpha")
-# market_resources = extract_var("m")
-
-# if consumption is not None and assets is not None:
-#    print(f"Data shapes: consumption {consumption.shape}, assets {assets.shape}")
-# else:
-#    print("Warning: Some variables were not found in simulation history")
+cons.cons_portfolio_problem.display_formulas()
 
 # %%
-# Create comprehensive plots
+# Step 3b: Inspect and visualize the Portfolio Block
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-# fig.suptitle("Consumption-Portfolio Model: Simulation Results", fontsize=16)
+img, _ = cons.cons_portfolio_problem.display(cons.calibration)
 
-# Plot 1: Average consumption over time
-# if consumption is not None:
-#    mean_consumption = np.mean(consumption, axis=1)
-#    std_consumption = np.std(consumption, axis=1)
+plt.figure(figsize=(10, 8))
+plt.imshow(img)
+plt.axis("off")
+plt.tight_layout()
 
-#    axes[0, 0].plot(mean_consumption, "b-", linewidth=2, label="Mean")
-#    axes[0, 0].fill_between(
-#        range(len(mean_consumption)),
-#        mean_consumption - std_consumption,
-#        mean_consumption + std_consumption,
-#        alpha=0.3,
-#        label="±1 Std Dev",
-#    )
-#    axes[0, 0].set_title("Consumption Over Time")
-#    axes[0, 0].set_xlabel("Period")
-#    axes[0, 0].set_ylabel("Consumption")
-#    axes[0, 0].legend()
-#    axes[0, 0].grid(True, alpha=0.3)
-
-# Plot 2: Asset accumulation
-# if assets is not None:
-#    mean_assets = np.mean(assets, axis=1)
-#    percentiles = np.percentile(assets, [25, 75], axis=1)
-
-#    axes[0, 1].plot(mean_assets, "g-", linewidth=2, label="Mean")
-#    axes[0, 1].fill_between(
-#        range(len(mean_assets)),
-#        percentiles[0],
-#        percentiles[1],
-#        alpha=0.3,
-#        label="25th-75th percentile",
-#    )
-#    axes[0, 1].set_title("Asset Accumulation")
-#    axes[0, 1].set_xlabel("Period")
-#    axes[0, 1].set_ylabel("Assets")
-#    axes[0, 1].legend()
-#    axes[0, 1].grid(True, alpha=0.3)
-
-# Plot 3: Portfolio allocation
-# if portfolio_share is not None:
-#    mean_alpha = np.mean(portfolio_share, axis=1)
-#    axes[0, 2].plot(mean_alpha, "r-", linewidth=2)
-#    axes[0, 2].set_title("Average Risky Asset Share")
-#    axes[0, 2].set_xlabel("Period")
-#    axes[0, 2].set_ylabel("Share in Risky Asset")
-#    axes[0, 2].set_ylim(0, 1)
-#    axes[0, 2].grid(True, alpha=0.3)
-
-# Plot 4: Income distribution evolution
-# if income is not None:
-#    # Show income distribution at different time periods
-#    periods_to_show = [0, 25, 50, 75, 99]
-#    colors = ["blue", "green", "orange", "red", "purple"]
+# %%
+# Step 5: Define a Simple Consumption Rule
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   for i, period in enumerate(periods_to_show):
-#       if period < income.shape[0]:
-#          axes[1, 0].hist(
-#               income[period],
-#               bins=30,
-#               alpha=0.6,
-#              color=colors[i],
-#               label=f"Period {period}",
-#               density=True,
-#           )
-
-#   axes[1, 0].set_title("Income Distribution Evolution")
-#   axes[1, 0].set_xlabel("Income")
-#   axes[1, 0].set_ylabel("Density")
-#   axes[1, 0].legend()
-#   axes[1, 0].grid(True, alpha=0.3)
-
-# Plot 5: Wealth distribution
-# f assets is not None:
-#   final_wealth = assets[-1]  # Final period wealth
-#   # Filter out NaN values
-#   final_wealth_clean = final_wealth[~np.isnan(final_wealth)]
+# The optimal policy for this model requires numerical solution methods.
+# Here we use a simple **constant marginal propensity to consume** (MPC) rule
+# as a tractable approximation:
 #
-#   if len(final_wealth_clean) > 0:
-#      axes[1, 1].hist(
-#           final_wealth_clean, bins=50, alpha=0.7, color="gold", edgecolor="black"
-#       )
-#       axes[1, 1].axvline(
-#          np.mean(final_wealth_clean),
-#           color="red",
-#           linestyle="--",
-#           linewidth=2,
-#           label=f"Mean: {np.mean(final_wealth_clean):.2f}",
-#       )
-#      axes[1, 1].axvline(
-#           np.median(final_wealth_clean),
-#           color="blue",
-#           linestyle="--",
-#           linewidth=2,
-#           label=f"Median: {np.median(final_wealth_clean):.2f}",
-#       )
-#   else:
-#       axes[1, 1].text(
-#           0.5, 0.5, "No valid data", transform=axes[1, 1].transAxes, ha="center"
-#       )
-#   axes[1, 1].set_title("Final Wealth Distribution")
-#   axes[1, 1].set_xlabel("Wealth")
-#   axes[1, 1].set_ylabel("Frequency")
-#   axes[1, 1].legend()
-#   axes[1, 1].grid(True, alpha=0.3)
-
-# Plot 6: Consumption vs Income relationship
-# f consumption is not None and income is not None:
-#   # Take final period data
-#   final_c = consumption[-1]
-#   final_y = income[-1]
-
-#    axes[1, 2].scatter(final_y, final_c, alpha=0.5, s=10)
-
-#    # Add regression line
-#    coeffs = np.polyfit(final_y, final_c, 1)
-#    line = np.poly1d(coeffs)
-#    x_line = np.linspace(final_y.min(), final_y.max(), 100)
-#    axes[1, 2].plot(
-#        x_line, line(x_line), "r--", linewidth=2, label=f"Slope: {coeffs[0]:.3f}"
-#    )
-
-#    axes[1, 2].set_title("Consumption vs Income (Final Period)")
-#    axes[1, 2].set_xlabel("Income")
-#    axes[1, 2].set_ylabel("Consumption")
-#    axes[1, 2].legend()
-#    axes[1, 2].grid(True, alpha=0.3)
-
-# plt.tight_layout()
-# plt.show()
-
-# %%
-# Summary Statistics
-# ^^^^^^^^^^^^^^^^^^
-
-# print("\n" + "=" * 50)
-# print("SIMULATION SUMMARY STATISTICS")
-# print("=" * 50)
-
-# if consumption is not None:
-#    print(f"Average final consumption: {np.mean(consumption[-1]):.3f}")
-#    print(
-#        f"Consumption growth rate: {(np.mean(consumption[-1]) / np.mean(consumption[0]) - 1) * 100:.1f}%"
-#    )
-
-# if assets is not None:
-#    print(f"Average final assets: {np.mean(assets[-1]):.3f}")
-#    print(f"Fraction with negative assets: {np.mean(assets[-1] < 0) * 100:.1f}%")
-
-# if portfolio_share is not None:
-#    print(f"Average risky asset share: {np.mean(portfolio_share):.3f}")
-
-# if income is not None:
-#    print(f"Average final income: {np.mean(income[-1]):.3f}")
-#    print(f"Income volatility (CV): {np.std(income[-1]) / np.mean(income[-1]):.3f}")
-
-# %%
-# Model Insights
-# ^^^^^^^^^^^^^^
-
-# print("\n" + "=" * 50)
-# print("MODEL INSIGHTS")
-# print("=" * 50)
-
-# print(
-#    ""
-# This consumption-portfolio model demonstrates several key economic principles:
+# .. math::
 #
-# 1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income
-#   through saving and borrowing.
+#     c^*(m) = \kappa \cdot m
+#
+# where :math:`\kappa \in (0, 1)` is a fixed MPC. A low MPC creates buffer-stock
+# saving behaviour: agents accumulate assets and consume out of wealth gradually.
+#
 
-# 2. **Portfolio Choice**: The risky asset allocation varies with wealth levels,
-#   showing how risk-taking depends on financial resources.
+MPC = 0.15  # Marginal propensity to consume
 
-# 3. **Precautionary Saving**: Agents accumulate assets as a buffer against
-#   income uncertainty.
 
-# 4. **Life-Cycle Patterns**: The simulation shows realistic wealth accumulation
-#   patterns over the agent lifecycle.
+def consumption_rule(m):
+    """Consume a fixed fraction of market resources each period."""
+    return MPC * m
 
-# The scikit-agent framework makes it easy to:
-# - Define complex economic models using intuitive building blocks
-# - Run large-scale Monte Carlo simulations
-# - Analyze results with rich data structures
-# - Extend models with additional features
 
-# Next steps could include:
-# - Solving for optimal policies using value function iteration
-# - Adding more realistic features (retirement, health shocks, etc.)
-# - Calibrating to match empirical moments
-# - Comparing different behavioral rules
-# ""
-# )
+decision_rule = {"c": consumption_rule}
+
+# Plot the consumption rule
+m_range = np.linspace(0, 5, 200)
+plt.figure(figsize=(8, 5))
+plt.plot(m_range, consumption_rule(m_range), linewidth=2, label=rf"$c^*(m) = {MPC}\,m$")
+plt.plot(m_range, m_range, "k--", alpha=0.4, label="45° line (hand-to-mouth)")
+plt.xlabel("Market resources ($m$)")
+plt.ylabel("Consumption ($c^*$)")
+plt.title(f"Consumption Policy Rule (MPC = {MPC})")
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
 
 # %%
-# Note on Solution Methods
-# ^^^^^^^^^^^^^^^^^^^^^^^^
+# Step 6: Run Monte Carlo Simulation (Pure Saving Problem)
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# Simulate the pure saving problem (:data:`~skagent.models.consumer.cons_problem`)
+# which combines the normalized consumption block with the tick block.
+# Agents start with normalized capital :math:`k \approx 1`.
 
-# print("\n" + "=" * 50)
-# print("ABOUT SOLUTION METHODS")
-# print("=" * 50)
+initial_conditions = {
+    "k": Normal(mu=1.0, sigma=0.1),
+}
 
-# print(
-#    ""
-# This example used simple behavioral rules for illustration.
-# For rigorous analysis, you would solve for optimal policies using:
+simulator = ska.MonteCarloSimulator(
+    calibration=cons.calibration.copy(),
+    block=cons.cons_problem,
+    dr=decision_rule,
+    initial=initial_conditions,
+    agent_count=1000,
+    T_sim=100,
+    seed=42,
+)
 
-# 1. **Value Function Iteration** (ska.algos.vbi):
-#   - Backward induction on Bellman equation
-#   - Guaranteed convergence for well-posed problems
-#   - Good for models with moderate state dimensions#
+print("\nRunning simulation...")
+simulator.initialize_sim()
+simulator.simulate()
+print("Simulation completed successfully")
 
-# 2. **Neural Network Methods** (ska.ann):
-#   - Deep learning approaches for high-dimensional problems
-#   - Can handle complex, non-linear policies
-#   - Suitable for large-scale heterogeneous agent models
+# %%
+# Step 7: Plot Simulation Results
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# The plot shows the cross-sectional distribution of normalized market
+# resources :math:`m_t` over time. Under the constant-MPC rule, agents
+# accumulate a buffer stock of savings that stabilizes around a long-run
+# mean determined by :math:`\kappa`, :math:`R`, and :math:`G`.
 
-# 3. **Policy Iteration Methods**:
-#   - Alternate between policy evaluation and improvement
-#   - Often faster convergence than value function iteration
+plt.figure(figsize=(10, 6))
 
-# See the algorithms documentation for detailed examples of solving models optimally.
-# ""
-# )
+m_hist = simulator.history["m"]
 
-# print("\n✓ Example completed successfully!")
-# """
+plt.fill_between(
+    range(simulator.T_sim),
+    np.percentile(m_hist, 5, axis=1),
+    np.percentile(m_hist, 95, axis=1),
+    alpha=0.2,
+    color="C0",
+    label="5th–95th percentile",
+)
+plt.fill_between(
+    range(simulator.T_sim),
+    np.percentile(m_hist, 25, axis=1),
+    np.percentile(m_hist, 75, axis=1),
+    alpha=0.35,
+    color="C0",
+    label="25th–75th percentile",
+)
+plt.plot(m_hist.mean(axis=1), linewidth=2, color="C0", label="Mean")
+
+plt.xlabel("Time period", fontsize=11)
+plt.ylabel("Normalized market resources ($m$)", fontsize=11)
+plt.title("Market Resources Under Constant-MPC Rule", fontsize=12)
+plt.legend(fontsize=10)
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# %%
+# Step 8: Run Portfolio Simulation
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# Now extend to the portfolio problem
+# (:data:`~skagent.models.consumer.cons_portfolio_problem`),
+# where agents also choose their risky asset share :math:`\varsigma_t`.
+# We pair the MPC consumption rule with a fixed risky share of 0.5.
+
+RISKY_SHARE = 0.5  # Fixed portfolio share in risky asset
+
+portfolio_decision_rule = {
+    "c": consumption_rule,
+    "stigma": lambda a: RISKY_SHARE,
+}
+
+portfolio_sim = ska.MonteCarloSimulator(
+    calibration=cons.calibration.copy(),
+    block=cons.cons_portfolio_problem,
+    dr=portfolio_decision_rule,
+    initial={"k": Normal(mu=1.0, sigma=0.1), "R": cons.calibration["Rfree"]},
+    agent_count=1000,
+    T_sim=100,
+    seed=42,
+)
+
+print("\nRunning portfolio simulation...")
+portfolio_sim.initialize_sim()
+portfolio_sim.simulate()
+print("Portfolio simulation completed successfully")
+
+
+# %%
+# Step 9: Compare Saving vs Portfolio Paths
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# The risky asset earns a higher expected return, so the portfolio model
+# predicts higher mean wealth accumulation — but also greater dispersion
+# due to stock-return risk.
+
+fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
+fig.suptitle("Saving Model vs Portfolio Model", fontsize=13)
+
+for ax, sim, label, color in [
+    (axes[0], simulator, "Pure Saving", "C0"),
+    (axes[1], portfolio_sim, rf"Portfolio ($\varsigma={RISKY_SHARE}$)", "C1"),
+]:
+    m_h = sim.history["m"]
+    ax.fill_between(
+        range(sim.T_sim),
+        np.percentile(m_h, 5, axis=1),
+        np.percentile(m_h, 95, axis=1),
+        alpha=0.2,
+        color=color,
+        label="5th–95th pct",
+    )
+    ax.fill_between(
+        range(sim.T_sim),
+        np.percentile(m_h, 25, axis=1),
+        np.percentile(m_h, 75, axis=1),
+        alpha=0.35,
+        color=color,
+        label="25th–75th pct",
+    )
+    ax.plot(m_h.mean(axis=1), linewidth=2, color=color, label="Mean")
+    ax.set_title(label)
+    ax.set_xlabel("Time period")
+    ax.set_ylabel("Normalized market resources ($m$)")
+    ax.legend(fontsize=9)
+    ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
