@@ -1,7 +1,7 @@
 r"""
-##############################
+#####################################
 Consumption-Saving-Portfolio Model
-##############################
+#####################################
 
 The consumption-saving problem is one of the central models of modern
 macroeconomics and household finance. An agent with uncertain income must
@@ -142,13 +142,13 @@ plt.tight_layout()
 
 # %%
 # Step 3a: Inspect and visualize the Portfolio Block
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 cons.cons_portfolio_problem.display_formulas()
 
 # %%
 # Step 3b: Inspect and visualize the Portfolio Block
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 img, _ = cons.cons_portfolio_problem.display(cons.calibration)
 
