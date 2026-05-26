@@ -1,3 +1,5 @@
+import numpy as np
+
 from skagent.distributions import Lognormal
 import skagent.models.consumer as cons
 import skagent.models.perfect_foresight as pfm
@@ -107,3 +109,5 @@ class test_consumer_models(unittest.TestCase):
         # and dynamic for the portfolio model
 
         self.assertTrue(self.pcs.history["R"][0][0] != 1.03)
+
+        self.assertFalse(np.isnan(self.pcs.history["m"])[1, 1])
