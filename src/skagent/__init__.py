@@ -46,7 +46,6 @@ __all__ = [
     "Net",
     "BlockPolicyNet",
     # Simulation
-    "AgentTypeMonteCarloSimulator",
     "MonteCarloSimulator",
     # Modules
     "vbi",
