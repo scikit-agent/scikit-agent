@@ -19,6 +19,7 @@ and this project adheres to
 - Added shock resolution support in `BellmanPeriod` methods
 - Moved `compute_gradients_for_tensors` tests from `test_bellman.py` to
   `test_utils.py`
+- Created working `Consumption-Saving Model` example
 
 ### Added
 
