@@ -1,6 +1,6 @@
 r"""
 ##############################
-Consumption-Saving Model
+Consumption-Saving-Portfolio Model
 ##############################
 
 The consumption-saving problem is one of the central models of modern
