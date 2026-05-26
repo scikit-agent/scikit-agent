@@ -69,7 +69,7 @@ portfolio_block = DBlock(
             "risky_return": (Lognormal, {"mean": "Rfree + EqP", "std": "RiskyStd"})
         },
         "dynamics": {
-            "stigma": Control(["a"]),
+            "stigma": Control(["a"], agent="consumer"),
             "R": lambda stigma, Rfree, risky_return: Rfree
             + (risky_return - Rfree) * stigma,
         },
