@@ -136,8 +136,8 @@ class ModelAnalyzer:
         """
         Use get_arrival_states method to identify lag dependencies.
         """
+        arrival_states = self.model.get_arrival_states(self.calibration)
         for blk in self._blocks:
-            arrival_states = blk.get_arrival_states(self.calibration)
             for var in blk.get_dynamics().keys():
                 for dep in self._raw_deps.get(var, []):
                     if dep in arrival_states:
