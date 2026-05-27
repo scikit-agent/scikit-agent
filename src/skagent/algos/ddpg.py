@@ -129,11 +129,15 @@ class DDPG:
         def decision_rule(*information):
             # Ensure float32 — shocks and dynamics can produce float64 numpy/tensors
             info_f32 = tuple(torch.as_tensor(x).float() for x in information)
-            action = dr_basic[self.actor.control_sym](*info_f32)
-            action = action.cpu()
+            env_device = info_f32[0].device if info_f32 else torch.device("cpu")
+
+            # Run actor on its device, then return to the environment's device
+            info_on_actor = tuple(t.to(self.device) for t in info_f32)
+            action = dr_basic[self.actor.control_sym](*info_on_actor)
+            action = action.to(env_device)
 
             if add_noise:
-                noise = self.noise.sample()
+                noise = self.noise.sample().to(env_device)
                 action = action + noise
 
             # Clip to control bounds. The network enforces these via sigmoid/softplus
