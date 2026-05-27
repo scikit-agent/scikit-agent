@@ -13,7 +13,7 @@ class TestDDPGTraining:
         """DDPG training loop runs without error on the D-2 benchmark (infinite-horizon CRRA)."""
         rng = np.random.default_rng(TEST_SEED)
 
-        bp = BellmanPeriod(d2_block, d2_calibration)
+        bp = BellmanPeriod(d2_block, "DiscFac", d2_calibration)
         initial = {"a": MeanOneLogNormal(sigma=1)}
         env = Environment(bp, initial, rng=rng)
 
