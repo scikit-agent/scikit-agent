@@ -19,7 +19,7 @@ class ReplayBuffer:
     def __init__(self, capacity=100000):
         self.buffer = deque(maxlen=capacity)
 
-    def push(self, state, action, reward, next_state, discount, done):
+    def push(self, state, action, reward, next_state, discount, done, obs):
         def _detach(d):
             return {
                 k: v.detach() if isinstance(v, torch.Tensor) else v
@@ -34,12 +34,13 @@ class ReplayBuffer:
                 _detach(next_state),
                 discount,
                 done,
+                _detach(obs),
             )
         )
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
-        states, actions, rewards, next_states, discounts, dones = zip(*batch)
+        states, actions, rewards, next_states, discounts, dones, obss = zip(*batch)
 
         states = {key: torch.cat([d[key] for d in states]) for key in states[0]}
         actions = {key: torch.cat([d[key] for d in actions]) for key in actions[0]}
@@ -47,8 +48,9 @@ class ReplayBuffer:
         next_states = {
             key: torch.cat([d[key] for d in next_states]) for key in next_states[0]
         }
+        obss = {key: torch.cat([d[key] for d in obss]) for key in obss[0]}
 
-        return states, actions, rewards, next_states, discounts, dones
+        return states, actions, rewards, next_states, discounts, dones, obss
 
     def __len__(self):
         return len(self.buffer)
@@ -122,25 +124,32 @@ class DDPG:
     def get_decision_rule(self, add_noise=True):
         """Produce the decision rule using current policy with optional exploration noise"""
         dr_basic = self.actor.get_decision_rule()
+        control = self.bp.block.dynamics[self.actor.control_sym]
 
         def decision_rule(*information):
-            action = dr_basic[self.actor.control_sym](*information)
-
+            # Ensure float32 — shocks and dynamics can produce float64 numpy/tensors
+            info_f32 = tuple(torch.as_tensor(x).float() for x in information)
+            action = dr_basic[self.actor.control_sym](*info_f32)
             action = action.cpu()
-
-            print("dr action before noise:", action)
 
             if add_noise:
                 noise = self.noise.sample()
-
                 action = action + noise
 
-                print("todo -- clip to bounds")
-
-                ## TODO: need to deal with the bounds as provided by the BP
-                # action = np.clip(
-                #    action, -self.max_action, self.max_action
-                # )
+            # Clip to control bounds. The network enforces these via sigmoid/softplus
+            # in its forward pass, but noise can push the action outside them.
+            lo = (
+                torch.as_tensor(control.lower_bound(*info_f32)).float()
+                if control.lower_bound is not None
+                else None
+            )
+            hi = (
+                torch.as_tensor(control.upper_bound(*info_f32)).float()
+                if control.upper_bound is not None
+                else None
+            )
+            if lo is not None or hi is not None:
+                action = torch.clamp(action, min=lo, max=hi)
 
             return action
 
@@ -152,30 +161,44 @@ class DDPG:
             return None, None
 
         # Sample batch
-        states, actions, rewards, next_states, discounts, dones = (
+        states, actions, rewards, next_states, discounts, dones, obss = (
             self.replay_buffer.sample(batch_size)
         )
 
-        states = torch.stack(list(states.values()), dim=1).float().to(self.device)
-        actions = torch.stack(list(actions.values()), dim=1).float().to(self.device)
-        rewards = torch.stack(list(rewards.values()), dim=1).float().to(self.device)
-        next_states = (
+        states_t = torch.stack(list(states.values()), dim=1).float().to(self.device)
+        actions_t = torch.stack(list(actions.values()), dim=1).float().to(self.device)
+        rewards_t = torch.stack(list(rewards.values()), dim=1).float().to(self.device)
+        next_states_t = (
             torch.stack(list(next_states.values()), dim=1).float().to(self.device)
         )
-        discounts = torch.FloatTensor(discounts).unsqueeze(1).to(self.device)
-        dones = torch.FloatTensor(dones).unsqueeze(1).to(self.device)
+        obs_t = torch.stack(list(obss.values()), dim=1).float().to(self.device)
+        discounts_t = torch.FloatTensor(discounts).unsqueeze(1).to(self.device)
+        dones_t = torch.FloatTensor(dones).unsqueeze(1).to(self.device)
 
         # Update Critic
         with torch.no_grad():
-            ## TODO: this is going to need to depend on shocks, and involves sampling forward
-            next_actions = self.actor_target(next_states)
+            # Compute next info-set by running forward_function with dummy controls
+            next_shocks_raw = self.bp.draw_shocks(n=batch_size)
+            next_shocks = {k: torch.FloatTensor(v) for k, v in next_shocks_raw.items()}
+            dummy_controls = {
+                csym: torch.zeros(batch_size) for csym in self.bp.get_controls()
+            }
+            next_post = self.bp.forward_function(
+                next_states, next_shocks, dummy_controls
+            )
+            next_obs_t = torch.stack(
+                [
+                    torch.as_tensor(next_post[sym]).float().flatten()
+                    for sym in self.actor.iset
+                ],
+                dim=1,
+            ).to(self.device)
 
-            # this does not depend on shocks, because it's the critic value
-            target_q = self.critic_target(next_states, next_actions)
+            next_actions = self.actor_target(next_obs_t)
+            target_q = self.critic_target(next_states_t, next_actions)
+            target_q = rewards_t + (1 - dones_t) * discounts_t * target_q
 
-            target_q = rewards + (1 - dones) * discounts * target_q
-
-        current_q = self.critic(states, actions)
+        current_q = self.critic(states_t, actions_t)
         critic_loss = nn.MSELoss()(current_q, target_q)
 
         self.critic_optimizer.zero_grad()
@@ -183,7 +206,7 @@ class DDPG:
         self.critic_optimizer.step()
 
         # Update Actor
-        actor_loss = -self.critic(states, self.actor(states)).mean()
+        actor_loss = -self.critic(states_t, self.actor(obs_t)).mean()
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
@@ -250,7 +273,7 @@ class Environment:
         return initial_vals
 
     def step(self, decision_rule):
-        shocks = self.bp.draw_shocks()
+        shocks = self.bp.draw_shocks(n=1)
 
         post = self.bp.forward_function(
             self.state, shocks, {}, decision_rules=decision_rule
@@ -264,8 +287,23 @@ class Environment:
             # if agent is None or self.block.reward[rsym] == agent # TODO deal with multiple agents
         }
         discount = self.bp.resolve_discount_factor(post)
-        state_t_plus = {a_sym: post[a_sym] for a_sym in self.bp.get_arrival_states()}
+        state_t_plus = {
+            a_sym: post[a_sym].detach()
+            if isinstance(post[a_sym], torch.Tensor)
+            else post[a_sym]
+            for a_sym in self.bp.get_arrival_states()
+        }
+
+        # info-set for each control (what the actor sees)
+        control_sym = next(iter(decision_rule))
+        iset = self.bp.block.dynamics[control_sym].iset
+        obs = {
+            sym: post[sym].detach()
+            if isinstance(post[sym], torch.Tensor)
+            else post[sym]
+            for sym in iset
+        }
 
         self.state = state_t_plus
 
-        return state_t, action, reward, state_t_plus, discount
+        return state_t, action, reward, state_t_plus, discount, obs

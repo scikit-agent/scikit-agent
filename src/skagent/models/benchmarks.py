@@ -368,7 +368,7 @@ u1_block = DBlock(
     **{
         "name": "u1_hall_random_walk",
         "shocks": {
-            "eta": (Normal, {"mean": 0.0, "std": "income_std"}),
+            "eta": (Normal, {"mu": 0.0, "sigma": "income_std"}),
         },
         "dynamics": {
             "y": lambda y_mean, eta: y_mean + eta,  # i.i.d. income
