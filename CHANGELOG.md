@@ -23,7 +23,7 @@ and this project adheres to
 
 ### Added
 
-- Initial release features
+- NumFOCUS Code of Conduct adopted
 
 ...
 

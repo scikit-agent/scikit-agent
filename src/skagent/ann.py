@@ -361,21 +361,12 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         decisions - dict
             symbols : values
         """
-        if parameters is None:
-            parameters = {}
-        vals = parameters | states_t | shocks_t
-
-        # hacky -- should be moved into transition method as other option
-        # very brittle, because it can interfere with constraints
-        drs = {
-            control_sym: lambda: 1 for control_sym in self.bellman_period.get_controls()
-        }
-
-        post = self.bellman_period.block.transition(vals, drs, until=self.control_sym)
-
+        iset_dict = self.bellman_period.compute_pre_state(
+            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
+        )
         # the inputs to the network are the information set of the control variable
         # The use of torch.stack and .T here are wild guesses, probably doesn't generalize
-        iset_vals = [post[isym].flatten() for isym in self.iset]
+        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
 
         def get_tensor_size(d):
             for value in d.values():
@@ -385,11 +376,9 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
                     return value.size
             return 1  # No tensors found
 
-        print(post.values())
-
-        output = self.get_decision_rule(length=get_tensor_size(post))[self.control_sym](
-            *iset_vals
-        )
+        output = self.get_decision_rule(length=get_tensor_size(iset_dict))[
+            self.control_sym
+        ](*iset_vals)
 
         # again, assuming only one for now...
         # decisions = dict(zip([control_sym], output))
@@ -539,10 +528,10 @@ class BlockValueNet(BellmanPeriodMixin, Net):
         torch.Tensor
             Value function estimates
         """
-        # The inputs to the network are the information set variables
-        # Combine states_t and shocks_t to get all available variables
-        all_vars = states_t | shocks_t
-        iset_vals = [all_vars[isym].flatten() for isym in self.cobj.iset]
+        iset_dict = self.bellman_period.compute_pre_state(
+            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
+        )
+        iset_vals = [iset_dict[isym].flatten() for isym in self.cobj.iset]
 
         input_tensor = torch.stack(iset_vals).T
 
