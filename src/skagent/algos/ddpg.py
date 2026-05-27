@@ -11,7 +11,6 @@ import random
 from skagent.ann import BlockPolicyNet, BlockQNet
 from skagent.bellman import BellmanPeriod
 from skagent.simulation.monte_carlo import draw_shocks
-from skagent.distributions import MeanOneLogNormal
 
 
 class ReplayBuffer:
@@ -21,7 +20,21 @@ class ReplayBuffer:
         self.buffer = deque(maxlen=capacity)
 
     def push(self, state, action, reward, next_state, done):
-        self.buffer.append((state, action, reward, next_state, done))
+        def _detach(d):
+            return {
+                k: v.detach() if isinstance(v, torch.Tensor) else v
+                for k, v in d.items()
+            }
+
+        self.buffer.append(
+            (
+                _detach(state),
+                _detach(action),
+                _detach(reward),
+                _detach(next_state),
+                done,
+            )
+        )
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
@@ -152,17 +165,11 @@ class DDPG:
             batch_size
         )
 
-        print(states, actions, rewards, next_states)
-
-        states = torch.FloatTensor(torch.stack(list(states.values()))).to(self.device)
-        actions = torch.FloatTensor(torch.stack(list(actions.values()))).to(self.device)
-        rewards = (
-            torch.FloatTensor(torch.stack(list(rewards.values())))
-            .unsqueeze(1)
-            .to(self.device)
-        )
-        next_states = torch.FloatTensor(torch.stack(list(next_states.values()))).to(
-            self.device
+        states = torch.stack(list(states.values()), dim=1).float().to(self.device)
+        actions = torch.stack(list(actions.values()), dim=1).float().to(self.device)
+        rewards = torch.stack(list(rewards.values()), dim=1).float().to(self.device)
+        next_states = (
+            torch.stack(list(next_states.values()), dim=1).float().to(self.device)
         )
         dones = torch.FloatTensor(dones).unsqueeze(1).to(self.device)
 
@@ -251,10 +258,11 @@ class Environment:
         return initial_vals
 
     def step(self, decision_rule):
-        # TODO implement
-        shocks = bp.draw_shocks()
+        shocks = self.bp.draw_shocks()
 
-        post = bp.forward_function(self.state, shocks, {}, decision_rules=decision_rule)
+        post = self.bp.forward_function(
+            self.state, shocks, {}, decision_rules=decision_rule
+        )
 
         state_t = self.state
         action = {csym: post[csym] for csym in decision_rule}
@@ -268,76 +276,3 @@ class Environment:
         self.state = state_t_plus
 
         return state_t, action, reward, state_t_plus
-
-
-# Example usage
-if __name__ == "__main__":
-    from skagent.models.benchmarks import d2_calibration, d2_block
-
-    bp = BellmanPeriod(d2_block, d2_calibration)
-
-    print("arrival states:", bp.get_arrival_states())
-
-    initial = {
-        "a": MeanOneLogNormal(sigma=1)
-    }  # this is a dictionary of distributions for the initial values of the state variables.
-    # this gets passed in to something...
-    # combined with the BellmanPeriod it is the environment.
-
-    env = Environment(bp, initial)
-
-    state_dim = bp.get_states_dim()
-    action_dim = bp.get_action_dim()
-
-    print("dimensions: ", state_dim, action_dim)
-
-    max_action = 1.0  ## todo: use BP limits
-
-    # Initialize agent
-    agent = DDPG(
-        bp,
-        max_action=max_action,  ## TODO: replace this with conditions from BP
-        device="cuda" if torch.cuda.is_available() else "cpu",
-    )
-
-    print(agent.device)
-
-    # Training loop example
-    num_episodes = 100
-    max_steps = 500
-
-    for episode in range(num_episodes):
-        state = env.reset()
-
-        agent.noise.reset()
-        episode_reward = 0
-
-        for step in range(max_steps):
-            # Select action
-            print("state:", state)
-
-            state, action, reward, next_state = env.step(agent.get_decision_rule())
-
-            print("action:", action)
-            print("reward:", reward)
-            print("next_state:", next_state)
-
-            done = step == max_steps - 1
-
-            # Store transition
-            agent.replay_buffer.push(state, action, reward, next_state, done)
-
-            # Train agent
-            actor_loss, critic_loss = agent.train(batch_size=64)
-
-            state = next_state
-            episode_reward += sum([reward[rsym] for rsym in reward])
-
-            if done:
-                break
-
-        if episode % 10 == 0:
-            print(f"Episode {episode}, Reward: {episode_reward:.2f}")
-
-    # Save model
-    agent.save("ddpg_model.pth")
