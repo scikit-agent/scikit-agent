@@ -19,7 +19,7 @@ class ReplayBuffer:
     def __init__(self, capacity=100000):
         self.buffer = deque(maxlen=capacity)
 
-    def push(self, state, action, reward, next_state, done):
+    def push(self, state, action, reward, next_state, discount, done):
         def _detach(d):
             return {
                 k: v.detach() if isinstance(v, torch.Tensor) else v
@@ -32,13 +32,14 @@ class ReplayBuffer:
                 _detach(action),
                 _detach(reward),
                 _detach(next_state),
+                discount,
                 done,
             )
         )
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
-        states, actions, rewards, next_states, dones = zip(*batch)
+        states, actions, rewards, next_states, discounts, dones = zip(*batch)
 
         states = {key: torch.cat([d[key] for d in states]) for key in states[0]}
         actions = {key: torch.cat([d[key] for d in actions]) for key in actions[0]}
@@ -47,15 +48,7 @@ class ReplayBuffer:
             key: torch.cat([d[key] for d in next_states]) for key in next_states[0]
         }
 
-        # import pdb; pdb.set_trace()
-
-        return (
-            states,  # np.array(states),
-            actions,  # np.array(actions),
-            rewards,  # np.array(rewards),
-            next_states,  # np.array(next_states),
-            dones,  # np.array(dones),
-        )
+        return states, actions, rewards, next_states, discounts, dones
 
     def __len__(self):
         return len(self.buffer)
@@ -93,13 +86,11 @@ class DDPG:
         hidden_dim=256,
         lr_actor=1e-4,
         lr_critic=1e-3,
-        gamma=0.99,  ## will need to update with dynamic discounting
         tau=0.005,
         device="cpu",
     ):
         self.device = device
-        # TODO: this is assuming a fixed discount factor, not taking the discount factor from the BP
-        self.gamma = gamma
+        self.bp = bp
         self.tau = tau
         self.max_action = max_action
 
@@ -161,8 +152,8 @@ class DDPG:
             return None, None
 
         # Sample batch
-        states, actions, rewards, next_states, dones = self.replay_buffer.sample(
-            batch_size
+        states, actions, rewards, next_states, discounts, dones = (
+            self.replay_buffer.sample(batch_size)
         )
 
         states = torch.stack(list(states.values()), dim=1).float().to(self.device)
@@ -171,6 +162,7 @@ class DDPG:
         next_states = (
             torch.stack(list(next_states.values()), dim=1).float().to(self.device)
         )
+        discounts = torch.FloatTensor(discounts).unsqueeze(1).to(self.device)
         dones = torch.FloatTensor(dones).unsqueeze(1).to(self.device)
 
         # Update Critic
@@ -181,7 +173,7 @@ class DDPG:
             # this does not depend on shocks, because it's the critic value
             target_q = self.critic_target(next_states, next_actions)
 
-            target_q = rewards + (1 - dones) * self.gamma * target_q
+            target_q = rewards + (1 - dones) * discounts * target_q
 
         current_q = self.critic(states, actions)
         critic_loss = nn.MSELoss()(current_q, target_q)
@@ -269,10 +261,11 @@ class Environment:
         reward = {
             rsym: post[rsym]
             for rsym in self.bp.block.reward
-            # if agent is None or self.block.reward[rsym] == agent # TODO deal with multiple cagents
+            # if agent is None or self.block.reward[rsym] == agent # TODO deal with multiple agents
         }
+        discount = self.bp.resolve_discount_factor(post)
         state_t_plus = {a_sym: post[a_sym] for a_sym in self.bp.get_arrival_states()}
 
         self.state = state_t_plus
 
-        return state_t, action, reward, state_t_plus
+        return state_t, action, reward, state_t_plus, discount

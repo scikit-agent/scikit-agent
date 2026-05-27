@@ -30,10 +30,14 @@ class TestDDPGTraining:
             episode_reward = 0
 
             for step in range(max_steps):
-                state, action, reward, next_state = env.step(agent.get_decision_rule())
+                state, action, reward, next_state, discount = env.step(
+                    agent.get_decision_rule()
+                )
 
                 done = step == max_steps - 1
-                agent.replay_buffer.push(state, action, reward, next_state, done)
+                agent.replay_buffer.push(
+                    state, action, reward, next_state, discount, done
+                )
                 agent.train(batch_size=64)
 
                 state = next_state
