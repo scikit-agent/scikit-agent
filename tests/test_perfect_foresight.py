@@ -38,6 +38,7 @@ from skagent.models.benchmarks import (
     get_analytical_policy,
     d1_analytical_lifetime_reward,
 )
+import time
 
 # Test configuration
 TEST_SEED = 12345
@@ -220,7 +221,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id)
 
-        bp = bellman.BellmanPeriod(block, calibration)
+        bp = bellman.BellmanPeriod(block, "DiscFac", calibration)
         policy = get_analytical_policy(model_id)
 
         # Test with very large time horizons to approximate infinite horizon
@@ -239,7 +240,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
 
                 numerical = bellman.estimate_discounted_lifetime_reward(
                     bp,
-                    calibration["DiscFac"],
                     policy,
                     {"a": initial_assets, "liv": 1.0},  # Start alive
                     big_t,
@@ -267,13 +267,11 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
 
         This represents approximately a 250x improvement in testable time horizons.
         """
-        import time
-
         model_id = "D-3"
         block = get_benchmark_model(model_id)
         calibration = get_benchmark_calibration(model_id)
 
-        bp = bellman.BellmanPeriod(block, calibration)
+        bp = bellman.BellmanPeriod(block, "DiscFac", calibration)
 
         policy = get_analytical_policy(model_id)
 
@@ -294,7 +292,6 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
 
             reward = bellman.estimate_discounted_lifetime_reward(
                 bp,
-                calibration["DiscFac"],
                 policy,
                 {"a": initial_assets, "liv": 1.0},  # Start alive
                 big_t,

@@ -33,10 +33,13 @@ TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality co
 
 from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
 from skagent.block import Control, DBlock
+import logging
 import torch
 from torch import as_tensor
 import numpy as np
 from typing import Dict, Any, Callable
+
+logger = logging.getLogger(__name__)
 
 
 # UTILITY FUNCTIONS
@@ -428,53 +431,75 @@ def u1_analytical_policy(states, shocks, parameters):
     return {"c": c_optimal}
 
 
-# U-2: Log Utility with Geometric Random Walk Income (ρ=1)
-# --------------------------------------------------------
-# Uses standard timing convention for consistency across models.
-# With log utility and permanent income following a unit root process,
-# consumption is proportional to total wealth (financial + human).
+# U-2: Log Utility with Permanent Income Shocks (Normalized)
+# ------------------------------------------------------------
+# Uses NORMALIZED variables for proper handling of permanent income.
+# All variables are expressed as ratios to permanent income P:
+#   m = M/P  (normalized cash-on-hand)
+#   c = C/P  (normalized consumption)
+#   a = A/P  (normalized assets)
+#
+# This normalization is essential because:
+# 1. The PIH solution depends only on normalized m, not on m and P separately
+# 2. The network learns a 1D function c(m) instead of 2D c(m,P)
+# 3. This is the standard formulation in the buffer stock literature (Carroll, HARK)
+#
+# U-2 is UNCONSTRAINED: agent can borrow against human wealth h = 1/r.
+# At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33 (borrowing against h).
+# The upper bound is tightened to prevent Ponzi scheme solutions that satisfy
+# the Euler equation but violate transversality. The analytical solution
+# c = (1-β)(m+h) ≈ 0.04*m + 1.33 is well within the bound 0.1*m + 2.
+# For the TRUE buffer stock model with BINDING borrowing constraint c ≤ m, see U-3.
+#
+# When σ_ψ = 0, the permanent shock ψ ≡ 1 and the model becomes deterministic.
+# This is the default calibration, making the PIH analytical solution exact.
 
-# Mathematical foundation:
-#   u(c) = ln c  (log utility)
-#   p_t = p_{t-1} * ψ_t  (Geometric Random Walk with ρ=1)
-#   Standard timing: m_t = R*A_{t-1} + p_t; A_t = m_t - c_t
-#   Human wealth: H_t = p_t / r  (present value of geometric random walk)
+# Mathematical foundation (NORMALIZED):
+#   u(c) = ln c  (log utility of normalized consumption)
+#   Transition: a = m - c, then m' = R*a/ψ + θ
+#   - ψ is the permanent income shock (= 1 when σ_ψ = 0)
+#   - θ is normalized transitory income (here θ ≡ 1, i.e., E[θ] = 1)
+#   Human wealth (normalized): h = 1/r  (constant when income is deterministic)
 
-# Key insight: ρ=1 makes the problem analytically tractable.
-# Log utility homotheticity + standard timing ⟹ simple linear consumption.
-
-# Closed-form solution (STANDARD TIMING):
-#   c_t = (1-β)(m_t + H_t) = (1-β)(R*A_{t-1} + p_t + p_t/r)
-
-# This is the standard PIH solution with geometric random walk income.
+# Closed-form solution (NORMALIZED):
+#   c = (1-β)(m + 1/r)
 
 u2_calibration = {
     "DiscFac": 0.96,
     "R": 1.03,
-    "rho_p": 1.0,  # ρ=1 (Geometric Random Walk) for analytical tractability
-    "sigma_p": 0.05,  # Std of permanent shocks
-    "description": "U-2: Log utility with geometric random walk income (ρ=1)",
+    "sigma_psi": 0.0,  # No permanent shocks - PIH solution is exact when σ_ψ=0
+    "description": "U-2: Log utility (normalized), no borrowing constraint, σ_ψ=0",
 }
 
 u2_block = DBlock(
     **{
-        "name": "u2_log_permanent",
+        "name": "u2_log_permanent_normalized",
         "shocks": {
-            "psi": (MeanOneLogNormal, {"sigma": "sigma_p"}),  # Permanent income shock
+            "psi": (MeanOneLogNormal, {"sigma": "sigma_psi"}),  # Permanent income shock
         },
         "dynamics": {
-            "p": lambda p, psi: p
-            * psi,  # Geometric Random Walk: p_t = p_{t-1} * ψ_t (ρ=1)
-            "m": lambda A, R, p: A * R
-            + p,  # STANDARD TIMING: Cash-on-hand m_t = R*A_{t-1} + p_t
+            # Normalized cash-on-hand: m = R*a/ψ + θ where θ ≡ 1 (normalized income)
+            # The "+1" represents E[θ] = 1, the mean of normalized transitory income.
+            # In full buffer stock models (U-3), θ would be a shock; here it's deterministic.
+            # Note: psi is strictly positive from MeanOneLogNormal, but we clamp for safety.
+            "m": lambda a, R, psi: R * a / torch.clamp(psi, min=1e-8) + 1,
+            # Normalized consumption - network sees only m
+            # U-2 is UNCONSTRAINED PIH: agent can borrow against human wealth h = 1/r.
+            # At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33.
+            # The analytical c ≈ (1-β)(m+h) ≈ 0.04*m + 1.33, which is always < 0.1*m + 2
+            # for m in the training range. The bound is loose enough for the analytical
+            # solution but prevents Ponzi schemes (over-borrowing that violates transversality).
             "c": Control(
-                ["m", "p"],  # Control depends on both m and p (policy uses both)
-                upper_bound=lambda m, p: m,  # Budget constraint based on cash-on-hand
+                ["m"],  # Control depends ONLY on m (network input)
+                lower_bound=lambda m: 0.01,  # Ensure c > 0 for log utility
+                upper_bound=lambda m: 0.1 * m
+                + 2,  # Loose bound; analytical c ≈ 0.04*m + 1.33
                 agent="consumer",
             ),
-            "A": lambda m, c: m
-            - c,  # STANDARD TIMING: End-of-period assets A_t = m_t - c_t
-            "u": lambda c: crra_utility(c, 1.0),  # Log utility (CRRA with gamma=1)
+            # Normalized assets (for transition to next period)
+            "a": lambda m, c: m - c,
+            # Log utility of normalized consumption
+            "u": lambda c: crra_utility(c, 1.0),
         },
         "reward": {"u": "consumer"},
     }
@@ -483,44 +508,119 @@ u2_block = DBlock(
 
 def u2_analytical_policy(states, shocks, parameters):
     """
-    U-2: PIH with Geometric Random Walk Income using standard timing.
+    U-2: PIH with Geometric Random Walk Income (NORMALIZED).
 
-    Uses standard timing m_t = R*A_{t-1} + p_t for consistency.
-    With ρ=1, income follows p_t = p_{t-1} * ψ_t (geometric random walk).
-    Human wealth: H_t = p_t / r (present value of geometric random walk income).
+    In normalized terms (all variables divided by permanent income p):
+    - m = market_resources / p (normalized cash-on-hand)
+    - c = consumption / p (normalized consumption)
+    - h = 1/r (normalized human wealth, constant)
 
-    Standard timing analytical solution: c_t = (1-β)(m_t + H_t)
+    Analytical solution: c = (1-β)(m + h) = (1-β)(m + 1/r)
     """
     beta = parameters["DiscFac"]
     R = parameters["R"]
-    rho_p = parameters["rho_p"]
 
-    # Verify ρ=1 for analytical tractability
-    if abs(rho_p - 1.0) > 1e-10:
-        raise ValueError(
-            f"Model requires ρ=1 for analytical tractability, got ρ={rho_p}"
+    # Extract arrival state (normalized assets from previous period)
+    a = states["a"]
+
+    # Get shock realization (default to ones tensor for type consistency)
+    psi = shocks.get("psi", torch.ones_like(a))
+
+    # Compute normalized cash-on-hand: m = R*a/ψ + 1
+    clamped_psi = torch.clamp(psi, min=1e-8)
+    if not torch.equal(psi, clamped_psi):
+        logger.debug(
+            "Clamped near-zero psi values in u2_analytical_policy: min(psi)=%g -> %g",
+            psi.min().item(),
+            clamped_psi.min().item(),
         )
+    m = R * a / clamped_psi + 1
 
-    # STANDARD TIMING: Use cash-on-hand from states (computed by DBlock)
-    m_t = states["m"]  # Cash-on-hand m_t = R*A_{t-1} + p_t
-    p_t = states["p"]  # Current permanent income level
-
-    # Human wealth for Geometric Random Walk (ρ=1)
+    # Human wealth (normalized): h = 1/r
     r = R - 1
     if r <= 0:
         raise ValueError(
             f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
         )
-    human_wealth = p_t / r
+    h = 1 / r
 
-    # Total wealth under standard timing: W_t = m_t + H_t
-    total_wealth = m_t + human_wealth
-
-    # Permanent income hypothesis: c_t = (1-β) * W_t
+    # PIH solution (normalized): c = (1-β)(m + h)
     mpc = 1 - beta
-    c_optimal = mpc * total_wealth
+    c_optimal = mpc * (m + h)
 
     return {"c": c_optimal}
+
+
+# U-3: Buffer Stock Model - CRRA Utility with Borrowing Constraint
+# -----------------------------------------------------------------
+# Carroll's buffer stock consumption model (Carroll 1992, 1997) with:
+#   - CRRA utility with γ > 1 (e.g., γ=2)
+#   - Borrowing constraint: c ≤ m (cannot borrow against future income)
+#   - Permanent income shocks (ψ ~ MeanOneLogNormal)
+#   - Transitory income shocks (θ ~ MeanOneLogNormal)
+#
+# Uses NORMALIZED variables (lowercase = normalized by permanent income P):
+#   m = M/P  (normalized cash-on-hand)
+#   c = C/P  (normalized consumption)
+#   a = A/P  (normalized assets)
+#
+# Normalized dynamics:
+#   m = R*a/ψ + θ  (normalized cash-on-hand, where ψ is permanent shock, θ is transitory)
+#   a' = m - c     (normalized end-of-period assets)
+#
+# This model does NOT have a closed-form analytical solution due to the
+# borrowing constraint + income uncertainty interaction. However, it has
+# well-known LIMITING MPC properties that can be tested:
+#   - MPC is between 0 and 1
+#   - MPC DECREASES with wealth (precautionary saving diminishes)
+#   - As wealth → ∞: MPC → κ = (R - (βR)^(1/γ)) / R  (same as perfect foresight)
+
+u3_calibration = {
+    "DiscFac": 0.96,
+    "R": 1.03,
+    "CRRA": 2.0,  # γ = 2 (more risk averse than log utility)
+    "sigma_psi": 0.1,  # Std of permanent shocks
+    "sigma_theta": 0.1,  # Std of transitory shocks
+    "description": "U-3: Buffer stock model (normalized) with CRRA=2, permanent + transitory shocks",
+}
+
+u3_block = DBlock(
+    **{
+        "name": "u3_buffer_stock_normalized",
+        "shocks": {
+            "psi": (MeanOneLogNormal, {"sigma": "sigma_psi"}),  # Permanent income shock
+            "theta": (
+                MeanOneLogNormal,
+                {"sigma": "sigma_theta"},
+            ),  # Transitory income shock
+        },
+        "dynamics": {
+            # Normalized cash-on-hand: m = R*a/ψ + θ
+            # Note: psi is strictly positive from MeanOneLogNormal, but we add epsilon for safety
+            "m": lambda a, R, psi, theta: R * a / torch.clamp(psi, min=1e-8) + theta,
+            # Normalized consumption - depends ONLY on m
+            # Lower bound ensures c > 0 for CRRA utility
+            # Upper bound is borrowing constraint: c ≤ m
+            "c": Control(
+                ["m"],  # Control depends ONLY on normalized m
+                lower_bound=lambda m: 0.01,  # Ensure c > 0 for CRRA utility
+                upper_bound=lambda m: m,  # BORROWING CONSTRAINT: c ≤ m
+                agent="consumer",
+            ),
+            # Normalized assets (for transition)
+            "a": lambda m, c: m - c,
+            # Lambda maps calibration key CRRA to crra_utility's gamma parameter
+            "u": lambda c, CRRA: crra_utility(c, CRRA),
+        },
+        "reward": {"u": "consumer"},
+    }
+)
+
+
+def _generate_u3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-3 buffer stock model: a (normalized arrival assets)"""
+    a = torch.linspace(0.5, 5.0, test_points)  # Normalized assets
+    return {"a": a}
 
 
 # =============================================================================
@@ -559,19 +659,10 @@ def _generate_u1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
 
 
 def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-2 model with STANDARD TIMING: m (cash-on-hand), p (permanent income)"""
-    # For standard timing, policy expects m (computed from A*R + p)
-    A = torch.linspace(0.5, 3.0, test_points)
-    p = torch.ones(test_points)
-    # Use default R=1.03 for test state generation to avoid coupling to global calibration
-    # Actual policy evaluation uses the calibration-specific R value
-    R = 1.03
-
-    return {
-        "A": A,  # Keep for reference but policy uses m
-        "p": p,  # Permanent income level
-        "m": A * R + p,  # Cash-on-hand that policy expects under standard timing
-    }
+    """Generate test states for U-2 model: a (normalized arrival assets)"""
+    # Arrival state is normalized assets a = A/P from previous period
+    a = torch.linspace(0.5, 5.0, test_points)
+    return {"a": a}
 
 
 def _validate_d2_d3_solution(
@@ -668,11 +759,17 @@ BENCHMARK_MODELS = {
         "analytical_policy": u2_analytical_policy,
         "test_states": _generate_u2_test_states,
     },
+    "U-3": {
+        "block": u3_block,
+        "calibration": u3_calibration,
+        # NO analytical_policy - buffer stock requires numerical solution
+        "test_states": _generate_u3_test_states,
+    },
 }
 
 
 def get_benchmark_model(model_id: str) -> DBlock:
-    """Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2) - 5 models remain"""
+    """Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2, U-3) - 6 models"""
     if model_id not in BENCHMARK_MODELS:
         available = list(BENCHMARK_MODELS.keys())
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
@@ -690,10 +787,22 @@ def get_benchmark_calibration(model_id: str) -> Dict[str, Any]:
 
 
 def get_analytical_policy(model_id: str) -> Callable:
-    """Get analytical policy function by model ID"""
+    """Get analytical policy function by model ID.
+
+    Raises ValueError if the model does not have an analytical policy
+    (e.g., U-3 buffer stock model requires numerical solution).
+    """
     if model_id not in BENCHMARK_MODELS:
         available = list(BENCHMARK_MODELS.keys())
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    if "analytical_policy" not in BENCHMARK_MODELS[model_id]:
+        raise ValueError(
+            f"Model '{model_id}' does not have an analytical policy. "
+            "This model requires numerical solution via Euler equation training. "
+            "Use EulerEquationLoss with maliar_training_loop (constrained=True for "
+            "models with upper-bound constrained controls). See tests/test_maliar.py for examples."
+        )
 
     return BENCHMARK_MODELS[model_id]["analytical_policy"]
 
@@ -718,7 +827,11 @@ def get_custom_validation(model_id: str) -> Callable | None:
 
 
 def list_benchmark_models() -> Dict[str, str]:
-    """List all analytically solvable discrete-time benchmark models"""
+    """List all discrete-time benchmark models.
+
+    Note: Most models have analytical solutions, but some (e.g., U-3 buffer stock)
+    require numerical solution due to borrowing constraints + income uncertainty.
+    """
     return {
         model_id: model_info["calibration"]["description"]
         for model_id, model_info in BENCHMARK_MODELS.items()
@@ -795,7 +908,7 @@ def validate_analytical_solution(
             ).item(),
         }
 
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError, TypeError, AttributeError) as e:
         return {
             "success": False,
             "validation": "FAILED",

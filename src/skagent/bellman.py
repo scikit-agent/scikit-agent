@@ -1,47 +1,298 @@
 """
-Functions for creating and reasoning about Dynamic Stochastic Optimization Problems (DSOPs).
+Dynamic Stochastic Optimization Problems (DSOPs) built on Block models.
 
-The Block data structure is rather general, and can be used to represent static problems.
+Bellman timing within a period:
 
-Converting Block models into DSOPs involves identifying transition and reward functions,
-and framing them in terms of arrival states, shocks, and decisions.
+    [arrival] + [shock] -> [pre] -> [control] -> [post] -> [arrival']
 
+- [arrival]  ``s``  state on arrival, before any shock
+- [shock]    ``e``  exogenous random variable
+- [pre]      ``m``  pre-decision state (the control's iset)
+- [control]  ``c``  chosen by the decision rule on m
+- [post]            post-transition output: the bag of variables
+                    realized in the period (m, c, u, b, s'),
+                    returned by :meth:`BellmanPeriod.post_function`
+- [arrival'] ``s'`` next-period arrival state
+
+Reward ``u`` and discount ``b`` are realized between [control] and
+[arrival'].
+
+State-variable naming (long / short / informal):
+
+- pre-decision: ``pre_decision_state`` / ``pre_state`` / ``iset``
+
+The Bellman-timing distinction between the post-decision *state* (a
+single timing point) and the post-transition *bag* is conflated in
+``post_function`` for now, and will be split in a future PR.
+
+A ``_rule`` is a user-supplied callable on pre-decision variables; a
+``_function`` is a callable on arrival states. Module-level ``df``
+and ``vf`` are the decision and value callables; each accepts a
+single ``Callable`` or a ``dict[str, Callable]`` (``df`` keyed by
+control symbol; ``vf`` by agent name).
 """
 
-import inspect
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import torch
-from torch.autograd import grad
 
-from skagent.utils import compute_gradients_for_tensors
 from skagent.simulation.monte_carlo import draw_shocks
+from skagent.utils import compute_gradients_for_tensors
+
+if TYPE_CHECKING:
+    from skagent.block import Block
 
 
 class BellmanPeriod:
     """
     A class representing a period of a Bellman or Dynamic Stochastic Optimization Problem.
 
-    TODO: Currently this is based on a Block, but I think BlockBellmanPeriod should be
-    a subclass of an abstract class.
+    This class wraps a Block model with calibration parameters and decision rules,
+    providing methods for computing transitions, decisions, rewards, and their gradients.
+
+    Parameters
+    ----------
+    block : Block
+        The underlying block model containing dynamics, shocks, and reward definitions.
+    discount_variable : str
+        A variable name which represents the discount factor for future value streams.
+    calibration : dict[str, Any]
+        Dictionary of calibration parameters for the model.
+    decision_rules : dict[str, Callable] | None, optional
+        Dictionary mapping control variable names to decision rule functions.
+
+    Attributes
+    ----------
+    block : Block
+        The underlying block model.
+    discount_variable : str
+        The name of the discount factor variable.
+    calibration : dict[str, Any]
+        The calibration parameters.
+    decision_rules : dict[str, Callable] | None
+        The decision rules for control variables.
+    arrival_states : set[str]
+        The set of arrival state variable names.
+
+    Notes
+    -----
+    Future versions may introduce an abstract base class to support different
+    block types beyond DBlock/RBlock.
     """
 
-    def __init__(self, block, calibration, decision_rules=None):
+    block: Block
+    discount_variable: str
+    calibration: dict[str, Any]
+    decision_rules: dict[str, Callable] | None
+    arrival_states: set[str]
+
+    def __init__(
+        self,
+        block: Block,
+        discount_variable: str,
+        calibration: dict[str, Any],
+        decision_rules: dict[str, Callable] | None = None,
+    ) -> None:
         self.block = block
         self.calibration = calibration
+        self.discount_variable = discount_variable
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
-    def get_arrival_states(self, calibration=None):
-        return self.block.get_arrival_states(
-            calibration if calibration else self.calibration
+    def _resolve_inputs(
+        self,
+        shocks: dict[str, Any] | None,
+        decision_rules: dict[str, Callable] | None,
+        parameters: dict[str, Any] | None,
+    ) -> tuple[dict[str, Any], dict[str, Callable], dict[str, Any]]:
+        """Resolve ``(shocks, decision_rules, parameters)``, replacing ``None``
+        with defaults: ``{}`` for shocks; instance ``decision_rules`` then
+        ``{}`` for decision_rules; instance calibration for parameters.
+        """
+        if decision_rules is None:
+            decision_rules = self.decision_rules
+        if decision_rules is None:
+            decision_rules = {}
+        return (
+            shocks if shocks is not None else {},
+            decision_rules,
+            parameters if parameters is not None else self.calibration,
         )
 
-    def get_controls(self):
+    def get_arrival_states(self, calibration: dict[str, Any] | None = None) -> set[str]:
+        """Get arrival state variable names for given calibration."""
+        return self.block.get_arrival_states(
+            calibration if calibration is not None else self.calibration
+        )
+
+    def get_controls(self) -> dict[str, Any]:
+        """Get control variables from the block."""
         return self.block.get_controls()
 
-    def get_shocks(self):
+    def get_shocks(self) -> dict[str, Any]:
+        """Get shock distributions from the block."""
         return self.block.get_shocks()
+
+    def get_reward_syms(self, agent: str | None = None) -> list[str]:
+        """Return all reward symbols for *agent* (or all agents if *agent* is None).
+
+        Parameters
+        ----------
+        agent : str | None, optional
+            If specified, only return reward symbols for this agent.
+
+        Raises
+        ------
+        ValueError
+            If no reward variables match the given agent.
+        """
+        reward_vars = [
+            sym
+            for sym in self.block.reward
+            if agent is None or self.block.reward[sym] == agent
+        ]
+        if not reward_vars:
+            raise ValueError(
+                f"No reward variables found in block for agent '{agent}'"
+                if agent is not None
+                else "No reward variables found in block"
+            )
+        return reward_vars
+
+    def get_reward_sym(self, agent: str | None = None) -> str:
+        """Return the first reward symbol for *agent* (or any agent if *agent* is None).
+
+        If multiple reward symbols match, only the first is returned.
+        Models with multiple rewards per agent are not currently supported.
+
+        Raises
+        ------
+        ValueError
+            If no reward variables match the given agent.
+        """
+        return self.get_reward_syms(agent)[0]
+
+    def compute_pre_state(
+        self,
+        control_sym: str,
+        states: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Return the pre-decision state values for *control_sym* as
+        ``{var: value}``. The variables are those in the control's
+        information set (``iset``).
+
+        If the pre-decision state variables are already in *states* or
+        *shocks*, they are taken from there directly. Otherwise block
+        dynamics are run from arrival states up to the control to
+        produce them.
+        """
+        iset = self.block.dynamics[control_sym].iset
+        shocks = shocks if shocks is not None else {}
+        params = parameters if parameters is not None else self.calibration
+        vals = params | states | shocks
+
+        if all(isym in vals for isym in iset):
+            return {isym: vals[isym] for isym in iset}
+
+        drs = {cs: (lambda: 1) for cs in self.get_controls()}
+        out = self.block.transition(vals, drs, until=control_sym)
+        return {isym: out[isym] for isym in iset}
+
+    def compute_controls(
+        self,
+        df: dict[str, Callable] | Callable,
+        states: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Compute control variable values from a decision function or decision rules.
+
+        This generalises ``decision_function`` to also accept an external callable
+        with signature ``df(states, shocks, parameters) -> controls``.
+
+        Parameters
+        ----------
+        df : dict[str, Callable] | Callable
+            A callable decision function, or a dict of decision rules passed
+            through to ``decision_function``.
+        states : dict[str, Any]
+            Current state variables.
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+
+        Returns
+        -------
+        dict[str, Any]
+            Control variable values.
+
+        Raises
+        ------
+        TypeError
+            If *df* is neither callable nor a dict.
+        """
+        shocks = shocks if shocks is not None else {}
+        params = parameters if parameters is not None else self.calibration
+
+        if callable(df):
+            return df(states, shocks, params)
+        if not isinstance(df, dict):
+            raise TypeError(
+                f"df must be a callable decision function or a dict of decision rules, "
+                f"got {type(df).__name__!r}"
+            )
+        return self.decision_function(
+            states, shocks=shocks, parameters=params, decision_rules=df
+        )
+
+    def compute_value(
+        self,
+        vf: dict[str, Callable] | Callable,
+        states: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+    ) -> Any:
+        """
+        Compute value-function output at *states*, parallel to
+        :meth:`compute_controls`.
+
+        Accepts a single callable, or a dict ``{agent: callable}`` from
+        which *agent* selects an entry. The selected callable receives
+        arrival states; any pre-decision (iset) computation it needs is
+        the callable's responsibility.
+        """
+        shocks = shocks if shocks is not None else {}
+        params = parameters if parameters is not None else self.calibration
+
+        if callable(vf):
+            return vf(states, shocks, params)
+        if not isinstance(vf, dict):
+            raise TypeError(
+                f"vf must be a callable value function or a dict mapping "
+                f"agent name to a callable, got {type(vf).__name__!r}"
+            )
+        if agent is None:
+            raise ValueError(
+                "vf is a dict (per-agent value functions); the 'agent' "
+                f"argument must be specified. Available agents: {sorted(vf)}."
+            )
+        if agent not in vf:
+            raise KeyError(
+                f"vf has no entry for agent '{agent}'. Available agents: {sorted(vf)}."
+            )
+        return vf[agent](states, shocks, params)
 
     def get_action_dim(self):
         return len(self.get_controls())
@@ -76,184 +327,290 @@ class BellmanPeriod:
         return post
 
     def transition_function(
-        self, states_t, shocks_t, controls_t, parameters=None, decision_rules=None
-    ):
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
+        self,
+        states: dict[str, Any],
+        controls: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Compute the transition to next-period arrival states.
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            Current state variables.
+        controls : dict[str, Any]
+            Current control variable values.
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules (defaults to instance decision_rules).
+
+        Returns
+        -------
+        dict[str, Any]
+            Next-period arrival state values.
+        """
+        shocks, decision_rules, parameters = self._resolve_inputs(
+            shocks, decision_rules, parameters
         )
 
-        vals = parameters | states_t | shocks_t | controls_t
-        post = self.block.transition(vals, decision_rules, fix=list(controls_t.keys()))
+        vals = parameters | states | shocks | controls
+        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
 
         return {sym: post[sym] for sym in self.arrival_states}
 
     def decision_function(
-        self, states_t, shocks_t, parameters=None, decision_rules=None
-    ):
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
+        self,
+        states: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Compute control variable values from decision rules.
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            Current state variables.
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules (defaults to instance decision_rules).
+
+        Returns
+        -------
+        dict[str, Any]
+            Control variable values computed from decision rules.
+        """
+        shocks, decision_rules, parameters = self._resolve_inputs(
+            shocks, decision_rules, parameters
         )
 
-        vals = parameters | states_t | shocks_t
+        vals = parameters | states | shocks
         post = self.block.transition(vals, decision_rules)
         return {sym: post[sym] for sym in decision_rules}
 
     def reward_function(
         self,
-        states_t,
-        shocks_t,
-        controls_t,
-        parameters=None,
-        agent=None,
-        decision_rules=None,
-    ):
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
+        states: dict[str, Any],
+        controls: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Compute reward values for the current period.
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            Current state variables.
+        controls : dict[str, Any]
+            Current control variable values.
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        agent : str | None, optional
+            If specified, only return rewards for this agent.
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules (defaults to instance decision_rules).
+
+        Returns
+        -------
+        dict[str, Any]
+            Reward values for the period.
+        """
+        shocks, decision_rules, parameters = self._resolve_inputs(
+            shocks, decision_rules, parameters
         )
 
-        vals_t = parameters | states_t | shocks_t | controls_t
-        post = self.block.transition(
-            vals_t, decision_rules, fix=list(controls_t.keys())
+        vals = parameters | states | shocks | controls
+        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
+        return {sym: post[sym] for sym in self.get_reward_syms(agent)}
+
+    def post_function(
+        self,
+        states: dict[str, Any],
+        controls: dict[str, Any],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Return the full ex post variables for the period.
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            Current state variables.
+        controls : dict[str, Any]
+            Current control variable values.
+        shocks : dict[str, Any] | None, optional
+            Current shock realizations (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        agent : str | None, optional
+            Agent identifier (currently unused, reserved for future use).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules (defaults to instance decision_rules).
+
+        Returns
+        -------
+        dict[str, Any]
+            All computed variables from the block transition.
+        """
+        shocks, decision_rules, parameters = self._resolve_inputs(
+            shocks, decision_rules, parameters
         )
-        return {
-            sym: post[sym]
-            for sym in self.block.reward
-            if agent is None or self.block.reward[sym] == agent
-        }
+
+        vals = parameters | states | shocks | controls
+        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
+        return post
 
     def grad_reward_function(
         self,
-        states_t,
-        shocks_t,
-        controls_t,
-        parameters,
-        wrt,
-        agent=None,
-        decision_rules=None,
-    ):
+        states: dict[str, Any],
+        controls: dict[str, Any],
+        wrt: dict[str, torch.Tensor],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        agent: str | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+        create_graph: bool = False,
+    ) -> dict[str, dict[str, torch.Tensor | None]]:
         """
         Compute gradients of reward function with respect to specified variables.
 
         Parameters
         ----------
-        states_t : dict
-            State variables at time t
-        shocks_t : dict
-            Shock variables at time t
-        controls_t : dict
-            Control variables at time t
-        parameters : dict
-            Model parameters
-        wrt : dict
+        states : dict[str, Any]
+            State variables.
+        controls : dict[str, Any]
+            Control variables.
+        wrt : dict[str, torch.Tensor]
             Dictionary of variables to compute gradients with respect to.
-            Keys are variable names, values are tensors with requires_grad=True
-        agent : str, optional
-            If specified, only compute gradients for rewards belonging to this agent
-        decision_rules : dict, optional
-            Decision rules of control variables that will _not_ be given to the function
+            Keys are variable names, values are tensors with requires_grad=True.
+        shocks : dict[str, Any] | None, optional
+            Shock variables (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        agent : str | None, optional
+            If specified, only compute gradients for rewards belonging to this agent.
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules of control variables that will _not_ be given to the function.
+        create_graph : bool, optional
+            If True, the graph of the derivative is constructed, allowing higher-order
+            derivatives and end-to-end training through the gradient computation.
 
         Returns
         -------
-        dict
+        dict[str, dict[str, torch.Tensor | None]]
             Nested dictionary of gradients for each reward symbol and variable:
-            {reward_sym: {var_name: gradient}}
+            {reward_sym: {var_name: gradient}}. Gradient is None if the reward
+            does not depend on the variable.
         """
-        decision_rules = (
-            decision_rules
-            if decision_rules
-            else (self.decision_rules if self.decision_rules else {})
-        )
-        parameters = (
-            parameters if parameters else (self.calibration if self.calibration else {})
+        shocks, decision_rules, parameters = self._resolve_inputs(
+            shocks, decision_rules, parameters
         )
 
         # Combine all variables for block evaluation
-        vals_t = parameters | states_t | shocks_t | controls_t
+        vals = parameters | states | shocks | controls
 
         # Compute rewards using block transition
-        post = self.block.transition(
-            vals_t, decision_rules, fix=list(controls_t.keys())
-        )
+        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
+        # Calls block.transition directly (rather than post_function) to keep
+        # the exact computation graph needed for autograd differentiation.
 
-        # move this logic to BP
-        rewards = {
-            sym: post[sym]
-            for sym in self.block.reward
-            if agent is None or self.block.reward[sym] == agent
-        }
+        # Filter rewards by agent
+        rewards = {sym: post[sym] for sym in self.get_reward_syms(agent)}
 
         # Use utility function to compute gradients
-        return compute_gradients_for_tensors(rewards, wrt)
+        return compute_gradients_for_tensors(rewards, wrt, create_graph=create_graph)
 
     def grad_transition_function(
         self,
-        states_t,
-        shocks_t,
-        controls_t,
-        parameters,
-        wrt,
-        decision_rules=None,
-    ):
+        states: dict[str, Any],
+        controls: dict[str, Any],
+        wrt: dict[str, torch.Tensor],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+        create_graph: bool = False,
+    ) -> dict[str, dict[str, torch.Tensor | None]]:
         """
         Compute gradients of transition function with respect to specified variables.
 
         This computes ∂s_{t+1}/∂x for each arrival state s_{t+1} and each variable x
         specified in wrt. This is needed for Euler equations where the gradient of
-        future states with respect to current controls appears (e.g., ∂A_{t+1}/∂c_t = -R).
+        future states with respect to current controls appears (e.g., ∂a_{t+1}/∂c_t = -1
+        for the budget constraint a_{t+1} = m_t - c_t).
 
         Parameters
         ----------
-        states_t : dict
-            State variables at time t
-        shocks_t : dict
-            Shock variables at time t
-        controls_t : dict
-            Control variables at time t
-        parameters : dict
-            Model parameters
-        wrt : dict
+        states : dict[str, Any]
+            State variables.
+        controls : dict[str, Any]
+            Control variables.
+        wrt : dict[str, torch.Tensor]
             Dictionary of variables to compute gradients with respect to.
-            Keys are variable names, values are tensors with requires_grad=True
-        decision_rules : dict, optional
-            Decision rules of control variables that will _not_ be given to the function
+            Keys are variable names, values are tensors with requires_grad=True.
+        shocks : dict[str, Any] | None, optional
+            Shock variables (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules of control variables that will _not_ be given to the function.
+        create_graph : bool, optional
+            If True, the graph of the derivative is constructed, allowing higher-order
+            derivatives and end-to-end training through the gradient computation.
 
         Returns
         -------
-        dict
+        dict[str, dict[str, torch.Tensor | None]]
             Nested dictionary of gradients for each arrival state and variable:
-            {state_sym: {var_name: gradient}}
+            {state_sym: {var_name: gradient}}.
         """
         # Use the existing transition_function method to compute next states
         next_states = self.transition_function(
-            states_t, shocks_t, controls_t, parameters, decision_rules
+            states,
+            controls,
+            shocks=shocks,
+            parameters=parameters,
+            decision_rules=decision_rules,
         )
 
         # Use utility function to compute gradients
-        return compute_gradients_for_tensors(next_states, wrt)
+        return compute_gradients_for_tensors(
+            next_states, wrt, create_graph=create_graph
+        )
 
     def grad_pre_state_function(
         self,
-        states_t,
-        shocks_t,
-        parameters,
-        wrt,
-        control_sym=None,
-    ):
+        states: dict[str, Any],
+        wrt: dict[str, torch.Tensor],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        control_sym: str | None = None,
+        create_graph: bool = False,
+    ) -> dict[str, dict[str, torch.Tensor | None]]:
         """
         Compute gradients of pre-decision state variables with respect to arrival states.
 
@@ -276,24 +633,27 @@ class BellmanPeriod:
 
         Parameters
         ----------
-        states_t : dict
-            Arrival state variables (with requires_grad=True for gradient computation)
-        shocks_t : dict
-            Shock variables at time t
-        parameters : dict
-            Model parameters
-        wrt : dict
+        states : dict[str, Any]
+            Arrival state variables (with requires_grad=True for gradient computation).
+        wrt : dict[str, torch.Tensor]
             Dictionary of arrival states to compute gradients with respect to.
-            Keys are variable names, values are tensors with requires_grad=True
-        control_sym : str, optional
+            Keys are variable names, values are tensors with requires_grad=True.
+        shocks : dict[str, Any] | None, optional
+            Shock variables (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        control_sym : str | None, optional
             Name of the control variable whose info-set we want gradients for.
             If None, uses the first control found in the block.
+        create_graph : bool, optional
+            If True, the graph of the derivative is constructed, allowing higher-order
+            derivatives and end-to-end training through the gradient computation.
 
         Returns
         -------
-        dict
+        dict[str, dict[str, torch.Tensor | None]]
             Nested dictionary of gradients for each pre-state variable and arrival state:
-            {pre_state_var: {state_sym: gradient}}
+            {pre_state_var: {state_sym: gradient}}.
         """
         # Get the control's pre-state variables (stored as iset in the Control)
         if control_sym is None:
@@ -302,114 +662,158 @@ class BellmanPeriod:
                 if hasattr(rule, "iset"):
                     control_sym = sym
                     break
-
         if control_sym is None:
             raise ValueError("No control with pre-state found in block dynamics")
-
         control_rule = self.block.dynamics.get(control_sym)
         if control_rule is None or not hasattr(control_rule, "iset"):
-            raise ValueError(f"Control '{control_sym}' has no pre-state (iset) defined")
+            raise ValueError(
+                f"Control '{control_sym}' has no pre-state (iset) attribute defined. "
+                f"Ensure the Control object in block.dynamics['{control_sym}'] is "
+                "constructed with an explicit 'iset' argument specifying which "
+                "variables the control depends on."
+            )
 
-        pre_state_vars = control_rule.iset
-
-        # Compute pre-state values using helper method
-        pre_state_values = self._compute_pre_state_values(
-            pre_state_vars, states_t, shocks_t, parameters
+        pre_state_values = self.compute_pre_state(
+            control_sym, states, shocks=shocks, parameters=parameters
         )
 
         # Use utility function to compute gradients
-        return compute_gradients_for_tensors(pre_state_values, wrt)
+        return compute_gradients_for_tensors(
+            pre_state_values, wrt, create_graph=create_graph
+        )
 
-    def _compute_pre_state_values(self, pre_state_vars, states_t, shocks_t, parameters):
+    def resolve_discount_factor(self, post: dict[str, Any]) -> Any:
+        """Return ``post[self.discount_variable]``, raising ``KeyError``
+        with a diagnostic message if the discount variable is missing.
+        Expects the post-transition output returned by
+        :meth:`post_function`.
         """
-        Compute pre-decision state variable values.
+        dv = self.discount_variable
+        if dv not in post:
+            raise KeyError(
+                f"Discount variable '{dv}' not found in post-transition output. "
+                f"Available variables: {sorted(post.keys())}. "
+                "Ensure the discount variable is defined in block.dynamics "
+                "or passed in calibration."
+            )
+        return post[dv]
 
-        This is a helper method used by grad_pre_state_function and estimate_euler_residual
-        to compute pre-state values without duplication.
 
-        Parameters
-        ----------
-        pre_state_vars : list
-            List of pre-state variable names (from Control.iset)
-        states_t : dict
-            Arrival state variables
-        shocks_t : dict
-            Shock variables at time t
-        parameters : dict
-            Model parameters
+def _extract_period_shocks(
+    bellman_period: BellmanPeriod,
+    shocks: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Validate and split combined shocks into period-t and period-(t+1) dicts.
 
-        Returns
-        -------
-        dict
-            Dictionary mapping pre-state variable names to their computed values
-        """
-        # Build values dict with arrival states and parameters
-        vals = {**states_t, **shocks_t, **parameters}
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        Used to look up the model's shock variable names.
+    shocks : dict[str, Any]
+        Combined shock dict with keys ``{sym}_0`` (period t) and ``{sym}_1``
+        (period t+1) for each shock symbol.
 
-        # Compute pre-state variables by running dynamics up to the control
-        pre_state_values = {}
-        for var_name in pre_state_vars:
-            if var_name in self.arrival_states:
-                # Pre-state variable IS an arrival state, gradient is identity
-                pre_state_values[var_name] = states_t[var_name]
-            elif var_name in self.block.dynamics:
-                # Compute the dynamics for this variable
-                rule = self.block.dynamics[var_name]
-                if callable(rule):
-                    sig = inspect.signature(rule)
-                    args = {p: vals[p] for p in sig.parameters if p in vals}
-                    pre_state_values[var_name] = rule(**args)
-                else:
-                    pre_state_values[var_name] = rule
-            else:
-                raise ValueError(
-                    f"Pre-state variable '{var_name}' not found in arrival_states or dynamics"
-                )
+    Returns
+    -------
+    shocks_t, shocks_t_plus_1 : tuple[dict, dict]
 
-        return pre_state_values
+    Raises
+    ------
+    KeyError
+        If a required shock key is missing.
+
+    Notes
+    -----
+    For deterministic models with no shocks, ``shock_syms`` is empty,
+    no keys are required in *shocks*, and both returned dicts are empty.
+    """
+    shock_syms = list(bellman_period.get_shocks())
+    for sym in shock_syms:
+        if f"{sym}_0" not in shocks:
+            raise KeyError(
+                f"Missing shock '{sym}_0' in shocks dict. For models with shocks, "
+                f"provide two independent realizations: '{sym}_0' (period t) "
+                f"and '{sym}_1' (period t+1)."
+            )
+        if f"{sym}_1" not in shocks:
+            raise KeyError(
+                f"Missing shock '{sym}_1' in shocks dict. For models with shocks, "
+                f"provide two independent realizations: '{sym}_0' (period t) "
+                f"and '{sym}_1' (period t+1)."
+            )
+    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
+    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
+    return shocks_t, shocks_t_plus_1
+
+
+def _ensure_grad(
+    controls: dict[str, Any], sym: str
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    """Ensure the control tensor for *sym* has ``requires_grad=True``.
+
+    If the tensor already tracks gradients it is returned as-is.  Otherwise it
+    is detached and re-attached so that ``torch.autograd.grad`` can
+    differentiate through it.
+
+    Returns the (possibly new) tensor and an updated copy of *controls*.
+    """
+    c = controls[sym]
+    if not isinstance(c, torch.Tensor):
+        raise TypeError(
+            f"Control '{sym}' must be a torch.Tensor for gradient computation, "
+            f"got {type(c).__name__}"
+        )
+    if not c.requires_grad:
+        c = c.detach().requires_grad_(True)
+    return c, {**controls, sym: c}
 
 
 def estimate_discounted_lifetime_reward(
-    bellman_period,
-    discount_factor,
-    dr,
-    states_0,
-    big_t,
-    shocks_by_t=None,
-    parameters={},
-    agent=None,
-):
-    """
+    bellman_period: BellmanPeriod,
+    dr: dict[str, Callable] | Callable,
+    states_0: dict[str, Any],
+    big_t: int,
+    shocks_by_t: dict[str, Any] | None = None,
+    parameters: dict[str, Any] | None = None,
+    agent: str | None = None,
+) -> float | torch.Tensor:
+    r"""
     Compute the discounted lifetime reward for a model given a fixed T of periods to simulate forward.
 
-    MMW JME '21 for inspiration.
+    Based on Maliar, Maliar, and Winant (2021, JME).
 
-    bellman_period
-    discount_factor - can be a number or a function of state variables
-    dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
-    states_0 - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
-    shocks_by_t - dict - sym : big_t vector of shock values at each time period
-    big_t - integer. Number of time steps to simulate forward
-    parameters - optional - calibration parameters
-    agent - optional - name of reference agent for rewards
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The Bellman period object containing the model. The discount factor is
+        extracted from the post-transition variables via ``bellman_period.discount_variable``.
+    dr : dict[str, Callable] | Callable
+        Decision rules (dict of functions), or a decision function that
+        returns the decisions given states, shocks, and parameters.
+    states_0 : dict[str, Any]
+        Initial states as a dictionary mapping symbols to values.
+        Both scalar and vector values are supported.
+    big_t : int
+        Number of time steps to simulate forward.
+    shocks_by_t : dict[str, Any] | None, optional
+        Dictionary mapping shock symbols to arrays of shock values at each
+        time period. The first axis must have length ``big_t``; remaining
+        axes are batch dimensions (e.g., shape ``(big_t, n_samples)``).
+    parameters : dict[str, Any] | None, optional
+        Calibration parameters (defaults to empty dict).
+    agent : str | None, optional
+        Name of reference agent for rewards. If None, all rewards are summed.
+
+    Returns
+    -------
+    float | torch.Tensor
+        The total discounted lifetime reward.
     """
     states_t = states_0
-    total_discounted_reward = 0
+    total_discounted_reward = 0.0
+    cumulative_discount = 1.0  # Π_{τ=0}^{t-1} β_τ
 
-    # Get all reward symbols for the agent
-    # TODO: move logic to bellman period
-    reward_syms = list(
-        {
-            sym
-            for sym in bellman_period.block.reward
-            if agent is None or bellman_period.block.reward[sym] == agent
-        }
-    )
-
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
+    reward_syms = bellman_period.get_reward_syms(agent)
 
     for t in range(big_t):
         if shocks_by_t is not None:
@@ -417,54 +821,53 @@ def estimate_discounted_lifetime_reward(
         else:
             shocks_t = {}
 
-        if callable(dr):
-            # assume a full decision function has been passed in
-            controls_t = dr(states_t, shocks_t, parameters)
-        else:
-            # create a decision function from the decision rule
-            controls_t = bellman_period.decision_function(
-                states_t, shocks_t, parameters, decision_rules=dr
-            )
-
-        reward_t = bellman_period.reward_function(
-            states_t, shocks_t, controls_t, parameters, agent=agent
+        controls_t = bellman_period.compute_controls(
+            dr, states_t, shocks=shocks_t, parameters=parameters
         )
 
-        # Sum all rewards for this period
+        # TODO: can improve performance by consolidating multiple calls
+        #       that simulate forward.
+        post = bellman_period.post_function(
+            states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
+        )
+        discount_factor = bellman_period.resolve_discount_factor(post)
+
+        reward_t = bellman_period.reward_function(
+            states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
+        )
+
         period_reward = 0
         for rsym in reward_syms:
-            # assumes torch
             if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
                 torch.isnan(reward_t[rsym])
             ):
-                raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+                raise ValueError(f"Calculated reward {rsym} is NaN: {reward_t}")
             if isinstance(reward_t[rsym], np.ndarray) and np.any(
                 np.isnan(reward_t[rsym])
             ):
-                raise Exception(f"Calculated reward {rsym} is NaN: {reward_t}")
+                raise ValueError(f"Calculated reward {rsym} is NaN: {reward_t}")
             period_reward += reward_t[rsym]
 
-        total_discounted_reward += period_reward * discount_factor**t
+        total_discounted_reward += period_reward * cumulative_discount
+        cumulative_discount = cumulative_discount * discount_factor
 
-        # t + 1
         states_t = bellman_period.transition_function(
-            states_t, shocks_t, controls_t, parameters
+            states_t, controls_t, shocks=shocks_t, parameters=parameters
         )
 
     return total_discounted_reward
 
 
 def estimate_bellman_residual(
-    bellman_period,
-    discount_factor,
-    value_function,
-    df,
-    states_t,
-    shocks,
-    parameters={},
-    agent=None,
-):
-    """
+    bellman_period: BellmanPeriod,
+    vf: dict[str, Callable] | Callable,
+    df: dict[str, Callable] | Callable,
+    states_t: dict[str, Any],
+    shocks: dict[str, Any],
+    parameters: dict[str, Any] | None = None,
+    agent: str | None = None,
+) -> torch.Tensor:
+    r"""
     Computes the Bellman equation residual for given states and shocks.
 
     The Bellman equation is:
@@ -485,71 +888,90 @@ def estimate_bellman_residual(
     Parameters
     ----------
     bellman_period : BellmanPeriod
-        The Bellman period with transitions, rewards, etc.
-    discount_factor : float
-        The discount factor β
-    value_function : callable
-        A value function that takes state variables and returns value estimates
-    df : callable
-        Decision function that returns controls given states and shocks
-    states_t : dict
-        Current state variables
-    shocks : dict
+        The Bellman period with transitions, rewards, etc. The discount factor is
+        extracted from the post-transition variables via ``bellman_period.discount_variable``.
+    vf : dict[str, Callable] | Callable
+        Value function ``vf(states_t, shocks_t, parameters) -> tensor``
+        on arrival states, or a dict mapping ``agent`` name to such a
+        callable for multi-agent models (in which case ``agent`` must be
+        specified). Any pre-decision (iset) computation the underlying
+        approximator needs is the callable's responsibility.
+    df : dict[str, Callable] | Callable
+        Decision callable ``df(states_t, shocks_t, parameters) -> controls_t``
+        on arrival states, or a dict of decision rules keyed by control
+        symbol (callables on the iset).
+    states_t : dict[str, Any]
+        Current arrival state variables.
+    shocks : dict[str, Any]
         Shock realizations for both periods:
         - {shock_sym}_0: period t shocks (for immediate reward and transitions)
         - {shock_sym}_1: period t+1 shocks (for continuation value evaluation)
-    parameters : dict, optional
-        Model parameters for calibration
-    agent : str, optional
-        Agent identifier for rewards
+    parameters : dict[str, Any] | None, optional
+        Model parameters for calibration (defaults to empty dict).
+    agent : str | None, optional
+        Agent identifier for rewards.
 
     Returns
     -------
     torch.Tensor
-        Bellman equation residual
+        Bellman equation residual.
+
+    Raises
+    ------
+    ValueError
+        If no reward variables are found in the block.
+    KeyError
+        If required shock variables are missing from the shocks dict.
+
+    Notes
+    -----
+    Single-reward, multi-control: this function returns a single residual
+    tensor, evaluated against the first reward variable matching ``agent``.
+    For multi-control models it complements
+    :func:`estimate_euler_residual` (which returns one residual per
+    control) and :func:`estimate_bellman_foc_residual` (which returns one
+    FOC residual per control by differentiating the value callable).
     """
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
+    shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
 
-    # Get shock variable names
-    shock_vars = bellman_period.get_shocks()
-    shock_syms = list(shock_vars.keys())
+    reward_sym = bellman_period.get_reward_sym(agent)
 
-    # Extract period-specific shocks from the combined shocks object
-    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
-    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
-
-    # Get reward variables
-    # TODO: logic to BP
-    reward_vars = [
-        sym
-        for sym in bellman_period.block.reward
-        if agent is None or bellman_period.block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
-        raise Exception("No reward variables found in block")
-    reward_sym = reward_vars[0]  # Assume single reward for now
-
-    # Get current value estimates (using period t shocks)
-    current_values = value_function(states_t, shocks_t, parameters)
-
-    # Get controls from decision function (using period t shocks)
-    controls_t = df(states_t, shocks_t, parameters)
-
-    # Compute immediate reward (using period t shocks)
-    immediate_reward = bellman_period.reward_function(
-        states_t, shocks_t, controls_t, parameters
-    )[reward_sym]
-
-    # Compute next states (using period t shocks)
-    next_states = bellman_period.transition_function(
-        states_t, shocks_t, controls_t, parameters
+    # V(s_t) — value at the period-t arrival state
+    current_values = bellman_period.compute_value(
+        vf, states_t, shocks=shocks_t, parameters=parameters, agent=agent
     )
 
-    # Compute continuation value using value network (using period t+1 shocks)
-    continuation_values = value_function(next_states, shocks_t_plus_1, parameters)
+    # Controls from decision callable (also takes arrival states)
+    controls_t = bellman_period.compute_controls(
+        df, states_t, shocks=shocks_t, parameters=parameters
+    )
+
+    # Immediate reward at period t
+    immediate_reward = bellman_period.reward_function(
+        states_t, controls_t, shocks=shocks_t, parameters=parameters
+    )[reward_sym]
+
+    # Next-period arrival state from the transition
+    next_states = bellman_period.transition_function(
+        states_t, controls_t, shocks=shocks_t, parameters=parameters
+    )
+
+    # V(s_{t+1}) — continuation value at the next-period arrival state
+    # using the second independent shock draw
+    continuation_values = bellman_period.compute_value(
+        vf,
+        next_states,
+        shocks=shocks_t_plus_1,
+        parameters=parameters,
+        agent=agent,
+    )
+
+    # TODO: this is all calling the forward simulation multiple times;
+    #       can be made more efficient
+    post = bellman_period.post_function(
+        states_t, controls_t, shocks=shocks_t, parameters=parameters
+    )
+    discount_factor = bellman_period.resolve_discount_factor(post)
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
@@ -557,361 +979,431 @@ def estimate_bellman_residual(
     # Return residual: V(s) - [u(s,c,ε) + β V(s')]
     bellman_residual = current_values - bellman_rhs
 
+    if torch.any(torch.isnan(bellman_residual)) or torch.any(
+        torch.isinf(bellman_residual)
+    ):
+        # Provide detailed diagnostics to help locate the source
+        def _range_str(t):
+            if not isinstance(t, torch.Tensor):
+                return str(t)
+            return f"[{t.min().item():.2e}, {t.max().item():.2e}]"
+
+        raise ValueError(
+            "Bellman residual contains NaN or Inf. "
+            f"immediate_reward range: {_range_str(immediate_reward)}, "
+            f"discount_factor: {_range_str(discount_factor)}, "
+            f"continuation_values range: {_range_str(continuation_values)}, "
+            f"current_values range: {_range_str(current_values)}."
+        )
+
     return bellman_residual
 
 
-def estimate_euler_residual(
-    bellman_period,
-    discount_factor,
-    df,
-    states_t,
-    shocks,
-    parameters=None,
-    agent=None,
-):
+def _chain_rule_return_factor(
+    bellman_period: BellmanPeriod,
+    control_sym: str,
+    transition_gradients: dict[str, torch.Tensor | None],
+    pre_state_gradients: dict[str, dict[str, torch.Tensor | None]],
+    like: torch.Tensor,
+) -> torch.Tensor:
+    r"""Sum the chain-rule product :math:`\sum_s \partial m'/\partial s' \cdot \partial s'/\partial c`.
+
+    Here :math:`s'` indexes the next-period arrival states, :math:`m'` is
+    the next-period pre-decision state (the variable in the control's
+    information set), and :math:`c` is the period-:math:`t` control. The
+    sum is the envelope-condition return factor used in the Euler
+    residual.
+
+    Raises ``ValueError`` if no chain-rule path contributes.
     """
-    Computes the Euler equation residual for given states and shocks.
+    if torch.any(torch.isnan(like)) or torch.any(torch.isinf(like)):
+        raise ValueError(
+            f"Euler residual: marginal_reward_t1 contains NaN or Inf for "
+            f"control '{control_sym}'. Cannot compute chain-rule return factor."
+        )
+
+    total = torch.zeros_like(like)
+
+    for state_sym in bellman_period.arrival_states:
+        trans_grad = transition_gradients[state_sym]
+        if trans_grad is None:
+            logging.debug(
+                "Transition gradient d(%s)/d(%s) is None (no computational path). "
+                "If unexpected, check that control '%s' tensors require_grad.",
+                state_sym,
+                control_sym,
+                control_sym,
+            )
+            continue
+        for state_grads in pre_state_gradients.values():
+            pre_state_grad = state_grads.get(state_sym)
+            if pre_state_grad is not None:
+                total = total + pre_state_grad * trans_grad
+
+    if torch.any(torch.isnan(total)):
+        raise ValueError(
+            f"Euler residual: return_factor_sum contains NaN for "
+            f"control '{control_sym}'. This indicates ill-conditioned "
+            "transition or pre-state gradients. Check block dynamics for "
+            "numerical stability."
+        )
+    if torch.any(torch.isinf(total)):
+        raise ValueError(
+            f"Euler residual: return_factor_sum contains Inf for "
+            f"control '{control_sym}'. This indicates ill-conditioned "
+            "transition or pre-state gradients. Check block dynamics for "
+            "numerical stability."
+        )
+    if not torch.any(total != 0):
+        raise ValueError(
+            "Euler residual: return_factor_sum is zero for all arrival states. "
+            "No arrival state depends on the control through the transition "
+            "and pre-state gradients. Check that the block dynamics correctly "
+            f"connect the control '{control_sym}' to the arrival states "
+            f"{sorted(bellman_period.arrival_states)} and that the Control "
+            "object has a properly defined 'iset'."
+        )
+    return total
+
+
+def _euler_residual_single_control(
+    bellman_period: BellmanPeriod,
+    discount_factor: Any,
+    control_sym: str,
+    reward_sym: str,
+    states_t: dict[str, Any],
+    controls_t: dict[str, Any],
+    states_t_plus_1: dict[str, Any],
+    controls_t_plus_1: dict[str, Any],
+    shocks_t: dict[str, Any],
+    shocks_t_plus_1: dict[str, Any],
+    parameters: dict[str, Any] | None,
+    agent: str | None,
+) -> torch.Tensor:
+    """Compute the Euler residual for a single control variable.
+
+    This is the inner workhorse called once per control by
+    ``estimate_euler_residual``.  Factored out to support multi-control models.
+    """
+    c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
+    c_t1, controls_t1_grad = _ensure_grad(controls_t_plus_1, control_sym)
+
+    # ∂u/∂c at period t
+    grads_t = bellman_period.grad_reward_function(
+        states_t,
+        controls_t_grad,
+        wrt={control_sym: c_t},
+        shocks=shocks_t,
+        parameters=parameters,
+        agent=agent,
+        create_graph=True,
+    )
+    marginal_reward_t = grads_t[reward_sym][control_sym]
+    if marginal_reward_t is None:
+        raise ValueError(
+            f"Could not compute marginal reward at period t: "
+            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+        )
+
+    # ∂u/∂c at period t+1
+    grads_t1 = bellman_period.grad_reward_function(
+        states_t_plus_1,
+        controls_t1_grad,
+        wrt={control_sym: c_t1},
+        shocks=shocks_t_plus_1,
+        parameters=parameters,
+        agent=agent,
+        create_graph=True,
+    )
+    marginal_reward_t1 = grads_t1[reward_sym][control_sym]
+    if marginal_reward_t1 is None:
+        raise ValueError(
+            f"Could not compute marginal reward at period t+1: "
+            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+        )
+
+    # Transition gradients: ∂s_{t+1}/∂c_t for all arrival states.
+    trans_grads_nested = bellman_period.grad_transition_function(
+        states_t,
+        controls_t_grad,
+        wrt={control_sym: c_t},
+        shocks=shocks_t,
+        parameters=parameters,
+        create_graph=True,
+    )
+    transition_gradients = {
+        state_sym: trans_grads_nested[state_sym][control_sym]
+        for state_sym in bellman_period.arrival_states
+    }
+
+    # Pre-state gradients: ∂m'/∂s' (envelope condition).
+    states_t1_grad = {
+        sym: s if s.requires_grad else s.detach().requires_grad_(True)
+        for sym, s in states_t_plus_1.items()
+        if sym in bellman_period.arrival_states
+    }
+
+    pre_state_gradients = bellman_period.grad_pre_state_function(
+        states_t1_grad,
+        wrt=states_t1_grad,
+        shocks=shocks_t_plus_1,
+        parameters=parameters,
+        control_sym=control_sym,
+        create_graph=True,
+    )
+
+    return_factor = _chain_rule_return_factor(
+        bellman_period,
+        control_sym,
+        transition_gradients,
+        pre_state_gradients,
+        like=marginal_reward_t1,
+    )
+
+    # f = u'(c_t) + β * u'(c_{t+1}) * Σ_s [∂m'/∂s' * ∂s'/∂c] = 0
+    return marginal_reward_t + discount_factor * marginal_reward_t1 * return_factor
+
+
+def estimate_euler_residual(
+    bellman_period: BellmanPeriod,
+    df: dict[str, Callable] | Callable,
+    states_t: dict[str, Any],
+    shocks: dict[str, Any],
+    parameters: dict[str, Any] | None = None,
+    agent: str | None = None,
+    controls_t: dict[str, Any] | None = None,
+) -> dict[str, torch.Tensor]:
+    r"""Compute the Euler equation residual for given states and shocks.
 
     The Euler equation is the first-order condition from the Bellman equation,
-    relating marginal utilities across periods. This function computes the Euler
-    equation **residual**:
+    relating marginal rewards across periods.  For each control variable
+    :math:`c_j`, this function computes the residual:
 
     .. math::
 
-        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot \\sum_s \\left[
-            \\frac{\\partial s_{t+1}}{\\partial c_t} \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
-        \\right]
+        f_j = u'(c_{j,t}) + \beta \cdot u'(c_{j,t+1}) \cdot \sum_s \left[
+            \frac{\partial s_{t+1}}{\partial c_{j,t}}
+            \cdot \frac{\partial m'_j}{\partial s_{t+1}}
+        \right]
 
-    where :math:`f` is the Euler equation residual, :math:`s_{t+1}` is the next-period
-    arrival state, and :math:`m'` is the pre-decision state (information set for the
-    control). At optimality, :math:`f = 0` represents the first-order condition being
-    satisfied.
+    At optimality :math:`f_j = 0` for every control :math:`j`.
 
-    **Derivation:**
+    The discount factor :math:`\beta` is obtained from the model via
+    ``bellman_period.discount_variable``.
 
-    The first-order condition from the Bellman equation
-    :math:`V(s) = \\max_c \\{ u(c) + \\beta E[V(s')] \\}` is:
-
-    .. math::
-
-        u'(c_t) = -\\beta E\\left[V'(s_{t+1}) \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
-
-    By the envelope theorem, :math:`V'(s') = u'(c') \\cdot \\frac{\\partial m'}{\\partial s'}`,
-    where :math:`m'` is the pre-decision state. Substituting:
-
-    .. math::
-
-        u'(c_t) = -\\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
-            \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right]
-
-    Rearranging to define the residual :math:`f`:
-
-    .. math::
-
-        f = u'(c_t) + \\beta E\\left[u'(c_{t+1}) \\cdot \\frac{\\partial m'}{\\partial s_{t+1}}
-            \\cdot \\frac{\\partial s_{t+1}}{\\partial c_t}\\right] = 0
-
-    **Example:**
-
-    For a consumption-saving model with :math:`a_{t+1} = m_t - c_t` where
-    :math:`m_t = R \\cdot a_t + y_t` (cash-on-hand):
-
-    - Transition gradient: :math:`\\frac{\\partial a_{t+1}}{\\partial c_t} = -1`
-    - Pre-state gradient: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} = R`
-    - Combined: :math:`\\frac{\\partial m'}{\\partial a_{t+1}} \\cdot \\frac{\\partial a_{t+1}}{\\partial c_t} = R \\cdot (-1) = -R`
-
-    Substituting into the residual:
-
-    .. math::
-
-        f = u'(c_t) + \\beta \\cdot u'(c_{t+1}) \\cdot (-R) = u'(c_t) - \\beta R \\cdot u'(c_{t+1})
-
-    At optimality, :math:`f = 0` gives the standard Euler equation
-    :math:`u'(c_t) = \\beta R E[u'(c_{t+1})]`.
-
-    **Notation:**
-
-    Following Maliar et al. (2021) Definition 2.7, this function computes a single
-    Euler equation residual using two independent shock realizations. The residual
-    :math:`f` uses shocks :math:`\\varepsilon_0` for transitions from :math:`t` to
-    :math:`t+1` and :math:`\\varepsilon_1` for transitions from :math:`t+1` to
-    :math:`t+2`.
-
-    The loss function then computes :math:`L(\\theta) = E[f^2]` where the squared
-    residual approximates the squared expectation operator from the paper.
-
-    Note: We use :math:`\\varepsilon` (epsilon) to denote exogenous shocks, which may
-    differ slightly from Maliar et al.'s notation but represents the same concept of
-    stochastic disturbances in the model.
+    Following Maliar et al. (2021, JME) Definition 2.7, this function uses two
+    independent shock realizations (AiO expectation operator).
 
     Parameters
     ----------
     bellman_period : BellmanPeriod
-        The Bellman period with transitions, rewards, etc.
-    discount_factor : float
-        The discount factor β (time preference parameter).
-    df : callable or dict
-        Decision function that returns controls given states and shocks.
-        Can be a callable with signature df(states_t, shocks_t, parameters) -> controls_t
-        or a dict of decision rules.
-    states_t : dict
-        Current state variables (arrival states)
-    shocks : dict
-        Shock realizations for both periods:
-        - {shock_sym}_0: period t shocks (for transitions to t+1)
-        - {shock_sym}_1: period t+1 shocks (for transitions to t+2)
-        This structure supports the AiO expectation operator.
-    parameters : dict, optional
-        Model parameters for calibration
-    agent : str, optional
-        Agent identifier for rewards
+        The Bellman period with transitions, rewards, etc.  The discount factor
+        is extracted from the post-transition variables via
+        ``bellman_period.discount_variable``.
+    df : dict[str, Callable] | Callable
+        Decision function or dict of decision rules.
+    states_t : dict[str, Any]
+        Current state variables (arrival states).
+    shocks : dict[str, Any]
+        Shock realizations for both periods (``{sym}_0`` and ``{sym}_1``).
+    parameters : dict[str, Any] | None, optional
+        Model parameters for calibration.
+    agent : str | None, optional
+        Agent identifier for rewards.
+    controls_t : dict[str, Any] | None, optional
+        Pre-computed period-t controls. When provided, the function skips its
+        internal ``compute_controls`` call for period t.  This is used by
+        ``EulerEquationLoss`` to share the same control tensors between the
+        residual computation and the constraint slack computation.
 
     Returns
     -------
-    torch.Tensor
-        Euler equation residual computed using two independent shock realizations
-        (one for each period transition). Returns one residual value per state sample.
-
-    Notes
-    -----
-    This implementation follows Maliar, Maliar, and Winant (2021, JME) Section 2.2.
-    The AiO expectation operator (Definition 2.7) requires two independent shock
-    realizations to approximate the squared expectation E[(E[f])²].
-
-    Examples
-    --------
-    >>> # Euler equation automatically adapts to your model's reward structure
-    >>> residual = estimate_euler_residual(
-    ...     bp, discount_factor=0.95, df=my_policy,
-    ...     states_t, shocks, parameters
-    ... )
+    dict[str, torch.Tensor]
+        Mapping from each control symbol to its Euler residual tensor.
     """
-    if parameters is None:
-        parameters = {}
+    shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
 
-    if callable(discount_factor):
-        raise ValueError(
-            "State-dependent discount factors not yet supported for Euler residuals. "
-            "Please pass a numerical discount factor."
-        )
+    reward_sym = bellman_period.get_reward_sym(agent)
 
-    # Get shock variable names
-    shock_vars = bellman_period.get_shocks()
-    shock_syms = list(shock_vars.keys())
-
-    # Extract period-specific shocks from the combined shocks object
-    # shocks_0 are for transitions from t to t+1
-    # shocks_1 are for transitions from t+1 to t+2 (independent realization)
-    # For deterministic models (no shocks), shock_syms will be empty and these dicts will be empty
-    for sym in shock_syms:
-        if f"{sym}_0" not in shocks:
-            raise KeyError(
-                f"Missing shock '{sym}_0' in shocks dict. For models with shocks, "
-                f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-            )
-        if f"{sym}_1" not in shocks:
-            raise KeyError(
-                f"Missing shock '{sym}_1' in shocks dict. For models with shocks, "
-                f"provide two independent realizations: '{sym}_0' (period t) and '{sym}_1' (period t+1)."
-            )
-    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
-    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
-
-    # Get reward variables (should have exactly one for standard Euler equation)
-    reward_vars = [
-        sym
-        for sym in bellman_period.block.reward
-        if agent is None or bellman_period.block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
-        raise ValueError("No reward variables found in block for the specified agent")
-
-    reward_sym = reward_vars[0]
-
-    # Get controls from decision function for period t
-    if callable(df):
-        # Full decision function provided
-        controls_t = df(states_t, shocks_t, parameters)
-    else:
-        # Dictionary of decision rules provided
-        controls_t = bellman_period.decision_function(
-            states_t, shocks_t, parameters, decision_rules=df
+    # Period-t controls and transition
+    if controls_t is None:
+        controls_t = bellman_period.compute_controls(
+            df, states_t, shocks=shocks_t, parameters=parameters
         )
 
     # Compute next period states (t+1) using first shock realization
     states_t_plus_1 = bellman_period.transition_function(
-        states_t, shocks_t, controls_t, parameters
+        states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
 
-    # Get controls for period t+1 using second independent shock realization
-    if callable(df):
-        controls_t_plus_1 = df(states_t_plus_1, shocks_t_plus_1, parameters)
-    else:
-        controls_t_plus_1 = bellman_period.decision_function(
-            states_t_plus_1, shocks_t_plus_1, parameters, decision_rules=df
-        )
+    # Period-(t+1) controls (second independent shock draw — AiO)
+    controls_t_plus_1 = bellman_period.compute_controls(
+        df, states_t_plus_1, shocks=shocks_t_plus_1, parameters=parameters
+    )
 
-    # Get control symbols to compute gradients with respect to
-    control_syms = list(controls_t.keys())
+    control_syms = list(controls_t)
     if len(control_syms) == 0:
         raise ValueError("No control variables found in decision function")
-    if len(control_syms) > 1:
-        raise NotImplementedError(
-            "Euler residual estimation currently only supports single-control models. "
-            f"Found controls: {control_syms}"
+
+    # Resolve discount factor from model
+    post = bellman_period.post_function(
+        states_t, controls_t, shocks=shocks_t, parameters=parameters
+    )
+    discount_factor = bellman_period.resolve_discount_factor(post)
+
+    # Compute Euler residual for each control
+    residuals = {}
+    for control_sym in control_syms:
+        residuals[control_sym] = _euler_residual_single_control(
+            bellman_period,
+            discount_factor,
+            control_sym,
+            reward_sym,
+            states_t,
+            controls_t,
+            states_t_plus_1,
+            controls_t_plus_1,
+            shocks_t,
+            shocks_t_plus_1,
+            parameters,
+            agent,
         )
 
-    control_sym = control_syms[0]  # Assume single control for now
+    return residuals
 
-    # For training, we need to compute marginal utilities while keeping the policy
-    # in the computation graph. We use create_graph=True to allow backprop through
-    # the gradient computation itself.
-    #
-    # The approach:
-    # 1. Compute reward with controls that require grad
-    # 2. Use autograd to get u'(c) w.r.t. c, with create_graph=True
-    # 3. This keeps the policy network in the graph for end-to-end training
 
-    # Enable gradients on the original controls (not detached copies)
-    c_t = controls_t[control_sym]
-    c_t_plus_1 = controls_t_plus_1[control_sym]
+def estimate_bellman_foc_residual(
+    bellman_period: BellmanPeriod,
+    vf: dict[str, Callable] | Callable,
+    df: dict[str, Callable] | Callable,
+    states_t: dict[str, Any],
+    shocks: dict[str, Any],
+    parameters: dict[str, Any] | None = None,
+    agent: str | None = None,
+) -> dict[str, torch.Tensor]:
+    r"""Compute the first-order condition (FOC) residual from the Bellman equation.
 
-    # Ensure controls require gradients for computing marginal utility
-    if not c_t.requires_grad:
-        c_t = c_t.detach().requires_grad_(True)
-    if not c_t_plus_1.requires_grad:
-        c_t_plus_1 = c_t_plus_1.detach().requires_grad_(True)
+    The Bellman equation is:
 
-    # Build controls dicts with grad-enabled tensors
-    controls_t_grad = {**controls_t, control_sym: c_t}
-    controls_t_plus_1_grad = {**controls_t_plus_1, control_sym: c_t_plus_1}
+    .. math::
 
-    # Compute reward at t and get marginal utility u'(c_t)
-    rewards_t = bellman_period.reward_function(
-        states_t, shocks_t, controls_t_grad, parameters, agent=agent
+        V(s) = \max_c \{ u(s,c,\varepsilon) + \beta E_{\varepsilon'}[V(s')] \}
+
+    The FOC w.r.t. each control :math:`c_j` is:
+
+    .. math::
+
+        \frac{\partial u}{\partial c_j}
+        + \beta \sum_s \frac{\partial V(s')}{\partial s'_s}
+        \cdot \frac{\partial s'_s}{\partial c_j} = 0
+
+    Adding a weighted FOC term to the Bellman loss improves convergence
+    (Maliar et al. 2021, equation 14).
+
+    Unlike :func:`estimate_euler_residual`, which replaces :math:`V'(s')` with
+    the envelope condition :math:`u'(c') \cdot \partial m'/\partial s'` (where
+    :math:`m'` is the next-period pre-decision state), this function
+    differentiates the value callable directly.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The Bellman period.
+    vf : dict[str, Callable] | Callable
+        Value function on arrival states; either a single callable or a
+        per-agent dict. See :func:`estimate_bellman_residual` for the
+        full contract.
+    df : dict[str, Callable] | Callable
+        Decision callable on arrival states, or dict of decision rules.
+    states_t : dict[str, Any]
+        Current arrival state variables.
+    shocks : dict[str, Any]
+        Shock realizations with ``{sym}_0`` and ``{sym}_1`` keys.
+    parameters : dict[str, Any] | None, optional
+        Model parameters.
+    agent : str | None, optional
+        Agent identifier.
+
+    Returns
+    -------
+    dict[str, torch.Tensor]
+        Mapping from each control symbol to its FOC residual tensor.
+    """
+    shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
+    reward_sym = bellman_period.get_reward_sym(agent)
+
+    controls_t = bellman_period.compute_controls(
+        df, states_t, shocks=shocks_t, parameters=parameters
     )
-    reward_t = rewards_t[reward_sym]
+    control_syms = list(controls_t)
 
-    # Compute marginal utility at t: u'(c_t) = ∂u/∂c
-    # Use create_graph=True to keep policy in computation graph for training
-    marginal_utility_t = grad(
-        reward_t.sum(),
-        c_t,
-        create_graph=True,
-        retain_graph=True,
-        allow_unused=True,
-    )[0]
+    post = bellman_period.post_function(
+        states_t, controls_t, shocks=shocks_t, parameters=parameters
+    )
+    discount_factor = bellman_period.resolve_discount_factor(post)
 
-    if marginal_utility_t is None:
-        raise ValueError(
-            f"Could not compute marginal utility: reward '{reward_sym}' "
-            f"does not depend on control '{control_sym}'"
+    residuals = {}
+    for control_sym in control_syms:
+        c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
+
+        # u'(c_t) — marginal reward at period t
+        reward_grads = bellman_period.grad_reward_function(
+            states_t,
+            controls_t_grad,
+            wrt={control_sym: c_t},
+            shocks=shocks_t,
+            parameters=parameters,
+            agent=agent,
+            create_graph=True,
+        )
+        mr_t = reward_grads[reward_sym][control_sym]
+        if mr_t is None:
+            raise ValueError(
+                f"Could not compute marginal reward: "
+                f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+            )
+
+        # s' = f(s, c, ε₀) — transition preserving autograd graph through c_t
+        next_states = bellman_period.transition_function(
+            states_t, controls_t_grad, shocks=shocks_t, parameters=parameters
         )
 
-    # Compute reward at t+1 and get marginal utility u'(c_{t+1})
-    rewards_t_plus_1 = bellman_period.reward_function(
-        states_t_plus_1,
-        shocks_t_plus_1,
-        controls_t_plus_1_grad,
-        parameters,
-        agent=agent,
-    )
-    reward_t_plus_1 = rewards_t_plus_1[reward_sym]
-
-    marginal_utility_t_plus_1 = grad(
-        reward_t_plus_1.sum(),
-        c_t_plus_1,
-        create_graph=True,
-        retain_graph=True,
-        allow_unused=True,
-    )[0]
-
-    if marginal_utility_t_plus_1 is None:
-        raise ValueError(
-            f"Could not compute marginal utility at t+1: reward '{reward_sym}' "
-            f"does not depend on control '{control_sym}'"
+        # V(s', ε₁) — continuation value with second independent shock draw,
+        # evaluated on next-period arrival states
+        v_next = bellman_period.compute_value(
+            vf,
+            next_states,
+            shocks=shocks_t_plus_1,
+            parameters=parameters,
+            agent=agent,
         )
 
-    # Compute transition gradients: ∂s_{t+1}/∂c_t for all arrival states
-    # This captures how today's control affects tomorrow's state (e.g., ∂a'/∂c = -1)
-    # We need create_graph=True here too for end-to-end training
-    next_states = bellman_period.transition_function(
-        states_t, shocks_t, controls_t_grad, parameters
-    )
-
-    transition_gradients = {}
-    for state_sym in bellman_period.arrival_states:
-        next_state = next_states[state_sym]
-        trans_grad = grad(
-            next_state.sum(),
+        # ∂V/∂c via autograd chain rule: ∂V/∂s' * ∂s'/∂c
+        dv_dc = torch.autograd.grad(
+            v_next.sum(),
             c_t,
             create_graph=True,
             retain_graph=True,
             allow_unused=True,
         )[0]
-        transition_gradients[state_sym] = trans_grad
 
-    # Compute the return factor from the dynamics: ∂m'/∂s' (how pre-state depends on arrival state)
-    # By the envelope theorem: V'(s') = u'(c') * ∂m'/∂s'
-    # For consumption-saving with m = a*R + y, this gives ∂m/∂a = R
-    #
-    # For this, we need to compute gradients of pre-state variables w.r.t. arrival states
-    # Make arrival states at t+1 require gradients
-    states_t_plus_1_grad = {}
-    for sym in bellman_period.arrival_states:
-        s = states_t_plus_1[sym]
-        if not s.requires_grad:
-            s = s.detach().requires_grad_(True)
-        states_t_plus_1_grad[sym] = s
+        if dv_dc is None:
+            # Continuation value has no differentiable dependence on this
+            # control; with allow_unused=True this is a legitimate outcome
+            # for multi-control models where only some controls affect V(s').
+            # Treat it as a zero gradient and continue.
+            logging.debug(
+                "Autograd returned None for dV/d%s — treating as zero gradient.",
+                control_sym,
+            )
+            dv_dc = torch.zeros_like(c_t)
+        if torch.any(torch.isnan(dv_dc)):
+            raise ValueError(
+                f"Autograd gradient dV/d{control_sym} is NaN. "
+                "Check that vf is properly initialized and numerically stable."
+            )
 
-    # Get the control's pre-state variables
-    control_rule = bellman_period.block.dynamics.get(control_sym)
-    if control_rule is not None and hasattr(control_rule, "iset"):
-        pre_state_vars = control_rule.iset
-    else:
-        # Fall back: assume control depends on arrival states directly
-        pre_state_vars = list(bellman_period.arrival_states)
+        # FOC: u'(c) + β * ∂V(s',ε')/∂c = 0
+        residuals[control_sym] = mr_t + discount_factor * dv_dc
 
-    # Compute pre-state values using the helper method (avoids code duplication)
-    pre_state_values = bellman_period._compute_pre_state_values(
-        pre_state_vars, states_t_plus_1_grad, shocks_t_plus_1, parameters
-    )
-
-    # Compute ∂(pre_state)/∂(arrival_state) using utility function with create_graph=True
-    pre_state_gradients = compute_gradients_for_tensors(
-        pre_state_values, states_t_plus_1_grad, create_graph=True
-    )
-
-    # Compute ∂(pre_state)/∂(arrival_state) * ∂(arrival_state)/∂c summed over states
-    # This gives the total derivative of pre-state w.r.t. control through all paths
-    return_factor_sum = torch.zeros_like(marginal_utility_t_plus_1)
-
-    for state_sym in bellman_period.arrival_states:
-        trans_grad = transition_gradients[state_sym]
-        if trans_grad is None:
-            continue
-
-        # Sum over all pre-state variables
-        for pre_state_var, state_grads in pre_state_gradients.items():
-            pre_state_grad = state_grads.get(state_sym)
-            if pre_state_grad is not None:
-                # Chain rule: dm/dc = dm/ds * ds/dc
-                return_factor_sum = return_factor_sum + pre_state_grad * trans_grad
-
-    # Compute the Euler equation residual
-    # The first-order condition is: u'(c_t) = β * V'(a') * |∂a'/∂c|
-    # where V'(a') = u'(c') * ∂m'/∂a' (envelope theorem)
-    #
-    # In residual form with proper signs:
-    # f = u'(c_t) + β * u'(c_{t+1}) * (∂a'/∂c) * (∂m'/∂a')
-    #
-    # For consumption-saving: ∂a'/∂c = -1, ∂m'/∂a' = R
-    # So: f = u'(c) + β * u'(c') * (-1) * R = u'(c) - βR*u'(c')
-
-    # return_factor_sum already contains (∂a'/∂c * ∂m'/∂a') summed over states
-    euler_residual = (
-        marginal_utility_t
-        + discount_factor * marginal_utility_t_plus_1 * return_factor_sum
-    )
-
-    return euler_residual
+    return residuals

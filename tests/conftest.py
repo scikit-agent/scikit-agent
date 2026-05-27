@@ -14,7 +14,7 @@ case_0 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda a: 0},
     "givens": grid.Grid.from_config(
         {
@@ -22,7 +22,7 @@ case_0 = {
         }
     ),
 }
-case_0["bp"] = BellmanPeriod(case_0["block"], case_0["calibration"])
+case_0["bp"] = BellmanPeriod(case_0["block"], "beta", case_0["calibration"])
 
 case_1 = {
     "block": DBlock(
@@ -39,7 +39,7 @@ case_1 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda a, theta: theta},
     "givens": {
         1: grid.Grid.from_config(
@@ -57,7 +57,7 @@ case_1 = {
         ),
     },
 }
-case_1["bp"] = BellmanPeriod(case_1["block"], case_1["calibration"])
+case_1["bp"] = BellmanPeriod(case_1["block"], "beta", case_1["calibration"])
 
 case_2 = {
     "block": DBlock(
@@ -74,7 +74,7 @@ case_2 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda a: 0},
     "givens": grid.Grid.from_config(
         {
@@ -83,7 +83,7 @@ case_2 = {
         }
     ),
 }
-case_2["bp"] = BellmanPeriod(case_2["block"], case_2["calibration"])
+case_2["bp"] = BellmanPeriod(case_2["block"], "beta", case_2["calibration"])
 
 case_3 = {
     "block": DBlock(
@@ -103,7 +103,7 @@ case_3 = {
         }
     ),
     "optimal_dr": {"c": lambda m: m},
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "givens": {
         1: grid.Grid.from_config(
             {
@@ -123,7 +123,7 @@ case_3 = {
         ),
     },
 }
-case_3["bp"] = BellmanPeriod(case_3["block"], case_3["calibration"])
+case_3["bp"] = BellmanPeriod(case_3["block"], "beta", case_3["calibration"])
 
 case_4 = {
     "block": DBlock(
@@ -144,7 +144,7 @@ case_4 = {
         }
     ),
     "optimal_dr": {"c": lambda g, m: g - m},
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "givens": {
         2: grid.Grid.from_config(
             {
@@ -158,7 +158,7 @@ case_4 = {
         ),
     },
 }
-case_4["bp"] = BellmanPeriod(case_4["block"], case_4["calibration"])
+case_4["bp"] = BellmanPeriod(case_4["block"], "beta", case_4["calibration"])
 
 case_5 = {
     "block": DBlock(
@@ -175,7 +175,7 @@ case_5 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda a: a},
     "givens": grid.Grid.from_config(
         {
@@ -184,7 +184,7 @@ case_5 = {
         }
     ),
 }
-case_5["bp"] = BellmanPeriod(case_5["block"], case_5["calibration"])
+case_5["bp"] = BellmanPeriod(case_5["block"], "beta", case_5["calibration"])
 
 case_6 = {
     "block": DBlock(
@@ -203,7 +203,7 @@ case_6 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda a: a},
     "givens": grid.Grid.from_config(
         {
@@ -212,7 +212,7 @@ case_6 = {
         }
     ),
 }
-case_6["bp"] = BellmanPeriod(case_6["block"], case_6["calibration"])
+case_6["bp"] = BellmanPeriod(case_6["block"], "beta", case_6["calibration"])
 
 case_7 = {
     "block": DBlock(
@@ -229,7 +229,7 @@ case_7 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda a: 1},
     "givens": grid.Grid.from_config(
         {
@@ -238,7 +238,7 @@ case_7 = {
         }
     ),
 }
-case_7["bp"] = BellmanPeriod(case_7["block"], case_7["calibration"])
+case_7["bp"] = BellmanPeriod(case_7["block"], "beta", case_7["calibration"])
 
 case_8 = {
     "block": DBlock(
@@ -255,7 +255,7 @@ case_8 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda a: a},
     "givens": grid.Grid.from_config(
         {
@@ -264,7 +264,7 @@ case_8 = {
         }
     ),
 }
-case_8["bp"] = BellmanPeriod(case_8["block"], case_8["calibration"])
+case_8["bp"] = BellmanPeriod(case_8["block"], "beta", case_8["calibration"])
 
 case_9 = {
     "block": DBlock(
@@ -278,7 +278,7 @@ case_9 = {
             "reward": {"u": "consumer"},
         }
     ),
-    "calibration": {},
+    "calibration": {"beta": 0.9},
     "optimal_dr": {"c": lambda: 3},
     "givens": grid.Grid.from_config(
         {
@@ -286,7 +286,7 @@ case_9 = {
         }
     ),
 }
-case_9["bp"] = BellmanPeriod(case_9["block"], case_9["calibration"])
+case_9["bp"] = BellmanPeriod(case_9["block"], "beta", case_9["calibration"])
 
 case_10 = {
     "block": DBlock(
@@ -300,7 +300,7 @@ case_10 = {
             "reward": {"u": "agent"},
         }
     ),
-    "calibration": {"k": 3},
+    "calibration": {"k": 3, "beta": 0.9},
     "optimal_dr": {"c": lambda a: a, "d": lambda: 3},
     "givens": grid.Grid.from_config(
         {
@@ -308,7 +308,7 @@ case_10 = {
         }
     ),
 }
-case_10["bp"] = BellmanPeriod(case_10["block"], case_10["calibration"])
+case_10["bp"] = BellmanPeriod(case_10["block"], "beta", case_10["calibration"])
 
 case_11 = {
     "block": DBlock(
@@ -336,4 +336,4 @@ case_11 = {
         }
     ),
 }
-case_11["bp"] = BellmanPeriod(case_11["block"], {})
+case_11["bp"] = BellmanPeriod(case_11["block"], "beta", {"beta": 0.9})

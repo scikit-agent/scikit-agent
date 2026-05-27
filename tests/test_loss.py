@@ -1,4 +1,3 @@
-from skagent.bellman import BellmanPeriod
 from conftest import case_0
 import numpy as np
 import os
@@ -26,7 +25,7 @@ class TestLossFunctions(unittest.TestCase):
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_case_0(self):
-        bp = BellmanPeriod(case_0["block"], calibration=case_0["calibration"])
+        bp = case_0["bp"]
 
         cl = CustomLoss(
             static_reward,
