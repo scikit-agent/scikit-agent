@@ -80,3 +80,6 @@ packages = ["src/skagent"]
 # For editable installs
 [tool.hatch.build.targets.editable]
 packages = ["src/skagent"]
+
+[tool.codespell]
+ignore-words-list = "mape"

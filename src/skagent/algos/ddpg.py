@@ -126,6 +126,48 @@ class DDPG:
         self.replay_buffer = ReplayBuffer()
         self.noise = OUNoise(action_dim)
 
+    def get_random_decision_rule(self):
+        """Random policy for warmup: samples action uniformly in [lo, hi].
+
+        Used before actor updates begin so the critic sees diverse (state, action)
+        pairs across the full action range, not just near the actor's initial output.
+
+        Bounds are taken from the ``Control``'s ``lower_bound`` / ``upper_bound``
+        callables. When either bound is not set on the ``Control``, this method
+        falls back to arbitrary defaults:
+
+          * ``lower_bound is None`` → ``lo = 0``
+          * ``upper_bound is None`` → ``hi = 1``
+
+        These defaults are only sensible for action spaces that happen to lie in
+        ``[0, 1]``. For unbounded or differently-scaled action spaces, the
+        warmup distribution will not cover the relevant range and this method
+        should be made parameterizable (e.g. accept explicit ``(lo, hi)`` for
+        the random policy).
+        """
+        control = self.bp.block.dynamics[self.actor.control_sym]
+
+        def decision_rule(*information):
+            info_f32 = tuple(torch.as_tensor(x).float() for x in information)
+            n = info_f32[0].numel()
+
+            lo = (
+                torch.as_tensor(control.lower_bound(*info_f32)).float()
+                if control.lower_bound is not None
+                else torch.zeros(n)
+            )
+            hi = (
+                torch.as_tensor(control.upper_bound(*info_f32)).float()
+                if control.upper_bound is not None
+                else torch.ones(n)
+            )
+            # Keep a small gap from the hard bounds (avoids -inf utility at c=0)
+            eps = 1e-3 * (hi - lo).clamp(min=1e-6)
+            action = (lo + eps) + ((hi - eps) - (lo + eps)) * torch.rand_like(hi)
+            return action
+
+        return {self.actor.control_sym: decision_rule}
+
     def get_decision_rule(self, add_noise=True):
         """Produce the decision rule using current policy with optional exploration noise"""
         control = self.bp.block.dynamics[self.actor.control_sym]
@@ -332,6 +374,7 @@ def ddpg_training_loop(
     tolerance: Optional[float] = None,
     convergence_window: int = 50,
     log_every: int = 10,
+    warmup_episodes: int = 0,
 ) -> tuple:
     """
     Run the DDPG training loop for a BellmanPeriod model.
@@ -370,6 +413,11 @@ def ddpg_training_loop(
         Default is 50.
     log_every : int, optional
         Log a summary every this many episodes. Default is 10.
+    warmup_episodes : int, optional
+        Number of episodes run with a *random* policy before actor updates begin.
+        The transitions are stored in the replay buffer so the critic is exposed to
+        diverse (state, action) pairs across the full action range before the actor
+        starts receiving gradient updates.  Default is 0 (no warmup).
 
     Returns
     -------
@@ -411,6 +459,24 @@ def ddpg_training_loop(
 
     episode_rewards: list[float] = []
     converged = False
+
+    # Warmup: fill replay buffer with random-policy transitions so the critic
+    # sees diverse (state, action) pairs before actor updates begin.
+    if warmup_episodes > 0:
+        for _ in range(warmup_episodes):
+            env.reset()
+            for step in range(max_steps_per_episode):
+                state, action, reward, next_state, discount, obs = env.step(
+                    agent.get_random_decision_rule()
+                )
+                done = step == max_steps_per_episode - 1
+                agent.replay_buffer.push(
+                    state, action, reward, next_state, discount, done, obs
+                )
+        logger.info(
+            "Warmup complete: %d transitions in replay buffer",
+            len(agent.replay_buffer),
+        )
 
     for episode in range(num_episodes):
         env.reset()
