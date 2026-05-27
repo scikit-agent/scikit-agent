@@ -28,7 +28,7 @@ from .simulation.monte_carlo import MonteCarloSimulator
 from .algos import vbi
 from .algos import maliar
 from .algos import ddpg
-from .algos.ddpg import DDPG
+from .algos.ddpg import DDPG, ddpg_training_loop
 
 # Utility functions
 from . import utils
@@ -57,4 +57,5 @@ __all__ = [
     "parser",
     # DDPG
     "DDPG",
+    "ddpg_training_loop",
 ]

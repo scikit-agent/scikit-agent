@@ -2,6 +2,9 @@
 For reference: https://arxiv.org/pdf/1509.02971
 """
 
+import logging
+from typing import Optional
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,6 +14,8 @@ import random
 from skagent.ann import BlockPolicyNet, BlockQNet
 from skagent.bellman import BellmanPeriod
 from skagent.simulation.monte_carlo import draw_shocks
+
+logger = logging.getLogger(__name__)
 
 
 class ReplayBuffer:
@@ -123,7 +128,6 @@ class DDPG:
 
     def get_decision_rule(self, add_noise=True):
         """Produce the decision rule using current policy with optional exploration noise"""
-        dr_basic = self.actor.get_decision_rule()
         control = self.bp.block.dynamics[self.actor.control_sym]
 
         def decision_rule(*information):
@@ -131,10 +135,10 @@ class DDPG:
             info_f32 = tuple(torch.as_tensor(x).float() for x in information)
             env_device = info_f32[0].device if info_f32 else torch.device("cpu")
 
-            # Run actor on its device, then return to the environment's device
-            info_on_actor = tuple(t.to(self.device) for t in info_f32)
-            action = dr_basic[self.actor.control_sym](*info_on_actor)
-            action = action.to(env_device)
+            # Call actor directly (bypassing ann.py's module-level device closure)
+            # and return to the environment's device
+            input_tensor = torch.stack(info_f32).T.to(self.device)
+            action = self.actor(input_tensor).flatten().to(env_device)
 
             if add_noise:
                 noise = self.noise.sample().to(env_device)
@@ -311,3 +315,167 @@ class Environment:
         self.state = state_t_plus
 
         return state_t, action, reward, state_t_plus, discount, obs
+
+
+def ddpg_training_loop(
+    bellman_period: BellmanPeriod,
+    initial: dict,
+    num_episodes: int = 1000,
+    max_steps_per_episode: int = 200,
+    batch_size: int = 64,
+    hidden_dim: int = 256,
+    lr_actor: float = 1e-4,
+    lr_critic: float = 1e-3,
+    tau: float = 0.005,
+    device: str = "cpu",
+    random_seed: Optional[int] = None,
+    tolerance: Optional[float] = None,
+    convergence_window: int = 50,
+    log_every: int = 10,
+) -> tuple:
+    """
+    Run the DDPG training loop for a BellmanPeriod model.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        Model definition containing block dynamics and transitions.
+    initial : dict
+        Initial state distribution; maps arrival-state symbols to
+        Distribution objects used to reset the environment each episode.
+    num_episodes : int, optional
+        Maximum number of episodes to train for. Default is 1000.
+    max_steps_per_episode : int, optional
+        Steps per episode before forced termination. Default is 200.
+    batch_size : int, optional
+        Replay buffer sample size for each training step. Default is 64.
+    hidden_dim : int, optional
+        Width of hidden layers in actor and critic networks. Default is 256.
+    lr_actor : float, optional
+        Adam learning rate for the actor. Default is 1e-4.
+    lr_critic : float, optional
+        Adam learning rate for the critic. Default is 1e-3.
+    tau : float, optional
+        Polyak averaging coefficient for target network updates. Default is 0.005.
+    device : str, optional
+        Torch device for the networks. Default is "cpu".
+    random_seed : int, optional
+        Seed for reproducibility. Default is None.
+    tolerance : float, optional
+        If set, stop early when the absolute difference in mean episode reward
+        between two consecutive windows of ``convergence_window`` episodes is
+        below this threshold. Default is None (run for all episodes).
+    convergence_window : int, optional
+        Number of episodes in each window used for the convergence check.
+        Default is 50.
+    log_every : int, optional
+        Log a summary every this many episodes. Default is 10.
+
+    Returns
+    -------
+    tuple
+        ``(agent, episode_rewards)`` where ``agent`` is the trained
+        :class:`DDPG` instance and ``episode_rewards`` is a list of total
+        undiscounted reward per episode.
+    """
+    if bellman_period is None:
+        raise TypeError("bellman_period cannot be None")
+    if not initial:
+        raise ValueError("initial cannot be empty")
+    if num_episodes < 1:
+        raise ValueError(f"num_episodes must be >= 1, got {num_episodes}")
+    if max_steps_per_episode < 1:
+        raise ValueError(
+            f"max_steps_per_episode must be >= 1, got {max_steps_per_episode}"
+        )
+    if batch_size < 1:
+        raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    if tolerance is not None and tolerance <= 0:
+        raise ValueError(f"tolerance must be > 0, got {tolerance}")
+    if convergence_window < 1:
+        raise ValueError(f"convergence_window must be >= 1, got {convergence_window}")
+
+    rng = np.random.default_rng(random_seed)
+    if random_seed is not None:
+        torch.manual_seed(random_seed)
+
+    agent = DDPG(
+        bellman_period,
+        hidden_dim=hidden_dim,
+        lr_actor=lr_actor,
+        lr_critic=lr_critic,
+        tau=tau,
+        device=device,
+    )
+    env = Environment(bellman_period, initial, rng=rng)
+
+    episode_rewards: list[float] = []
+    converged = False
+
+    for episode in range(num_episodes):
+        env.reset()
+        agent.noise.reset()
+        episode_reward = 0.0
+        actor_losses: list[float] = []
+        critic_losses: list[float] = []
+
+        for step in range(max_steps_per_episode):
+            state, action, reward, next_state, discount, obs = env.step(
+                agent.get_decision_rule()
+            )
+
+            done = step == max_steps_per_episode - 1
+            agent.replay_buffer.push(
+                state, action, reward, next_state, discount, done, obs
+            )
+
+            actor_loss, critic_loss = agent.train(batch_size=batch_size)
+            if actor_loss is not None:
+                actor_losses.append(actor_loss)
+                critic_losses.append(critic_loss)
+
+            episode_reward += sum(
+                v.detach().item() if isinstance(v, torch.Tensor) else float(v)
+                for v in reward.values()
+            )
+
+            if done:
+                break
+
+        episode_rewards.append(episode_reward)
+
+        if (episode + 1) % log_every == 0:
+            mean_actor = float(np.mean(actor_losses)) if actor_losses else float("nan")
+            mean_critic = (
+                float(np.mean(critic_losses)) if critic_losses else float("nan")
+            )
+            logger.info(
+                "Episode %d/%d: reward=%.4f, actor_loss=%.4e, critic_loss=%.4e",
+                episode + 1,
+                num_episodes,
+                episode_reward,
+                mean_actor,
+                mean_critic,
+            )
+
+        if tolerance is not None and len(episode_rewards) >= 2 * convergence_window:
+            prev_mean = float(
+                np.mean(episode_rewards[-2 * convergence_window : -convergence_window])
+            )
+            curr_mean = float(np.mean(episode_rewards[-convergence_window:]))
+            if abs(curr_mean - prev_mean) < tolerance:
+                converged = True
+                logger.info(
+                    "Converged after %d episodes: mean reward change %.2e < tolerance %.2e",
+                    episode + 1,
+                    abs(curr_mean - prev_mean),
+                    tolerance,
+                )
+                break
+
+    if not converged and tolerance is not None:
+        logger.warning(
+            "Training completed without convergence after %d episodes.", num_episodes
+        )
+
+    return agent, episode_rewards
