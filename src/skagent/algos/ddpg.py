@@ -95,11 +95,13 @@ class DDPG:
         lr_critic=1e-3,
         tau=0.005,
         device="cpu",
+        noise_scale_frac=0.3,
     ):
         self.device = device
         self.bp = bp
         self.tau = tau
         self.max_action = max_action
+        self.noise_scale_frac = noise_scale_frac
 
         # state_dim = bp.get_states_dim()
         action_dim = bp.get_action_dim()
@@ -169,7 +171,19 @@ class DDPG:
         return {self.actor.control_sym: decision_rule}
 
     def get_decision_rule(self, add_noise=True):
-        """Produce the decision rule using current policy with optional exploration noise"""
+        """Produce the decision rule using current policy with optional exploration noise.
+
+        Exploration noise is scaled to the per-state action range:
+        ``noise · (hi - lo) · noise_scale_frac``. This keeps exploration
+        proportional to how much room the action has at each state, instead of
+        applying a fixed-magnitude noise that may be tiny relative to a wide
+        action space (or huge relative to a narrow one).
+
+        When a bound is missing on the ``Control``, the same arbitrary defaults
+        as in :meth:`get_random_decision_rule` are used for the *scaling*
+        computation (``lo=0`` / ``hi=1``).  Clipping is still skipped on the
+        missing side.
+        """
         control = self.bp.block.dynamics[self.actor.control_sym]
 
         def decision_rule(*information):
@@ -182,12 +196,7 @@ class DDPG:
             input_tensor = torch.stack(info_f32).T.to(self.device)
             action = self.actor(input_tensor).flatten().to(env_device)
 
-            if add_noise:
-                noise = self.noise.sample().to(env_device)
-                action = action + noise
-
-            # Clip to control bounds. The network enforces these via sigmoid/softplus
-            # in its forward pass, but noise can push the action outside them.
+            # Resolve bounds once: used for both noise scaling and clipping.
             lo = (
                 torch.as_tensor(control.lower_bound(*info_f32)).float()
                 if control.lower_bound is not None
@@ -198,6 +207,16 @@ class DDPG:
                 if control.upper_bound is not None
                 else None
             )
+
+            if add_noise:
+                noise = self.noise.sample().to(env_device)
+                lo_for_scale = lo if lo is not None else torch.zeros_like(noise)
+                hi_for_scale = hi if hi is not None else torch.ones_like(noise)
+                scale = (hi_for_scale - lo_for_scale) * self.noise_scale_frac
+                action = action + noise * scale
+
+            # Clip to control bounds. The network enforces these via sigmoid/softplus
+            # in its forward pass, but noise can push the action outside them.
             if lo is not None or hi is not None:
                 action = torch.clamp(action, min=lo, max=hi)
 
@@ -375,6 +394,9 @@ def ddpg_training_loop(
     convergence_window: int = 50,
     log_every: int = 10,
     warmup_episodes: int = 0,
+    noise_scale_frac: float = 0.3,
+    random_rollout_every: int = 0,
+    random_rollout_episodes: int = 1,
 ) -> tuple:
     """
     Run the DDPG training loop for a BellmanPeriod model.
@@ -418,6 +440,21 @@ def ddpg_training_loop(
         The transitions are stored in the replay buffer so the critic is exposed to
         diverse (state, action) pairs across the full action range before the actor
         starts receiving gradient updates.  Default is 0 (no warmup).
+    noise_scale_frac : float, optional
+        Fraction of the per-state action range used to scale OUNoise during
+        exploration.  An effective noise of roughly ``noise_scale_frac · (hi - lo)``
+        is applied to the actor output before clipping.  Default is 0.3.
+    random_rollout_every : int, optional
+        Interleave a block of random-policy episodes every this many main
+        training episodes (counting from episode index 1 onward).  Counters
+        for the main training schedule do *not* advance during these
+        rollouts; their purpose is to refresh replay-buffer diversity so the
+        critic continues to see off-policy ``(state, action)`` pairs after
+        the initial warmup data has been diluted.  Network updates *do* run
+        on each random-rollout step.  Default is 0 (no interleaved rollouts).
+    random_rollout_episodes : int, optional
+        Number of random-policy episodes to run each time the interval fires.
+        Default is 1.
 
     Returns
     -------
@@ -454,6 +491,7 @@ def ddpg_training_loop(
         lr_critic=lr_critic,
         tau=tau,
         device=device,
+        noise_scale_frac=noise_scale_frac,
     )
     env = Environment(bellman_period, initial, rng=rng)
 
@@ -479,6 +517,32 @@ def ddpg_training_loop(
         )
 
     for episode in range(num_episodes):
+        # Periodic random rollouts: every `random_rollout_every` main episodes,
+        # interleave `random_rollout_episodes` random-policy episodes to refresh
+        # buffer diversity. Network updates continue on the new data; these
+        # rollouts do *not* advance the main episode counter.
+        if (
+            random_rollout_every > 0
+            and episode > 0
+            and episode % random_rollout_every == 0
+        ):
+            for _ in range(random_rollout_episodes):
+                env.reset()
+                for step in range(max_steps_per_episode):
+                    state, action, reward, next_state, discount, obs = env.step(
+                        agent.get_random_decision_rule()
+                    )
+                    done = step == max_steps_per_episode - 1
+                    agent.replay_buffer.push(
+                        state, action, reward, next_state, discount, done, obs
+                    )
+                    agent.train(batch_size=batch_size)
+            logger.debug(
+                "Interleaved %d random rollout(s) before main episode %d",
+                random_rollout_episodes,
+                episode + 1,
+            )
+
         env.reset()
         agent.noise.reset()
         episode_reward = 0.0

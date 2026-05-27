@@ -44,13 +44,15 @@ class TestDDPGTraining:
         agent, _ = ddpg_training_loop(
             bp,
             initial,
-            num_episodes=200,
-            max_steps_per_episode=100,
+            num_episodes=150,
+            max_steps_per_episode=50,
             batch_size=64,
             hidden_dim=64,
             device=DEVICE,
             random_seed=TEST_SEED,
             warmup_episodes=20,
+            random_rollout_every=20,
+            random_rollout_episodes=1,
         )
 
         # Analytical solution over test states
