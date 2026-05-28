@@ -342,7 +342,8 @@ class Environment:
         return initial_vals
 
     def step(self, decision_rule):
-        shocks = self.bp.draw_shocks(n=1)
+        # todo: better handling/internalizing this type shift
+        shocks = {k: torch.from_numpy(v) for k, v in self.bp.draw_shocks(n=1).items()}
 
         post = self.bp.forward_function(
             self.state, shocks, {}, decision_rules=decision_rule
