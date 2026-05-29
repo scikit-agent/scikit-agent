@@ -11,7 +11,7 @@ from skagent.distributions import Uniform
 from skagent.env import Environment
 from skagent.models.benchmarks import d2_block, d2_calibration
 
-from tests.conftest import case_0
+from tests.conftest import case_0, case_2, case_5
 
 
 # Short PPO settings so tests stay fast.
@@ -152,3 +152,58 @@ def test_decision_rule_rejects_wrong_iset_arity(d2_agent):
     dr = d2_agent.decision_rule()
     with pytest.raises(TypeError, match="iset arguments"):
         dr["c"](torch.tensor([1.0]), torch.tensor([2.0]))  # iset=['m'] → 1 arg
+
+
+# ---------------------------------------------------------------------------
+# Convergence tests — exercise the same training setup as
+# diagnostic_ppo_allbench.py; tolerances are derived from that diagnostic's
+# observed errors (with generous headroom for SB3 non-determinism).
+# ---------------------------------------------------------------------------
+
+CONVERGENCE_PPO_KWARGS = {"n_steps": 256, "batch_size": 64, "n_epochs": 4}
+CONVERGENCE_TRAIN_STEPS = 10_000
+CONVERGENCE_MAX_EPISODE_STEPS = 64
+CONVERGENCE_OBS_GRID = np.linspace(0.1, 1.0, 10, dtype=np.float32).reshape(-1, 1)
+
+
+@pytest.mark.parametrize(
+    "case,gym_kwargs,mae_tol,max_err_tol",
+    [
+        # case_0: c*=0, no bounds → use wide default range. Diagnostic: MAE=0.012.
+        (case_0, {"default_lower": -1.0, "default_upper": 1.0}, 0.05, 0.10),
+        # case_2: c*=0 (θ hidden), no bounds. Diagnostic: MAE=0.014.
+        (case_2, {"default_lower": -1.0, "default_upper": 1.0}, 0.05, 0.10),
+        # case_5: c*=a, Control(upper=a, lower=0). Diagnostic: MAE=0.107.
+        (case_5, {}, 0.20, 0.30),
+    ],
+    ids=["case_0_c=0", "case_2_c=0_hidden_shock", "case_5_c=a_constrained"],
+)
+def test_ppo_converges_to_optimal(case, gym_kwargs, mae_tol, max_err_tol):
+    agent = PPOAgent(
+        case["bp"],
+        {"a": Uniform(low=0.1, high=1.0)},
+        max_episode_steps=CONVERGENCE_MAX_EPISODE_STEPS,
+        seed=0,
+        gym_kwargs=gym_kwargs,
+        ppo_kwargs=CONVERGENCE_PPO_KWARGS,
+    )
+    agent.learn(total_timesteps=CONVERGENCE_TRAIN_STEPS)
+
+    obs = CONVERGENCE_OBS_GRID
+    c_learned = agent.predict_unscaled(obs)
+
+    # Match the diagnostic: evaluate optimal_dr at each obs row and clip to
+    # the per-state bounds the env actually enforces.
+    optimal_c = case["optimal_dr"]["c"]
+    c_opt = np.empty(obs.shape[0], dtype=np.float32)
+    for i in range(obs.shape[0]):
+        lo, hi = agent.env._bounds_at_iset(obs[i])
+        c_opt[i] = float(np.clip(float(optimal_c(*obs[i])), lo, hi))
+
+    err = c_learned - c_opt
+    mae = float(np.mean(np.abs(err)))
+    max_err = float(np.max(np.abs(err)))
+    assert mae <= mae_tol, f"MAE={mae:.4f} exceeds tolerance {mae_tol}"
+    assert max_err <= max_err_tol, (
+        f"MaxErr={max_err:.4f} exceeds tolerance {max_err_tol}"
+    )
