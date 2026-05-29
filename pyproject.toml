@@ -31,6 +31,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
   "cairosvg",
+  "gymnasium",
   "ipython",
   "matplotlib",
   "numba",
@@ -38,6 +39,7 @@ dependencies = [
   "pydot",
   "pyyaml",
   "scipy",
+  "stable-baselines3",
   "sympy",
   "torch >=2.0",
   "xarray",
