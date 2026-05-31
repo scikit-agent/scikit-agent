@@ -31,7 +31,9 @@ from skagent.models.benchmarks import (
 )
 
 SEED = 0
-TOTAL_TIMESTEPS = 100_000
+# Snapshot the learned consumption function at each of these cumulative
+# training-timestep counts to show whether/how PPO converges to the optimum.
+CHECKPOINTS = [50_000, 100_000, 200_000]
 MAX_EPISODE_STEPS = 200
 N_EVAL_ROLLOUTS = 50
 EVAL_ROLLOUT_STEPS = 200
@@ -92,14 +94,24 @@ def main() -> None:
             "learning_rate": 3e-4,
         },
     )
-    agent.learn(total_timesteps=TOTAL_TIMESTEPS)
-    episode_rewards = np.asarray(agent.episode_rewards, dtype=np.float32)
-
-    # -- policy comparison on a grid of m values ---------------------------
+    # Train incrementally, snapshotting the learned consumption function at
+    # each checkpoint. ``reset_num_timesteps=False`` keeps PPO's internal step
+    # counter (and schedules) continuous across the successive ``learn`` calls.
     m_grid = np.linspace(0.5, 10.0, 41, dtype=np.float32)
     obs_grid = m_grid.reshape(-1, 1)
-    c_learned = agent.predict_unscaled(obs_grid)
+    c_learned_by_checkpoint: dict[int, np.ndarray] = {}
+    prev = 0
+    for i, checkpoint in enumerate(CHECKPOINTS):
+        agent.learn(total_timesteps=checkpoint - prev, reset_num_timesteps=(i == 0))
+        c_learned_by_checkpoint[checkpoint] = agent.predict_unscaled(obs_grid)
+        prev = checkpoint
+    total_timesteps = CHECKPOINTS[-1]
+    episode_rewards = np.asarray(agent.episode_rewards, dtype=np.float32)
 
+    # The final-checkpoint policy is used for the rollouts.
+    # c_learned = c_learned_by_checkpoint[CHECKPOINTS[-1]]
+
+    # -- policy comparison on a grid of m values ---------------------------
     a_grid = (m_grid - d2_calibration["y"]) / d2_calibration["R"]
     c_optimal_unc = np.asarray(
         d2_analytical_policy({"a": a_grid}, {}, d2_calibration)["c"], dtype=np.float32
@@ -110,11 +122,17 @@ def main() -> None:
     # ``c = min(κ(m + H), m)`` — the constraint binds and assets go to zero.
     c_optimal = np.minimum(c_optimal_unc, m_grid)
 
-    mae = float(np.mean(np.abs(c_learned - c_optimal)))
-    max_err = float(np.max(np.abs(c_learned - c_optimal)))
+    # Per-checkpoint error vs the closed-form optimum, to show convergence.
     print(f"Policy error vs closed-form (over m ∈ [{m_grid[0]}, {m_grid[-1]}]):")
-    print(f"  MAE     = {mae:.4f}")
-    print(f"  MaxErr  = {max_err:.4f}")
+    print(f"  {'checkpoint':>12}  {'MAE':>10}  {'MaxErr':>10}")
+    mae_by_checkpoint: dict[int, float] = {}
+    for checkpoint in CHECKPOINTS:
+        err = np.abs(c_learned_by_checkpoint[checkpoint] - c_optimal)
+        mae_ckpt = float(np.mean(err))
+        max_err_ckpt = float(np.max(err))
+        mae_by_checkpoint[checkpoint] = mae_ckpt
+        print(f"  {checkpoint:>12,}  {mae_ckpt:>10.4f}  {max_err_ckpt:>10.4f}")
+    mae = mae_by_checkpoint[CHECKPOINTS[-1]]
 
     # -- discounted-reward Monte-Carlo comparison --------------------------
     rng = np.random.default_rng(SEED + 1)
@@ -148,7 +166,12 @@ def main() -> None:
     # -- plots -------------------------------------------------------------
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
-    axes[0].plot(m_grid, c_learned, label="PPO (learned)")
+    for checkpoint in CHECKPOINTS:
+        axes[0].plot(
+            m_grid,
+            c_learned_by_checkpoint[checkpoint],
+            label=f"PPO @ {checkpoint:,} steps",
+        )
     axes[0].plot(m_grid, c_optimal, label="closed form (constrained)", linestyle="--")
     axes[0].plot(
         m_grid,
@@ -174,7 +197,7 @@ def main() -> None:
         )
         axes[1].set_xlabel("episode")
         axes[1].set_ylabel("undiscounted episode reward")
-        axes[1].set_title(f"Training curve ({TOTAL_TIMESTEPS} timesteps)")
+        axes[1].set_title(f"Training curve ({total_timesteps:,} timesteps)")
         axes[1].legend()
     else:
         axes[1].set_title("No episodes completed during training")
