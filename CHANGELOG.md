@@ -27,6 +27,8 @@ and this project adheres to
   model and supports multi-control models (returns a dict for >1 controls)
 - Control bounds (`lower_bound`, `upper_bound`) must now be callables; numeric
   values raise a clear `TypeError` instead of being silently ignored.
+- Introduced `mortality_block` (and `mortal_cons_problem`) to demonstrate how to
+  encode stochastic mortality and agent rebirth as a composable `DBlock`.
 
 ### Added
 
@@ -46,6 +48,16 @@ and this project adheres to
   shared-backbone network (`BlockPolicyValueNet`) trained with one optimizer
 - `value_network` and `value_loss_function` parameters from
   `maliar_training_loop`
+- Removed `AgentTypeMonteCarloSimulator`; mortality is now expressed
+  declaratively via `mortality_block` (see Changed). The now-unused
+  `calibration_by_age` helper and its API documentation entry were removed with
+  it.
+
+### Fixed
+
+- Fixed the `CRRA` calibration in `perfect_foresight_normalized`: it was a
+  1-tuple `(2.0,)`, which broke the CRRA utility power; it is now the scalar
+  `2.0`.
 
 ...
 
