@@ -142,6 +142,7 @@ def _validate_training_inputs(
     network_width,
     epochs_per_iteration,
     states_0_n,
+    lr,
 ):
     """Validate all inputs for :func:`maliar_training_loop`."""
     if bellman_period is None:
@@ -170,6 +171,8 @@ def _validate_training_inputs(
             raise ValueError(f"{name} must be >= {lo}, got {val}")
     if tolerance <= 0:
         raise ValueError(f"tolerance must be > 0, got {tolerance}")
+    if lr <= 0:
+        raise ValueError(f"lr must be > 0, got {lr}")
     if not isinstance(states_0_n, Grid):
         raise TypeError(
             f"states_0_n must be a Grid instance, got {type(states_0_n).__name__}"
@@ -358,6 +361,7 @@ def maliar_training_loop(
         network_width,
         epochs_per_iteration,
         states_0_n,
+        lr,
     )
 
     if random_seed is not None:

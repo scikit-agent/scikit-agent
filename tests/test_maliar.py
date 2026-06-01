@@ -1386,6 +1386,29 @@ class TestMaliarTrainingLoopValidation(unittest.TestCase):
                 random_seed=TEST_SEED,
             )
 
+    def test_lr_zero_raises(self):
+        # lr=0 would silently produce a no-learning run; it must be rejected.
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                lr=0.0,
+                random_seed=TEST_SEED,
+            )
+
+    def test_lr_negative_raises(self):
+        with self.assertRaises(ValueError):
+            maliar.maliar_training_loop(
+                self.bp,
+                self.loss_fn,
+                self.states,
+                self.calibration,
+                lr=-0.001,
+                random_seed=TEST_SEED,
+            )
+
     def test_shock_copies_zero_raises(self):
         with self.assertRaises(ValueError):
             maliar.maliar_training_loop(

@@ -796,16 +796,12 @@ def train_block_nn(
         loss = aggregate_net_loss(
             inputs, block_policy_nn.get_core_function(length=inputs.n()), loss_function
         )
-        loss.backward()
-        if grad_clip is not None:
-            torch.nn.utils.clip_grad_norm_(block_policy_nn.parameters(), grad_clip)
-        optimizer.step()
+        # Check finiteness BEFORE backward/step. final_loss is already a synced
+        # host scalar, so this guard is free. A non-finite loss means training
+        # has diverged; stopping here keeps the last finite weights instead of
+        # applying non-finite gradients and poisoning the network. (NaN < tol is
+        # also False, so downstream convergence checks would never fire.)
         final_loss = loss.item()
-
-        # final_loss is already a synced host scalar, so this guard is free.
-        # A non-finite loss means gradients have diverged; continuing would
-        # silently poison the weights (NaN < tol is False, so convergence
-        # checks never fire). Stop and surface it instead.
         if final_loss != final_loss or final_loss in (float("inf"), float("-inf")):
             logging.warning(
                 "Non-finite loss (%s) at epoch %d; stopping training early.",
@@ -813,6 +809,11 @@ def train_block_nn(
                 epoch,
             )
             break
+
+        loss.backward()
+        if grad_clip is not None:
+            torch.nn.utils.clip_grad_norm_(block_policy_nn.parameters(), grad_clip)
+        optimizer.step()
 
         if verbose and epoch % 100 == 0:
             logging.info("Epoch %d: Loss = %.6e", epoch, final_loss)
