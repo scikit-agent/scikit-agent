@@ -81,40 +81,6 @@ def draw_shocks(
     return draws
 
 
-def calibration_by_age(ages, calibration):
-    """
-    Returns calibration for this model, but with vectorized
-    values which map age-varying values to agent ages.
-
-    Parameters
-    ----------
-    ages: np.array
-        An array of agent ages.
-
-    calibration: dict
-        A calibration dictionary
-
-    Returns
-    --------
-    aged_calibration: dict
-        A dictionary of parameter values.
-        If a parameter is age-varying, the value is a vector
-        corresponding to the values for each input age.
-    """
-
-    def aged_param(ages, p_value):
-        if isinstance(p_value, (float, int)) or callable(p_value):
-            return p_value
-        elif isinstance(p_value, list) and len(p_value) > 1:
-            pv_array = np.array(p_value)
-
-            return np.apply_along_axis(lambda a: pv_array[a], 0, ages)
-        else:
-            return np.empty(ages.size)
-
-    return {p: aged_param(ages, calibration[p]) for p in calibration}
-
-
 def _set_rng_recursive(obj, rng):
     """
     Recursively set the RNG on an object and its nested distributions.
@@ -274,8 +240,10 @@ class Simulator:
 
     def _get_shock_conditions(self):
         """
-        Get the conditions array for shock drawing.
-        Base class uses zeros; subclasses may override (e.g., for age-varying shocks).
+        Get the conditions array passed to shock draws.
+
+        The base class draws shocks unconditionally (a zero vector). The hook
+        exists so a subclass can make shock draws depend on per-agent state.
         """
         return np.zeros(self.agent_count)
 

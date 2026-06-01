@@ -127,13 +127,16 @@ class TestRuleDependencyExtraction:
         for rule in consumption_block.dynamics.values():
             all_deps.update(extract_dependencies(rule))
 
-        # These parameters are in calibration but shouldn't be detected in the model
-        unused_params = ["DiscFac", "R", "Rfree", "EqP", "BoroCnstArt", "RiskyStd"]
+        # These parameters are in calibration but are not referenced by any
+        # shock or dynamic in consumption_block, so they must not be extracted.
+        # (R is intentionally excluded: it is a genuine dependency of `b = k * R`.)
+        unused_params = ["DiscFac", "Rfree", "EqP", "BoroCnstArt", "RiskyStd"]
 
         for param in unused_params:
-            if param in all_deps:
-                # This might be OK if the parameter is actually used, but let's flag it
-                print(f"Warning: Parameter '{param}' was detected but not expected")
+            assert param not in all_deps, (
+                f"Parameter '{param}' is not used in consumption_block but was "
+                f"extracted as a dependency. All deps: {sorted(all_deps)}"
+            )
 
     def test_rule_types_handled(self):
         """Test that different rule types are handled correctly."""

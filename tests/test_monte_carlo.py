@@ -55,9 +55,9 @@ class test_simulate_dynamics(unittest.TestCase):
         self.assertAlmostEqual(post["cNrm"], 0.98388429)
 
 
-class test_MonteCarloSimulator_2(unittest.TestCase):
+class test_MonteCarloSimulatorWithLiveShock(unittest.TestCase):
     def setUp(self):
-        self.calibration = {  # TODO
+        self.calibration = {
             "G": 1.05,
         }
         self.block = DBlock(
@@ -105,7 +105,7 @@ class test_MonteCarloSimulator_2(unittest.TestCase):
 
 class test_MonteCarloSimulator(unittest.TestCase):
     def setUp(self):
-        self.calibration = {  # TODO
+        self.calibration = {
             "G": 1.05,
         }
         self.block = DBlock(
