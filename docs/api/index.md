@@ -9,6 +9,7 @@ blocks
 models
 algorithms
 simulation
+parser
 utils
 ```
 
@@ -20,6 +21,7 @@ The scikit-agent API is organized into several main modules:
 - {doc}`models` - Canonical models from scientific literature
 - {doc}`algorithms` - Solution algorithms and optimization methods
 - {doc}`simulation` - Simulation tools and analysis functions
+- {doc}`parser` - Parsing strings into mathematical expressions
 - {doc}`utils` - Utility functions and helpers
 
 ## Quick Reference
