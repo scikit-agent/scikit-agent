@@ -17,10 +17,6 @@ class TestRuleDependencyExtraction:
 
     def test_shock_dependencies(self):
         """Test dependency extraction from shock definitions."""
-        # Test live shock: (Bernoulli, {"p": "LivPrb"})
-        live_shock = consumption_block.shocks["live"]
-        live_deps = extract_dependencies(live_shock)
-        assert "LivPrb" in live_deps, f"Expected 'LivPrb' in {live_deps}"
 
         # Test theta shock: (MeanOneLogNormal, {"sigma": "TranShkStd"})
         theta_shock = consumption_block.shocks["theta"]
@@ -82,7 +78,7 @@ class TestRuleDependencyExtraction:
             all_deps.update(extract_dependencies(rule))
 
         # These parameters should be detected in the model
-        expected_params = ["LivPrb", "TranShkStd", "PermGroFac", "CRRA"]
+        expected_params = ["TranShkStd", "PermGroFac", "CRRA"]
 
         for param in expected_params:
             assert param in all_deps, (
@@ -94,7 +90,6 @@ class TestRuleDependencyExtraction:
         # Expected dependencies for each variable
         expected_deps = {
             # Shocks
-            "live": {"LivPrb"},
             "theta": {"TranShkStd"},
             # Dynamics
             "b": {"k", "R"},
@@ -132,13 +127,16 @@ class TestRuleDependencyExtraction:
         for rule in consumption_block.dynamics.values():
             all_deps.update(extract_dependencies(rule))
 
-        # These parameters are in calibration but shouldn't be detected in the model
-        unused_params = ["DiscFac", "R", "Rfree", "EqP", "BoroCnstArt", "RiskyStd"]
+        # These parameters are in calibration but are not referenced by any
+        # shock or dynamic in consumption_block, so they must not be extracted.
+        # (R is intentionally excluded: it is a genuine dependency of `b = k * R`.)
+        unused_params = ["DiscFac", "Rfree", "EqP", "BoroCnstArt", "RiskyStd"]
 
         for param in unused_params:
-            if param in all_deps:
-                # This might be OK if the parameter is actually used, but let's flag it
-                print(f"Warning: Parameter '{param}' was detected but not expected")
+            assert param not in all_deps, (
+                f"Parameter '{param}' is not used in consumption_block but was "
+                f"extracted as a dependency. All deps: {sorted(all_deps)}"
+            )
 
     def test_rule_types_handled(self):
         """Test that different rule types are handled correctly."""

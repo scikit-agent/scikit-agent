@@ -18,13 +18,14 @@ calibration = {
     "PermGroFac": 1.01,
     "TranShkStd": 0.1,
     "RiskyStd": 0.1,
+    "kInitStd": 1,  # newborn asset (k) dispersion used by mortality_block rebirth
+    "pInitStd": 1,  # newborn permanent-income (p) dispersion used by mortality_block
 }
 
 consumption_block = DBlock(
     **{
         "name": "consumption",
         "shocks": {
-            "live": (Bernoulli, {"p": "LivPrb"}),  # Move to tick or mortality block?
             "theta": (MeanOneLogNormal, {"sigma": "TranShkStd"}),
         },
         "dynamics": {
@@ -46,7 +47,6 @@ consumption_block_normalized = DBlock(
     **{
         "name": "consumption normalized",
         "shocks": {
-            "live": (Bernoulli, {"p": "LivPrb"}),  # Move to tick or mortality block?
             "theta": (MeanOneLogNormal, {"sigma": "TranShkStd"}),
         },
         "dynamics": {
@@ -89,3 +89,25 @@ cons_problem = RBlock(blocks=[consumption_block_normalized, tick_block])
 cons_portfolio_problem = RBlock(
     blocks=[consumption_block_normalized, portfolio_block, tick_block]
 )
+
+# Alternative to `tick_block`: on `live`=1 the agent survives (k = a); on
+# `live`=0 it dies and is reborn from the `*_init` draws with age reset to 0.
+# Only the death-reset lives here; within-life dynamics stay in the consumption
+# block (so under the normalized block `p` is carried but unused).
+mortality_block = DBlock(
+    **{
+        "name": "mortality",
+        "shocks": {
+            "live": (Bernoulli, {"p": "LivPrb"}),
+            "k_init": (MeanOneLogNormal, {"sigma": "kInitStd"}),
+            "p_init": (MeanOneLogNormal, {"sigma": "pInitStd"}),
+        },
+        "dynamics": {
+            "k": lambda live, a, k_init: a * live + k_init * (1 - live),
+            "p": lambda live, p, p_init: p * live + p_init * (1 - live),
+            "age": lambda age, live: (age + 1) * live,
+        },
+    }
+)
+
+mortal_cons_problem = RBlock(blocks=[consumption_block_normalized, mortality_block])

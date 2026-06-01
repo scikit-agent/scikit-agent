@@ -8,18 +8,6 @@ functions.
 The simulation module provides Monte Carlo simulation engines for economic
 models.
 
-### AgentTypeMonteCarloSimulator
-
-A Monte Carlo simulation engine inspired by agent-based modeling frameworks.
-This simulator includes aging and mortality assumptions.
-
-```{eval-rst}
-.. autoclass:: skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 ### MonteCarloSimulator
 
 A simplified Monte Carlo simulation engine that doesn't make assumptions about
@@ -49,12 +37,6 @@ aging or mortality.
 .. autofunction:: skagent.simulation.monte_carlo.draw_shocks
 ```
 
-### Age-Varying Calibration
-
-```{eval-rst}
-.. autofunction:: skagent.simulation.monte_carlo.calibration_by_age
-```
-
 ## Example Usage
 
 ### Basic Simulation
@@ -77,22 +59,32 @@ simulator = ska.MonteCarloSimulator(
 )
 
 # Run simulation
+simulator.initialize_sim()
 results = simulator.simulate()
 ```
 
-### Agent-Type Simulation with Aging
+### Simulation with Mortality
+
+Mortality is expressed declaratively as a block rather than baked into the
+simulator. The `mortality_block` in `skagent.models.consumer` resets an agent's
+state to a newborn draw whenever the `live` shock is zero, so the base
+`MonteCarloSimulator` is sufficient:
 
 ```python
-# For models with aging and mortality
-simulator = ska.AgentTypeMonteCarloSimulator(
+import skagent as ska
+from skagent.distributions import Lognormal
+from skagent.models.consumer import calibration, mortal_cons_problem
+
+simulator = ska.MonteCarloSimulator(
     calibration=calibration,
-    block=consumption_block,
-    dr=dr,
-    initial={"k": 1.0, "p": 1.0},
+    block=mortal_cons_problem,
+    dr={"c": lambda m: m / 3},
+    initial={"k": Lognormal(-6, 0), "p": 1.0, "age": 0},
     agent_count=1000,
     T_sim=50,
 )
 
+simulator.initialize_sim()
 results = simulator.simulate()
 ```
 
