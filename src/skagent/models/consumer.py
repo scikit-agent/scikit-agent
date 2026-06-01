@@ -16,7 +16,6 @@ calibration = {
     "EqP": 0.02,
     "LivPrb": 0.98,
     "PermGroFac": 1.01,
-    "BoroCnstArt": None,
     "TranShkStd": 0.1,
     "RiskyStd": 0.1,
     "kInitStd": 1,  # newborn asset (k) dispersion used by mortality_block rebirth
@@ -54,7 +53,7 @@ consumption_block_normalized = DBlock(
             "b": lambda k, R, PermGroFac: k * R / PermGroFac,
             "m": lambda b, theta: b + theta,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
-            "a": "m - c",
+            "a": lambda m, c: m - c,
             "u": lambda c, CRRA: torch.log(c)
             if CRRA == 1
             else c ** (1 - CRRA) / (1 - CRRA),
@@ -70,7 +69,7 @@ portfolio_block = DBlock(
             "risky_return": (Lognormal, {"mean": "Rfree + EqP", "std": "RiskyStd"})
         },
         "dynamics": {
-            "stigma": Control(["a"]),
+            "stigma": Control(["a"], agent="consumer"),
             "R": lambda stigma, Rfree, risky_return: Rfree
             + (risky_return - Rfree) * stigma,
         },

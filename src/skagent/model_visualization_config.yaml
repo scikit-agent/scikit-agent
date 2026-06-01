@@ -37,14 +37,14 @@ edge_styles:
 
 # Color configuration
 color_config:
-  default_other_color: "#C0D0E0" # Slate gray for global/other
+  default_other_color: "#D0E0F0" # Slate gray for global/other
 
 # Color generation parameters (golden-ratio HSL→RGB)
 color_generation:
   algorithm: "golden_ratio"
   golden_ratio_factor: 0.618033988749895
   saturation_range: [0.5, 0.7]
-  lightness_range: [0.4, 0.6]
+  lightness_range: [0.6, 0.8]
   color_seed: 42
 
 # Graph layout configuration
