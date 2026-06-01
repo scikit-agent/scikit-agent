@@ -29,10 +29,20 @@ and this project adheres to
   values raise a clear `TypeError` instead of being silently ignored.
 - Introduced `mortality_block` (and `mortal_cons_problem`) to demonstrate how to
   encode stochastic mortality and agent rebirth as a composable `DBlock`.
+- `train_block_nn` now always returns a 3-tuple
+  `(network, final_loss, optimizer)`; previously it returned a 2-tuple unless an
+  optimizer was passed in. Callers should unpack three values.
+- `maliar_training_loop` accepts an `lr` argument controlling the learning rate
+  of its internal Adam optimizer.
+- Consolidated the open-bounds scaling and decision-function plumbing shared by
+  `BlockPolicyNet` and `BlockPolicyValueNet` into `BellmanPeriodMixin`.
 
 ### Added
 
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
+- `examples/algorithms/plot_maliar_training.py` gallery example: trains a
+  shared-backbone policy/value network and compares the trained policy against
+  the U-2 analytical permanent-income solution.
 - `estimate_bellman_foc_residual` for the first-order condition from the Bellman
   equation, using autograd to differentiate the value network
 - `BellmanEquationLoss` gains a `foc_weight` parameter for adding a weighted FOC
@@ -58,6 +68,8 @@ and this project adheres to
 - Fixed the `CRRA` calibration in `perfect_foresight_normalized`: it was a
   1-tuple `(2.0,)`, which broke the CRRA utility power; it is now the scalar
   `2.0`.
+- `train_block_nn` now halts early with a warning on a non-finite (NaN/Inf) loss
+  instead of continuing to train on poisoned weights.
 
 ...
 

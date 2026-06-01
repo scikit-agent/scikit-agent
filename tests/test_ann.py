@@ -427,6 +427,24 @@ class test_block_policy_value_net(unittest.TestCase):
         value_estimates = vf(test_states, {"theta": torch.tensor([1.0])}, {})
         self.assertIsInstance(value_estimates, torch.Tensor)
         self.assertEqual(value_estimates.shape, (1,))
+        self.assertTrue(
+            torch.all(torch.isfinite(value_estimates)),
+            "Value head produced non-finite estimates",
+        )
+
+        # Shared backbone: the value head adds only a single Linear(width, 1)
+        # on top of the policy network's parameters, rather than a second
+        # full network. This pins down the defining property of the PR.
+        policy_only = ann.BlockPolicyNet(case_1["bp"])
+        n_shared = sum(p.numel() for p in policy_value_net.parameters())
+        n_policy_only = sum(p.numel() for p in policy_only.parameters())
+        width = policy_value_net.width
+        self.assertEqual(
+            n_shared,
+            n_policy_only + width + 1,
+            "BlockPolicyValueNet should add exactly one value head "
+            "(width weights + 1 bias) on top of the shared policy backbone",
+        )
 
     def test_block_policy_value_net__case_11(self):
         """BlockPolicyValueNet forward pass returns (policy, value) 2-tuple with correct shapes."""
@@ -443,6 +461,12 @@ class test_block_policy_value_net(unittest.TestCase):
         self.assertEqual(value.shape, (n_samples, 1))
         self.assertIsInstance(policy, torch.Tensor)
         self.assertIsInstance(value, torch.Tensor)
+        self.assertTrue(
+            torch.all(torch.isfinite(policy)), "Policy head produced non-finite output"
+        )
+        self.assertTrue(
+            torch.all(torch.isfinite(value)), "Value head produced non-finite output"
+        )
 
 
 class TestTrainBlockNNValidation(unittest.TestCase):
@@ -476,7 +500,13 @@ class TestTrainBlockNNValidation(unittest.TestCase):
             ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, grad_clip=0.0)
 
     def test_none_grad_clip_allowed(self):
-        _, loss = ann.train_block_nn(
+        _, loss, _ = ann.train_block_nn(
             self.bpn, self.inputs, self.loss_fn, epochs=1, grad_clip=None
         )
-        self.assertIsNotNone(loss)
+        # grad_clip=None must be accepted and still produce a real, finite
+        # loss (confirms a training step actually ran, not just that it
+        # returned non-None).
+        self.assertIsInstance(loss, float)
+        self.assertTrue(
+            np.isfinite(loss), "grad_clip=None run produced a non-finite loss"
+        )

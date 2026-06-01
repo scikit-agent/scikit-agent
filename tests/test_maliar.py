@@ -1,4 +1,5 @@
 from conftest import case_1, case_3, case_4
+import logging
 import numpy as np
 import os
 import skagent.algos.maliar as maliar
@@ -8,6 +9,7 @@ import skagent.loss as loss
 import skagent.block as model
 import torch
 import unittest
+from skagent.ann import BlockPolicyNet, BlockPolicyValueNet, train_block_nn
 from skagent.distributions import Normal
 from skagent.models.benchmarks import (
     get_benchmark_model,
@@ -399,9 +401,9 @@ def test_get_euler_residual_loss():
     losses = loss_fn(d2_policy, input_grid)
 
     # Check that we get per-sample losses
-    assert isinstance(losses, torch.Tensor)
-    assert losses.shape[0] == n_points  # One loss per grid point
-    assert torch.all(losses >= 0)  # Squared residuals should be non-negative
+    assert isinstance(losses, torch.Tensor), "losses must be a torch.Tensor"
+    assert losses.shape[0] == n_points, "Expected one loss value per grid point"
+    assert torch.all(losses >= 0), "Squared residuals must be non-negative"
 
     # For the analytical optimal policy, Euler residuals should be near zero
     # (within numerical tolerance for perfect foresight model)
@@ -491,7 +493,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         Uses scikit-agent's BlockPolicyNet and train_block_nn for proper integration.
         """
-        from skagent.ann import BlockPolicyNet, train_block_nn
 
         # Get D-2 benchmark model and calibration
         d2_block = get_benchmark_model("D-2")
@@ -520,7 +521,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         )
 
         # Train using scikit-agent's train_block_nn
-        trained_net, final_loss = train_block_nn(
+        trained_net, final_loss, _ = train_block_nn(
             policy_net, train_grid, euler_loss_fn, epochs=1000, verbose=False
         )
 
@@ -582,7 +583,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         room to walk the policy down. With the right initial policy the
         Euler equation pins down both slope and level.
         """
-        from skagent.ann import BlockPolicyNet, train_block_nn
 
         d2_block = get_benchmark_model("D-2")
         d2_calibration = get_benchmark_calibration("D-2")
@@ -628,7 +628,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
                 "a": torch.rand(n_grid_points, device=device) * 9.9 + 0.1,
             }
         )
-        trained_net, final_loss = train_block_nn(
+        trained_net, final_loss, _ = train_block_nn(
             policy_net, train_grid, euler_loss_fn, epochs=2000, verbose=False
         )
 
@@ -659,6 +659,12 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             f"5% on average. Got mean rel error = {mean_rel_error:.4f}, "
             f"max = {max_rel_error:.4f}.",
         )
+        self.assertLess(
+            max_rel_error,
+            0.15,
+            f"Euler-trained policy max relative error should be below 15%. "
+            f"Got max rel error = {max_rel_error:.4f}.",
+        )
 
     def test_maliar_training_loop_u2_analytical(self):
         """
@@ -677,7 +683,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         V(m) = u(c) + β E[V(m')], resolving the level-identification problem
         inherent in pure Euler equation training.
         """
-        from skagent.ann import BlockPolicyValueNet, train_block_nn
 
         # Get U-2 benchmark model
         u2_block = get_benchmark_model("U-2")
@@ -716,12 +721,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         )
 
         # Train with single optimizer (both heads share the backbone)
-        trained_net, final_loss = train_block_nn(
+        trained_net, _, _ = train_block_nn(
             pvnet, train_grid, bellman_loss_fn, epochs=2000, verbose=False
         )
-
-        # Verify training achieved small loss
-        self.assertIsNotNone(trained_net)
 
         # Get decision function from trained network
         decision_fn = trained_net.get_decision_function()
@@ -818,10 +820,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             simulation_steps=1,
         )
 
-        # Verify training completed
-        self.assertIsNotNone(trained_net)
-        self.assertIsNotNone(final_states)
-
         # Get decision function and parameters
         decision_fn = trained_net.get_decision_function()
         R = u3_calibration["R"]
@@ -895,6 +893,12 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             0.2,
             f"Euler residual should be small at high wealth (unconstrained). "
             f"Got mean |residual| = {mean_euler_residual:.4f}",
+        )
+        max_euler_residual = torch.max(torch.abs(euler_residual)).item()
+        self.assertLess(
+            max_euler_residual,
+            0.6,
+            "Max pointwise Euler residual exceeds tolerance",
         )
 
 
@@ -1211,7 +1215,6 @@ class TestConstrainedWarning(unittest.TestCase):
 
     def test_constrained_warns_without_upper_bound(self):
         """constrained=True should warn when no Control has an upper_bound."""
-        import logging
 
         # D-1 has a Control with upper_bound, but build a minimal block without one
         no_bound_block = model.DBlock(
@@ -1243,7 +1246,6 @@ class TestConstrainedWarning(unittest.TestCase):
 
     def test_constrained_no_warn_with_upper_bound(self):
         """constrained=True should NOT warn when a Control has upper_bound."""
-        import logging
 
         u3_block = get_benchmark_model("U-3")
         u3_calibration = get_benchmark_calibration("U-3")
@@ -1593,7 +1595,6 @@ class TestLogIteration(unittest.TestCase):
 
     def test_converged_by_params(self):
         """Convergence log should report only the triggering criterion."""
-        import logging
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(
@@ -1611,7 +1612,6 @@ class TestLogIteration(unittest.TestCase):
 
     def test_converged_by_loss(self):
         """Convergence by loss should report loss, not parameters."""
-        import logging
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(
@@ -1628,7 +1628,6 @@ class TestLogIteration(unittest.TestCase):
 
     def test_log_shows_loss_when_provided(self):
         """Log should include loss when current_loss is supplied."""
-        import logging
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(
@@ -1642,7 +1641,6 @@ class TestLogIteration(unittest.TestCase):
 
     def test_both_criteria_converged(self):
         """Log message includes both criteria when both trigger simultaneously."""
-        import logging
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(

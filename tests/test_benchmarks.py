@@ -769,6 +769,8 @@ class TestConsumptionPolicyDiagnostics:
 
     def test_u2_analytical_passes_diagnostics(self):
         """U-2 PIH normalized analytical policy satisfies all diagnostics."""
+        # Seed for R14 compliance; this test is deterministic regardless.
+        torch.manual_seed(10077693)
         bp_id = "U-2"
         calibration = get_benchmark_calibration(bp_id)
         analytical_policy = get_analytical_policy(bp_id)
@@ -795,6 +797,8 @@ class TestConsumptionPolicyDiagnostics:
 
     def test_d2_analytical_passes_diagnostics(self):
         """D-2 deterministic CRRA analytical policy satisfies diagnostics."""
+        # Seed for R14 compliance; this test is deterministic regardless.
+        torch.manual_seed(10077693)
         bp_id = "D-2"
         calibration = get_benchmark_calibration(bp_id)
         analytical_policy = get_analytical_policy(bp_id)
@@ -836,19 +840,7 @@ def test_calibration_descriptions():
 
 def test_benchmark_functionality():
     """Integration test: verify all benchmark models are functional"""
-
-    print("\n=== BENCHMARK MODELS ===")
-    print("Testing well-known consumption-savings problems")
-    print("=" * 55)
-
     models = list_benchmark_models()
-    for model_id, description in models.items():
-        has_analytical = (
-            "analytical" if has_analytical_policy(model_id) else "numerical"
-        )
-        print(f"{model_id:4s}: {description} [{has_analytical}]")
-
-    print(f"\nTotal: {len(models)} models")
 
     # Verify we have exactly the expected models
     expected_models = [
@@ -859,15 +851,18 @@ def test_benchmark_functionality():
         "U-2",
         "U-3",  # Buffer stock - numerical only
     ]
-    assert set(models.keys()) == set(expected_models)
-    assert len(models) == 6
+    assert set(models.keys()) == set(expected_models), (
+        f"Unexpected benchmark model set: {set(models.keys())}"
+    )
+    assert len(models) == 6, f"Expected 6 benchmark models, got {len(models)}"
 
     # Verify analytical vs numerical classification
     analytical_models = [m for m in expected_models if has_analytical_policy(m)]
     numerical_models = [m for m in expected_models if not has_analytical_policy(m)]
 
-    assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2"}
-    assert set(numerical_models) == {"U-3"}
-
-    print(f"\n✓ {len(analytical_models)} models with analytical solutions")
-    print(f"✓ {len(numerical_models)} models requiring numerical solution")
+    assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2"}, (
+        f"Unexpected analytical model set: {set(analytical_models)}"
+    )
+    assert set(numerical_models) == {"U-3"}, (
+        f"Unexpected numerical model set: {set(numerical_models)}"
+    )

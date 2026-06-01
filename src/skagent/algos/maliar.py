@@ -16,6 +16,7 @@ by the skagent Block system.
 from __future__ import annotations
 
 import logging
+import numbers
 from typing import TYPE_CHECKING, Callable, Optional
 
 import torch
@@ -161,7 +162,9 @@ def _validate_training_inputs(
         ("network_width", network_width, 1),
         ("epochs_per_iteration", epochs_per_iteration, 1),
     ]:
-        if not isinstance(val, int):
+        # numbers.Integral accepts Python int and numpy integers (e.g.
+        # np.int64 from array indexing), which a bare ``int`` check rejects.
+        if not isinstance(val, numbers.Integral):
             raise TypeError(f"{name} must be an integer, got {type(val).__name__}")
         if val < lo:
             raise ValueError(f"{name} must be >= {lo}, got {val}")
@@ -176,7 +179,28 @@ def _validate_training_inputs(
 
 
 def _check_convergence(prev_params, curr_params, tolerance, prev_loss, current_loss):
-    """Return ``(converged, param_diff, loss_diff, param_converged, loss_converged)``."""
+    """Decide whether the training loop has converged this iteration.
+
+    Parameters
+    ----------
+    prev_params, curr_params : array-like
+        Flattened network parameters before and after the iteration; their
+        L2 difference drives parameter convergence.
+    tolerance : float
+        Threshold applied to both the parameter difference and the loss
+        difference; satisfying either alone counts as converged.
+    prev_loss : float or None
+        Loss from the previous iteration. ``None`` on the first iteration,
+        in which case loss convergence is skipped.
+    current_loss : float or None
+        Loss from this iteration. Must be a Python scalar (or ``None``);
+        loss convergence is skipped when either loss is ``None``.
+
+    Returns
+    -------
+    tuple
+        ``(converged, param_diff, loss_diff, param_converged, loss_converged)``.
+    """
     if current_loss is not None and not isinstance(current_loss, (int, float)):
         raise TypeError(
             f"current_loss must be a Python scalar (int or float), "
@@ -240,8 +264,9 @@ def maliar_training_loop(
     simulation_steps: int = 1,
     network_width: int = 16,
     epochs_per_iteration: int = 250,
+    lr: float = 0.001,
 ) -> tuple:
-    """
+    r"""
     Run the Maliar, Maliar, and Winant (JME '21) training loop.
 
     Trains a single neural network policy to minimize empirical risk (loss)
@@ -254,22 +279,29 @@ def maliar_training_loop(
     :class:`~skagent.ann.BlockPolicyValueNet`; a future refactor may add
     value-network support here.
 
+    The loop maps onto the MMW JME'21 algorithm steps as follows:
+    :func:`_validate_training_inputs` and the network construction below
+    cover Step 1 (initialize topology and coefficients); the per-iteration
+    :func:`~skagent.ann.train_block_nn` call is Step 2 (minimize the
+    empirical risk :math:`\Xi^n(\theta)`); the returned network is the Step 3
+    trained approximation :math:`\varphi(\cdot, \theta)`.
+
     Parameters
     ----------
     bellman_period : BellmanPeriod
         A model definition containing block dynamics and transitions.
     loss_function : Callable
-        The empirical risk function Xi^n from MMW JME'21. This function is
-        passed to the neural network training routine as
+        The empirical risk function :math:`\Xi^n` from MMW JME'21. This
+        function is passed to the neural network training routine as
         ``loss_function(decision_function, input_grid) -> loss_tensor``.
     states_0_n : Grid
         A panel of starting states for training. Must contain at least one state.
     parameters : dict
         Given parameters for the model.
     shock_copies : int, optional
-        Number of copies of shocks to include in the training set omega.
-        Must match expected number of shock copies in the loss function.
-        Must be >= 1. Default is 2.
+        Number of shock copies to include in the training set
+        :math:`\{\omega_i\}`. Must match the expected number of shock copies
+        in the loss function. Must be >= 1. Default is 2.
     max_iterations : int, optional
         Maximum number of training loop iterations before stopping.
         Must be >= 1. Default is 5.
@@ -282,8 +314,8 @@ def maliar_training_loop(
         Random seed for reproducibility. Default is None.
     simulation_steps : int, optional
         Number of time steps to simulate forward when determining the next
-        omega set for training. Higher values let the training states
-        explore more of the state space at higher computational cost.
+        training set :math:`\{\omega_i\}`. Higher values let the training
+        states explore more of the state space at higher computational cost.
         Must be >= 1. Default is 1.
     network_width : int, optional
         Width of hidden layers in the policy neural network.
@@ -291,11 +323,20 @@ def maliar_training_loop(
     epochs_per_iteration : int, optional
         Number of training epochs per iteration.
         Must be >= 1. Default is 250.
+    lr : float, optional
+        Learning rate for the internal Adam optimizer. The optimizer is
+        created once and reused across iterations to preserve momentum.
+        Must be > 0. Default is 0.001.
 
     Returns
     -------
     tuple
-        ``(trained_policy_network, training_states)``.
+        ``(trained_policy_network, training_states)`` where
+        ``trained_policy_network`` is the trained
+        :class:`~skagent.ann.BlockPolicyNet` and ``training_states`` is the
+        :class:`~skagent.grid.Grid` of states from the final iteration (the
+        convergence point if training converged early, otherwise the states
+        after ``max_iterations`` steps).
 
     Raises
     ------
@@ -323,7 +364,7 @@ def maliar_training_loop(
         torch.manual_seed(random_seed)
 
     bpn = ann.BlockPolicyNet(bellman_period, width=network_width)
-    optimizer = torch.optim.Adam(bpn.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(bpn.parameters(), lr=lr)
     states = states_0_n
     prev_loss = None
 

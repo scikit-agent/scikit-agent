@@ -3,7 +3,7 @@ import logging
 from skagent.grid import Grid
 import torch
 from skagent.utils import create_vectorized_function_wrapper_with_mapping
-from typing import Callable
+from typing import Callable, Optional
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -16,6 +16,22 @@ class BellmanPeriodMixin:
     and information set that are commonly needed across BlockPolicyNet and
     BlockPolicyValueNet.
     """
+
+    # Contract: attributes/methods that concrete subclasses provide and that
+    # the shared helpers below rely on. Declared (without assignment) so that
+    # static analysis can see the mixin's dependencies.
+    iset: list
+    apply_open_bounds: bool
+    upper_bound_vec_func: Optional[Callable]
+    lower_bound_vec_func: Optional[Callable]
+
+    def decision_function(self, states_t, shocks_t, parameters) -> dict:
+        """Map states, shocks, and parameters to a controls dict.
+
+        Implemented by each concrete network; declared here as the contract
+        that :meth:`get_decision_function` closes over.
+        """
+        raise NotImplementedError
 
     def _init_bellman_period(self, bellman_period, control_sym=None):
         """
@@ -36,7 +52,9 @@ class BellmanPeriodMixin:
 
         self.control_sym = control_sym
         self.cobj = self.bellman_period.block.dynamics[control_sym]
-        self.iset = self.cobj.iset
+        # Snapshot the information set so later mutation of cobj.iset cannot
+        # silently desync the network's input dimension and bound mappings.
+        self.iset = list(self.cobj.iset)
 
     def _setup_bound(self, bound_func, bound_name):
         """Set up a vectorized bound function from a callable or None.
@@ -68,6 +86,50 @@ class BellmanPeriodMixin:
             bound_func, param_to_column
         )
         return vec_func, param_to_column
+
+    def _apply_open_bounds(self, x1, x_input):
+        """Scale raw network output ``x1`` into the control's open bounds.
+
+        "Open" means the output can approach but never equal a bound. The
+        branch is selected from which bound vec-funcs are present (probed
+        via ``is None`` so a numeric bound such as ``0.0`` is not treated as
+        absent):
+
+        - no bounds: identity
+        - both bounds: ``lower + sigmoid(x1) * (upper - lower)``
+        - lower only: ``lower + softplus(x1)``
+        - upper only: ``upper - softplus(x1)``
+
+        The caller is responsible for supplying bound callables with
+        ``lower < upper``; an inverted or degenerate pair yields a constant
+        or out-of-range policy with no error raised here (a per-call check
+        is omitted to keep the forward pass free of host-device syncs).
+        """
+        if not self.apply_open_bounds:
+            return x1
+        # Bind to locals so static narrowing of the `is not None` checks
+        # carries through to the calls below.
+        upper = self.upper_bound_vec_func
+        lower = self.lower_bound_vec_func
+        if upper is None and lower is None:
+            return x1
+        if upper is not None and lower is not None:
+            ub = upper(x_input)
+            lb = lower(x_input)
+            return lb + torch.nn.functional.sigmoid(x1) * (ub - lb)
+        if lower is not None:
+            return lower(x_input) + torch.nn.functional.softplus(x1)
+        # upper only
+        ub = upper(x_input)
+        return ub - torch.nn.functional.softplus(x1)
+
+    def get_decision_function(self):
+        """Return a closure ``(states, shocks, parameters) -> controls dict``."""
+
+        def df(states_t, shocks_t, parameters):
+            return self.decision_function(states_t, shocks_t, parameters)
+
+        return df
 
 
 ##########
@@ -303,9 +365,10 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
     """
     A neural network for policy functions in dynamic programming problems.
 
-    This network inherits from Net and provides economic model integration.
-    It automatically determines input/output dimensions from the model block specification
-    and handles control variable bounds.
+    This network wraps a :class:`Net` and integrates with the
+    :class:`~skagent.bellman.BellmanPeriod` interface. It automatically
+    determines input/output dimensions from the model block specification
+    and enforces control variable bounds.
 
     Parameters
     -----------
@@ -402,47 +465,10 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         but adds on a normalization layer appropriate to the
         bounds of the decision rule.
         """
-
         x1 = super().forward(x)
-
-        if self.apply_open_bounds:
-            # Probe `is None` on the vec-funcs (not on the raw bound values)
-            # so numeric bounds like 0.0 are not falsely treated as absent.
-            has_upper = self.upper_bound_vec_func is not None
-            has_lower = self.lower_bound_vec_func is not None
-            if not has_upper and not has_lower:
-                x2 = x1
-            elif has_upper and has_lower:
-                # Compute bounds from input using wrapped functions
-                upper_bound = self.upper_bound_vec_func(x)
-                lower_bound = self.lower_bound_vec_func(x)
-
-                # Scale to bounds
-                x2 = lower_bound + torch.nn.functional.sigmoid(x1) * (
-                    upper_bound - lower_bound
-                )
-
-            elif has_lower:
-                lower_bound = self.lower_bound_vec_func(x)
-                x2 = lower_bound + torch.nn.functional.softplus(x1)
-
-            else:  # has_upper only
-                upper_bound = self.upper_bound_vec_func(x)
-                x2 = upper_bound - torch.nn.functional.softplus(x1)
-        else:
-            # return un-normalized reals.
-            x2 = x1
-
-        return x2
-
-    def get_decision_function(self):
-        def df(states_t, shocks_t, parameters):
-            return self.decision_function(states_t, shocks_t, parameters)
-
-        return df
+        return self._apply_open_bounds(x1, x)
 
     def get_core_function(self, length=None):
-        # consider making this an abstract method in a base class
         return self.get_decision_rule(length=length)
 
     def get_decision_rule(self, length=None):
@@ -492,8 +518,9 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
     - **Value head** — unconstrained scalar output
 
     Sharing the backbone means one optimizer updates all weights
-    simultaneously, and the value head anchors the consumption *level*
-    that Euler-equation-only training cannot identify.
+    simultaneously, and the value head anchors the control *level* that
+    first-order-condition-only training (e.g. an Euler residual loss)
+    cannot identify.
 
     Parameters
     ----------
@@ -542,8 +569,13 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
     # ------------------------------------------------------------------
     # Forward
     # ------------------------------------------------------------------
-    def forward(self, x):
-        """Run shared backbone, then policy head (bounded) + value head."""
+    def forward(self, x) -> tuple[torch.Tensor, torch.Tensor]:
+        """Run shared backbone, then policy head (bounded) + value head.
+
+        Returns the ``(policy, value)`` pair. The policy tensor is scaled
+        into the control's open bounds; the value tensor is unconstrained.
+        Both have shape ``(n, 1)``.
+        """
         x_input = x
 
         # Shared hidden layers
@@ -552,43 +584,41 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
             if not self.activation_is_identity[i]:
                 x = self.activations[i](x)
 
-        # Policy head (uses Net's output layer)
+        # Policy head (uses Net's output layer); bounds logic shared with
+        # BlockPolicyNet via BellmanPeriodMixin._apply_open_bounds.
         policy_raw = self.output(x)
         if self.transform is not None:
             policy_raw = self._apply_transform(policy_raw)
-        policy = self._apply_policy_bounds(policy_raw, x_input)
+        policy = self._apply_open_bounds(policy_raw, x_input)
 
         # Value head (unconstrained)
         value = self.value_output(x)
 
         return policy, value
 
-    def _apply_policy_bounds(self, x1, x_input):
-        """Apply open bounds to policy output (same logic as BlockPolicyNet)."""
-        if not self.apply_open_bounds:
-            return x1
-        # Probe `is None` on the vec-funcs (not on the raw bound values)
-        # so numeric bounds like 0.0 are not falsely treated as absent.
-        has_upper = self.upper_bound_vec_func is not None
-        has_lower = self.lower_bound_vec_func is not None
-        if not has_upper and not has_lower:
-            return x1
-        if has_upper and has_lower:
-            ub = self.upper_bound_vec_func(x_input)
-            lb = self.lower_bound_vec_func(x_input)
-            return lb + torch.nn.functional.sigmoid(x1) * (ub - lb)
-        if has_lower:
-            lb = self.lower_bound_vec_func(x_input)
-            return lb + torch.nn.functional.softplus(x1)
-        # upper only
-        ub = self.upper_bound_vec_func(x_input)
-        return ub - torch.nn.functional.softplus(x1)
-
     # ------------------------------------------------------------------
     # Policy interface (compatible with BlockPolicyNet)
     # ------------------------------------------------------------------
     def decision_function(self, states_t, shocks_t, parameters):
-        """Decision function: states, shocks, parameters → controls dict."""
+        """Map states, shocks, and parameters to a controls dict.
+
+        Parameters
+        ----------
+        states_t : dict
+            Arrival state values, ``symbol -> tensor``.
+        shocks_t : dict or None
+            Shock values, ``symbol -> tensor`` (``None`` is treated as ``{}``).
+        parameters : dict
+            Model parameters, ``symbol -> value``.
+
+        Returns
+        -------
+        dict
+            ``{control_sym: tensor}`` of policy-head outputs. The arrival
+            states are mapped to the control's information set via
+            :meth:`~skagent.bellman.BellmanPeriod.compute_pre_state` before
+            the network is evaluated.
+        """
         if shocks_t is None:
             shocks_t = {}
         iset_dict = self.bellman_period.compute_pre_state(
@@ -607,12 +637,6 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
         dr = self.get_decision_rule(length=get_tensor_size(iset_dict))
         output = dr[self.control_sym](*iset_vals)
         return {self.control_sym: output}
-
-    def get_decision_function(self):
-        def df(states_t, shocks_t, parameters):
-            return self.decision_function(states_t, shocks_t, parameters)
-
-        return df
 
     def get_decision_rule(self, length=None):
         """Decision rule returning only the policy output."""
@@ -636,7 +660,29 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
     # Value interface
     # ------------------------------------------------------------------
     def value_function(self, states_t, shocks_t=None, parameters=None):
-        """Evaluate V(s) using the value head."""
+        """Evaluate the value head at the control's information set.
+
+        The input domain mirrors :meth:`decision_function`: arrival
+        ``states_t`` (with ``shocks_t`` and ``parameters``) are mapped to the
+        control's information set via
+        :meth:`~skagent.bellman.BellmanPeriod.compute_pre_state`, then the
+        shared backbone's value head is evaluated on that pre-decision
+        representation.
+
+        Parameters
+        ----------
+        states_t : dict
+            Arrival state values, ``symbol -> tensor``.
+        shocks_t : dict or None, optional
+            Shock values (``None`` is treated as ``{}``).
+        parameters : dict or None, optional
+            Model parameters.
+
+        Returns
+        -------
+        torch.Tensor
+            Flattened value estimates, one per input row.
+        """
         if shocks_t is None:
             shocks_t = {}
         iset_dict = self.bellman_period.compute_pre_state(
@@ -680,7 +726,12 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
     Return the mean.
     """
     losses = loss_function(df, inputs)
-    if hasattr(losses, "to"):  # slow, clumsy
+    if not isinstance(losses, torch.Tensor):
+        raise TypeError(
+            "loss_function must return a torch.Tensor of per-sample losses, "
+            f"got {type(losses).__name__}."
+        )
+    if losses.device != device:
         losses = losses.to(device)
     return losses.mean()
 
@@ -689,18 +740,19 @@ def train_block_nn(
     block_policy_nn,
     inputs: Grid,
     loss_function: Callable,
-    epochs=50,
-    lr=0.01,
-    optimizer=None,
-    grad_clip=1.0,
-    verbose=True,
+    epochs: int = 50,
+    lr: float = 0.01,
+    optimizer: Optional[torch.optim.Optimizer] = None,
+    grad_clip: Optional[float] = 1.0,
+    verbose: bool = True,
 ):
     """Train a policy network by minimizing a loss function over a grid.
 
     Parameters
     ----------
-    block_policy_nn : BlockPolicyNet
-        The policy network to train.
+    block_policy_nn : BlockPolicyNet or BlockPolicyValueNet
+        The network to train. Its ``get_core_function`` supplies the
+        decision rule(s) the loss is evaluated against.
     inputs : Grid
         Input grid containing states and shocks.
     loss_function : Callable
@@ -715,14 +767,16 @@ def train_block_nn(
     grad_clip : float or None, optional
         Maximum gradient norm for clipping (default 1.0). Set to None to disable.
     verbose : bool, optional
-        Print loss every 100 epochs (default True).
+        Emit a ``logging.info`` message with the loss every 100 epochs
+        (default True). Configure the root logger to suppress these.
 
     Returns
     -------
     tuple
-        ``(trained_network, final_loss)`` when ``optimizer`` is ``None``
-        (default). ``(trained_network, final_loss, optimizer)`` when an
-        existing optimizer is passed in, enabling warm-start across calls.
+        ``(trained_network, final_loss, optimizer)``. The ``optimizer`` is
+        the one passed in, or the Adam instance created internally when none
+        was supplied; returning it always lets callers warm-start a later
+        call by threading it back in.
     """
     if not isinstance(epochs, int) or epochs < 1:
         raise ValueError(f"epochs must be a positive integer, got {epochs!r}")
@@ -731,11 +785,12 @@ def train_block_nn(
     if grad_clip is not None and grad_clip <= 0:
         raise ValueError(f"grad_clip must be > 0 or None, got {grad_clip}")
 
-    return_optimizer = optimizer is not None
     if optimizer is None:
         optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=lr)
 
-    final_loss = None
+    # NaN sentinel (overwritten on the first epoch; epochs >= 1 is validated
+    # above). Typing it as float keeps the return contract free of None.
+    final_loss = float("nan")
     for epoch in range(epochs):
         optimizer.zero_grad()
         loss = aggregate_net_loss(
@@ -747,9 +802,19 @@ def train_block_nn(
         optimizer.step()
         final_loss = loss.item()
 
+        # final_loss is already a synced host scalar, so this guard is free.
+        # A non-finite loss means gradients have diverged; continuing would
+        # silently poison the weights (NaN < tol is False, so convergence
+        # checks never fire). Stop and surface it instead.
+        if final_loss != final_loss or final_loss in (float("inf"), float("-inf")):
+            logging.warning(
+                "Non-finite loss (%s) at epoch %d; stopping training early.",
+                final_loss,
+                epoch,
+            )
+            break
+
         if verbose and epoch % 100 == 0:
             logging.info("Epoch %d: Loss = %.6e", epoch, final_loss)
 
-    if return_optimizer:
-        return block_policy_nn, final_loss, optimizer
-    return block_policy_nn, final_loss
+    return block_policy_nn, final_loss, optimizer
