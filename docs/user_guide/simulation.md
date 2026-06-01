@@ -2,12 +2,12 @@
 
 This guide covers how to run simulations and analyze results with scikit-agent.
 
-While it may support more simulation engines in the future, scikit-agent current
-supports generic Monte Carlo simulation of its models.
+While it may support more simulation engines in the future, scikit-agent
+currently supports generic Monte Carlo simulation of its models.
 
 The simulator accepts as arguments a calibration dictionary, a model, and
 decision rules for all agent decisions. It also takes initial state values, a
-number of agents to simulate, and an number of time steps to simulate through.
+number of agents to simulate, and a number of time steps to simulate through.
 
 The simulator then runs through the model equations, sampling random variables
 and applying transition and decision rules. It generates a complete history of
@@ -61,8 +61,9 @@ simulator.simulate()
 The data for all variables of the simulation is made available as a dictionary
 of arrays.
 
-The following will show the mean over all agents for the `k` variable along the
-time axis.
+The following will show the mean across all agents, at each time step, for the
+`k` variable (the history array is shaped `(T_sim, agent_count)`, so `axis=1`
+averages over agents).
 
 ```python
 import matplotlib.pyplot as plt

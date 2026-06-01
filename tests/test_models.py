@@ -110,4 +110,5 @@ class test_consumer_models(unittest.TestCase):
 
         self.assertTrue(self.pcs.history["R"][0][0] != 1.03)
 
-        self.assertFalse(np.isnan(self.pcs.history["m"])[1, 1])
+        # the portfolio simulation must not produce NaN anywhere in m
+        self.assertFalse(np.any(np.isnan(self.pcs.history["m"])))

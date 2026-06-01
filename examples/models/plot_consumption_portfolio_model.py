@@ -18,29 +18,29 @@ Model Structure
 
 The model is built from three composable blocks:
 
-- :data:`~skagent.models.consumer.consumption_block_normalized` — one
+- :data:`~skagent.models.consumer.consumption_block_normalized` - one
   period of the normalized consumption-saving problem
-- :data:`~skagent.models.consumer.portfolio_block` — risky portfolio
+- :data:`~skagent.models.consumer.portfolio_block` - risky portfolio
   allocation that endogenizes the gross return :math:`R`
-- :data:`~skagent.models.consumer.tick_block` — state transition that
+- :data:`~skagent.models.consumer.tick_block` - state transition that
   carries end-of-period assets into next period's capital
 
 The two complete recursive problems are:
 
-- :data:`~skagent.models.consumer.cons_problem` — pure saving (fixed
+- :data:`~skagent.models.consumer.cons_problem` - pure saving (fixed
   return)
-- :data:`~skagent.models.consumer.cons_portfolio_problem` — saving plus
+- :data:`~skagent.models.consumer.cons_portfolio_problem` - saving plus
   portfolio choice
 
 Normalized Consumption Block
 -----------------------------
 
-**State Variable**: :math:`k_t` — normalized capital (assets divided by
+**State Variable**: :math:`k_t` - normalized capital (assets divided by
 permanent income) carried into the period
 
 **Shocks**:
 
-- :math:`\theta_t` — transitory income shock, :math:`\mathbb{E}[\theta_t] = 1`
+- :math:`\theta_t` - transitory income shock, :math:`\mathbb{E}[\theta_t] = 1`
 
 **Dynamics**:
 
@@ -99,7 +99,7 @@ References
 
 .. [1] Carroll, C.D. (2001). "A Theory of the Consumption Function, With
        and Without Liquidity Constraints." *Journal of Economic
-       Perspectives*, 15(3), 23–45.
+       Perspectives*, 15(3), 23-45.
 
 """
 
@@ -158,7 +158,7 @@ plt.axis("off")
 plt.tight_layout()
 
 # %%
-# Step 5: Define a Simple Consumption Rule
+# Step 4: Define a Simple Consumption Rule
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The optimal policy for this model requires numerical solution methods.
@@ -196,7 +196,7 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 
 # %%
-# Step 6: Run Monte Carlo Simulation (Pure Saving Problem)
+# Step 5: Run Monte Carlo Simulation (Pure Saving Problem)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Simulate the pure saving problem (:data:`~skagent.models.consumer.cons_problem`)
@@ -223,7 +223,7 @@ simulator.simulate()
 print("Simulation completed successfully")
 
 # %%
-# Step 7: Plot Simulation Results
+# Step 6: Plot Simulation Results
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The plot shows the cross-sectional distribution of normalized market
@@ -241,7 +241,7 @@ plt.fill_between(
     np.percentile(m_hist, 95, axis=1),
     alpha=0.2,
     color="C0",
-    label="5th–95th percentile",
+    label="5th-95th percentile",
 )
 plt.fill_between(
     range(simulator.T_sim),
@@ -249,7 +249,7 @@ plt.fill_between(
     np.percentile(m_hist, 75, axis=1),
     alpha=0.35,
     color="C0",
-    label="25th–75th percentile",
+    label="25th-75th percentile",
 )
 plt.plot(m_hist.mean(axis=1), linewidth=2, color="C0", label="Mean")
 
@@ -262,7 +262,7 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# Step 8: Run Portfolio Simulation
+# Step 7: Run Portfolio Simulation
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now extend to the portfolio problem
@@ -294,11 +294,11 @@ print("Portfolio simulation completed successfully")
 
 
 # %%
-# Step 9: Compare Saving vs Portfolio Paths
+# Step 8: Compare Saving vs Portfolio Paths
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The risky asset earns a higher expected return, so the portfolio model
-# predicts higher mean wealth accumulation — but also greater dispersion
+# predicts higher mean wealth accumulation - but also greater dispersion
 # due to stock-return risk.
 
 fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
@@ -315,7 +315,7 @@ for ax, sim, label, color in [
         np.percentile(m_h, 95, axis=1),
         alpha=0.2,
         color=color,
-        label="5th–95th pct",
+        label="5th-95th pct",
     )
     ax.fill_between(
         range(sim.T_sim),
@@ -323,7 +323,7 @@ for ax, sim, label, color in [
         np.percentile(m_h, 75, axis=1),
         alpha=0.35,
         color=color,
-        label="25th–75th pct",
+        label="25th-75th pct",
     )
     ax.plot(m_h.mean(axis=1), linewidth=2, color=color, label="Mean")
     ax.set_title(label)

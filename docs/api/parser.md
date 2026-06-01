@@ -30,6 +30,7 @@ callable functions.
    :members:
    :undoc-members:
    :show-inheritance:
+   :no-index:
 ```
 
 ## Example Usage
