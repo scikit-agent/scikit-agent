@@ -796,11 +796,9 @@ def train_block_nn(
         loss = aggregate_net_loss(
             inputs, block_policy_nn.get_core_function(length=inputs.n()), loss_function
         )
-        # Check finiteness BEFORE backward/step. final_loss is already a synced
-        # host scalar, so this guard is free. A non-finite loss means training
-        # has diverged; stopping here keeps the last finite weights instead of
-        # applying non-finite gradients and poisoning the network. (NaN < tol is
-        # also False, so downstream convergence checks would never fire.)
+        # Check finiteness BEFORE backward/step: a non-finite loss means
+        # training diverged; stopping here keeps the last finite weights instead
+        # of applying NaN/Inf gradients. final_loss is already synced (free).
         final_loss = loss.item()
         if final_loss != final_loss or final_loss in (float("inf"), float("-inf")):
             logging.warning(
