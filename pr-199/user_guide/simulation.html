@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms Guide" href="algorithms.html"><link rel="prev" title="Block Guide" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation Guide - scikit-agent 0.1.dev503+g2153c5b31</title>
+        <title>Simulation Guide - scikit-agent 0.1.dev529+g688a3c472</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev503+g2153c5b31</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev529+g688a3c472</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -211,8 +211,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
@@ -223,6 +223,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/parser.html">Parsing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -275,31 +276,68 @@
           <section class="tex2jax_ignore mathjax_ignore" id="simulation-guide">
 <h1>Simulation Guide<a class="headerlink" href="#simulation-guide" title="Link to this heading">¶</a></h1>
 <p>This guide covers how to run simulations and analyze results with scikit-agent.</p>
-<section id="running-simulations">
-<h2>Running Simulations<a class="headerlink" href="#running-simulations" title="Link to this heading">¶</a></h2>
-<p>Learn how to execute model simulations:</p>
-<ul class="simple">
-<li><p><strong>Monte Carlo Simulations</strong>: Statistical analysis with random sampling</p></li>
-<li><p><strong>Deterministic Simulations</strong>: Controlled scenario analysis</p></li>
-<li><p><strong>Comparative Statistics</strong>: Parameter sensitivity analysis</p></li>
-</ul>
-</section>
+<p>While it may support more simulation engines in the future, scikit-agent
+currently supports generic Monte Carlo simulation of its models.</p>
+<p>The simulator accepts as arguments a calibration dictionary, a model, and
+decision rules for all agent decisions. It also takes initial state values, a
+number of agents to simulate, and a number of time steps to simulate through.</p>
+<p>The simulator then runs through the model equations, sampling random variables
+and applying transition and decision rules. It generates a complete history of
+all variables in the simulation, that can then be inspected.</p>
 <section id="simulation-configuration">
 <h2>Simulation Configuration<a class="headerlink" href="#simulation-configuration" title="Link to this heading">¶</a></h2>
-<p>Documentation for simulation setup and parameters will be added here.</p>
+<p>The simulator takes the following elements in configuration:</p>
+<ul class="simple">
+<li><p><strong>Calibration dictionary</strong>. A dictionary specifying values for any free
+parameters of the model.</p></li>
+<li><p><strong>Model</strong>. A <code class="docutils literal notranslate"><span class="pre">Block</span></code> model, defining states, shocks, control, and reward
+variables of an agent (or population of agents).</p></li>
+<li><p><strong>Decision rules</strong>. A dictionary of decision rules governing the informed
+choices of agents at their decision variables.</p></li>
+<li><p><strong>Initial values</strong>. A dictionary of starting values, or starting
+distributions, for arrival state variables.</p></li>
+</ul>
+<p>This provides all the data needed for the simulation to run forward.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lognormal</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cons</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.simulation.monte_carlo</span><span class="w"> </span><span class="kn">import</span> <span class="n">MonteCarloSimulator</span>
+
+<span class="n">simulator</span> <span class="o">=</span> <span class="n">MonteCarloSimulator</span><span class="p">(</span>
+    <span class="n">cons</span><span class="o">.</span><span class="n">calibration</span><span class="p">,</span>
+    <span class="n">cons</span><span class="o">.</span><span class="n">cons_problem</span><span class="p">,</span>
+    <span class="p">{</span>  <span class="c1"># decision rules passed in as dictionary</span>
+        <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>  <span class="c1"># distributions of starting values</span>
+        <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="n">Lognormal</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">},</span>
+    <span class="n">agent_count</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">T_sim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 </section>
-<section id="data-collection">
-<h2>Data Collection<a class="headerlink" href="#data-collection" title="Link to this heading">¶</a></h2>
-<p>Documentation for collecting and organizing simulation results will be added
-here.</p>
+<section id="running-simulations">
+<h2>Running Simulations<a class="headerlink" href="#running-simulations" title="Link to this heading">¶</a></h2>
+<p>Running the simulation is a simple two-step process:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">simulator</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
+</pre></div>
+</div>
 </section>
-<section id="analysis-and-visualization">
-<h2>Analysis and Visualization<a class="headerlink" href="#analysis-and-visualization" title="Link to this heading">¶</a></h2>
-<p>Documentation for analyzing and visualizing simulation output will be added
-here.</p>
-<hr class="docutils" />
-<p><em>This page is under construction. Content will be added as simulation tools are
-developed.</em></p>
+<section id="analyzing-and-visualizing-data">
+<h2>Analyzing and Visualizing Data<a class="headerlink" href="#analyzing-and-visualizing-data" title="Link to this heading">¶</a></h2>
+<p>The data for all variables of the simulation is made available as a dictionary
+of arrays.</p>
+<p>The following will show the mean across all agents, at each time step, for the
+<code class="docutils literal notranslate"><span class="pre">k</span></code> variable (the history array is shaped <code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">agent_count)</span></code>, so <code class="docutils literal notranslate"><span class="pre">axis=1</span></code>
+averages over agents).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;k&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -366,10 +404,9 @@ developed.</em></p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Simulation Guide</a><ul>
-<li><a class="reference internal" href="#running-simulations">Running Simulations</a></li>
 <li><a class="reference internal" href="#simulation-configuration">Simulation Configuration</a></li>
-<li><a class="reference internal" href="#data-collection">Data Collection</a></li>
-<li><a class="reference internal" href="#analysis-and-visualization">Analysis and Visualization</a></li>
+<li><a class="reference internal" href="#running-simulations">Running Simulations</a></li>
+<li><a class="reference internal" href="#analyzing-and-visualizing-data">Analyzing and Visualizing Data</a></li>
 </ul>
 </li>
 </ul>
@@ -381,7 +418,7 @@ developed.</em></p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=885cd571"></script>
+</div><script src="../_static/documentation_options.js?v=2fecf903"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
