@@ -51,6 +51,23 @@ training, and other computational approaches to solving economic models.
 
 .. thumbnail-parent-div-open
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form.">
+
+.. only:: html
+
+  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_maliar_training_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/algorithms/plot_maliar_training`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Training a Policy Network Against a Known Solution</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -99,7 +116,7 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to build, solve, and simulate a consumption-portfolio choice model using scikit-agent. The model includes:">
+    <div class="sphx-glr-thumbcontainer" tooltip="The consumption-saving problem is one of the central models of modern macroeconomics and household finance. An agent with uncertain income must decide each period how much to consume and how much to save, trading off current utility against future resources.">
 
 .. only:: html
 
@@ -110,7 +127,7 @@ other computational methods.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Consumption-Portfolio Model</div>
+      <div class="sphx-glr-thumbnail-title">Consumption-Saving-Portfolio Model</div>
     </div>
 
 

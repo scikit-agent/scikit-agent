@@ -24,9 +24,32 @@ training, and other computational approaches to solving economic models.
 
 .. thumbnail-parent-div-open
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form.">
+
+.. only:: html
+
+  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_maliar_training_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/algorithms/plot_maliar_training`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Training a Policy Network Against a Known Solution</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
 
     </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/algorithms/plot_maliar_training
 
