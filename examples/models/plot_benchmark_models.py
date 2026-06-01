@@ -3,24 +3,32 @@ r"""
 Benchmark Consumption Models
 ##############################
 
-A guided tour of :py:mod:`skagent.models.benchmarks`. The closed-form
-policies in this registry retrace dynamic consumption theory in roughly the
-order the field discovered them, and each model teaches a fact that the
-previous ones could not. Reading from top to bottom:
+A guided tour of :py:mod:`skagent.models.benchmarks`. Consumption economics
+asks how a household should split each period's resources between spending now
+and saving for later. The closed-form policies in this registry are the classic
+answers, and they retrace the theory in roughly the order the field discovered
+it. Each model teaches a fact the previous ones could not. Reading from top to
+bottom:
 
-#. **D-1, D-2.** Finite horizons stop mattering once :math:`T - t` is far
-   enough from the present.
-#. **D-3.** Mortality acts like extra impatience: it scales the discount
-   factor and pushes up the MPC.
-#. **U-1.** Under :math:`\beta R = 1`, the *change* in consumption is the
-   fundamental object, not its level. Income shocks of standard deviation
-   :math:`\sigma_\eta` produce consumption changes of standard deviation
-   :math:`(r/R)\,\sigma_\eta` only, a factor of roughly 30× smaller.
-#. **U-2.** Dividing every level variable by permanent income collapses a
-   2-D Bellman to a 1-D one. This trick is what makes neural-network
-   solvers practical for richer models.
-#. **U-3.** What happens when no normalization saves you, and how the
-   registry still keeps the model around for limit-checking.
+#. **Finite horizons fade.** Once the distance to the terminal date
+   :math:`T - t` is large, the finite-horizon rule is indistinguishable from
+   the infinite-horizon one.
+#. **Mortality erodes patience.** A survival probability below one acts like
+   extra impatience: it scales the discount factor and pushes up the MPC.
+#. **Consumption is a martingale.** Under :math:`\beta R = 1`, the *change* in
+   consumption is the fundamental object, not its level. Income shocks of
+   standard deviation :math:`\sigma_\eta` produce consumption changes of
+   standard deviation :math:`(r/R)\,\sigma_\eta` only, a factor of roughly 30x
+   smaller.
+#. **Normalization collapses the state.** Dividing every level variable by
+   permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
+   what makes neural-network solvers practical for richer models.
+#. **Closed forms run out.** When no normalization saves you, the model has no
+   closed-form policy, and the registry keeps it around for limit-checking.
+
+The short registry keys in the code and figure labels below (``D-1`` through
+``U-3``) are internal identifiers; the section titles give the names the models
+actually go by.
 
 This example is the runnable companion to :doc:`/user_guide/benchmark_models`.
 The code is intentionally verbose; production code should compose helpers,
@@ -326,7 +334,7 @@ fig.tight_layout()
 #
 # **Lesson:** U-3 is U-2 plus a *binding* borrowing constraint
 # :math:`c \leq m`. The U-2 closed form still satisfies the Euler equation
-# everywhere — but it violates the constraint at low :math:`m`, because at
+# everywhere, but it violates the constraint at low :math:`m`, because at
 # :math:`m = 0` it prescribes :math:`c = (1-\beta)/r > 0` (the agent
 # wants to borrow against future income). Below the intersection of the
 # PIH line with the constraint :math:`c = m`, the U-2 policy is
@@ -334,7 +342,7 @@ fig.tight_layout()
 # because the U-3 agent has *precautionary* saving motives that U-2 lacks.
 # The actual U-3 policy bends below the PIH line at moderate :math:`m`
 # and approaches D-2's :math:`\kappa` only as :math:`m \to \infty`.
-# Neither bend nor approach has a closed form — that is exactly why U-3
+# Neither bend nor approach has a closed form, which is exactly why U-3
 # is in the registry as ``"numerical only"``.
 
 m_u3 = torch.linspace(0.0, 4.0, 81)

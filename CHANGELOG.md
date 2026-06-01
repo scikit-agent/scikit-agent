@@ -27,6 +27,9 @@ and this project adheres to
 - NumFOCUS Code of Conduct adopted
 - Created a working `Consumption-Saving Model` example in the documentation
   gallery
+- Added a **Benchmark Models** page to the user guide documenting the
+  closed-form dynamic-programming benchmarks, with a runnable
+  `plot_benchmark_models.py` tour in the models gallery
 
 ### Removed
 
