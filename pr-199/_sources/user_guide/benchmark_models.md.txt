@@ -1,11 +1,22 @@
 # Benchmark Models
 
-The {py:mod}`skagent.models.benchmarks` registry collects benchmark dynamic
-programming problems. Most entries pair a working
+How much of this year's income should a household spend, and how much should it
+save for later? Consumption economics studies that one decision, made again and
+again over a lifetime, when income is uncertain, life is finite, and spending
+today comes at the expense of spending tomorrow. The benchmark models on this
+page are the classic answers. Each starts from the simplest possible case and
+adds a single realistic complication: income that grows, a chance of not
+surviving into the next period, or a shock that moves income permanently. The
+question stays the same throughout, namely how the optimal saving rule should
+respond. Read in order, the models retrace how economists came to understand
+saving over the past century.
+
+The {py:mod}`skagent.models.benchmarks` registry collects these problems in a
+form a solver can use. Most entries pair a working
 {py:class}`~skagent.block.DBlock` with an analytical decision function whose
-optimal policy is known in closed form; U-3 (the buffer-stock model) is included
-for numerical validation against its limiting MPC properties, even though it has
-no closed-form solution. The registry serves three purposes.
+optimal policy is known in closed form. The buffer-stock model is the exception:
+it has no closed-form solution and is included for numerical validation against
+its limiting MPC properties. The registry serves three purposes.
 
 **Validation.** A numerical solver can be checked against the closed-form policy
 on a set of test states. The function
@@ -21,8 +32,9 @@ regression that breaks an analytical identity is caught early.
 through Hall's random walk, retraces the development of dynamic consumption
 theory in roughly the order it was discovered.
 
-This page assumes familiarity with discrete-time stochastic dynamic programming.
-Readers new to the topic can start with Carroll (2024),
+The closed forms are written in the language of discrete-time dynamic
+programming, but the prose for each model is meant to stand on its own. Readers
+who want the underlying machinery can start with Carroll (2024),
 {py:mod}`~skagent.models.perfect_foresight_normalized` for the workhorse
 formulation, and the {doc}`../auto_examples/index` for runnable code.
 
@@ -51,22 +63,25 @@ income $P_t$.
 
 ## Roster
 
-The models below split into two groups. The six entries in `BENCHMARK_MODELS`
-are accessible by ID through the helpers in
-{py:func}`~skagent.models.benchmarks.list_benchmark_models`. The remaining four
+The models below split into two groups. Six ship in the `BENCHMARK_MODELS`
+registry, each reachable through
+{py:func}`~skagent.models.benchmarks.list_benchmark_models` by the short
+registry key shown in the table. Those keys, such as `D-1` or `U-2`, are
+internal identifiers rather than names anyone uses at the whiteboard, so the
+discussion below leads with each model's descriptive name. The remaining four
 models ship as standalone modules.
 
-**Registry (lookup by ID via
-{py:func}`~skagent.models.benchmarks.get_benchmark_model`):**
+**Registry models** (fetch with
+{py:func}`~skagent.models.benchmarks.get_benchmark_model` and the registry key):
 
-| ID      | Problem                             | Utility   | Income                    | Closed form            |
-| ------- | ----------------------------------- | --------- | ------------------------- | ---------------------- |
-| **D-1** | Finite-horizon                      | Log       | Wealth only               | Remaining-horizon MPC  |
-| **D-2** | Infinite-horizon perfect foresight  | CRRA      | Constant $y$              | Linear in total wealth |
-| **D-3** | Blanchard mortality                 | CRRA      | Constant $y$              | Same with $s\beta$     |
-| **U-1** | Hall random walk                    | Quadratic | Stochastic, $\beta R = 1$ | PIH annuity rule       |
-| **U-2** | Log + permanent shocks (normalized) | Log       | Geometric random walk     | $c = (1-\beta)(m + h)$ |
-| **U-3** | Buffer stock                        | CRRA      | Geometric random walk     | None (numerical only)  |
+| Model                                          | Key   | Utility   | Income                    | Closed form            |
+| ---------------------------------------------- | ----- | --------- | ------------------------- | ---------------------- |
+| Finite-horizon log utility                     | `D-1` | Log       | Wealth only               | Remaining-horizon MPC  |
+| Infinite-horizon perfect foresight             | `D-2` | CRRA      | Constant $y$              | Linear in total wealth |
+| Blanchard mortality                            | `D-3` | CRRA      | Constant $y$              | Same with $s\beta$     |
+| Hall random walk                               | `U-1` | Quadratic | Stochastic, $\beta R = 1$ | PIH annuity rule       |
+| Log utility with permanent shocks (normalized) | `U-2` | Log       | Geometric random walk     | $c = (1-\beta)(m + h)$ |
+| Buffer stock                                   | `U-3` | CRRA      | Geometric random walk     | None (numerical only)  |
 
 **Standalone modules (not in `BENCHMARK_MODELS`):**
 
@@ -79,36 +94,37 @@ models ship as standalone modules.
 
 ## Deterministic Benchmarks
 
-### D-1: Finite-Horizon Log Utility
+### Finite-Horizon Log Utility
 
 The remaining-horizon MPC $(1 - \beta) / (1 - \beta^{T-t})$ is the cleanest
 illustration of _time non-stationarity from a fixed terminal date_. The
 infinite-horizon limit recovers the constant-MPC rule $c_t = (1 - \beta)\, W_t$,
-which is the $\sigma = 1$ special case of D-2.
+which is the $\sigma = 1$ special case of the infinite-horizon perfect-foresight
+model below.
 
 ```{eval-rst}
 .. autofunction:: skagent.models.benchmarks.d1_analytical_policy
    :no-index:
 ```
 
-### D-2: Infinite-Horizon CRRA Perfect Foresight
+### Infinite-Horizon CRRA Perfect Foresight
 
-D-2 is the workhorse model for almost everything that follows. The MPC
+This is the workhorse model for almost everything that follows. The MPC
 $\kappa = (R - (\beta R)^{1/\sigma}) / R$ collapses to $1 - \beta$ under log
 utility ($\sigma = 1$), and to $r/R$ whenever $\beta R = 1$, regardless of
-$\sigma$. The latter limit coincides with U-1's PIH MPC out of total wealth: in
-U-1 the same value $r/R$ arises from a quite different model (quadratic utility,
-stochastic income), and the two derivations meet at the same number through the
-algebraic identity $(\beta R)^{1/\sigma} = 1$. Human wealth $H = y / r$ converts
-the infinite stream of future income into a single number that the linear rule
-can act on.
+$\sigma$. The latter limit coincides with the permanent-income MPC out of total
+wealth in Hall's random walk below: there the same value $r/R$ arises from a
+quite different model (quadratic utility, stochastic income), and the two
+derivations meet at the same number through the algebraic identity
+$(\beta R)^{1/\sigma} = 1$. Human wealth $H = y / r$ converts the infinite
+stream of future income into a single number that the linear rule can act on.
 
 ```{eval-rst}
 .. autofunction:: skagent.models.benchmarks.d2_analytical_policy
    :no-index:
 ```
 
-### D-3: Blanchard Discrete-Time Mortality
+### Blanchard Discrete-Time Mortality
 
 Adding i.i.d. survival risk does not break tractability: it scales the effective
 discount factor from $\beta$ to $s\beta$. The resulting MPC $\kappa_s$ strictly
@@ -138,9 +154,10 @@ The block is exposed as {py:data}`skagent.models.fisher.block` with calibration
 
 ### Perfect Foresight (Level Variables)
 
-Adds permanent income growth $G$ and i.i.d. survival to D-2. The closed-form
-solution remains linear in total wealth, but the human-wealth term now reflects
-growing income: $H_t = G\, P_t / (R - G)$.
+Adds permanent income growth $G$ and i.i.d. survival to the infinite-horizon
+perfect-foresight model. The closed-form solution remains linear in total
+wealth, but the human-wealth term now reflects growing income:
+$H_t = G\, P_t / (R - G)$.
 
 ```{eval-rst}
 .. automodule:: skagent.models.perfect_foresight
@@ -166,7 +183,7 @@ analytical and neural-network solutions practical for richer models.
 
 ## Stochastic Benchmarks with Closed Forms
 
-### U-1: Hall (1978) Random Walk
+### Hall's (1978) Random Walk
 
 The historically pivotal observation: under quadratic utility and the neutral
 SDF $\beta R = 1$, the Euler equation forces consumption to be a martingale,
@@ -179,13 +196,14 @@ unforecastable from period-$t$ information.
    :no-index:
 ```
 
-### U-2: Log Utility with Permanent Income Shocks
+### Log Utility with Permanent Income Shocks
 
 Geometric random-walk permanent income looks intractable in level variables. The
 normalization $m = M/P$, $c = C/P$ collapses the state space, and the closed
 form $c = (1 - \beta)(m + 1/r)$ falls out cleanly. The same normalization
-applied to the borrowing-constrained CRRA case (U-3) yields a problem with _no_
-closed form: the constraint plus uncertainty break the linearity.
+applied to the borrowing-constrained CRRA case, the buffer-stock model below,
+yields a problem with _no_ closed form: the constraint plus uncertainty break
+the linearity.
 
 ```{eval-rst}
 .. autofunction:: skagent.models.benchmarks.u2_analytical_policy
@@ -217,15 +235,15 @@ this page. The model requires the impatience condition $\delta r < 1$.
 The optimal decision rule is constructed by
 {py:func}`skagent.models.resource_extraction.make_optimal_decision_rule`.
 
-## Beyond Closed Forms: U-3 Buffer Stock
+## Beyond Closed Forms: The Buffer-Stock Model
 
-The buffer-stock model U-3 (CRRA utility, permanent and transitory income
-shocks, binding borrowing constraint $c \leq m$) has no closed-form policy. Its
-limiting properties are nonetheless known: the MPC stays in $(0, 1)$, decreases
-in wealth, and converges to the perfect-foresight $\kappa$ as wealth grows
-large. These limits are what the test harness in
+The buffer-stock model (CRRA utility, permanent and transitory income shocks,
+binding borrowing constraint $c \leq m$) has no closed-form policy. Its limiting
+properties are nonetheless known: the MPC stays in $(0, 1)$, decreases in
+wealth, and converges to the perfect-foresight $\kappa$ as wealth grows large.
+These limits are what the test harness in
 {py:func}`~skagent.models.benchmarks.validate_analytical_solution` checks when a
-numerical solver claims to have solved U-3.
+numerical solver claims to have solved it.
 
 ## Validating Analytical Solutions
 
@@ -252,10 +270,11 @@ result = validate_analytical_solution("D-2", tolerance=1e-8)
 print(result["validation"])  # 'PASSED'
 ```
 
-Requesting the analytical policy for U-3 raises {py:exc}`ValueError`, since none
-exists; the error message points to {py:class}`~skagent.loss.EulerEquationLoss`
-(combined with {py:func}`~skagent.algos.maliar.maliar_training_loop`) as the
-recommended numerical alternative.
+Requesting the analytical policy for the buffer-stock model raises
+{py:exc}`ValueError`, since none exists; the error message points to
+{py:class}`~skagent.loss.EulerEquationLoss` (combined with
+{py:func}`~skagent.algos.maliar.maliar_training_loop`) as the recommended
+numerical alternative.
 
 The full registry helpers are documented below.
 
@@ -284,7 +303,7 @@ The full registry helpers are documented below.
   to this page: a six-step pedagogical tour that loads each closed-form policy,
   validates it on the standard test grid, and walks through the lessons each
   model contributes (finite-horizon limits, the mortality wedge, Hall's
-  martingale, normalization, and why U-3 has no closed form).
+  martingale, normalization, and why the buffer-stock model has no closed form).
 - {doc}`../auto_examples/index` for the full gallery of runnable examples.
 - {doc}`algorithms` for the numerical methods used to solve models that do not
   have closed forms.

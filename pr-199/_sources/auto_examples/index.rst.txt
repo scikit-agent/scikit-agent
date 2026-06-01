@@ -116,7 +116,7 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of :pyskagent.models.benchmarks. The closed-form policies in this registry retrace dynamic consumption theory in roughly the order the field discovered them, and each model teaches a fact that the previous ones could not. Reading from top to bottom:">
+    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of :pyskagent.models.benchmarks. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:">
 
 .. only:: html
 

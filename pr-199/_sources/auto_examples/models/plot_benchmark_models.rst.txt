@@ -22,24 +22,32 @@
 Benchmark Consumption Models
 ##############################
 
-A guided tour of :py:mod:`skagent.models.benchmarks`. The closed-form
-policies in this registry retrace dynamic consumption theory in roughly the
-order the field discovered them, and each model teaches a fact that the
-previous ones could not. Reading from top to bottom:
+A guided tour of :py:mod:`skagent.models.benchmarks`. Consumption economics
+asks how a household should split each period's resources between spending now
+and saving for later. The closed-form policies in this registry are the classic
+answers, and they retrace the theory in roughly the order the field discovered
+it. Each model teaches a fact the previous ones could not. Reading from top to
+bottom:
 
-#. **D-1, D-2.** Finite horizons stop mattering once :math:`T - t` is far
-   enough from the present.
-#. **D-3.** Mortality acts like extra impatience: it scales the discount
-   factor and pushes up the MPC.
-#. **U-1.** Under :math:`\beta R = 1`, the *change* in consumption is the
-   fundamental object, not its level. Income shocks of standard deviation
-   :math:`\sigma_\eta` produce consumption changes of standard deviation
-   :math:`(r/R)\,\sigma_\eta` only, a factor of roughly 30× smaller.
-#. **U-2.** Dividing every level variable by permanent income collapses a
-   2-D Bellman to a 1-D one. This trick is what makes neural-network
-   solvers practical for richer models.
-#. **U-3.** What happens when no normalization saves you, and how the
-   registry still keeps the model around for limit-checking.
+#. **Finite horizons fade.** Once the distance to the terminal date
+   :math:`T - t` is large, the finite-horizon rule is indistinguishable from
+   the infinite-horizon one.
+#. **Mortality erodes patience.** A survival probability below one acts like
+   extra impatience: it scales the discount factor and pushes up the MPC.
+#. **Consumption is a martingale.** Under :math:`\beta R = 1`, the *change* in
+   consumption is the fundamental object, not its level. Income shocks of
+   standard deviation :math:`\sigma_\eta` produce consumption changes of
+   standard deviation :math:`(r/R)\,\sigma_\eta` only, a factor of roughly 30x
+   smaller.
+#. **Normalization collapses the state.** Dividing every level variable by
+   permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
+   what makes neural-network solvers practical for richer models.
+#. **Closed forms run out.** When no normalization saves you, the model has no
+   closed-form policy, and the registry keeps it around for limit-checking.
+
+The short registry keys in the code and figure labels below (``D-1`` through
+``U-3``) are internal identifiers; the section titles give the names the models
+actually go by.
 
 This example is the runnable companion to :doc:`/user_guide/benchmark_models`.
 The code is intentionally verbose; production code should compose helpers,
@@ -55,7 +63,7 @@ References
 * Carroll, C.D. (2024). *Solution Methods for Solving Microeconomic Dynamic
   Stochastic Optimization Problems*. https://llorracc.github.io/SolvingMicroDSOPs/
 
-.. GENERATED FROM PYTHON SOURCE LINES 40-53
+.. GENERATED FROM PYTHON SOURCE LINES 48-61
 
 .. code-block:: Python
 
@@ -79,7 +87,7 @@ References
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 54-63
+.. GENERATED FROM PYTHON SOURCE LINES 62-71
 
 Step 1: What's in the Registry
 ------------------------------
@@ -91,7 +99,7 @@ uncertainty break the linearity that every other entry relies on; the
 helper still reports it as ``FAILED`` because no policy was found, not
 because anything is wrong with the model.
 
-.. GENERATED FROM PYTHON SOURCE LINES 63-81
+.. GENERATED FROM PYTHON SOURCE LINES 71-89
 
 .. code-block:: Python
 
@@ -131,7 +139,7 @@ because anything is wrong with the model.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-94
+.. GENERATED FROM PYTHON SOURCE LINES 90-102
 
 Step 2: Finite Horizons Fade Away (D-1 → D-2)
 ---------------------------------------------
@@ -146,7 +154,7 @@ horizon and decays geometrically as :math:`T - t \to \infty`. Holding
 wealth fixed at :math:`W = 5` and sweeping :math:`T`, the gap is already
 below 1% of the limit by :math:`T = 30`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-123
+.. GENERATED FROM PYTHON SOURCE LINES 102-131
 
 .. code-block:: Python
 
@@ -191,7 +199,7 @@ below 1% of the limit by :math:`T = 30`.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 124-139
+.. GENERATED FROM PYTHON SOURCE LINES 132-147
 
 Step 3: Mortality Erodes Patience (D-3)
 ---------------------------------------
@@ -209,7 +217,7 @@ is around :math:`s = 0.999`, which is essentially indistinguishable from
 the no-mortality limit at this scale, but life-cycle models that
 aggregate over many decades pick up a measurable mortality wedge.
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-171
+.. GENERATED FROM PYTHON SOURCE LINES 147-179
 
 .. code-block:: Python
 
@@ -257,7 +265,7 @@ aggregate over many decades pick up a measurable mortality wedge.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 172-192
+.. GENERATED FROM PYTHON SOURCE LINES 180-200
 
 Step 4: Hall's Martingale (U-1)
 -------------------------------
@@ -280,7 +288,7 @@ while :math:`\eta_t` spreads out by a factor of about :math:`R/r \approx
 saving for consumption volatility. Empirical PIH tests are precisely
 tests of whether this picture survives in real data.
 
-.. GENERATED FROM PYTHON SOURCE LINES 192-272
+.. GENERATED FROM PYTHON SOURCE LINES 200-280
 
 .. code-block:: Python
 
@@ -376,7 +384,7 @@ tests of whether this picture survives in real data.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 273-290
+.. GENERATED FROM PYTHON SOURCE LINES 281-298
 
 Step 5: Normalization Collapses the State Space (U-2)
 -----------------------------------------------------
@@ -396,7 +404,7 @@ onto the single curve :math:`c = (1-\beta)(m + 1/r)`. The four
 line-styles all trace the same curve; the visual coincidence is the
 state-space collapse.
 
-.. GENERATED FROM PYTHON SOURCE LINES 290-323
+.. GENERATED FROM PYTHON SOURCE LINES 298-331
 
 .. code-block:: Python
 
@@ -445,14 +453,14 @@ state-space collapse.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 324-339
+.. GENERATED FROM PYTHON SOURCE LINES 332-347
 
 Step 6: When the Closed Form Breaks (U-3)
 -----------------------------------------
 
 **Lesson:** U-3 is U-2 plus a *binding* borrowing constraint
 :math:`c \leq m`. The U-2 closed form still satisfies the Euler equation
-everywhere — but it violates the constraint at low :math:`m`, because at
+everywhere, but it violates the constraint at low :math:`m`, because at
 :math:`m = 0` it prescribes :math:`c = (1-\beta)/r > 0` (the agent
 wants to borrow against future income). Below the intersection of the
 PIH line with the constraint :math:`c = m`, the U-2 policy is
@@ -460,10 +468,10 @@ infeasible. Above the intersection, it is feasible but suboptimal,
 because the U-3 agent has *precautionary* saving motives that U-2 lacks.
 The actual U-3 policy bends below the PIH line at moderate :math:`m`
 and approaches D-2's :math:`\kappa` only as :math:`m \to \infty`.
-Neither bend nor approach has a closed form — that is exactly why U-3
+Neither bend nor approach has a closed form, which is exactly why U-3
 is in the registry as ``"numerical only"``.
 
-.. GENERATED FROM PYTHON SOURCE LINES 339-390
+.. GENERATED FROM PYTHON SOURCE LINES 347-398
 
 .. code-block:: Python
 
@@ -537,7 +545,7 @@ is in the registry as ``"numerical only"``.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 391-401
+.. GENERATED FROM PYTHON SOURCE LINES 399-409
 
 Where to Read Next
 ------------------
@@ -550,7 +558,7 @@ Where to Read Next
 - The other examples in this gallery wire benchmark blocks into Monte
   Carlo simulators and reinforcement learning loops.
 
-.. GENERATED FROM PYTHON SOURCE LINES 401-403
+.. GENERATED FROM PYTHON SOURCE LINES 409-411
 
 .. code-block:: Python
 
@@ -566,7 +574,7 @@ Where to Read Next
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.046 seconds)
+   **Total running time of the script:** (0 minutes 0.497 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_benchmark_models.py:

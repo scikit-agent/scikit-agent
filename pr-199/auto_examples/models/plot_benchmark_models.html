@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Simulation" href="../simulation/index.html"><link rel="prev" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Consumption Models - scikit-agent 0.1.dev529+g688a3c472</title>
+        <title>Benchmark Consumption Models - scikit-agent 0.1.dev530+g5ed0b8a8e</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev529+g688a3c472</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev530+g5ed0b8a8e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -280,25 +280,32 @@ to download the full example code.</p>
 </div>
 <section class="sphx-glr-example-title" id="benchmark-consumption-models">
 <span id="sphx-glr-auto-examples-models-plot-benchmark-models-py"></span><h1>Benchmark Consumption Models<a class="headerlink" href="#benchmark-consumption-models" title="Link to this heading">¶</a></h1>
-<p>A guided tour of <a class="reference internal" href="../../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a>. The closed-form
-policies in this registry retrace dynamic consumption theory in roughly the
-order the field discovered them, and each model teaches a fact that the
-previous ones could not. Reading from top to bottom:</p>
+<p>A guided tour of <a class="reference internal" href="../../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a>. Consumption economics
+asks how a household should split each period’s resources between spending now
+and saving for later. The closed-form policies in this registry are the classic
+answers, and they retrace the theory in roughly the order the field discovered
+it. Each model teaches a fact the previous ones could not. Reading from top to
+bottom:</p>
 <ol class="arabic simple">
-<li><p><strong>D-1, D-2.</strong> Finite horizons stop mattering once <span class="math notranslate nohighlight">\(T - t\)</span> is far
-enough from the present.</p></li>
-<li><p><strong>D-3.</strong> Mortality acts like extra impatience: it scales the discount
-factor and pushes up the MPC.</p></li>
-<li><p><strong>U-1.</strong> Under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, the <em>change</em> in consumption is the
-fundamental object, not its level. Income shocks of standard deviation
-<span class="math notranslate nohighlight">\(\sigma_\eta\)</span> produce consumption changes of standard deviation
-<span class="math notranslate nohighlight">\((r/R)\,\sigma_\eta\)</span> only, a factor of roughly 30× smaller.</p></li>
-<li><p><strong>U-2.</strong> Dividing every level variable by permanent income collapses a
-2-D Bellman to a 1-D one. This trick is what makes neural-network
-solvers practical for richer models.</p></li>
-<li><p><strong>U-3.</strong> What happens when no normalization saves you, and how the
-registry still keeps the model around for limit-checking.</p></li>
+<li><p><strong>Finite horizons fade.</strong> Once the distance to the terminal date
+<span class="math notranslate nohighlight">\(T - t\)</span> is large, the finite-horizon rule is indistinguishable from
+the infinite-horizon one.</p></li>
+<li><p><strong>Mortality erodes patience.</strong> A survival probability below one acts like
+extra impatience: it scales the discount factor and pushes up the MPC.</p></li>
+<li><p><strong>Consumption is a martingale.</strong> Under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, the <em>change</em> in
+consumption is the fundamental object, not its level. Income shocks of
+standard deviation <span class="math notranslate nohighlight">\(\sigma_\eta\)</span> produce consumption changes of
+standard deviation <span class="math notranslate nohighlight">\((r/R)\,\sigma_\eta\)</span> only, a factor of roughly 30x
+smaller.</p></li>
+<li><p><strong>Normalization collapses the state.</strong> Dividing every level variable by
+permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
+what makes neural-network solvers practical for richer models.</p></li>
+<li><p><strong>Closed forms run out.</strong> When no normalization saves you, the model has no
+closed-form policy, and the registry keeps it around for limit-checking.</p></li>
 </ol>
+<p>The short registry keys in the code and figure labels below (<code class="docutils literal notranslate"><span class="pre">D-1</span></code> through
+<code class="docutils literal notranslate"><span class="pre">U-3</span></code>) are internal identifiers; the section titles give the names the models
+actually go by.</p>
 <p>This example is the runnable companion to <a class="reference internal" href="../../user_guide/benchmark_models.html"><span class="doc">Benchmark Models</span></a>.
 The code is intentionally verbose; production code should compose helpers,
 but here every step is written out so the reader can follow the algebra.</p>
@@ -597,7 +604,7 @@ state-space collapse.</p>
 <h3>Step 6: When the Closed Form Breaks (U-3)<a class="headerlink" href="#step-6-when-the-closed-form-breaks-u-3" title="Link to this heading">¶</a></h3>
 <p><strong>Lesson:</strong> U-3 is U-2 plus a <em>binding</em> borrowing constraint
 <span class="math notranslate nohighlight">\(c \leq m\)</span>. The U-2 closed form still satisfies the Euler equation
-everywhere — but it violates the constraint at low <span class="math notranslate nohighlight">\(m\)</span>, because at
+everywhere, but it violates the constraint at low <span class="math notranslate nohighlight">\(m\)</span>, because at
 <span class="math notranslate nohighlight">\(m = 0\)</span> it prescribes <span class="math notranslate nohighlight">\(c = (1-\beta)/r &gt; 0\)</span> (the agent
 wants to borrow against future income). Below the intersection of the
 PIH line with the constraint <span class="math notranslate nohighlight">\(c = m\)</span>, the U-2 policy is
@@ -605,7 +612,7 @@ infeasible. Above the intersection, it is feasible but suboptimal,
 because the U-3 agent has <em>precautionary</em> saving motives that U-2 lacks.
 The actual U-3 policy bends below the PIH line at moderate <span class="math notranslate nohighlight">\(m\)</span>
 and approaches D-2’s <span class="math notranslate nohighlight">\(\kappa\)</span> only as <span class="math notranslate nohighlight">\(m \to \infty\)</span>.
-Neither bend nor approach has a closed form — that is exactly why U-3
+Neither bend nor approach has a closed form, which is exactly why U-3
 is in the registry as <code class="docutils literal notranslate"><span class="pre">&quot;numerical</span> <span class="pre">only&quot;</span></code>.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="torch.Tensor" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_u3</span></a> <span class="o">=</span> <a href="https://docs.pytorch.org/docs/stable/generated/torch.linspace.html#torch.linspace" title="torch.linspace" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-function"><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mi">81</span><span class="p">)</span>
 <a href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="torch.Tensor" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">c_pih</span></a> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">beta_u2</span></a><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><a href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="torch.Tensor" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_u3</span></a> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">r_u2</span></a><span class="p">)</span>
@@ -677,7 +684,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.046 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.497 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-benchmark-models-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/2cc3c98062c3edf3537ea32dc3909b7c/plot_benchmark_models.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_benchmark_models.ipynb</span></code></a></p>
@@ -778,7 +785,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=2fecf903"></script>
+</div><script src="../../_static/documentation_options.js?v=aaf1ebdc"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
