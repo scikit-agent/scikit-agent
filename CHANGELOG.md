@@ -25,6 +25,8 @@ and this project adheres to
 ### Added
 
 - NumFOCUS Code of Conduct adopted
+- Created a working `Consumption-Saving Model` example in the documentation
+  gallery
 
 ### Removed
 
@@ -41,4 +43,4 @@ and this project adheres to
 
 ...
 
-[Unreleased]: https://github.com/user/repo/commits/main
+[Unreleased]: https://github.com/scikit-agent/scikit-agent/commits/main

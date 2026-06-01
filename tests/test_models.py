@@ -1,3 +1,5 @@
+import numpy as np
+
 from skagent.distributions import Lognormal
 import skagent.models.consumer as cons
 import skagent.models.perfect_foresight as pfm
@@ -106,6 +108,9 @@ class test_consumer_models(unittest.TestCase):
         self.pcs.initialize_sim()
         self.pcs.simulate()
         self.assertTrue(self.pcs.history["R"][0][0] != 1.03)
+
+        # the portfolio simulation must not produce NaN anywhere in m
+        self.assertFalse(np.any(np.isnan(self.pcs.history["m"])))
 
     def test_mortality_dynamics(self):
         """mortality_block resets dead agents to newborns and ages survivors."""

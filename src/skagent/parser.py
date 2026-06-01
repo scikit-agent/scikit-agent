@@ -15,7 +15,7 @@ class ControlToken:
 
 class Expression:
     def __init__(self, text):
-        self.txt
+        self.txt = text
         self.expr = parse_expr(text)
         self.npf = self.func()
 
