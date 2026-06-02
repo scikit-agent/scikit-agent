@@ -14,7 +14,9 @@ bottom:
    :math:`T - t` is large, the finite-horizon rule is indistinguishable from
    the infinite-horizon one.
 #. **Mortality erodes patience.** A survival probability below one acts like
-   extra impatience: it scales the discount factor and pushes up the MPC.
+   extra impatience: it scales the discount factor and pushes up the marginal
+   propensity to consume (MPC), the fraction of an extra dollar of wealth that
+   is spent rather than saved.
 #. **Consumption is a martingale.** Under :math:`\beta R = 1`, the *change* in
    consumption is the fundamental object, not its level. Income shocks of
    standard deviation :math:`\sigma_\eta` produce consumption changes of
@@ -33,6 +35,28 @@ actually go by.
 This example is the runnable companion to :doc:`/user_guide/benchmark_models`.
 The code is intentionally verbose; production code should compose helpers,
 but here every step is written out so the reader can follow the algebra.
+
+Notation
+========
+
+Periods are indexed by :math:`t = 0, 1, 2, \ldots`, and the symbols below carry
+fixed meaning throughout every model on this page:
+
+* :math:`A_{t-1}`: beginning-of-period assets (the arrival state, before
+  interest);
+* :math:`R = 1 + r > 1`: gross return on assets, with net rate :math:`r`;
+* :math:`y_t`: non-capital income realized in period :math:`t`;
+* :math:`m_t = R\, A_{t-1} + y_t`: cash-on-hand (market resources);
+* :math:`c_t`: consumption, the control;
+* :math:`A_t = m_t - c_t`: end-of-period assets;
+* :math:`H_t = \mathbb{E}_t \sum_{s \ge 1} R^{-s}\, y_{t+s}`: human wealth,
+  the present value of expected future income;
+* :math:`W_t = m_t + H_t`: total wealth;
+* :math:`u(c)`: period utility;
+* :math:`\beta`: the discount factor.
+
+The normalized models (U-2, U-3) additionally use lowercase :math:`m, c, a`
+for ratios to permanent income :math:`P_t`.
 
 References
 ==========
@@ -54,6 +78,7 @@ from skagent.models.benchmarks import (
     EPS_VALIDATION,
     get_analytical_policy,
     get_benchmark_calibration,
+    has_analytical_policy,
     list_benchmark_models,
     validate_analytical_solution,
 )
@@ -68,19 +93,14 @@ from skagent.models.benchmarks import (
 # uncertainty break the linearity that every other entry relies on; the
 # helper still reports it as ``FAILED`` because no policy was found, not
 # because anything is wrong with the model.
-
-
-def _has_closed_form(model_id: str) -> bool:
-    """Check whether the registry exposes an analytical policy for ``model_id``."""
-    try:
-        get_analytical_policy(model_id)
-    except ValueError:
-        return False
-    return True
-
+#
+# The registry itself records which models have a closed form, so the
+# distinction is queried with
+# :py:func:`~skagent.models.benchmarks.has_analytical_policy` rather than
+# re-derived here.
 
 for model_id, description in list_benchmark_models().items():
-    marker = "closed form" if _has_closed_form(model_id) else "numerical only"
+    marker = "closed form" if has_analytical_policy(model_id) else "numerical only"
     result = validate_analytical_solution(
         model_id, test_points=20, tolerance=EPS_VALIDATION
     )
@@ -89,6 +109,21 @@ for model_id, description in list_benchmark_models().items():
 # %%
 # Step 2: Finite Horizons Fade Away (D-1 → D-2)
 # ---------------------------------------------
+#
+# **The model.** D-1 is finite-horizon log utility. With a deterministic
+# terminal date :math:`T`, the agent solves
+#
+# .. math::
+#
+#     V_T(W_T) = \log W_T, \qquad
+#     V_t(W_t) = \max_{0 < c_t \le W_t}\; \log c_t
+#         + \beta\, V_{t+1}\!\bigl((W_t - c_t)\, R\bigr),
+#
+# and the first-order condition yields the remaining-horizon decision rule
+#
+# .. math::
+#
+#     c_t = \frac{1 - \beta}{1 - \beta^{\,T - t}}\; W_t .
 #
 # **Lesson:** A 30-year-old human has an *almost* infinite-horizon MPC.
 # That is why infinite-horizon models survive as a baseline despite being
@@ -103,11 +138,20 @@ for model_id, description in list_benchmark_models().items():
 beta_d1 = get_benchmark_calibration("D-1")["DiscFac"]
 W_fixed = 5.0
 horizons = np.arange(1, 81)
-# c_t = (1-β) / (1 - β^{T-t}) * W_t is the D-1 closed form (see
-# ``d1_analytical_policy``). Sweeping T at t = 0 reduces to a single
-# vectorized expression; the registry policy is exercised in Steps 1, 3,
-# 4, and 6 below.
-c_finite = (1 - beta_d1) / (1 - beta_d1**horizons) * W_fixed
+# Evaluate the *registered* D-1 policy at fixed wealth W = 5 for each
+# horizon T (with t = 0, so the remaining horizon is T). Stacking the
+# per-horizon outputs reproduces the remaining-horizon decay while
+# exercising the same d1_analytical_policy the test suite validates.
+d1_policy = get_analytical_policy("D-1")
+d1_calibration = get_benchmark_calibration("D-1")
+c_finite = np.array(
+    [
+        float(
+            d1_policy({"W": W_fixed, "t": 0}, {}, {**d1_calibration, "T": int(T)})["c"]
+        )
+        for T in horizons
+    ]
+)
 c_infinite = (1 - beta_d1) * W_fixed
 
 fig, ax = plt.subplots(figsize=(8, 5))
@@ -131,6 +175,31 @@ fig.tight_layout()
 # %%
 # Step 3: Mortality Erodes Patience (D-3)
 # ---------------------------------------
+#
+# **The models.** D-2 is the infinite-horizon CRRA workhorse plotted as the
+# limit above. It solves
+#
+# .. math::
+#
+#     \max_{\{c_t\}}\; \mathbb{E}_0 \sum_{t=0}^{\infty} \beta^t\,
+#         \frac{c_t^{1-\sigma}}{1-\sigma}
+#     \quad\text{s.t.}\quad m_t = R\, A_{t-1} + y,\;\; A_t = m_t - c_t,
+#
+# and its closed form is linear in total wealth,
+#
+# .. math::
+#
+#     c_t = \kappa\, W_t, \qquad
+#     \kappa = \frac{R - (\beta R)^{1/\sigma}}{R}, \qquad
+#     W_t = m_t + H, \qquad H = \frac{y}{r}.
+#
+# Here :math:`\sigma` is the coefficient of relative risk aversion and
+# :math:`\kappa` the constant MPC out of total wealth :math:`W_t`.
+#
+# D-3 adds an i.i.d. survival probability :math:`s \in (0, 1]`: an agent
+# alive today reaches tomorrow with probability :math:`s`, so it discounts
+# the future by :math:`s\beta` in place of :math:`\beta`. The identical
+# algebra then gives :math:`\kappa_s = (R - (s\beta R)^{1/\sigma})/R`.
 #
 # **Lesson:** I.i.d. mortality risk :math:`s` is observationally equivalent
 # to scaling the discount factor from :math:`\beta` to :math:`s\beta`. The
@@ -179,6 +248,24 @@ fig.tight_layout()
 # %%
 # Step 4: Hall's Martingale (U-1)
 # -------------------------------
+#
+# **The model.** U-1 pairs quadratic utility with the neutral discount
+# condition :math:`\beta R = 1` and a stochastic income stream:
+#
+# .. math::
+#
+#     u(c) = a\, c - \tfrac{b}{2}\, c^2, \qquad \beta R = 1, \qquad
+#     m_t = R\, A_{t-1} + y_t ,
+#
+# for utility constants :math:`a, b > 0`. Under :math:`\beta R = 1` the Euler
+# equation collapses to the martingale property
+# :math:`\mathbb{E}_t[c_{t+1}] = c_t`, and the decision rule consistent with it
+# (plus a transversality condition ruling out explosive borrowing) is the
+# permanent-income annuity rule
+#
+# .. math::
+#
+#     c_t = \frac{r}{R}\,(m_t + H), \qquad H = \frac{\mathbb{E}_t\, y}{r}.
 #
 # **Lesson:** Hall's contribution wasn't the level of consumption. It was
 # the prediction that, under :math:`\beta R = 1`, consumption changes are
@@ -281,6 +368,23 @@ fig.tight_layout()
 # Step 5: Normalization Collapses the State Space (U-2)
 # -----------------------------------------------------
 #
+# **The model.** U-2 is log utility with permanent income shocks, written
+# in variables normalized by permanent income :math:`P_t` (lowercase
+# :math:`m = M/P`, :math:`c = C/P`, :math:`a = A/P`):
+#
+# .. math::
+#
+#     u(c) = \log c, \qquad a_t = m_t - c_t, \qquad
+#     m_{t+1} = \frac{R\, a_t}{\psi_{t+1}} + \theta_{t+1},
+#
+# where :math:`\psi` is the permanent shock and :math:`\theta` normalized
+# transitory income (:math:`\mathbb{E}[\theta] = 1`). With normalized human
+# wealth :math:`h = 1/r`, the closed form is the permanent-income line
+#
+# .. math::
+#
+#     c = (1 - \beta)\,(m + 1/r).
+#
 # **Lesson:** A clever change of variables can turn an :math:`n`-dimensional
 # state space into an :math:`(n-1)`-dimensional one. For U-2 the trick is
 # dividing every level by permanent income :math:`P_t`, which removes
@@ -331,6 +435,22 @@ fig.tight_layout()
 # %%
 # Step 6: When the Closed Form Breaks (U-3)
 # -----------------------------------------
+#
+# **The model.** U-3 is the Carroll buffer-stock problem: U-2's normalized
+# dynamics with CRRA utility (:math:`\gamma > 1`), genuine permanent *and*
+# transitory shocks, and a *binding* borrowing constraint :math:`c \le m`,
+#
+# .. math::
+#
+#     V(m) = \max_{0 < c \le m}\; \frac{c^{1-\gamma}}{1-\gamma}
+#         + \beta\, \mathbb{E}\!\left[V\!\left(
+#             \frac{R\,(m - c)}{\psi'} + \theta' \right)\right].
+#
+# The constraint together with income uncertainty breaks the linearity that
+# every other entry relies on, so U-3 has no closed-form policy; only its
+# limiting MPC properties are known (the MPC stays in :math:`(0, 1)`,
+# decreases in wealth, and converges to D-2's :math:`\kappa` as
+# :math:`m \to \infty`).
 #
 # **Lesson:** U-3 is U-2 plus a *binding* borrowing constraint
 # :math:`c \leq m`. The U-2 closed form still satisfies the Euler equation
@@ -399,9 +519,10 @@ except ValueError as exc:
 # Where to Read Next
 # ------------------
 #
-# - :doc:`/user_guide/benchmark_models` for the per-model derivations,
-#   notation conventions, and the standalone modules (Fisher, perfect
-#   foresight, resource extraction).
+# - :doc:`/user_guide/benchmark_models` for the registry roster and the
+#   helper functions used to fetch, validate, and list these models.
+# - :doc:`/api/models` for the full API reference, including the standalone
+#   modules (Fisher, perfect foresight, resource extraction).
 # - :doc:`/user_guide/algorithms` covers the numerical solvers used for
 #   models like U-3 that have no closed form.
 # - The other examples in this gallery wire benchmark blocks into Monte

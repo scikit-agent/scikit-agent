@@ -1033,6 +1033,38 @@ def get_analytical_policy(model_id: str) -> Callable:
     return BENCHMARK_MODELS[model_id]["analytical_policy"]
 
 
+def has_analytical_policy(model_id: str) -> bool:
+    """Return whether the registry exposes a closed-form policy for ``model_id``.
+
+    Most benchmark entries pair their :py:class:`~skagent.block.DBlock` with an
+    analytical decision function; a few (for example ``U-3``, the buffer-stock
+    model) are registered without one because a borrowing constraint combined
+    with income uncertainty leaves them with no closed form. This predicate lets
+    callers branch on that distinction without catching the
+    :py:exc:`ValueError` that :py:func:`get_analytical_policy` raises.
+
+    Parameters
+    ----------
+    model_id : str
+        Registry key, e.g. ``"D-1"`` or ``"U-3"``.
+
+    Returns
+    -------
+    bool
+        ``True`` if a closed-form policy is available, ``False`` otherwise.
+
+    Raises
+    ------
+    ValueError
+        If ``model_id`` is not a registered benchmark model.
+    """
+    if model_id not in BENCHMARK_MODELS:
+        available = list(BENCHMARK_MODELS.keys())
+        raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    return "analytical_policy" in BENCHMARK_MODELS[model_id]
+
+
 def get_test_states(model_id: str, test_points: int = 10) -> Dict[str, torch.Tensor]:
     """Get test states for model validation by model ID"""
     if model_id not in BENCHMARK_MODELS:
