@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Algorithms" href="algorithms.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Parsing" href="parser.html"><link rel="prev" title="Algorithms" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation - scikit-agent 0.1.dev496+g234aec0a5</title>
+        <title>Simulation - scikit-agent 0.1.dev521+g4c9940f20</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev496+g234aec0a5</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev521+g4c9940f20</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -210,7 +210,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
@@ -221,6 +221,7 @@
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html">Parsing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 </li>
@@ -278,84 +279,6 @@ functions.</p>
 <h2>Monte Carlo Simulation<a class="headerlink" href="#monte-carlo-simulation" title="Link to this heading">¶</a></h2>
 <p>The simulation module provides Monte Carlo simulation engines for economic
 models.</p>
-<section id="agenttypemontecarlosimulator">
-<h3>AgentTypeMonteCarloSimulator<a class="headerlink" href="#agenttypemontecarlosimulator" title="Link to this heading">¶</a></h3>
-<p>A Monte Carlo simulation engine inspired by agent-based modeling frameworks.
-This simulator includes aging and mortality assumptions.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">AgentTypeMonteCarloSimulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulator</span></code></a></p>
-<p>A Monte Carlo simulation engine for agent-based economic models with aging and mortality.</p>
-<p>This class extends the base Simulator with:
-- Age tracking for agents
-- Mortality handling (agents die when <cite>live</cite> state &lt;= 0)
-- Age-varying calibration and decision rules
-- Pre-specified shock history support</p>
-<p>This simulator makes assumptions about population birth and mortality which
-are not generic. All agents are replaced with newborns when they expire.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>calibration</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Model calibration parameters</p></li>
-<li><p><strong>block</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a></span>) – Has shocks, dynamics, and rewards</p></li>
-<li><p><strong>dr</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – Decision rules for control variables</p></li>
-<li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Initial state distributions</p></li>
-<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – A seed for this instance’s random number generator</p></li>
-<li><p><strong>agent_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of agents to simulate</p></li>
-<li><p><strong>T_sim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of periods to simulate</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.get_mortality">
-<span class="sig-name descname"><span class="pre">get_mortality</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.get_mortality" title="Link to this definition">¶</a></dt>
-<dd><p>Simulates mortality or agent turnover.
-Agents die when their state <cite>live</cite> is less than or equal to zero.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.initialize_sim">
-<span class="sig-name descname"><span class="pre">initialize_sim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.initialize_sim" title="Link to this definition">¶</a></dt>
-<dd><p>Prepares for a new simulation with age tracking.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.make_shock_history">
-<span class="sig-name descname"><span class="pre">make_shock_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.make_shock_history" title="Link to this definition">¶</a></dt>
-<dd><p>Makes a pre-specified history of shocks for the simulation.</p>
-<p>This method runs the simulation loop and stores shock values,
-then sets read_shocks to True so these shocks are used in future simulations.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>shock_history</strong> – The subset of simulation history that are the shocks for each agent and time.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_birth">
-<span class="sig-name descname"><span class="pre">sim_birth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which_agents</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_birth" title="Link to this definition">¶</a></dt>
-<dd><p>Makes new agents for the simulation with age tracking.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>which_agents</strong> (<em>np.array</em><em>(</em><em>Bool</em><em>)</em>) – Boolean array of size self.agent_count indicating which agents should be “born”.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_one_period">
-<span class="sig-name descname"><span class="pre">sim_one_period</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_one_period" title="Link to this definition">¶</a></dt>
-<dd><p>Simulates one period with mortality and age-varying parameters.</p>
-</dd></dl>
-
-</dd></dl>
-
-</section>
 <section id="montecarlosimulator">
 <h3>MonteCarloSimulator<a class="headerlink" href="#montecarlosimulator" title="Link to this heading">¶</a></h3>
 <p>A simplified Monte Carlo simulation engine that doesn’t make assumptions about
@@ -488,32 +411,6 @@ distributions that support it.</p></li>
 </dd></dl>
 
 </section>
-<section id="age-varying-calibration">
-<h3>Age-Varying Calibration<a class="headerlink" href="#age-varying-calibration" title="Link to this heading">¶</a></h3>
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.simulation.monte_carlo.calibration_by_age">
-<span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">calibration_by_age</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ages</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.calibration_by_age" title="Link to this definition">¶</a></dt>
-<dd><p>Returns calibration for this model, but with vectorized
-values which map age-varying values to agent ages.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ages</strong> (<em>np.array</em>) – An array of agent ages.</p></li>
-<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – A calibration dictionary</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>aged_calibration</strong> – A dictionary of parameter values.
-If a parameter is age-varying, the value is a vector
-corresponding to the values for each input age.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</section>
 </section>
 <section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
@@ -536,22 +433,31 @@ corresponding to the values for each input age.</p>
 <span class="p">)</span>
 
 <span class="c1"># Run simulation</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
 </pre></div>
 </div>
 </section>
-<section id="agent-type-simulation-with-aging">
-<h3>Agent-Type Simulation with Aging<a class="headerlink" href="#agent-type-simulation-with-aging" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For models with aging and mortality</span>
-<span class="n">simulator</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">AgentTypeMonteCarloSimulator</span><span class="p">(</span>
+<section id="simulation-with-mortality">
+<h3>Simulation with Mortality<a class="headerlink" href="#simulation-with-mortality" title="Link to this heading">¶</a></h3>
+<p>Mortality is expressed declaratively as a block rather than baked into the
+simulator. The <code class="docutils literal notranslate"><span class="pre">mortality_block</span></code> in <code class="docutils literal notranslate"><span class="pre">skagent.models.consumer</span></code> resets an agent’s
+state to a newborn draw whenever the <code class="docutils literal notranslate"><span class="pre">live</span></code> shock is zero, so the base
+<code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator</span></code> is sufficient:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lognormal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="kn">import</span> <span class="n">calibration</span><span class="p">,</span> <span class="n">mortal_cons_problem</span>
+
+<span class="n">simulator</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">MonteCarloSimulator</span><span class="p">(</span>
     <span class="n">calibration</span><span class="o">=</span><span class="n">calibration</span><span class="p">,</span>
-    <span class="n">block</span><span class="o">=</span><span class="n">consumption_block</span><span class="p">,</span>
-    <span class="n">dr</span><span class="o">=</span><span class="n">dr</span><span class="p">,</span>
-    <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+    <span class="n">block</span><span class="o">=</span><span class="n">mortal_cons_problem</span><span class="p">,</span>
+    <span class="n">dr</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span> <span class="o">/</span> <span class="mi">3</span><span class="p">},</span>
+    <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="n">Lognormal</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
     <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
 <span class="p">)</span>
 
+<span class="n">simulator</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -566,12 +472,12 @@ corresponding to the values for each input age.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="utils.html">
+          <a class="next-page" href="parser.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Utils</div>
+                <div class="title">Parsing</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -625,17 +531,6 @@ corresponding to the values for each input age.</p>
             <ul>
 <li><a class="reference internal" href="#">Simulation</a><ul>
 <li><a class="reference internal" href="#monte-carlo-simulation">Monte Carlo Simulation</a><ul>
-<li><a class="reference internal" href="#agenttypemontecarlosimulator">AgentTypeMonteCarloSimulator</a><ul>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.get_mortality"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.get_mortality()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.initialize_sim"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.initialize_sim()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.make_shock_history"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.make_shock_history()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_birth"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.sim_birth()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.AgentTypeMonteCarloSimulator.sim_one_period"><code class="docutils literal notranslate"><span class="pre">AgentTypeMonteCarloSimulator.sim_one_period()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
 <li><a class="reference internal" href="#montecarlosimulator">MonteCarloSimulator</a><ul>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.MonteCarloSimulator"><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator</span></code></a></li>
 </ul>
@@ -660,15 +555,11 @@ corresponding to the values for each input age.</p>
 <li><a class="reference internal" href="#skagent.simulation.monte_carlo.draw_shocks"><code class="docutils literal notranslate"><span class="pre">draw_shocks()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#age-varying-calibration">Age-Varying Calibration</a><ul>
-<li><a class="reference internal" href="#skagent.simulation.monte_carlo.calibration_by_age"><code class="docutils literal notranslate"><span class="pre">calibration_by_age()</span></code></a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#example-usage">Example Usage</a><ul>
 <li><a class="reference internal" href="#basic-simulation">Basic Simulation</a></li>
-<li><a class="reference internal" href="#agent-type-simulation-with-aging">Agent-Type Simulation with Aging</a></li>
+<li><a class="reference internal" href="#simulation-with-mortality">Simulation with Mortality</a></li>
 </ul>
 </li>
 </ul>
@@ -682,7 +573,7 @@ corresponding to the values for each input age.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=3b301df3"></script>
+</div><script src="../_static/documentation_options.js?v=d5a38ab0"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

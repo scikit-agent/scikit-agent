@@ -44,7 +44,7 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to build, solve, and simulate a consumption-portfolio choice model using scikit-agent. The model includes:">
+    <div class="sphx-glr-thumbcontainer" tooltip="The consumption-saving problem is one of the central models of modern macroeconomics and household finance. An agent with uncertain income must decide each period how much to consume and how much to save, trading off current utility against future resources.">
 
 .. only:: html
 
@@ -55,7 +55,7 @@ other computational methods.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Consumption-Portfolio Model</div>
+      <div class="sphx-glr-thumbnail-title">Consumption-Saving-Portfolio Model</div>
     </div>
 
 

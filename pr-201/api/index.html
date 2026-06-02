@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Blocks" href="blocks.html"><link rel="prev" title="Simulation" href="../auto_examples/simulation/index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>API Reference - scikit-agent 0.1.dev496+g234aec0a5</title>
+        <title>API Reference - scikit-agent 0.1.dev521+g4c9940f20</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev496+g234aec0a5</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev521+g4c9940f20</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -210,7 +210,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
@@ -221,6 +221,7 @@
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html">Parsing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 </li>
@@ -299,8 +300,16 @@
 <li class="toctree-l2"><a class="reference internal" href="simulation.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="parser.html">Parsing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parser.html#skagent.parser.ControlToken"><code class="docutils literal notranslate"><span class="pre">ControlToken</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html#skagent.parser.math_text_to_lambda"><code class="docutils literal notranslate"><span class="pre">math_text_to_lambda()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html#skagent.parser.skagent_loader"><code class="docutils literal notranslate"><span class="pre">skagent_loader()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html#core-parser-functions">Core Parser Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html#parser-classes">Parser Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#parser-utilities">Parser Utilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html#general-utilities">General Utilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html#example-usage">Example Usage</a></li>
 </ul>
@@ -315,6 +324,7 @@
 <li><p><a class="reference internal" href="models.html"><span class="doc">Models</span></a> - Canonical models from scientific literature</p></li>
 <li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a> - Solution algorithms and optimization methods</p></li>
 <li><p><a class="reference internal" href="simulation.html"><span class="doc">Simulation</span></a> - Simulation tools and analysis functions</p></li>
+<li><p><a class="reference internal" href="parser.html"><span class="doc">Parsing</span></a> - Parsing strings into mathematical expressions</p></li>
 <li><p><a class="reference internal" href="utils.html"><span class="doc">Utils</span></a> - Utility functions and helpers</p></li>
 </ul>
 </section>
@@ -401,7 +411,7 @@ examples in our <a class="reference internal" href="../auto_examples/index.html"
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=3b301df3"></script>
+</div><script src="../_static/documentation_options.js?v=d5a38ab0"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
