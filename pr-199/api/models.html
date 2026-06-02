@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Blocks" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.dev530+g5ed0b8a8e</title>
+        <title>Models - scikit-agent 0.1.dev531+ga470b10e9</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev530+g5ed0b8a8e</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev531+ga470b10e9</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -275,13 +275,20 @@
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="models">
 <h1>Models<a class="headerlink" href="#models" title="Link to this heading">¶</a></h1>
-<p>The <code class="docutils literal notranslate"><span class="pre">skagent.models</span></code> subpackage contains predefined economic models:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">skagent.models</span></code> subpackage contains predefined economic models. For a
+narrative overview of the benchmark registry and how to call it, see the
+<a class="reference internal" href="../user_guide/benchmark_models.html"><span class="doc">Benchmark Models</span></a> guide; for runnable, plotted walkthroughs
+see the <a class="reference internal" href="../auto_examples/index.html"><span class="doc">Examples</span></a>.</p>
 <section id="module-skagent.models.consumer">
 <span id="consumer-models"></span><h2>Consumer Models<a class="headerlink" href="#module-skagent.models.consumer" title="Link to this heading">¶</a></h2>
 </section>
-<section id="module-skagent.models.benchmarks">
-<span id="benchmarks"></span><h2>Benchmarks<a class="headerlink" href="#module-skagent.models.benchmarks" title="Link to this heading">¶</a></h2>
-<p>Analytically Solvable Consumption-Savings Models</p>
+<section id="benchmark-registry">
+<h2>Benchmark Registry<a class="headerlink" href="#benchmark-registry" title="Link to this heading">¶</a></h2>
+<p>The benchmark registry catalogues discrete-time dynamic programming problems
+with known closed-form policies (plus a few that are kept for numerical
+validation). Its public helpers and analytical-policy functions are listed
+below.</p>
+<p id="module-skagent.models.benchmarks">Analytically Solvable Consumption-Savings Models</p>
 <p>This module implements a collection of discrete-time consumption-savings
 dynamic programming problems for which the literature has succeeded in writing down
 true closed-form policies. These represent well-known benchmark problems from
@@ -308,32 +315,184 @@ u(c)                : period utility function
 TVC                 : lim_{T→∞} E_0[β^T u’(c_T) A_T] = 0 (transversality condition)</p>
 </section>
 </section>
+<section id="registry-access">
+<h3>Registry access<a class="headerlink" href="#registry-access" title="Link to this heading">¶</a></h3>
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.crra_utility">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">crra_utility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.crra_utility" title="Link to this definition">¶</a></dt>
-<dd><p>CRRA utility: u(c) = c^(1-gamma)/(1-gamma) for gamma != 1, log(c) for gamma == 1</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.d1_analytical_lifetime_reward">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d1_analytical_lifetime_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_wealth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interest_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_horizon</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d1_analytical_lifetime_reward" title="Link to this definition">¶</a></dt>
-<dd><p>Analytical lifetime reward for D-1: Finite horizon log utility.</p>
-<p>Forward simulation that exactly matches the D-1 model implementation.</p>
+<dt class="sig sig-object py" id="skagent.models.benchmarks.list_benchmark_models">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">list_benchmark_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.list_benchmark_models" title="Link to this definition">¶</a></dt>
+<dd><p>List all discrete-time benchmark models.</p>
+<p>Note: Most models have analytical solutions, but some (e.g., U-3 buffer stock)
+require numerical solution due to borrowing constraints + income uncertainty.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>initial_wealth</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>discount_factor</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>interest_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>time_horizon</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.get_benchmark_model">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_benchmark_model" title="Link to this definition">¶</a></dt>
+<dd><p>Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2, U-3) - 6 models</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.get_benchmark_calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_benchmark_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>Get benchmark calibration by model ID</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.get_analytical_policy">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_analytical_policy" title="Link to this definition">¶</a></dt>
+<dd><p>Get analytical policy function by model ID.</p>
+<p>Raises ValueError if the model does not have an analytical policy
+(e.g., U-3 buffer stock model requires numerical solution).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.has_analytical_policy">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">has_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.has_analytical_policy" title="Link to this definition">¶</a></dt>
+<dd><p>Return whether the registry exposes a closed-form policy for <code class="docutils literal notranslate"><span class="pre">model_id</span></code>.</p>
+<p>Most benchmark entries pair their <a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> with an
+analytical decision function; a few (for example <code class="docutils literal notranslate"><span class="pre">U-3</span></code>, the buffer-stock
+model) are registered without one because a borrowing constraint combined
+with income uncertainty leaves them with no closed form. This predicate lets
+callers branch on that distinction without catching the
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> that <a class="reference internal" href="#skagent.models.benchmarks.get_analytical_policy" title="skagent.models.benchmarks.get_analytical_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_analytical_policy()</span></code></a> raises.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Registry key, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;D-1&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;U-3&quot;</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if a closed-form policy is available, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">model_id</span></code> is not a registered benchmark model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.get_test_states">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_test_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_test_states" title="Link to this definition">¶</a></dt>
+<dd><p>Get test states for model validation by model ID</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.get_custom_validation">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_custom_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_custom_validation" title="Link to this definition">¶</a></dt>
+<dd><p>Get custom validation function for model (if it has one)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="validation">
+<h3>Validation<a class="headerlink" href="#validation" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.validate_analytical_solution">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">validate_analytical_solution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.validate_analytical_solution" title="Link to this definition">¶</a></dt>
+<dd><p>Validate analytical solution satisfies optimality conditions and budget constraints</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+<li><p><strong>tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.euler_equation_test">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">euler_equation_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.euler_equation_test" title="Link to this definition">¶</a></dt>
+<dd><p>Test Euler equation satisfaction for stochastic analytical solutions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.get_analytical_lifetime_reward">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_analytical_lifetime_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_analytical_lifetime_reward" title="Link to this definition">¶</a></dt>
+<dd><p>Get analytical lifetime reward for a benchmark model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Model identifier (D-1, D-2, D-3, etc.)</p></li>
+<li><p><strong>*args</strong> – Arguments to pass to the specific analytical function</p></li>
+<li><p><strong>**kwargs</strong> – Arguments to pass to the specific analytical function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Analytical lifetime reward value</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="analytical-policies">
+<h3>Analytical policies<a class="headerlink" href="#analytical-policies" title="Link to this heading">¶</a></h3>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.d1_analytical_policy">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d1_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d1_analytical_policy" title="Link to this definition">¶</a></dt>
@@ -380,30 +539,6 @@ index, defaults to <code class="docutils literal notranslate"><span class="pre">
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <span class="math notranslate nohighlight">\(\beta \geq 1\)</span>, since the closed form is undefined.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.d2_analytical_lifetime_reward">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d2_analytical_lifetime_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cash_on_hand</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interest_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">risk_aversion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">income</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d2_analytical_lifetime_reward" title="Link to this definition">¶</a></dt>
-<dd><p>Analytical lifetime reward for D-2 using total wealth.</p>
-<p>With constant income y &gt; 0, the value function is based on total wealth W = m + H
-where H = y/r is human wealth.</p>
-<p>Optimal policy: c = κ*(m + H) where κ = (R - (βR)^(1/σ))/R
-Value function: V(W) = κ^(1-σ)/(1-σ) * W^(1-σ) / (1 - β*(βR)^((1-σ)/σ))</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>cash_on_hand</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>discount_factor</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>interest_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>risk_aversion</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>income</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -468,32 +603,6 @@ state.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.d3_analytical_lifetime_reward">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d3_analytical_lifetime_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cash_on_hand</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interest_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">risk_aversion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">survival_prob</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">income</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d3_analytical_lifetime_reward" title="Link to this definition">¶</a></dt>
-<dd><p>Analytical lifetime reward for D-3: Blanchard discrete-time mortality.</p>
-<p>Similar to D-2 but uses effective discount factor β_eff = s*β where s is survival probability.
-The mortality risk effectively increases the discount rate, making the agent more impatient.</p>
-<p>With income y &gt; 0, uses total wealth W = m + H where H = y/r.
-Value function: V(W) = κ_eff^(1-σ)/(1-σ) * W^(1-σ) / (1 - β_eff*(β_eff*R)^((1-σ)/σ))
-where κ_eff uses β_eff = s*β in place of β.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>cash_on_hand</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>discount_factor</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>interest_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>risk_aversion</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>survival_prob</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-<li><p><strong>income</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.d3_analytical_policy">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">d3_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.d3_analytical_policy" title="Link to this definition">¶</a></dt>
 <dd><p>Optimal policy for D-3: Blanchard (1985) discrete-time mortality.</p>
@@ -549,132 +658,6 @@ analytical policy itself.</p></li>
 </dd>
 </dl>
 </div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.euler_equation_test">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">euler_equation_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.euler_equation_test" title="Link to this definition">¶</a></dt>
-<dd><p>Test Euler equation satisfaction for stochastic analytical solutions</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
-<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.get_analytical_lifetime_reward">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_analytical_lifetime_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_analytical_lifetime_reward" title="Link to this definition">¶</a></dt>
-<dd><p>Get analytical lifetime reward for a benchmark model.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Model identifier (D-1, D-2, D-3, etc.)</p></li>
-<li><p><strong>*args</strong> – Arguments to pass to the specific analytical function</p></li>
-<li><p><strong>**kwargs</strong> – Arguments to pass to the specific analytical function</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Analytical lifetime reward value</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.get_analytical_policy">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_analytical_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_analytical_policy" title="Link to this definition">¶</a></dt>
-<dd><p>Get analytical policy function by model ID.</p>
-<p>Raises ValueError if the model does not have an analytical policy
-(e.g., U-3 buffer stock model requires numerical solution).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.get_benchmark_calibration">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_benchmark_calibration" title="Link to this definition">¶</a></dt>
-<dd><p>Get benchmark calibration by model ID</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.get_benchmark_model">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_benchmark_model" title="Link to this definition">¶</a></dt>
-<dd><p>Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2, U-3) - 6 models</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.get_custom_validation">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_custom_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_custom_validation" title="Link to this definition">¶</a></dt>
-<dd><p>Get custom validation function for model (if it has one)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.get_test_states">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_test_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_test_states" title="Link to this definition">¶</a></dt>
-<dd><p>Get test states for model validation by model ID</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
-<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.list_benchmark_models">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">list_benchmark_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.list_benchmark_models" title="Link to this definition">¶</a></dt>
-<dd><p>List all discrete-time benchmark models.</p>
-<p>Note: Most models have analytical solutions, but some (e.g., U-3 buffer stock)
-require numerical solution due to borrowing constraints + income uncertainty.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -789,23 +772,44 @@ that satisfy the Euler equation while violating transversality.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.models.benchmarks.validate_analytical_solution">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">validate_analytical_solution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.validate_analytical_solution" title="Link to this definition">¶</a></dt>
-<dd><p>Validate analytical solution satisfies optimality conditions and budget constraints</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
-<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
-<li><p><strong>tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="skagent.models.benchmarks.crra_utility">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">crra_utility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.crra_utility" title="Link to this definition">¶</a></dt>
+<dd><p>CRRA utility: u(c) = c^(1-gamma)/(1-gamma) for gamma != 1, log(c) for gamma == 1</p>
 </dd></dl>
 
+</section>
+</section>
+<section id="module-skagent.models.fisher">
+<span id="fisher-two-period-model"></span><h2>Fisher Two-Period Model<a class="headerlink" href="#module-skagent.models.fisher" title="Link to this heading">¶</a></h2>
+<p>Fisher (1930) two-period intertemporal consumption.</p>
+<p>The simplest dynamic programming problem with a closed-form solution. An
+agent receives income <span class="math notranslate nohighlight">\(y_0\)</span> in period 0 and <span class="math notranslate nohighlight">\(y_1\)</span> in period 1,
+borrows or saves at gross rate <span class="math notranslate nohighlight">\(R\)</span>, and chooses consumption
+<span class="math notranslate nohighlight">\(c_0, c_1\)</span> to maximize</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u(c_0) + \beta \, u(c_1)\]</div>
+</div>
+<p>subject to the lifetime budget constraint
+<span class="math notranslate nohighlight">\(c_0 + c_1/R = m_0 + y_1/R\)</span>, with <span class="math notranslate nohighlight">\(m_0 = R\, a_{-1} + y_0\)</span>. With
+CRRA utility <span class="math notranslate nohighlight">\(u(c) = c^{1-\sigma}/(1-\sigma)\)</span>, the Euler equation
+<span class="math notranslate nohighlight">\(u'(c_0) = \beta R \, u'(c_1)\)</span> together with the budget constraint
+gives the closed form</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_0 \;=\; \frac{m_0 + y_1/R}{\,1 + (\beta R)^{1/\sigma}/R\,},
+\qquad
+c_1 \;=\; (\beta R)^{1/\sigma} \, c_0.\]</div>
+</div>
+<p>The two-period horizon makes the model an exact analogue of the
+intertemporal-choice diagram in introductory macroeconomics, while the
+recursive form is the simplest non-trivial test case for value-function
+iteration and Euler-equation solvers in <code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent</span></code>.</p>
+<p class="rubric">Notes</p>
+<p>The math above uses <span class="math notranslate nohighlight">\(R\)</span> for the gross return; the block parameter
+key is <code class="docutils literal notranslate"><span class="pre">Rfree</span></code>.</p>
+<p class="rubric">References</p>
+<p>Fisher, I. (1930). <em>The Theory of Interest</em>. New York: Macmillan.</p>
 </section>
 <section id="module-skagent.models.perfect_foresight">
 <span id="perfect-foresight-models"></span><h2>Perfect Foresight Models<a class="headerlink" href="#module-skagent.models.perfect_foresight" title="Link to this heading">¶</a></h2>
@@ -829,7 +833,7 @@ not explode), and <span class="math notranslate nohighlight">\(R &gt; G\)</span>
 the consumption rule is linear in total wealth <span class="math notranslate nohighlight">\(W_t = m_t + H_t\)</span>,
 with human wealth <span class="math notranslate nohighlight">\(H_t = G\, P_t / (R - G)\)</span> and MPC
 <span class="math notranslate nohighlight">\(\kappa_s = (R - (s\beta R)^{1/\sigma})/R\)</span>. The companion module
-<code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.perfect_foresight_normalized</span></code> solves the same
+<a class="reference internal" href="#module-skagent.models.perfect_foresight_normalized" title="skagent.models.perfect_foresight_normalized"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.perfect_foresight_normalized</span></code></a> solves the same
 problem in variables divided by <span class="math notranslate nohighlight">\(P_t\)</span>, which collapses the state
 space and is the form used in the buffer-stock literature.</p>
 <p class="rubric">Notes</p>
@@ -841,6 +845,197 @@ corresponding block parameter keys are <code class="docutils literal notranslate
 <p>Carroll, C.D. (2024). <em>Solution Methods for Solving Microeconomic Dynamic
 Stochastic Optimization Problems</em>.
 <a class="reference external" href="https://llorracc.github.io/SolvingMicroDSOPs/">https://llorracc.github.io/SolvingMicroDSOPs/</a></p>
+</section>
+<section id="module-skagent.models.perfect_foresight_normalized">
+<span id="perfect-foresight-models-normalized"></span><h2>Perfect Foresight Models (Normalized)<a class="headerlink" href="#module-skagent.models.perfect_foresight_normalized" title="Link to this heading">¶</a></h2>
+<p>Perfect-foresight consumption-savings in normalized variables.</p>
+<p>The same problem as <a class="reference internal" href="#module-skagent.models.perfect_foresight" title="skagent.models.perfect_foresight"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.perfect_foresight</span></code></a>, but with
+every level variable divided by permanent income <span class="math notranslate nohighlight">\(P_t\)</span>. Lowercase
+ratios <span class="math notranslate nohighlight">\(m = M/P\)</span>, <span class="math notranslate nohighlight">\(c = C/P\)</span>, <span class="math notranslate nohighlight">\(a = A/P\)</span> evolve via the
+effective return <span class="math notranslate nohighlight">\(R_{\text{eff}} = R / G\)</span>,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[b_{t+1} = R_{\text{eff}} \, a_t,
+\qquad
+m_{t+1} = b_{t+1} + 1,
+\qquad
+a_{t+1} = m_{t+1} - c_{t+1},\]</div>
+</div>
+<p>with normalized income identically equal to one. Normalization reduces
+the state space from <span class="math notranslate nohighlight">\((M, P)\)</span> to the single ratio <span class="math notranslate nohighlight">\(m\)</span>, which
+matters both for analytical tractability and for neural-network solvers,
+where the network learns a one-dimensional function <span class="math notranslate nohighlight">\(c(m)\)</span> instead
+of a two-dimensional <span class="math notranslate nohighlight">\(c(M, P)\)</span>.</p>
+<p>The closed-form normalized policy is <span class="math notranslate nohighlight">\(c_t = \kappa_s\, (m_t + h)\)</span>
+with <span class="math notranslate nohighlight">\(\kappa_s = (R - (s\beta R)^{1/\sigma})/R\)</span> and
+<span class="math notranslate nohighlight">\(h = 1 / (R_{\text{eff}} - 1)\)</span>. Although the normalized Bellman
+discounts future utility by <span class="math notranslate nohighlight">\(s\beta G^{1-\sigma}\)</span> rather than
+<span class="math notranslate nohighlight">\(s\beta\)</span>, the algebra collapses
+<span class="math notranslate nohighlight">\((s\beta G^{1-\sigma} R_{\text{eff}})^{1/\sigma}\)</span> to
+<span class="math notranslate nohighlight">\((s\beta R)^{1/\sigma}/G\)</span>, so the level and normalized MPCs agree.</p>
+<p class="rubric">Notes</p>
+<p>The math above uses <span class="math notranslate nohighlight">\(R\)</span>, <span class="math notranslate nohighlight">\(G\)</span>, and <span class="math notranslate nohighlight">\(s\)</span> for the gross
+return, permanent income growth, and survival probability; the
+corresponding block parameter keys are <code class="docutils literal notranslate"><span class="pre">Rfree</span></code>, <code class="docutils literal notranslate"><span class="pre">PermGroFac</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">LivPrb</span></code>.</p>
+<p class="rubric">References</p>
+<p>Carroll, C.D. (2024). <em>Solution Methods for Solving Microeconomic Dynamic
+Stochastic Optimization Problems</em>.
+<a class="reference external" href="https://llorracc.github.io/SolvingMicroDSOPs/">https://llorracc.github.io/SolvingMicroDSOPs/</a></p>
+</section>
+<section id="module-skagent.models.resource_extraction">
+<span id="resource-extraction"></span><h2>Resource Extraction<a class="headerlink" href="#module-skagent.models.resource_extraction" title="Link to this heading">¶</a></h2>
+<section id="resource-extraction-with-optimal-escapement-reed-1979">
+<h3>Resource Extraction with Optimal Escapement (Reed 1979)<a class="headerlink" href="#resource-extraction-with-optimal-escapement-reed-1979" title="Link to this heading">¶</a></h3>
+<p>Resource extraction models analyze the optimal management of renewable or depletable resources over time. These models appear in:</p>
+<blockquote>
+<div><p>Fisheries management: Determining sustainable harvest rates for fish populations
+Forestry: Optimal timber harvesting schedules
+Environmental economics: Managing renewable natural resources (water, wildlife)
+Energy: Optimal depletion of oil fields and mineral deposits
+Finance: Portfolio liquidation and asset drawdown strategies</p>
+</div></blockquote>
+<p>The core problem involves balancing immediate extraction (profit now) against preserving the resource stock (profit later), accounting for natural growth dynamics and environmental uncertainty.</p>
+<p>This implementation follows the model from:</p>
+<blockquote>
+<div><p>Reed, W.J. (1979). “Optimal escapement levels in stochastic and deterministic
+harvesting models.” Journal of Environmental Economics and Management, 6(4), 350-363.</p>
+</div></blockquote>
+<p>Reed showed that under multiplicative environmental shocks and stock-dependent harvesting
+costs, the optimal policy has a simple “constant escapement” form: maintain a target stock
+level S* and harvest any surplus above it. This optimal escapement level S* can be computed
+analytically without solving the full dynamic programming problem, making it an excellent
+benchmark for testing reinforcement learning algorithms.</p>
+<section id="mathematical-model">
+<h4>Mathematical Model<a class="headerlink" href="#mathematical-model" title="Link to this heading">¶</a></h4>
+<p><strong>State</strong>: <span class="math notranslate nohighlight">\(x_t\)</span> = resource stock at time <span class="math notranslate nohighlight">\(t\)</span></p>
+<p><strong>Control</strong>: <span class="math notranslate nohighlight">\(u_t\)</span> = harvest, constrained by <span class="math notranslate nohighlight">\(0 \leq u_t \leq x_t\)</span></p>
+<p><strong>Dynamics</strong>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[x_{t+1} = r (x_t - u_t) \epsilon_t\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(r &gt; 1\)</span> is the growth rate, <span class="math notranslate nohighlight">\(\epsilon_t\)</span> is a mean-one
+log-normal shock, and <span class="math notranslate nohighlight">\((x_t - u_t)\)</span> is the escapement (remaining stock).</p>
+<p><strong>Profit</strong>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\pi(u_t, x_t) = \left(p - \frac{c_0}{x_t}\right) u_t\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(p\)</span> is price and <span class="math notranslate nohighlight">\(c_0/x_t\)</span> is the stock-dependent unit cost.</p>
+<p><strong>Objective</strong>: Maximize <span class="math notranslate nohighlight">\(\mathbb{E}\left[\sum_{t=0}^{\infty} \delta^t \pi(u_t, x_t)\right]\)</span></p>
+</section>
+<section id="optimal-policy">
+<h4>Optimal Policy<a class="headerlink" href="#optimal-policy" title="Link to this heading">¶</a></h4>
+<p>Reed (1979) <a class="reference internal" href="#reed1979" id="id1"><span>[Reed1979]</span></a> proved the optimal policy has constant escapement form:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u_t^* = \max(0, x_t - S^*)\]</div>
+</div>
+<p>where the optimal escapement level is:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}\]</div>
+</div>
+<p>This requires the impatience condition <span class="math notranslate nohighlight">\(\delta r &lt; 1\)</span>.</p>
+<p>This model provides an excellent benchmark for RL algorithms since <span class="math notranslate nohighlight">\(S^*\)</span>
+can be computed analytically without dynamic programming.</p>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="reed1979" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>Reed1979<span class="fn-bracket">]</span></span>
+<p>Reed, W.J. (1979). “Optimal escapement levels in stochastic and
+deterministic harvesting models.” Journal of Environmental Economics
+and Management, 6(4), 350-363.</p>
+</div>
+</div>
+</section>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.resource_extraction.df_u">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.resource_extraction.</span></span><span class="sig-name descname"><span class="pre">df_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.resource_extraction.df_u" title="Link to this definition">¶</a></dt>
+<dd><p>Decision function compatible with DBlock interface.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Contains <code class="docutils literal notranslate"><span class="pre">'x'</span></code> (current stock)</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Random shocks (not used in optimal policy)</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Model parameters (not used after S* is computed)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>u</strong> – Optimal harvest</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.resource_extraction.dr_u">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.resource_extraction.</span></span><span class="sig-name descname"><span class="pre">dr_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.resource_extraction.dr_u" title="Link to this definition">¶</a></dt>
+<dd><p>Optimal harvest under constant escapement policy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>array_like</em>) – Current stock level(s)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>u</strong> – Optimal harvest <span class="math notranslate nohighlight">\(u = \max(0, x - S^*)\)</span></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a> or ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.resource_extraction.make_optimal_decision_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.resource_extraction.</span></span><span class="sig-name descname"><span class="pre">make_optimal_decision_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.resource_extraction.make_optimal_decision_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the optimal constant-escapement policy from Reed (1979).</p>
+<p>Reed showed that for the model with multiplicative shocks and stock-dependent
+costs <span class="math notranslate nohighlight">\(c(x) = c_0/x\)</span>, the optimal policy has the form:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u^*(x) = \max(0, x - S^*)\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(S^*\)</span> is the optimal escapement level (target stock to maintain).
+This can be computed analytically from the first-order condition without
+solving the full dynamic programming problem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – <p>Model parameters including:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">r</span></code> : float, growth rate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">p</span></code> : float, price per unit</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">c_0</span></code> : float, cost parameter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DiscFac</span></code> : float, discount factor</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>decision_rule</strong> (<em>callable</em>) – Maps stock x to optimal harvest <span class="math notranslate nohighlight">\(u^*(x) = \max(0, x - S^*)\)</span></p></li>
+<li><p><strong>decision_function</strong> (<em>callable</em>) – Compatible with DBlock interface: <code class="docutils literal notranslate"><span class="pre">decision_function(states,</span> <span class="pre">shocks,</span> <span class="pre">parameters)</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The optimal escapement <span class="math notranslate nohighlight">\(S^*\)</span> satisfies the first-order condition:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[p - \frac{c_0}{S^*} = \delta r \left(p - \frac{c_0}{r S^*}\right)\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\delta\)</span> is the discount factor. Rearranging gives:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}\]</div>
+</div>
+<p>This requires the “impatience condition” <span class="math notranslate nohighlight">\(\delta r &lt; 1\)</span>, which ensures
+the agent prefers extraction over indefinite accumulation.</p>
+</dd></dl>
+
 </section>
 </section>
 
@@ -908,32 +1103,52 @@ Stochastic Optimization Problems</em>.
             <ul>
 <li><a class="reference internal" href="#">Models</a><ul>
 <li><a class="reference internal" href="#module-skagent.models.consumer">Consumer Models</a></li>
-<li><a class="reference internal" href="#module-skagent.models.benchmarks">Benchmarks</a><ul>
+<li><a class="reference internal" href="#benchmark-registry">Benchmark Registry</a><ul>
 <li><a class="reference internal" href="#theoretical-foundation">THEORETICAL FOUNDATION</a><ul>
 <li><a class="reference internal" href="#standard-timing-convention-adopted-throughout">Standard Timing Convention (Adopted Throughout)</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.crra_utility"><code class="docutils literal notranslate"><span class="pre">crra_utility()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.d1_analytical_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">d1_analytical_lifetime_reward()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.d1_analytical_policy"><code class="docutils literal notranslate"><span class="pre">d1_analytical_policy()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.d2_analytical_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">d2_analytical_lifetime_reward()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.d2_analytical_policy"><code class="docutils literal notranslate"><span class="pre">d2_analytical_policy()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.d3_analytical_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">d3_analytical_lifetime_reward()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.d3_analytical_policy"><code class="docutils literal notranslate"><span class="pre">d3_analytical_policy()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.euler_equation_test"><code class="docutils literal notranslate"><span class="pre">euler_equation_test()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.get_analytical_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">get_analytical_lifetime_reward()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.get_analytical_policy"><code class="docutils literal notranslate"><span class="pre">get_analytical_policy()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.get_benchmark_calibration"><code class="docutils literal notranslate"><span class="pre">get_benchmark_calibration()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.get_benchmark_model"><code class="docutils literal notranslate"><span class="pre">get_benchmark_model()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.get_custom_validation"><code class="docutils literal notranslate"><span class="pre">get_custom_validation()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.get_test_states"><code class="docutils literal notranslate"><span class="pre">get_test_states()</span></code></a></li>
+<li><a class="reference internal" href="#registry-access">Registry access</a><ul>
 <li><a class="reference internal" href="#skagent.models.benchmarks.list_benchmark_models"><code class="docutils literal notranslate"><span class="pre">list_benchmark_models()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.u1_analytical_policy"><code class="docutils literal notranslate"><span class="pre">u1_analytical_policy()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.u2_analytical_policy"><code class="docutils literal notranslate"><span class="pre">u2_analytical_policy()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.models.benchmarks.validate_analytical_solution"><code class="docutils literal notranslate"><span class="pre">validate_analytical_solution()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.get_benchmark_model"><code class="docutils literal notranslate"><span class="pre">get_benchmark_model()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.get_benchmark_calibration"><code class="docutils literal notranslate"><span class="pre">get_benchmark_calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.get_analytical_policy"><code class="docutils literal notranslate"><span class="pre">get_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.has_analytical_policy"><code class="docutils literal notranslate"><span class="pre">has_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.get_test_states"><code class="docutils literal notranslate"><span class="pre">get_test_states()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.get_custom_validation"><code class="docutils literal notranslate"><span class="pre">get_custom_validation()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#validation">Validation</a><ul>
+<li><a class="reference internal" href="#skagent.models.benchmarks.validate_analytical_solution"><code class="docutils literal notranslate"><span class="pre">validate_analytical_solution()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.euler_equation_test"><code class="docutils literal notranslate"><span class="pre">euler_equation_test()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.get_analytical_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">get_analytical_lifetime_reward()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#analytical-policies">Analytical policies</a><ul>
+<li><a class="reference internal" href="#skagent.models.benchmarks.d1_analytical_policy"><code class="docutils literal notranslate"><span class="pre">d1_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.d2_analytical_policy"><code class="docutils literal notranslate"><span class="pre">d2_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.d3_analytical_policy"><code class="docutils literal notranslate"><span class="pre">d3_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.u1_analytical_policy"><code class="docutils literal notranslate"><span class="pre">u1_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.u2_analytical_policy"><code class="docutils literal notranslate"><span class="pre">u2_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.crra_utility"><code class="docutils literal notranslate"><span class="pre">crra_utility()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-skagent.models.fisher">Fisher Two-Period Model</a></li>
 <li><a class="reference internal" href="#module-skagent.models.perfect_foresight">Perfect Foresight Models</a></li>
+<li><a class="reference internal" href="#module-skagent.models.perfect_foresight_normalized">Perfect Foresight Models (Normalized)</a></li>
+<li><a class="reference internal" href="#module-skagent.models.resource_extraction">Resource Extraction</a><ul>
+<li><a class="reference internal" href="#resource-extraction-with-optimal-escapement-reed-1979">Resource Extraction with Optimal Escapement (Reed 1979)</a><ul>
+<li><a class="reference internal" href="#mathematical-model">Mathematical Model</a></li>
+<li><a class="reference internal" href="#optimal-policy">Optimal Policy</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.models.resource_extraction.df_u"><code class="docutils literal notranslate"><span class="pre">df_u()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.resource_extraction.dr_u"><code class="docutils literal notranslate"><span class="pre">dr_u()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.resource_extraction.make_optimal_decision_rule"><code class="docutils literal notranslate"><span class="pre">make_optimal_decision_rule()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -945,7 +1160,7 @@ Stochastic Optimization Problems</em>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=aaf1ebdc"></script>
+</div><script src="../_static/documentation_options.js?v=53ab11cf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Simulation" href="../simulation/index.html"><link rel="prev" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Consumption Models - scikit-agent 0.1.dev530+g5ed0b8a8e</title>
+        <title>Benchmark Consumption Models - scikit-agent 0.1.dev531+ga470b10e9</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev530+g5ed0b8a8e</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev531+ga470b10e9</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -291,7 +291,9 @@ bottom:</p>
 <span class="math notranslate nohighlight">\(T - t\)</span> is large, the finite-horizon rule is indistinguishable from
 the infinite-horizon one.</p></li>
 <li><p><strong>Mortality erodes patience.</strong> A survival probability below one acts like
-extra impatience: it scales the discount factor and pushes up the MPC.</p></li>
+extra impatience: it scales the discount factor and pushes up the marginal
+propensity to consume (MPC), the fraction of an extra dollar of wealth that
+is spent rather than saved.</p></li>
 <li><p><strong>Consumption is a martingale.</strong> Under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, the <em>change</em> in
 consumption is the fundamental object, not its level. Income shocks of
 standard deviation <span class="math notranslate nohighlight">\(\sigma_\eta\)</span> produce consumption changes of
@@ -309,6 +311,27 @@ actually go by.</p>
 <p>This example is the runnable companion to <a class="reference internal" href="../../user_guide/benchmark_models.html"><span class="doc">Benchmark Models</span></a>.
 The code is intentionally verbose; production code should compose helpers,
 but here every step is written out so the reader can follow the algebra.</p>
+<section id="notation">
+<h2>Notation<a class="headerlink" href="#notation" title="Link to this heading">¶</a></h2>
+<p>Periods are indexed by <span class="math notranslate nohighlight">\(t = 0, 1, 2, \ldots\)</span>, and the symbols below carry
+fixed meaning throughout every model on this page:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(A_{t-1}\)</span>: beginning-of-period assets (the arrival state, before
+interest);</p></li>
+<li><p><span class="math notranslate nohighlight">\(R = 1 + r &gt; 1\)</span>: gross return on assets, with net rate <span class="math notranslate nohighlight">\(r\)</span>;</p></li>
+<li><p><span class="math notranslate nohighlight">\(y_t\)</span>: non-capital income realized in period <span class="math notranslate nohighlight">\(t\)</span>;</p></li>
+<li><p><span class="math notranslate nohighlight">\(m_t = R\, A_{t-1} + y_t\)</span>: cash-on-hand (market resources);</p></li>
+<li><p><span class="math notranslate nohighlight">\(c_t\)</span>: consumption, the control;</p></li>
+<li><p><span class="math notranslate nohighlight">\(A_t = m_t - c_t\)</span>: end-of-period assets;</p></li>
+<li><p><span class="math notranslate nohighlight">\(H_t = \mathbb{E}_t \sum_{s \ge 1} R^{-s}\, y_{t+s}\)</span>: human wealth,
+the present value of expected future income;</p></li>
+<li><p><span class="math notranslate nohighlight">\(W_t = m_t + H_t\)</span>: total wealth;</p></li>
+<li><p><span class="math notranslate nohighlight">\(u(c)\)</span>: period utility;</p></li>
+<li><p><span class="math notranslate nohighlight">\(\beta\)</span>: the discount factor.</p></li>
+</ul>
+<p>The normalized models (U-2, U-3) additionally use lowercase <span class="math notranslate nohighlight">\(m, c, a\)</span>
+for ratios to permanent income <span class="math notranslate nohighlight">\(P_t\)</span>.</p>
+</section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
 <ul class="simple">
@@ -327,6 +350,7 @@ Stochastic Optimization Problems</em>. <a class="reference external" href="https
     <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">EPS_VALIDATION</span></a><span class="p">,</span>
     <span class="n">get_analytical_policy</span><span class="p">,</span>
     <span class="n">get_benchmark_calibration</span><span class="p">,</span>
+    <span class="n">has_analytical_policy</span><span class="p">,</span>
     <span class="n">list_benchmark_models</span><span class="p">,</span>
     <span class="n">validate_analytical_solution</span><span class="p">,</span>
 <span class="p">)</span>
@@ -340,17 +364,12 @@ U-3 is registered without one because the borrowing constraint plus
 uncertainty break the linearity that every other entry relies on; the
 helper still reports it as <code class="docutils literal notranslate"><span class="pre">FAILED</span></code> because no policy was found, not
 because anything is wrong with the model.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">_has_closed_form</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">model_id</span></a><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the registry exposes an analytical policy for ``model_id``.&quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">get_analytical_policy</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">model_id</span></a><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">return</span> <span class="kc">True</span>
-
-
-<span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">model_id</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">description</span></a> <span class="ow">in</span> <span class="n">list_benchmark_models</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">marker</span></a> <span class="o">=</span> <span class="s2">&quot;closed form&quot;</span> <span class="k">if</span> <span class="n">_has_closed_form</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">model_id</span></a><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;numerical only&quot;</span>
+<p>The registry itself records which models have a closed form, so the
+distinction is queried with
+<a class="reference internal" href="../../api/models.html#skagent.models.benchmarks.has_analytical_policy" title="skagent.models.benchmarks.has_analytical_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">has_analytical_policy()</span></code></a> rather than
+re-derived here.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">model_id</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">description</span></a> <span class="ow">in</span> <span class="n">list_benchmark_models</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">marker</span></a> <span class="o">=</span> <span class="s2">&quot;closed form&quot;</span> <span class="k">if</span> <span class="n">has_analytical_policy</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">model_id</span></a><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;numerical only&quot;</span>
     <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">result</span></a> <span class="o">=</span> <span class="n">validate_analytical_solution</span><span class="p">(</span>
         <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">model_id</span></a><span class="p">,</span> <span class="n">test_points</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">EPS_VALIDATION</span></a>
     <span class="p">)</span>
@@ -368,6 +387,19 @@ U-3 (numerical only): FAILED  U-3: Buffer stock model (normalized) with CRRA=2, 
 </section>
 <section id="step-2-finite-horizons-fade-away-d-1-d-2">
 <h3>Step 2: Finite Horizons Fade Away (D-1 → D-2)<a class="headerlink" href="#step-2-finite-horizons-fade-away-d-1-d-2" title="Link to this heading">¶</a></h3>
+<p><strong>The model.</strong> D-1 is finite-horizon log utility. With a deterministic
+terminal date <span class="math notranslate nohighlight">\(T\)</span>, the agent solves</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[V_T(W_T) = \log W_T, \qquad
+V_t(W_t) = \max_{0 &lt; c_t \le W_t}\; \log c_t
+    + \beta\, V_{t+1}\!\bigl((W_t - c_t)\, R\bigr),\]</div>
+</div>
+<p>and the first-order condition yields the remaining-horizon decision rule</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t = \frac{1 - \beta}{1 - \beta^{\,T - t}}\; W_t .\]</div>
+</div>
 <p><strong>Lesson:</strong> A 30-year-old human has an <em>almost</em> infinite-horizon MPC.
 That is why infinite-horizon models survive as a baseline despite being
 obviously unrealistic.</p>
@@ -379,11 +411,20 @@ below 1% of the limit by <span class="math notranslate nohighlight">\(T = 30\)</
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">beta_d1</span></a> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;D-1&quot;</span><span class="p">)[</span><span class="s2">&quot;DiscFac&quot;</span><span class="p">]</span>
 <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">W_fixed</span></a> <span class="o">=</span> <span class="mf">5.0</span>
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">horizons</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">81</span><span class="p">)</span>
-<span class="c1"># c_t = (1-β) / (1 - β^{T-t}) * W_t is the D-1 closed form (see</span>
-<span class="c1"># ``d1_analytical_policy``). Sweeping T at t = 0 reduces to a single</span>
-<span class="c1"># vectorized expression; the registry policy is exercised in Steps 1, 3,</span>
-<span class="c1"># 4, and 6 below.</span>
-<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">c_finite</span></a> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">beta_d1</span></a><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">beta_d1</span></a><span class="o">**</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">horizons</span></a><span class="p">)</span> <span class="o">*</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">W_fixed</span></a>
+<span class="c1"># Evaluate the *registered* D-1 policy at fixed wealth W = 5 for each</span>
+<span class="c1"># horizon T (with t = 0, so the remaining horizon is T). Stacking the</span>
+<span class="c1"># per-horizon outputs reproduces the remaining-horizon decay while</span>
+<span class="c1"># exercising the same d1_analytical_policy the test suite validates.</span>
+<span class="n">d1_policy</span> <span class="o">=</span> <span class="n">get_analytical_policy</span><span class="p">(</span><span class="s2">&quot;D-1&quot;</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">d1_calibration</span></a> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;D-1&quot;</span><span class="p">)</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">c_finite</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="nb">float</span><span class="p">(</span>
+            <span class="n">d1_policy</span><span class="p">({</span><span class="s2">&quot;W&quot;</span><span class="p">:</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">W_fixed</span></a><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span> <span class="p">{},</span> <span class="p">{</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">d1_calibration</span></a><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">T</span><span class="p">)})[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">T</span> <span class="ow">in</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">horizons</span></a>
+    <span class="p">]</span>
+<span class="p">)</span>
 <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">c_infinite</span></a> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">beta_d1</span></a><span class="p">)</span> <span class="o">*</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">W_fixed</span></a>
 
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure" class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fig</span></a><span class="p">,</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ax</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
@@ -408,6 +449,27 @@ below 1% of the limit by <span class="math notranslate nohighlight">\(T = 30\)</
 <img src="../../_images/sphx_glr_plot_benchmark_models_001.png" srcset="../../_images/sphx_glr_plot_benchmark_models_001.png" alt="Finite-Horizon Consumption Decays to the Infinite-Horizon Rule" class = "sphx-glr-single-img"/></section>
 <section id="step-3-mortality-erodes-patience-d-3">
 <h3>Step 3: Mortality Erodes Patience (D-3)<a class="headerlink" href="#step-3-mortality-erodes-patience-d-3" title="Link to this heading">¶</a></h3>
+<p><strong>The models.</strong> D-2 is the infinite-horizon CRRA workhorse plotted as the
+limit above. It solves</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\max_{\{c_t\}}\; \mathbb{E}_0 \sum_{t=0}^{\infty} \beta^t\,
+    \frac{c_t^{1-\sigma}}{1-\sigma}
+\quad\text{s.t.}\quad m_t = R\, A_{t-1} + y,\;\; A_t = m_t - c_t,\]</div>
+</div>
+<p>and its closed form is linear in total wealth,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t = \kappa\, W_t, \qquad
+\kappa = \frac{R - (\beta R)^{1/\sigma}}{R}, \qquad
+W_t = m_t + H, \qquad H = \frac{y}{r}.\]</div>
+</div>
+<p>Here <span class="math notranslate nohighlight">\(\sigma\)</span> is the coefficient of relative risk aversion and
+<span class="math notranslate nohighlight">\(\kappa\)</span> the constant MPC out of total wealth <span class="math notranslate nohighlight">\(W_t\)</span>.</p>
+<p>D-3 adds an i.i.d. survival probability <span class="math notranslate nohighlight">\(s \in (0, 1]\)</span>: an agent
+alive today reaches tomorrow with probability <span class="math notranslate nohighlight">\(s\)</span>, so it discounts
+the future by <span class="math notranslate nohighlight">\(s\beta\)</span> in place of <span class="math notranslate nohighlight">\(\beta\)</span>. The identical
+algebra then gives <span class="math notranslate nohighlight">\(\kappa_s = (R - (s\beta R)^{1/\sigma})/R\)</span>.</p>
 <p><strong>Lesson:</strong> I.i.d. mortality risk <span class="math notranslate nohighlight">\(s\)</span> is observationally equivalent
 to scaling the discount factor from <span class="math notranslate nohighlight">\(\beta\)</span> to <span class="math notranslate nohighlight">\(s\beta\)</span>. The
 MPC <span class="math notranslate nohighlight">\(\kappa_s = (R - (s\beta R)^{1/\sigma})/R\)</span> strictly exceeds the
@@ -454,6 +516,22 @@ aggregate over many decades pick up a measurable mortality wedge.</p>
 <img src="../../_images/sphx_glr_plot_benchmark_models_002.png" srcset="../../_images/sphx_glr_plot_benchmark_models_002.png" alt="Mortality Risk Visibly Increases the MPC" class = "sphx-glr-single-img"/></section>
 <section id="step-4-hall-s-martingale-u-1">
 <h3>Step 4: Hall’s Martingale (U-1)<a class="headerlink" href="#step-4-hall-s-martingale-u-1" title="Link to this heading">¶</a></h3>
+<p><strong>The model.</strong> U-1 pairs quadratic utility with the neutral discount
+condition <span class="math notranslate nohighlight">\(\beta R = 1\)</span> and a stochastic income stream:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u(c) = a\, c - \tfrac{b}{2}\, c^2, \qquad \beta R = 1, \qquad
+m_t = R\, A_{t-1} + y_t ,\]</div>
+</div>
+<p>for utility constants <span class="math notranslate nohighlight">\(a, b &gt; 0\)</span>. Under <span class="math notranslate nohighlight">\(\beta R = 1\)</span> the Euler
+equation collapses to the martingale property
+<span class="math notranslate nohighlight">\(\mathbb{E}_t[c_{t+1}] = c_t\)</span>, and the decision rule consistent with it
+(plus a transversality condition ruling out explosive borrowing) is the
+permanent-income annuity rule</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t = \frac{r}{R}\,(m_t + H), \qquad H = \frac{\mathbb{E}_t\, y}{r}.\]</div>
+</div>
 <p><strong>Lesson:</strong> Hall’s contribution wasn’t the level of consumption. It was
 the prediction that, under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, consumption changes are
 unforecastable from period-<span class="math notranslate nohighlight">\(t\)</span> information, and that the standard
@@ -553,6 +631,21 @@ tests of whether this picture survives in real data.</p>
 <img src="../../_images/sphx_glr_plot_benchmark_models_003.png" srcset="../../_images/sphx_glr_plot_benchmark_models_003.png" alt="One Agent: Income Volatile, Consumption Smooth, Theory: $\sigma_{\Delta c} = (r/R)\,\sigma_\eta = 0.0029$" class = "sphx-glr-single-img"/></section>
 <section id="step-5-normalization-collapses-the-state-space-u-2">
 <h3>Step 5: Normalization Collapses the State Space (U-2)<a class="headerlink" href="#step-5-normalization-collapses-the-state-space-u-2" title="Link to this heading">¶</a></h3>
+<p><strong>The model.</strong> U-2 is log utility with permanent income shocks, written
+in variables normalized by permanent income <span class="math notranslate nohighlight">\(P_t\)</span> (lowercase
+<span class="math notranslate nohighlight">\(m = M/P\)</span>, <span class="math notranslate nohighlight">\(c = C/P\)</span>, <span class="math notranslate nohighlight">\(a = A/P\)</span>):</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u(c) = \log c, \qquad a_t = m_t - c_t, \qquad
+m_{t+1} = \frac{R\, a_t}{\psi_{t+1}} + \theta_{t+1},\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\psi\)</span> is the permanent shock and <span class="math notranslate nohighlight">\(\theta\)</span> normalized
+transitory income (<span class="math notranslate nohighlight">\(\mathbb{E}[\theta] = 1\)</span>). With normalized human
+wealth <span class="math notranslate nohighlight">\(h = 1/r\)</span>, the closed form is the permanent-income line</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c = (1 - \beta)\,(m + 1/r).\]</div>
+</div>
 <p><strong>Lesson:</strong> A clever change of variables can turn an <span class="math notranslate nohighlight">\(n\)</span>-dimensional
 state space into an <span class="math notranslate nohighlight">\((n-1)\)</span>-dimensional one. For U-2 the trick is
 dividing every level by permanent income <span class="math notranslate nohighlight">\(P_t\)</span>, which removes
@@ -602,6 +695,20 @@ state-space collapse.</p>
 <img src="../../_images/sphx_glr_plot_benchmark_models_004.png" srcset="../../_images/sphx_glr_plot_benchmark_models_004.png" alt="Level Variables: 2-D Family, Normalized: All Four Lines Coincide" class = "sphx-glr-single-img"/></section>
 <section id="step-6-when-the-closed-form-breaks-u-3">
 <h3>Step 6: When the Closed Form Breaks (U-3)<a class="headerlink" href="#step-6-when-the-closed-form-breaks-u-3" title="Link to this heading">¶</a></h3>
+<p><strong>The model.</strong> U-3 is the Carroll buffer-stock problem: U-2’s normalized
+dynamics with CRRA utility (<span class="math notranslate nohighlight">\(\gamma &gt; 1\)</span>), genuine permanent <em>and</em>
+transitory shocks, and a <em>binding</em> borrowing constraint <span class="math notranslate nohighlight">\(c \le m\)</span>,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[V(m) = \max_{0 &lt; c \le m}\; \frac{c^{1-\gamma}}{1-\gamma}
+    + \beta\, \mathbb{E}\!\left[V\!\left(
+        \frac{R\,(m - c)}{\psi'} + \theta' \right)\right].\]</div>
+</div>
+<p>The constraint together with income uncertainty breaks the linearity that
+every other entry relies on, so U-3 has no closed-form policy; only its
+limiting MPC properties are known (the MPC stays in <span class="math notranslate nohighlight">\((0, 1)\)</span>,
+decreases in wealth, and converges to D-2’s <span class="math notranslate nohighlight">\(\kappa\)</span> as
+<span class="math notranslate nohighlight">\(m \to \infty\)</span>).</p>
 <p><strong>Lesson:</strong> U-3 is U-2 plus a <em>binding</em> borrowing constraint
 <span class="math notranslate nohighlight">\(c \leq m\)</span>. The U-2 closed form still satisfies the Euler equation
 everywhere, but it violates the constraint at low <span class="math notranslate nohighlight">\(m\)</span>, because at
@@ -673,9 +780,10 @@ is in the registry as <code class="docutils literal notranslate"><span class="pr
 <section id="where-to-read-next">
 <h3>Where to Read Next<a class="headerlink" href="#where-to-read-next" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p><a class="reference internal" href="../../user_guide/benchmark_models.html"><span class="doc">Benchmark Models</span></a> for the per-model derivations,
-notation conventions, and the standalone modules (Fisher, perfect
-foresight, resource extraction).</p></li>
+<li><p><a class="reference internal" href="../../user_guide/benchmark_models.html"><span class="doc">Benchmark Models</span></a> for the registry roster and the
+helper functions used to fetch, validate, and list these models.</p></li>
+<li><p><a class="reference internal" href="../../api/models.html"><span class="doc">Models</span></a> for the full API reference, including the standalone
+modules (Fisher, perfect foresight, resource extraction).</p></li>
 <li><p><a class="reference internal" href="../../user_guide/algorithms.html"><span class="doc">Algorithms Guide</span></a> covers the numerical solvers used for
 models like U-3 that have no closed form.</p></li>
 <li><p>The other examples in this gallery wire benchmark blocks into Monte
@@ -684,7 +792,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.497 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.726 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-benchmark-models-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/2cc3c98062c3edf3537ea32dc3909b7c/plot_benchmark_models.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_benchmark_models.ipynb</span></code></a></p>
@@ -764,6 +872,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Benchmark Consumption Models</a><ul>
+<li><a class="reference internal" href="#notation">Notation</a></li>
 <li><a class="reference internal" href="#references">References</a><ul>
 <li><a class="reference internal" href="#step-1-what-s-in-the-registry">Step 1: What’s in the Registry</a></li>
 <li><a class="reference internal" href="#step-2-finite-horizons-fade-away-d-1-d-2">Step 2: Finite Horizons Fade Away (D-1 → D-2)</a></li>
@@ -785,7 +894,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=aaf1ebdc"></script>
+</div><script src="../../_static/documentation_options.js?v=53ab11cf"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
