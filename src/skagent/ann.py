@@ -509,6 +509,72 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         return {self.control_sym: decision_rule}
 
 
+class BlockValueNet(BellmanPeriodMixin, Net):
+    """Standalone value-function network for a Bellman problem.
+
+    Maps a control's information set (the same pre-decision states a policy
+    network sees) to a single unconstrained scalar value. It is the value-only
+    counterpart of :class:`BlockPolicyNet`, kept for algorithms that approximate
+    a value function separately from the policy. The Maliar/MMW path in this
+    package uses the shared-backbone :class:`BlockPolicyValueNet` instead, so
+    ``BlockValueNet`` is not wired into
+    :func:`~skagent.algos.maliar.maliar_training_loop`.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The model Bellman period.
+    control_sym : str, optional
+        Control whose information set defines the value function's domain.
+        Defaults to the first control.
+    width : int, optional
+        Width of hidden layers. Default 32.
+    **kwargs
+        Passed to :class:`Net` (activation, n_layers, init_seed, etc.).
+    """
+
+    def __init__(self, bellman_period, control_sym=None, width: int = 32, **kwargs):
+        self._init_bellman_period(bellman_period, control_sym)
+        # Information set in, single unconstrained scalar value out.
+        super().__init__(n_inputs=len(self.iset), n_outputs=1, width=width, **kwargs)
+
+    def value_function(self, states_t, shocks_t=None, parameters=None):
+        """Evaluate the value function at the control's information set.
+
+        Arrival ``states_t`` (with ``shocks_t`` and ``parameters``) are mapped to
+        the control's information set via
+        :meth:`~skagent.bellman.BellmanPeriod.compute_pre_state`, mirroring
+        :meth:`BlockPolicyNet.decision_function`, then the network is evaluated.
+
+        Returns
+        -------
+        torch.Tensor
+            Flattened value estimates, one per input row.
+        """
+        if shocks_t is None:
+            shocks_t = {}
+        iset_dict = self.bellman_period.compute_pre_state(
+            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
+        )
+        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
+        input_tensor = torch.stack(iset_vals).T.to(device)
+        return self(input_tensor).flatten()
+
+    def get_value_function(self):
+        """Return a callable ``(states, shocks, parameters) -> value`` tensor."""
+
+        def vf(states_t, shocks_t=None, parameters=None):
+            return self.value_function(
+                states_t, shocks_t if shocks_t is not None else {}, parameters
+            )
+
+        return vf
+
+    def get_core_function(self, length=None):
+        """Return the value function (the trainable core for this net)."""
+        return self.get_value_function()
+
+
 class BlockPolicyValueNet(BellmanPeriodMixin, Net):
     """
     Single neural network with shared backbone for both policy and value.

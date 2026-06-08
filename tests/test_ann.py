@@ -468,6 +468,35 @@ class test_block_policy_value_net(unittest.TestCase):
             torch.all(torch.isfinite(value)), "Value head produced non-finite output"
         )
 
+    def test_block_value_net__case_1(self):
+        """BlockValueNet maps the control's information set to finite scalar values."""
+        value_net = ann.BlockValueNet(case_1["bp"])
+
+        # Inputs are exactly the control's information set (the states the policy
+        # sees), never the control itself, and set the network's input width.
+        self.assertEqual(set(value_net.iset), set(value_net.cobj.iset))
+        self.assertNotIn(value_net.control_sym, value_net.iset)
+        self.assertEqual(value_net.n_inputs, len(value_net.iset))
+
+        test_states = {"a": torch.tensor([2.0, 3.0])}
+        test_shocks = {"theta": torch.tensor([1.0, 1.0])}
+        values = value_net.value_function(test_states, test_shocks, {})
+        self.assertIsInstance(values, torch.Tensor)
+        self.assertEqual(values.shape, (2,))
+        self.assertTrue(
+            torch.all(torch.isfinite(values)),
+            "BlockValueNet produced non-finite value estimates",
+        )
+        # get_value_function returns a callable equivalent to value_function.
+        vf = value_net.get_value_function()
+        self.assertTrue(torch.allclose(vf(test_states, test_shocks, {}), values))
+
+        # Standalone value net: one unconstrained scalar output, separate from
+        # any policy network (not the shared-backbone BlockPolicyValueNet).
+        self.assertEqual(value_net.n_outputs, 1)
+        x = torch.randn(4, len(value_net.iset), device=device)
+        self.assertEqual(value_net(x).shape, (4, 1))
+
 
 class TestTrainBlockNNValidation(unittest.TestCase):
     """Test input validation in train_block_nn."""

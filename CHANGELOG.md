@@ -91,9 +91,11 @@ and this project adheres to
 
 ### Removed
 
-- Standalone `BlockValueNet` class and `train_block_value_and_policy_nn`
-  trainer; the alternating dual-optimizer pattern is replaced by a single
-  shared-backbone network (`BlockPolicyValueNet`) trained with one optimizer
+- `train_block_value_and_policy_nn` trainer and its alternating dual-optimizer
+  pattern; value-aware training now uses the single shared-backbone
+  `BlockPolicyValueNet` trained with one optimizer. The standalone
+  `BlockValueNet` is retained for value-function approximation in future
+  algorithms but is no longer used in the Maliar training path.
 - `value_network` and `value_loss_function` parameters from
   `maliar_training_loop`
 - Removed `AgentTypeMonteCarloSimulator`; mortality is now expressed
