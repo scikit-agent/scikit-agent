@@ -27,6 +27,13 @@ and this project adheres to
 - NumFOCUS Code of Conduct adopted
 - Created a working `Consumption-Saving Model` example in the documentation
   gallery
+- Added a **Benchmark Models** user-guide page (a model-agnostic onramp: the
+  registry roster and how to fetch and validate models) alongside a runnable
+  `plot_benchmark_models.py` gallery tour that introduces each model with its
+  equations and plots the lesson it teaches
+- Added the public `has_analytical_policy` registry helper to
+  `skagent.models.benchmarks`, replacing duplicated closed-form checks in the
+  tests and the gallery
 
 ### Removed
 
