@@ -74,6 +74,7 @@ blocks
 simulation
 algorithms
 environments
+benchmark_models
 science
 ```
 

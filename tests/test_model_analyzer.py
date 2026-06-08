@@ -8,7 +8,11 @@ import sys
 
 # --- Core Imports ---
 sys.path.append("../src")
-from skagent.models.consumer import consumption_block
+from skagent.models.consumer import (
+    consumption_block,
+    cons_portfolio_problem,
+    calibration as portfolio_calibration,
+)
 from skagent.block import DBlock
 from skagent.distributions import Bernoulli
 from skagent.model_analyzer import ModelAnalyzer
@@ -179,6 +183,43 @@ class TestAgentAssignments(unittest.TestCase):
             meta = result.node_meta[var]
             if meta["agent"] != "global":
                 self.assertEqual(meta["plate"], "test_agent")
+
+
+class TestRBlockLagDetection(unittest.TestCase):
+    """
+    Regression tests for #202: arrival states must be computed at the whole-model
+    (RBlock) level, not per sub-block.
+
+    In ``cons_portfolio_problem`` the variable ``a`` is produced in the
+    consumption sub-block and consumed by the portfolio and tick sub-blocks
+    *within the same period*. Asking each sub-block in isolation for its arrival
+    states makes ``a`` look lagged (it is not produced inside those sub-blocks),
+    so the old per-block code wrongly classified ``a -> stigma`` and ``a -> k``
+    as lag (previous-period) edges. At the model level the only true arrival
+    state is ``k`` (``k_t = a_{t-1}``), so the only lag edge is ``k -> b``.
+    """
+
+    def setUp(self):
+        self.analyzer = ModelAnalyzer(cons_portfolio_problem, portfolio_calibration)
+        self.result = self.analyzer.analyze()
+
+    def test_within_period_cross_block_deps_are_instant_not_lag(self):
+        """``a`` feeds ``stigma`` and ``k`` in the same period: instant, not lag."""
+        lag = self.result.edges["lag"]
+        instant = self.result.edges["instant"]
+
+        # Old per-block code put these in ``lag``; the fix puts them in ``instant``.
+        self.assertNotIn(("a", "stigma"), lag)
+        self.assertNotIn(("a", "k"), lag)
+        self.assertIn(("a", "stigma"), instant)
+        self.assertIn(("a", "k"), instant)
+
+    def test_genuine_arrival_state_is_the_only_lag_edge(self):
+        """``k`` is the sole arrival state, so ``k -> b`` is the only lag edge."""
+        self.assertEqual(
+            cons_portfolio_problem.get_arrival_states(portfolio_calibration), {"k"}
+        )
+        self.assertEqual(self.result.edges["lag"], [("k", "b")])
 
 
 if __name__ == "__main__":

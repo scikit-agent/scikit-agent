@@ -19,6 +19,8 @@ and this project adheres to
 - Added shock resolution support in `BellmanPeriod` methods
 - Moved `compute_gradients_for_tensors` tests from `test_bellman.py` to
   `test_utils.py`
+- Introduced `mortality_block` (and `mortal_cons_problem`) to demonstrate how to
+  encode stochastic mortality and agent rebirth as a composable `DBlock`.
 
 ### Added
 
@@ -38,6 +40,28 @@ and this project adheres to
 - Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
   D-2 benchmark
 - NumFOCUS Code of Conduct adopted
+- Created a working `Consumption-Saving Model` example in the documentation
+  gallery
+- Added a **Benchmark Models** user-guide page (a model-agnostic onramp: the
+  registry roster and how to fetch and validate models) alongside a runnable
+  `plot_benchmark_models.py` gallery tour that introduces each model with its
+  equations and plots the lesson it teaches
+- Added the public `has_analytical_policy` registry helper to
+  `skagent.models.benchmarks`, replacing duplicated closed-form checks in the
+  tests and the gallery
+
+### Removed
+
+- Removed `AgentTypeMonteCarloSimulator`; mortality is now expressed
+  declaratively via `mortality_block` (see Changed). The now-unused
+  `calibration_by_age` helper and its API documentation entry were removed with
+  it.
+
+### Fixed
+
+- Fixed the `CRRA` calibration in `perfect_foresight_normalized`: it was a
+  1-tuple `(2.0,)`, which broke the CRRA utility power; it is now the scalar
+  `2.0`.
 
 ...
 

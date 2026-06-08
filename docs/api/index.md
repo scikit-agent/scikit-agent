@@ -10,6 +10,7 @@ models
 algorithms
 environments
 simulation
+parser
 utils
 ```
 
@@ -23,6 +24,7 @@ The scikit-agent API is organized into several main modules:
 - {doc}`environments` - Environment adapters for reinforcement-learning
   algorithms
 - {doc}`simulation` - Simulation tools and analysis functions
+- {doc}`parser` - Parsing strings into mathematical expressions
 - {doc}`utils` - Utility functions and helpers
 
 ## Quick Reference
