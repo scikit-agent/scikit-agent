@@ -108,7 +108,7 @@ euler_loss_fn = loss.EulerEquationLoss(bp, parameters=u3_calibration, constraine
 # estimate of the squared expected residual, avoiding the upward bias of
 # squaring a single draw.
 
-states_0 = grid.Grid.from_config({"a": {"min": 0.1, "max": 4.0, "count": 15}})
+states_0 = grid.Grid.from_config({"a": {"min": 0.1, "max": 4.0, "count": 200}})
 
 trained_net, final_states = maliar.maliar_training_loop(
     bp,
@@ -116,24 +116,31 @@ trained_net, final_states = maliar.maliar_training_loop(
     states_0,
     u3_calibration,
     shock_copies=2,
-    max_iterations=15,
+    max_iterations=40,
     tolerance=1e-6,
     random_seed=SEED,
     simulation_steps=1,
+    network_width=32,
 )
 
 # %%
 # Step 4: Evaluate the trained consumption function
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# We read the policy on a fine grid of assets, holding the income shocks at
-# their mean (:math:`\psi = \theta = 1`) so the slice is deterministic. Then we
-# check the two buffer-stock properties.
+# We read the policy over the ergodic set of assets the loop actually trained
+# on, holding the income shocks at their mean (:math:`\psi = \theta = 1`) so the
+# slice is deterministic. Then we check the two buffer-stock properties.
 
 decision_fn = trained_net.get_decision_function()
 
+# Evaluate over the ergodic set the loop trained on (the assets the simulated
+# agent visits), not a fixed grid: extrapolating past it shows an artifactual,
+# untrained downward bend in consumption at high wealth.
 n_test = 60
-test_a = torch.linspace(0.1, 4.0, n_test, device=device)
+ergodic_a = final_states["a"].detach().to(device)
+test_a = torch.linspace(
+    float(ergodic_a.min()), float(ergodic_a.max()), n_test, device=device
+)
 mean_shocks = {
     "psi": torch.ones(n_test, device=device),
     "theta": torch.ones(n_test, device=device),
@@ -168,10 +175,11 @@ print(f"APC falls as the buffer grows (buffer-stock signature): {apc_high < apc_
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The upper panel shows consumption against cash-on-hand, with the 45-degree
-# line :math:`c = m` marking the borrowing constraint: the policy hugs it at low
-# wealth (the agent would like to borrow but cannot) and bends away as a buffer
-# of assets accumulates. The lower panel shows the average propensity to consume
-# :math:`c / m` falling monotonically as that buffer grows.
+# line :math:`c = m` marking the borrowing constraint. Over the ergodic set the
+# agent holds a precautionary buffer, so consumption stays strictly below the
+# constraint (the gap to :math:`c = m` is that buffer) and rises concavely. The
+# lower panel shows the average propensity to consume :math:`c / m` falling as
+# wealth grows.
 
 m_np = m.cpu().numpy()
 c_np = c.cpu().numpy()
@@ -184,7 +192,7 @@ fig, (ax_policy, ax_apc) = plt.subplots(
 ax_policy.plot(m_np, m_np, "k:", linewidth=1.5, label="Constraint $c = m$")
 ax_policy.plot(m_np, c_np, "C0-", linewidth=2, label="Trained policy (Maliar loop)")
 ax_policy.set_ylabel("Normalized consumption $c$")
-ax_policy.set_title("Maliar loop recovers a concave, constrained policy (U-3)")
+ax_policy.set_title("Maliar loop recovers a concave buffer-stock policy (U-3)")
 ax_policy.legend()
 ax_policy.grid(True, alpha=0.3)
 
