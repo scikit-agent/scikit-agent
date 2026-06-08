@@ -856,30 +856,9 @@ def _generate_u3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
 
 # D-4: Deterministic CRRA with a Binding Borrowing Constraint
 # -----------------------------------------------------------
-# D-4 is the deterministic, impatient counterpart of the U-3 buffer-stock model.
-# It keeps CRRA utility and the natural borrowing constraint c <= m of U-3 but
-# removes all income risk, and it is calibrated to be impatient (βR < 1) so the
-# constraint actually binds at low cash-on-hand.
-#
-#   max ∑_{t=0}^∞ β^t c_t^{1-σ}/(1-σ)
-#   s.t.  m_t = R*A_{t-1} + y,   A_t = m_t - c_t,   c_t ≤ m_t  (no borrowing)
-#
-# Because the constraint binds, NO closed-form policy exists (just as for U-3).
-# What makes D-4 useful is precisely that binding constraint: it pins down the
-# consumption LEVEL. Pure Euler-equation training identifies only consumption
-# GROWTH; a level shift changes the Euler residual only by a term proportional
-# to (1 - βR), so the level is weakly identified and Euler-only training on an
-# unconstrained interior model (e.g. U-2) drifts. The borrowing constraint
-# supplies the missing boundary condition c = m at the constrained boundary,
-# anchoring the level. With that anchor, a policy trained by minimizing the
-# Fischer-Burmeister Euler/KKT residual (EulerEquationLoss with
-# constrained=True) recovers the value-function-iteration solution to under 1%
-# (see tests/test_maliar.py, TestD4ConstrainedEulerVFI). D-4 is therefore the
-# minimal in-package demonstration that the Euler method of Maliar, Maliar, and
-# Winant (2021, JME) reaches benchmark accuracy on a constrained problem.
-#
-# Impatience: βR = 0.92 * 1.04 = 0.9568 < 1, so the unconstrained target assets
-# are negative at low m and the constraint c = m binds there.
+# Impatient (betaR = 0.9568 < 1) deterministic counterpart of U-3; the binding
+# constraint c <= m precludes a closed form but pins the level Euler-only
+# training leaves free. See d4_vfi_reference_policy and TestD4ConstrainedEulerVFI.
 
 d4_calibration = {
     "DiscFac": 0.92,

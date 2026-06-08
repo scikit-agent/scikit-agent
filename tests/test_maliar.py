@@ -50,16 +50,9 @@ decision_rules = {"c": lambda a: a / 2}
 decisions = {"c": 0.5}
 
 
-# ---------------------------------------------------------------------------
-# Shared comparison helpers
-#
-# The same two quantities -- the Euler residual of a decision function, and the
-# pointwise error of a policy against a reference -- are checked in several
-# tests, against both analytical policies and policies produced by a training
-# algorithm. These helpers compute those quantities once so the assertions can
-# be written without duplicating the plumbing, and so the identical check can
-# be applied to any solution method (PR #190 review, sbenthall).
-# ---------------------------------------------------------------------------
+# Shared comparison helpers: the Euler residual of a decision function and the
+# pointwise error of a policy vs a reference, factored out so the same checks
+# apply to both analytical and trained policies without duplicated plumbing.
 
 
 def euler_residual_of(bp, decision_fn, states, shocks, parameters):
@@ -579,10 +572,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             bp, decision_fn, test_states, shocks, d2_calibration
         )
 
-        # The trained policy is a neural network approximation, not an
-        # analytical solution, so we keep a mean threshold here (a max
-        # threshold would be dominated by a few outlier samples and is
-        # only appropriate for near-machine-precision tests).
+        # Trained NN approximation, not analytical: a mean threshold fits here;
+        # a max threshold suits only near-machine-precision tests.
         mean_residual = torch.mean(torch.abs(final_residual)).item()
         mse_residual = torch.mean(final_residual**2).item()
 
@@ -682,12 +673,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         mean_rel_error = rel_error.mean().item()
         max_rel_error = rel_error.max().item()
 
-        # The Bellman equation V(m) = u(c) + β E[V(m')] anchors the
-        # consumption level via the value function, resolving the
-        # indeterminacy that Euler-only training suffers from. With the shared
-        # backbone the error is uniform across the grid (max is ~5.5%, barely
-        # above the mean at this seed), so we assert a pointwise bound as well
-        # as the mean rather than a mean that a few accurate points could carry.
+        # The value function anchors the consumption level (Euler-only training
+        # leaves it indeterminate). The error is near-uniform across the grid, so
+        # we assert a pointwise max bound, not just the mean.
         self.assertLess(
             mean_rel_error,
             0.05,
@@ -741,11 +729,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             }
         )
 
-        # Create Euler equation loss with constrained=True for buffer stock model
-        # The borrowing constraint (c <= m) means the Euler equation becomes an
-        # inequality at constrained points: u'(c) >= βR E[u'(c')].
-        # Using constrained=True enables one-sided loss that only penalizes
-        # negative residuals (overconsumption), not positive ones (constraint binding).
+        # constrained=True: the borrowing constraint c <= m turns the Euler
+        # equation into an inequality (u'(c) >= betaR E[u'(c')]); the one-sided
+        # loss penalizes only negative residuals (overconsumption).
         euler_loss_fn = loss.EulerEquationLoss(
             bp,
             parameters=u3_calibration,
@@ -773,11 +759,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         beta = u3_calibration["DiscFac"]  # β ≡ DiscFac (standard economics notation)
         gamma = u3_calibration["CRRA"]
 
-        # =================================================================
-        # 1. Economic sanity via the reusable diagnostics helper
-        # (positive consumption, budget c <= m, strict monotonicity in
-        #  wealth, average MPC in (0, 1)).
-        # =================================================================
+        # 1. Economic sanity via the reusable diagnostics helper: positive c,
+        # budget c <= m, strict monotonicity in wealth, average MPC in (0, 1).
         n_test = 30
         test_a = torch.linspace(0.5, 10.0, n_test, device=device)
         test_states = {"a": test_a}
@@ -805,11 +788,8 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             kappa_pf, 0.0, "Perfect-foresight MPC must be positive for U-3."
         )
 
-        # =================================================================
-        # 2. Euler residual check in the unconstrained region (high wealth).
-        # The borrowing constraint is slack here, so the Euler equation
-        # (the actual training objective) should be satisfied closely.
-        # =================================================================
+        # 2. Euler residual in the unconstrained (high-wealth) region: the
+        # constraint is slack, so the Euler equation should hold closely.
         n_high = 10
         high_wealth_a = torch.linspace(5.0, 10.0, n_high, device=device)
         high_wealth_states = {"a": high_wealth_a}
@@ -958,10 +938,9 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         This test verifies that the constrained flag is correctly wired through
         the entire loss computation pipeline, not just the formula in isolation.
         """
-        # Use U-3 buffer stock model. Construct its shocks here: the loss draws
-        # the all-in-one operator's second next-period shock from the block, so
-        # the block must be constructed (and seeded, for determinism) rather
-        # than relying on another test having constructed it first.
+        # Construct U-3's shocks here (seeded): the loss draws the all-in-one
+        # operator's second next-period shock from the block, so it must be
+        # constructed rather than relying on another test to do it first.
         torch.manual_seed(TEST_SEED)
         u3_block = get_benchmark_model("U-3")
         u3_calibration = get_benchmark_calibration("U-3")
@@ -1126,11 +1105,9 @@ class TestU3OneSidedConstraintTraining(unittest.TestCase):
             f"wealth. Got c = {c}, m = {m}",
         )
 
-        # Core claim: in the constrained region, the Euler residual
-        # u'(c) - betaR E[u'(c')] should be weakly non-negative because
-        # the constraint c <= m binds. The one-sided loss does not
-        # penalize positive residuals, so after training the residuals
-        # should not be substantially negative.
+        # Core claim: where c <= m binds, the Euler residual
+        # u'(c) - betaR E[u'(c')] is weakly non-negative; the one-sided loss
+        # leaves positive residuals unpenalized, so trained residuals stay >~ 0.
         constraint_shocks = {
             "psi_0": torch.ones(3, device=device),
             "psi_1": torch.ones(3, device=device),
@@ -1192,15 +1169,12 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
         R = d4_calibration["R"]
         y = d4_calibration["y"]
         # Train on arrival assets a so cash-on-hand m = R*a + y spans [1, 9],
-        # covering both the binding (low m) and slack (high m) regions. Fresh
-        # uniform resampling each step is the Maliar all-domain training that
-        # a fixed grid cannot provide.
+        # covering the binding (low m) and slack (high m) regions. Fresh uniform
+        # resampling each step is Maliar all-domain training, not a fixed grid.
         a_lo, a_hi = (1.0 - y) / R, (9.0 - y) / R
-        # 5000 resampling steps is past the knee of the convergence curve: the
-        # mean gap clears 1% within ~2000 steps (the level is anchored fast by
-        # the binding constraint), and by 5000 the pointwise max at the
-        # constraint kink has settled into a ~0.7-1.2% band. Measured here:
-        # mean = 0.30%, max = 0.83% against the VFI oracle.
+        # 5000 steps is past the knee: the mean gap clears 1% by ~2000 steps and
+        # the pointwise max at the constraint kink settles to ~0.7-1.2%. Measured
+        # here: mean = 0.30%, max = 0.83% vs the VFI oracle.
         optimizer = None
         for _ in range(5000):
             train_grid = grid.Grid.from_dict(
@@ -1230,9 +1204,8 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
         max_rel_error = rel_error.max().item()
 
         # The binding constraint anchors the level, so Euler + Fischer-Burmeister
-        # matches the VFI oracle to well under 1% on average. The pointwise max
-        # sits at the constraint kink (the single non-smooth point) and is held
-        # to a looser but still tight bound.
+        # matches VFI to well under 1% on average; the pointwise max sits at the
+        # constraint kink and is held to a looser but still tight bound.
         self.assertLess(
             mean_rel_error,
             0.01,
@@ -1266,12 +1239,9 @@ class TestEulerLossAllInOneOperator(unittest.TestCase):
     """
 
     def _stochastic_u3(self):
-        # Widen the transitory dispersion so Var(f) is large relative to
-        # (E[f])**2 and the bias is unmistakable (the default 0.1 leaves only a
-        # ~10% gap). theta is transitory, so this does not just rescale.
-        # get_benchmark_model returns an independent copy with its shock specs
-        # still in tuple form, so this sigma override is applied here regardless
-        # of any other test that constructed U-3 first.
+        # Widen the transitory dispersion so Var(f) dominates (E[f])**2 and the
+        # bias is unmistakable; theta is transitory, so this does not just
+        # rescale. get_benchmark_model returns a fresh copy, so the override holds.
         cal = dict(get_benchmark_calibration("U-3"))
         cal["sigma_theta"] = 0.3
         block = get_benchmark_model("U-3")

@@ -850,11 +850,9 @@ class TestConsumptionPolicyDiagnostics:
         calibration = get_benchmark_calibration(bp_id)
         analytical_policy = get_analytical_policy(bp_id)
 
-        # D-2 is deterministic and uses arrival state ``a``. The model
-        # encodes cash-on-hand inside the analytical policy itself, so we
-        # use a generous upper bound (a + 1/r) for the budget envelope.
-        # In the deterministic limit consumption equals the annuity value
-        # of total wealth and is strictly below this envelope.
+        # D-2 is deterministic and uses arrival state ``a``; cash-on-hand is
+        # encoded inside the analytical policy, so we use a generous envelope
+        # (a + 1/r) that consumption stays strictly below.
         R = calibration["R"]
         a = torch.linspace(0.1, 10.0, 30)
         test_states = {"a": a}
