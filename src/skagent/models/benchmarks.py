@@ -230,6 +230,34 @@ def d2_analytical_policy(states, shocks, parameters):
     return {"c": c_optimal}
 
 
+def d2_constrained_optimal_c(m):
+    """D-2 constrained closed-form consumption ``c = min(κ(m + H), m)``.
+
+    Keyed on cash-on-hand ``m`` (the information set of the D-2 control), this
+    inverts ``m = aR + y`` to recover arrival assets, delegates the
+    unconstrained closed form to :func:`d2_analytical_policy`, and applies the
+    borrowing constraint ``c ≤ m`` that :func:`d2_analytical_policy` does not
+    impose.
+
+    Parameters
+    ----------
+    m : scalar, numpy array, or torch.Tensor
+        Cash-on-hand value(s).
+
+    Returns
+    -------
+    numpy.ndarray
+        1-D array of constrained optimal consumption values.
+    """
+    m_arr = np.asarray(
+        m.detach().cpu().numpy() if isinstance(m, torch.Tensor) else m,
+        dtype=np.float32,
+    ).reshape(-1)
+    a = (m_arr - d2_calibration["y"]) / d2_calibration["R"]
+    c_unconstrained = d2_analytical_policy({"a": a}, {}, d2_calibration)["c"]
+    return np.minimum(np.asarray(c_unconstrained, dtype=np.float32), m_arr)
+
+
 # D-3: Blanchard Discrete-Time Mortality
 # ---------------------------------------
 # Extension of D-2 with i.i.d. survival risk. Each period, the agent survives

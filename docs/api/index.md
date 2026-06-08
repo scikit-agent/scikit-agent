@@ -8,6 +8,7 @@ This section contains the complete API documentation for scikit-agent.
 blocks
 models
 algorithms
+environments
 simulation
 utils
 ```
@@ -19,6 +20,8 @@ The scikit-agent API is organized into several main modules:
 - {doc}`blocks` - Building blocks -- modular model components
 - {doc}`models` - Canonical models from scientific literature
 - {doc}`algorithms` - Solution algorithms and optimization methods
+- {doc}`environments` - Environment adapters for reinforcement-learning
+  algorithms
 - {doc}`simulation` - Simulation tools and analysis functions
 - {doc}`utils` - Utility functions and helpers
 

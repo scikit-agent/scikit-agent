@@ -155,6 +155,59 @@ def test_decision_rule_rejects_wrong_iset_arity(d2_agent):
 
 
 # ---------------------------------------------------------------------------
+# Policy snapshots
+# ---------------------------------------------------------------------------
+
+SNAPSHOT_OBS = np.array([[1.0], [2.5], [5.0]], dtype=np.float32)
+
+
+def test_snapshot_matches_live_policy_at_capture(d2_agent):
+    d2_agent.learn(total_timesteps=64)
+    snap = d2_agent.snapshot()
+    assert np.allclose(
+        snap.predict_unscaled(SNAPSHOT_OBS), d2_agent.predict_unscaled(SNAPSHOT_OBS)
+    )
+
+
+def test_snapshot_is_frozen_across_further_training(d2_agent):
+    d2_agent.learn(total_timesteps=64)
+    snap = d2_agent.snapshot()
+    before = snap.predict_unscaled(SNAPSHOT_OBS)
+
+    # Further training mutates the live agent but must not touch the snapshot.
+    d2_agent.learn(total_timesteps=256, reset_num_timesteps=False)
+    after = snap.predict_unscaled(SNAPSHOT_OBS)
+
+    assert np.array_equal(before, after)  # snapshot exactly frozen
+    assert not np.array_equal(before, d2_agent.predict_unscaled(SNAPSHOT_OBS))
+
+
+def test_snapshot_decision_rule_drives_environment(d2_agent):
+    d2_agent.learn(total_timesteps=64)
+    dr = d2_agent.snapshot().decision_rule()
+    assert list(dr.keys()) == ["c"]
+
+    env = Environment(
+        BellmanPeriod(d2_block, "DiscFac", d2_calibration),
+        {"a": Uniform(low=0.5, high=2.0)},
+        rng=np.random.default_rng(0),
+    )
+    env.reset()
+    for _ in range(5):
+        state, action, reward, _, _, _ = env.step(dr)
+        c = float(action["c"][0])
+        m = float(state["a"][0]) * d2_calibration["R"] + d2_calibration["y"]
+        assert 0.0 <= c <= m  # respects D-2 borrowing constraint
+
+
+def test_snapshot_decision_rule_rejects_wrong_iset_arity(d2_agent):
+    d2_agent.learn(total_timesteps=32)
+    dr = d2_agent.snapshot().decision_rule()
+    with pytest.raises(TypeError, match="iset arguments"):
+        dr["c"](torch.tensor([1.0]), torch.tensor([2.0]))
+
+
+# ---------------------------------------------------------------------------
 # Convergence tests — exercise the same training setup as
 # diagnostic_ppo_allbench.py; tolerances are derived from that diagnostic's
 # observed errors (with generous headroom for SB3 non-determinism).
