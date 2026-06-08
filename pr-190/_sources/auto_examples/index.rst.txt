@@ -53,14 +53,31 @@ training, and other computational approaches to solving economic models.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="The companion example trains a network on a fixed grid and checks it against a closed-form policy. This one runs the full Maliar, Maliar, and Winant (2021) algorithm, maliar_training_loop, on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem (benchmark U-3). Solving such models is the reason the neural-network method exists, so it is the honest setting in which to show the algorithm at work.">
+
+.. only:: html
+
+  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_maliar_training_loop_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/algorithms/plot_maliar_training_loop`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">The Maliar Training Loop on a Model With No Closed-Form Solution</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form.">
 
 .. only:: html
 
-  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_maliar_training_thumb.png
+  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_train_against_known_solution_thumb.png
     :alt:
 
-  :doc:`/auto_examples/algorithms/plot_maliar_training`
+  :doc:`/auto_examples/algorithms/plot_train_against_known_solution`
 
 .. raw:: html
 
@@ -128,6 +145,23 @@ other computational methods.
 .. raw:: html
 
       <div class="sphx-glr-thumbnail-title">Consumption-Saving-Portfolio Model</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of :pyskagent.models.benchmarks. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_benchmark_models_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_benchmark_models`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Benchmark Consumption Models</div>
     </div>
 
 
