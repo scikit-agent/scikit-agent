@@ -12,16 +12,12 @@ from skagent.models.benchmarks import (
     get_benchmark_calibration,
     get_analytical_policy,
     get_test_states,
+    has_analytical_policy,
     validate_analytical_solution,
     get_analytical_lifetime_reward,
     BENCHMARK_MODELS,
     EPS_STATIC,
 )
-
-
-def has_analytical_policy(model_id: str) -> bool:
-    """Check if a model has an analytical policy."""
-    return "analytical_policy" in BENCHMARK_MODELS.get(model_id, {})
 
 
 def assert_consumption_policy_diagnostics(
@@ -836,6 +832,35 @@ def test_calibration_descriptions():
         assert "description" in calibration, (
             f"Model {model_id} missing 'description' in calibration"
         )
+
+
+def test_has_analytical_policy_matches_registry():
+    """``has_analytical_policy`` agrees with the registry and guards bad IDs.
+
+    This pins the closed-form/numerical split that the docs and the gallery
+    rely on: the five deterministic-and-stochastic closed forms report ``True``
+    and only the buffer-stock model reports ``False``. It also fails loudly if
+    the predicate stops raising on an unknown key, which would let typos pass
+    silently as "numerical only".
+    """
+    for model_id in ("D-1", "D-2", "D-3", "U-1", "U-2"):
+        assert has_analytical_policy(model_id) is True, (
+            f"{model_id} should expose a closed-form policy"
+        )
+    assert has_analytical_policy("U-3") is False, (
+        "U-3 buffer stock has no closed form and must report False"
+    )
+
+    # The predicate must stay consistent with what get_analytical_policy does.
+    for model_id in BENCHMARK_MODELS:
+        if has_analytical_policy(model_id):
+            assert callable(get_analytical_policy(model_id))
+        else:
+            with pytest.raises(ValueError):
+                get_analytical_policy(model_id)
+
+    with pytest.raises(ValueError):
+        has_analytical_policy("not-a-model")
 
 
 def test_benchmark_functionality():
