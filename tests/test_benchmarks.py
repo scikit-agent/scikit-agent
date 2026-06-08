@@ -4,6 +4,7 @@
 Most models have analytical solutions, but U-3 (buffer stock) requires numerical solution.
 """
 
+import numpy as np
 import pytest
 import torch
 from skagent.models.benchmarks import (
@@ -18,6 +19,7 @@ from skagent.models.benchmarks import (
     BENCHMARK_MODELS,
     EPS_STATIC,
 )
+from skagent.simulation.monte_carlo import draw_shocks
 
 
 def assert_consumption_policy_diagnostics(
@@ -123,14 +125,15 @@ def assert_consumption_policy_diagnostics(
 
 
 class TestBenchmarksModels:
-    """Test suite for all 6 consumption-savings benchmark models.
+    """Test suite for all 7 consumption-savings benchmark models.
 
     5 models have analytical solutions (D-1, D-2, D-3, U-1, U-2).
-    1 model requires numerical solution (U-3 buffer stock).
+    2 models require numerical solution (U-3 buffer stock, D-4 deterministic
+    constrained CRRA).
     """
 
     def test_benchmark_models_exist(self):
-        """Test that all 6 benchmark models are present"""
+        """Test that all 7 benchmark models are present"""
         expected_models = [
             "D-1",
             "D-2",
@@ -138,14 +141,15 @@ class TestBenchmarksModels:
             "U-1",
             "U-2",
             "U-3",  # Buffer stock - no analytical solution
+            "D-4",  # Deterministic constrained CRRA - no analytical solution
         ]
         actual_models = list(BENCHMARK_MODELS.keys())
 
         assert set(expected_models) == set(actual_models), (
             f"Expected {expected_models}, got {actual_models}"
         )
-        assert len(BENCHMARK_MODELS) == 6, (
-            f"Expected 6 models, got {len(BENCHMARK_MODELS)}"
+        assert len(BENCHMARK_MODELS) == 7, (
+            f"Expected 7 models, got {len(BENCHMARK_MODELS)}"
         )
 
     @pytest.mark.parametrize(
@@ -252,6 +256,7 @@ class TestBenchmarksModels:
             "U-1": "Hall random walk consumption",
             "U-2": "Log utility normalized",
             "U-3": "Buffer stock",
+            "D-4": "binding borrowing constraint",
         }
 
         for model_id, description in models.items():
@@ -299,6 +304,52 @@ class TestBenchmarksModels:
         # Test error handling
         with pytest.raises(ValueError):
             get_benchmark_model("INVALID")
+
+    def test_all_models_construct_and_draw_shocks(self):
+        """Every benchmark model must build its shock specs and yield finite
+        draws.
+
+        Regression test: U-1's income shock passed ``mean``/``std`` to
+        ``Normal`` (whose constructor takes ``mu``/``sigma``), so
+        ``construct_shocks("U-1")`` raised ``TypeError`` and the model could not
+        be used at all.
+        """
+        for model_id in BENCHMARK_MODELS.keys():
+            block = get_benchmark_model(model_id)
+            calibration = get_benchmark_calibration(model_id)
+            block.construct_shocks(calibration, rng=np.random.default_rng(0))
+            assert all(not isinstance(v, tuple) for v in block.shocks.values()), (
+                f"{model_id} shock specs were left unconstructed (still tuples)"
+            )
+            drawn = draw_shocks(block.shocks, n=16)
+            for sym, values in drawn.items():
+                arr = np.asarray(values, dtype=float)
+                assert np.all(np.isfinite(arr)), (
+                    f"{model_id} shock '{sym}' produced non-finite draws"
+                )
+
+    def test_get_benchmark_model_returns_independent_copies(self):
+        """``get_benchmark_model`` must return independent copies so that
+        constructing one caller's block cannot mutate another's.
+
+        Regression test: the registered blocks are shared singletons whose shock
+        specs ``construct_shocks`` rewrites in place, so before the copy was
+        returned, constructing one retrieval silently changed every other
+        retrieval (and a later ``construct_shocks`` with a different calibration
+        became a no-op).
+        """
+        first = get_benchmark_model("U-3")
+        second = get_benchmark_model("U-3")
+        assert first is not second, (
+            "get_benchmark_model must not hand out a shared mutable object"
+        )
+        first.construct_shocks(
+            get_benchmark_calibration("U-3"), rng=np.random.default_rng(0)
+        )
+        assert all(isinstance(v, tuple) for v in second.shocks.values()), (
+            "Constructing one returned block leaked into another retrieval; "
+            "get_benchmark_model must return independent copies."
+        )
 
         with pytest.raises(ValueError):
             get_benchmark_calibration("INVALID")
@@ -875,11 +926,12 @@ def test_benchmark_functionality():
         "U-1",
         "U-2",
         "U-3",  # Buffer stock - numerical only
+        "D-4",  # Deterministic constrained CRRA - numerical only
     ]
     assert set(models.keys()) == set(expected_models), (
         f"Unexpected benchmark model set: {set(models.keys())}"
     )
-    assert len(models) == 6, f"Expected 6 benchmark models, got {len(models)}"
+    assert len(models) == 7, f"Expected 7 benchmark models, got {len(models)}"
 
     # Verify analytical vs numerical classification
     analytical_models = [m for m in expected_models if has_analytical_policy(m)]
@@ -888,6 +940,6 @@ def test_benchmark_functionality():
     assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2"}, (
         f"Unexpected analytical model set: {set(analytical_models)}"
     )
-    assert set(numerical_models) == {"U-3"}, (
+    assert set(numerical_models) == {"U-3", "D-4"}, (
         f"Unexpected numerical model set: {set(numerical_models)}"
     )

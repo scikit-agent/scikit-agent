@@ -15,7 +15,10 @@ from skagent.models.benchmarks import (
     get_benchmark_model,
     get_benchmark_calibration,
     get_analytical_policy,
+    get_reference_policy,
 )
+from skagent.simulation.monte_carlo import draw_shocks
+from skagent.utils import reconcile
 from test_benchmarks import assert_consumption_policy_diagnostics
 
 # Deterministic test seed - change this single value to modify all seeding
@@ -45,6 +48,44 @@ states_0 = {
 # a dummy policy
 decision_rules = {"c": lambda a: a / 2}
 decisions = {"c": 0.5}
+
+
+# ---------------------------------------------------------------------------
+# Shared comparison helpers
+#
+# The same two quantities -- the Euler residual of a decision function, and the
+# pointwise error of a policy against a reference -- are checked in several
+# tests, against both analytical policies and policies produced by a training
+# algorithm. These helpers compute those quantities once so the assertions can
+# be written without duplicating the plumbing, and so the identical check can
+# be applied to any solution method (PR #190 review, sbenthall).
+# ---------------------------------------------------------------------------
+
+
+def euler_residual_of(bp, decision_fn, states, shocks, parameters):
+    """Return the (single-control) Euler residual tensor for a decision function.
+
+    Centralizes the ``estimate_euler_residual`` -> single-control ->
+    ``detach`` sequence shared by the analytical-policy and trained-policy
+    tests, so the same residual computation is reused across solution methods.
+    """
+    residuals = bellman.estimate_euler_residual(
+        bp, decision_fn, states, shocks, parameters
+    )
+    return next(iter(residuals.values())).detach()
+
+
+def policy_rel_error_of(decision_fn, reference_fn, states, shocks, parameters):
+    """Return the pointwise relative error of a policy against a reference.
+
+    Both arguments are decision functions ``(states, shocks, parameters) ->
+    {control: tensor}``, so the comparison is identical whether ``decision_fn``
+    is an analytical solution or the output of a training algorithm. Callers
+    take ``.mean()`` and/or ``.max()`` of the returned tensor.
+    """
+    actual = decision_fn(states, shocks, parameters)["c"].detach()
+    reference = reference_fn(states, shocks, parameters)["c"].detach().to(actual.device)
+    return torch.abs(actual - reference) / (torch.abs(reference) + 1e-8)
 
 
 class TestGridManipulations(unittest.TestCase):
@@ -452,15 +493,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         shocks = {}
 
         # Compute Euler residual with analytical optimal policy
-        optimal_residuals = bellman.estimate_euler_residual(
-            bp,
-            d2_policy,
-            test_states,
-            shocks,
-            d2_calibration,
+        optimal_residual = euler_residual_of(
+            bp, d2_policy, test_states, shocks, d2_calibration
         )
-        # estimate_euler_residual always returns a dict
-        optimal_residual = next(iter(optimal_residuals.values()))
 
         # For the analytical optimal policy every Euler residual should be
         # at machine precision: the max over all samples must be tiny, not
@@ -540,14 +575,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         decision_fn = trained_net.get_decision_function()
 
         # Compute final Euler residual
-        final_residuals = bellman.estimate_euler_residual(
-            bp,
-            decision_fn,
-            test_states,
-            shocks,
-            d2_calibration,
+        final_residual = euler_residual_of(
+            bp, decision_fn, test_states, shocks, d2_calibration
         )
-        final_residual = next(iter(final_residuals.values())).detach()
 
         # The trained policy is a neural network approximation, not an
         # analytical solution, so we keep a mean threshold here (a max
@@ -644,24 +674,31 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         test_states = {"a": test_a}
         test_shocks = {"psi": torch.ones(n_test, device=device)}
 
-        # Get trained and analytical consumption (both normalized)
-        trained_c = decision_fn(test_states, test_shocks, u2_calibration)["c"]
-        analytical_c = analytical_policy(test_states, test_shocks, u2_calibration)["c"]
-
-        # Compare trained vs analytical
-        rel_error = torch.abs(trained_c - analytical_c) / (analytical_c + 1e-8)
+        # Compare trained vs analytical through the shared helper, so the exact
+        # same comparison can later be applied to any other solution method.
+        rel_error = policy_rel_error_of(
+            decision_fn, analytical_policy, test_states, test_shocks, u2_calibration
+        )
         mean_rel_error = rel_error.mean().item()
+        max_rel_error = rel_error.max().item()
 
         # The Bellman equation V(m) = u(c) + β E[V(m')] anchors the
         # consumption level via the value function, resolving the
-        # indeterminacy that Euler-only training suffers from.
-        # With the shared backbone, mean relative error is consistently
-        # 1-3% across seeds (vs ~10% for Euler-only).
+        # indeterminacy that Euler-only training suffers from. With the shared
+        # backbone the error is uniform across the grid (max is ~5.5%, barely
+        # above the mean at this seed), so we assert a pointwise bound as well
+        # as the mean rather than a mean that a few accurate points could carry.
         self.assertLess(
             mean_rel_error,
             0.05,
             f"Bellman-trained policy should closely match analytical PIH solution. "
             f"Mean relative error: {mean_rel_error:.4f}",
+        )
+        self.assertLess(
+            max_rel_error,
+            0.08,
+            f"Every tested state should match the analytical PIH solution, not "
+            f"only on average. Max relative error: {max_rel_error:.4f}",
         )
 
     def test_maliar_training_loop_u3_buffer_stock(self):
@@ -785,14 +822,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             "theta_1": torch.ones(n_high, device=device),
         }
 
-        euler_residuals = bellman.estimate_euler_residual(
-            bp,
-            decision_fn,
-            high_wealth_states,
-            high_wealth_shocks,
-            u3_calibration,
+        euler_residual = euler_residual_of(
+            bp, decision_fn, high_wealth_states, high_wealth_shocks, u3_calibration
         )
-        euler_residual = next(iter(euler_residuals.values()))
 
         mean_euler_residual = torch.mean(torch.abs(euler_residual)).item()
         # In the unconstrained region, Euler residual should be small.
@@ -926,9 +958,14 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         This test verifies that the constrained flag is correctly wired through
         the entire loss computation pipeline, not just the formula in isolation.
         """
-        # Use U-3 buffer stock model
+        # Use U-3 buffer stock model. Construct its shocks here: the loss draws
+        # the all-in-one operator's second next-period shock from the block, so
+        # the block must be constructed (and seeded, for determinism) rather
+        # than relying on another test having constructed it first.
+        torch.manual_seed(TEST_SEED)
         u3_block = get_benchmark_model("U-3")
         u3_calibration = get_benchmark_calibration("U-3")
+        u3_block.construct_shocks(u3_calibration, rng=np.random.default_rng(TEST_SEED))
 
         bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
 
@@ -1100,14 +1137,9 @@ class TestU3OneSidedConstraintTraining(unittest.TestCase):
             "theta_0": torch.ones(3, device=device),
             "theta_1": torch.ones(3, device=device),
         }
-        euler_residuals = bellman.estimate_euler_residual(
-            bp,
-            decision_fn,
-            low_wealth_states,
-            constraint_shocks,
-            u3_calibration,
+        residual = euler_residual_of(
+            bp, decision_fn, low_wealth_states, constraint_shocks, u3_calibration
         )
-        residual = next(iter(euler_residuals.values())).detach()
         # Allow a small slack for NN approximation; the principled
         # statement is residual >= 0, so any negative tail of meaningful
         # magnitude is a real failure of the one-sided loss.
@@ -1117,6 +1149,225 @@ class TestU3OneSidedConstraintTraining(unittest.TestCase):
             -1e-2,
             f"One-sided Euler loss should keep residuals non-negative in "
             f"the constrained region. Got min residual = {min_residual:.4e}.",
+        )
+
+
+class TestD4ConstrainedEulerVFI(unittest.TestCase):
+    """Euler + Fischer-Burmeister training recovers the VFI solution to <1% on D-4.
+
+    D-4 is a deterministic CRRA model with a binding borrowing constraint
+    (c <= m) and impatience (betaR = 0.9568 < 1). Pure Euler training identifies
+    consumption GROWTH but not its LEVEL (a level shift changes the Euler
+    residual only by a term proportional to 1 - betaR). The binding borrowing
+    constraint supplies the boundary condition c = m that anchors the level, so
+    minimizing the Fischer-Burmeister Euler/KKT residual (constrained=True)
+    matches an independent value-function-iteration oracle to under 1%.
+
+    This is the in-package demonstration that the Euler method of Maliar,
+    Maliar, and Winant (2021, JME) reaches benchmark accuracy on a constrained
+    problem, using only the Euler residual and Fischer-Burmeister (no value
+    head). The contrast with the unconstrained interior models (U-2 stalls near
+    8% under Euler-only training) isolates the binding constraint as the level
+    anchor.
+    """
+
+    def test_d4_euler_fb_matches_vfi_within_one_percent(self):
+        torch.manual_seed(TEST_SEED)
+
+        d4_block = get_benchmark_model("D-4")
+        d4_calibration = get_benchmark_calibration("D-4")
+        d4_reference = get_reference_policy("D-4")
+
+        # D-4 is deterministic; construct_shocks is a no-op but keeps the
+        # block-construction contract uniform with the stochastic models.
+        d4_block.construct_shocks(d4_calibration)
+        bp = bellman.BellmanPeriod(d4_block, "DiscFac", d4_calibration)
+
+        # Policy-only network (Euler method, no value head).
+        policy_net = BlockPolicyNet(bp, width=64, init_seed=TEST_SEED)
+        euler_loss_fn = loss.EulerEquationLoss(
+            bp, parameters=d4_calibration, constrained=True
+        )
+
+        R = d4_calibration["R"]
+        y = d4_calibration["y"]
+        # Train on arrival assets a so cash-on-hand m = R*a + y spans [1, 9],
+        # covering both the binding (low m) and slack (high m) regions. Fresh
+        # uniform resampling each step is the Maliar all-domain training that
+        # a fixed grid cannot provide.
+        a_lo, a_hi = (1.0 - y) / R, (9.0 - y) / R
+        # 5000 resampling steps is past the knee of the convergence curve: the
+        # mean gap clears 1% within ~2000 steps (the level is anchored fast by
+        # the binding constraint), and by 5000 the pointwise max at the
+        # constraint kink has settled into a ~0.7-1.2% band. Measured here:
+        # mean = 0.30%, max = 0.83% against the VFI oracle.
+        optimizer = None
+        for _ in range(5000):
+            train_grid = grid.Grid.from_dict(
+                {"a": torch.empty(256, device=device).uniform_(a_lo, a_hi)}
+            )
+            policy_net, _, optimizer = train_block_nn(
+                policy_net,
+                train_grid,
+                euler_loss_fn,
+                epochs=1,
+                lr=1e-2,
+                optimizer=optimizer,
+                verbose=False,
+            )
+
+        decision_fn = policy_net.get_decision_function()
+        test_a = torch.linspace(a_lo, a_hi, 80, device=device)
+        test_states = {"a": test_a}
+
+        # Compare against the VFI oracle through the same helper used for the
+        # analytical-solution tests, so the constrained Euler method is held to
+        # the identical comparison as every other solution method.
+        rel_error = policy_rel_error_of(
+            decision_fn, d4_reference, test_states, {}, d4_calibration
+        )
+        mean_rel_error = rel_error.mean().item()
+        max_rel_error = rel_error.max().item()
+
+        # The binding constraint anchors the level, so Euler + Fischer-Burmeister
+        # matches the VFI oracle to well under 1% on average. The pointwise max
+        # sits at the constraint kink (the single non-smooth point) and is held
+        # to a looser but still tight bound.
+        self.assertLess(
+            mean_rel_error,
+            0.01,
+            f"Euler+FB should match VFI within 1% on average for the constrained "
+            f"D-4 model. Got mean relative error: {mean_rel_error:.4%}",
+        )
+        self.assertLess(
+            max_rel_error,
+            0.02,
+            f"Euler+FB pointwise gap to VFI should stay tight even at the "
+            f"constraint kink. Got max relative error: {max_rel_error:.4%}",
+        )
+
+
+class TestEulerLossAllInOneOperator(unittest.TestCase):
+    """EulerEquationLoss forms the all-in-one *product* of two independent
+    next-period residual draws, never the square of a single draw.
+
+    On a stochastic model the single-draw square estimates
+    ``E[f**2] = (E[f])**2 + Var(f)``, biased upward by the shock variance, which
+    shifts the minimizer. The product of two independent draws is unbiased,
+    ``E[f_a f_b] = (E[f])**2`` (Maliar, Maliar, and Winant 2021, JME, all-in-one
+    operator). These tests fail if the loss reverts to squaring a single draw.
+
+    The fixture is U-3 with a *widened transitory* shock. The transitory shock
+    theta is not absorbed by the permanent-income normalization, so the
+    next-period residual has genuine variance even at a fixed policy; the
+    permanent-only models (e.g. U-2) divide their shock out and leave
+    ``Var(f) = 0``, so they cannot exhibit the bias and would make this test
+    vacuous.
+    """
+
+    def _stochastic_u3(self):
+        # Widen the transitory dispersion so Var(f) is large relative to
+        # (E[f])**2 and the bias is unmistakable (the default 0.1 leaves only a
+        # ~10% gap). theta is transitory, so this does not just rescale.
+        # get_benchmark_model returns an independent copy with its shock specs
+        # still in tuple form, so this sigma override is applied here regardless
+        # of any other test that constructed U-3 first.
+        cal = dict(get_benchmark_calibration("U-3"))
+        cal["sigma_theta"] = 0.3
+        block = get_benchmark_model("U-3")
+        block.construct_shocks(cal, rng=np.random.default_rng(TEST_SEED))
+        bp = bellman.BellmanPeriod(block, "DiscFac", cal)
+        return bp, block, cal
+
+    @staticmethod
+    def _half_cash_on_hand(states, shocks, parameters):
+        # Fixed interior policy c = 0.5 m (0 < c < m). Not optimal, which is the
+        # point: it leaves a nonzero, shock-varying Euler residual to estimate,
+        # with no training required.
+        a = states["a"]
+        R = parameters["R"]
+        psi = shocks.get("psi", torch.ones_like(a))
+        theta = shocks.get("theta", torch.ones_like(a))
+        m = R * a / torch.clamp(psi, min=1e-8) + theta
+        return {"c": 0.5 * m}
+
+    def test_two_evaluations_differ_independent_second_draw(self):
+        """Two evaluations on the *same* grid differ, because the loss draws an
+        independent second next-period residual internally. A single-draw square
+        is deterministic given the grid, so identical outputs would betray it."""
+        torch.manual_seed(TEST_SEED)
+        bp, _, cal = self._stochastic_u3()
+        n = 1024
+        ones = torch.ones(n, dtype=torch.float64)
+        g = grid.Grid.from_dict(
+            {
+                "a": torch.linspace(0.5, 5.0, n, dtype=torch.float64),
+                "psi_0": ones,
+                "theta_0": ones,
+                "psi_1": ones,
+                "theta_1": ones,
+            }
+        )
+        loss_fn = loss.EulerEquationLoss(bp, parameters=cal)
+        out1 = loss_fn(self._half_cash_on_hand, g)
+        out2 = loss_fn(self._half_cash_on_hand, g)
+        self.assertFalse(
+            torch.allclose(out1, out2),
+            "EulerEquationLoss must form the all-in-one product with an "
+            "independently drawn second residual. Identical outputs across two "
+            "calls on a stochastic model mean it is squaring a single draw, "
+            "which is biased by Var(f).",
+        )
+
+    def test_all_in_one_loss_is_unbiased_below_single_draw_square(self):
+        """Averaged over independent next-period draws, the all-in-one loss
+        estimates the unbiased ``(E f)**2``, which sits strictly below the
+        biased single-draw square ``E[f**2] = (E f)**2 + Var(f)``. Reverting the
+        loss to a single-draw square would push it up to the biased value and
+        break the bound."""
+        torch.manual_seed(TEST_SEED)
+        bp, block, cal = self._stochastic_u3()
+        n = 1024
+        ones = torch.ones(n, dtype=torch.float64)
+        states = {"a": torch.linspace(0.5, 5.0, n, dtype=torch.float64)}
+        loss_fn = loss.EulerEquationLoss(bp, parameters=cal)
+        df = self._half_cash_on_hand
+
+        n_draws = 200
+        aio_total = 0.0
+        biased_total = 0.0
+        for _ in range(n_draws):
+            drawn = draw_shocks(block.shocks, n=n)
+            shocks = {
+                "psi_0": ones,
+                "theta_0": ones,
+                "psi_1": reconcile(states["a"], drawn["psi"]).to(torch.float64),
+                "theta_1": reconcile(states["a"], drawn["theta"]).to(torch.float64),
+            }
+            # All-in-one: the grid draw is residual A, the loss self-draws B.
+            input_grid = grid.Grid.from_dict({"a": states["a"], **shocks})
+            aio_total += loss_fn(df, input_grid).mean().item()
+            # Biased comparison: square the single residual at the same draw.
+            residual = bellman.estimate_euler_residual(bp, df, states, shocks, cal)
+            biased_total += (next(iter(residual.values())).detach() ** 2).mean().item()
+        aio_avg = aio_total / n_draws
+        biased_avg = biased_total / n_draws
+
+        self.assertGreater(
+            biased_avg,
+            1e-2,
+            "Test would be vacuous without appreciable residual variance; "
+            f"biased E[f**2] = {biased_avg:.4e} is too small to separate the "
+            "two estimators.",
+        )
+        self.assertLess(
+            aio_avg,
+            0.7 * biased_avg,
+            "The all-in-one product estimates the unbiased (E f)**2 and must "
+            "sit well below the biased single-draw square E[f**2]. Got "
+            f"AiO = {aio_avg:.4e}, biased = {biased_avg:.4e} "
+            f"(ratio {aio_avg / biased_avg:.2f}); a ratio near 1 means the loss "
+            "is squaring a single draw.",
         )
 
 
@@ -1209,7 +1460,7 @@ class TestSimulateForwardHappyPath(unittest.TestCase):
         rng = np.random.default_rng(TEST_SEED)
         case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
         self.bp = case_4["bp"]
-        # case_4 Control(["g", "m"]) — policy returns c given g, m
+        # case_4 Control(["g", "m"]): policy returns c given g, m
         self.policy = lambda s, sh, p: {"c": s["m"] * 0.5 + s["g"] * 0.0}
         self.states = {
             "m": torch.tensor([1.0, 2.0, 3.0]),

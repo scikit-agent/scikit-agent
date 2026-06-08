@@ -748,6 +748,23 @@ def train_block_nn(
 ):
     """Train a policy network by minimizing a loss function over a grid.
 
+    This is a generic stochastic-gradient-descent driver, not a solution
+    algorithm in itself. It runs ``epochs`` Adam updates that minimize whatever
+    ``loss_function`` is supplied, evaluated on a single, *fixed* grid of
+    ``inputs``; it is agnostic to where that grid came from or which method the
+    loss encodes (Euler residual, Bellman residual, FOC, or a custom loss).
+
+    Because it trains on whatever ``inputs`` it is given, accuracy depends on
+    the caller re-sampling those states across calls: Maliar, Maliar, and Winant
+    (2021) keep the training data "constantly re-sampled," and minimizing on a
+    single fixed grid instead lets the solution over-fit those points while
+    drifting elsewhere. Re-draw ``inputs`` each call (threading the returned
+    optimizer back in to keep Adam's momentum), or use
+    :func:`~skagent.algos.maliar.maliar_training_loop`, which wraps this driver
+    in the full MMW'21 outer loop: it alternates these inner SGD updates with a
+    forward-simulation step that refreshes the training states toward the
+    model's ergodic set.
+
     Parameters
     ----------
     block_policy_nn : BlockPolicyNet or BlockPolicyValueNet
