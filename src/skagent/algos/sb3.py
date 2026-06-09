@@ -27,6 +27,11 @@ from stable_baselines3.common.callbacks import BaseCallback, CallbackList
 from skagent.bellman import BellmanPeriod
 from skagent.env import GymEnv
 
+# Public API. Restricting this keeps Sphinx autodoc from documenting the
+# re-imported third-party ``PPO`` (whose internal ``VecEnv`` forward reference
+# cannot be resolved by sphinx_autodoc_typehints).
+__all__ = ["PPOAgent", "PolicySnapshot"]
+
 
 def _predict_unscaled(env: GymEnv, predict, obs, deterministic: bool) -> np.ndarray:
     """Shared body of ``predict_unscaled`` for agents and snapshots.
