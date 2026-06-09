@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Simulation" href="../simulation/index.html"><link rel="prev" title="Resource Extraction Model" href="plot_resource_extraction.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Benchmark Consumption Models" href="plot_benchmark_models.html"><link rel="prev" title="Resource Extraction Model" href="plot_resource_extraction.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Consumption-Portfolio Model - scikit-agent 0.1.dev498+g9fe71d7cd</title>
+        <title>Consumption-Saving-Portfolio Model - scikit-agent 0.1.dev540+g8bdda7021</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev498+g9fe71d7cd</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev540+g8bdda7021</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,28 +203,36 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/environments.html">Environments Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/benchmark_models.html">Benchmark Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../algorithms/index.html">Algorithms</a></li>
-<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="plot_resource_extraction.html">Resource Extraction Model</a></li>
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Consumption-Portfolio Model</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../simulation/index.html">Simulation</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../api/blocks.html">Blocks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/algorithms.html">Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/environments.html">Environments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/parser.html">Parsing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utils</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
@@ -275,484 +283,370 @@
 <p><a class="reference internal" href="#sphx-glr-download-auto-examples-models-plot-consumption-portfolio-model-py"><span class="std std-ref">Go to the end</span></a>
 to download the full example code.</p>
 </div>
-<section class="sphx-glr-example-title" id="consumption-portfolio-model">
-<span id="sphx-glr-auto-examples-models-plot-consumption-portfolio-model-py"></span><h1>Consumption-Portfolio Model<a class="headerlink" href="#consumption-portfolio-model" title="Link to this heading">¶</a></h1>
-<p>This example demonstrates how to build, solve, and simulate a consumption-portfolio
-choice model using scikit-agent. The model includes:</p>
+<section class="sphx-glr-example-title" id="consumption-saving-portfolio-model">
+<span id="sphx-glr-auto-examples-models-plot-consumption-portfolio-model-py"></span><h1>Consumption-Saving-Portfolio Model<a class="headerlink" href="#consumption-saving-portfolio-model" title="Link to this heading">¶</a></h1>
+<p>The consumption-saving problem is one of the central models of modern
+macroeconomics and household finance. An agent with uncertain income must
+decide each period how much to consume and how much to save, trading off
+current utility against future resources.</p>
+<p>This example uses the model blocks defined in
+<a class="reference internal" href="../../api/models.html#module-skagent.models.consumer" title="skagent.models.consumer"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.consumer</span></code></a>, which implements Carroll’s (2001) <a class="footnote-reference brackets" href="#id2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>
+formulation of the normalized buffer-stock problem and extends it with a
+portfolio choice between a safe bond and a risky asset.</p>
+<section id="model-structure">
+<h2>Model Structure<a class="headerlink" href="#model-structure" title="Link to this heading">¶</a></h2>
+<p>The model is built from three composable blocks:</p>
 <ul class="simple">
-<li><p>Stochastic labor income</p></li>
-<li><p>Portfolio choice between safe and risky assets</p></li>
-<li><p>Consumption-saving decisions</p></li>
-<li><p>Monte Carlo simulation and analysis</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">consumption_block_normalized</span></code> - one
+period of the normalized consumption-saving problem</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">portfolio_block</span></code> - risky portfolio
+allocation that endogenizes the gross return <span class="math notranslate nohighlight">\(R\)</span></p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">tick_block</span></code> - state transition that
+carries end-of-period assets into next period’s capital</p></li>
 </ul>
-<p>The model follows the approach of Merton (1969) and extends it with labor income risk.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<p>The two complete recursive problems are:</p>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">cons_problem</span></code> - pure saving (fixed
+return)</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">cons_portfolio_problem</span></code> - saving plus
+portfolio choice</p></li>
+</ul>
+<section id="normalized-consumption-block">
+<h3>Normalized Consumption Block<a class="headerlink" href="#normalized-consumption-block" title="Link to this heading">¶</a></h3>
+<p><strong>State Variable</strong>: <span class="math notranslate nohighlight">\(k_t\)</span> - normalized capital (assets divided by
+permanent income) carried into the period</p>
+<p><strong>Shocks</strong>:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\theta_t\)</span> - transitory income shock, <span class="math notranslate nohighlight">\(\mathbb{E}[\theta_t] = 1\)</span></p></li>
+</ul>
+<p><strong>Dynamics</strong>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[b_t = \frac{k_t R}{G}\]</div>
+</div>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[m_t = b_t + \theta_t\]</div>
+</div>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c_t \in [0,\, m_t] \quad \text{(control)}\]</div>
+</div>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[a_t = m_t - c_t\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(G\)</span> = <code class="docutils literal notranslate"><span class="pre">PermGroFac</span></code> is the permanent income growth factor and
+<span class="math notranslate nohighlight">\(R\)</span> is the gross return on savings.</p>
+<p><strong>Utility</strong>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u(c_t) = \frac{c_t^{1-\rho}}{1-\rho}, \quad \rho = \text{CRRA}\]</div>
+</div>
+</section>
+<section id="portfolio-block">
+<h3>Portfolio Block<a class="headerlink" href="#portfolio-block" title="Link to this heading">¶</a></h3>
+<p>The portfolio block augments the saving problem with an endogenous asset
+return. The agent chooses the risky share <span class="math notranslate nohighlight">\(\varsigma_t \in [0,1]\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[R_t = R_f + (R^{\text{risky}}_t - R_f)\,\varsigma_t\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(R^{\text{risky}}_t \sim \text{Lognormal}(R_f + \text{EqP},\,
+\text{RiskyStd})\)</span>.</p>
+</section>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\beta\)</span> (<code class="docutils literal notranslate"><span class="pre">DiscFac</span></code>) = 0.96: Discount factor</p></li>
+<li><p><span class="math notranslate nohighlight">\(\rho\)</span> (<code class="docutils literal notranslate"><span class="pre">CRRA</span></code>) = 2.0: Coefficient of relative risk aversion</p></li>
+<li><p><span class="math notranslate nohighlight">\(R\)</span> = 1.03: Gross safe return (3 % per period)</p></li>
+<li><p><span class="math notranslate nohighlight">\(G\)</span> (<code class="docutils literal notranslate"><span class="pre">PermGroFac</span></code>) = 1.01: Permanent income growth factor</p></li>
+<li><p><span class="math notranslate nohighlight">\(\sigma_\theta\)</span> (<code class="docutils literal notranslate"><span class="pre">TranShkStd</span></code>) = 0.1: Transitory income shock std</p></li>
+<li><p><span class="math notranslate nohighlight">\(R_f\)</span> (<code class="docutils literal notranslate"><span class="pre">Rfree</span></code>) = 1.03: Risk-free rate</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{EqP}\)</span> = 0.02: Equity premium</p></li>
+<li><p><span class="math notranslate nohighlight">\(\sigma_R\)</span> (<code class="docutils literal notranslate"><span class="pre">RiskyStd</span></code>) = 0.1: Risky return std</p></li>
+</ul>
+</section>
+<section id="references">
+<h3>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h3>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id2" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Carroll, C.D. (2001). “A Theory of the Consumption Function, With
+and Without Liquidity Constraints.” <em>Journal of Economic
+Perspectives</em>, 15(3), 23-45.</p>
+</aside>
+</aside>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">Lognormal</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">MeanOneLogNormal</span></a><span class="p">,</span> <span class="n">DiscreteDistribution</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">Normal</span></a>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cons</span>
 </pre></div>
 </div>
-<section id="model-setup">
-<h2>Model Setup<a class="headerlink" href="#model-setup" title="Link to this heading">¶</a></h2>
-<p>First, let’s define the economic environment. We’ll create a model where agents:
-1. Receive risky labor income
-2. Choose consumption each period
-3. Allocate savings between safe and risky assets
-4. Maximize expected utility over their lifetime</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== Consumption-Portfolio Model with scikit-agent ===</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>=== Consumption-Portfolio Model with scikit-agent ===
-</pre></div>
-</div>
-<section id="step-1-define-model-parameters">
-<h3>Step 1: Define Model Parameters<a class="headerlink" href="#step-1-define-model-parameters" title="Link to this heading">¶</a></h3>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a> <span class="o">=</span> <span class="p">{</span>
-    <span class="c1"># Preferences</span>
-    <span class="s2">&quot;CRRA&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># Coefficient of relative risk aversion</span>
-    <span class="s2">&quot;DiscFac&quot;</span><span class="p">:</span> <span class="mf">0.96</span><span class="p">,</span>  <span class="c1"># Discount factor</span>
-    <span class="c1"># Asset returns</span>
-    <span class="s2">&quot;Rfree&quot;</span><span class="p">:</span> <span class="mf">1.03</span><span class="p">,</span>  <span class="c1"># Risk-free rate (3% annually)</span>
-    <span class="s2">&quot;EqP&quot;</span><span class="p">:</span> <span class="mf">0.06</span><span class="p">,</span>  <span class="c1"># Equity premium (6% annually)</span>
-    <span class="s2">&quot;RiskyStd&quot;</span><span class="p">:</span> <span class="mf">0.20</span><span class="p">,</span>  <span class="c1"># Stock return volatility (20%)</span>
-    <span class="c1"># Income process</span>
-    <span class="s2">&quot;PermGroFac&quot;</span><span class="p">:</span> <span class="mf">1.01</span><span class="p">,</span>  <span class="c1"># Permanent income growth (1%)</span>
-    <span class="s2">&quot;TranShkStd&quot;</span><span class="p">:</span> <span class="mf">0.15</span><span class="p">,</span>  <span class="c1"># Transitory income shock volatility</span>
-    <span class="s2">&quot;PermShkStd&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span>  <span class="c1"># Permanent income shock volatility</span>
-    <span class="c1"># Initial conditions</span>
-    <span class="s2">&quot;init_wealth&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># Initial financial wealth</span>
-    <span class="s2">&quot;init_perm&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># Initial permanent income</span>
-<span class="p">}</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model Calibration:&quot;</span><span class="p">)</span>
-<span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">param</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">value</span></a> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">param</span></a><span class="si">}</span><span class="s2">: </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">value</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</section>
+<section id="model-inspection">
+<h3>Model Inspection<a class="headerlink" href="#model-inspection" title="Link to this heading">¶</a></h3>
+<p>Load the predefined model elements and inspect them.</p>
+<section id="step-1-show-model-parameters">
+<h4>Step 1: Show Model Parameters<a class="headerlink" href="#step-1-show-model-parameters" title="Link to this heading">¶</a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model Calibration:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">param</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">value</span></a> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span></a><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">param</span></a><span class="si">}</span><span class="s2">: </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">value</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Model Calibration:
-  CRRA: 2.0
   DiscFac: 0.96
+  CRRA: 2.0
+  R: 1.03
   Rfree: 1.03
-  EqP: 0.06
-  RiskyStd: 0.2
+  EqP: 0.02
+  LivPrb: 0.98
   PermGroFac: 1.01
-  TranShkStd: 0.15
-  PermShkStd: 0.05
-  init_wealth: 1.0
-  init_perm: 1.0
+  TranShkStd: 0.1
+  RiskyStd: 0.1
+  kInitStd: 1
+  pInitStd: 1
 </pre></div>
 </div>
 </section>
-<section id="step-2-build-the-economic-model">
-<h3>Step 2: Build the Economic Model<a class="headerlink" href="#step-2-build-the-economic-model" title="Link to this heading">¶</a></h3>
-<p>We’ll create a DBlock that represents one period of the model</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define stochastic shocks</span>
-<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">(</span><a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">MeanOneLogNormal</span></a><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="s2">&quot;TranShkStd&quot;</span><span class="p">}),</span>  <span class="c1"># Transitory income shock</span>
-    <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="p">(</span><a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">MeanOneLogNormal</span></a><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="s2">&quot;PermShkStd&quot;</span><span class="p">}),</span>  <span class="c1"># Permanent income shock</span>
-    <span class="s2">&quot;risky_return&quot;</span><span class="p">:</span> <span class="p">(</span>
-        <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">Lognormal</span></a><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="s2">&quot;1 + Rfree + EqP&quot;</span><span class="p">,</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="s2">&quot;RiskyStd&quot;</span><span class="p">},</span>
-    <span class="p">),</span>  <span class="c1"># Risky asset return</span>
+<section id="step-2a-inspect-the-consumption-block-formulas">
+<h4>Step 2a: Inspect the Consumption Block Formulas<a class="headerlink" href="#step-2a-inspect-the-consumption-block-formulas" title="Link to this heading">¶</a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">cons</span><span class="o">.</span><span class="n">cons_problem</span><span class="o">.</span><span class="n">display_formulas</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>b = lambda k, R, PermGroFac: k * R / PermGroFac
+m = lambda b, theta: b + theta
+c = Control(m)
+a = lambda m, c: m - c
+u = lambda c, CRRA: torch.log(c
+k = lambda a: a
+</pre></div>
+</div>
+</section>
+<section id="step-2b-visualize-the-consumption-block">
+<h4>Step 2b: Visualize the Consumption Block<a class="headerlink" href="#step-2b-visualize-the-consumption-block" title="Link to this heading">¶</a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#bytes" title="builtins.bytes" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">cons</span><span class="o">.</span><span class="n">cons_problem</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">)</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.axis.html#matplotlib.pyplot.axis" title="matplotlib.pyplot.axis" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span></a><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_consumption_portfolio_model_001.png" srcset="../../_images/sphx_glr_plot_consumption_portfolio_model_001.png" alt="plot consumption portfolio model" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;IPython.core.display.SVG object&gt;
+</pre></div>
+</div>
+</section>
+<section id="step-3a-inspect-and-visualize-the-portfolio-block">
+<h4>Step 3a: Inspect and visualize the Portfolio Block<a class="headerlink" href="#step-3a-inspect-and-visualize-the-portfolio-block" title="Link to this heading">¶</a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">cons</span><span class="o">.</span><span class="n">cons_portfolio_problem</span><span class="o">.</span><span class="n">display_formulas</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>b = lambda k, R, PermGroFac: k * R / PermGroFac
+m = lambda b, theta: b + theta
+c = Control(m)
+a = lambda m, c: m - c
+u = lambda c, CRRA: torch.log(c
+stigma = Control(a)
+R = lambda stigma, Rfree, risky_return: Rfree
+k = lambda a: a
+</pre></div>
+</div>
+</section>
+<section id="step-3b-inspect-and-visualize-the-portfolio-block">
+<h4>Step 3b: Inspect and visualize the Portfolio Block<a class="headerlink" href="#step-3b-inspect-and-visualize-the-portfolio-block" title="Link to this heading">¶</a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#bytes" title="builtins.bytes" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">cons</span><span class="o">.</span><span class="n">cons_portfolio_problem</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">)</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.axis.html#matplotlib.pyplot.axis" title="matplotlib.pyplot.axis" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span></a><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_consumption_portfolio_model_002.png" srcset="../../_images/sphx_glr_plot_consumption_portfolio_model_002.png" alt="plot consumption portfolio model" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;IPython.core.display.SVG object&gt;
+</pre></div>
+</div>
+</section>
+<section id="step-4-define-a-simple-consumption-rule">
+<h4>Step 4: Define a Simple Consumption Rule<a class="headerlink" href="#step-4-define-a-simple-consumption-rule" title="Link to this heading">¶</a></h4>
+<p>The optimal policy for this model requires numerical solution methods.
+Here we use a simple <strong>constant marginal propensity to consume</strong> (MPC) rule
+as a tractable approximation:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[c^*(m) = \kappa \cdot m\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\kappa \in (0, 1)\)</span> is a fixed MPC. A low MPC creates buffer-stock
+saving behaviour: agents accumulate assets and consume out of wealth gradually.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">MPC</span></a> <span class="o">=</span> <span class="mf">0.15</span>  <span class="c1"># Marginal propensity to consume</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">consumption_rule</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Consume a fixed fraction of market resources each period.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">MPC</span></a> <span class="o">*</span> <span class="n">m</span>
+
+
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rule</span></a> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">consumption_rule</span><span class="p">}</span>
+
+<span class="c1"># Plot the consumption rule</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_range</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot" title="matplotlib.pyplot.plot" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_range</span></a><span class="p">,</span> <span class="n">consumption_rule</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_range</span></a><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="sa">rf</span><span class="s2">&quot;$c^*(m) = </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">MPC</span></a><span class="si">}</span><span class="s2">\,m$&quot;</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot" title="matplotlib.pyplot.plot" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_range</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_range</span></a><span class="p">,</span> <span class="s2">&quot;k--&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;45° line (hand-to-mouth)&quot;</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.xlabel.html#matplotlib.pyplot.xlabel" title="matplotlib.pyplot.xlabel" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span></a><span class="p">(</span><span class="s2">&quot;Market resources ($m$)&quot;</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ylabel.html#matplotlib.pyplot.ylabel" title="matplotlib.pyplot.ylabel" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span></a><span class="p">(</span><span class="s2">&quot;Consumption ($c^*$)&quot;</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Consumption Policy Rule (MPC = </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">MPC</span></a><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html#matplotlib.pyplot.legend" title="matplotlib.pyplot.legend" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">legend</span></a><span class="p">()</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.grid.html#matplotlib.pyplot.grid" title="matplotlib.pyplot.grid" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_consumption_portfolio_model_003.png" srcset="../../_images/sphx_glr_plot_consumption_portfolio_model_003.png" alt="Consumption Policy Rule (MPC = 0.15)" class = "sphx-glr-single-img"/></section>
+<section id="step-5-run-monte-carlo-simulation-pure-saving-problem">
+<h4>Step 5: Run Monte Carlo Simulation (Pure Saving Problem)<a class="headerlink" href="#step-5-run-monte-carlo-simulation-pure-saving-problem" title="Link to this heading">¶</a></h4>
+<p>Simulate the pure saving problem (<code class="xref py py-data docutils literal notranslate"><span class="pre">cons_problem</span></code>)
+which combines the normalized consumption block with the tick block.
+Agents start with normalized capital <span class="math notranslate nohighlight">\(k \approx 1\)</span>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">initial_conditions</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;k&quot;</span><span class="p">:</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">Normal</span></a><span class="p">(</span><span class="n">mu</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
 <span class="p">}</span>
 
-<span class="c1"># Define model dynamics (state transitions)</span>
-<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dynamics</span></a> <span class="o">=</span> <span class="p">{</span>
-    <span class="c1"># === Income Process ===</span>
-    <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">theta</span><span class="p">,</span>  <span class="c1"># Labor income this period</span>
-    <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">PermGroFac</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">psi</span> <span class="o">*</span> <span class="n">PermGroFac</span><span class="p">,</span>  <span class="c1"># Permanent income evolution</span>
-    <span class="c1"># === Portfolio Returns ===</span>
-    <span class="s2">&quot;R_portfolio&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">Rfree</span><span class="p">,</span> <span class="n">risky_return</span><span class="p">:</span> <span class="p">(</span>  <span class="c1"># Portfolio return</span>
-        <span class="n">Rfree</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">risky_return</span> <span class="o">-</span> <span class="n">Rfree</span><span class="p">)</span>
-    <span class="p">),</span>
-    <span class="c1"># === Budget Constraint ===</span>
-    <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">R_portfolio</span><span class="p">:</span> <span class="n">a</span> <span class="o">*</span> <span class="n">R_portfolio</span><span class="p">,</span>  <span class="c1"># Beginning-of-period wealth</span>
-    <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">b</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span>  <span class="c1"># Market resources</span>
-    <span class="c1"># === Decision Variables (Controls) ===</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">],</span> <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="n">m</span><span class="p">),</span>  <span class="c1"># Consumption choice</span>
-    <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
-        <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">],</span> <span class="n">lower_bound</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">upper_bound</span><span class="o">=</span><span class="mf">1.0</span>
-    <span class="p">),</span>  <span class="c1"># Portfolio share in risky asset</span>
-    <span class="c1"># === End-of-Period States ===</span>
-    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">m</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># Assets saved</span>
-    <span class="c1"># === Utility ===</span>
-    <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="n">c</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">),</span>  <span class="c1"># CRRA utility function</span>
-<span class="p">}</span>
-
-<span class="c1"># Create the model block</span>
-<span class="n">consumption_portfolio_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;consumption_portfolio&quot;</span><span class="p">,</span>
-    <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">,</span>
-    <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dynamics</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dynamics</span></a><span class="p">,</span>
-    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="n">u</span><span class="p">},</span>  <span class="c1"># Household maximizes utility</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">✓ Created model block with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dynamics</span></a><span class="p">)</span><span class="si">}</span><span class="s2"> state variables&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Control variables: </span><span class="si">{</span><span class="n">consumption_portfolio_block</span><span class="o">.</span><span class="n">get_controls</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Shock variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>✓ Created model block with 9 state variables
-✓ Control variables: {&#39;c&#39;: &lt;skagent.block.Control object at 0x7ff6a39f9400&gt;, &#39;alpha&#39;: &lt;skagent.block.Control object at 0x7ff6a39fa150&gt;}
-✓ Shock variables: [&#39;theta&#39;, &#39;psi&#39;, &#39;risky_return&#39;]
-</pre></div>
-</div>
-</section>
-<section id="step-3-construct-distributions">
-<h3>Step 3: Construct Distributions<a class="headerlink" href="#step-3-construct-distributions" title="Link to this heading">¶</a></h3>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">consumption_portfolio_block</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ Constructed shock distributions from calibration&quot;</span><span class="p">)</span>
-
-<span class="c1"># Examine the constructed distributions</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Shock Distributions:&quot;</span><span class="p">)</span>
-<span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shock_name</span></a><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">consumption_portfolio_block</span><span class="o">.</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shock_name</span></a><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>✓ Constructed shock distributions from calibration
-
-Shock Distributions:
-  theta: MeanOneLogNormal
-  psi: MeanOneLogNormal
-  risky_return: Lognormal
-</pre></div>
-</div>
-</section>
-<section id="step-4-define-simple-decision-rules">
-<h3>Step 4: Define Simple Decision Rules<a class="headerlink" href="#step-4-define-simple-decision-rules" title="Link to this heading">¶</a></h3>
-<p>For this example, we’ll use simple rules rather than solving the full optimization.
-In practice, you would use scikit-agent’s solution algorithms.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">consumption_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple consumption rule: consume a fraction of market resources&quot;&quot;&quot;</span>
-    <span class="c1"># More consumption when resources are high relative to permanent income</span>
-    <span class="n">mpc</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">minimum</span></a><span class="p">(</span><span class="n">m</span> <span class="o">/</span> <span class="n">p</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)</span>  <span class="c1"># MPC between 10-35%</span>
-    <span class="k">return</span> <span class="n">mpc</span> <span class="o">*</span> <span class="n">m</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">portfolio_rule</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple portfolio rule: invest more in stocks when wealth is high&quot;&quot;&quot;</span>
-    <span class="c1"># Handle array inputs for all agents</span>
-    <span class="n">risky_share</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.where.html#numpy.where" title="numpy.where" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">where</span></a><span class="p">(</span>
-        <span class="n">a</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">minimum</span></a><span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.3</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">/</span> <span class="n">p</span><span class="p">))</span>
-    <span class="p">)</span>  <span class="c1"># 30-80% in stocks</span>
-    <span class="k">return</span> <span class="n">risky_share</span>
-
-
-<span class="c1"># Wrap rules in the format expected by simulator</span>
-<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rules</span></a> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">consumption_rule</span><span class="p">,</span> <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">portfolio_rule</span><span class="p">}</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ Defined behavioral decision rules&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>✓ Defined behavioral decision rules
-</pre></div>
-</div>
-</section>
-<section id="step-5-run-monte-carlo-simulation">
-<h3>Step 5: Run Monte Carlo Simulation<a class="headerlink" href="#step-5-run-monte-carlo-simulation" title="Link to this heading">¶</a></h3>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initial conditions (must be distributions, not scalar values)</span>
-<span class="c1"># Use the tracked variable names &#39;a&#39; and &#39;p&#39;, not &#39;a_prev&#39; and &#39;p_prev&#39;</span>
-<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">initial_conditions</span></a> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">DiscreteDistribution</span><span class="p">(</span>
-        <span class="p">[</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">[</span><span class="s2">&quot;init_wealth&quot;</span><span class="p">]],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-    <span class="p">),</span>  <span class="c1"># Start with some wealth</span>
-    <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="n">DiscreteDistribution</span><span class="p">(</span>
-        <span class="p">[</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">[</span><span class="s2">&quot;init_perm&quot;</span><span class="p">]],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-    <span class="p">),</span>  <span class="c1"># Initial permanent income</span>
-<span class="p">}</span>
-
-<span class="c1"># Create and run simulator</span>
 <span class="n">simulator</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">MonteCarloSimulator</span><span class="p">(</span>
-    <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">,</span>
-    <span class="n">block</span><span class="o">=</span><span class="n">consumption_portfolio_block</span><span class="p">,</span>
-    <span class="n">dr</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rules</span></a><span class="p">,</span>
+    <span class="n">calibration</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span></a><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+    <span class="n">block</span><span class="o">=</span><span class="n">cons</span><span class="o">.</span><span class="n">cons_problem</span><span class="p">,</span>
+    <span class="n">dr</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rule</span></a><span class="p">,</span>
     <span class="n">initial</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">initial_conditions</span></a><span class="p">,</span>
-    <span class="n">agent_count</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>  <span class="c1"># Simulate 5000 agents</span>
-    <span class="n">T_sim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># For 100 periods</span>
-    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>  <span class="c1"># For reproducibility</span>
+    <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">T_sim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;✓ Created simulator with </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulator</span><span class="o">.</span><span class="n">agent_count</span></a><span class="si">}</span><span class="s2"> agents over </span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulator</span><span class="o">.</span><span class="n">T_sim</span></a><span class="si">}</span><span class="s2"> periods&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Running simulation...&quot;</span><span class="p">)</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Simulation completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Running simulation...
+Simulation completed successfully
+</pre></div>
+</div>
+</section>
+<section id="step-6-plot-simulation-results">
+<h4>Step 6: Plot Simulation Results<a class="headerlink" href="#step-6-plot-simulation-results" title="Link to this heading">¶</a></h4>
+<p>The plot shows the cross-sectional distribution of normalized market
+resources <span class="math notranslate nohighlight">\(m_t\)</span> over time. Under the constant-MPC rule, agents
+accumulate a buffer stock of savings that stabilizes around a long-run
+mean determined by <span class="math notranslate nohighlight">\(\kappa\)</span>, <span class="math notranslate nohighlight">\(R\)</span>, and <span class="math notranslate nohighlight">\(G\)</span>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_hist</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulator</span><span class="o">.</span><span class="n">history</span></a><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">]</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.fill_between.html#matplotlib.pyplot.fill_between" title="matplotlib.pyplot.fill_between" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span></a><span class="p">(</span>
+    <span class="nb">range</span><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulator</span><span class="o">.</span><span class="n">T_sim</span></a><span class="p">),</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_hist</span></a><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_hist</span></a><span class="p">,</span> <span class="mi">95</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;5th-95th percentile&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.fill_between.html#matplotlib.pyplot.fill_between" title="matplotlib.pyplot.fill_between" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span></a><span class="p">(</span>
+    <span class="nb">range</span><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">simulator</span><span class="o">.</span><span class="n">T_sim</span></a><span class="p">),</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_hist</span></a><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_hist</span></a><span class="p">,</span> <span class="mi">75</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;25th-75th percentile&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot" title="matplotlib.pyplot.plot" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_hist</span></a><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;Mean&quot;</span><span class="p">)</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.xlabel.html#matplotlib.pyplot.xlabel" title="matplotlib.pyplot.xlabel" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span></a><span class="p">(</span><span class="s2">&quot;Time period&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ylabel.html#matplotlib.pyplot.ylabel" title="matplotlib.pyplot.ylabel" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span></a><span class="p">(</span><span class="s2">&quot;Normalized market resources ($m$)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="s2">&quot;Market Resources Under Constant-MPC Rule&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html#matplotlib.pyplot.legend" title="matplotlib.pyplot.legend" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">legend</span></a><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.grid.html#matplotlib.pyplot.grid" title="matplotlib.pyplot.grid" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_consumption_portfolio_model_004.png" srcset="../../_images/sphx_glr_plot_consumption_portfolio_model_004.png" alt="Market Resources Under Constant-MPC Rule" class = "sphx-glr-single-img"/></section>
+<section id="step-7-run-portfolio-simulation">
+<h4>Step 7: Run Portfolio Simulation<a class="headerlink" href="#step-7-run-portfolio-simulation" title="Link to this heading">¶</a></h4>
+<p>Now extend to the portfolio problem
+(<code class="xref py py-data docutils literal notranslate"><span class="pre">cons_portfolio_problem</span></code>),
+where agents also choose their risky asset share <span class="math notranslate nohighlight">\(\varsigma_t\)</span>.
+We pair the MPC consumption rule with a fixed risky share of 0.5.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">RISKY_SHARE</span></a> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># Fixed portfolio share in risky asset</span>
+
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">portfolio_decision_rule</span></a> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">consumption_rule</span><span class="p">,</span>
+    <span class="s2">&quot;stigma&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">RISKY_SHARE</span></a><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">portfolio_sim</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">MonteCarloSimulator</span><span class="p">(</span>
+    <span class="n">calibration</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span></a><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+    <span class="n">block</span><span class="o">=</span><span class="n">cons</span><span class="o">.</span><span class="n">cons_portfolio_problem</span><span class="p">,</span>
+    <span class="n">dr</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">portfolio_decision_rule</span></a><span class="p">,</span>
+    <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">Normal</span></a><span class="p">(</span><span class="n">mu</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">[</span><span class="s2">&quot;Rfree&quot;</span><span class="p">]},</span>
+    <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">T_sim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># Run the simulation</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running simulation...&quot;</span><span class="p">)</span>
-<span class="n">simulator</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>  <span class="c1"># Initialize simulation variables</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WILL FIX THIS AFTER BENCHMARKS ARE SETTLED&quot;</span><span class="p">)</span>
-<span class="c1"># simulator.simulate()</span>
-
-<span class="c1"># print(&quot;✓ Simulation completed successfully&quot;)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Running portfolio simulation...&quot;</span><span class="p">)</span>
+<span class="n">portfolio_sim</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>
+<span class="n">portfolio_sim</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Portfolio simulation completed successfully&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>✓ Created simulator with 5000 agents over 100 periods
-Running simulation...
-WILL FIX THIS AFTER BENCHMARKS ARE SETTLED
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Running portfolio simulation...
+Portfolio simulation completed successfully
 </pre></div>
 </div>
 </section>
-<section id="step-6-analyze-and-visualize-results">
-<h3>Step 6: Analyze and Visualize Results<a class="headerlink" href="#step-6-analyze-and-visualize-results" title="Link to this heading">¶</a></h3>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract simulation history</span>
-<span class="c1"># history = simulator.history</span>
-<span class="c1"># print(f&quot;\nSimulation generated data for variables: {list(history.keys())}&quot;)</span>
+<section id="step-8-compare-saving-vs-portfolio-paths">
+<h4>Step 8: Compare Saving vs Portfolio Paths<a class="headerlink" href="#step-8-compare-saving-vs-portfolio-paths" title="Link to this heading">¶</a></h4>
+<p>The risky asset earns a higher expected return, so the portfolio model
+predicts higher mean wealth accumulation - but also greater dispersion
+due to stock-return risk.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure" class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fig</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axes</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.suptitle.html#matplotlib.figure.Figure.suptitle" title="matplotlib.figure.Figure.suptitle" class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-method"><span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span></a><span class="p">(</span><span class="s2">&quot;Saving Model vs Portfolio Model&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
 
+<span class="k">for</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ax</span></a><span class="p">,</span> <span class="n">sim</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a> <span class="ow">in</span> <span class="p">[</span>
+    <span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">simulator</span><span class="p">,</span> <span class="s2">&quot;Pure Saving&quot;</span><span class="p">,</span> <span class="s2">&quot;C0&quot;</span><span class="p">),</span>
+    <span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">portfolio_sim</span><span class="p">,</span> <span class="sa">rf</span><span class="s2">&quot;Portfolio ($\varsigma=</span><span class="si">{</span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">RISKY_SHARE</span></a><span class="si">}</span><span class="s2">$)&quot;</span><span class="p">,</span> <span class="s2">&quot;C1&quot;</span><span class="p">),</span>
+<span class="p">]:</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_h</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">sim</span><span class="o">.</span><span class="n">history</span></a><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">]</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.fill_between.html#matplotlib.axes.Axes.fill_between" title="matplotlib.axes.Axes.fill_between" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span></a><span class="p">(</span>
+        <span class="nb">range</span><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">sim</span><span class="o">.</span><span class="n">T_sim</span></a><span class="p">),</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_h</span></a><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_h</span></a><span class="p">,</span> <span class="mi">95</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+        <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="p">,</span>
+        <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;5th-95th pct&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.fill_between.html#matplotlib.axes.Axes.fill_between" title="matplotlib.axes.Axes.fill_between" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span></a><span class="p">(</span>
+        <span class="nb">range</span><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">sim</span><span class="o">.</span><span class="n">T_sim</span></a><span class="p">),</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_h</span></a><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html#numpy.percentile" title="numpy.percentile" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">percentile</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_h</span></a><span class="p">,</span> <span class="mi">75</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span>
+        <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="p">,</span>
+        <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;25th-75th pct&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">m_h</span></a><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;Mean&quot;</span><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_xlabel.html#matplotlib.axes.Axes.set_xlabel" title="matplotlib.axes.Axes.set_xlabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span></a><span class="p">(</span><span class="s2">&quot;Time period&quot;</span><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_ylabel.html#matplotlib.axes.Axes.set_ylabel" title="matplotlib.axes.Axes.set_ylabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span></a><span class="p">(</span><span class="s2">&quot;Normalized market resources ($m$)&quot;</span><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.legend.html#matplotlib.axes.Axes.legend" title="matplotlib.axes.Axes.legend" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">legend</span></a><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
-<span class="c1"># Convert to numpy arrays for analysis</span>
-<span class="c1"># def extract_var(var_name):</span>
-<span class="c1">#    &quot;&quot;Extract a variable from simulation history as numpy array&quot;&quot;</span>
-<span class="c1">#    if var_name in history:</span>
-<span class="c1">#        return np.array(history[var_name])</span>
-<span class="c1">#    else:</span>
-<span class="c1">#        return None</span>
-
-
-<span class="c1"># Extract key variables</span>
-<span class="c1"># consumption = extract_var(&quot;c&quot;)</span>
-<span class="c1"># assets = extract_var(&quot;a&quot;)</span>
-<span class="c1"># income = extract_var(&quot;y&quot;)</span>
-<span class="c1"># portfolio_share = extract_var(&quot;alpha&quot;)</span>
-<span class="c1"># market_resources = extract_var(&quot;m&quot;)</span>
-
-<span class="c1"># if consumption is not None and assets is not None:</span>
-<span class="c1">#    print(f&quot;Data shapes: consumption {consumption.shape}, assets {assets.shape}&quot;)</span>
-<span class="c1"># else:</span>
-<span class="c1">#    print(&quot;Warning: Some variables were not found in simulation history&quot;)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<p>Create comprehensive plots</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># fig, axes = plt.subplots(2, 3, figsize=(15, 10))</span>
-<span class="c1"># fig.suptitle(&quot;Consumption-Portfolio Model: Simulation Results&quot;, fontsize=16)</span>
-
-<span class="c1"># Plot 1: Average consumption over time</span>
-<span class="c1"># if consumption is not None:</span>
-<span class="c1">#    mean_consumption = np.mean(consumption, axis=1)</span>
-<span class="c1">#    std_consumption = np.std(consumption, axis=1)</span>
-
-<span class="c1">#    axes[0, 0].plot(mean_consumption, &quot;b-&quot;, linewidth=2, label=&quot;Mean&quot;)</span>
-<span class="c1">#    axes[0, 0].fill_between(</span>
-<span class="c1">#        range(len(mean_consumption)),</span>
-<span class="c1">#        mean_consumption - std_consumption,</span>
-<span class="c1">#        mean_consumption + std_consumption,</span>
-<span class="c1">#        alpha=0.3,</span>
-<span class="c1">#        label=&quot;±1 Std Dev&quot;,</span>
-<span class="c1">#    )</span>
-<span class="c1">#    axes[0, 0].set_title(&quot;Consumption Over Time&quot;)</span>
-<span class="c1">#    axes[0, 0].set_xlabel(&quot;Period&quot;)</span>
-<span class="c1">#    axes[0, 0].set_ylabel(&quot;Consumption&quot;)</span>
-<span class="c1">#    axes[0, 0].legend()</span>
-<span class="c1">#    axes[0, 0].grid(True, alpha=0.3)</span>
-
-<span class="c1"># Plot 2: Asset accumulation</span>
-<span class="c1"># if assets is not None:</span>
-<span class="c1">#    mean_assets = np.mean(assets, axis=1)</span>
-<span class="c1">#    percentiles = np.percentile(assets, [25, 75], axis=1)</span>
-
-<span class="c1">#    axes[0, 1].plot(mean_assets, &quot;g-&quot;, linewidth=2, label=&quot;Mean&quot;)</span>
-<span class="c1">#    axes[0, 1].fill_between(</span>
-<span class="c1">#        range(len(mean_assets)),</span>
-<span class="c1">#        percentiles[0],</span>
-<span class="c1">#        percentiles[1],</span>
-<span class="c1">#        alpha=0.3,</span>
-<span class="c1">#        label=&quot;25th-75th percentile&quot;,</span>
-<span class="c1">#    )</span>
-<span class="c1">#    axes[0, 1].set_title(&quot;Asset Accumulation&quot;)</span>
-<span class="c1">#    axes[0, 1].set_xlabel(&quot;Period&quot;)</span>
-<span class="c1">#    axes[0, 1].set_ylabel(&quot;Assets&quot;)</span>
-<span class="c1">#    axes[0, 1].legend()</span>
-<span class="c1">#    axes[0, 1].grid(True, alpha=0.3)</span>
-
-<span class="c1"># Plot 3: Portfolio allocation</span>
-<span class="c1"># if portfolio_share is not None:</span>
-<span class="c1">#    mean_alpha = np.mean(portfolio_share, axis=1)</span>
-<span class="c1">#    axes[0, 2].plot(mean_alpha, &quot;r-&quot;, linewidth=2)</span>
-<span class="c1">#    axes[0, 2].set_title(&quot;Average Risky Asset Share&quot;)</span>
-<span class="c1">#    axes[0, 2].set_xlabel(&quot;Period&quot;)</span>
-<span class="c1">#    axes[0, 2].set_ylabel(&quot;Share in Risky Asset&quot;)</span>
-<span class="c1">#    axes[0, 2].set_ylim(0, 1)</span>
-<span class="c1">#    axes[0, 2].grid(True, alpha=0.3)</span>
-
-<span class="c1"># Plot 4: Income distribution evolution</span>
-<span class="c1"># if income is not None:</span>
-<span class="c1">#    # Show income distribution at different time periods</span>
-<span class="c1">#    periods_to_show = [0, 25, 50, 75, 99]</span>
-<span class="c1">#    colors = [&quot;blue&quot;, &quot;green&quot;, &quot;orange&quot;, &quot;red&quot;, &quot;purple&quot;]</span>
-<span class="c1">#</span>
-<span class="c1">#   for i, period in enumerate(periods_to_show):</span>
-<span class="c1">#       if period &lt; income.shape[0]:</span>
-<span class="c1">#          axes[1, 0].hist(</span>
-<span class="c1">#               income[period],</span>
-<span class="c1">#               bins=30,</span>
-<span class="c1">#               alpha=0.6,</span>
-<span class="c1">#              color=colors[i],</span>
-<span class="c1">#               label=f&quot;Period {period}&quot;,</span>
-<span class="c1">#               density=True,</span>
-<span class="c1">#           )</span>
-
-<span class="c1">#   axes[1, 0].set_title(&quot;Income Distribution Evolution&quot;)</span>
-<span class="c1">#   axes[1, 0].set_xlabel(&quot;Income&quot;)</span>
-<span class="c1">#   axes[1, 0].set_ylabel(&quot;Density&quot;)</span>
-<span class="c1">#   axes[1, 0].legend()</span>
-<span class="c1">#   axes[1, 0].grid(True, alpha=0.3)</span>
-
-<span class="c1"># Plot 5: Wealth distribution</span>
-<span class="c1"># f assets is not None:</span>
-<span class="c1">#   final_wealth = assets[-1]  # Final period wealth</span>
-<span class="c1">#   # Filter out NaN values</span>
-<span class="c1">#   final_wealth_clean = final_wealth[~np.isnan(final_wealth)]</span>
-<span class="c1">#</span>
-<span class="c1">#   if len(final_wealth_clean) &gt; 0:</span>
-<span class="c1">#      axes[1, 1].hist(</span>
-<span class="c1">#           final_wealth_clean, bins=50, alpha=0.7, color=&quot;gold&quot;, edgecolor=&quot;black&quot;</span>
-<span class="c1">#       )</span>
-<span class="c1">#       axes[1, 1].axvline(</span>
-<span class="c1">#          np.mean(final_wealth_clean),</span>
-<span class="c1">#           color=&quot;red&quot;,</span>
-<span class="c1">#           linestyle=&quot;--&quot;,</span>
-<span class="c1">#           linewidth=2,</span>
-<span class="c1">#           label=f&quot;Mean: {np.mean(final_wealth_clean):.2f}&quot;,</span>
-<span class="c1">#       )</span>
-<span class="c1">#      axes[1, 1].axvline(</span>
-<span class="c1">#           np.median(final_wealth_clean),</span>
-<span class="c1">#           color=&quot;blue&quot;,</span>
-<span class="c1">#           linestyle=&quot;--&quot;,</span>
-<span class="c1">#           linewidth=2,</span>
-<span class="c1">#           label=f&quot;Median: {np.median(final_wealth_clean):.2f}&quot;,</span>
-<span class="c1">#       )</span>
-<span class="c1">#   else:</span>
-<span class="c1">#       axes[1, 1].text(</span>
-<span class="c1">#           0.5, 0.5, &quot;No valid data&quot;, transform=axes[1, 1].transAxes, ha=&quot;center&quot;</span>
-<span class="c1">#       )</span>
-<span class="c1">#   axes[1, 1].set_title(&quot;Final Wealth Distribution&quot;)</span>
-<span class="c1">#   axes[1, 1].set_xlabel(&quot;Wealth&quot;)</span>
-<span class="c1">#   axes[1, 1].set_ylabel(&quot;Frequency&quot;)</span>
-<span class="c1">#   axes[1, 1].legend()</span>
-<span class="c1">#   axes[1, 1].grid(True, alpha=0.3)</span>
-
-<span class="c1"># Plot 6: Consumption vs Income relationship</span>
-<span class="c1"># f consumption is not None and income is not None:</span>
-<span class="c1">#   # Take final period data</span>
-<span class="c1">#   final_c = consumption[-1]</span>
-<span class="c1">#   final_y = income[-1]</span>
-
-<span class="c1">#    axes[1, 2].scatter(final_y, final_c, alpha=0.5, s=10)</span>
-
-<span class="c1">#    # Add regression line</span>
-<span class="c1">#    coeffs = np.polyfit(final_y, final_c, 1)</span>
-<span class="c1">#    line = np.poly1d(coeffs)</span>
-<span class="c1">#    x_line = np.linspace(final_y.min(), final_y.max(), 100)</span>
-<span class="c1">#    axes[1, 2].plot(</span>
-<span class="c1">#        x_line, line(x_line), &quot;r--&quot;, linewidth=2, label=f&quot;Slope: {coeffs[0]:.3f}&quot;</span>
-<span class="c1">#    )</span>
-
-<span class="c1">#    axes[1, 2].set_title(&quot;Consumption vs Income (Final Period)&quot;)</span>
-<span class="c1">#    axes[1, 2].set_xlabel(&quot;Income&quot;)</span>
-<span class="c1">#    axes[1, 2].set_ylabel(&quot;Consumption&quot;)</span>
-<span class="c1">#    axes[1, 2].legend()</span>
-<span class="c1">#    axes[1, 2].grid(True, alpha=0.3)</span>
-
-<span class="c1"># plt.tight_layout()</span>
-<span class="c1"># plt.show()</span>
-</pre></div>
-</div>
-</section>
-<section id="summary-statistics">
-<h3>Summary Statistics<a class="headerlink" href="#summary-statistics" title="Link to this heading">¶</a></h3>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># print(&quot;\n&quot; + &quot;=&quot; * 50)</span>
-<span class="c1"># print(&quot;SIMULATION SUMMARY STATISTICS&quot;)</span>
-<span class="c1"># print(&quot;=&quot; * 50)</span>
-
-<span class="c1"># if consumption is not None:</span>
-<span class="c1">#    print(f&quot;Average final consumption: {np.mean(consumption[-1]):.3f}&quot;)</span>
-<span class="c1">#    print(</span>
-<span class="c1">#        f&quot;Consumption growth rate: {(np.mean(consumption[-1]) / np.mean(consumption[0]) - 1) * 100:.1f}%&quot;</span>
-<span class="c1">#    )</span>
-
-<span class="c1"># if assets is not None:</span>
-<span class="c1">#    print(f&quot;Average final assets: {np.mean(assets[-1]):.3f}&quot;)</span>
-<span class="c1">#    print(f&quot;Fraction with negative assets: {np.mean(assets[-1] &lt; 0) * 100:.1f}%&quot;)</span>
-
-<span class="c1"># if portfolio_share is not None:</span>
-<span class="c1">#    print(f&quot;Average risky asset share: {np.mean(portfolio_share):.3f}&quot;)</span>
-
-<span class="c1"># if income is not None:</span>
-<span class="c1">#    print(f&quot;Average final income: {np.mean(income[-1]):.3f}&quot;)</span>
-<span class="c1">#    print(f&quot;Income volatility (CV): {np.std(income[-1]) / np.mean(income[-1]):.3f}&quot;)</span>
-</pre></div>
-</div>
-</section>
-<section id="model-insights">
-<h3>Model Insights<a class="headerlink" href="#model-insights" title="Link to this heading">¶</a></h3>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># print(&quot;\n&quot; + &quot;=&quot; * 50)</span>
-<span class="c1"># print(&quot;MODEL INSIGHTS&quot;)</span>
-<span class="c1"># print(&quot;=&quot; * 50)</span>
-
-<span class="c1"># print(</span>
-<span class="c1">#    &quot;&quot;</span>
-<span class="c1"># This consumption-portfolio model demonstrates several key economic principles:</span>
-<span class="c1">#</span>
-<span class="c1"># 1. **Consumption Smoothing**: Agents smooth consumption relative to volatile income</span>
-<span class="c1">#   through saving and borrowing.</span>
-
-<span class="c1"># 2. **Portfolio Choice**: The risky asset allocation varies with wealth levels,</span>
-<span class="c1">#   showing how risk-taking depends on financial resources.</span>
-
-<span class="c1"># 3. **Precautionary Saving**: Agents accumulate assets as a buffer against</span>
-<span class="c1">#   income uncertainty.</span>
-
-<span class="c1"># 4. **Life-Cycle Patterns**: The simulation shows realistic wealth accumulation</span>
-<span class="c1">#   patterns over the agent lifecycle.</span>
-
-<span class="c1"># The scikit-agent framework makes it easy to:</span>
-<span class="c1"># - Define complex economic models using intuitive building blocks</span>
-<span class="c1"># - Run large-scale Monte Carlo simulations</span>
-<span class="c1"># - Analyze results with rich data structures</span>
-<span class="c1"># - Extend models with additional features</span>
-
-<span class="c1"># Next steps could include:</span>
-<span class="c1"># - Solving for optimal policies using value function iteration</span>
-<span class="c1"># - Adding more realistic features (retirement, health shocks, etc.)</span>
-<span class="c1"># - Calibrating to match empirical moments</span>
-<span class="c1"># - Comparing different behavioral rules</span>
-<span class="c1"># &quot;&quot;</span>
-<span class="c1"># )</span>
-</pre></div>
-</div>
-</section>
-<section id="note-on-solution-methods">
-<h3>Note on Solution Methods<a class="headerlink" href="#note-on-solution-methods" title="Link to this heading">¶</a></h3>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># print(&quot;\n&quot; + &quot;=&quot; * 50)</span>
-<span class="c1"># print(&quot;ABOUT SOLUTION METHODS&quot;)</span>
-<span class="c1"># print(&quot;=&quot; * 50)</span>
-
-<span class="c1"># print(</span>
-<span class="c1">#    &quot;&quot;</span>
-<span class="c1"># This example used simple behavioral rules for illustration.</span>
-<span class="c1"># For rigorous analysis, you would solve for optimal policies using:</span>
-
-<span class="c1"># 1. **Value Function Iteration** (ska.algos.vbi):</span>
-<span class="c1">#   - Backward induction on Bellman equation</span>
-<span class="c1">#   - Guaranteed convergence for well-posed problems</span>
-<span class="c1">#   - Good for models with moderate state dimensions#</span>
-
-<span class="c1"># 2. **Neural Network Methods** (ska.ann):</span>
-<span class="c1">#   - Deep learning approaches for high-dimensional problems</span>
-<span class="c1">#   - Can handle complex, non-linear policies</span>
-<span class="c1">#   - Suitable for large-scale heterogeneous agent models</span>
-
-<span class="c1"># 3. **Policy Iteration Methods**:</span>
-<span class="c1">#   - Alternate between policy evaluation and improvement</span>
-<span class="c1">#   - Often faster convergence than value function iteration</span>
-
-<span class="c1"># See the algorithms documentation for detailed examples of solving models optimally.</span>
-<span class="c1"># &quot;&quot;</span>
-<span class="c1"># )</span>
-
-<span class="c1"># print(&quot;\n✓ Example completed successfully!&quot;)</span>
-<span class="c1"># &quot;&quot;&quot;</span>
-</pre></div>
-</div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.047 seconds)</p>
+<img src="../../_images/sphx_glr_plot_consumption_portfolio_model_005.png" srcset="../../_images/sphx_glr_plot_consumption_portfolio_model_005.png" alt="Saving Model vs Portfolio Model, Pure Saving, Portfolio ($\varsigma=0.5$)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.995 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-consumption-portfolio-model-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/863d4886346bbabb42461a05206761f9/plot_consumption_portfolio_model.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_consumption_portfolio_model.ipynb</span></code></a></p>
@@ -768,18 +662,19 @@ WILL FIX THIS AFTER BENCHMARKS ARE SETTLED
 </section>
 </section>
 </section>
+</section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../simulation/index.html">
+          <a class="next-page" href="plot_benchmark_models.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Simulation</div>
+                <div class="title">Benchmark Consumption Models</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -831,17 +726,25 @@ WILL FIX THIS AFTER BENCHMARKS ARE SETTLED
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Consumption-Portfolio Model</a><ul>
-<li><a class="reference internal" href="#model-setup">Model Setup</a><ul>
-<li><a class="reference internal" href="#step-1-define-model-parameters">Step 1: Define Model Parameters</a></li>
-<li><a class="reference internal" href="#step-2-build-the-economic-model">Step 2: Build the Economic Model</a></li>
-<li><a class="reference internal" href="#step-3-construct-distributions">Step 3: Construct Distributions</a></li>
-<li><a class="reference internal" href="#step-4-define-simple-decision-rules">Step 4: Define Simple Decision Rules</a></li>
-<li><a class="reference internal" href="#step-5-run-monte-carlo-simulation">Step 5: Run Monte Carlo Simulation</a></li>
-<li><a class="reference internal" href="#step-6-analyze-and-visualize-results">Step 6: Analyze and Visualize Results</a></li>
-<li><a class="reference internal" href="#summary-statistics">Summary Statistics</a></li>
-<li><a class="reference internal" href="#model-insights">Model Insights</a></li>
-<li><a class="reference internal" href="#note-on-solution-methods">Note on Solution Methods</a></li>
+<li><a class="reference internal" href="#">Consumption-Saving-Portfolio Model</a><ul>
+<li><a class="reference internal" href="#model-structure">Model Structure</a><ul>
+<li><a class="reference internal" href="#normalized-consumption-block">Normalized Consumption Block</a></li>
+<li><a class="reference internal" href="#portfolio-block">Portfolio Block</a></li>
+<li><a class="reference internal" href="#parameters">Parameters</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#model-inspection">Model Inspection</a><ul>
+<li><a class="reference internal" href="#step-1-show-model-parameters">Step 1: Show Model Parameters</a></li>
+<li><a class="reference internal" href="#step-2a-inspect-the-consumption-block-formulas">Step 2a: Inspect the Consumption Block Formulas</a></li>
+<li><a class="reference internal" href="#step-2b-visualize-the-consumption-block">Step 2b: Visualize the Consumption Block</a></li>
+<li><a class="reference internal" href="#step-3a-inspect-and-visualize-the-portfolio-block">Step 3a: Inspect and visualize the Portfolio Block</a></li>
+<li><a class="reference internal" href="#step-3b-inspect-and-visualize-the-portfolio-block">Step 3b: Inspect and visualize the Portfolio Block</a></li>
+<li><a class="reference internal" href="#step-4-define-a-simple-consumption-rule">Step 4: Define a Simple Consumption Rule</a></li>
+<li><a class="reference internal" href="#step-5-run-monte-carlo-simulation-pure-saving-problem">Step 5: Run Monte Carlo Simulation (Pure Saving Problem)</a></li>
+<li><a class="reference internal" href="#step-6-plot-simulation-results">Step 6: Plot Simulation Results</a></li>
+<li><a class="reference internal" href="#step-7-run-portfolio-simulation">Step 7: Run Portfolio Simulation</a></li>
+<li><a class="reference internal" href="#step-8-compare-saving-vs-portfolio-paths">Step 8: Compare Saving vs Portfolio Paths</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -855,7 +758,7 @@ WILL FIX THIS AFTER BENCHMARKS ARE SETTLED
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=85c7a515"></script>
+</div><script src="../../_static/documentation_options.js?v=775d6c0f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
@@ -863,5 +766,7 @@ WILL FIX THIS AFTER BENCHMARKS ARE SETTLED
     <script src="../../_static/copybutton.js?v=f281be69"></script>
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"tex": {"packages": {"[+]": ["amsmath", "amssymb"]}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
 </html>

@@ -44,7 +44,7 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to build, solve, and simulate a consumption-portfolio choice model using scikit-agent. The model includes:">
+    <div class="sphx-glr-thumbcontainer" tooltip="The consumption-saving problem is one of the central models of modern macroeconomics and household finance. An agent with uncertain income must decide each period how much to consume and how much to save, trading off current utility against future resources.">
 
 .. only:: html
 
@@ -55,7 +55,24 @@ other computational methods.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Consumption-Portfolio Model</div>
+      <div class="sphx-glr-thumbnail-title">Consumption-Saving-Portfolio Model</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of :pyskagent.models.benchmarks. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_benchmark_models_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_benchmark_models`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Benchmark Consumption Models</div>
     </div>
 
 
@@ -71,4 +88,5 @@ other computational methods.
 
    /auto_examples/models/plot_resource_extraction
    /auto_examples/models/plot_consumption_portfolio_model
+   /auto_examples/models/plot_benchmark_models
 
