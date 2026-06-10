@@ -13,28 +13,40 @@ The utils module contains general-purpose utility functions.
 
 ## Example Usage
 
-### Working with Grids
+### Calling a Function from a Dictionary of Values
+
+`apply_fun_to_vals` calls a function using only the entries of a dictionary that
+match the function's named arguments, ignoring the rest:
 
 ```python
-import skagent as ska
+from skagent.utils import apply_fun_to_vals
 
-# Create a grid configuration
-config = {
-    "wealth": {"min": 0.0, "max": 10.0, "count": 50},
-    "income": {"min": 0.5, "max": 2.0, "count": 20},
-}
 
-# Create grid
-grid = ska.Grid.from_config(config)
+def transition(a, b):
+    return a + b
 
-# Access grid points
-wealth_points = grid["wealth"]
-income_points = grid["income"]
 
-# Convert to dictionary
-grid_dict = grid.to_dict()
+# The extra key "c" is ignored
+apply_fun_to_vals(transition, {"a": 1.0, "b": 2.0, "c": 99.0})  # 3.0
 ```
 
----
+### Smooth Complementarity Conditions
 
-_This page is under construction. Content will be added as the API develops._
+`fischer_burmeister` replaces the complementarity conditions
+$a \geq 0,\; h \geq 0,\; ah = 0$ with a single smooth equation, which is useful
+for occasionally binding constraints in loss functions:
+
+```python
+import torch
+
+from skagent.utils import fischer_burmeister
+
+a = torch.tensor([0.0, 1.0, 3.0])
+h = torch.tensor([2.0, 0.0, 4.0])
+fischer_burmeister(a, h)  # tensor([0., 0., 2.])
+```
+
+```{note}
+Grid construction tools (`Grid`, `make_grid`, `cartesian_product`) live in
+`skagent.grid` and are documented on the {doc}`algorithms` page.
+```

@@ -32,6 +32,7 @@ below.
 .. autofunction:: skagent.models.benchmarks.get_benchmark_calibration
 .. autofunction:: skagent.models.benchmarks.get_analytical_policy
 .. autofunction:: skagent.models.benchmarks.has_analytical_policy
+.. autofunction:: skagent.models.benchmarks.get_reference_policy
 .. autofunction:: skagent.models.benchmarks.get_test_states
 .. autofunction:: skagent.models.benchmarks.get_custom_validation
 ```
