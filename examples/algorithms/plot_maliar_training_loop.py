@@ -150,7 +150,9 @@ c = decision_fn({"a": test_a}, mean_shocks, u3_calibration)["c"].detach()
 R = u3_calibration["R"]
 m = R * test_a / mean_shocks["psi"] + mean_shocks["theta"]
 
-# Property 1: the borrowing constraint 0 < c <= m holds everywhere.
+# Property 1: the borrowing constraint 0 < c <= m holds everywhere, up to
+# the 1e-6 numerical tolerance on the upper bound (the sigmoid-based
+# bounding can approach but never exactly reach m).
 respects_constraint = bool(torch.all(c > 0) and torch.all(c <= m + 1e-6))
 
 # Property 2: the average propensity to consume c / m falls as the buffer

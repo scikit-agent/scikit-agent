@@ -20,8 +20,8 @@ bottom:
 #. **Consumption is a martingale.** Under :math:`\beta R = 1`, the *change* in
    consumption is the fundamental object, not its level. Income shocks of
    standard deviation :math:`\sigma_\eta` produce consumption changes of
-   standard deviation :math:`(r/R)\,\sigma_\eta` only, a factor of roughly 30x
-   smaller.
+   standard deviation :math:`(r/R)\,\sigma_\eta` only, a factor of
+   :math:`R/r \approx 34` smaller at this calibration.
 #. **Normalization collapses the state.** Dividing every level variable by
    permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
    what makes neural-network solvers practical for richer models.
@@ -87,12 +87,15 @@ from skagent.models.benchmarks import (
 # Step 1: What's in the Registry
 # ------------------------------
 #
-# Five of the six entries carry an analytical policy that
+# Five of the seven entries carry an analytical policy that
 # ``validate_analytical_solution`` checks against the standard test grid.
 # U-3 is registered without one because the borrowing constraint plus
-# uncertainty break the linearity that every other entry relies on; the
-# helper still reports it as ``FAILED`` because no policy was found, not
-# because anything is wrong with the model.
+# uncertainty break the linearity that every other entry relies on, and
+# D-4 lacks one because its binding borrowing constraint forecloses a
+# closed form (its oracle is the value-function-iteration reference
+# policy from :py:func:`~skagent.models.benchmarks.get_reference_policy`).
+# The helper still reports both as ``FAILED`` because no analytical
+# policy was found, not because anything is wrong with the models.
 #
 # The registry itself records which models have a closed form, so the
 # distinction is queried with
@@ -207,7 +210,7 @@ fig.tight_layout()
 # no-mortality MPC :math:`\kappa`, and the wedge widens as :math:`s` falls.
 #
 # Sweeping :math:`s \in \{1.0, 0.95, 0.9, 0.8, 0.7\}` (median lifetime
-# falling from infinity to about 3 periods) makes the wedge visible. At
+# falling from infinity to about 2 periods) makes the wedge visible. At
 # :math:`s = 0.7` the agent consumes nearly six times more per dollar of
 # total wealth than at :math:`s = 1`. Empirical annual mortality at age 30
 # is around :math:`s = 0.999`, which is essentially indistinguishable from
