@@ -33,6 +33,7 @@ TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality co
 
 from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
 from skagent.block import Control, DBlock
+import copy
 import logging
 import torch
 from torch import as_tensor
@@ -881,6 +882,109 @@ def _generate_u3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     return {"a": a}
 
 
+# D-4: Deterministic CRRA with a Binding Borrowing Constraint
+# -----------------------------------------------------------
+# Impatient (betaR = 0.9568 < 1) deterministic counterpart of U-3; the binding
+# constraint c <= m precludes a closed form but pins the level Euler-only
+# training leaves free. See d4_vfi_reference_policy and TestD4ConstrainedEulerVFI.
+
+d4_calibration = {
+    "DiscFac": 0.92,
+    "R": 1.04,
+    "CRRA": 2.0,
+    "y": 1.0,
+    "description": "D-4: Deterministic CRRA with binding borrowing constraint (no closed form)",
+}
+
+d4_block = DBlock(
+    **{
+        "name": "d4_deterministic_constrained_crra",
+        "shocks": {},
+        "dynamics": {
+            "m": lambda a, R, y: a * R + y,  # cash-on-hand m = R*a + y
+            "c": Control(
+                ["m"],
+                lower_bound=lambda m: 1e-3,  # c > 0 for CRRA utility
+                upper_bound=lambda m: m,  # BORROWING CONSTRAINT: c <= m
+                agent="consumer",
+            ),
+            "a": lambda m, c: m - c,  # end-of-period assets
+            "u": lambda c, CRRA: crra_utility(c, CRRA),
+        },
+        "reward": {"u": "consumer"},
+    }
+)
+
+
+def d4_vfi_reference_policy(
+    states,
+    shocks,
+    parameters,
+    m_max: float = 9.5,
+    m_grid_size: int = 800,
+    c_grid_size: int = 300,
+    max_iter: int = 400,
+    tol: float = 1e-9,
+):
+    """D-4 numerical reference policy via value-function iteration.
+
+    D-4 has a binding borrowing constraint and impatience, so (unlike D-2) it
+    admits no closed-form policy. This routine solves the model on a dense
+    cash-on-hand grid by value-function iteration and returns optimal
+    consumption interpolated at the queried arrival state. It is the
+    independent oracle used to validate Euler-trained policies: it mirrors the
+    D-4 transition m' = R*(m - c) + y exactly and enforces c <= m by
+    construction (candidate consumption is a share in (0, 1] of m).
+
+    The signature matches the ``(states, shocks, parameters)`` decision-function
+    convention used by the analytical policies; ``shocks`` is unused because
+    D-4 is deterministic.
+    """
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    y = parameters["y"]
+    sigma = parameters["CRRA"]
+
+    a_tensor = as_tensor(states["a"])
+    a_np = a_tensor.detach().cpu().numpy().astype(np.float64)
+
+    m_grid = np.linspace(1.0, m_max, m_grid_size)
+    # Candidate consumption as a share of m enforces 0 < c <= m (the constraint).
+    shares = np.linspace(1e-3, 1.0, c_grid_size)
+
+    def crra_np(c):
+        if abs(sigma - 1.0) < 1e-10:
+            return np.log(c)
+        return c ** (1 - sigma) / (1 - sigma)
+
+    V = np.zeros_like(m_grid)
+    best_idx = np.zeros(m_grid_size, dtype=np.intp)
+    for _ in range(max_iter):
+        candidate_c = np.outer(m_grid, shares)  # shape (m_grid_size, c_grid_size)
+        m_next = R * (m_grid[:, None] - candidate_c) + y  # transition m' = R(m-c)+y
+        cont = np.interp(m_next.ravel(), m_grid, V).reshape(candidate_c.shape)
+        objective = crra_np(candidate_c) + beta * cont
+        best_idx = objective.argmax(axis=1)
+        V_new = objective[np.arange(m_grid_size), best_idx]
+        if np.max(np.abs(V_new - V)) < tol:
+            V = V_new
+            break
+        V = V_new
+
+    c_on_grid = m_grid * shares[best_idx]  # optimal c at each grid m
+    m_query = R * a_np + y
+    c_query = np.interp(m_query, m_grid, c_on_grid)
+    return {"c": torch.as_tensor(c_query, dtype=a_tensor.dtype, device=a_tensor.device)}
+
+
+def _generate_d4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-4 model: a (arrival assets).
+
+    Spans the binding (low m) and slack (high m) regions of the constraint.
+    """
+    return {"a": torch.linspace(0.0, 7.5, test_points)}
+
+
 # =============================================================================
 # Model Registry
 # =============================================================================
@@ -1019,16 +1123,32 @@ BENCHMARK_MODELS = {
         # NO analytical_policy - buffer stock requires numerical solution
         "test_states": _generate_u3_test_states,
     },
+    "D-4": {
+        "block": d4_block,
+        "calibration": d4_calibration,
+        # NO analytical_policy - binding constraint + impatience has no closed form.
+        # The independent oracle is value-function iteration:
+        "reference_policy": d4_vfi_reference_policy,
+        "test_states": _generate_d4_test_states,
+    },
 }
 
 
 def get_benchmark_model(model_id: str) -> DBlock:
-    """Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2, U-3) - 6 models"""
+    """Get benchmark model by ID (D-1 through D-4, U-1 through U-3).
+
+    Returns an independent deep copy of the registered block. The registered
+    blocks are module-level singletons whose shock specs are mutated in place by
+    ``construct_shocks`` (the ``(class, args)`` tuples are replaced by
+    distribution objects). Returning a copy keeps that mutation local to the
+    caller, so constructing or recalibrating one block never leaks into another
+    caller (or another test) holding "the same" model.
+    """
     if model_id not in BENCHMARK_MODELS:
         available = list(BENCHMARK_MODELS.keys())
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
 
-    return BENCHMARK_MODELS[model_id]["block"]
+    return copy.deepcopy(BENCHMARK_MODELS[model_id]["block"])
 
 
 def get_benchmark_calibration(model_id: str) -> Dict[str, Any]:
@@ -1091,6 +1211,28 @@ def has_analytical_policy(model_id: str) -> bool:
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
 
     return "analytical_policy" in BENCHMARK_MODELS[model_id]
+
+
+def get_reference_policy(model_id: str) -> Callable:
+    """Get a numerical reference policy for a model lacking a closed form.
+
+    Some benchmarks (currently D-4) have no analytical policy because a binding
+    constraint precludes one, but do have an independent numerical oracle (e.g.
+    value-function iteration) suitable for validating trained policies.
+
+    Raises ValueError if the model has no reference policy registered.
+    """
+    if model_id not in BENCHMARK_MODELS:
+        available = list(BENCHMARK_MODELS.keys())
+        raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    if "reference_policy" not in BENCHMARK_MODELS[model_id]:
+        raise ValueError(
+            f"Model '{model_id}' does not have a numerical reference policy. "
+            "Models with closed forms expose get_analytical_policy instead."
+        )
+
+    return BENCHMARK_MODELS[model_id]["reference_policy"]
 
 
 def get_test_states(model_id: str, test_points: int = 10) -> Dict[str, torch.Tensor]:
