@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms/index.html"><link rel="prev" title="Science" href="../user_guide/science.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Examples - scikit-agent 0.1.dev540+g8bdda7021</title>
+        <title>Examples - scikit-agent 0.1.dev564+g296697500</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev540+g8bdda7021</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -210,6 +210,8 @@
 </li>
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -293,7 +295,13 @@ These examples demonstrate how to use various solution methods, optimization
 algorithms, and numerical techniques.</p>
 <p>Examples include value function iteration, policy iteration, neural network
 training, and other computational approaches to solving economic models.</p>
-<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm. Rather than re-implementing PPO, scikit-agent wraps a BellmanPeriod in a gymnasium environment and hands it to the robust PPO implementation in Stable-Baselines3 (SB3). The PPOAgent class manages this wrapping, trains the agent, and emits a standard scikit-agent decision rule."><img alt="" src="../_images/sphx_glr_plot_sb3_ppo_thumb.png" />
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="The companion example trains a network on a fixed grid and checks it against a closed-form policy. This one runs the full Maliar, Maliar, and Winant (2021) algorithm, maliar_training_loop, on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem (benchmark U-3). Solving such models is the reason the neural-network method exists, so it is the honest setting in which to show the algorithm at work."><img alt="" src="../_images/sphx_glr_plot_maliar_training_loop_thumb.png" />
+<p><a class="reference internal" href="algorithms/plot_maliar_training_loop.html"><span class="doc">The Maliar Training Loop on a Model With No Closed-Form Solution</span></a></p>
+  <div class="sphx-glr-thumbnail-title">The Maliar Training Loop on a Model With No Closed-Form Solution</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form."><img alt="" src="../_images/sphx_glr_plot_train_against_known_solution_thumb.png" />
+<p><a class="reference internal" href="algorithms/plot_train_against_known_solution.html"><span class="doc">Training a Policy Network Against a Known Solution</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Training a Policy Network Against a Known Solution</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm. Rather than re-implementing PPO, scikit-agent wraps a BellmanPeriod in a gymnasium environment and hands it to the robust PPO implementation in Stable-Baselines3 (SB3). The PPOAgent class manages this wrapping, trains the agent, and emits a standard scikit-agent decision rule."><img alt="" src="../_images/sphx_glr_plot_sb3_ppo_thumb.png" />
 <p><a class="reference internal" href="algorithms/plot_sb3_ppo.html"><span class="doc">PPO via Stable-Baselines3 on the D-2 Benchmark</span></a></p>
   <div class="sphx-glr-thumbnail-title">PPO via Stable-Baselines3 on the D-2 Benchmark</div>
 </div></div></section>
@@ -403,7 +411,7 @@ and analyze the results.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=775d6c0f"></script>
+</div><script src="../_static/documentation_options.js?v=012e414b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

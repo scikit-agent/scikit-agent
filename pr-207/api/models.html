@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Blocks" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.dev540+g8bdda7021</title>
+        <title>Models - scikit-agent 0.1.dev564+g296697500</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev540+g8bdda7021</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -210,6 +210,8 @@
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -338,7 +340,13 @@ require numerical solution due to borrowing constraints + income uncertainty.</p
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.benchmarks.get_benchmark_model">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_benchmark_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_benchmark_model" title="Link to this definition">¶</a></dt>
-<dd><p>Get benchmark model by ID (D-1, D-2, D-3, U-1, U-2, U-3) - 6 models</p>
+<dd><p>Get benchmark model by ID (D-1 through D-4, U-1 through U-3).</p>
+<p>Returns an independent deep copy of the registered block. The registered
+blocks are module-level singletons whose shock specs are mutated in place by
+<code class="docutils literal notranslate"><span class="pre">construct_shocks</span></code> (the <code class="docutils literal notranslate"><span class="pre">(class,</span> <span class="pre">args)</span></code> tuples are replaced by
+distribution objects). Returning a copy keeps that mutation local to the
+caller, so constructing or recalibrating one block never leaks into another
+caller (or another test) holding “the same” model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
@@ -1165,7 +1173,7 @@ the agent prefers extraction over indefinite accumulation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=775d6c0f"></script>
+</div><script src="../_static/documentation_options.js?v=012e414b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
