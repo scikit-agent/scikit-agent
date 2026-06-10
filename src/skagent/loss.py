@@ -16,7 +16,8 @@ from skagent.bellman import (
     estimate_euler_residual,
 )
 from skagent.grid import Grid
-from skagent.utils import fischer_burmeister
+from skagent.simulation.monte_carlo import draw_shocks
+from skagent.utils import fischer_burmeister, reconcile
 
 if TYPE_CHECKING:
     from skagent.bellman import BellmanPeriod
@@ -522,6 +523,58 @@ class EulerEquationLoss(_EquationLossBase):
 
         return ub_value - controls_t[control_sym]
 
+    def _aio_residual_pair(self, df: Callable, states_t: dict, shocks: dict):
+        """Two Euler residuals sharing the current control, at two independent
+        next-period shock draws (MMW JME'21 all-in-one operator, Def. 2.7).
+
+        The squared expected residual is estimated by the *product* of two
+        residuals evaluated at independent draws of the next-period shock,
+        which is unbiased: ``E[f_a f_b] = (E[f])**2``. Squaring a single
+        residual would instead add ``Var(f) >= 0``, biasing the solution of any
+        stochastic model. For deterministic models the two draws coincide and
+        the product reduces to ``f**2``.
+
+        Returns ``(res_a, res_b, controls_t, shocks_t)``.
+        """
+        shocks_t, shocks_next_a = _extract_period_shocks(self.bellman_period, shocks)
+        # Current control: computed once and shared by both factors so the
+        # all-in-one product cancels the cross terms to (E[f])**2.
+        controls_t = self.bellman_period.compute_controls(
+            df, states_t, shocks=shocks_t, parameters=self.parameters
+        )
+        # Second, independent next-period shock draw (the input grid supplies
+        # the first). For deterministic models this is empty and the two
+        # residuals coincide.
+        template = next(iter(states_t.values()))
+        n = template.shape[0]
+        shocks_next_b = {
+            sym: reconcile(template, val)
+            for sym, val in draw_shocks(self.bellman_period.block.shocks, n=n).items()
+        }
+        shocks_a = {f"{s}_0": shocks_t[s] for s in shocks_t}
+        shocks_a.update({f"{s}_1": shocks_next_a[s] for s in shocks_next_a})
+        shocks_b = {f"{s}_0": shocks_t[s] for s in shocks_t}
+        shocks_b.update({f"{s}_1": shocks_next_b[s] for s in shocks_next_b})
+        res_a = estimate_euler_residual(
+            self.bellman_period,
+            df,
+            states_t,
+            shocks_a,
+            self.parameters,
+            self.agent,
+            controls_t=controls_t,
+        )
+        res_b = estimate_euler_residual(
+            self.bellman_period,
+            df,
+            states_t,
+            shocks_b,
+            self.parameters,
+            self.agent,
+            controls_t=controls_t,
+        )
+        return res_a, res_b, controls_t, shocks_t
+
     def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor:
         """
         Euler equation loss function using the AiO expectation operator.
@@ -552,41 +605,25 @@ class EulerEquationLoss(_EquationLossBase):
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
+        # All-in-one operator: form the product of two residuals at independent
+        # next-period draws, never the square of a single draw (MMW eq. 12).
+        res_a, res_b, controls_t, shocks_t = self._aio_residual_pair(
+            df, states_t, shocks
+        )
+
         if self.constrained:
-            # Compute controls once and share them between the residual
-            # computation and the slack computation so both use the same
-            # autograd graph.
-            shocks_t, _ = _extract_period_shocks(self.bellman_period, shocks)
-            controls_t = self.bellman_period.compute_controls(
-                df, states_t, shocks=shocks_t, parameters=self.parameters
-            )
-
-            euler_residuals = estimate_euler_residual(
-                self.bellman_period,
-                df,
-                states_t,
-                shocks,
-                self.parameters,
-                self.agent,
-                controls_t=controls_t,
-            )
-
             total = 0.0
-            for ctrl_sym, residual in euler_residuals.items():
+            for ctrl_sym in res_a:
                 slack = self._compute_slack(ctrl_sym, controls_t, states_t, shocks_t)
                 if slack is not None:
-                    total = total + fischer_burmeister(residual, slack) ** 2
+                    total = total + fischer_burmeister(
+                        res_a[ctrl_sym], slack
+                    ) * fischer_burmeister(res_b[ctrl_sym], slack)
                 else:
-                    total = total + torch.relu(-residual) ** 2
+                    total = total + torch.relu(-res_a[ctrl_sym]) * torch.relu(
+                        -res_b[ctrl_sym]
+                    )
             return self.weight * total
 
-        # Unconstrained loss
-        euler_residuals = estimate_euler_residual(
-            self.bellman_period,
-            df,
-            states_t,
-            shocks,
-            self.parameters,
-            self.agent,
-        )
-        return self.weight * sum((r**2 for r in euler_residuals.values()), 0.0)
+        # Unconstrained loss: mean of the product estimates (E[f])**2.
+        return self.weight * sum((res_a[c] * res_b[c] for c in res_a), 0.0)

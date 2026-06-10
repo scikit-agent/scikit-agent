@@ -16,6 +16,7 @@ by the skagent Block system.
 from __future__ import annotations
 
 import logging
+import numbers
 from typing import TYPE_CHECKING, Callable, Optional
 
 import torch
@@ -130,6 +131,130 @@ def simulate_forward(
     return states_t
 
 
+def _validate_training_inputs(
+    bellman_period,
+    loss_function,
+    parameters,
+    max_iterations,
+    tolerance,
+    shock_copies,
+    simulation_steps,
+    network_width,
+    epochs_per_iteration,
+    states_0_n,
+    lr,
+):
+    """Validate all inputs for :func:`maliar_training_loop`."""
+    if bellman_period is None:
+        raise TypeError("bellman_period cannot be None")
+    if not callable(loss_function):
+        raise TypeError(
+            f"loss_function must be callable, got {type(loss_function).__name__}"
+        )
+    if parameters is None:
+        raise TypeError(
+            "parameters cannot be None; pass an empty dict if no parameters are needed"
+        )
+
+    for name, val, lo in [
+        ("max_iterations", max_iterations, 1),
+        ("shock_copies", shock_copies, 1),
+        ("simulation_steps", simulation_steps, 1),
+        ("network_width", network_width, 1),
+        ("epochs_per_iteration", epochs_per_iteration, 1),
+    ]:
+        # numbers.Integral accepts Python int and numpy integers (e.g.
+        # np.int64 from array indexing), which a bare ``int`` check rejects.
+        if not isinstance(val, numbers.Integral):
+            raise TypeError(f"{name} must be an integer, got {type(val).__name__}")
+        if val < lo:
+            raise ValueError(f"{name} must be >= {lo}, got {val}")
+    if tolerance <= 0:
+        raise ValueError(f"tolerance must be > 0, got {tolerance}")
+    if lr <= 0:
+        raise ValueError(f"lr must be > 0, got {lr}")
+    if not isinstance(states_0_n, Grid):
+        raise TypeError(
+            f"states_0_n must be a Grid instance, got {type(states_0_n).__name__}"
+        )
+    if states_0_n.n() < 1:
+        raise ValueError("states_0_n must contain at least one state")
+
+
+def _check_convergence(prev_params, curr_params, tolerance, prev_loss, current_loss):
+    """Decide whether the training loop has converged this iteration.
+
+    Parameters
+    ----------
+    prev_params, curr_params : array-like
+        Flattened network parameters before and after the iteration; their
+        L2 difference drives parameter convergence.
+    tolerance : float
+        Threshold applied to both the parameter difference and the loss
+        difference; satisfying either alone counts as converged.
+    prev_loss : float or None
+        Loss from the previous iteration. ``None`` on the first iteration,
+        in which case loss convergence is skipped.
+    current_loss : float or None
+        Loss from this iteration. Must be a Python scalar (or ``None``);
+        loss convergence is skipped when either loss is ``None``.
+
+    Returns
+    -------
+    tuple
+        ``(converged, param_diff, loss_diff, param_converged, loss_converged)``.
+    """
+    if current_loss is not None and not isinstance(current_loss, (int, float)):
+        raise TypeError(
+            f"current_loss must be a Python scalar (int or float), "
+            f"got {type(current_loss).__name__}. "
+            "Ensure the loss function returns a scalar via .item()."
+        )
+    param_diff = utils.compute_parameter_difference(prev_params, curr_params)
+    param_converged = param_diff < tolerance
+
+    loss_diff = None
+    loss_converged = False
+    if prev_loss is not None and current_loss is not None:
+        loss_diff = abs(current_loss - prev_loss)
+        loss_converged = loss_diff < tolerance
+
+    return (
+        param_converged or loss_converged,
+        param_diff,
+        loss_diff,
+        param_converged,
+        loss_converged,
+    )
+
+
+def _log_iteration(
+    converged,
+    iteration,
+    param_diff,
+    loss_diff,
+    current_loss,
+    param_converged=False,
+    loss_converged=False,
+):
+    """Emit a single log line for the current iteration."""
+    if converged:
+        reasons = []
+        if param_converged:
+            reasons.append(f"parameters (diff={param_diff:.2e})")
+        if loss_converged:
+            reasons.append(f"loss (diff={loss_diff:.2e})")
+        reason_str = ", ".join(reasons) if reasons else "unknown criterion"
+        logging.info(f"Converged after {iteration + 1} iterations by {reason_str}")
+    else:
+        msg = f"Iteration {iteration + 1}: param_diff={param_diff:.2e}"
+        if current_loss is not None:
+            msg += f", loss={current_loss:.2e}"
+            if loss_diff is not None:
+                msg += f" (loss_diff={loss_diff:.2e})"
+        logging.info(msg)
+
+
 def maliar_training_loop(
     bellman_period: BellmanPeriod,
     loss_function: Callable,
@@ -142,31 +267,44 @@ def maliar_training_loop(
     simulation_steps: int = 1,
     network_width: int = 16,
     epochs_per_iteration: int = 250,
+    lr: float = 0.001,
 ) -> tuple:
-    """
+    r"""
     Run the Maliar, Maliar, and Winant (JME '21) training loop.
 
-    This implements the machine learning method for solving dynamic economic models
-    by training a neural network policy to minimize empirical risk (loss). The
-    network architecture (width, training epochs per iteration) is configurable
-    via optional parameters.
+    Trains a single neural network policy to minimize empirical risk (loss)
+    on a panel of states drawn forward through the model dynamics. This
+    helper constructs and trains a :class:`~skagent.ann.BlockPolicyNet`
+    internally and does not currently accept a pre-built shared-backbone
+    :class:`~skagent.ann.BlockPolicyValueNet`. If value-aware training is
+    needed (e.g. for a Bellman residual loss with a value head), call
+    :func:`~skagent.ann.train_block_nn` directly on a
+    :class:`~skagent.ann.BlockPolicyValueNet`; a future refactor may add
+    value-network support here.
+
+    The loop maps onto the MMW JME'21 algorithm steps as follows:
+    :func:`_validate_training_inputs` and the network construction below
+    cover Step 1 (initialize topology and coefficients); the per-iteration
+    :func:`~skagent.ann.train_block_nn` call is Step 2 (minimize the
+    empirical risk :math:`\Xi^n(\theta)`); the returned network is the Step 3
+    trained approximation :math:`\varphi(\cdot, \theta)`.
 
     Parameters
     ----------
     bellman_period : BellmanPeriod
         A model definition containing block dynamics and transitions.
     loss_function : Callable
-        The empirical risk function Xi^n from MMW JME'21. This function is
-        passed to the neural network training routine as
+        The empirical risk function :math:`\Xi^n` from MMW JME'21. This
+        function is passed to the neural network training routine as
         ``loss_function(decision_function, input_grid) -> loss_tensor``.
     states_0_n : Grid
         A panel of starting states for training. Must contain at least one state.
     parameters : dict
         Given parameters for the model.
     shock_copies : int, optional
-        Number of copies of shocks to include in the training set omega.
-        Must match expected number of shock copies in the loss function.
-        Must be >= 1. Default is 2.
+        Number of shock copies to include in the training set
+        :math:`\{\omega_i\}`. Must match the expected number of shock copies
+        in the loss function. Must be >= 1. Default is 2.
     max_iterations : int, optional
         Maximum number of training loop iterations before stopping.
         Must be >= 1. Default is 5.
@@ -179,8 +317,8 @@ def maliar_training_loop(
         Random seed for reproducibility. Default is None.
     simulation_steps : int, optional
         Number of time steps to simulate forward when determining the next
-        omega set for training. Higher values let the training states
-        explore more of the state space at higher computational cost.
+        training set :math:`\{\omega_i\}`. Higher values let the training
+        states explore more of the state space at higher computational cost.
         Must be >= 1. Default is 1.
     network_width : int, optional
         Width of hidden layers in the policy neural network.
@@ -188,13 +326,20 @@ def maliar_training_loop(
     epochs_per_iteration : int, optional
         Number of training epochs per iteration.
         Must be >= 1. Default is 250.
+    lr : float, optional
+        Learning rate for the internal Adam optimizer. The optimizer is
+        created once and reused across iterations to preserve momentum.
+        Must be > 0. Default is 0.001.
 
     Returns
     -------
     tuple
-        (trained_policy_network, training_states) where trained_policy_network
-        is the BlockPolicyNet and training_states is the Grid of states from
-        the last training iteration (or the convergence point if reached early).
+        ``(trained_policy_network, training_states)`` where
+        ``trained_policy_network`` is the trained
+        :class:`~skagent.ann.BlockPolicyNet` and ``training_states`` is the
+        :class:`~skagent.grid.Grid` of states from the final iteration (the
+        convergence point if training converged early, otherwise the states
+        after ``max_iterations`` steps).
 
     Raises
     ------
@@ -205,105 +350,66 @@ def maliar_training_loop(
     TypeError
         If bellman_period is None or loss_function is not callable.
     """
-    # Validate object-type parameters
-    if bellman_period is None:
-        raise TypeError("bellman_period cannot be None")
-    if not callable(loss_function):
-        raise TypeError(
-            f"loss_function must be callable, got {type(loss_function).__name__}"
-        )
-    if parameters is None:
-        raise TypeError(
-            "parameters cannot be None; pass an empty dict if no parameters are needed"
-        )
-
-    # Validate numeric parameters
-    if max_iterations < 1:
-        raise ValueError(f"max_iterations must be >= 1, got {max_iterations}")
-    if tolerance <= 0:
-        raise ValueError(f"tolerance must be > 0, got {tolerance}")
-    if shock_copies < 1:
-        raise ValueError(f"shock_copies must be >= 1, got {shock_copies}")
-    if simulation_steps < 1:
-        raise ValueError(f"simulation_steps must be >= 1, got {simulation_steps}")
-    if network_width < 1:
-        raise ValueError(f"network_width must be >= 1, got {network_width}")
-    if epochs_per_iteration < 1:
-        raise ValueError(
-            f"epochs_per_iteration must be >= 1, got {epochs_per_iteration}"
-        )
-    if states_0_n.n() < 1:
-        raise ValueError("states_0_n must contain at least one state")
-
-    # Step 1. Initialize the algorithm:
-    # i). Theoretical risk Xi(θ) = E_ω[ξ(ω;θ)] provided as loss_function
-    # ii). Define neural network topology ϕ(·,θ)
-    # iii). Fix initial coefficients θ
+    _validate_training_inputs(
+        bellman_period,
+        loss_function,
+        parameters,
+        max_iterations,
+        tolerance,
+        shock_copies,
+        simulation_steps,
+        network_width,
+        epochs_per_iteration,
+        states_0_n,
+        lr,
+    )
 
     if random_seed is not None:
         torch.manual_seed(random_seed)
 
     bpn = ann.BlockPolicyNet(bellman_period, width=network_width)
+    optimizer = torch.optim.Adam(bpn.parameters(), lr=lr)
     states = states_0_n
-
-    # Step 2. Train the machine to minimize empirical risk Xi^n(θ)
-    iteration = 0
-    converged = False
     prev_loss = None
 
-    while iteration < max_iterations and not converged:
-        # Store current parameters before training
+    for iteration in range(max_iterations):
         prev_params = utils.extract_parameters(bpn)
 
-        # i). Simulate model to produce data {ω_i}_{i=1}^n using decision rule ϕ(·,θ)
         givens = generate_givens_from_states(states, bellman_period.block, shock_copies)
 
-        # ii). Construct gradient ∇Xi^n(θ) and update coefficients
-        bpn, current_loss = ann.train_block_nn(
-            bpn, givens, loss_function, epochs=epochs_per_iteration
+        bpn, current_loss, optimizer = ann.train_block_nn(
+            bpn,
+            givens,
+            loss_function,
+            epochs=epochs_per_iteration,
+            optimizer=optimizer,
         )
 
-        # Extract parameters after training
         curr_params = utils.extract_parameters(bpn)
-
-        # Check for parameter convergence
-        param_diff = utils.compute_parameter_difference(prev_params, curr_params)
-        param_converged = param_diff < tolerance
-
-        # Check for loss convergence
-        loss_converged = False
-        if prev_loss is not None:
-            loss_diff = abs(current_loss - prev_loss)
-            loss_converged = loss_diff < tolerance
-
-        # Convergence if either parameter or loss criteria are met
-        converged = param_converged or loss_converged
-
-        # Logging
-        if converged:
-            if param_converged:
-                logging.info(
-                    f"Converged after {iteration + 1} iterations by parameters. "
-                    f"Parameter difference: {param_diff:.2e}"
-                )
-            if loss_converged:
-                logging.info(
-                    f"Converged after {iteration + 1} iterations by loss. "
-                    f"Loss difference: {loss_diff:.2e}"
-                )
-        else:
-            log_msg = (
-                f"Iteration {iteration + 1}: "
-                f"Parameter difference: {param_diff:.2e}, Loss: {current_loss:.2e}"
+        converged, param_diff, loss_diff, param_converged, loss_converged = (
+            _check_convergence(
+                prev_params,
+                curr_params,
+                tolerance,
+                prev_loss,
+                current_loss,
             )
-            if prev_loss is not None:
-                log_msg += f" (loss diff: {abs(current_loss - prev_loss):.2e})"
-            logging.info(log_msg)
+        )
 
-        # Update previous loss for next iteration
+        _log_iteration(
+            converged,
+            iteration,
+            param_diff,
+            loss_diff,
+            current_loss,
+            param_converged,
+            loss_converged,
+        )
         prev_loss = current_loss
 
-        # Simulate forward to get next omega set for training
+        if converged:
+            break
+
         next_states = simulate_forward(
             states,
             bellman_period,
@@ -311,17 +417,10 @@ def maliar_training_loop(
             parameters,
             simulation_steps,
         )
-
-        # Detach from the computational graph so the next iteration's
-        # backward pass does not attempt to traverse a freed graph.
-        detached = {k: v.detach() for k, v in next_states.items()}
-        states = Grid.from_dict(detached)
-        iteration += 1
-
-    if not converged:
+        states = Grid.from_dict({k: v.detach() for k, v in next_states.items()})
+    else:
         logging.warning(
             f"Training completed without convergence after {max_iterations} iterations."
         )
 
-    # Step 3. Return trained approximation ϕ(·,θ) for accuracy assessment
     return bpn, states
