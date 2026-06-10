@@ -1,0 +1,124 @@
+# Algorithms
+
+This section contains the API documentation for solution algorithms, neural
+network components, and grid tools used to solve dynamic stochastic optimization
+problems.
+
+## Value Backwards Induction (VBI)
+
+The value backwards induction (VBI) algorithm derives arrival value functions
+from a continuation value function and the stage dynamics of model blocks.
+
+```{eval-rst}
+.. automodule:: skagent.algos.vbi
+   :members:
+```
+
+### Core VBI Functions
+
+```{eval-rst}
+.. autofunction:: skagent.algos.vbi.solve
+   :no-index:
+```
+
+```{eval-rst}
+.. autofunction:: skagent.algos.vbi.get_action_rule
+   :no-index:
+```
+
+```{eval-rst}
+.. autofunction:: skagent.algos.vbi.ar_from_data
+   :no-index:
+```
+
+```{eval-rst}
+.. autofunction:: skagent.algos.vbi.grid_to_data_array
+   :no-index:
+```
+
+## Maliar-Style Algorithms
+
+Neural network-based solution methods following Maliar et al.
+
+```{eval-rst}
+.. automodule:: skagent.algos.maliar
+   :members:
+```
+
+## Neural Network Components
+
+### Net
+
+Base neural network class with device management.
+
+```{eval-rst}
+.. autoclass:: skagent.ann.Net
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+### BlockPolicyNet
+
+A neural network for policy functions in dynamic programming problems.
+
+```{eval-rst}
+.. autoclass:: skagent.ann.BlockPolicyNet
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+### BlockValueNet
+
+A neural network for value functions in dynamic programming problems.
+
+```{eval-rst}
+.. autoclass:: skagent.ann.BlockValueNet
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+### BlockPolicyValueNet
+
+A shared-backbone neural network that jointly represents the policy and value
+functions.
+
+```{eval-rst}
+.. autoclass:: skagent.ann.BlockPolicyValueNet
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+### Training Functions
+
+```{eval-rst}
+.. autofunction:: skagent.ann.train_block_nn
+```
+
+```{eval-rst}
+.. autofunction:: skagent.ann.aggregate_net_loss
+```
+
+## Grid and Computational Tools
+
+### Grid Class
+
+```{eval-rst}
+.. autoclass:: skagent.grid.Grid
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+### Grid Utility Functions
+
+```{eval-rst}
+.. autofunction:: skagent.grid.make_grid
+```
+
+```{eval-rst}
+.. autofunction:: skagent.grid.cartesian_product
+```
