@@ -106,12 +106,12 @@ git push origin main
 
 ```bash
 # Build docs locally
-pip install ".[docs]"
+uv pip install ".[docs]"
 cd docs
-python -m sphinx -b html . _build
+uv run python -m sphinx -b html . _build
 
 # Serve locally
-python -m http.server 8000 -d _build
+uv run python -m http.server 8000 -d _build
 ```
 
 ## 🐛 Troubleshooting
