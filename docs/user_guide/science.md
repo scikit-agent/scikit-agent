@@ -19,7 +19,7 @@ This work was funded in part by:
 
 - National Science Foundation
   [#2131532](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2131532)
-- National Science Foudnation
+- National Science Foundation
   [#2131533](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2131533)
 - Future of Life Foundation
 

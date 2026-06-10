@@ -7,9 +7,11 @@ scikit-agent.
 
 Learn about different approaches to solving economic models:
 
-- **All-in-One Deep Learning Methods** : Deep learning solvers that use an
-  All-in-One (AiO) objective function
-- **Value Function Iteration**: Classical dynamic programming approaches
+- **Maliar-style deep learning methods**: Neural network solvers following
+  Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
+  objective function
+- **Value backwards induction (VBI)**: Classical dynamic programming via
+  backwards induction on a grid
 
 ## Algorithm Configuration
 
