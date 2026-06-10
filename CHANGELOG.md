@@ -46,6 +46,21 @@ and this project adheres to
 
 ### Added
 
+- PPO solution algorithm via Stable-Baselines3: `skagent.algos.sb3.PPOAgent`
+  wraps a `BellmanPeriod` in a gymnasium environment, trains SB3's PPO, and
+  emits a standard skagent decision rule (`#205`)
+- `PPOAgent.snapshot()` and the `PolicySnapshot` class, capturing a frozen copy
+  of the trained policy (unaffected by later `learn` calls) for comparing
+  checkpoints during training
+- `skagent.env` module with `Environment` (single-transition stepping of a
+  `BellmanPeriod`) and `GymEnv` (gymnasium adapter for Stable-Baselines3)
+- `skagent.env.discounted_rollout_reward` for scoring a decision rule by its
+  realized discounted return over a rollout
+- `skagent.models.benchmarks.d2_constrained_optimal_c`, the D-2 closed-form
+  consumption function keyed on cash-on-hand with the borrowing constraint
+  applied
+- Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
+  D-2 benchmark
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
