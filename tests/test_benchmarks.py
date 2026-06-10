@@ -4,6 +4,7 @@
 Most models have analytical solutions, but U-3 (buffer stock) requires numerical solution.
 """
 
+import numpy as np
 import pytest
 import torch
 from skagent.models.benchmarks import (
@@ -18,17 +19,121 @@ from skagent.models.benchmarks import (
     BENCHMARK_MODELS,
     EPS_STATIC,
 )
+from skagent.simulation.monte_carlo import draw_shocks
+
+
+def assert_consumption_policy_diagnostics(
+    decision_fn,
+    *,
+    test_states: dict,
+    test_shocks: dict,
+    calibration: dict,
+    cash_on_hand_func,
+    require_strict_monotone: bool = True,
+    require_mpc_in_unit_interval: bool = True,
+    budget_tol: float = 1e-6,
+    monotone_tol: float = 0.0,
+    label: str = "policy",
+):
+    """Check basic economic properties of a consumption decision rule.
+
+    Works for any callable with signature
+    ``decision_fn(states, shocks, parameters) -> {"c": tensor}`` (analytical
+    policies and trained ``BlockPolicyNet``/``BlockPolicyValueNet`` instances
+    both qualify), so the same set of checks runs against closed-form
+    benchmarks in this file and against trained policies elsewhere.
+
+    Parameters
+    ----------
+    decision_fn : callable
+        Maps ``(states, shocks, parameters)`` to a dict containing ``"c"``.
+    test_states : dict[str, torch.Tensor]
+        State grid passed to ``decision_fn`` (e.g. ``{"a": ...}``).
+        Tensors must be sorted ascending along the wealth axis when
+        ``require_strict_monotone`` is True.
+    test_shocks : dict[str, torch.Tensor]
+        Shock realization passed to ``decision_fn``.
+    calibration : dict
+        Model calibration (must contain "R" when ``cash_on_hand_func``
+        uses it).
+    cash_on_hand_func : callable
+        ``cash_on_hand_func(states, shocks, calibration) -> tensor``
+        returning the cash-on-hand ``m`` matching the model's budget
+        constraint (e.g. ``m = R*a/psi + theta`` for normalized buffer
+        stock).
+    require_strict_monotone : bool, optional
+        If True, c must be increasing along the wealth axis (subject to
+        ``monotone_tol`` for per-step noise). The overall slope
+        ``c[-1] > c[0]`` is always enforced when this is True.
+        Default True.
+    require_mpc_in_unit_interval : bool, optional
+        If True, the average marginal propensity to consume across the
+        grid must lie in (0, 1). Default True.
+    budget_tol : float, optional
+        Tolerance for the budget constraint ``c <= m``. Default 1e-6.
+    monotone_tol : float, optional
+        Absolute tolerance for per-step monotonicity violations. A
+        forward difference of c is accepted when it exceeds
+        ``-monotone_tol``. Use 0.0 (default) for analytical policies
+        where strict monotonicity must hold; pass a small positive
+        value (e.g. 1e-2) for trained policies where NN-approximation
+        noise can produce tiny flat or backward steps.
+    label : str, optional
+        Used in assertion messages to distinguish policies.
+    """
+    result = decision_fn(test_states, test_shocks, calibration)
+    c = result["c"]
+    m = cash_on_hand_func(test_states, test_shocks, calibration)
+
+    assert torch.all(c > 0), f"{label}: consumption must be positive. Got c = {c}"
+
+    assert torch.all(c <= m + budget_tol), (
+        f"{label}: consumption must respect budget c <= m. Got c = {c}, m = {m}"
+    )
+
+    if require_strict_monotone:
+        # Overall slope: c must rise across the grid by a meaningful
+        # margin. This catches degenerate or flat policies even if
+        # per-step diffs are within tolerance.
+        assert c[-1] > c[0], (
+            f"{label}: consumption must rise across the wealth grid. "
+            f"Got c[0] = {c[0].item():.4f}, c[-1] = {c[-1].item():.4f}."
+        )
+        diffs = c[1:] - c[:-1]
+        assert torch.all(diffs > -monotone_tol), (
+            f"{label}: consumption must be non-decreasing in wealth "
+            f"(within monotone_tol={monotone_tol}). Got diffs below "
+            f"tolerance at indices "
+            f"{(diffs <= -monotone_tol).nonzero().flatten().tolist()}, "
+            f"diff values = {diffs[diffs <= -monotone_tol].tolist()}"
+        )
+
+    if require_mpc_in_unit_interval:
+        # Average MPC from the discrete grid (forward difference in c
+        # divided by forward difference in m).
+        m_diffs = m[1:] - m[:-1]
+        # Avoid divide-by-zero on grids with constant m.
+        nonzero = m_diffs.abs() > 1e-12
+        assert nonzero.any(), (
+            f"{label}: cannot compute MPC, grid has no wealth variation."
+        )
+        c_diffs = c[1:] - c[:-1]
+        mpc = (c_diffs[nonzero] / m_diffs[nonzero]).mean().item()
+        assert 0.0 < mpc < 1.0, (
+            f"{label}: average MPC must lie in (0, 1). Got MPC = {mpc:.4f}"
+        )
 
 
 class TestBenchmarksModels:
-    """Test suite for all 6 consumption-savings benchmark models.
+    """Test suite for all 7 consumption-savings benchmark models.
 
     5 models have analytical solutions (D-1, D-2, D-3, U-1, U-2).
-    1 model requires numerical solution (U-3 buffer stock).
+    2 models require numerical solution (U-3 buffer stock, D-4 deterministic
+    constrained CRRA).
     """
 
     def test_benchmark_models_exist(self):
-        """Test that all 6 benchmark models are present"""
+        """Test that all 7 benchmark models are present"""
         expected_models = [
             "D-1",
             "D-2",
@@ -36,14 +141,15 @@ class TestBenchmarksModels:
             "U-1",
             "U-2",
             "U-3",  # Buffer stock - no analytical solution
+            "D-4",  # Deterministic constrained CRRA - no analytical solution
         ]
         actual_models = list(BENCHMARK_MODELS.keys())
 
         assert set(expected_models) == set(actual_models), (
             f"Expected {expected_models}, got {actual_models}"
         )
-        assert len(BENCHMARK_MODELS) == 6, (
-            f"Expected 6 models, got {len(BENCHMARK_MODELS)}"
+        assert len(BENCHMARK_MODELS) == 7, (
+            f"Expected 7 models, got {len(BENCHMARK_MODELS)}"
         )
 
     @pytest.mark.parametrize(
@@ -150,6 +256,7 @@ class TestBenchmarksModels:
             "U-1": "Hall random walk consumption",
             "U-2": "Log utility normalized",
             "U-3": "Buffer stock",
+            "D-4": "binding borrowing constraint",
         }
 
         for model_id, description in models.items():
@@ -197,6 +304,52 @@ class TestBenchmarksModels:
         # Test error handling
         with pytest.raises(ValueError):
             get_benchmark_model("INVALID")
+
+    def test_all_models_construct_and_draw_shocks(self):
+        """Every benchmark model must build its shock specs and yield finite
+        draws.
+
+        Regression test: U-1's income shock passed ``mean``/``std`` to
+        ``Normal`` (whose constructor takes ``mu``/``sigma``), so
+        ``construct_shocks("U-1")`` raised ``TypeError`` and the model could not
+        be used at all.
+        """
+        for model_id in BENCHMARK_MODELS.keys():
+            block = get_benchmark_model(model_id)
+            calibration = get_benchmark_calibration(model_id)
+            block.construct_shocks(calibration, rng=np.random.default_rng(0))
+            assert all(not isinstance(v, tuple) for v in block.shocks.values()), (
+                f"{model_id} shock specs were left unconstructed (still tuples)"
+            )
+            drawn = draw_shocks(block.shocks, n=16)
+            for sym, values in drawn.items():
+                arr = np.asarray(values, dtype=float)
+                assert np.all(np.isfinite(arr)), (
+                    f"{model_id} shock '{sym}' produced non-finite draws"
+                )
+
+    def test_get_benchmark_model_returns_independent_copies(self):
+        """``get_benchmark_model`` must return independent copies so that
+        constructing one caller's block cannot mutate another's.
+
+        Regression test: the registered blocks are shared singletons whose shock
+        specs ``construct_shocks`` rewrites in place, so before the copy was
+        returned, constructing one retrieval silently changed every other
+        retrieval (and a later ``construct_shocks`` with a different calibration
+        became a no-op).
+        """
+        first = get_benchmark_model("U-3")
+        second = get_benchmark_model("U-3")
+        assert first is not second, (
+            "get_benchmark_model must not hand out a shared mutable object"
+        )
+        first.construct_shocks(
+            get_benchmark_calibration("U-3"), rng=np.random.default_rng(0)
+        )
+        assert all(isinstance(v, tuple) for v in second.shocks.values()), (
+            "Constructing one returned block leaked into another retrieval; "
+            "get_benchmark_model must return independent copies."
+        )
 
         with pytest.raises(ValueError):
             get_benchmark_calibration("INVALID")
@@ -652,6 +805,75 @@ class TestDynamicOptimalityChecks:
             )
 
 
+class TestConsumptionPolicyDiagnostics:
+    """Run the reusable consumption-policy diagnostics against analytical
+    benchmarks.
+
+    The same diagnostics are imported by ``test_maliar.py`` and run against
+    the trained policies it produces, so the test contract is shared between
+    closed-form solutions and numerical approximations.
+    """
+
+    def test_u2_analytical_passes_diagnostics(self):
+        """U-2 PIH normalized analytical policy satisfies all diagnostics."""
+        # Seed for R14 compliance; this test is deterministic regardless.
+        torch.manual_seed(10077693)
+        bp_id = "U-2"
+        calibration = get_benchmark_calibration(bp_id)
+        analytical_policy = get_analytical_policy(bp_id)
+
+        # U-2: cash-on-hand m = R*a/psi + 1 (theta == 1 in U-2)
+        R = calibration["R"]
+        a = torch.linspace(0.5, 5.0, 25)
+        test_states = {"a": a}
+        test_shocks = {"psi": torch.ones_like(a)}
+
+        def cash_on_hand(states, shocks, cal):
+            return cal["R"] * states["a"] / shocks["psi"] + 1.0
+
+        # Sanity check that R is what we expect.
+        assert R > 0
+        assert_consumption_policy_diagnostics(
+            analytical_policy,
+            test_states=test_states,
+            test_shocks=test_shocks,
+            calibration=calibration,
+            cash_on_hand_func=cash_on_hand,
+            label="U-2 analytical",
+        )
+
+    def test_d2_analytical_passes_diagnostics(self):
+        """D-2 deterministic CRRA analytical policy satisfies diagnostics."""
+        # Seed for R14 compliance; this test is deterministic regardless.
+        torch.manual_seed(10077693)
+        bp_id = "D-2"
+        calibration = get_benchmark_calibration(bp_id)
+        analytical_policy = get_analytical_policy(bp_id)
+
+        # D-2 is deterministic and uses arrival state ``a``; cash-on-hand is
+        # encoded inside the analytical policy, so we use a generous envelope
+        # (a + 1/r) that consumption stays strictly below.
+        R = calibration["R"]
+        a = torch.linspace(0.1, 10.0, 30)
+        test_states = {"a": a}
+        test_shocks = {}
+
+        def cash_on_hand(states, shocks, cal):
+            # Total wealth: cash-on-hand a plus discounted future income 1/r
+            r = cal["R"] - 1.0
+            return states["a"] + 1.0 / r if r > 0 else states["a"] + 1.0
+
+        assert R > 1.0, "D-2 calibration requires R > 1 for finite human wealth."
+        assert_consumption_policy_diagnostics(
+            analytical_policy,
+            test_states=test_states,
+            test_shocks=test_shocks,
+            calibration=calibration,
+            cash_on_hand_func=cash_on_hand,
+            label="D-2 analytical",
+        )
+
+
 def test_calibration_descriptions():
     """Verify all benchmark models have a description in calibration."""
     for model_id in BENCHMARK_MODELS.keys():
@@ -692,19 +914,7 @@ def test_has_analytical_policy_matches_registry():
 
 def test_benchmark_functionality():
     """Integration test: verify all benchmark models are functional"""
-
-    print("\n=== BENCHMARK MODELS ===")
-    print("Testing well-known consumption-savings problems")
-    print("=" * 55)
-
     models = list_benchmark_models()
-    for model_id, description in models.items():
-        has_analytical = (
-            "analytical" if has_analytical_policy(model_id) else "numerical"
-        )
-        print(f"{model_id:4s}: {description} [{has_analytical}]")
-
-    print(f"\nTotal: {len(models)} models")
 
     # Verify we have exactly the expected models
     expected_models = [
@@ -714,16 +924,20 @@ def test_benchmark_functionality():
         "U-1",
         "U-2",
         "U-3",  # Buffer stock - numerical only
+        "D-4",  # Deterministic constrained CRRA - numerical only
     ]
-    assert set(models.keys()) == set(expected_models)
-    assert len(models) == 6
+    assert set(models.keys()) == set(expected_models), (
+        f"Unexpected benchmark model set: {set(models.keys())}"
+    )
+    assert len(models) == 7, f"Expected 7 benchmark models, got {len(models)}"
 
     # Verify analytical vs numerical classification
     analytical_models = [m for m in expected_models if has_analytical_policy(m)]
     numerical_models = [m for m in expected_models if not has_analytical_policy(m)]
 
-    assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2"}
-    assert set(numerical_models) == {"U-3"}
-
-    print(f"\n✓ {len(analytical_models)} models with analytical solutions")
-    print(f"✓ {len(numerical_models)} models requiring numerical solution")
+    assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2"}, (
+        f"Unexpected analytical model set: {set(analytical_models)}"
+    )
+    assert set(numerical_models) == {"U-3", "D-4"}, (
+        f"Unexpected numerical model set: {set(numerical_models)}"
+    )

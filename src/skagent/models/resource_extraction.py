@@ -95,7 +95,10 @@ resource_extraction_block = DBlock(
         },
         "dynamics": {
             "u": Control(
-                ["x"], lower_bound=0.0, upper_bound=lambda x: x, agent="extractor"
+                ["x"],
+                lower_bound=lambda: 0.0,
+                upper_bound=lambda x: x,
+                agent="extractor",
             ),
             # Stock-dependent unit cost: harder to harvest when stock is low
             "unit_cost": lambda x, c_0: c_0 / x,
