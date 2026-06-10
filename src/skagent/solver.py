@@ -1,4 +1,5 @@
 import skagent.ann as ann
+import skagent.loss
 
 
 def solve_multiple_controls(
@@ -19,7 +20,7 @@ def solve_multiple_controls(
     """
 
     if loss is None:
-        loss = loss.StaticRewardLoss
+        loss = skagent.loss.StaticRewardLoss
 
     # Control policy networks for each control in the block.
     cpns = {}
@@ -41,9 +42,8 @@ def solve_multiple_controls(
         ann.train_block_nn(
             cpns[control_sym],
             givens,
-            loss(  # !!
+            loss(
                 bellman_period,
-                ["a"],  # !!
                 calibration,
                 dict_of_decision_rules,
             ),
