@@ -108,7 +108,7 @@ def solve(
         pre_states.update(state_vals)
 
         # prepare function to optimize
-        def negated_value(a):  # old! (should be negative)
+        def negated_value(a):
             dr = {c: get_action_rule(a[i]) for i, c in enumerate(controls)}
 
             # negative, for minimization later
@@ -120,7 +120,7 @@ def solve(
         elif len(controls) == 1:
             ## get lower bound.
             ## assumes only one control currently
-            lower_bound = -1e-6  ## a really low number!
+            lower_bound = -1e12  # a very low number
             feq = block.dynamics[controls[0]].lower_bound
             if feq is not None:
                 lower_bound = feq(
@@ -129,10 +129,8 @@ def solve(
 
             ## get upper bound
             ## assumes only one control currently
-            upper_bound = 1e-12  # a very high number
+            upper_bound = 1e12  # a very high number
             feq = block.dynamics[controls[0]].upper_bound
-
-            print(feq)
 
             if feq is not None:
                 upper_bound = feq(
@@ -140,8 +138,6 @@ def solve(
                 )
 
             bounds = ((lower_bound, upper_bound),)
-
-            print(bounds)
 
             res = minimize(  # choice of
                 negated_value,
@@ -172,8 +168,6 @@ def solve(
             raise Exception(
                 f"Value backup iteration is not yet implemented for stages with {len(controls)} > 1 control variables."
             )
-
-    print(policy_data)
 
     # use the xarray interpolator to create a decision rule.
     dr_from_data = {
