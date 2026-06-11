@@ -35,9 +35,15 @@ class Distribution(ABC):
         self.backend = backend
         self.rng = rng if rng is not None else np.random.default_rng()
 
-    @abstractmethod
     def draw(self, n: int = 1) -> np.ndarray:
         """Draw n samples from the distribution"""
+        if self.backend == "scipy":
+            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
+        if self.backend == "torch":
+            samples = self._dist.sample((n,))
+            return samples.detach().cpu().numpy()
+        msg = f"Unsupported backend: {self.backend}"
+        raise ValueError(msg)
 
     @abstractmethod
     def discretize(self, **kwargs) -> DiscreteDistribution:
@@ -76,15 +82,6 @@ class Normal(Distribution):
                 torch.tensor(sigma, dtype=torch.float32),
             )
 
-    def draw(self, n: int = 1) -> np.ndarray:
-        if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
-        if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
-        msg = f"Unsupported backend: {self.backend}"
-        raise ValueError(msg)
-
     def discretize(
         self,
         n_points: int = 7,
@@ -93,7 +90,7 @@ class Normal(Distribution):
         **kwargs,
     ) -> DiscreteDistribution:
         """Discretize using Gauss-Hermite quadrature or uniform grid"""
-        # Handle HARK-style parameter naming
+        # Handle alternative parameter naming
         if N is not None:
             n_points = N
 
@@ -175,7 +172,7 @@ class Lognormal(Distribution):
     def discretize(
         self, n_points: int = 7, N: int | None = None, **kwargs
     ) -> DiscreteDistribution:
-        # Handle HARK-style parameter naming
+        # Handle alternative parameter naming
         if N is not None:
             n_points = N
 
@@ -241,15 +238,6 @@ class Uniform(Distribution):
                 torch.tensor(high, dtype=torch.float32),
             )
 
-    def draw(self, n: int = 1) -> np.ndarray:
-        if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
-        if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
-        msg = f"Unsupported backend: {self.backend}"
-        raise ValueError(msg)
-
     def discretize(
         self,
         n_points: int = 7,
@@ -257,7 +245,7 @@ class Uniform(Distribution):
         **kwargs,
     ) -> DiscreteDistribution:
         """Discretize using Gauss-Hermite quadrature or uniform grid"""
-        # Handle HARK-style parameter naming
+        # Handle alternative parameter naming
         if N is not None:
             n_points = N
 
@@ -297,15 +285,6 @@ class Bernoulli(Distribution):
         elif self.backend == "torch":
             self._dist = torch_dist.Bernoulli(torch.tensor(p, dtype=torch.float32))
 
-    def draw(self, n: int = 1) -> np.ndarray:
-        if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
-        if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
-        msg = f"Unsupported backend: {self.backend}"
-        raise ValueError(msg)
-
     def discretize(self, **kwargs) -> DiscreteDistribution:
         """Bernoulli is already discrete"""
         points = np.array([0, 1])
@@ -323,7 +302,7 @@ class Bernoulli(Distribution):
 
 class DiscreteDistribution:
     """
-    A discrete distribution representation compatible with HARK's DiscreteDistributionLabeled
+    A discrete distribution representation for labeled discrete distributions
     """
 
     def __init__(
@@ -344,7 +323,7 @@ class DiscreteDistribution:
         # Create variables dict for compatibility
         self.variables = {name: i for i, name in enumerate(self.var_names)}
 
-        # HARK compatibility attributes
+        # Legacy compatibility attributes
         self.pmv = self.weights  # pmv = probability mass vector
 
     def draw(self, n: int = 1) -> np.ndarray:
@@ -364,7 +343,7 @@ class DiscreteDistribution:
 
 class DiscreteDistributionLabeled(DiscreteDistribution):
     """
-    Labeled discrete distribution for compatibility with HARK
+    Labeled discrete distribution with variable names
     """
 
     @classmethod
@@ -505,7 +484,7 @@ def expected(func, dist: DiscreteDistribution) -> float:
                 # First try passing scalar value directly (most common case)
                 result = func(point)
             except (TypeError, IndexError):
-                # If that fails, try with dict-like structure for HARK compatibility
+                # If that fails, try with dict-like structure for legacy compatibility
                 if len(dist.var_names) == 1:
 
                     class PointDict:

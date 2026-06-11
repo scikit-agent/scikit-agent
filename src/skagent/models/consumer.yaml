@@ -10,7 +10,6 @@ calibration:
   EqP: 0.02
   LivPrb: 0.98
   PermGroFac: 1.01
-  BoroCnstArt: None
   TranShkStd: 0.1
   RiskyStd: 0.1
 

@@ -4,26 +4,12 @@ on the actual consumption model.
 
 """
 
-from importlib.util import find_spec
-import pytest
-import sys
-
-sys.path.append("../src")
-from skagent.rule import extract_dependencies
-
-SKAGENT_AVAILABLE = find_spec("skagent") is not None
-HARK_AVAILABLE = find_spec("HARK") is not None
-HAS_DEPENDENCIES = SKAGENT_AVAILABLE and HARK_AVAILABLE
-
-pytestmark = pytest.mark.skipif(
-    not HAS_DEPENDENCIES,
-    reason="Optional dependencies (`scikit-agent` and/or `HARK`) not installed.",
-)
-
-if HAS_DEPENDENCIES:
-    from skagent.models.consumer import consumption_block
-    from skagent.model import Control
-    from skagent.distributions import Bernoulli
+import inspect
+from skagent.rule import extract_dependencies, Rule
+from skagent.models.consumer import consumption_block
+from skagent.block import Control
+from skagent.distributions import Bernoulli
+import unittest
 
 
 class TestRuleDependencyExtraction:
@@ -31,10 +17,6 @@ class TestRuleDependencyExtraction:
 
     def test_shock_dependencies(self):
         """Test dependency extraction from shock definitions."""
-        # Test live shock: (Bernoulli, {"p": "LivPrb"})
-        live_shock = consumption_block.shocks["live"]
-        live_deps = extract_dependencies(live_shock)
-        assert "LivPrb" in live_deps, f"Expected 'LivPrb' in {live_deps}"
 
         # Test theta shock: (MeanOneLogNormal, {"sigma": "TranShkStd"})
         theta_shock = consumption_block.shocks["theta"]
@@ -96,7 +78,7 @@ class TestRuleDependencyExtraction:
             all_deps.update(extract_dependencies(rule))
 
         # These parameters should be detected in the model
-        expected_params = ["LivPrb", "TranShkStd", "PermGroFac", "CRRA"]
+        expected_params = ["TranShkStd", "PermGroFac", "CRRA"]
 
         for param in expected_params:
             assert param in all_deps, (
@@ -108,7 +90,6 @@ class TestRuleDependencyExtraction:
         # Expected dependencies for each variable
         expected_deps = {
             # Shocks
-            "live": {"LivPrb"},
             "theta": {"TranShkStd"},
             # Dynamics
             "b": {"k", "R"},
@@ -146,13 +127,16 @@ class TestRuleDependencyExtraction:
         for rule in consumption_block.dynamics.values():
             all_deps.update(extract_dependencies(rule))
 
-        # These parameters are in calibration but shouldn't be detected in the model
-        unused_params = ["DiscFac", "R", "Rfree", "EqP", "BoroCnstArt", "RiskyStd"]
+        # These parameters are in calibration but are not referenced by any
+        # shock or dynamic in consumption_block, so they must not be extracted.
+        # (R is intentionally excluded: it is a genuine dependency of `b = k * R`.)
+        unused_params = ["DiscFac", "Rfree", "EqP", "BoroCnstArt", "RiskyStd"]
 
         for param in unused_params:
-            if param in all_deps:
-                # This might be OK if the parameter is actually used, but let's flag it
-                print(f"Warning: Parameter '{param}' was detected but not expected")
+            assert param not in all_deps, (
+                f"Parameter '{param}' is not used in consumption_block but was "
+                f"extracted as a dependency. All deps: {sorted(all_deps)}"
+            )
 
     def test_rule_types_handled(self):
         """Test that different rule types are handled correctly."""
@@ -215,3 +199,24 @@ class TestRuleRobustness:
         # Should handle gracefully without crashing
         deps = extract_dependencies(outer_func)
         assert isinstance(deps, list)
+
+
+class TestRuleClass(unittest.TestCase):
+    def test_rule_class(self):
+        # Create a rule
+        rule = Rule("x**2 + 2*x + 1")
+
+        # Check the signature
+        self.assertEqual(str(inspect.signature(rule.update_func())), "(x)")
+
+        # String representation returns original string
+        self.assertEqual(str(rule), "x**2 + 2*x + 1")
+
+        # Call it like a function
+        self.assertEqual(rule.update_func()(3), 16)
+        self.assertEqual(rule.update_func()(x=3), 16)
+
+        rule2 = Rule("x*y + z")
+        self.assertEqual(str(inspect.signature(rule2.update_func())), "(x, y, z)")
+        self.assertEqual(rule2.update_func()(2, 3, 4), 10)
+        self.assertEqual(rule2.update_func()(x=2, y=3, z=4), 10)

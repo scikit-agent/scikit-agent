@@ -12,8 +12,12 @@ from skagent.distributions import (
 )
 from inspect import signature
 import numpy as np
+from skagent.model_analyzer import ModelAnalyzer
+from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
+from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
+from skagent.rule import Rule, format_rule
 
 
 class Aggregate:
@@ -179,11 +183,12 @@ def simulate_dynamics(
 
     for sym in dynamics:
         # Using the fact that Python dictionaries are ordered
-        feq = dynamics[sym]
+        update_fn = dynamics[sym]
 
-        if isinstance(feq, Control):
+        if isinstance(update_fn, Control):
             # This tests if the decision rule is age varying.
             # If it is, this will be a vector with the decision rule for each agent.
+
             if isinstance(dr[sym], np.ndarray):
                 ## Now we have to loop through each agent, and apply the decision rule.
                 ## This is quite slow.
@@ -200,11 +205,26 @@ def simulate_dynamics(
                         *[vals_i[var] for var in signature(dr[sym][i]).parameters]
                     )
             else:
-                vals[sym] = dr[sym](
-                    *[vals[var] for var in signature(dr[sym]).parameters]
-                )  # TODO: test for signature match with Control
+                if len(signature(dr[sym]).parameters) > 0:
+                    try:
+                        vals[sym] = dr[sym](
+                            *[
+                                vals[var] for var in update_fn.iset
+                            ]  # signature(dr[sym]).parameters]
+                        )  # TODO: test for signature match with Control
+                    except (TypeError, ValueError, KeyError) as e:
+                        raise (Exception(f"Can't compute decision rule. {e}"))
+                else:
+                    # decision rule takes no arguments
+                    # easy to compute in any scope...
+                    vals[sym] = dr[sym]()
         else:
-            vals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
+            if isinstance(update_fn, Rule):
+                update_fn = update_fn.update_func()
+
+            vals[sym] = update_fn(
+                *[vals[var] for var in signature(update_fn).parameters]
+            )
 
     return vals
 
@@ -236,9 +256,127 @@ class Block:
         return attributions
 
     def get_controls(self):
+        """
+        Returns only the Control variables from the Block dynamics.
+        """
         dyn = self.get_dynamics()
 
-        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
+        return {sym: dyn[sym] for sym in dyn if isinstance(dyn[sym], Control)}
+
+    def get_arrival_states(self, calibration=None):
+        """
+        Return a list of symbols that are:
+          - required by the dynamic equations of the block
+          - dynamic variables themselves (controlled by dynamic equations)
+
+        This is the list of symbols that are implicitly 'lagged',
+        or must be provided 'on arrival'.
+
+        Parameters
+        -----------
+
+        calibration: dict, optional
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+        """
+        maybe_lag_variables = set()
+
+        dynamics = self.get_dynamics()
+        for sym in reversed(dynamics):
+            maybe_lag_variables.discard(sym)  # not a lag if updated dynamically now.
+            rule = dynamics[sym]
+            dependencies = extract_dependencies(rule)
+            maybe_lag_variables.update(dependencies)
+
+        for sym in self.get_shocks():
+            # shocks aren't lag variables
+            maybe_lag_variables.discard(sym)
+
+        if calibration is not None:
+            # these variables are parameters not states
+            for sym in calibration:
+                maybe_lag_variables.discard(sym)
+
+        return maybe_lag_variables
+
+    def visualize(self, calibration):
+        """
+        Return a PyDot graph visualization of this block.
+
+        Base style configuration is in model_visualization_config.yaml
+
+        Parameters
+        -----------
+
+        calibration: dict
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+
+        Returns
+        -----------
+
+        graph: pydot.core.Dot
+            A PyDot graph representation of the model.
+        """
+        # Generate analysis
+        analyzer = ModelAnalyzer(self, calibration)
+        analyzer.analyze()
+
+        viz = ModelVisualizer(analyzer.to_dict(), title=self.name)
+
+        return viz
+
+    def display(self, calibration):
+        """
+        Displays (as in a notebook) an SVG of the visualized graph of this block.
+
+        Base style configuration is in model_visualizatio_config.yaml
+
+        Parameters
+        -----------
+
+        calibration: dict
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+
+
+        Returns
+        -----------
+
+        img : matplotlib.image.mpimg
+        svg_content : str
+        """
+        viz = self.visualize(calibration)
+
+        viz.display()
+
+        return viz.get_image()
+
+    def formulas(self, calibration: dict):
+        """
+        Returns a dictionary of string representations of the block's dynamic formulas.
+
+        Parameters
+        -----------
+
+        calibration: dict
+            A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
+        """
+        formulas = {}
+        # Process dynamics from all blocks
+        for var, rule in self.get_dynamics().items():
+            formulas[var] = format_rule(var, rule)
+
+        # Process parameters
+        for param, value in calibration.items():
+            formulas[param] = format_rule(param, value)
+
+        return formulas
+
+    def display_formulas(self):
+        """
+        Prints the model's formulas.
+        """
+        formulas = self.formulas({})
+
+        print("\n".join(formulas.values()))
 
 
 @dataclass
@@ -262,10 +400,12 @@ class DBlock(Block):
         of a calibration dictionary.
 
     dynamics: Mapping(str, str or callable)
-        A dictionary mapping variable names to mathematical expressions.
+        An ordered dictionary mapping variable names to mathematical expressions.
         These expressions can be simple functions, in which case the
         argument names should match the variable inputs.
         Or these can be strings, which are parsed into functions.
+        The order of dynamic equations matters, as they are applied sequentially as
+        update rules.
 
     reward: Mapping(str, str)
         A dictionary mapping variable names to agent role labels.
@@ -318,7 +458,7 @@ class DBlock(Block):
     def __post_init__(self):
         for v in self.dynamics:
             if isinstance(self.dynamics[v], str):
-                self.dynamics[v] = math_text_to_lambda(self.dynamics[v])
+                self.dynamics[v] = Rule(self.dynamics[v])
 
         # --- this now has agent assignments.
         # for r in self.reward:
@@ -415,8 +555,12 @@ class DBlock(Block):
         rvals = {}
 
         for sym in self.reward:
-            feq = self.dynamics[sym]
-            rvals[sym] = feq(*[vals[var] for var in signature(feq).parameters])
+            update_fn = self.dynamics[sym]
+            if isinstance(update_fn, Rule):
+                update_fn = update_fn.update_func()
+            rvals[sym] = update_fn(
+                *[vals[var] for var in signature(update_fn).parameters]
+            )
 
         return rvals
 
@@ -494,6 +638,49 @@ class DBlock(Block):
         """A DBlock is its own leaf."""
         yield self
 
+    def deep_replace(
+        self, name=None, description=None, shocks=None, dynamics=None, reward=None
+    ):
+        """
+        Creates a deep copy of the block with new shocks, dynamics, and rewards dictionaries.
+        These dictionaries will have updated values based on the inputs.
+
+        Parameters
+        ----------
+        name : str | None, optional
+            New name for the block. If None, keeps the original name.
+        description : str | None, optional
+            New description. If None, keeps the original description.
+        shocks : dict | None, optional
+            Dictionary of shocks to merge with existing shocks.
+        dynamics : dict | None, optional
+            Dictionary of dynamics to merge with existing dynamics.
+        reward : dict | None, optional
+            Dictionary of rewards to merge with existing rewards.
+
+        Returns
+        -------
+        DBlock
+            A new DBlock instance with the merged values.
+        """
+        new_name = self.name if name is None else name
+        new_description = self.description if description is None else description
+
+        new_shocks = self.shocks | (shocks or {})
+        new_dynamics = self.dynamics | (dynamics or {})
+        new_reward = self.reward | (reward or {})
+
+        replacement = replace(
+            self,
+            name=new_name,
+            description=new_description,
+            shocks=new_shocks,
+            dynamics=new_dynamics,
+            reward=new_reward,
+        )
+
+        return replacement
+
 
 @dataclass
 class RBlock(Block):
@@ -540,46 +727,42 @@ class RBlock(Block):
         # returns a copy of the RBlock with the blocks replaced
         return replace(self, blocks=cbs)
 
+    def _merge_from_blocks(self, getter):
+        """
+        Merge dictionaries from all blocks using the given getter function.
+
+        Parameters
+        ----------
+        getter : callable
+            Function that takes a block and returns a dict (e.g., lambda b: b.get_shocks())
+
+        Returns
+        -------
+        dict
+            Merged dictionary from all blocks (later blocks override earlier ones)
+        """
+        merged = {}
+        for block in self.blocks:
+            merged.update(getter(block))
+        return merged
+
     def get_shocks(self):
-        ### TODO: Bug in here is causing AttributeError: 'set' object has no attribute 'draw'
-
-        super_shocks = {}  # uses set to avoid duplicates
-
-        for b in self.blocks:
-            for k, v in b.get_shocks().items():  # use d.iteritems() in python 2
-                super_shocks[k] = v
-
-        return super_shocks
+        return self._merge_from_blocks(lambda b: b.get_shocks())
 
     def get_controls(self):
         dyn = self.get_dynamics()
-
         return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
     def get_dynamics(self):
-        super_dyn = {}  # uses set to avoid duplicates
-
-        for b in self.blocks:
-            for k, v in b.get_dynamics().items():  # use d.iteritems() in python 2
-                super_dyn[k] = v
-
-        return super_dyn
+        return self._merge_from_blocks(lambda b: b.get_dynamics())
 
     def get_vars(self):
         return list(self.get_shocks().keys()) + list(self.get_dynamics().keys())
 
     @property
     def reward(self):
-        """
-        The reward attributions for all subblocks.
-        """
-        super_rew = {}  # uses set to avoid duplicates
-
-        for b in self.blocks:
-            for k, v in b.reward.items():  # use d.iteritems() in python 2
-                super_rew[k] = v
-
-        return super_rew
+        """The reward attributions for all subblocks."""
+        return self._merge_from_blocks(lambda b: b.reward)
 
     def iter_dblocks(self):
         """Iterate over all DBlock leaves in this RBlock tree."""

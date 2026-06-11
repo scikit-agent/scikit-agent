@@ -1,201 +1,61 @@
-import numpy as np
-import skagent.ann as ann
-from skagent.grid import Grid
-import skagent.model as model
-from skagent.simulation.monte_carlo import draw_shocks
-import torch
-import skagent.utils as utils
-
 """
 Tools for the implementation of the Maliar, Maliar, and Winant (JME '21) method.
 
 This method relies on a simpler problem representation than that elaborated
 by the skagent Block system.
 
+.. note::
+   ``generate_givens_from_states`` currently accesses ``bellman_period.block``
+   directly rather than working through the BellmanPeriod interface. A future
+   refactoring could route shock generation through BellmanPeriod itself.
+   Similarly, shock draws are currently Monte Carlo only; structured draws
+   (e.g. exact discretizations) could be supported via BellmanPeriod.
+
 """
 
+from __future__ import annotations
 
-def create_transition_function(block, state_syms):
+import logging
+import numbers
+from typing import TYPE_CHECKING, Callable, Optional
+
+import torch
+
+import skagent.ann as ann
+import skagent.block as block
+import skagent.utils as utils
+from skagent.grid import Grid
+from skagent.simulation.monte_carlo import draw_shocks
+
+if TYPE_CHECKING:
+    from skagent.bellman import BellmanPeriod
+
+
+def generate_givens_from_states(
+    states: Grid, model_block: block.Block, shock_copies: int
+) -> Grid:
     """
-    block
-    state_syms : list of string
-        A list of symbols for 'state variables at time t', aka arrival states.
-        # TODO: state variables should be derived from the block analysis.
+    Generate omega_i values of the MMW JME '21 method.
+
+    Parameters
+    ----------
+    states : Grid
+        A grid of starting state values (exogenous and endogenous).
+    model_block : block.Block
+        Block information (used to get the shock names).
+    shock_copies : int
+        Number of copies of the shocks to be included. Must be >= 1.
+
+    Returns
+    -------
+    Grid
+        Grid containing states augmented with shock copies.
     """
-
-    def transition_function(states_t, shocks_t, controls_t, parameters):
-        vals = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals, {}, fix=list(controls_t.keys()))
-
-        return {sym: post[sym] for sym in state_syms}
-
-    return transition_function
-
-
-def create_decision_function(block, decision_rules):
-    """
-    block
-    decision_rules
-    """
-
-    def decision_function(states_t, shocks_t, parameters):
-        if parameters is None:
-            parameters = {}
-        vals = parameters | states_t | shocks_t
-        post = block.transition(vals, decision_rules)
-
-        return {sym: post[sym] for sym in decision_rules}
-
-    return decision_function
-
-
-def create_reward_function(block, agent=None):
-    """
-    block
-    agent : optional, str
-    """
-
-    def reward_function(states_t, shocks_t, controls_t, parameters):
-        vals_t = parameters | states_t | shocks_t | controls_t
-        post = block.transition(vals_t, {}, fix=list(controls_t.keys()))
-        return {
-            sym: post[sym]
-            for sym in block.reward
-            if agent is None or block.reward[sym] == agent
-        }
-
-    return reward_function
-
-
-def estimate_discounted_lifetime_reward(
-    block,
-    discount_factor,
-    dr,
-    states_0,
-    big_t,
-    shocks_by_t=None,
-    parameters={},
-    agent=None,
-):
-    """
-    block
-    discount_factor - can be a number or a function of state variables
-    dr - decision rules (dict of functions), or optionally a decision function (a function that returns the decisions)
-    states_0 - dict - initial states, symbols : values (scalars work; TODO: do vectors work here?)
-    shocks_by_t - dict - sym : big_t vector of shock values at each time period
-    big_t - integer. Number of time steps to simulate forward
-    parameters - optional - calibration parameters
-    agent - optional - name of reference agent for rewards
-    """
-    states_t = states_0
-    total_discounted_reward = 0
-
-    tf = create_transition_function(block, list(states_0.keys()))
-
-    if callable(dr):
-        # assume a full decision function has been passed in
-        df = dr
-    else:
-        # create a decision function from the decision rule
-        df = create_decision_function(block, dr)
-
-    rf = create_reward_function(block, agent)
-
-    # this assumes only one reward is given.
-    # can be generalized in the future.
-    rsym = list(
-        {sym for sym in block.reward if agent is None or block.reward[sym] == agent}
-    )[0]
-
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
-
-    for t in range(big_t):
-        if shocks_by_t is not None:
-            shocks_t = {sym: shocks_by_t[sym][t] for sym in shocks_by_t}
-        else:
-            shocks_t = {}
-
-        controls_t = df(states_t, shocks_t, parameters)
-        reward_t = rf(states_t, shocks_t, controls_t, parameters)
-
-        # assumes torch
-        if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
-            torch.isnan(reward_t[rsym])
-        ):
-            raise Exception(f"Calculated reward {[rsym]} is NaN: {reward_t}")
-        if isinstance(reward_t[rsym], np.ndarray) and np.any(np.isnan(reward_t[rsym])):
-            raise Exception(f"Calculated reward {[rsym]} is NaN: {reward_t}")
-
-        total_discounted_reward += reward_t[rsym] * discount_factor**t
-
-        # t + 1
-        states_t = tf(states_t, shocks_t, controls_t, parameters)
-
-    return total_discounted_reward
-
-
-def get_estimated_discounted_lifetime_reward_loss(
-    state_variables, block, discount_factor, big_t, parameters
-):
-    # TODO: Should be able to get 'state variables' from block
-    # Maybe with ZP's analysis modules
-
-    # convoluted
-    # TODO: codify this encoding and decoding of the grid into a separate object
-    # It is specifically the EDLR loss function that requires big_t of the shocks.
-    # other AiO loss functions use 2 copies of the shocks only.
-    shock_vars = block.get_shocks()
-    big_t_shock_syms = sum(
-        [[f"{sym}_{t}" for sym in list(shock_vars.keys())] for t in range(big_t)], []
-    )
-
-    def estimated_discounted_lifetime_reward_loss(df: callable, input_grid: Grid):
-        ## includes the values of state_0 variables, and shocks.
-        given_vals = input_grid.to_dict()
-
-        shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
-        shocks_by_t = {
-            sym: torch.stack([shock_vals[f"{sym}_{t}"] for t in range(big_t)])
-            for sym in shock_vars
-        }
-
-        ####block, discount_factor, dr, states_0, big_t, parameters={}, agent=None
-        edlr = estimate_discounted_lifetime_reward(
-            block,
-            discount_factor,
-            df,
-            {sym: given_vals[sym] for sym in state_variables},
-            big_t,
-            parameters=parameters,
-            agent=None,  ## TODO: Pass through the agent?
-            shocks_by_t=shocks_by_t,
-            ## Handle multiple decision rules?
-        )
-        return -edlr
-
-    return estimated_discounted_lifetime_reward_loss
-
-
-def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: int):
-    """
-    Generates omega_i values of the MMW JME '21 method.
-
-    states : a grid of starting state values (exogenous and endogenous)
-    block: block information (used to get the shock names)
-    shock_copies : int - number of copies of the shocks to be included.
-    """
-
-    # get the length of the states vectors -- N
     n = states.n()
     new_shock_values = {}
 
     for i in range(shock_copies):
-        # relies on constructed shocks
-        # required
-        shock_values = draw_shocks(block.shocks, n=n)
+        shock_values = draw_shocks(model_block.shocks, n=n)
         new_shock_values.update(
             {f"{sym}_{i}": shock_values[sym] for sym in shock_values}
         )
@@ -206,30 +66,57 @@ def generate_givens_from_states(states: Grid, block: model.Block, shock_copies: 
 
 
 def simulate_forward(
-    states_t,
-    block: model.Block,
-    decision_function: callable,
-    parameters,
-    big_t,
-    # state_syms,
-):
+    states_t: Grid | dict,
+    bellman_period: BellmanPeriod,
+    decision_function: Callable,
+    parameters: dict,
+    big_t: int,
+) -> dict:
+    """
+    Simulate the model forward for a specified number of periods.
+
+    Parameters
+    ----------
+    states_t : Grid or dict
+        Initial state values.
+    bellman_period : BellmanPeriod
+        The Bellman period containing model dynamics.
+    decision_function : Callable
+        Function mapping (states, shocks, parameters) to controls.
+    parameters : dict
+        Model parameters.
+    big_t : int
+        Number of time periods to simulate forward. If 0, returns the
+        initial states unchanged.
+
+    Returns
+    -------
+    dict
+        Final state values after big_t periods.
+
+    Raises
+    ------
+    ValueError
+        If big_t < 0 or if states_t is an empty dict.
+    """
+    if big_t < 0:
+        raise ValueError(f"big_t must be non-negative, got {big_t}")
+
     if isinstance(states_t, Grid):
         n = states_t.n()
         states_t = states_t.to_dict()
     else:
-        # kludge
+        if not states_t:
+            raise ValueError("states_t cannot be an empty dict")
         n = len(states_t[next(iter(states_t.keys()))])
 
-    state_syms = list(states_t.keys())
-    tf = create_transition_function(block, state_syms)
+    if big_t == 0:
+        return states_t
 
     for t in range(big_t):
-        # TODO: make sure block shocks are 'constructed'
-        # TODO: allow option for 'structured' draws, e.g. from exact discretization.
-        shocks_t = draw_shocks(block.shocks, n=n)
+        shocks_t = draw_shocks(bellman_period.block.shocks, n=n)
 
-        # this is cumbersome; probably can be solved deeper on the data structure level
-        # note similarity to Grid.from_dict() reconciliation logic.
+        # Reconcile shock dimensions with state dimensions (see Grid.from_dict())
         states_template = states_t[next(iter(states_t.keys()))]
         shocks_t = {
             sym: utils.reconcile(states_template, shocks_t[sym]) for sym in shocks_t
@@ -237,273 +124,303 @@ def simulate_forward(
 
         controls_t = decision_function(states_t, shocks_t, parameters)
 
-        states_t_plus_1 = tf(states_t, shocks_t, controls_t, parameters)
-        states_t = states_t_plus_1
+        states_t = bellman_period.transition_function(
+            states_t, controls_t, shocks=shocks_t, parameters=parameters
+        )
 
-    return states_t_plus_1
+    return states_t
+
+
+def _validate_training_inputs(
+    bellman_period,
+    loss_function,
+    parameters,
+    max_iterations,
+    tolerance,
+    shock_copies,
+    simulation_steps,
+    network_width,
+    epochs_per_iteration,
+    states_0_n,
+    lr,
+):
+    """Validate all inputs for :func:`maliar_training_loop`."""
+    if bellman_period is None:
+        raise TypeError("bellman_period cannot be None")
+    if not callable(loss_function):
+        raise TypeError(
+            f"loss_function must be callable, got {type(loss_function).__name__}"
+        )
+    if parameters is None:
+        raise TypeError(
+            "parameters cannot be None; pass an empty dict if no parameters are needed"
+        )
+
+    for name, val, lo in [
+        ("max_iterations", max_iterations, 1),
+        ("shock_copies", shock_copies, 1),
+        ("simulation_steps", simulation_steps, 1),
+        ("network_width", network_width, 1),
+        ("epochs_per_iteration", epochs_per_iteration, 1),
+    ]:
+        # numbers.Integral accepts Python int and numpy integers (e.g.
+        # np.int64 from array indexing), which a bare ``int`` check rejects.
+        if not isinstance(val, numbers.Integral):
+            raise TypeError(f"{name} must be an integer, got {type(val).__name__}")
+        if val < lo:
+            raise ValueError(f"{name} must be >= {lo}, got {val}")
+    if tolerance <= 0:
+        raise ValueError(f"tolerance must be > 0, got {tolerance}")
+    if lr <= 0:
+        raise ValueError(f"lr must be > 0, got {lr}")
+    if not isinstance(states_0_n, Grid):
+        raise TypeError(
+            f"states_0_n must be a Grid instance, got {type(states_0_n).__name__}"
+        )
+    if states_0_n.n() < 1:
+        raise ValueError("states_0_n must contain at least one state")
+
+
+def _check_convergence(prev_params, curr_params, tolerance, prev_loss, current_loss):
+    """Decide whether the training loop has converged this iteration.
+
+    Parameters
+    ----------
+    prev_params, curr_params : array-like
+        Flattened network parameters before and after the iteration; their
+        L2 difference drives parameter convergence.
+    tolerance : float
+        Threshold applied to both the parameter difference and the loss
+        difference; satisfying either alone counts as converged.
+    prev_loss : float or None
+        Loss from the previous iteration. ``None`` on the first iteration,
+        in which case loss convergence is skipped.
+    current_loss : float or None
+        Loss from this iteration. Must be a Python scalar (or ``None``);
+        loss convergence is skipped when either loss is ``None``.
+
+    Returns
+    -------
+    tuple
+        ``(converged, param_diff, loss_diff, param_converged, loss_converged)``.
+    """
+    if current_loss is not None and not isinstance(current_loss, (int, float)):
+        raise TypeError(
+            f"current_loss must be a Python scalar (int or float), "
+            f"got {type(current_loss).__name__}. "
+            "Ensure the loss function returns a scalar via .item()."
+        )
+    param_diff = utils.compute_parameter_difference(prev_params, curr_params)
+    param_converged = param_diff < tolerance
+
+    loss_diff = None
+    loss_converged = False
+    if prev_loss is not None and current_loss is not None:
+        loss_diff = abs(current_loss - prev_loss)
+        loss_converged = loss_diff < tolerance
+
+    return (
+        param_converged or loss_converged,
+        param_diff,
+        loss_diff,
+        param_converged,
+        loss_converged,
+    )
+
+
+def _log_iteration(
+    converged,
+    iteration,
+    param_diff,
+    loss_diff,
+    current_loss,
+    param_converged=False,
+    loss_converged=False,
+):
+    """Emit a single log line for the current iteration."""
+    if converged:
+        reasons = []
+        if param_converged:
+            reasons.append(f"parameters (diff={param_diff:.2e})")
+        if loss_converged:
+            reasons.append(f"loss (diff={loss_diff:.2e})")
+        reason_str = ", ".join(reasons) if reasons else "unknown criterion"
+        logging.info(f"Converged after {iteration + 1} iterations by {reason_str}")
+    else:
+        msg = f"Iteration {iteration + 1}: param_diff={param_diff:.2e}"
+        if current_loss is not None:
+            msg += f", loss={current_loss:.2e}"
+            if loss_diff is not None:
+                msg += f" (loss_diff={loss_diff:.2e})"
+        logging.info(msg)
 
 
 def maliar_training_loop(
-    block,
-    loss_function,
+    bellman_period: BellmanPeriod,
+    loss_function: Callable,
     states_0_n: Grid,
-    parameters,
-    shock_copies=2,
-    max_iterations=5,
-    random_seed=None,
-    simulation_steps=1,
-):
+    parameters: dict,
+    shock_copies: int = 2,
+    max_iterations: int = 5,
+    tolerance: float = 1e-6,
+    random_seed: Optional[int] = None,
+    simulation_steps: int = 1,
+    network_width: int = 16,
+    epochs_per_iteration: int = 250,
+    lr: float = 0.001,
+) -> tuple:
+    r"""
+    Run the Maliar, Maliar, and Winant (JME '21) training loop.
+
+    Trains a single neural network policy to minimize empirical risk (loss)
+    on a panel of states drawn forward through the model dynamics. This
+    helper constructs and trains a :class:`~skagent.ann.BlockPolicyNet`
+    internally and does not currently accept a pre-built shared-backbone
+    :class:`~skagent.ann.BlockPolicyValueNet`. If value-aware training is
+    needed (e.g. for a Bellman residual loss with a value head), call
+    :func:`~skagent.ann.train_block_nn` directly on a
+    :class:`~skagent.ann.BlockPolicyValueNet`; a future refactor may add
+    value-network support here.
+
+    The loop maps onto the MMW JME'21 algorithm steps as follows:
+    :func:`_validate_training_inputs` and the network construction below
+    cover Step 1 (initialize topology and coefficients); the per-iteration
+    :func:`~skagent.ann.train_block_nn` call is Step 2 (minimize the
+    empirical risk :math:`\Xi^n(\theta)`); the returned network is the Step 3
+    trained approximation :math:`\varphi(\cdot, \theta)`.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        A model definition containing block dynamics and transitions.
+    loss_function : Callable
+        The empirical risk function :math:`\Xi^n` from MMW JME'21. This
+        function is passed to the neural network training routine as
+        ``loss_function(decision_function, input_grid) -> loss_tensor``.
+    states_0_n : Grid
+        A panel of starting states for training. Must contain at least one state.
+    parameters : dict
+        Given parameters for the model.
+    shock_copies : int, optional
+        Number of shock copies to include in the training set
+        :math:`\{\omega_i\}`. Must match the expected number of shock copies
+        in the loss function. Must be >= 1. Default is 2.
+    max_iterations : int, optional
+        Maximum number of training loop iterations before stopping.
+        Must be >= 1. Default is 5.
+    tolerance : float, optional
+        Convergence tolerance. Training stops when either the L2 norm of
+        parameter changes or the absolute difference in loss is below this
+        threshold. Satisfying either criterion alone is sufficient.
+        Must be > 0. Default is 1e-6.
+    random_seed : int, optional
+        Random seed for reproducibility. Default is None.
+    simulation_steps : int, optional
+        Number of time steps to simulate forward when determining the next
+        training set :math:`\{\omega_i\}`. Higher values let the training
+        states explore more of the state space at higher computational cost.
+        Must be >= 1. Default is 1.
+    network_width : int, optional
+        Width of hidden layers in the policy neural network.
+        Must be >= 1. Default is 16.
+    epochs_per_iteration : int, optional
+        Number of training epochs per iteration.
+        Must be >= 1. Default is 250.
+    lr : float, optional
+        Learning rate for the internal Adam optimizer. The optimizer is
+        created once and reused across iterations to preserve momentum.
+        Must be > 0. Default is 0.001.
+
+    Returns
+    -------
+    tuple
+        ``(trained_policy_network, training_states)`` where
+        ``trained_policy_network`` is the trained
+        :class:`~skagent.ann.BlockPolicyNet` and ``training_states`` is the
+        :class:`~skagent.grid.Grid` of states from the final iteration (the
+        convergence point if training converged early, otherwise the states
+        after ``max_iterations`` steps).
+
+    Raises
+    ------
+    ValueError
+        If max_iterations < 1, tolerance <= 0, shock_copies < 1,
+        simulation_steps < 1, network_width < 1, epochs_per_iteration < 1,
+        or states_0_n contains no states.
+    TypeError
+        If bellman_period is None or loss_function is not callable.
     """
-    block - a model definition
-    loss_function : callable((df, input_vector) -> loss vector
-    states_0_n : Grid a panel of starting states
-    parameters : dict : given parameters for the model
-
-    shock_copies: int : number of copies of shocks to include in the training set omega
-                        must match expected number of shock copies in the loss function
-                        TODO: make this better, less ad hoc
-
-    loss_function is the "empirical risk Xi^n" in MMW JME'21.
-
-    max_iterations: int
-        Number of times to perform the training loop, if there is no convergence.
-    simulation_steps : int
-        The number of time steps to simulate forward when determining the next omega set for training
-    """
-
-    # Step 1. Initialize the algorithm:
-
-    # i). construct theoretical risk Xi(θ ) = Eω [ξ (ω; θ )] (lifetime reward, Euler/Bellmanequations);
-    # ii). deﬁne empirical risk Xi^n (θ ) = 1n ni=1 ξ (ωi ; θ );
-    loss_function  # This is provided as an argument.
-
-    # iii). deﬁne a topology of neural network ϕ (·, θ );
-    # iv). ﬁx initial vector of the coeﬃcients θ .
+    _validate_training_inputs(
+        bellman_period,
+        loss_function,
+        parameters,
+        max_iterations,
+        tolerance,
+        shock_copies,
+        simulation_steps,
+        network_width,
+        epochs_per_iteration,
+        states_0_n,
+        lr,
+    )
 
     if random_seed is not None:
         torch.manual_seed(random_seed)
 
-    bpn = ann.BlockPolicyNet(block, width=16)
+    bpn = ann.BlockPolicyNet(bellman_period, width=network_width)
+    optimizer = torch.optim.Adam(bpn.parameters(), lr=lr)
+    states = states_0_n
+    prev_loss = None
 
-    states = states_0_n  # V) Create initial panel of agents/starting states.
+    for iteration in range(max_iterations):
+        prev_params = utils.extract_parameters(bpn)
 
-    # Step 2. Train the machine, i.e., ﬁnd θ that minimizes theempirical risk Xi^n (θ ):
-    for i in range(max_iterations):
-        # i). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
-        givens = generate_givens_from_states(states_0_n, block, shock_copies)
+        givens = generate_givens_from_states(states, bellman_period.block, shock_copies)
 
-        # ii). construct the gradient ∇ Xi^n (θ ) = 1n ni=1 ∇ ξ (ωi ; θ );
-        # iii). update the coeﬃcients θ_hat = θ − λk ∇ Xi^n (θ ) and go to step 2.i);
-        # TODO how many epochs? What Adam scale? Passing through variables
-        ann.train_block_policy_nn(bpn, givens, loss_function, epochs=250)
+        bpn, current_loss, optimizer = ann.train_block_nn(
+            bpn,
+            givens,
+            loss_function,
+            epochs=epochs_per_iteration,
+            optimizer=optimizer,
+        )
 
-        # i/iv). simulate the model to produce data {ωi }ni=1 by using the decision rule ϕ (·, θ );
+        curr_params = utils.extract_parameters(bpn)
+        converged, param_diff, loss_diff, param_converged, loss_converged = (
+            _check_convergence(
+                prev_params,
+                curr_params,
+                tolerance,
+                prev_loss,
+                current_loss,
+            )
+        )
+
+        _log_iteration(
+            converged,
+            iteration,
+            param_diff,
+            loss_diff,
+            current_loss,
+            param_converged,
+            loss_converged,
+        )
+        prev_loss = current_loss
+
+        if converged:
+            break
+
         next_states = simulate_forward(
-            states, block, bpn.get_decision_function(), parameters, simulation_steps
-        )
-
-        states = Grid.from_dict(next_states)
-
-        # End Step 2 if the convergence criterion || θ_hat − θ ||  < ε is satisﬁed.
-        # TODO: test for difference.. how? This effects the FOR (/while) loop above.
-
-    # Step 3. Assess the accuracy of constructed approximation ϕ (·, θ ) on a new sample.
-    return bpn, states
-
-
-def estimate_bellman_residual(
-    block,
-    discount_factor,
-    value_network,
-    df,
-    states_t,
-    shocks,
-    parameters={},
-    agent=None,
-):
-    """
-    Computes the Bellman equation residual for given states and shocks.
-
-    The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
-    This function computes: V(s) - [u(s,c,ε) + β V(s')]
-    where s' = f(s,c,ε) and V(s') is evaluated at a specific future shock realization ε'.
-
-    Parameters
-    ----------
-    block : model.DBlock
-        The model block containing dynamics, rewards, and shocks
-    discount_factor : float
-        The discount factor β
-    value_network : callable
-        A value function that takes state variables and returns value estimates
-    df : callable
-        Decision function that returns controls given states and shocks
-    states_t : dict
-        Current state variables
-    shocks : dict
-        Shock realizations for both periods:
-        - {shock_sym}_0: period t shocks (for immediate reward and transitions)
-        - {shock_sym}_1: period t+1 shocks (for continuation value evaluation)
-    parameters : dict, optional
-        Model parameters for calibration
-    agent : str, optional
-        Agent identifier for rewards
-
-    Returns
-    -------
-    torch.Tensor
-        Bellman equation residual
-    """
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
-
-    # Get state variable names for transition
-    state_variables = list(states_t.keys())
-
-    # Get shock variable names
-    shock_vars = block.get_shocks()
-    shock_syms = list(shock_vars.keys())
-
-    # Extract period-specific shocks from the combined shocks object
-    shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
-    shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
-
-    # Get reward variables
-    reward_vars = [
-        sym for sym in block.reward if agent is None or block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
-        raise Exception("No reward variables found in block")
-    reward_sym = reward_vars[0]  # Assume single reward for now
-
-    # Get current value estimates (using period t shocks)
-    current_values = value_network(states_t, shocks_t, parameters)
-
-    # Get controls from decision function (using period t shocks)
-    controls_t = df(states_t, shocks_t, parameters)
-
-    # Create transition and reward functions
-    tf = create_transition_function(block, state_variables)
-    rf = create_reward_function(block, agent)
-
-    # Compute immediate reward (using period t shocks)
-    immediate_reward = rf(states_t, shocks_t, controls_t, parameters)[reward_sym]
-
-    # Compute next states (using period t shocks)
-    next_states = tf(states_t, shocks_t, controls_t, parameters)
-
-    # Compute continuation value using value network (using period t+1 shocks)
-    continuation_values = value_network(next_states, shocks_t_plus_1, parameters)
-
-    # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
-    bellman_rhs = immediate_reward + discount_factor * continuation_values
-
-    # Return residual: V(s) - [u(s,c,ε) + β V(s')]
-    bellman_residual = current_values - bellman_rhs
-
-    return bellman_residual
-
-
-def get_bellman_equation_loss(
-    state_variables, block, discount_factor, value_network, parameters={}, agent=None
-):
-    """
-    Creates a Bellman equation loss function for the Maliar method.
-
-    The Bellman equation is: V(s) = max_c { u(s,c,ε) + β E_ε'[V(s')] }
-    where s' = f(s,c,ε) is the next state given current state s, control c, and shock ε,
-    and the expectation E_ε' is taken over future shock realizations ε'.
-
-    This follows the same pattern as get_estimated_discounted_lifetime_reward_loss
-    and is designed for use with the Maliar all-in-one approach.
-
-    This function expects the input grid to contain two independent shock realizations:
-    - {shock_sym}_0: shocks for period t (used for immediate reward and transitions)
-    - {shock_sym}_1: shocks for period t+1 (used for continuation value evaluation)
-
-    Parameters
-    ----------
-    state_variables : list of str
-        List of state variable names (endogenous state variables)
-    block : model.DBlock
-        The model block containing dynamics, rewards, and shocks
-    discount_factor : float
-        The discount factor β
-    value_network : callable
-        A value function that takes state variables and returns value estimates
-    parameters : dict, optional
-        Model parameters for calibration
-    agent : str, optional
-        Agent identifier for rewards
-
-    Returns
-    -------
-    callable
-        A loss function that takes (decision_function, input_grid) and returns
-        the Bellman equation residual loss
-    """
-    if callable(discount_factor):
-        raise Exception(
-            "Currently only numerical, not state-dependent, discount factors are supported."
-        )
-
-    # Get shock variables
-    shock_vars = block.get_shocks()
-    shock_syms = list(shock_vars.keys())
-
-    # Get control variables
-    control_vars = block.get_controls()
-    if len(control_vars) == 0:
-        raise Exception("No control variables found in block")
-
-    # Get reward variables
-    reward_vars = [
-        sym for sym in block.reward if agent is None or block.reward[sym] == agent
-    ]
-    if len(reward_vars) == 0:
-        raise Exception("No reward variables found in block")
-    reward_vars[0]  # Assume single reward for now
-
-    def bellman_equation_loss(df, input_grid: Grid):
-        """
-        Bellman equation loss function.
-
-        Parameters
-        ----------
-        df : callable
-            Decision function from policy network
-        input_grid : Grid
-            Grid containing current states and two independent shock realizations:
-            - {shock_sym}_0: period t shocks
-            - {shock_sym}_1: period t+1 shocks (independent of period t)
-
-        Returns
-        -------
-        torch.Tensor
-            Bellman equation residual loss (squared)
-        """
-        given_vals = input_grid.to_dict()
-
-        # Extract current states and both shock realizations
-        states_t = {sym: given_vals[sym] for sym in state_variables}
-        shocks = {f"{sym}_0": given_vals[f"{sym}_0"] for sym in shock_syms}
-        shocks.update({f"{sym}_1": given_vals[f"{sym}_1"] for sym in shock_syms})
-
-        # Use helper function to estimate Bellman residual with combined shock object
-        bellman_residual = estimate_bellman_residual(
-            block,
-            discount_factor,
-            value_network,
-            df,
-            states_t,
-            shocks,
+            states,
+            bellman_period,
+            bpn.get_decision_function(),
             parameters,
-            agent,
+            simulation_steps,
+        )
+        states = Grid.from_dict({k: v.detach() for k, v in next_states.items()})
+    else:
+        logging.warning(
+            f"Training completed without convergence after {max_iterations} iterations."
         )
 
-        # Return squared residual as loss
-        return bellman_residual**2
-
-    return bellman_equation_loss
+    return bpn, states

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import numpy as np
@@ -91,3 +93,125 @@ def create_vectorized_function_wrapper_with_mapping(lambda_func, param_to_column
             ).unsqueeze(1)
 
     return wrapper
+
+
+def extract_parameters(network):
+    """Extract all parameters from a PyTorch network into a flat tensor."""
+    params = []
+    for param in network.parameters():
+        params.append(param.data.view(-1))
+    return torch.cat(params) if params else torch.tensor([])
+
+
+def compute_parameter_difference(params1, params2):
+    """Compute the L2 norm of the difference between two parameter vectors."""
+    if len(params1) != len(params2):
+        return float("inf")
+    return torch.norm(params1 - params2).item()
+
+
+def fischer_burmeister(
+    a: torch.Tensor, h: torch.Tensor, eps: float = 1e-12
+) -> torch.Tensor:
+    r"""Compute the Fischer-Burmeister function for smooth complementarity.
+
+    The Fischer-Burmeister function replaces the complementarity conditions
+    :math:`a \geq 0,\; h \geq 0,\; ah = 0` with the equivalent smooth equation:
+
+    .. math::
+
+        \text{FB}(a, h) = a + h - \sqrt{a^2 + h^2} = 0
+
+    This is differentiable everywhere, unlike :math:`\min(a, h) = 0`.
+
+    Following Maliar et al. (2021, JME) equation (25).
+
+    Parameters
+    ----------
+    a : torch.Tensor
+        First argument (e.g., slack variable :math:`1 - c/w`).
+    h : torch.Tensor
+        Second argument (e.g., unit-free Lagrange multiplier).
+    eps : float, optional
+        Regularization constant added inside the square root to keep the
+        gradient finite at the origin. At the default ``eps=1e-12``,
+        ``FB(0, 0) = -sqrt(eps) ≈ -1e-6`` rather than exactly zero.
+        This is below typical convergence tolerances but should be
+        accounted for in tests or with very tight tolerances.
+
+    Returns
+    -------
+    torch.Tensor
+        Fischer-Burmeister residual. Approximately zero when the
+        complementarity conditions are satisfied.
+    """
+    if eps <= 0:
+        raise ValueError(f"eps must be > 0, got {eps}")
+    return a + h - torch.sqrt(a**2 + h**2 + eps)
+
+
+def compute_gradients_for_tensors(
+    tensors_dict: dict[str, torch.Tensor],
+    wrt: dict[str, torch.Tensor],
+    create_graph: bool = False,
+) -> dict[str, dict[str, torch.Tensor | None]]:
+    """
+    Compute gradients for a dictionary of tensors with respect to variables.
+
+    This function computes gradients using PyTorch's autograd. It is used by
+    the gradient methods on BellmanPeriod (``grad_reward_function``,
+    ``grad_transition_function``, and ``grad_pre_state_function``).
+
+    For batched inputs, this computes the diagonal of the Jacobian: for each
+    batch element *i*, we compute ∂target[i]/∂var[i]. The implementation
+    uses ``grad(target.sum(), var)``, which yields the correct diagonal
+    whenever target[i] depends only on var[i] (sample-independence). This
+    assumption holds when each batch element is computed independently,
+    which is the case for element-wise reward and transition functions in
+    this library.
+
+    For scalar inputs, ``.sum()`` is a no-op, so the same code path handles
+    both cases without branching.
+
+    Parameters
+    ----------
+    tensors_dict : dict[str, torch.Tensor]
+        Dictionary mapping symbol names to tensors to compute gradients for.
+    wrt : dict[str, torch.Tensor]
+        Dictionary of variables to compute gradients with respect to.
+        Keys are variable names, values are tensors with ``requires_grad=True``.
+    create_graph : bool, optional
+        If True, the graph of the derivative is constructed, allowing
+        higher-order derivatives and end-to-end training. Default: False.
+
+    Returns
+    -------
+    dict[str, dict[str, torch.Tensor | None]]
+        Nested dictionary of gradients for each tensor symbol and variable:
+        ``{tensor_sym: {var_name: gradient}}``. Gradient is ``None`` if and
+        only if the variable does not require gradients or no computational
+        graph path exists from the variable to the target tensor. A zero
+        tensor is returned when the dependency exists but evaluates to zero.
+        Callers should treat ``None`` as structural independence, not as a
+        zero gradient.
+    """
+    from torch.autograd import grad
+
+    gradients: dict[str, dict[str, torch.Tensor | None]] = {}
+    for tensor_sym, target_tensor in tensors_dict.items():
+        gradients[tensor_sym] = {}
+        for var_name, var_tensor in wrt.items():
+            if not var_tensor.requires_grad:
+                gradients[tensor_sym][var_name] = None
+                continue
+
+            grad_result = grad(
+                target_tensor.sum(),
+                var_tensor,
+                retain_graph=True,
+                create_graph=create_graph,
+                allow_unused=True,
+            )
+            gradients[tensor_sym][var_name] = grad_result[0]
+
+    return gradients

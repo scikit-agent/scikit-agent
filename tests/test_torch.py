@@ -1,8 +1,8 @@
 import unittest
 
 import numpy as np
-import skagent.model as model
-from skagent.model import Control
+import skagent.block as model
+from skagent.block import Control
 import torch
 
 torch.manual_seed(10077691)

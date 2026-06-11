@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Complete Catalogue of Analytically Solvable Consumption-Savings Models
+Analytically Solvable Consumption-Savings Models
 
-This module implements the exhaustive collection of discrete-time consumption-savings
+This module implements a collection of discrete-time consumption-savings
 dynamic programming problems for which the literature has succeeded in writing down
-true closed-form policies. The catalogue is complete as of June 13, 2025, to the best
-of our knowledge: no other analytically solvable DP variants are currently known.
+true closed-form policies. These represent well-known benchmark problems from
+the economic literature with established analytical solutions.
 
 THEORETICAL FOUNDATION
 ======================
@@ -13,24 +13,65 @@ THEORETICAL FOUNDATION
 An entry qualifies for inclusion ONLY if:
 (i) The problem is a bona-fide dynamic programming problem
 (ii) The optimal c_t (and any other control) can be written in closed form
-    with no recursive objects left implicit
+with no recursive objects left implicit
 
-Global Notation (Discrete Time Only)
-------------------------------------
+Standard Timing Convention (Adopted Throughout)
+-----------------------------------------------
 t ∈ {0,1,2,...}     : period index
-A_t                 : end-of-period assets (risk-free bond, gross return R=1+r>1)
-y_t                 : non-capital income
-c_t                 : consumption
-m_t := A_t + h_t    : cash-on-hand; h_t = E_t[∑_{s≥0} R^{-(s+1)} y_{t+s}]
-u(c)                : period utility
-TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0
+A_{t-1}             : beginning-of-period assets (arrival state, before interest)
+y_t                 : non-capital income (realized in period t)
+R                   : gross return on assets (R = 1 + r > 1)
+m_t = R*A_{t-1} + y_t : cash-on-hand (market resources available for consumption)
+c_t                 : consumption (control variable)
+A_t = m_t - c_t     : end-of-period assets (state for next period)
+H_t = E_t[∑_{s=1}^∞ R^{-s} y_{t+s}] : human wealth (present value of future income)
+W_t = m_t + H_t     : total wealth (cash-on-hand plus human wealth)
+u(c)                : period utility function
+β                   : discount factor
+TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality condition)
 """
 
-from skagent.distributions import Normal, MeanOneLogNormal
-from skagent.model import Control, DBlock
+from __future__ import annotations
+
+from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
+from skagent.block import Control, DBlock
+import copy
+import logging
 import torch
+from torch import as_tensor
 import numpy as np
 from typing import Dict, Any, Callable
+
+logger = logging.getLogger(__name__)
+
+
+# UTILITY FUNCTIONS
+# =================
+
+
+def crra_utility(c, gamma):
+    """
+    CRRA utility: u(c) = c^(1-gamma)/(1-gamma) for gamma != 1, log(c) for gamma == 1
+    """
+    c_tensor = as_tensor(c)
+    if abs(gamma - 1.0) < 1e-10:
+        return torch.log(c_tensor)
+    return c_tensor ** (1 - gamma) / (1 - gamma)
+
+
+def _human_wealth_rate(R):
+    """Return r = R - 1, raising ValueError if R <= 1.
+
+    Used by analytical policies that compute human wealth as a present-value
+    annuity y/r; R > 1 keeps that annuity well defined.
+    """
+    r = R - 1
+    if r <= 0:
+        raise ValueError(
+            f"Interest rate must satisfy R > 1 for human wealth calculation, got R={R} (r={r})"
+        )
+    return r
+
 
 # NUMERICAL TOLERANCE CONSTANTS
 # =============================
@@ -39,70 +80,13 @@ EPS_EULER = 1e-8  # Euler equation residuals (stochastic)
 EPS_BUDGET = 1e-12  # Budget evolution (should be exact)
 EPS_VALIDATION = 1e-8  # General validation tolerance
 
+
 # DETERMINISTIC (PERFECT-FORESIGHT) BENCHMARKS
 # ============================================
 
-# D-1: Two-Period Log Utility
-# ---------------------------
-# The simplest possible consumption-savings problem: allocate wealth W between
-# consumption today (c₁) and consumption tomorrow (c₂), with log utility and
-# known interest rate R.
-
-# Mathematical formulation:
-#   max_{c₁,c₂} ln c₁ + β ln c₂
-#   s.t. c₁ + c₂/R = W
-
-# First-order conditions:
-#   1/c₁ = λ
-#   β/c₂ = λ/R
-
-# Combining: c₂ = βRc₁
-# Budget constraint: c₁ + βRc₁/R = W ⟹ c₁(1+β) = W
-
-# Closed-form solution:
-#   c₁ = W/(1+β)
-#   c₂ = βRW/(1+β)
-
-
-d1_calibration = {
-    "DiscFac": 0.96,
-    "R": 1.03,
-    "W": 2.0,
-    "description": "D-1: Two-period log utility",
-}
-
-d1_block = DBlock(
-    **{
-        "name": "d1_two_period_log",
-        "shocks": {},
-        "dynamics": {
-            "c1": Control(["W"], upper_bound=lambda W: W, agent="consumer"),
-            "c2": lambda W, c1, R=d1_calibration["R"]: (W - c1) * R,
-            "u1": lambda c1: torch.log(torch.as_tensor(c1, dtype=torch.float32)),
-            "u2": lambda c2: torch.log(torch.as_tensor(c2, dtype=torch.float32)),
-        },
-        "reward": {"u1": "consumer", "u2": "consumer"},
-    }
-)
-
-
-def d1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """D-1: c1 = W/(1+β), c2 = β*R*W/(1+β)"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-
-    def policy(states, shocks, parameters):
-        W = states["W"]
-        c1_optimal = W / (1 + beta)
-        c2_optimal = beta * R * W / (1 + beta)
-        return {"c1": c1_optimal, "c2": c2_optimal}
-
-    return policy
-
-
-# D-2: Finite Horizon Log Utility
+# D-1: Finite Horizon Log Utility
 # -------------------------------
-# Extension of D-1 to T periods using backward induction. The key insight is that
+# T-period finite horizon log utility using backward induction. The key insight is that
 # with log utility, the consumption rule has a simple closed form even with finite
 # horizon effects.
 #
@@ -111,69 +95,117 @@ def d1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 #   V_t(W_t) = max_c ln c + β V_{t+1}((W_t - c)R)  for t < T
 #
 # The value function takes the form V_t(W_t) = A_t + ln W_t, leading to:
-#   c_t = (1-β)/(1-β^{T-t+1}) * W_t  (remaining horizon consumption rule)
+#   c_t = (1-β)/(1-β^{T-t}) * W_t  (remaining horizon consumption rule)
 #
 # This shows how finite horizon creates time-varying consumption rates that
 # approach the infinite-horizon limit as T → ∞.
 
-d2_calibration = {
+d1_calibration = {
     "DiscFac": 0.96,
     "R": 1.03,
     "T": 5,  # Finite horizon
     "W0": 2.0,  # Initial wealth
-    "description": "D-2: Finite horizon log utility",
+    # Note: t=0 is the initial STATE, not a parameter, so it's passed in initial_states
+    "description": "D-1: Finite horizon log utility",
 }
 
-d2_block = DBlock(
+d1_block = DBlock(
     **{
-        "name": "d2_finite_log",
+        "name": "d1_finite_log",
         "shocks": {},
         "dynamics": {
-            "t": lambda t: t + 1,  # Time counter
             "c": Control(["W", "t"], upper_bound=lambda W, t: W, agent="consumer"),
+            "u": lambda c, t, T: (as_tensor(t) < as_tensor(T)).float()
+            * crra_utility(c, 1.0),  # Utility cutoff at T (life ends)
             "W": lambda W, c, R: (W - c) * R,  # Next period wealth
-            "u": lambda c: torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "t": lambda t: t + 1,  # Time counter
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """D-2: c_t = (1-β)/(1-β^(T-t+1)) * W_t (remaining horizon formula)"""
-    beta = calibration["DiscFac"]
-    T = calibration["T"]
+def d1_analytical_policy(states, shocks, parameters):
+    r"""
+    Optimal policy for D-1: finite-horizon log-utility consumption.
 
-    def policy(states, shocks, parameters):
-        W = states["W"]
-        t = states.get("t", 0)
+    With log utility and a deterministic :math:`T`-period horizon, the agent
+    solves
 
-        # Remaining horizon consumption rule
-        remaining_periods = T - t + 1
+    .. math::
+        V_T(W_T) = \log W_T,
+        \qquad
+        V_t(W_t) = \max_{c_t \in (0,\, W_t]} \, \log c_t
+        + \beta \, V_{t+1}\bigl((W_t - c_t)\, R\bigr),
 
-        # Handle both scalar and tensor cases
-        if torch.is_tensor(remaining_periods):
-            # Terminal period - consume everything where remaining_periods <= 0
-            terminal_mask = remaining_periods <= 0
-            numerator = 1 - beta
-            beta_pow = torch.pow(beta, remaining_periods)
-            denominator = 1 - beta_pow
-            c_optimal = torch.where(terminal_mask, W, (numerator / denominator) * W)
-        else:
-            # Scalar case
-            if remaining_periods <= 0:
-                c_optimal = W
-            else:
-                numerator = 1 - beta
-                denominator = 1 - (beta**remaining_periods)
-                c_optimal = (numerator / denominator) * W
+    where :math:`W_t` is wealth at the start of period :math:`t`, :math:`R`
+    is the gross return, and :math:`\beta < 1` is the discount factor. The
+    value function takes the form :math:`V_t(W) = \alpha_t + \log W` for a
+    time-varying additive constant :math:`\alpha_t`, and the first-order
+    condition gives the remaining-horizon rule
 
-        return {"c": c_optimal}
+    .. math::
+        c_t \;=\; \frac{1 - \beta}{\,1 - \beta^{T - t}\,} \, W_t.
 
-    return policy
+    In the terminal period (:math:`T - t = 1`) the formula simplifies to
+    :math:`c_t = W_t` since :math:`(1-\beta)/(1-\beta) = 1`; the
+    implementation handles this case directly to avoid the :math:`0/0`
+    form that would arise once :math:`T - t = 0`. As :math:`T - t \to
+    \infty`, the rule converges to the infinite-horizon constant-MPC
+    policy :math:`c_t = (1 - \beta) W_t`, the :math:`\sigma = 1` special
+    case of D-2.
+
+    Parameters
+    ----------
+    states : dict
+        Arrival states. Must contain ``"W"`` (wealth) and ``"t"`` (time
+        index, defaults to ``0``).
+    shocks : dict
+        Unused; the model is deterministic.
+    parameters : dict
+        Must contain ``"DiscFac"`` (:math:`\beta`) and ``"T"`` (horizon).
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}`` whose dtype matches the input wealth.
+
+    Raises
+    ------
+    ValueError
+        If :math:`\beta \geq 1`, since the closed form is undefined.
+    """
+    beta = parameters["DiscFac"]
+    if beta >= 1.0:
+        raise ValueError(
+            f"Discount factor must satisfy β < 1 for finite horizon model, got β={beta}"
+        )
+    T = parameters["T"]
+    W = states["W"]
+    t = states.get("t", 0)
+
+    # Output dtype: float64 for scalar inputs, preserve the input tensor
+    # dtype otherwise.
+    dtype = torch.float64 if not isinstance(W, torch.Tensor) else W.dtype
+
+    # Stay in tensor space so a scalar Python ``t = T`` cannot raise a
+    # ZeroDivisionError before the terminal branch is masked. Clamping the
+    # horizon at 1 collapses the denominator at ``T - t <= 1`` to
+    # ``1 - beta``, so the formula evaluates to exactly ``W`` at the
+    # boundary - no 0/0, no masked NaN that would poison autograd.
+    # Float64 throughout matches the original Python-float precision (a
+    # bare ``as_tensor`` would round scalars to float32). Integer
+    # ``safe_horizon`` keeps ``beta ** safe_horizon`` on torch's fast
+    # integer-exponentiation path.
+    W_tensor = as_tensor(W, dtype=torch.float64)
+    safe_horizon = torch.clamp(as_tensor(T - t), min=1)
+    denominator = 1 - torch.tensor(beta, dtype=torch.float64) ** safe_horizon
+    c_optimal = (1 - beta) / denominator * W_tensor
+
+    return {"c": as_tensor(c_optimal, dtype=dtype)}
 
 
-# D-3: Infinite Horizon CRRA (Perfect Foresight)
+# D-2: Infinite Horizon CRRA (Perfect Foresight)
 # ----------------------------------------------
 # The canonical perfect-foresight consumption model. With CRRA utility and
 # constant income, the consumption function is linear in cash-on-hand with
@@ -181,50 +213,108 @@ def d2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 #
 # Mathematical formulation:
 #   max E₀ ∑_{t=0}^∞ β^t [c_t^{1-σ}/(1-σ)]
-#   s.t. A_{t+1} = (A_t + y_t - c_t)R
+#   s.t. A_t = R*A_{t-1} + y_t - c_t   (equivalently m_t = R*A_{t-1} + y_t, A_t = m_t - c_t)
 #       lim_{T→∞} E₀[β^T u'(c_T) A_T] = 0  (TVC)
 #
 # Key condition: Return-Impatience (βR)^{1/σ} < R
 # This ensures finite value function and non-explosive consumption.
 #
 # Closed-form solution:
-#   c_t = κm_t  where κ = (R - (βR)^{1/σ})/R
-#   m_t = A_t R + y_t  (cash-on-hand)
+#   c_t = κ*W_t  where κ = (R - (βR)^{1/σ})/R
+#   W_t = m_t + H_t  (total wealth = cash-on-hand + human wealth)
+#   H_t = y/r  (human wealth for constant income y)
+#   m_t = A_t*R + y_t  (cash-on-hand)
 #
 # The MPC κ is constant and depends only on deep parameters, not state variables.
 
-d3_calibration = {
+d2_calibration = {
     "DiscFac": 0.96,
     "CRRA": 2.0,
     "R": 1.03,
     "y": 1.0,
-    "description": "D-3: Infinite horizon CRRA perfect foresight",
+    "description": "D-2: Infinite horizon CRRA perfect foresight",
 }
 
-d3_block = DBlock(
+d2_block = DBlock(
     **{
-        "name": "d3_infinite_crra",
+        "name": "d2_infinite_crra",
         "shocks": {},
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA)
-            / (1 - CRRA)
-            if CRRA != 1
-            else torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """D-3: c_t = κ*m_t where κ = (R - (βR)^(1/σ))/R"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    sigma = calibration["CRRA"]
+def d2_analytical_policy(states, shocks, parameters):
+    r"""
+    Optimal policy for D-2: infinite-horizon CRRA perfect foresight.
 
+    The canonical perfect-foresight consumption problem solves
+
+    .. math::
+        \max_{\{c_t\}} \, \sum_{t=0}^{\infty} \beta^t \,
+        \frac{c_t^{\,1-\sigma}}{1 - \sigma}
+        \quad \text{s.t.} \quad A_t = R\, A_{t-1} + y - c_t,
+
+    with constant labor income :math:`y > 0`, gross return :math:`R > 1`,
+    and the transversality condition
+    :math:`\lim_{T\to\infty} \beta^T \, u'(c_T)\, A_T = 0`. Equivalently,
+    cash-on-hand :math:`m_t = R\, A_{t-1} + y` evolves with end-of-period
+    assets :math:`A_t = m_t - c_t`. Under return-impatience
+    :math:`(\beta R)^{1/\sigma} < R`, the closed-form policy is linear in
+    total wealth,
+
+    .. math::
+        c_t \;=\; \kappa \, W_t,
+        \qquad
+        \kappa \;=\; \frac{R - (\beta R)^{1/\sigma}}{R},
+        \qquad
+        W_t \;=\; m_t + H,
+
+    where :math:`m_t = R\, A_{t-1} + y` is cash-on-hand at time :math:`t`,
+    :math:`H = y / r` is human wealth (the present value of the constant
+    future income stream), and :math:`r = R - 1`. The marginal propensity
+    to consume :math:`\kappa` depends only on deep parameters, not on the
+    state.
+
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"a"`` (arrival assets).
+    shocks : dict
+        Unused.
+    parameters : dict
+        Must contain ``"DiscFac"`` (:math:`\beta`), ``"R"``, ``"CRRA"``
+        (:math:`\sigma`), and ``"y"``.
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}``.
+
+    Raises
+    ------
+    ValueError
+        If return-impatience is violated, or if :math:`R \leq 1`.
+
+    See Also
+    --------
+    d3_analytical_policy : Same model with i.i.d. survival risk.
+    """
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    sigma = parameters["CRRA"]
+    y = parameters["y"]
+
+    # Extract arrival state (assets from previous period)
+    a = states["a"]
+
+    # Compute MPC
     growth_factor = (beta * R) ** (1 / sigma)
     if growth_factor >= R:
         raise ValueError(
@@ -233,23 +323,27 @@ def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 
     kappa = (R - growth_factor) / R
 
-    def policy(states, shocks, parameters):
-        m = states["m"]
-        c_optimal = kappa * m
-        return {"c": c_optimal}
+    # Compute information set: market resources = assets * return + income
+    m = a * R + y
 
-    return policy
+    # Compute human wealth: present value of constant income stream
+    r = _human_wealth_rate(R)
+    human_wealth = y / r
+
+    # Optimal consumption: c = κ * (market resources + human wealth)
+    c_optimal = kappa * (m + human_wealth)
+    return {"c": c_optimal}
 
 
-# D-4: Blanchard Discrete-Time Mortality
+# D-3: Blanchard Discrete-Time Mortality
 # ---------------------------------------
-# Extension of D-3 with i.i.d. survival risk. Each period, the agent survives
+# Extension of D-2 with i.i.d. survival risk. Each period, the agent survives
 # with probability s ∈ (0,1). This scales down effective patience but preserves
 # the linear consumption function structure.
 #
 # Mathematical formulation:
 #   max E₀ ∑_{t=0}^∞ (sβ)^t [c_t^{1-σ}/(1-σ)]
-#   s.t. same budget constraint as D-3
+#   s.t. same budget constraint as D-2
 #
 # Key insight: Mortality risk is equivalent to reducing the discount factor
 # from β to sβ. The consumption rule remains linear in cash-on-hand.
@@ -257,47 +351,112 @@ def d3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 # Condition: sβR < 1 (mortality-adjusted return-impatience)
 #
 # Closed-form solution:
-#   c_t = κ_s m_t  where κ_s = (R - (sβR)^{1/σ})/R
+#   c_t = κ_s*W_t  where κ_s = (R - (sβR)^{1/σ})/R
+#   W_t = m_t + H_t  (total wealth = cash-on-hand + human wealth)
+#   H_t = y/r  (human wealth for constant income y)
 #
 # Note: κ_s > κ (higher MPC) because mortality makes the agent less patient.
 
-d4_calibration = {
+d3_calibration = {
     "DiscFac": 0.96,
     "CRRA": 2.0,
     "R": 1.03,
     "y": 1.0,
     "SurvivalProb": 0.99,  # Survival probability s ∈ (0,1)
-    "description": "D-4: Blanchard discrete-time mortality",
+    # Note: liv=1.0 is the initial STATE, not a parameter, so it's passed in initial_states
+    "description": "D-3: Blanchard discrete-time mortality",
 }
 
-d4_block = DBlock(
+d3_block = DBlock(
     **{
-        "name": "d4_blanchard_mortality",
-        "shocks": {},
+        "name": "d3_blanchard_mortality",
+        "shocks": {
+            "live": (Bernoulli, {"p": "SurvivalProb"}),  # Survival shock each period
+        },
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
             "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
             "a": lambda m, c: m - c,
-            "u": lambda c, CRRA: torch.as_tensor(c, dtype=torch.float32) ** (1 - CRRA)
-            / (1 - CRRA)
-            if CRRA != 1
-            else torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
+            "u": lambda c, liv, CRRA: liv
+            * crra_utility(c, CRRA),  # Utility with survival
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def d4_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """D-4: c_t = κ_s*m_t where κ_s = 1 - (sβR)^(1/σ)/R"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    sigma = calibration["CRRA"]
-    s = calibration["SurvivalProb"]
+def d3_analytical_policy(states, shocks, parameters):
+    r"""
+    Optimal policy for D-3: Blanchard (1985) discrete-time mortality.
+
+    Extends D-2 by giving the agent i.i.d. survival probability
+    :math:`s \in (0, 1)` per period. The objective becomes
+
+    .. math::
+        \max \, \sum_{t=0}^{\infty} (s\beta)^t \,
+        \frac{c_t^{\,1-\sigma}}{1 - \sigma},
+
+    with the same budget constraint as D-2. Mortality is observationally
+    equivalent to scaling the discount factor from :math:`\beta` to
+    :math:`s\beta`, so the linear consumption rule survives:
+
+    .. math::
+        c_t \;=\; \kappa_s \, (m_t + H),
+        \qquad
+        \kappa_s \;=\; \frac{R - (s\beta R)^{1/\sigma}}{R},
+
+    with :math:`H = y / r` as before. The MPC :math:`\kappa_s > \kappa`
+    because mortality erodes effective patience: the agent consumes a
+    larger share of wealth each period.
+
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"a"`` (arrival assets). The ``"liv"`` alive
+        indicator is part of the DBlock simulator dynamics but is not read
+        by the analytical policy.
+    shocks : dict
+        May contain ``"live"`` (Bernoulli survival shock); unused for the
+        analytical policy itself.
+    parameters : dict
+        Must contain ``"DiscFac"``, ``"R"``, ``"CRRA"``, ``"y"``, and
+        ``"SurvivalProb"`` (:math:`s`).
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}``.
+
+    Raises
+    ------
+    ValueError
+        If mortality-adjusted return-impatience is violated, or if
+        :math:`R \leq 1`.
+
+    References
+    ----------
+    Blanchard, O.J. (1985). "Debt, deficits, and finite horizons."
+    *Journal of Political Economy*, 93(2), 223-247.
+
+    See Also
+    --------
+    d2_analytical_policy : Underlying perfect-foresight model without
+        mortality.
+    """
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    sigma = parameters["CRRA"]
+    s = parameters["SurvivalProb"]
+    y = parameters["y"]
+
+    # Extract arrival state (assets from previous period)
+    a = states["a"]
 
     # Effective discount factor with mortality
     beta_eff = s * beta
 
+    # Compute MPC with mortality
     growth_factor = (beta_eff * R) ** (1 / sigma)
     if growth_factor >= R:
         raise ValueError(
@@ -306,16 +465,20 @@ def d4_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 
     kappa_s = (R - growth_factor) / R
 
-    def policy(states, shocks, parameters):
-        m = states["m"]
-        c_optimal = kappa_s * m
-        return {"c": c_optimal}
+    # Compute information set: market resources = assets * return + income
+    m = a * R + y
 
-    return policy
+    # Compute human wealth: present value of constant income stream
+    r = _human_wealth_rate(R)
+    human_wealth = y / r
+
+    # Optimal consumption: c = κ_s * (market resources + human wealth)
+    c_optimal = kappa_s * (m + human_wealth)
+    return {"c": c_optimal}
 
 
-# Remarks: D-3 is the canonical perfect-foresight workhorse; D-4 shows that adding
-# i.i.d. survival risk does NOT break tractability—mortality just scales down patience.
+# Remarks: D-2 is the canonical perfect-foresight workhorse; D-3 shows that adding
+# i.i.d. survival risk does NOT break tractability; mortality just scales down patience.
 
 # STOCHASTIC MODELS WITH CLOSED FORM
 # ==================================
@@ -355,14 +518,17 @@ u1_block = DBlock(
     **{
         "name": "u1_hall_random_walk",
         "shocks": {
-            "eta": (Normal, {"mean": 0.0, "std": "income_std"}),
+            "eta": (Normal, {"mu": 0.0, "sigma": "income_std"}),
         },
         "dynamics": {
             "y": lambda y_mean, eta: y_mean + eta,  # i.i.d. income
             "m": lambda A, R, y: A * R + y,  # Cash-on-hand
-            "c": Control(["c_lag"], upper_bound=lambda c_lag: np.inf, agent="consumer"),
+            "c": Control(
+                ["m"],
+                upper_bound=lambda m: m,
+                agent="consumer",
+            ),
             "A": lambda m, c: m - c,  # End-of-period assets
-            "c_lag": lambda c: c,  # Store current consumption for next period
             "u": lambda c, quad_a, quad_b: quad_a * c
             - quad_b * c**2 / 2,  # Quadratic utility
         },
@@ -371,449 +537,426 @@ u1_block = DBlock(
 )
 
 
-def u1_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-1: Martingale consumption c_t = c_{t-1} when β*R = 1"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    income_std = calibration["income_std"]
+def u1_analytical_policy(states, shocks, parameters):
+    r"""
+    Optimal policy for U-1: Hall (1978) random-walk consumption.
+
+    With quadratic utility :math:`u(c) = ac - bc^2/2` and the neutral
+    stochastic discount factor :math:`\beta R = 1`, the Euler equation
+    collapses to the martingale property
+
+    .. math::
+        \mathbb{E}_t[c_{t+1}] = c_t,
+
+    so consumption follows a random walk regardless of the income process.
+    Hall's contribution was to derive this implication and confront it
+    with consumption data.
+
+    The decision rule consistent with this Euler equation, plus
+    transversality, is the Permanent Income Hypothesis: consume the
+    annuity value of total wealth,
+
+    .. math::
+        c_t \;=\; \frac{r}{R} \, (m_t + H),
+
+    where :math:`m_t = R \, A_{t-1} + y_t` is cash-on-hand,
+    :math:`H = \mathbb{E}_t y / r` is the present value of the expected
+    future income stream, and :math:`r = R - 1`. The martingale property
+    is a *consequence* of this PIH policy, not the policy itself.
+
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"A"`` (arrival assets) and ``"y"`` (current income
+        realization).
+    shocks : dict
+        May contain ``"eta"`` (mean-zero income innovation); unused once
+        :math:`y_t` is known.
+    parameters : dict
+        Must contain ``"DiscFac"``, ``"R"``, and ``"y_mean"``.
+
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}``.
+
+    Notes
+    -----
+    Logs a warning via the module logger if :math:`|\beta R - 1| > 10^{-6}`,
+    since the PIH derivation hinges on :math:`\beta R = 1` exactly. With
+    high income variance, transversality may also fail.
+
+    References
+    ----------
+    Hall, R.E. (1978). "Stochastic implications of the life cycle-permanent
+    income hypothesis: Theory and evidence." *Journal of Political
+    Economy*, 86(6), 971-987.
+    """
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    y_mean = parameters["y_mean"]
+    income_std = parameters.get("income_std", 0.0)
 
     if abs(beta * R - 1.0) > 1e-6:
-        print(
-            f"Warning: β*R = {beta * R:.6f} ≠ 1, martingale property may not hold exactly"
-        )
+        logger.warning("β*R = %.6f ≠ 1; PIH conditions may not hold exactly", beta * R)
 
     if income_std > 0.5:
-        print(
-            f"Warning: With unbounded income variance ({income_std}), verify TVC is satisfied"
-        )
+        logger.warning("high income variance (%g); verify TVC is satisfied", income_std)
 
-    def policy(states, shocks, parameters):
-        c_lag = states.get("c_lag", calibration["c_init"])
-        # Martingale property: E[c_t | c_{t-1}] = c_{t-1}
-        c_optimal = c_lag
-        return {"c": c_optimal}
+    # Extract arrival states
+    A = states["A"]  # Financial assets (arrival state)
+    y_current = states["y"]  # Current income realization (from y_mean + eta)
 
-    return policy
+    # Construct information set from arrival states
+    m = A * R + y_current  # Information set: cash-on-hand/market resources
+
+    # PIH solution with βR=1: consume annuity value of TOTAL wealth
+    r = _human_wealth_rate(R)
+    human_wealth = y_mean / r
+    total_wealth = m + human_wealth
+
+    # PIH MPC out of total wealth is r/R
+    mpc = r / R
+    c_optimal = mpc * total_wealth
+
+    return {"c": c_optimal}
 
 
-# U-2: CARA with Gaussian Shocks
-# ------------------------------
-# With CARA utility and Gaussian income shocks, the consumption function becomes
-# affine in wealth due to certainty equivalence. The agent behaves as if facing
-# a deterministic income equal to the certainty equivalent.
+# U-2: Log Utility with Permanent Income Shocks (Normalized)
+# ------------------------------------------------------------
+# Uses NORMALIZED variables for proper handling of permanent income.
+# All variables are expressed as ratios to permanent income P:
+#   m = M/P  (normalized cash-on-hand)
+#   c = C/P  (normalized consumption)
+#   a = A/P  (normalized assets)
+#
+# This normalization is essential because:
+# 1. The PIH solution depends only on normalized m, not on m and P separately
+# 2. The network learns a 1D function c(m) instead of 2D c(m,P)
+# 3. This is the standard formulation in the buffer stock literature (Carroll, HARK)
+#
+# U-2 is UNCONSTRAINED: agent can borrow against human wealth h = 1/r.
+# At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33 (borrowing against h).
+# The upper bound is tightened to prevent Ponzi scheme solutions that satisfy
+# the Euler equation but violate transversality. The analytical solution
+# c = (1-β)(m+h) ≈ 0.04*m + 1.33 is well within the bound 0.1*m + 2.
+# For the TRUE buffer stock model with BINDING borrowing constraint c ≤ m, see U-3.
+#
+# When σ_ψ = 0, the permanent shock ψ ≡ 1 and the model becomes deterministic.
+# This is the default calibration, making the PIH analytical solution exact.
 
-# Mathematical foundation:
-#   u(c) = -e^{-γc}  (CARA utility)
-#   y_t = ȳ + η_t, η_t ~ N(0,σ²)  (Gaussian income)
+# Mathematical foundation (NORMALIZED):
+#   u(c) = ln c  (log utility of normalized consumption)
+#   Transition: a = m - c, then m' = R*a/ψ + θ
+#   - ψ is the permanent income shock (= 1 when σ_ψ = 0)
+#   - θ is normalized transitory income (here θ ≡ 1, i.e., E[θ] = 1)
+#   Human wealth (normalized): h = 1/r  (constant when income is deterministic)
 
-# Key insight: CARA + Gaussian ⟹ certainty equivalent linearity
-# The agent maximizes expected utility as if income were deterministic at
-# its certainty equivalent level, minus a precautionary saving adjustment.
-
-# Closed-form solution:
-#   c_t = [(1-β)/(1-βR)] E_t[W_t] - [γσ²/(2r)]
-#         ⌊_____________⌋           ⌊________⌋
-#         certainty equiv.          precautionary
-
-# The first term is standard consumption out of expected wealth.
-# The second term is precautionary saving due to income risk.
+# Closed-form solution (NORMALIZED):
+#   c = (1-β)(m + 1/r)
 
 u2_calibration = {
     "DiscFac": 0.96,
     "R": 1.03,
-    "CARA": 2.0,  # γ
-    "y_bar": 1.0,
-    "sigma_eta": 0.1,
-    "description": "U-2: CARA with Gaussian shocks",
+    "sigma_psi": 0.0,  # No permanent shocks - PIH solution is exact when σ_ψ=0
+    "description": "U-2: Log utility (normalized), no borrowing constraint, σ_ψ=0",
 }
 
 u2_block = DBlock(
     **{
-        "name": "u2_cara_gaussian",
+        "name": "u2_log_permanent_normalized",
         "shocks": {
-            "eta": (Normal, {"mean": 0.0, "std": "sigma_eta"}),
+            "psi": (MeanOneLogNormal, {"sigma": "sigma_psi"}),  # Permanent income shock
         },
         "dynamics": {
-            "y": lambda y_bar, eta: y_bar + eta,  # Normal income
+            # Normalized cash-on-hand: m = R*a/ψ + θ where θ ≡ 1 (normalized income)
+            # The "+1" represents E[θ] = 1, the mean of normalized transitory income.
+            # In full buffer stock models (U-3), θ would be a shock; here it's deterministic.
+            # Note: psi is strictly positive from MeanOneLogNormal, but we clamp for safety.
+            "m": lambda a, R, psi: R * a / torch.clamp(psi, min=1e-8) + 1,
+            # Normalized consumption - network sees only m
+            # U-2 is UNCONSTRAINED PIH: agent can borrow against human wealth h = 1/r.
+            # At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33.
+            # The analytical c ≈ (1-β)(m+h) ≈ 0.04*m + 1.33, which is always < 0.1*m + 2
+            # for m in the training range. The bound is loose enough for the analytical
+            # solution but prevents Ponzi schemes (over-borrowing that violates transversality).
             "c": Control(
-                ["A", "y"],
-                upper_bound=lambda A, y, R=u2_calibration["R"]: A * R + y,
+                ["m"],  # Control depends ONLY on m (network input)
+                lower_bound=lambda m: 0.01,  # Ensure c > 0 for log utility
+                upper_bound=lambda m: 0.1 * m
+                + 2,  # Loose bound; analytical c ≈ 0.04*m + 1.33
                 agent="consumer",
             ),
-            "A": lambda A, y, c, R=u2_calibration["R"]: (A + y - c)
-            * R,  # Fixed asset evolution: A_{t+1} = (A_t + y_t - c_t)*R
-            "u": lambda c, CARA: -torch.exp(
-                -CARA * torch.as_tensor(c, dtype=torch.float32)
-            ),  # CARA utility
+            # Normalized assets (for transition to next period)
+            "a": lambda m, c: m - c,
+            # Log utility of normalized consumption
+            "u": lambda c: crra_utility(c, 1.0),
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def u2_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-2: c_t = (r/R)*A_t + y_t - (1/r)*[log(βR)/γ + γ*σ²/2]"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    gamma = calibration["CARA"]
-    sigma_eta = calibration["sigma_eta"]
-    y_bar = calibration["y_bar"]
+def u2_analytical_policy(states, shocks, parameters):
+    r"""
+    Optimal policy for U-2: log utility with permanent income shocks
+    (normalized).
 
-    if beta * R >= 1:
-        raise ValueError(f"Condition violated: β*R = {beta * R:.6f} >= 1")
+    The buffer-stock problem with log utility, geometric random-walk
+    permanent income, and no borrowing constraint admits a closed-form
+    policy in *normalized* variables. Dividing every level variable by
+    permanent income :math:`P_t` yields the lowercase ratios
+    :math:`m = M/P`, :math:`c = C/P`, :math:`a = A/P`, with normalized
+    transition
 
-    r = R - 1
+    .. math::
+        m_{t+1} = \frac{R}{\psi_{t+1}} \, a_t + 1,
 
-    # Precautionary saving term
-    precautionary_term = (1 / r) * (np.log(beta * R) / gamma + gamma * sigma_eta**2 / 2)
+    where :math:`\psi_{t+1}` is the mean-one permanent income shock. The
+    constant ``+1`` represents normalized transitory income, which is
+    identically one in U-2; the more general two-shock case (with a
+    stochastic transitory component) is U-3. Under log utility the closed
+    form is
 
-    def policy(states, shocks, parameters):
-        A_t = states["A"]  # Financial assets (state variable)
-        y = states.get("y", y_bar)  # Current income
+    .. math::
+        c_t \;=\; (1 - \beta) \, (m_t + h),
+        \qquad
+        h \;=\; 1/r,
 
-        # CARA certainty equivalence formula
-        c_optimal = (r / R) * A_t + y - precautionary_term
+    independent of the realized shock path. The MPC :math:`(1 - \beta)`
+    is the limiting MPC for any unconstrained CRRA agent; log utility (the
+    :math:`\sigma = 1` case) makes it exact rather than asymptotic.
 
-        return {"c": c_optimal}
+    Parameters
+    ----------
+    states : dict
+        Must contain ``"a"`` (normalized arrival assets).
+    shocks : dict
+        May contain ``"psi"`` (permanent income shock, defaults to ones).
+    parameters : dict
+        Must contain ``"DiscFac"`` and ``"R"``.
 
-    return policy
+    Returns
+    -------
+    dict
+        ``{"c": c_optimal}`` (normalized consumption).
+
+    Notes
+    -----
+    Setting ``"sigma_psi": 0`` makes :math:`\psi \equiv 1`, so the PIH
+    analytical solution holds exactly. The ``Control`` upper bound
+    :math:`0.1\, m + 2` is loose enough for the analytical policy
+    :math:`c \approx 0.04\, m + 1.33` but rules out Ponzi-scheme solutions
+    that satisfy the Euler equation while violating transversality.
+
+    See Also
+    --------
+    u3_block : Same problem with a binding borrowing constraint and CRRA
+        utility, which has no closed form.
+    """
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+
+    # Extract arrival state (normalized assets from previous period)
+    a = states["a"]
+
+    # Get shock realization (default to ones tensor for type consistency)
+    psi = shocks.get("psi", torch.ones_like(a))
+
+    # Compute normalized cash-on-hand: m = R*a/ψ + 1
+    clamped_psi = torch.clamp(psi, min=1e-8)
+    if not torch.equal(psi, clamped_psi):
+        logger.debug(
+            "Clamped near-zero psi values in u2_analytical_policy: min(psi)=%g -> %g",
+            psi.min().item(),
+            clamped_psi.min().item(),
+        )
+    m = R * a / clamped_psi + 1
+
+    # Human wealth (normalized): h = 1/r
+    r = _human_wealth_rate(R)
+    h = 1 / r
+
+    # PIH solution (normalized): c = (1-β)(m + h)
+    mpc = 1 - beta
+    c_optimal = mpc * (m + h)
+
+    return {"c": c_optimal}
 
 
-# U-3: Quadratic with Time-Varying Interest Rates
-# ----------------------------------------------
-# Extension of U-1 to time-varying interest rates. The martingale property
-# survives as long as β_t R_t = 1 for all t.
-
-# Mathematical foundation:
-#   Same quadratic utility as U-1
-#   R_t stochastic but observed at time t
-#   Condition: β_t R_t = 1 ∀t (time-varying neutral SDF)
-
-# The Euler equation becomes:
-#   u'(c_t) = β_t R_t E_t[u'(c_{t+1})] = E_t[u'(c_{t+1})]
-
-# This preserves the martingale property: c_t = E_t[c_{t+1}]
-
-# Key insight: Time-varying interest rates don't break tractability as long
-# as the neutrality condition β_t R_t = 1 is maintained.
+# U-3: Buffer Stock Model - CRRA Utility with Borrowing Constraint
+# -----------------------------------------------------------------
+# Carroll's buffer stock consumption model (Carroll 1992, 1997) with:
+#   - CRRA utility with γ > 1 (e.g., γ=2)
+#   - Borrowing constraint: c ≤ m (cannot borrow against future income)
+#   - Permanent income shocks (ψ ~ MeanOneLogNormal)
+#   - Transitory income shocks (θ ~ MeanOneLogNormal)
+#
+# Uses NORMALIZED variables (lowercase = normalized by permanent income P):
+#   m = M/P  (normalized cash-on-hand)
+#   c = C/P  (normalized consumption)
+#   a = A/P  (normalized assets)
+#
+# Normalized dynamics:
+#   m = R*a/ψ + θ  (normalized cash-on-hand, where ψ is permanent shock, θ is transitory)
+#   a' = m - c     (normalized end-of-period assets)
+#
+# This model does NOT have a closed-form analytical solution due to the
+# borrowing constraint + income uncertainty interaction. However, it has
+# well-known LIMITING MPC properties that can be tested:
+#   - MPC is between 0 and 1
+#   - MPC DECREASES with wealth (precautionary saving diminishes)
+#   - As wealth → ∞: MPC → κ = (R - (βR)^(1/γ)) / R  (same as perfect foresight)
 
 u3_calibration = {
-    "R_mean": 1.03,
-    "R_std": 0.01,
-    "quad_a": 1.0,
-    "quad_b": 0.5,
-    "y_mean": 1.0,
-    "c_init": 1.0,
-    "description": "U-3: Quadratic with time-varying rates",
+    "DiscFac": 0.96,
+    "R": 1.03,
+    "CRRA": 2.0,  # γ = 2 (more risk averse than log utility)
+    "sigma_psi": 0.1,  # Std of permanent shocks
+    "sigma_theta": 0.1,  # Std of transitory shocks
+    "description": "U-3: Buffer stock model (normalized) with CRRA=2, permanent + transitory shocks",
 }
 
 u3_block = DBlock(
     **{
-        "name": "u3_quadratic_varying_r",
+        "name": "u3_buffer_stock_normalized",
         "shocks": {
-            "R_shock": (Normal, {"mean": "R_mean", "std": "R_std"}),
-            "y_shock": (Normal, {"mean": "y_mean", "std": 0.1}),
+            "psi": (MeanOneLogNormal, {"sigma": "sigma_psi"}),  # Permanent income shock
+            "theta": (
+                MeanOneLogNormal,
+                {"sigma": "sigma_theta"},
+            ),  # Transitory income shock
         },
         "dynamics": {
-            "R": lambda R_shock: R_shock,  # Time-varying interest rate
-            "DiscFac": lambda R: 1.0 / R,  # β_t = 1/R_t to maintain β_t*R_t = 1
-            "y": lambda y_shock: y_shock,
-            "m": lambda A, R, y: A * R + y,
-            "c": Control(["c_lag"], upper_bound=lambda c_lag: np.inf, agent="consumer"),
-            "A": lambda m, c: m - c,
-            "c_lag": lambda c: c,  # Store for next period
-            "u": lambda c, quad_a, quad_b: quad_a * c - quad_b * c**2 / 2,
-        },
-        "reward": {"u": "consumer"},
-    }
-)
-
-
-def u3_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-3: Martingale consumption with time-varying β_t = 1/R_t"""
-
-    def policy(states, shocks, parameters):
-        c_lag = states.get("c_lag", calibration["c_init"])
-        # Martingale property still holds with β_t*R_t = 1
-        c_optimal = c_lag
-        return {"c": c_optimal}
-
-    return policy
-
-
-# U-4: Log Utility with Permanent Income Shocks
-# ----------------------------------------------
-# With log utility and permanent income shocks, consumption is proportional to
-# total wealth (financial + human). The log utility's homotheticity eliminates
-# the variance effects of permanent shocks.
-
-# Mathematical foundation:
-#   u(c) = ln c  (log utility)
-#   y_t follows permanent income process (unit root)
-#   Human wealth: H_t = E_t[∑_{s=0}^∞ R^{-(s+1)} y_{t+s}]
-
-# Key insight: Log utility ⟹ homotheticity wipes out variance of level shocks
-# The consumption function depends only on the level of permanent income, not
-# its variance or higher moments.
-
-# Closed-form solution:
-#   c_t = (1-β)[A_t + H_t]
-
-# where H_t is human wealth (present value of future income).
-# This is the famous permanent income hypothesis result.
-
-u4_calibration = {
-    "DiscFac": 0.96,
-    "R": 1.03,
-    "rho_p": 0.99,  # Persistence of permanent income
-    "sigma_p": 0.05,  # Std of permanent shocks
-    "description": "U-4: Log utility with permanent income",
-}
-
-u4_block = DBlock(
-    **{
-        "name": "u4_log_permanent",
-        "shocks": {
-            "psi": (MeanOneLogNormal, {"sigma": "sigma_p"}),  # Permanent income shock
-        },
-        "dynamics": {
-            "p": lambda p, psi, rho_p: p**rho_p
-            * psi,  # AR(1) in logs: p_t = p_{t-1}^ρ * ψ_t
-            "A": lambda A, p, c, R=u4_calibration["R"]: (
-                A * R + p - c
-            ),  # Financial assets evolution: A_{t+1} = A_t*R + p_t - c_t
+            # Normalized cash-on-hand: m = R*a/ψ + θ
+            # Note: psi is strictly positive from MeanOneLogNormal, but we add epsilon for safety
+            "m": lambda a, R, psi, theta: R * a / torch.clamp(psi, min=1e-8) + theta,
+            # Normalized consumption - depends ONLY on m
+            # Lower bound ensures c > 0 for CRRA utility
+            # Upper bound is borrowing constraint: c ≤ m
             "c": Control(
-                ["A", "p"],
-                upper_bound=lambda A, p, R=u4_calibration["R"]: A * R + p,
+                ["m"],  # Control depends ONLY on normalized m
+                lower_bound=lambda m: 0.01,  # Ensure c > 0 for CRRA utility
+                upper_bound=lambda m: m,  # BORROWING CONSTRAINT: c ≤ m
                 agent="consumer",
             ),
-            "u": lambda c: torch.log(torch.as_tensor(c, dtype=torch.float32)),
+            # Normalized assets (for transition)
+            "a": lambda m, c: m - c,
+            # Lambda maps calibration key CRRA to crra_utility's gamma parameter
+            "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def u4_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-4: c_t = (1-β)*[A_t + H_t] where H_t is human wealth"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    rho_p = calibration["rho_p"]
-    R - 1
-
-    def policy(states, shocks, parameters):
-        A_t = states["A"]  # Financial assets (state variable)
-        p_t = states.get("p", 1.0)  # Permanent income
-
-        # Human wealth calculation depends on persistence
-        # For AR(1): H_t = p_t * E[∑_{s=0}^∞ (ρ^s/R^s)] = p_t / (1 - ρ/R)
-        if rho_p >= R:
-            raise ValueError(f"Human wealth diverges: ρ = {rho_p} >= R = {R}")
-
-        human_wealth = p_t / (1 - rho_p / R)
-
-        # Permanent income formula: c_t = (1-β)*[A_t + H_t]
-        c_optimal = (1 - beta) * (A_t + human_wealth)
-
-        return {"c": c_optimal}
-
-    return policy
+def _generate_u3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-3 buffer stock model: a (normalized arrival assets)"""
+    a = torch.linspace(0.5, 5.0, test_points)  # Normalized assets
+    return {"a": a}
 
 
-# U-5: Epstein-Zin Knife-Edge Case
-# ---------------------------------
-# When the Epstein-Zin parameters satisfy θ = γ (knife-edge condition), the
-# recursive utility collapses to standard CRRA and the problem becomes identical
-# to the deterministic D-3 case.
+# D-4: Deterministic CRRA with a Binding Borrowing Constraint
+# -----------------------------------------------------------
+# Impatient (betaR = 0.9568 < 1) deterministic counterpart of U-3; the binding
+# constraint c <= m precludes a closed form but pins the level Euler-only
+# training leaves free. See d4_vfi_reference_policy and TestD4ConstrainedEulerVFI.
 
-# Mathematical foundation:
-#   Epstein-Zin utility with θ = γ
-#   Log-normal income shocks
-#   Condition: θ = γ (knife-edge coincidence)
-
-# Key insight: The knife-edge condition θ = γ makes the Epstein-Zin utility
-# degenerate to standard CRRA utility, eliminating the distinction between
-# risk aversion and intertemporal substitution.
-
-# Closed-form solution:
-#   c_t = κm_t  where κ = (R - (βR)^{1/γ})/R
-
-# This is identical to D-3, showing how the stochastic problem collapses
-# to the deterministic case under the knife-edge condition.
-
-u5_calibration = {
-    "DiscFac": 0.96,
-    "R": 1.03,
-    "gamma": 2.0,  # Risk aversion
-    "theta": 2.0,  # 1/EIS - MUST EQUAL gamma for knife-edge
-    "income_std": 0.1,
-    "description": "U-5: Epstein-Zin knife-edge (θ=γ)",
+d4_calibration = {
+    "DiscFac": 0.92,
+    "R": 1.04,
+    "CRRA": 2.0,
+    "y": 1.0,
+    "description": "D-4: Deterministic CRRA with binding borrowing constraint (no closed form)",
 }
 
-u5_block = DBlock(
+d4_block = DBlock(
     **{
-        "name": "u5_epstein_zin",
-        "shocks": {
-            "income_shock": (MeanOneLogNormal, {"sigma": "income_std"}),
-        },
+        "name": "d4_deterministic_constrained_crra",
+        "shocks": {},
         "dynamics": {
-            "y": lambda income_shock: income_shock,  # Log-normal income
-            "m": lambda A, R, y: A * R + y,
-            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
-            "A": lambda m, c: m - c,
-            "u": lambda c, gamma: torch.as_tensor(c, dtype=torch.float32) ** (1 - gamma)
-            / (1 - gamma),  # Collapses to CRRA
+            "m": lambda a, R, y: a * R + y,  # cash-on-hand m = R*a + y
+            "c": Control(
+                ["m"],
+                lower_bound=lambda m: 1e-3,  # c > 0 for CRRA utility
+                upper_bound=lambda m: m,  # BORROWING CONSTRAINT: c <= m
+                agent="consumer",
+            ),
+            "a": lambda m, c: m - c,  # end-of-period assets
+            "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
         "reward": {"u": "consumer"},
     }
 )
 
 
-def u5_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-5: Collapses to D-3 CRRA rule when θ=γ"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    gamma = calibration["gamma"]
-    theta = calibration["theta"]
+def d4_vfi_reference_policy(
+    states,
+    shocks,
+    parameters,
+    m_max: float = 9.5,
+    m_grid_size: int = 800,
+    c_grid_size: int = 300,
+    max_iter: int = 400,
+    tol: float = 1e-9,
+):
+    """D-4 numerical reference policy via value-function iteration.
 
-    if abs(gamma - theta) > 1e-8:
-        raise ValueError("Knife-edge condition violated: θ must equal γ")
+    D-4 has a binding borrowing constraint and impatience, so (unlike D-2) it
+    admits no closed-form policy. This routine solves the model on a dense
+    cash-on-hand grid by value-function iteration and returns optimal
+    consumption interpolated at the queried arrival state. It is the
+    independent oracle used to validate Euler-trained policies: it mirrors the
+    D-4 transition m' = R*(m - c) + y exactly and enforces c <= m by
+    construction (candidate consumption is a share in (0, 1] of m).
 
-    # Use D-3 kappa formula since it collapses to CRRA
-    growth_factor = (beta * R) ** (1 / gamma)
-    kappa = (R - growth_factor) / R
-
-    def policy(states, shocks, parameters):
-        m = states["m"]
-        c_optimal = kappa * m
-        return {"c": c_optimal}
-
-    return policy
-
-
-# U-6: Quadratic with Habit Formation
-# ------------------------------------
-# Linear-quadratic (LQ) model with habit formation. The habit stock creates
-# state dependence, but the LQ structure preserves linear optimal control.
-
-# Mathematical foundation:
-#   u(c,h) = a(c-h) - (b/2)(c-h)²  (utility depends on consumption relative to habit)
-#   h_{t+1} = ρ_h h_t + (1-ρ_h)c_t  (habit stock evolution)
-#   i.i.d. income shocks
-
-# Key insight: LQ structure ⟹ linear state feedback is optimal
-# The optimal policy is linear in the state variables (income and habit stock).
-
-# Closed-form solution:
-#   c_t = φ₁y_t + φ₂h_{t-1}
-
-# where φ₁, φ₂ are coefficients from solving the 2×2 algebraic Riccati equation.
-# The current implementation provides exact coefficients for the standard
-# calibration (quad_a=1.0, quad_b=0.5).
-
-u6_calibration = {
-    "DiscFac": 0.96,
-    "R": 1.03,
-    "rho_h": 0.8,  # Habit persistence
-    "quad_a": 1.0,
-    "quad_b": 0.5,
-    "income_std": 0.1,
-    "description": "U-6: Quadratic with habit formation",
-}
-
-
-class U6HabitSolver:
-    """Exact Riccati solution for quadratic utility with habit formation
-
-    Note: The current implementation uses a simplified solution that is exact
-    for the standard calibration (quad_a=1.0, quad_b=0.5). For general
-    parameters, a full 2×2 algebraic Riccati equation solver would be needed.
+    The signature matches the ``(states, shocks, parameters)`` decision-function
+    convention used by the analytical policies; ``shocks`` is unused because
+    D-4 is deterministic.
     """
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    y = parameters["y"]
+    sigma = parameters["CRRA"]
 
-    def __init__(self, calibration):
-        self.beta = calibration["DiscFac"]
-        self.R = calibration["R"]
-        self.rho_h = calibration["rho_h"]
-        self.quad_a = calibration["quad_a"]
-        self.quad_b = calibration["quad_b"]
+    a_tensor = as_tensor(states["a"])
+    a_np = a_tensor.detach().cpu().numpy().astype(np.float64)
 
-        # Solve the 2x2 Riccati equation exactly
-        self.phi1, self.phi2 = self._solve_riccati()
+    m_grid = np.linspace(1.0, m_max, m_grid_size)
+    # Candidate consumption as a share of m enforces 0 < c <= m (the constraint).
+    shares = np.linspace(1e-3, 1.0, c_grid_size)
 
-    def _solve_riccati(self):
-        """Solve the exact 2x2 Riccati equation for habit formation LQ problem
+    def crra_np(c):
+        if abs(sigma - 1.0) < 1e-10:
+            return np.log(c)
+        return c ** (1 - sigma) / (1 - sigma)
 
-        For the LQ problem with habit formation:
-        u(c,h) = a*(c-h) - (b/2)*(c-h)^2
-        h_{t+1} = ρ_h*h_t + (1-ρ_h)*c_t
+    V = np.zeros_like(m_grid)
+    best_idx = np.zeros(m_grid_size, dtype=np.intp)
+    for _ in range(max_iter):
+        candidate_c = np.outer(m_grid, shares)  # shape (m_grid_size, c_grid_size)
+        m_next = R * (m_grid[:, None] - candidate_c) + y  # transition m' = R(m-c)+y
+        cont = np.interp(m_next.ravel(), m_grid, V).reshape(candidate_c.shape)
+        objective = crra_np(candidate_c) + beta * cont
+        best_idx = objective.argmax(axis=1)
+        V_new = objective[np.arange(m_grid_size), best_idx]
+        if np.max(np.abs(V_new - V)) < tol:
+            V = V_new
+            break
+        V = V_new
 
-        This implementation provides the exact solution for the standard
-        calibration. For general parameters, the full matrix Riccati equation
-        would need to be solved numerically.
-        """
-        beta, _R, rho_h = self.beta, self.R, self.rho_h
-        quad_a, quad_b = self.quad_a, self.quad_b
-
-        # Assert that we're using the standard calibration for which the exact solution applies
-        if abs(quad_a - 1.0) > 1e-10 or abs(quad_b - 0.5) > 1e-10:
-            raise ValueError(
-                f"Exact Riccati solution only valid for quad_a=1.0, quad_b=0.5, got quad_a={quad_a}, quad_b={quad_b}"
-            )
-
-        # State vector: [y_t, h_t]'
-        # Control: c_t = φ1*y_t + φ2*h_t
-
-        # Simplified exact solution for the standard calibration
-        # This is mathematically correct for quad_a=1.0, quad_b=0.5
-        denominator = quad_b * (1 + beta * rho_h**2)
-        phi1 = quad_a / denominator
-        phi2 = -quad_b * (1 - rho_h) / denominator
-
-        return phi1, phi2
+    c_on_grid = m_grid * shares[best_idx]  # optimal c at each grid m
+    m_query = R * a_np + y
+    c_query = np.interp(m_query, m_grid, c_on_grid)
+    return {"c": torch.as_tensor(c_query, dtype=a_tensor.dtype, device=a_tensor.device)}
 
 
-u6_block = DBlock(
-    **{
-        "name": "u6_quadratic_habit",
-        "shocks": {
-            "y_shock": (Normal, {"mean": 1.0, "std": "income_std"}),
-        },
-        "dynamics": {
-            "y": lambda y_shock: y_shock,
-            "h": lambda h, c_lag, rho_h: rho_h * h + (1 - rho_h) * c_lag,  # Habit stock
-            "m": lambda A, y, R=u6_calibration["R"]: A * R + y,
-            "c": Control(["m", "h"], upper_bound=lambda m, h: m, agent="consumer"),
-            "A": lambda m, c: m - c,
-            "c_lag": lambda c: c,  # Store for habit formation
-            "u": lambda c, h, quad_a, quad_b: quad_a * (c - h)
-            - quad_b * (c - h) ** 2 / 2,
-        },
-        "reward": {"u": "consumer"},
-    }
-)
+def _generate_d4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-4 model: a (arrival assets).
 
-
-def u6_analytical_policy(calibration: Dict[str, Any]) -> Callable:
-    """U-6: Linear state-feedback c_t = φ1*y_t + φ2*h_{t-1} (exact Riccati solution)"""
-    solver = U6HabitSolver(calibration)
-
-    def policy(states, shocks, parameters):
-        y = states.get("y", 1.0)
-        h = states.get("h", 0.0)
-
-        # Optimal linear policy from exact Riccati solution
-        c_unconstrained = solver.phi1 * y + solver.phi2 * h
-
-        # Only enforce budget constraint if m (cash-on-hand) is explicitly provided
-        if "m" in states:
-            m = states["m"]
-            c_optimal = torch.min(c_unconstrained, m)
-        else:
-            c_optimal = c_unconstrained
-
-        return {"c": c_optimal}
-
-    return policy
+    Spans the binding (low m) and slack (high m) regions of the constraint.
+    """
+    return {"a": torch.linspace(0.0, 7.5, test_points)}
 
 
 # =============================================================================
@@ -822,83 +965,75 @@ def u6_analytical_policy(calibration: Dict[str, Any]) -> Callable:
 
 
 def _generate_d1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for D-1 model: W (wealth)"""
-    return {"W": torch.linspace(1.0, 5.0, test_points)}
+    """Generate test states for D-1 model: W (wealth), t (time)"""
+    return {
+        "W": torch.linspace(1.0, 5.0, test_points),
+        "t": torch.zeros(test_points, dtype=torch.int64),  # Time state (starts at 0)
+    }
 
 
 def _generate_d2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for D-2 model: W (wealth), t (time)"""
+    """Generate test states for D-2 model: a (arrival assets)"""
+    return {"a": torch.linspace(0.5, 4.0, test_points)}
+
+
+def _generate_d3_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-3 model: a (arrival assets), liv (living state)"""
     return {
-        "W": torch.linspace(1.0, 5.0, test_points),
-        "t": torch.zeros(test_points),
+        "a": torch.linspace(0.5, 4.0, test_points),
+        "liv": torch.ones(test_points),  # Living state (starts alive)
     }
 
 
-def _generate_d34_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for D-3 and D-4 models: m (cash-on-hand)"""
-    return {"m": torch.linspace(1.0, 5.0, test_points)}
-
-
-def _generate_u13_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-1 and U-3 models: c_lag (lagged consumption)"""
-    return {"c_lag": torch.ones(test_points)}
+def _generate_u1_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for U-1 model: A (arrival assets), y (realized income)"""
+    # Simple Hall random walk - no habit formation, no c_lag
+    return {
+        "A": torch.linspace(0.5, 3.0, test_points),
+        "y": torch.ones(test_points),  # Default income realization for testing
+    }
 
 
 def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-2 model: A (assets), y (income)"""
-    return {
-        "A": torch.linspace(0.5, 3.0, test_points),
-        "y": torch.ones(test_points),
-    }
+    """Generate test states for U-2 model: a (normalized arrival assets)"""
+    # Arrival state is normalized assets a = A/P from previous period
+    a = torch.linspace(0.5, 5.0, test_points)
+    return {"a": a}
 
 
-def _generate_u4_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-4 model: A (assets), p (price)"""
-    return {
-        "A": torch.linspace(0.5, 3.0, test_points),
-        "p": torch.ones(test_points),
-    }
-
-
-def _generate_u5_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-5 model: m (cash-on-hand)"""
-    return {"m": torch.linspace(1.0, 5.0, test_points)}
-
-
-def _generate_u6_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
-    """Generate test states for U-6 model: y (income), h (habit)"""
-    return {
-        "y": torch.ones(test_points),
-        "h": torch.ones(test_points) * 0.5,
-    }
-
-
-def _validate_d3_d4_solution(
+def _validate_d2_d3_solution(
     model_id: str,
     test_states: Dict[str, torch.Tensor],
     analytical_controls: Dict[str, torch.Tensor],
-    calibration: Dict[str, Any],
+    parameters: Dict[str, Any],
     tolerance: float,
 ) -> Dict[str, Any]:
-    """Validate D-3 and D-4 perfect foresight optimality conditions"""
-    beta = calibration["DiscFac"]
-    R = calibration["R"]
-    sigma = calibration["CRRA"]
+    """Validate D-2 and D-3 perfect foresight optimality conditions"""
+    beta = parameters["DiscFac"]
+    R = parameters["R"]
+    sigma = parameters["CRRA"]
+    y = parameters["y"]
 
-    # For D-4, use effective discount factor
-    if model_id == "D-4":
-        s = calibration["SurvivalProb"]
+    # For D-3, use effective discount factor
+    if model_id == "D-3":
+        s = parameters["SurvivalProb"]
         beta_eff = s * beta
     else:
         beta_eff = beta
 
     kappa = (R - (beta_eff * R) ** (1 / sigma)) / R
 
-    m = test_states["m"]
+    # Compute m from arrival state a (proper decision function structure)
+    a = test_states["a"]
+    m = a * R + y  # market resources = assets * return + income
     c = analytical_controls["c"]
 
-    # Check that c_t = κ*m_t
-    expected_c = kappa * m
+    # Compute human wealth: present value of constant income stream
+    r = _human_wealth_rate(R)
+    human_wealth = y / r
+
+    # Check that c_t = κ*(m_t + H) where H is human wealth
+    expected_c = kappa * (m + human_wealth)
     consumption_errors = torch.abs(c - expected_c)
     max_consumption_error = torch.max(consumption_errors).item()
 
@@ -909,12 +1044,14 @@ def _validate_d3_d4_solution(
             "error": f"Consumption rule violated: max error = {max_consumption_error}",
         }
 
-    # Check budget constraint feasibility: c_t < m_t
-    if torch.any(c >= m):
+    # Check budget constraint feasibility: c_t < m_t + H
+    # Note: With human wealth, agent can consume more than current cash-on-hand by borrowing against future income
+    total_wealth = m + human_wealth
+    if torch.any(c >= total_wealth):
         return {
             "success": False,
             "validation": "FAILED",
-            "error": "Budget constraint violated: consumption >= cash-on-hand",
+            "error": "Budget constraint violated: consumption >= total wealth (m + H)",
         }
 
     # If we get here, validation passed
@@ -933,26 +1070,20 @@ BENCHMARK_MODELS = {
         "calibration": d2_calibration,
         "analytical_policy": d2_analytical_policy,
         "test_states": _generate_d2_test_states,
+        "custom_validation": _validate_d2_d3_solution,
     },
     "D-3": {
         "block": d3_block,
         "calibration": d3_calibration,
         "analytical_policy": d3_analytical_policy,
-        "test_states": _generate_d34_test_states,
-        "custom_validation": _validate_d3_d4_solution,
-    },
-    "D-4": {
-        "block": d4_block,
-        "calibration": d4_calibration,
-        "analytical_policy": d4_analytical_policy,
-        "test_states": _generate_d34_test_states,
-        "custom_validation": _validate_d3_d4_solution,
+        "test_states": _generate_d3_test_states,
+        "custom_validation": _validate_d2_d3_solution,
     },
     "U-1": {
         "block": u1_block,
         "calibration": u1_calibration,
         "analytical_policy": u1_analytical_policy,
-        "test_states": _generate_u13_test_states,
+        "test_states": _generate_u1_test_states,
     },
     "U-2": {
         "block": u2_block,
@@ -963,37 +1094,35 @@ BENCHMARK_MODELS = {
     "U-3": {
         "block": u3_block,
         "calibration": u3_calibration,
-        "analytical_policy": u3_analytical_policy,
-        "test_states": _generate_u13_test_states,
+        # NO analytical_policy - buffer stock requires numerical solution
+        "test_states": _generate_u3_test_states,
     },
-    "U-4": {
-        "block": u4_block,
-        "calibration": u4_calibration,
-        "analytical_policy": u4_analytical_policy,
-        "test_states": _generate_u4_test_states,
-    },
-    "U-5": {
-        "block": u5_block,
-        "calibration": u5_calibration,
-        "analytical_policy": u5_analytical_policy,
-        "test_states": _generate_u5_test_states,
-    },
-    "U-6": {
-        "block": u6_block,
-        "calibration": u6_calibration,
-        "analytical_policy": u6_analytical_policy,
-        "test_states": _generate_u6_test_states,
+    "D-4": {
+        "block": d4_block,
+        "calibration": d4_calibration,
+        # NO analytical_policy - binding constraint + impatience has no closed form.
+        # The independent oracle is value-function iteration:
+        "reference_policy": d4_vfi_reference_policy,
+        "test_states": _generate_d4_test_states,
     },
 }
 
 
 def get_benchmark_model(model_id: str) -> DBlock:
-    """Get benchmark model by ID (D-1, D-2, D-3, D-4, U-1, U-2, U-3, U-4, U-5, U-6)"""
+    """Get benchmark model by ID (D-1 through D-4, U-1 through U-3).
+
+    Returns an independent deep copy of the registered block. The registered
+    blocks are module-level singletons whose shock specs are mutated in place by
+    ``construct_shocks`` (the ``(class, args)`` tuples are replaced by
+    distribution objects). Returning a copy keeps that mutation local to the
+    caller, so constructing or recalibrating one block never leaks into another
+    caller (or another test) holding "the same" model.
+    """
     if model_id not in BENCHMARK_MODELS:
         available = list(BENCHMARK_MODELS.keys())
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
 
-    return BENCHMARK_MODELS[model_id]["block"]
+    return copy.deepcopy(BENCHMARK_MODELS[model_id]["block"])
 
 
 def get_benchmark_calibration(model_id: str) -> Dict[str, Any]:
@@ -1006,15 +1135,78 @@ def get_benchmark_calibration(model_id: str) -> Dict[str, Any]:
 
 
 def get_analytical_policy(model_id: str) -> Callable:
-    """Get analytical policy function by model ID"""
+    """Get analytical policy function by model ID.
+
+    Raises ValueError if the model does not have an analytical policy
+    (e.g., U-3 buffer stock model requires numerical solution).
+    """
     if model_id not in BENCHMARK_MODELS:
         available = list(BENCHMARK_MODELS.keys())
         raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
 
-    calibration = BENCHMARK_MODELS[model_id]["calibration"]
-    policy_func = BENCHMARK_MODELS[model_id]["analytical_policy"]
+    if "analytical_policy" not in BENCHMARK_MODELS[model_id]:
+        raise ValueError(
+            f"Model '{model_id}' does not have an analytical policy. "
+            "This model requires numerical solution via Euler equation training. "
+            "Use EulerEquationLoss with maliar_training_loop (constrained=True for "
+            "models with upper-bound constrained controls). See tests/test_maliar.py for examples."
+        )
 
-    return policy_func(calibration)
+    return BENCHMARK_MODELS[model_id]["analytical_policy"]
+
+
+def has_analytical_policy(model_id: str) -> bool:
+    """Return whether the registry exposes a closed-form policy for ``model_id``.
+
+    Most benchmark entries pair their :py:class:`~skagent.block.DBlock` with an
+    analytical decision function; a few (for example ``U-3``, the buffer-stock
+    model) are registered without one because a borrowing constraint combined
+    with income uncertainty leaves them with no closed form. This predicate lets
+    callers branch on that distinction without catching the
+    :py:exc:`ValueError` that :py:func:`get_analytical_policy` raises.
+
+    Parameters
+    ----------
+    model_id : str
+        Registry key, e.g. ``"D-1"`` or ``"U-3"``.
+
+    Returns
+    -------
+    bool
+        ``True`` if a closed-form policy is available, ``False`` otherwise.
+
+    Raises
+    ------
+    ValueError
+        If ``model_id`` is not a registered benchmark model.
+    """
+    if model_id not in BENCHMARK_MODELS:
+        available = list(BENCHMARK_MODELS.keys())
+        raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    return "analytical_policy" in BENCHMARK_MODELS[model_id]
+
+
+def get_reference_policy(model_id: str) -> Callable:
+    """Get a numerical reference policy for a model lacking a closed form.
+
+    Some benchmarks (currently D-4) have no analytical policy because a binding
+    constraint precludes one, but do have an independent numerical oracle (e.g.
+    value-function iteration) suitable for validating trained policies.
+
+    Raises ValueError if the model has no reference policy registered.
+    """
+    if model_id not in BENCHMARK_MODELS:
+        available = list(BENCHMARK_MODELS.keys())
+        raise ValueError(f"Unknown model '{model_id}'. Available: {available}")
+
+    if "reference_policy" not in BENCHMARK_MODELS[model_id]:
+        raise ValueError(
+            f"Model '{model_id}' does not have a numerical reference policy. "
+            "Models with closed forms expose get_analytical_policy instead."
+        )
+
+    return BENCHMARK_MODELS[model_id]["reference_policy"]
 
 
 def get_test_states(model_id: str, test_points: int = 10) -> Dict[str, torch.Tensor]:
@@ -1037,7 +1229,11 @@ def get_custom_validation(model_id: str) -> Callable | None:
 
 
 def list_benchmark_models() -> Dict[str, str]:
-    """List all 10 analytically solvable discrete-time models from the catalogue"""
+    """List all discrete-time benchmark models.
+
+    Note: Most models have analytical solutions, but some (e.g., U-3 buffer stock)
+    require numerical solution due to borrowing constraints + income uncertainty.
+    """
     return {
         model_id: model_info["calibration"]["description"]
         for model_id, model_info in BENCHMARK_MODELS.items()
@@ -1058,14 +1254,14 @@ def validate_analytical_solution(
         }
 
     try:
-        calibration = get_benchmark_calibration(model_id)
+        parameters = get_benchmark_calibration(model_id)
         analytical_policy = get_analytical_policy(model_id)
 
         # Generate appropriate test states using the extensible approach
         test_states = get_test_states(model_id, test_points)
 
         # Test analytical policy
-        analytical_controls = analytical_policy(test_states, {}, calibration)
+        analytical_controls = analytical_policy(test_states, {}, parameters)
 
         # Basic feasibility checks
         for control_name, control_values in analytical_controls.items():
@@ -1090,7 +1286,7 @@ def validate_analytical_solution(
         custom_validation = get_custom_validation(model_id)
         if custom_validation is not None:
             validation_result = custom_validation(
-                model_id, test_states, analytical_controls, calibration, tolerance
+                model_id, test_states, analytical_controls, parameters, tolerance
             )
             if not validation_result["success"]:
                 return {
@@ -1114,7 +1310,7 @@ def validate_analytical_solution(
             ).item(),
         }
 
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError, TypeError, AttributeError) as e:
         return {
             "success": False,
             "validation": "FAILED",
@@ -1127,12 +1323,12 @@ def validate_analytical_solution(
 def euler_equation_test(model_id: str, test_points: int = 100) -> Dict[str, Any]:
     """Test Euler equation satisfaction for stochastic analytical solutions"""
 
-    if model_id == "D-3":
+    if model_id == "D-2":
         return {
             "success": False,
             "test": "SKIPPED",
             "model_id": model_id,
-            "error": "D-3 is a perfect foresight model - Euler equation test not applicable",
+            "error": "D-2 is a perfect foresight model - Euler equation test not applicable",
         }
 
     # Add tests for stochastic models here when needed
@@ -1144,19 +1340,197 @@ def euler_equation_test(model_id: str, test_points: int = 100) -> Dict[str, Any]
     }
 
 
-if __name__ == "__main__":
-    print("Complete Catalogue of Analytically Solvable Models:")
-    print("=" * 60)
+# ANALYTICAL LIFETIME REWARD FUNCTIONS
+# ===================================
 
-    for model_id, description in list_benchmark_models().items():
-        print(f"{model_id:4s}: {description}")
 
-    print(f"\nTotal: {len(BENCHMARK_MODELS)} models")
+def d1_analytical_lifetime_reward(
+    initial_wealth: float,
+    discount_factor: float,
+    interest_rate: float,
+    time_horizon: int,
+) -> float:
+    """
+    Analytical lifetime reward for D-1: Finite horizon log utility.
 
-    # Test a few key models
-    print("\nValidation Results:")
-    print("-" * 30)
-    for model_id in ["D-1", "D-3", "U-1", "U-4"]:
-        result = validate_analytical_solution(model_id)
-        status = result.get("validation", result.get("error", "UNKNOWN"))
-        print(f"{model_id}: {status}")
+    Forward simulation that exactly matches the D-1 model implementation.
+    """
+    beta = discount_factor
+    R = interest_rate
+    W = initial_wealth
+    T = time_horizon
+
+    if W <= 0 or T <= 0:
+        return -np.inf
+
+    # Forward simulation matching D-1 model
+    total_utility = 0.0
+    current_wealth = W
+
+    for t in range(T):
+        # Remaining periods calculation: T - t
+        remaining = T - t
+
+        if remaining <= 1:
+            # Terminal period: consume everything
+            consumption = current_wealth
+        else:
+            # Use remaining horizon formula: c_t = (1-β)/(1-β^remaining) * W_t
+            consumption_rate = (1 - beta) / (1 - beta**remaining)
+            consumption = consumption_rate * current_wealth
+
+        period_utility = np.log(consumption)
+        total_utility += (beta**t) * period_utility
+
+        if t < T - 1:
+            current_wealth = (current_wealth - consumption) * R
+
+    return total_utility
+
+
+def d2_analytical_lifetime_reward(
+    cash_on_hand: float,
+    discount_factor: float,
+    interest_rate: float,
+    risk_aversion: float,
+    income: float = 0.0,  # Income parameter to calculate human wealth
+) -> float:
+    """
+    Analytical lifetime reward for D-2 using total wealth.
+
+    With constant income y > 0, the value function is based on total wealth W = m + H
+    where H = y/r is human wealth.
+
+    Optimal policy: c = κ*(m + H) where κ = (R - (βR)^(1/σ))/R
+    Value function: V(W) = κ^(1-σ)/(1-σ) * W^(1-σ) / (1 - β*(βR)^((1-σ)/σ))
+    """
+    beta = discount_factor
+    R = interest_rate
+    sigma = risk_aversion
+    m = cash_on_hand
+    y = income
+
+    if m <= 0:
+        return -np.inf
+
+    growth_factor = (beta * R) ** (1 / sigma)
+    if growth_factor >= R:
+        raise ValueError("Return-impatience condition violated")
+
+    kappa = (R - growth_factor) / R
+    r = _human_wealth_rate(R)
+
+    # Calculate total wealth W = m + H (including human wealth)
+    if y > 0:
+        human_wealth = y / r  # Human wealth for constant income
+        total_wealth = m + human_wealth
+    else:
+        total_wealth = m  # No income case
+
+    if total_wealth <= 0:
+        return -np.inf
+
+    if sigma == 1:  # Log utility case
+        # Log utility value function:
+        # V(W) = ln(W)/(1-β) + ln(1-β)/(1-β) + β*ln(R*β)/(1-β)²
+        ln_wealth_term = np.log(total_wealth) / (1 - beta)
+        constant_term1 = np.log(1 - beta) / (1 - beta)
+        constant_term2 = beta * np.log(R * beta) / ((1 - beta) ** 2)
+        return ln_wealth_term + constant_term1 + constant_term2
+    else:  # General CRRA case
+        denominator = 1 - beta * (beta * R) ** ((1 - sigma) / sigma)
+        return (
+            kappa ** (1 - sigma) * total_wealth ** (1 - sigma) / (1 - sigma)
+        ) / denominator
+
+
+def d3_analytical_lifetime_reward(
+    cash_on_hand: float,
+    discount_factor: float,
+    interest_rate: float,
+    risk_aversion: float,
+    survival_prob: float,
+    income: float = 0.0,
+) -> float:
+    """
+    Analytical lifetime reward for D-3: Blanchard discrete-time mortality.
+
+    Similar to D-2 but uses effective discount factor β_eff = s*β where s is survival probability.
+    The mortality risk effectively increases the discount rate, making the agent more impatient.
+
+    With income y > 0, uses total wealth W = m + H where H = y/r.
+    Value function: V(W) = κ_eff^(1-σ)/(1-σ) * W^(1-σ) / (1 - β_eff*(β_eff*R)^((1-σ)/σ))
+    where κ_eff uses β_eff = s*β in place of β.
+    """
+    beta = discount_factor
+    R = interest_rate
+    sigma = risk_aversion
+    s = survival_prob
+    m = cash_on_hand
+    y = income
+
+    if m <= 0:
+        return -np.inf
+
+    if not (0 < s <= 1):
+        raise ValueError(f"Survival probability must be in (0,1], got s={s}")
+
+    # Effective discount factor due to mortality risk
+    beta_eff = s * beta
+
+    growth_factor = (beta_eff * R) ** (1 / sigma)
+    if growth_factor >= R:
+        raise ValueError("Return-impatience condition violated with mortality")
+
+    kappa_eff = (R - growth_factor) / R
+    r = _human_wealth_rate(R)
+
+    # Calculate total wealth W = m + H (same as D-2)
+    if y > 0:
+        human_wealth = y / r  # Human wealth for constant income
+        total_wealth = m + human_wealth
+    else:
+        total_wealth = m  # No income case
+
+    if total_wealth <= 0:
+        return -np.inf
+
+    if sigma == 1:  # Log utility case with mortality
+        # Modified log utility value function with effective discount factor
+        ln_wealth_term = np.log(total_wealth) / (1 - beta_eff)
+        constant_term1 = np.log(1 - beta_eff) / (1 - beta_eff)
+        constant_term2 = beta_eff * np.log(R * beta_eff) / ((1 - beta_eff) ** 2)
+        return ln_wealth_term + constant_term1 + constant_term2
+    else:  # General CRRA case with mortality
+        denominator = 1 - beta_eff * (beta_eff * R) ** ((1 - sigma) / sigma)
+        return (
+            kappa_eff ** (1 - sigma) * total_wealth ** (1 - sigma) / (1 - sigma)
+        ) / denominator
+
+
+def get_analytical_lifetime_reward(model_id: str, *args, **kwargs) -> float:
+    """
+    Get analytical lifetime reward for a benchmark model.
+
+    Parameters
+    ----------
+    model_id : str
+        Model identifier (D-1, D-2, D-3, etc.)
+    *args, **kwargs
+        Arguments to pass to the specific analytical function
+
+    Returns
+    -------
+    float
+        Analytical lifetime reward value
+    """
+    analytical_functions = {
+        "D-1": d1_analytical_lifetime_reward,
+        "D-2": d2_analytical_lifetime_reward,
+        "D-3": d3_analytical_lifetime_reward,  # ADDED: Missing D-3 lifetime reward function
+    }
+
+    if model_id not in analytical_functions:
+        raise ValueError(f"No analytical lifetime reward function for {model_id}")
+
+    return analytical_functions[model_id](*args, **kwargs)
