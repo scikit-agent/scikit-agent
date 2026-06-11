@@ -27,34 +27,99 @@
 
   Cases 7 and 8 specifically validate the open-bound defaults (`±1e12`).
 
-## TODO — benchmark models cannot be tested against VBI yet
+## Context — what `main` already provides
 
-The benchmark catalogue in `src/skagent/models/benchmarks.py` is all _discounted
-dynamic programs_. The current `vbi.solve` cannot reproduce their analytic
-policies. Structural gaps to close before benchmark policy-matching tests are
-possible:
+Since this branch was first written, `main` landed a full torch-based solving
+stack that VBI predates and must now integrate with:
 
-1. **No discount factor.** The Bellman backup is literally `r + cv`
-   (`model.py:441`), with no β. Every benchmark's Euler equation depends on β.
-2. **Only the first reward is used** — `calc_reward(...).values()[0]`
-   (`model.py:435`), so e.g. D-1's two-period `u1 + u2` objective can't be
-   expressed.
-3. **Deterministic blocks crash.** The arrival value function calls
-   `discretized_shock_dstn` on empty shocks, which throws `IndexError` (D-3/D-4
-   have no shocks).
-4. **VFI iteration breaks.** Feeding a fitted decision rule back as a
-   continuation fails because `ar_from_data` uses a `**args` signature that
-   `simulate_dynamics` can't introspect (`KeyError: 'args'`).
-5. **Single control only** — `vbi.solve` raises for blocks with >1 control.
+- **`bellman.py` — `BellmanPeriod`.** Wraps a `Block` with an explicit
+  `discount_variable`; `resolve_discount_factor(post)` extracts β from the
+  post-transition bag. torch-native `transition_function` / `reward_function` /
+  `post_function` / `compute_controls(df, …)` / `compute_value(vf, …)`, plus
+  gradient variants. Multi-reward summation and empty-shock (deterministic)
+  handling are already solved here.
+- **`ann.py` — `BlockValueNet` / `BlockPolicyNet` / `BlockPolicyValueNet`** (all
+  `BellmanPeriodMixin`, one net per control). Expose `get_value_function()` /
+  `get_decision_rule()` / `get_decision_function()`.
+- **`loss.py` — `BellmanEquationLoss`** (`V(s) − [u + β·E V(s′)]` + optional FOC
+  weight), `EulerEquationLoss`, `StaticRewardLoss`,
+  `EstimatedDiscountedLifetimeRewardLoss`. All take a `BellmanPeriod`; all are
+  callables `loss(df, input_grid) -> tensor`.
+- **`solver.py` —
+  `solve_multiple_controls(control_order, bellman_period, givens, calibration, loss=…)`**
+  already drives multi-control _neural_ solving.
 
-### Suggested next step
+**Consequence:** the torch-based VFI already exists (`BellmanEquationLoss` +
+value/policy nets + `solver`). VBI's unique remaining value is that it is the
+only **exact grid** solver (per-grid-point `scipy.optimize`, no
+function-approximation error). So the goal is _not_ to rebuild VBI in torch — it
+is to bring the exact grid solver onto the `BellmanPeriod` protocol the rest of
+the stack speaks, then wire it into the nets as a warm-start / ground-truth
+tool.
 
-Extend VBI / `model.py` to close the gaps above:
+## Friction points (verified against current `src/`)
 
-- discount factor in the Bellman recursion,
-- multi-reward summation,
-- deterministic-block (empty-shock) arrival value,
-- a re-feedable decision rule so value-function iteration works,
+- `vbi.solve` still rides the **old `DBlock` continuation API**
+  (`get_state_rule_value_function_from_continuation` @ `block.py:567`,
+  `get_decision_value_function`, `get_arrival_value_function`). These still
+  exist, so nothing is broken, but it is a parallel universe to `BellmanPeriod`.
+- VBI decision rules use the
+  **`ar_from_data(**args)`** signature; the rest of the stack uses `f(states_t,
+  shocks_t,
+  parameters)`. The 11 VBI tests assert the old form (`dr["c"](m=1.5)`, `arr_vf({"y":
+  10})`), so the protocol change is breaking and must be shimmed or migrated.
+- Original structural gaps, still real: no explicit β (folded into
+  `continuation`, `block.py` backup is `r + cv`), single reward
+  (`calc_reward(...).values()[0]`), single control (`vbi.solve` raises for >1),
+  deterministic-block crash (`discretized_shock_dstn` on empty shocks).
 
-then add benchmark policy-matching tests (e.g. D-3 VFI should converge to
-`c = κ·m` with `κ = (R − (βR)^{1/σ})/R`).
+## Work plan
+
+Order is **1 → 2 → 3**: protocol first (unblocks interop), standalone exact
+solver second, bridge/warm-start last.
+
+**Assumption:** add a new opt-in `solve_bellman(bp, …)` entry point and leave
+the legacy `solve(block, continuation, …)` untouched. The legacy path is the
+deliberate "user controls their own discount factor by folding it into the
+continuation" feature, now documented as the explicit alternative to β.
+
+### Phase 1 — Protocol adapter (no solver-internals change)
+
+- Add a `df(states_t, shocks_t, parameters)`-shaped wrapper around the xarray
+  interpolation, replacing/supplementing `ar_from_data`.
+- Keep a thin back-compat shim for the existing `dr["c"](m=…)` keyword call so
+  the 11 tests keep passing (or migrate them in the same PR).
+- **Deliverable:** a VBI-fitted policy is a drop-in `df` for
+  `BellmanPeriod.compute_controls`, `loss.BellmanEquationLoss`, and `solver`.
+- **Test:** round-trip a VBI `dr` through `BellmanPeriod.compute_controls` and
+  one `BellmanEquationLoss.__call__`.
+
+### Phase 2 — Re-base the exact solver on `BellmanPeriod` (standalone completion)
+
+Add `vbi.solve_bellman(bp: BellmanPeriod, continuation_vf, state_grid, …)` that
+uses `bp` for model mechanics instead of the `DBlock` continuation methods:
+
+- **Explicit β:** backup becomes `r + β·cv`, β from
+  `bp.resolve_discount_factor(post)` (closes gap #1). Keep legacy `solve` as the
+  β-folded-into-continuation path.
+- **Multi-reward:** sum over `bp.get_reward_syms(agent)` (gap #2).
+- **Deterministic blocks:** take the shock expectation through `bp`
+  (empty-shock-safe) instead of VBI's direct `discretized_shock_dstn` (gap #3).
+- **Multiple controls:** vectorize the `scipy.minimize` call over a control
+  vector with per-control bounds (gap #5); `BlockPolicyNet`'s bound handling is
+  the reference. Stays _exact_ — distinct from `solver.solve_multiple_controls`,
+  which is neural.
+- Then add **benchmark policy-matching tests** (e.g. D-3 VFI → `c = κ·m` with
+  `κ = (R − (βR)^{1/σ})/R`), now expressible because the discounted recursion
+  exists.
+
+### Phase 3 — Bridge / warm-start
+
+- Add `vbi_value_to_net(value_da, bp) -> BlockValueNet` and
+  `vbi_policy_to_net(policy_da, bp) -> BlockPolicyNet` that supervised-fit a net
+  to the exact grid solution.
+- Uses: warm-start `solver.solve_multiple_controls` (initialize nets near the
+  exact solution); serve as ground truth in tests comparing neural-VFI output
+  against the exact grid.
+- xarray stays VBI-internal; tensors only cross at the Phase-1 callable
+  boundary.
