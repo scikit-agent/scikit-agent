@@ -5,28 +5,26 @@ functions.
 
 ## Monte Carlo Simulation
 
-The simulation module provides Monte Carlo simulation engines for economic
+The simulation module provides Monte Carlo simulation engines for block-based
 models.
 
-### MonteCarloSimulator
+### Simulator
 
-A simplified Monte Carlo simulation engine that doesn't make assumptions about
-aging or mortality.
-
-```{eval-rst}
-.. autoclass:: skagent.simulation.monte_carlo.MonteCarloSimulator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
-### Base Simulator
+The base Monte Carlo simulation engine. It makes no assumptions about aging or
+mortality; demographic features are expressed declaratively as blocks (see the
+mortality example below).
 
 ```{eval-rst}
 .. autoclass:: skagent.simulation.monte_carlo.Simulator
    :members:
    :undoc-members:
    :show-inheritance:
+```
+
+```{note}
+`MonteCarloSimulator` is an alias for `Simulator`, kept for backward
+compatibility. The examples below use the alias because it is what
+`skagent.__init__` exports.
 ```
 
 ## Simulation Utility Functions
@@ -79,7 +77,10 @@ simulator = ska.MonteCarloSimulator(
     calibration=calibration,
     block=mortal_cons_problem,
     dr={"c": lambda m: m / 3},
-    initial={"k": Lognormal(-6, 0), "p": 1.0, "age": 0},
+    # Initial states may be scalars or distributions. Lognormal takes the
+    # distribution's mean and standard deviation in levels; newborns draw
+    # their starting capital from it.
+    initial={"k": Lognormal(1.0, 0.5), "p": 1.0, "age": 0},
     agent_count=1000,
     T_sim=50,
 )
@@ -87,7 +88,3 @@ simulator = ska.MonteCarloSimulator(
 simulator.initialize_sim()
 results = simulator.simulate()
 ```
-
----
-
-_This page is under construction. Content will be added as the API develops._

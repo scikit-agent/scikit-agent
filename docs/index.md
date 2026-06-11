@@ -18,11 +18,13 @@ community/index
 
 ```python
 import skagent as ska
-from skagent.models.consumer import consumption_block, calibration
+from skagent.models.consumer import cons_problem, calibration
 
-# Create a consumption-saving model
-model = consumption_block
-model.construct_shocks(calibration)
+# A consumption-saving model: a consumption block chained with a
+# tick block that carries end-of-period assets into next period's
+# capital. The simulator constructs the shock distributions from
+# the calibration internally.
+model = cons_problem
 
 # Define simple decision rule
 decision_rules = {"c": lambda m: 0.9 * m}
@@ -32,11 +34,12 @@ simulator = ska.MonteCarloSimulator(
     calibration=calibration,
     block=model,
     dr=decision_rules,
-    initial={"k": 1.0, "p": 1.0},
+    initial={"k": 1.0},
     agent_count=1000,
     T_sim=50,
 )
 
+simulator.initialize_sim()
 results = simulator.simulate()
 ```
 
@@ -63,7 +66,7 @@ Learn to build custom models using DBlocks and economic building blocks
 :link: user_guide/algorithms
 :link-type: doc
 
-Explore solution methods from VFI to neural networks
+Explore solution methods from value backwards induction to neural networks
 :::
 
 :::{grid-item-card} 📈 Simulation Guide

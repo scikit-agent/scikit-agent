@@ -28,7 +28,7 @@ registry contains and how to call it.
 
 ## Roster
 
-The models below split into two groups. Six ship in the `BENCHMARK_MODELS`
+The models below split into two groups. Seven ship in the `BENCHMARK_MODELS`
 registry, each reachable through
 {py:func}`~skagent.models.benchmarks.list_benchmark_models` by the short
 registry key shown in the table. Those keys, such as `D-1` or `U-2`, are
@@ -39,14 +39,19 @@ as standalone modules.
 **Registry models** (fetch with
 {py:func}`~skagent.models.benchmarks.get_benchmark_model` and the registry key):
 
-| Model                                          | Key   | Utility   | Income                    | Closed form            |
-| ---------------------------------------------- | ----- | --------- | ------------------------- | ---------------------- |
-| Finite-horizon log utility                     | `D-1` | Log       | Wealth only               | Remaining-horizon MPC  |
-| Infinite-horizon perfect foresight             | `D-2` | CRRA      | Constant $y$              | Linear in total wealth |
-| Blanchard mortality                            | `D-3` | CRRA      | Constant $y$              | Same with $s\beta$     |
-| Hall random walk                               | `U-1` | Quadratic | Stochastic, $\beta R = 1$ | PIH annuity rule       |
-| Log utility with permanent shocks (normalized) | `U-2` | Log       | Geometric random walk     | $c = (1-\beta)(m + h)$ |
-| Buffer stock                                   | `U-3` | CRRA      | Geometric random walk     | None (numerical only)  |
+| Model                                          | Key   | Utility   | Income                           | Closed form                 |
+| ---------------------------------------------- | ----- | --------- | -------------------------------- | --------------------------- |
+| Finite-horizon log utility                     | `D-1` | Log       | Wealth only                      | Remaining-horizon MPC       |
+| Infinite-horizon perfect foresight             | `D-2` | CRRA      | Constant $y$                     | Linear in total wealth      |
+| Blanchard mortality                            | `D-3` | CRRA      | Constant $y$                     | Same with $s\beta$          |
+| Hall random walk                               | `U-1` | Quadratic | Stochastic[^br]                  | PIH annuity rule            |
+| Log utility with permanent shocks (normalized) | `U-2` | Log       | Geometric random walk            | $c = (1-\beta)(m + h)$      |
+| Buffer stock                                   | `U-3` | CRRA      | Geometric random walk            | None (numerical only)       |
+| Constrained perfect foresight                  | `D-4` | CRRA      | Constant $y$, binding constraint | None (VFI reference policy) |
+
+[^br]:
+    The U-1 closed form requires the calibration restriction $\beta R = 1$; the
+    Hall martingale result holds for any income process given that restriction.
 
 **Standalone modules (not in `BENCHMARK_MODELS`):**
 
@@ -75,7 +80,7 @@ from skagent.models.benchmarks import (
 
 list_benchmark_models()
 # {'D-1': '...', 'D-2': '...', 'D-3': '...',
-#  'U-1': '...', 'U-2': '...', 'U-3': '...'}
+#  'U-1': '...', 'U-2': '...', 'U-3': '...', 'D-4': '...'}
 
 block = get_benchmark_model("D-2")
 calibration = get_benchmark_calibration("D-2")
@@ -90,7 +95,9 @@ result["validation"]  # 'PASSED'
 
 Models without a closed form report `False` from
 {py:func}`~skagent.models.benchmarks.has_analytical_policy`, and requesting
-their analytical policy raises {py:exc}`ValueError`. For those, solve
+their analytical policy raises {py:exc}`ValueError`. The constrained `D-4` model
+instead provides a value-function-iteration reference policy through
+{py:func}`~skagent.models.benchmarks.get_reference_policy`. For the rest, solve
 numerically with {py:class}`~skagent.loss.EulerEquationLoss` and
 {py:func}`~skagent.algos.maliar.maliar_training_loop`; see {doc}`algorithms`.
 

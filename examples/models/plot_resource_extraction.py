@@ -71,9 +71,9 @@ discounted expected continuation value.
 Parameters
 ----------
 
-- :math:`r` = 1.1: Growth rate (10% per period)
+- :math:`r` = 1.02: Growth rate (2% per period)
 - :math:`p` = 5.0: Price per unit extracted
-- :math:`c_0` = 2.0: Cost parameter for stock-dependent costs
+- :math:`c_0` = 10.0: Cost parameter for stock-dependent costs
 - :math:`\delta` (`DiscFac`) = 0.95: Discount factor for future rewards
 - :math:`\sigma` = 0.1: Standard deviation of log-normal growth shock
 

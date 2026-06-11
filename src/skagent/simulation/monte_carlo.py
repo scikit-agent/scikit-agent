@@ -2,8 +2,10 @@
 Functions to support Monte Carlo simulation of models.
 """
 
+from __future__ import annotations
+
 from copy import copy
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, Union
 
 import numpy as np
 
@@ -13,7 +15,7 @@ from skagent.distributions import (
     TimeVaryingDiscreteDistribution,
 )
 from skagent.block import Aggregate
-from skagent.block import DBlock
+from skagent.block import DBlock, RBlock
 from skagent.block import construct_shocks, simulate_dynamics
 
 
@@ -115,7 +117,7 @@ class Simulator:
     ----------
     calibration : Mapping[str, Any]
         Model calibration parameters
-    block : DBlock
+    block : DBlock or RBlock
         Has shocks, dynamics, and rewards
     dr : Mapping[str, Callable]
         Decision rules for control variables
@@ -132,7 +134,14 @@ class Simulator:
     state_vars = []
 
     def __init__(
-        self, calibration, block: DBlock, dr, initial, seed=0, agent_count=1, T_sim=10
+        self,
+        calibration,
+        block: Union[DBlock, RBlock],
+        dr,
+        initial,
+        seed=0,
+        agent_count=1,
+        T_sim=10,
     ):
         self.calibration = calibration
         self.block = block
