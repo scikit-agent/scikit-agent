@@ -90,7 +90,9 @@ def solve(
         continuation, screen=True
     )
 
-    controls = block.get_controls()
+    # get_controls() returns a dict[sym, Control]; VBI works with the
+    # ordered list of control symbols.
+    controls = list(block.get_controls())
 
     # pseudo
     policy_data = grid_to_data_array(state_grid)
