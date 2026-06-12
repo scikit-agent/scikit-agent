@@ -90,7 +90,9 @@ def solve(
         continuation, screen=True
     )
 
-    controls = block.get_controls()
+    # get_controls() returns a dict[sym, Control]; VBI works with the
+    # ordered list of control symbols.
+    controls = list(block.get_controls())
 
     # pseudo
     policy_data = grid_to_data_array(state_grid)
@@ -108,7 +110,7 @@ def solve(
         pre_states.update(state_vals)
 
         # prepare function to optimize
-        def negated_value(a):  # old! (should be negative)
+        def negated_value(a):
             dr = {c: get_action_rule(a[i]) for i, c in enumerate(controls)}
 
             # negative, for minimization later
@@ -118,13 +120,10 @@ def solve(
             # if no controls, no optimization is necessary
             pass
         elif len(controls) == 1:
-            # assume only one for now
-            control_sym = next(iter(controls))
-
             ## get lower bound.
             ## assumes only one control currently
-            lower_bound = -1e-6  ## a really low number!
-            feq = block.dynamics[control_sym].lower_bound
+            lower_bound = -1e12  # a very low number
+            feq = block.dynamics[controls[0]].lower_bound
             if feq is not None:
                 lower_bound = feq(
                     *[pre_states[var] for var in signature(feq).parameters]
@@ -132,10 +131,8 @@ def solve(
 
             ## get upper bound
             ## assumes only one control currently
-            upper_bound = 1e-12  # a very high number
-            feq = block.dynamics[control_sym].upper_bound
-
-            print(feq)
+            upper_bound = 1e12  # a very high number
+            feq = block.dynamics[controls[0]].upper_bound
 
             if feq is not None:
                 upper_bound = feq(
@@ -143,8 +140,6 @@ def solve(
                 )
 
             bounds = ((lower_bound, upper_bound),)
-
-            print(bounds)
 
             res = minimize(  # choice of
                 negated_value,
@@ -175,8 +170,6 @@ def solve(
             raise Exception(
                 f"Value backup iteration is not yet implemented for stages with {len(controls)} > 1 control variables."
             )
-
-    print(policy_data)
 
     # use the xarray interpolator to create a decision rule.
     dr_from_data = {
