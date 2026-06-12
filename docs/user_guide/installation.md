@@ -2,27 +2,37 @@
 
 ## Requirements
 
-scikit-agent requires:
+scikit-agent requires Python 3.9 or higher. Its main runtime dependencies are:
 
-- Python 3.9 or higher
-- NumPy
-- SciPy
-- Matplotlib
+- NumPy, SciPy, SymPy, Numba, and xarray
 - PyTorch
-- Cairo
+- Matplotlib
+- cairosvg, pydot, PyYAML, and IPython (model visualization)
 
-### macOS
+See `pyproject.toml` for the authoritative dependency list; `pip` installs all
+of these automatically.
 
-To install system dependencies:
+### System Dependencies
+
+The `cairosvg` and `pydot` packages link against the Cairo and Graphviz system
+libraries, which must be installed separately for model visualization.
+
+On macOS:
 
 ```bash
-brew install cairo libffi
+brew install cairo libffi graphviz
 ```
 
 And link Cairo by setting the environment variable:
 
 ```
 DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH
+```
+
+On Debian/Ubuntu Linux:
+
+```bash
+sudo apt-get install libcairo2 graphviz
 ```
 
 ## Install from PyPI

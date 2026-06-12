@@ -19,8 +19,8 @@ The simulator takes the following elements in configuration:
 
 - **Calibration dictionary**. A dictionary specifying values for any free
   parameters of the model.
-- **Model**. A `Block` model, defining states, shocks, control, and reward
-  variables of an agent (or population of agents).
+- **Model**. A block model (`DBlock` or `RBlock`), defining states, shocks,
+  control, and reward variables of an agent (or population of agents).
 - **Decision rules**. A dictionary of decision rules governing the informed
   choices of agents at their decision variables.
 - **Initial values**. A dictionary of starting values, or starting
@@ -34,13 +34,13 @@ import skagent.models.consumer as cons
 from skagent.simulation.monte_carlo import MonteCarloSimulator
 
 simulator = MonteCarloSimulator(
-    cons.calibration,
-    cons.cons_problem,
-    {  # decision rules passed in as dictionary
+    calibration=cons.calibration,
+    block=cons.cons_problem,
+    dr={  # decision rules passed in as dictionary
         "c": lambda m: 0.5 * m,
     },
-    {  # distributions of starting values
-        "k": Lognormal(-6, 0),
+    initial={  # distributions of starting values, in levels
+        "k": Lognormal(1.0, 0.5),
     },
     agent_count=5,
     T_sim=10,

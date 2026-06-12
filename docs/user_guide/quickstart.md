@@ -50,7 +50,7 @@ Let's create a simple consumption-saving model step by step.
 ```python
 import numpy as np
 import skagent as ska
-from skagent.models.consumer import consumption_block, calibration
+from skagent.models.consumer import consumption_block, cons_problem, calibration
 ```
 
 ### Step 2: Examine the Pre-built Model
@@ -85,12 +85,21 @@ for param, value in my_calibration.items():
     print(f"  {param}: {value}")
 ```
 
-### Step 4: Construct Shocks
+### Step 4: Assemble the Recursive Problem
+
+A single `DBlock` describes one period of behavior. To simulate over time, the
+end-of-period assets `a` must become next period's capital `k`. The prebuilt
+`cons_problem` is an `RBlock` that chains a normalized consumption block with a
+small "tick" block doing exactly that:
 
 ```python
-# Build the shock distributions using calibration
-consumption_block.construct_shocks(my_calibration)
+print("Recursive problem blocks:")
+for block in cons_problem.blocks:
+    print(f"  {block.name}: {list(block.get_dynamics().keys())}")
 ```
+
+There is no need to construct the shock distributions by hand; the simulator
+builds them from the calibration internally.
 
 ### Step 5: Create a Simple Decision Rule
 
@@ -113,13 +122,12 @@ decision_rules = {"c": simple_consumption_rule}
 # Set up initial conditions
 initial_conditions = {
     "k": 1.0,  # Initial capital
-    "p": 1.0,  # Initial permanent income
 }
 
 # Create simulator
 simulator = ska.MonteCarloSimulator(
     calibration=my_calibration,
-    block=consumption_block,
+    block=cons_problem,
     dr=decision_rules,
     initial=initial_conditions,
     agent_count=1000,
@@ -129,6 +137,7 @@ simulator = ska.MonteCarloSimulator(
 
 # Run simulation
 print("Running simulation...")
+simulator.initialize_sim()
 results = simulator.simulate()
 
 print(f"Simulation completed. History keys: {list(results.keys())}")
@@ -139,9 +148,10 @@ print(f"Simulation completed. History keys: {list(results.keys())}")
 ```python
 import matplotlib.pyplot as plt
 
-# Plot average consumption over time
+# Plot average consumption over time. The history values are numpy
+# arrays of shape (T_sim, agent_count).
 if "c" in simulator.history:
-    consumption_data = np.array(simulator.history["c"])
+    consumption_data = simulator.history["c"]
     mean_consumption = np.mean(consumption_data, axis=1)
 
     plt.figure(figsize=(10, 6))
@@ -168,13 +178,18 @@ print(f"First few wealth points: {wealth_grid['m'][:5]}")
 
 ## Neural Network Solutions
 
-scikit-agent supports neural network-based solution methods:
+scikit-agent supports neural network-based solution methods. Policy networks are
+built on a `BellmanPeriod`, which wraps a block together with its discount
+variable and calibration:
 
 ```python
-# Create a neural network policy
-policy_net = ska.BlockPolicyNet(consumption_block, width=64)
+from skagent.bellman import BellmanPeriod
 
-print(f"Neural network input size: {policy_net.hidden1.in_features}")
+# Wrap the block as a Bellman period, then create a policy network
+bp = BellmanPeriod(consumption_block, "DiscFac", my_calibration)
+policy_net = ska.BlockPolicyNet(bp, width=64)
+
+print(f"Neural network input size: {policy_net.layers[0].in_features}")
 print(f"Neural network output size: {policy_net.output.out_features}")
 ```
 
@@ -201,7 +216,3 @@ After completing this quickstart:
 - The package follows scikit-learn conventions for a familiar API
 
 You're now ready to build more sophisticated economic models with scikit-agent!
-
----
-
-_This page is under construction. More detailed examples will be added._

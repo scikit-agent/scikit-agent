@@ -7,4 +7,6 @@ and classes in practical scenarios.
 
 Each example is designed to be self-contained and can be run independently.
 The examples demonstrate real-world usage patterns and best practices for
-using scikit-agent in your research and applications.
+using scikit-agent in your research and applications. Monte Carlo simulation
+is demonstrated within the model examples (the consumption-portfolio and
+resource extraction walkthroughs both simulate their models).

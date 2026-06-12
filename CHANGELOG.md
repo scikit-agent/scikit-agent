@@ -131,6 +131,41 @@ and this project adheres to
   trained decision rules.
 - `train_block_nn` now halts early with a warning on a non-finite (NaN/Inf) loss
   instead of continuing to train on poisoned weights.
+- Documentation correctness pass across `docs/` and the examples gallery: the
+  `index.md` and quickstart simulation snippets ran `simulate()` without
+  `initialize_sim()` and paired `consumption_block` with an initial state it
+  does not carry (both crashed verbatim; they now simulate `cons_problem` and
+  were verified by execution); the quickstart built `BlockPolicyNet` from a raw
+  `DBlock` and read a nonexistent `hidden1` attribute; the parser API example
+  used `gamma`, which SymPy parses as the gamma function; `blocks.md` live
+  sections referenced a `portfolio_block` defined only inside a comment; the
+  benchmark docs said six registry entries instead of seven (D-4 was
+  undocumented); gallery narratives contradicted the actual calibrations
+  (resource-extraction parameters, the U-2 policy's human-wealth intercept, the
+  D-3 median lifetime, and the U-1 smoothing factor).
+- New API reference pages for `skagent.bellman`, `skagent.loss`,
+  `skagent.distributions`, `skagent.model_analyzer`/`model_visualizer`, and
+  `skagent.rule`; added missing entries for `BlockValueNet`,
+  `BlockPolicyValueNet`, `train_block_nn`, and `get_reference_policy`; the
+  simulation API page no longer documents `MonteCarloSimulator` as a class
+  distinct from `Simulator` (it is an alias).
+- `solve_multiple_controls` default-loss path crashed (`AttributeError` on
+  `None`) and called the loss constructor with a stray positional argument; it
+  now resolves `skagent.loss.StaticRewardLoss` and matches its signature. The
+  function still has no tests or callers.
+- Importing `skagent.simulation.monte_carlo` or `skagent.models.benchmarks` on
+  Python 3.9 raised `TypeError` from PEP 604 unions evaluated without
+  `from __future__ import annotations`; the imports were added. The `Simulator`
+  block parameter is annotated `Union[DBlock, RBlock]` to match documented
+  usage.
+- Docs build hygiene: `plot_gallery` is a bool; the unused
+  `autosummary_generate` flag is gone; the copyright year derives from the build
+  date; `sphinx-autobuild` joins the `docs` extra so `make livehtml` works; Read
+  the Docs builds with `-W --keep-going` like CI; the empty
+  `examples/simulation/` gallery section was removed.
+- Project metadata: the PyPI description placeholder ("A great package.") was
+  replaced and the Development Status classifier bumped from Planning to
+  Pre-Alpha, matching the roadmap's v0.1 proof-of-concept status.
 
 ...
 
