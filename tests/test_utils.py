@@ -4,8 +4,6 @@ import skagent.utils as utils
 import torch
 from skagent.utils import compute_gradients_for_tensors
 
-torch.manual_seed(10077696)
-
 
 def test_utils_apply_fun_to_vals():
     def pow(x, y):
