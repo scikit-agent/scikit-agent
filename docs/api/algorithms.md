@@ -45,6 +45,29 @@ Neural network-based solution methods following Maliar et al.
    :members:
 ```
 
+## Solvers
+
+High-level routines that drive the neural-network training utilities to solve a
+model. See the {doc}`/user_guide/algorithms` guide for worked examples.
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_multiple_controls
+```
+
+## Loss Functions
+
+Objective functions passed to {func}`skagent.ann.train_block_nn`. The
+reward-based losses ({class}`~skagent.loss.StaticRewardLoss`,
+{class}`~skagent.loss.EstimatedDiscountedLifetimeRewardLoss`) solve a block
+directly for the non-recurring case; the equation-residual losses
+({class}`~skagent.loss.BellmanEquationLoss`,
+{class}`~skagent.loss.EulerEquationLoss`) target the recurring, dynamic case.
+
+```{eval-rst}
+.. automodule:: skagent.loss
+   :members:
+```
+
 ## Neural Network Components
 
 ### Net
