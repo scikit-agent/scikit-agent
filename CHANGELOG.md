@@ -46,6 +46,12 @@ and this project adheres to
 
 ### Added
 
+- **Constraints** user-guide page documenting the ways to constrain an
+  optimization problem: bound declaration on `Control`, the open-bounds
+  policy-network transforms, the Fischer-Burmeister complementarity loss
+  (including its current upper-bound-only scope), how the mechanisms compose,
+  and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
+  now passes callable bounds, matching the enforced API.
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
