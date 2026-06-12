@@ -504,6 +504,17 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
                     )
                 input_tensor = torch.empty(batch_size, 0, device=device)
 
+            """
+            This code pattern was suggested elsewhere; useful here?
+
+            self.actor.eval()
+            with torch.no_grad():
+                ## TODO: This is going to need to go from arrival_state to information set!
+                ## -- but that will require a shocks realization.
+                action = self.actor(state).cpu().numpy()[0]
+            self.actor.train()
+            """
+
             return self(input_tensor).flatten()  # application of network
 
         return {self.control_sym: decision_rule}
@@ -779,6 +790,107 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
     def get_policy_and_value_functions(self, length=None):
         """Return both policy decision rules and value function."""
         return self.get_decision_rule(length=length), self.get_value_function()
+
+
+class BlockQNet(BellmanPeriodMixin, Net):
+    """
+    A neural network for approximating the action-value function, or Q function, of a dynamic problems.
+
+    This network takes action and state variables as input and outputs value estimates.
+    Inherits from Net to provide configurable architecture.
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The Bellman Period
+    width : int, optional
+        Width of hidden layers. Default is 32.
+    n_layers : int, optional
+        Number of hidden layers (1-10). Default is 2.
+    control_sym : string
+        Control variable symbol.
+    **kwargs
+        Additional keyword arguments passed to Net. See Net class
+        documentation for all available options including activation, transform, init_seed, copy_weights_from, etc.
+    """
+
+    def __init__(self, bellman_period, control_sym=None, width: int = 32, **kwargs):
+        """
+        Initialize the BlockValueNet.
+        """
+        self._init_bellman_period(bellman_period, control_sym)
+
+        # Use the same information set as the policy network
+        self.state_variables = bellman_period.get_arrival_states()
+
+        n_inputs = len(self.state_variables) + 1  # only one control
+
+        # Value function takes state variables as input and outputs a scalar value
+        super().__init__(n_inputs=n_inputs, n_outputs=1, width=width, **kwargs)
+
+    def value_function(self, action_t, states_t, shocks_t={}, parameters={}):
+        """
+        Compute value function estimates for given action and state variables.
+
+        The value function takes the same information as the policy function
+        (the control's information set) but doesn't need to compute transitions.
+
+        Parameters
+        ----------
+        action_t : dict
+            State variables as dict (e.g., {"wealth": tensor(...)})
+        states_t : dict
+            State variables as dict (e.g., {"wealth": tensor(...)})
+        shocks_t : dict, optional
+            Shock variables as dict (not used but kept for interface consistency)
+        parameters : dict, optional
+            Model parameters (not used but kept for interface consistency)
+
+        Returns
+        -------
+        torch.Tensor
+            Value function estimates
+        """
+
+        # we get the action tensor
+        action_tensor = action_t[self.control_sym].flatten()
+
+        # and the arrival state tensor
+        arrival_state_tensor = torch.stack(
+            [states_t[asym].flatten() for asym in self.arrival_states]
+        ).T
+
+        # SB: I removed some tensor device management stuff here because it was complicated.
+
+        # Forward pass through network
+        output = self(action_tensor, arrival_state_tensor)
+
+        return output.flatten()
+
+    def get_value_function(self):
+        """
+        Get a callable value function for use with loss functions.
+
+        This follows the same pattern as BlockPolicyNet.get_decision_function()
+
+        Returns
+        -------
+        callable
+            A function that takes states, shocks, and parameters and returns value estimates
+        """
+
+        def vf(actions_t, states_t, shocks_t={}, parameters={}):
+            return self.value_function(actions_t, states_t, shocks_t, parameters)
+
+        return vf
+
+    def get_core_function(self, length=None):
+        # consider making this an abstract method in a base class
+        return self.get_value_function()
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], dim=1)  # Concatenate first
+        return super().forward(x)  # Then pass to network
 
 
 ###########
