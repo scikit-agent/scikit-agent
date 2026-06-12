@@ -460,7 +460,7 @@ class BellmanPeriod:
         agent: str | None = None,
         decision_rules: dict[str, Callable] | None = None,
         create_graph: bool = False,
-    ) -> dict[str, dict[str, torch.Tensor | None]]:
+    ) -> dict[str, dict[str, torch.Tensor]]:
         """
         Compute gradients of reward function with respect to specified variables.
 
@@ -487,10 +487,10 @@ class BellmanPeriod:
 
         Returns
         -------
-        dict[str, dict[str, torch.Tensor | None]]
+        dict[str, dict[str, torch.Tensor]]
             Nested dictionary of gradients for each reward symbol and variable:
-            {reward_sym: {var_name: gradient}}. Gradient is None if the reward
-            does not depend on the variable.
+            {reward_sym: {var_name: gradient}}. The gradient is a zero tensor
+            when the reward does not depend on the variable.
         """
         shocks, decision_rules, parameters = self._resolve_inputs(
             shocks, decision_rules, parameters
@@ -520,7 +520,7 @@ class BellmanPeriod:
         parameters: dict[str, Any] | None = None,
         decision_rules: dict[str, Callable] | None = None,
         create_graph: bool = False,
-    ) -> dict[str, dict[str, torch.Tensor | None]]:
+    ) -> dict[str, dict[str, torch.Tensor]]:
         """
         Compute gradients of transition function with respect to specified variables.
 
@@ -550,9 +550,10 @@ class BellmanPeriod:
 
         Returns
         -------
-        dict[str, dict[str, torch.Tensor | None]]
+        dict[str, dict[str, torch.Tensor]]
             Nested dictionary of gradients for each arrival state and variable:
-            {state_sym: {var_name: gradient}}.
+            {state_sym: {var_name: gradient}}. The gradient is a zero tensor
+            when the arrival state does not depend on the variable.
         """
         # Use the existing transition_function method to compute next states
         next_states = self.transition_function(
@@ -577,7 +578,7 @@ class BellmanPeriod:
         parameters: dict[str, Any] | None = None,
         control_sym: str | None = None,
         create_graph: bool = False,
-    ) -> dict[str, dict[str, torch.Tensor | None]]:
+    ) -> dict[str, dict[str, torch.Tensor]]:
         """
         Compute gradients of pre-decision state variables with respect to arrival states.
 
@@ -618,9 +619,11 @@ class BellmanPeriod:
 
         Returns
         -------
-        dict[str, dict[str, torch.Tensor | None]]
+        dict[str, dict[str, torch.Tensor]]
             Nested dictionary of gradients for each pre-state variable and arrival state:
-            {pre_state_var: {state_sym: gradient}}.
+            {pre_state_var: {state_sym: gradient}}. The gradient is a zero
+            tensor when the pre-state variable does not depend on the
+            arrival state.
         """
         # Get the control's pre-state variables (stored as iset in the Control)
         if control_sym is None:
@@ -969,8 +972,8 @@ def estimate_bellman_residual(
 def _chain_rule_return_factor(
     bellman_period: BellmanPeriod,
     control_sym: str,
-    transition_gradients: dict[str, torch.Tensor | None],
-    pre_state_gradients: dict[str, dict[str, torch.Tensor | None]],
+    transition_gradients: dict[str, torch.Tensor],
+    pre_state_gradients: dict[str, dict[str, torch.Tensor]],
     like: torch.Tensor,
 ) -> torch.Tensor:
     r"""Sum the chain-rule product :math:`\sum_s \partial m'/\partial s' \cdot \partial s'/\partial c`.
@@ -993,16 +996,13 @@ def _chain_rule_return_factor(
 
     for state_sym in bellman_period.arrival_states:
         trans_grad = transition_gradients[state_sym]
-        if trans_grad is None:
-            logging.debug(
-                "Transition gradient d(%s)/d(%s) is None (no computational path). "
-                "If unexpected, check that control '%s' tensors require_grad.",
-                state_sym,
-                control_sym,
-                control_sym,
-            )
+        if not torch.any(trans_grad != 0):
+            # An all-zero transition gradient means the arrival state is
+            # independent of the control; skipping the term also avoids
+            # 0 * Inf = NaN from an ill-conditioned pre-state factor.
             continue
         for state_grads in pre_state_gradients.values():
+            # .get guards arrival states absent from the wrt dict
             pre_state_grad = state_grads.get(state_sym)
             if pre_state_grad is not None:
                 total = total + pre_state_grad * trans_grad
@@ -1066,10 +1066,11 @@ def _euler_residual_single_control(
         create_graph=True,
     )
     marginal_reward_t = grads_t[reward_sym][control_sym]
-    if marginal_reward_t is None:
+    if not torch.any(marginal_reward_t != 0):
         raise ValueError(
-            f"Could not compute marginal reward at period t: "
-            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+            f"Marginal reward at period t is zero at every sample point: "
+            f"reward '{reward_sym}' is structurally independent of control "
+            f"'{control_sym}', or its gradient vanishes on the whole batch"
         )
 
     # ∂u/∂c at period t+1
@@ -1083,10 +1084,11 @@ def _euler_residual_single_control(
         create_graph=True,
     )
     marginal_reward_t1 = grads_t1[reward_sym][control_sym]
-    if marginal_reward_t1 is None:
+    if not torch.any(marginal_reward_t1 != 0):
         raise ValueError(
-            f"Could not compute marginal reward at period t+1: "
-            f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+            f"Marginal reward at period t+1 is zero at every sample point: "
+            f"reward '{reward_sym}' is structurally independent of control "
+            f"'{control_sym}', or its gradient vanishes on the whole batch"
         )
 
     # Transition gradients: ∂s_{t+1}/∂c_t for all arrival states.
@@ -1322,10 +1324,11 @@ def estimate_bellman_foc_residual(
             create_graph=True,
         )
         mr_t = reward_grads[reward_sym][control_sym]
-        if mr_t is None:
+        if not torch.any(mr_t != 0):
             raise ValueError(
-                f"Could not compute marginal reward: "
-                f"reward '{reward_sym}' does not depend on control '{control_sym}'"
+                f"Marginal reward is zero at every sample point: "
+                f"reward '{reward_sym}' is structurally independent of control "
+                f"'{control_sym}', or its gradient vanishes on the whole batch"
             )
 
         # s' = f(s, c, ε₀) — transition preserving autograd graph through c_t

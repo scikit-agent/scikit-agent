@@ -4,6 +4,8 @@ import skagent.utils as utils
 import torch
 from skagent.utils import compute_gradients_for_tensors
 
+torch.manual_seed(10077696)
+
 
 def test_utils_apply_fun_to_vals():
     def pow(x, y):
@@ -78,23 +80,40 @@ class TestComputeGradientsForTensors(unittest.TestCase):
         grads = compute_gradients_for_tensors({"y": target}, {"x": x})
         self.assertTrue(torch.allclose(grads["y"]["x"], 2.0 * x, atol=1e-6))
 
-    def test_no_grad_returns_none(self):
-        """Variable without requires_grad should produce None."""
+    def test_no_grad_raises(self):
+        """A wrt variable without requires_grad raises ValueError."""
         x = torch.tensor(3.0, requires_grad=False)
         y = torch.tensor(5.0, requires_grad=True)
         target = y**2
-        grads = compute_gradients_for_tensors({"t": target}, {"x": x, "y": y})
-        self.assertIsNone(grads["t"]["x"])
-        self.assertIsNotNone(grads["t"]["y"])
+        with self.assertRaises(ValueError):
+            compute_gradients_for_tensors({"t": target}, {"x": x, "y": y})
 
-    def test_unused_variable_returns_none(self):
-        """Variable not used in computation should produce None."""
+    def test_unused_variable_returns_zeros(self):
+        """A variable with no path to the target gets a zero gradient."""
+        x = torch.tensor(3.0, requires_grad=True)
+        y = torch.tensor([5.0, 6.0], requires_grad=True)
+        target = x**2  # the target is structurally independent of y
+        grads = compute_gradients_for_tensors({"t": target}, {"x": x, "y": y})
+        self.assertTrue(torch.allclose(grads["t"]["x"], 2.0 * x, atol=1e-6))
+        self.assertTrue(torch.equal(grads["t"]["y"], torch.zeros_like(y)))
+
+    def test_constant_target_returns_zeros(self):
+        """A target with no computational graph yields zero gradients."""
+        x = torch.tensor(3.0, requires_grad=True)
+        target = torch.tensor(7.0)
+        grads = compute_gradients_for_tensors({"t": target}, {"x": x})
+        self.assertTrue(torch.equal(grads["t"]["x"], torch.zeros_like(x)))
+
+    def test_unused_zero_supports_higher_order(self):
+        """With create_graph=True a structural zero stays differentiable."""
         x = torch.tensor(3.0, requires_grad=True)
         y = torch.tensor(5.0, requires_grad=True)
-        target = x**2  # y is unused
-        grads = compute_gradients_for_tensors({"t": target}, {"x": x, "y": y})
-        self.assertIsNotNone(grads["t"]["x"])
-        self.assertIsNone(grads["t"]["y"])
+        target = x**2
+        grads = compute_gradients_for_tensors(
+            {"t": target}, {"x": x, "y": y}, create_graph=True
+        )
+        second = torch.autograd.grad(grads["t"]["y"].sum(), y)[0]
+        self.assertTrue(torch.equal(second, torch.zeros_like(y)))
 
     def test_create_graph_enables_higher_order(self):
         """create_graph=True should allow second-order derivatives."""

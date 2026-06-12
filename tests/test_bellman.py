@@ -6,6 +6,8 @@ import skagent.block as model
 import torch
 import unittest
 
+torch.manual_seed(10077696)
+
 # Deterministic test seed - change this single value to modify all seeding
 TEST_SEED = 10077693
 
@@ -293,7 +295,8 @@ class TestGradRewardFunction(unittest.TestCase):
             states_t, controls_t, {"c": c, "a": a}
         )
 
-        # For u = log(c), du/dc = 1/c, du/da = 0 (unused variable)
+        # For u = log(c), du/dc = 1/c; du/da = 0 because u is structurally
+        # independent of a once the control is held fixed
         expected_grad_c = 1.0 / c
 
         self.assertIn("u", gradients)
@@ -301,7 +304,7 @@ class TestGradRewardFunction(unittest.TestCase):
         self.assertIn("a", gradients["u"])
 
         self.assertTrue(torch.allclose(gradients["u"]["c"], expected_grad_c, atol=1e-6))
-        self.assertIsNone(gradients["u"]["a"])  # Unused variable returns None
+        self.assertTrue(torch.equal(gradients["u"]["a"], torch.zeros_like(a)))
 
     def test_get_grad_reward_function_multiple_rewards(self):
         """Test gradients for multiple rewards."""
@@ -322,9 +325,9 @@ class TestGradRewardFunction(unittest.TestCase):
         self.assertTrue(
             torch.allclose(gradients["u1"]["c1"], expected_grad_u1_c1, atol=1e-6)
         )
-        self.assertIsNone(gradients["u1"]["c2"])  # u1 doesn't depend on c2
-
-        self.assertIsNone(gradients["u2"]["c1"])  # u2 doesn't depend on c1
+        # u1 does not depend on c2, and u2 does not depend on c1
+        self.assertTrue(torch.equal(gradients["u1"]["c2"], torch.zeros_like(c2)))
+        self.assertTrue(torch.equal(gradients["u2"]["c1"], torch.zeros_like(c1)))
         self.assertTrue(
             torch.allclose(gradients["u2"]["c2"], expected_grad_u2_c2, atol=1e-6)
         )
@@ -375,21 +378,69 @@ class TestGradRewardFunction(unittest.TestCase):
         )
 
     def test_get_grad_reward_function_error_handling(self):
-        """Test error handling and edge cases."""
-        # Test with variable that doesn't require gradients
+        """A wrt variable without requires_grad raises ValueError."""
         c_no_grad = torch.tensor(0.5, requires_grad=False)
         a = torch.tensor(1.0, requires_grad=True)
 
         states_t = {"a": a}
         controls_t = {"c": c_no_grad}
-        wrt = {"c": c_no_grad}  # This should handle gracefully
+        wrt = {"c": c_no_grad}
 
-        # This should work but return None gradients
-        gradients = self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
-        self.assertIn("u", gradients)
-        self.assertIn("c", gradients["u"])
-        # Gradient should be None for tensor without requires_grad=True
-        self.assertIsNone(gradients["u"]["c"])
+        with self.assertRaises(ValueError):
+            self.simple_bp.grad_reward_function(states_t, controls_t, wrt)
+
+    def test_zero_transition_gradient_masks_nonfinite_pre_state(self):
+        """An all-zero transition gradient skips its chain-rule term, so a
+        non-finite pre-state factor on that path cannot inject NaN."""
+        block = model.DBlock(
+            name="two_state",
+            dynamics={
+                "c": model.Control(["a"]),
+                "a": lambda a, c: a - c,
+                "b": lambda b: 0.9 * b,
+                "u": lambda c: torch.log(c),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        like = torch.ones(3)
+        transition_gradients = {"a": -torch.ones(3), "b": torch.zeros(3)}
+        pre_state_gradients = {
+            "m": {"a": 1.05 * torch.ones(3), "b": torch.full((3,), float("inf"))}
+        }
+
+        total = bellman._chain_rule_return_factor(
+            bp, "c", transition_gradients, pre_state_gradients, like
+        )
+
+        self.assertTrue(torch.allclose(total, -1.05 * torch.ones(3), atol=1e-7))
+
+    def test_grad_reward_composes_through_intermediates(self):
+        """The reward gradient flows through intermediate dynamics (#129)."""
+        block = model.DBlock(
+            name="indirect_reward",
+            dynamics={
+                "m": lambda a: 1.05 * a,
+                "c": model.Control(["m"]),
+                "u": lambda m, c: torch.log(m - 0.5 * c),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        a = torch.tensor(1.0, requires_grad=True)
+        c = torch.tensor(0.5, requires_grad=True)
+
+        gradients = bp.grad_reward_function({"a": a}, {"c": c}, {"c": c, "a": a})
+
+        # u = log(1.05 * a - 0.5 * c), so du/da = 1.05 / 0.8 = 1.3125
+        # and du/dc = -0.5 / 0.8 = -0.625 at (a, c) = (1.0, 0.5)
+        self.assertTrue(
+            torch.allclose(gradients["u"]["a"], torch.tensor(1.3125), atol=1e-7)
+        )
+        self.assertTrue(
+            torch.allclose(gradients["u"]["c"], torch.tensor(-0.625), atol=1e-7)
+        )
 
 
 class TestGradTransitionFunction(unittest.TestCase):
