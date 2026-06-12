@@ -6,8 +6,6 @@ import skagent.block as model
 import torch
 import unittest
 
-torch.manual_seed(10077696)
-
 # Deterministic test seed - change this single value to modify all seeding
 TEST_SEED = 10077693
 
