@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**01:08.957** total execution time for 2 files **from auto_examples/algorithms**:
+**01:09.798** total execution time for 2 files **from auto_examples/algorithms**:
 
 .. container::
 
@@ -33,8 +33,8 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_maliar_training_loop.py` (``plot_maliar_training_loop.py``)
-     - 00:44.543
+     - 00:44.935
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_train_against_known_solution.py` (``plot_train_against_known_solution.py``)
-     - 00:24.414
+     - 00:24.863
      - 0.0

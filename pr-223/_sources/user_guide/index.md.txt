@@ -37,7 +37,6 @@ Learn about the fundamental concepts and components:
 - {doc}`algorithms` - Solution methods for solving your models
 - {doc}`constraints` - The ways to constrain decisions and how solvers enforce
   them
-- {doc}`science` - Scientific concepts and references
 
 <!---
 ## Key Design Principles
@@ -75,7 +74,6 @@ simulation
 algorithms
 constraints
 benchmark_models
-science
 ```
 
 ## Need Help?
