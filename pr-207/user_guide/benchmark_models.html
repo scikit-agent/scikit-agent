@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Science" href="science.html"><link rel="prev" title="Environments Guide" href="environments.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Examples" href="../auto_examples/index.html"><link rel="prev" title="Environments Guide" href="environments.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Models - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Benchmark Models - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -306,7 +309,7 @@ model by model, with equations and plots; this page stays focused on what the
 registry contains and how to call it.</p>
 <section id="roster">
 <h2>Roster<a class="headerlink" href="#roster" title="Link to this heading">¶</a></h2>
-<p>The models below split into two groups. Six ship in the <code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code>
+<p>The models below split into two groups. Seven ship in the <code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code>
 registry, each reachable through
 <a class="reference internal" href="../api/models.html#skagent.models.benchmarks.list_benchmark_models" title="skagent.models.benchmarks.list_benchmark_models"><code class="xref py py-func docutils literal notranslate"><span class="pre">list_benchmark_models()</span></code></a> by the short
 registry key shown in the table. Those keys, such as <code class="docutils literal notranslate"><span class="pre">D-1</span></code> or <code class="docutils literal notranslate"><span class="pre">U-2</span></code>, are
@@ -347,7 +350,7 @@ as standalone modules.</p>
 <tr class="row-odd"><td><p>Hall random walk</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">U-1</span></code></p></td>
 <td><p>Quadratic</p></td>
-<td><p>Stochastic, <span class="math notranslate nohighlight">\(\beta R = 1\)</span></p></td>
+<td><p>Stochastic<a class="footnote-reference brackets" href="#br" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
 <td><p>PIH annuity rule</p></td>
 </tr>
 <tr class="row-even"><td><p>Log utility with permanent shocks (normalized)</p></td>
@@ -361,6 +364,12 @@ as standalone modules.</p>
 <td><p>CRRA</p></td>
 <td><p>Geometric random walk</p></td>
 <td><p>None (numerical only)</p></td>
+</tr>
+<tr class="row-even"><td><p>Constrained perfect foresight</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">D-4</span></code></p></td>
+<td><p>CRRA</p></td>
+<td><p>Constant <span class="math notranslate nohighlight">\(y\)</span>, binding constraint</p></td>
+<td><p>None (VFI reference policy)</p></td>
 </tr>
 </tbody>
 </table>
@@ -411,7 +420,7 @@ it:</p>
 
 <span class="n">list_benchmark_models</span><span class="p">()</span>
 <span class="c1"># {&#39;D-1&#39;: &#39;...&#39;, &#39;D-2&#39;: &#39;...&#39;, &#39;D-3&#39;: &#39;...&#39;,</span>
-<span class="c1">#  &#39;U-1&#39;: &#39;...&#39;, &#39;U-2&#39;: &#39;...&#39;, &#39;U-3&#39;: &#39;...&#39;}</span>
+<span class="c1">#  &#39;U-1&#39;: &#39;...&#39;, &#39;U-2&#39;: &#39;...&#39;, &#39;U-3&#39;: &#39;...&#39;, &#39;D-4&#39;: &#39;...&#39;}</span>
 
 <span class="n">block</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
 <span class="n">calibration</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
@@ -426,8 +435,10 @@ it:</p>
 </div>
 <p>Models without a closed form report <code class="docutils literal notranslate"><span class="pre">False</span></code> from
 <a class="reference internal" href="../api/models.html#skagent.models.benchmarks.has_analytical_policy" title="skagent.models.benchmarks.has_analytical_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">has_analytical_policy()</span></code></a>, and requesting
-their analytical policy raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>. For those, solve
-numerically with <code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code> and
+their analytical policy raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>. The constrained <code class="docutils literal notranslate"><span class="pre">D-4</span></code> model
+instead provides a value-function-iteration reference policy through
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.get_reference_policy" title="skagent.models.benchmarks.get_reference_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_reference_policy()</span></code></a>. For the rest, solve
+numerically with <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a> and
 <a class="reference internal" href="../api/algorithms.html#skagent.algos.maliar.maliar_training_loop" title="skagent.algos.maliar.maliar_training_loop"><code class="xref py py-func docutils literal notranslate"><span class="pre">maliar_training_loop()</span></code></a>; see <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a>.</p>
 </section>
 <section id="see-also">
@@ -444,18 +455,26 @@ form.</p></li>
 </ul>
 </section>
 </section>
+<hr class="footnotes docutils" />
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="br" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>The U-1 closed form requires the calibration restriction <span class="math notranslate nohighlight">\(\beta R = 1\)</span>; the
+Hall martingale result holds for any income process given that restriction.</p>
+</aside>
+</aside>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="science.html">
+          <a class="next-page" href="../auto_examples/index.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Science</div>
+                <div class="title">Examples</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -474,7 +493,7 @@ form.</p></li>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -522,7 +541,7 @@ form.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

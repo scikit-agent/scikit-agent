@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Block Guide" href="blocks.html"><link rel="prev" title="Installation" href="installation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Quickstart Guide - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Quickstart Guide - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -327,7 +330,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <h3>Step 1: Import scikit-agent<a class="headerlink" href="#step-1-import-scikit-agent" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="kn">import</span> <span class="n">consumption_block</span><span class="p">,</span> <span class="n">calibration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="kn">import</span> <span class="n">consumption_block</span><span class="p">,</span> <span class="n">cons_problem</span><span class="p">,</span> <span class="n">calibration</span>
 </pre></div>
 </div>
 </section>
@@ -362,12 +365,19 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </pre></div>
 </div>
 </section>
-<section id="step-4-construct-shocks">
-<h3>Step 4: Construct Shocks<a class="headerlink" href="#step-4-construct-shocks" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build the shock distributions using calibration</span>
-<span class="n">consumption_block</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">my_calibration</span><span class="p">)</span>
+<section id="step-4-assemble-the-recursive-problem">
+<h3>Step 4: Assemble the Recursive Problem<a class="headerlink" href="#step-4-assemble-the-recursive-problem" title="Link to this heading">¶</a></h3>
+<p>A single <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> describes one period of behavior. To simulate over time, the
+end-of-period assets <code class="docutils literal notranslate"><span class="pre">a</span></code> must become next period’s capital <code class="docutils literal notranslate"><span class="pre">k</span></code>. The prebuilt
+<code class="docutils literal notranslate"><span class="pre">cons_problem</span></code> is an <code class="docutils literal notranslate"><span class="pre">RBlock</span></code> that chains a normalized consumption block with a
+small “tick” block doing exactly that:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Recursive problem blocks:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">cons_problem</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">block</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">get_dynamics</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>There is no need to construct the shock distributions by hand; the simulator
+builds them from the calibration internally.</p>
 </section>
 <section id="step-5-create-a-simple-decision-rule">
 <h3>Step 5: Create a Simple Decision Rule<a class="headerlink" href="#step-5-create-a-simple-decision-rule" title="Link to this heading">¶</a></h3>
@@ -388,13 +398,12 @@ resources):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set up initial conditions</span>
 <span class="n">initial_conditions</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># Initial capital</span>
-    <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># Initial permanent income</span>
 <span class="p">}</span>
 
 <span class="c1"># Create simulator</span>
 <span class="n">simulator</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">MonteCarloSimulator</span><span class="p">(</span>
     <span class="n">calibration</span><span class="o">=</span><span class="n">my_calibration</span><span class="p">,</span>
-    <span class="n">block</span><span class="o">=</span><span class="n">consumption_block</span><span class="p">,</span>
+    <span class="n">block</span><span class="o">=</span><span class="n">cons_problem</span><span class="p">,</span>
     <span class="n">dr</span><span class="o">=</span><span class="n">decision_rules</span><span class="p">,</span>
     <span class="n">initial</span><span class="o">=</span><span class="n">initial_conditions</span><span class="p">,</span>
     <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
@@ -404,6 +413,7 @@ resources):</p>
 
 <span class="c1"># Run simulation</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running simulation...&quot;</span><span class="p">)</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Simulation completed. History keys: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -414,9 +424,10 @@ resources):</p>
 <h3>Step 7: Analyze Results<a class="headerlink" href="#step-7-analyze-results" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="c1"># Plot average consumption over time</span>
+<span class="c1"># Plot average consumption over time. The history values are numpy</span>
+<span class="c1"># arrays of shape (T_sim, agent_count).</span>
 <span class="k">if</span> <span class="s2">&quot;c&quot;</span> <span class="ow">in</span> <span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">:</span>
-    <span class="n">consumption_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">])</span>
+    <span class="n">consumption_data</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span>
     <span class="n">mean_consumption</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">consumption_data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
@@ -444,11 +455,16 @@ resources):</p>
 </section>
 <section id="neural-network-solutions">
 <h2>Neural Network Solutions<a class="headerlink" href="#neural-network-solutions" title="Link to this heading">¶</a></h2>
-<p>scikit-agent supports neural network-based solution methods:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a neural network policy</span>
-<span class="n">policy_net</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">consumption_block</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+<p>scikit-agent supports neural network-based solution methods. Policy networks are
+built on a <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code>, which wraps a block together with its discount
+variable and calibration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Neural network input size: </span><span class="si">{</span><span class="n">policy_net</span><span class="o">.</span><span class="n">hidden1</span><span class="o">.</span><span class="n">in_features</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Wrap the block as a Bellman period, then create a policy network</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">consumption_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">my_calibration</span><span class="p">)</span>
+<span class="n">policy_net</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Neural network input size: </span><span class="si">{</span><span class="n">policy_net</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">in_features</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Neural network output size: </span><span class="si">{</span><span class="n">policy_net</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">out_features</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -478,8 +494,6 @@ complex examples and use cases</p></li>
 <li><p>The package follows scikit-learn conventions for a familiar API</p></li>
 </ul>
 <p>You’re now ready to build more sophisticated economic models with scikit-agent!</p>
-<hr class="docutils" />
-<p><em>This page is under construction. More detailed examples will be added.</em></p>
 </section>
 </section>
 
@@ -512,7 +526,7 @@ complex examples and use cases</p></li>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -557,7 +571,7 @@ complex examples and use cases</p></li>
 <li><a class="reference internal" href="#step-1-import-scikit-agent">Step 1: Import scikit-agent</a></li>
 <li><a class="reference internal" href="#step-2-examine-the-pre-built-model">Step 2: Examine the Pre-built Model</a></li>
 <li><a class="reference internal" href="#step-3-set-up-model-parameters">Step 3: Set Up Model Parameters</a></li>
-<li><a class="reference internal" href="#step-4-construct-shocks">Step 4: Construct Shocks</a></li>
+<li><a class="reference internal" href="#step-4-assemble-the-recursive-problem">Step 4: Assemble the Recursive Problem</a></li>
 <li><a class="reference internal" href="#step-5-create-a-simple-decision-rule">Step 5: Create a Simple Decision Rule</a></li>
 <li><a class="reference internal" href="#step-6-run-a-simulation">Step 6: Run a Simulation</a></li>
 <li><a class="reference internal" href="#step-7-analyze-results">Step 7: Analyze Results</a></li>
@@ -578,7 +592,7 @@ complex examples and use cases</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

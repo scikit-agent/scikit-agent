@@ -46,15 +46,18 @@ below. Working in ratios to permanent income, the state is normalized assets
     V(m) = \max_{c} \; u(c) + \beta \, \mathbb{E}\!\left[ V(m') \right],
 
 with constant-relative-risk-aversion utility :math:`u` and discount factor
-:math:`\beta`. For this calibration the optimal policy is linear in
+:math:`\beta`. For this calibration the optimal policy is affine in
 cash-on-hand,
 
 .. math::
 
-    c^*(m) = \kappa \, m,
+    c^*(m) = \kappa \, (m + h),
 
-where the marginal propensity to consume :math:`\kappa` has a closed form. This
-gives us an exact target to check the trained policy against.
+where both the marginal propensity to consume :math:`\kappa = 1 - \beta` and
+the normalized human wealth :math:`h = 1/r` have closed forms. At this
+calibration :math:`h = 1/0.03 \approx 33.3`, so the intercept :math:`\kappa h`
+dominates and the consumption function is nearly flat over the training
+range. This gives us an exact target to check the trained policy against.
 
 Why a value head: the level-identification problem
 ===================================================
@@ -92,7 +95,7 @@ forward so the sampled states concentrate on the ergodic set, is provided by
 on a model with no closed-form solution, see the companion gallery example
 ``plot_maliar_training_loop.py``.
 
-.. GENERATED FROM PYTHON SOURCE LINES 76-93
+.. GENERATED FROM PYTHON SOURCE LINES 79-96
 
 .. code-block:: Python
 
@@ -120,7 +123,7 @@ on a model with no closed-form solution, see the companion gallery example
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-99
+.. GENERATED FROM PYTHON SOURCE LINES 97-102
 
 Step 1: Load the U-2 benchmark and build a BellmanPeriod
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -128,7 +131,7 @@ Step 1: Load the U-2 benchmark and build a BellmanPeriod
 ``get_benchmark_model`` returns the model block; ``get_analytical_policy``
 returns the closed-form solution we will validate against.
 
-.. GENERATED FROM PYTHON SOURCE LINES 99-109
+.. GENERATED FROM PYTHON SOURCE LINES 102-112
 
 .. code-block:: Python
 
@@ -149,7 +152,7 @@ returns the closed-form solution we will validate against.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 110-116
+.. GENERATED FROM PYTHON SOURCE LINES 113-119
 
 Step 2: Build the shared-backbone policy/value network
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -158,7 +161,7 @@ A single :class:`~skagent.ann.BlockPolicyValueNet` carries both a (bounded)
 policy head and an unconstrained value head on top of one shared hidden
 stack. One optimizer updates all of its weights together.
 
-.. GENERATED FROM PYTHON SOURCE LINES 116-120
+.. GENERATED FROM PYTHON SOURCE LINES 119-123
 
 .. code-block:: Python
 
@@ -173,7 +176,7 @@ stack. One optimizer updates all of its weights together.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 121-128
+.. GENERATED FROM PYTHON SOURCE LINES 124-131
 
 Step 3: Define the Bellman-equation loss
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -183,7 +186,7 @@ Step 3: Define the Bellman-equation loss
 head. ``foc_weight=1.0`` adds the first-order-condition term (Maliar et al.
 2021, eq. 14), which speeds convergence.
 
-.. GENERATED FROM PYTHON SOURCE LINES 128-136
+.. GENERATED FROM PYTHON SOURCE LINES 131-139
 
 .. code-block:: Python
 
@@ -202,7 +205,7 @@ head. ``foc_weight=1.0`` adds the first-order-condition term (Maliar et al.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 137-154
+.. GENERATED FROM PYTHON SOURCE LINES 140-157
 
 Step 4: Train on re-sampled states, snapshotting at increasing depths
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -222,7 +225,7 @@ as training proceeds rather than only its final fit. The depths are
 checkpoints of one continuous run (the optimizer is threaded through), so
 snapshotting only observes training, it does not perturb it.
 
-.. GENERATED FROM PYTHON SOURCE LINES 154-199
+.. GENERATED FROM PYTHON SOURCE LINES 157-202
 
 .. code-block:: Python
 
@@ -284,7 +287,7 @@ snapshotting only observes training, it does not perturb it.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 200-208
+.. GENERATED FROM PYTHON SOURCE LINES 203-211
 
 Step 5: Compare the deepest-trained policy to the analytical solution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -295,7 +298,7 @@ level, the mean relative error falls to about one percent (here 0.98%), an
 order of magnitude tighter than the several-percent floor of Euler-only
 training on this unconstrained model.
 
-.. GENERATED FROM PYTHON SOURCE LINES 208-221
+.. GENERATED FROM PYTHON SOURCE LINES 211-224
 
 .. code-block:: Python
 
@@ -326,7 +329,7 @@ training on this unconstrained model.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 222-231
+.. GENERATED FROM PYTHON SOURCE LINES 225-234
 
 Step 6: Plot the policy converging onto the analytical solution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -338,7 +341,7 @@ training deepens the curves march onto the closed-form linear PIH rule, making
 it visible that the error keeps shrinking with training rather than stalling.
 The lower panel shows the pointwise relative error at the deepest snapshot.
 
-.. GENERATED FROM PYTHON SOURCE LINES 231-260
+.. GENERATED FROM PYTHON SOURCE LINES 234-263
 
 .. code-block:: Python
 
@@ -386,7 +389,7 @@ The lower panel shows the pointwise relative error at the deepest snapshot.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 23.625 seconds)
+   **Total running time of the script:** (0 minutes 25.087 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_train_against_known_solution.py:

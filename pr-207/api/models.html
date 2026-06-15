@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Blocks" href="blocks.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Models - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -409,6 +412,24 @@ callers branch on that distinction without catching the
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">model_id</span></code> is not a registered benchmark model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.benchmarks.get_reference_policy">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.benchmarks.</span></span><span class="sig-name descname"><span class="pre">get_reference_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.benchmarks.get_reference_policy" title="Link to this definition">¶</a></dt>
+<dd><p>Get a numerical reference policy for a model lacking a closed form.</p>
+<p>Some benchmarks (currently D-4) have no analytical policy because a binding
+constraint precludes one, but do have an independent numerical oracle (e.g.
+value-function iteration) suitable for validating trained policies.</p>
+<p>Raises ValueError if the model has no reference policy registered.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1066,14 +1087,14 @@ the agent prefers extraction over indefinite accumulation.</p>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="blocks.html">
+          <a class="prev-page" href="bellman.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Blocks</div>
+                <div class="title">Bellman Periods</div>
                 
               </div>
             </a>
@@ -1081,7 +1102,7 @@ the agent prefers extraction over indefinite accumulation.</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -1127,6 +1148,7 @@ the agent prefers extraction over indefinite accumulation.</p>
 <li><a class="reference internal" href="#skagent.models.benchmarks.get_benchmark_calibration"><code class="docutils literal notranslate"><span class="pre">get_benchmark_calibration()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.models.benchmarks.get_analytical_policy"><code class="docutils literal notranslate"><span class="pre">get_analytical_policy()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.models.benchmarks.has_analytical_policy"><code class="docutils literal notranslate"><span class="pre">has_analytical_policy()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.benchmarks.get_reference_policy"><code class="docutils literal notranslate"><span class="pre">get_reference_policy()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.models.benchmarks.get_test_states"><code class="docutils literal notranslate"><span class="pre">get_test_states()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.models.benchmarks.get_custom_validation"><code class="docutils literal notranslate"><span class="pre">get_custom_validation()</span></code></a></li>
 </ul>
@@ -1173,7 +1195,7 @@ the agent prefers extraction over indefinite accumulation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

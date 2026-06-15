@@ -6,11 +6,15 @@ This section contains the complete API documentation for scikit-agent.
 :maxdepth: 2
 
 blocks
+bellman
 models
 algorithms
 environments
+loss
+distributions
 simulation
 parser
+analysis
 utils
 ```
 
@@ -19,12 +23,16 @@ utils
 The scikit-agent API is organized into several main modules:
 
 - {doc}`blocks` - Building blocks -- modular model components
+- {doc}`bellman` - Bellman periods and the meta-model notation
 - {doc}`models` - Canonical models from scientific literature
 - {doc}`algorithms` - Solution algorithms and optimization methods
 - {doc}`environments` - Environment adapters for reinforcement-learning
   algorithms
+- {doc}`loss` - Loss functions for neural network training
+- {doc}`distributions` - Distributions for shocks and initial conditions
 - {doc}`simulation` - Simulation tools and analysis functions
 - {doc}`parser` - Parsing strings into mathematical expressions
+- {doc}`analysis` - Model analysis and visualization
 - {doc}`utils` - Utility functions and helpers
 
 ## Quick Reference

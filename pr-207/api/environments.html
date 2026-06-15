@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation" href="simulation.html"><link rel="prev" title="Algorithms" href="algorithms.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Loss Functions" href="loss.html"><link rel="prev" title="Algorithms" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Environments - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Environments - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -283,7 +286,7 @@
           <section class="tex2jax_ignore mathjax_ignore" id="environments">
 <h1>Environments<a class="headerlink" href="#environments" title="Link to this heading">¶</a></h1>
 <p>This section documents the environment adapters that step a
-<code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> one transition at a time, for use by
+<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a> one transition at a time, for use by
 reinforcement-learning algorithms.</p>
 <p>Two interfaces are provided:</p>
 <ul class="simple">
@@ -295,7 +298,7 @@ adapter so Stable-Baselines3 algorithms (PPO, SAC, TD3, …) can drive a
 <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> directly. It is the backend used by
 <a class="reference internal" href="algorithms.html#skagent.algos.sb3.PPOAgent" title="skagent.algos.sb3.PPOAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.sb3.PPOAgent</span></code></a> (see <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a>).</p></li>
 </ul>
-<p id="module-skagent.env">Environment adapters for <code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> models.</p>
+<p id="module-skagent.env">Environment adapters for <a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a> models.</p>
 <p>Two interfaces are provided:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#skagent.env.Environment" title="skagent.env.Environment"><code class="xref py py-class docutils literal notranslate"><span class="pre">Environment</span></code></a> — plain Python environment that steps a BellmanPeriod
@@ -318,7 +321,7 @@ can index by name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></span>) – Model definition (block dynamics, calibration, discount variable).</p></li>
+<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – Model definition (block dynamics, calibration, discount variable).</p></li>
 <li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Maps arrival-state symbols to <code class="docutils literal notranslate"><span class="pre">skagent</span></code> <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> objects,
 used to sample fresh initial states each <code class="xref py py-meth docutils literal notranslate"><span class="pre">reset()</span></code>.</p></li>
 <li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – RNG used for shock and initial-state draws.</p></li>
@@ -371,7 +374,7 @@ the flag — which we do.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></span>) – Model definition.</p></li>
+<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – Model definition.</p></li>
 <li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Maps arrival-state symbols to skagent <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> objects used
 to sample initial states on <a class="reference internal" href="#skagent.env.GymEnv.reset" title="skagent.env.GymEnv.reset"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reset()</span></code></a>.</p></li>
 <li><p><strong>max_episode_steps</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Episode horizon. Default 200.</p></li>
@@ -464,7 +467,7 @@ model’s (possibly per-period) discount factor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></span>) – Model definition.</p></li>
+<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – Model definition.</p></li>
 <li><p><strong>decision_rule</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Maps control symbol to a callable on the control’s information set, as
 consumed by <a class="reference internal" href="#skagent.env.Environment.step" title="skagent.env.Environment.step"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Environment.step()</span></code></a>.</p></li>
 <li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Maps arrival-state symbols to skagent <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> objects used to
@@ -489,12 +492,12 @@ sample the initial state.</p></li>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="simulation.html">
+          <a class="next-page" href="loss.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Simulation</div>
+                <div class="title">Loss Functions</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -513,7 +516,7 @@ sample the initial state.</p></li>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -569,7 +572,7 @@ sample the initial state.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

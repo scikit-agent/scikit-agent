@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Blocks" href="blocks.html"><link rel="prev" title="Simulation" href="../auto_examples/simulation/index.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Blocks" href="blocks.html"><link rel="prev" title="Benchmark Consumption Models" href="../auto_examples/models/plot_benchmark_models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>API Reference - scikit-agent 0.1.dev564+g296697500</title>
+        <title>API Reference - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -290,6 +293,14 @@
 <li class="toctree-l2"><a class="reference internal" href="blocks.html#model-utilities">Model Utilities</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="bellman.html">Bellman Periods</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html#skagent.bellman.estimate_bellman_foc_residual"><code class="docutils literal notranslate"><span class="pre">estimate_bellman_foc_residual()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html#skagent.bellman.estimate_bellman_residual"><code class="docutils literal notranslate"><span class="pre">estimate_bellman_residual()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html#skagent.bellman.estimate_discounted_lifetime_reward"><code class="docutils literal notranslate"><span class="pre">estimate_discounted_lifetime_reward()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html#skagent.bellman.estimate_euler_residual"><code class="docutils literal notranslate"><span class="pre">estimate_euler_residual()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="models.html#module-skagent.models.consumer">Consumer Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#benchmark-registry">Benchmark Registry</a></li>
@@ -300,7 +311,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="algorithms.html">Algorithms</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="algorithms.html#value-function-iteration">Value Function Iteration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algorithms.html#value-backwards-induction-vbi">Value Backwards Induction (VBI)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html#maliar-style-algorithms">Maliar-Style Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html#reinforcement-learning-stable-baselines3">Reinforcement Learning (Stable-Baselines3)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html#neural-network-components">Neural Network Components</a></li>
@@ -311,6 +322,30 @@
 <li class="toctree-l2"><a class="reference internal" href="environments.html#skagent.env.Environment"><code class="docutils literal notranslate"><span class="pre">Environment</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html#skagent.env.GymEnv"><code class="docutils literal notranslate"><span class="pre">GymEnv</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html#skagent.env.discounted_rollout_reward"><code class="docutils literal notranslate"><span class="pre">discounted_rollout_reward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="loss.html">Loss Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="loss.html#skagent.loss.BellmanEquationLoss"><code class="docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html#skagent.loss.CustomLoss"><code class="docutils literal notranslate"><span class="pre">CustomLoss</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html#skagent.loss.EstimatedDiscountedLifetimeRewardLoss"><code class="docutils literal notranslate"><span class="pre">EstimatedDiscountedLifetimeRewardLoss</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html#skagent.loss.EulerEquationLoss"><code class="docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss"><code class="docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html#skagent.loss.static_reward"><code class="docutils literal notranslate"><span class="pre">static_reward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.Bernoulli"><code class="docutils literal notranslate"><span class="pre">Bernoulli</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.DiscreteDistribution"><code class="docutils literal notranslate"><span class="pre">DiscreteDistribution</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.DiscreteDistributionLabeled"><code class="docutils literal notranslate"><span class="pre">DiscreteDistributionLabeled</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.Distribution"><code class="docutils literal notranslate"><span class="pre">Distribution</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.IndexDistribution"><code class="docutils literal notranslate"><span class="pre">IndexDistribution</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.Lognormal"><code class="docutils literal notranslate"><span class="pre">Lognormal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.MeanOneLogNormal"><code class="docutils literal notranslate"><span class="pre">MeanOneLogNormal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.Normal"><code class="docutils literal notranslate"><span class="pre">Normal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.TimeVaryingDiscreteDistribution"><code class="docutils literal notranslate"><span class="pre">TimeVaryingDiscreteDistribution</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.Uniform"><code class="docutils literal notranslate"><span class="pre">Uniform</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.combine_indep_dstns"><code class="docutils literal notranslate"><span class="pre">combine_indep_dstns()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#skagent.distributions.expected"><code class="docutils literal notranslate"><span class="pre">expected()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation</a><ul>
@@ -325,7 +360,13 @@
 <li class="toctree-l2"><a class="reference internal" href="parser.html#skagent.parser.skagent_loader"><code class="docutils literal notranslate"><span class="pre">skagent_loader()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html#core-parser-functions">Core Parser Functions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html#parser-classes">Parser Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html#rules">Rules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="analysis.html">Model Analysis and Visualization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html#module-skagent.model_analyzer">Model Analyzer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html#module-skagent.model_visualizer">Model Visualizer</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a><ul>
@@ -340,12 +381,16 @@
 <p>The scikit-agent API is organized into several main modules:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="blocks.html"><span class="doc">Blocks</span></a> - Building blocks – modular model components</p></li>
+<li><p><a class="reference internal" href="bellman.html"><span class="doc">Bellman Periods</span></a> - Bellman periods and the meta-model notation</p></li>
 <li><p><a class="reference internal" href="models.html"><span class="doc">Models</span></a> - Canonical models from scientific literature</p></li>
 <li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a> - Solution algorithms and optimization methods</p></li>
 <li><p><a class="reference internal" href="environments.html"><span class="doc">Environments</span></a> - Environment adapters for reinforcement-learning
 algorithms</p></li>
+<li><p><a class="reference internal" href="loss.html"><span class="doc">Loss Functions</span></a> - Loss functions for neural network training</p></li>
+<li><p><a class="reference internal" href="distributions.html"><span class="doc">Distributions</span></a> - Distributions for shocks and initial conditions</p></li>
 <li><p><a class="reference internal" href="simulation.html"><span class="doc">Simulation</span></a> - Simulation tools and analysis functions</p></li>
 <li><p><a class="reference internal" href="parser.html"><span class="doc">Parsing</span></a> - Parsing strings into mathematical expressions</p></li>
+<li><p><a class="reference internal" href="analysis.html"><span class="doc">Model Analysis and Visualization</span></a> - Model analysis and visualization</p></li>
 <li><p><a class="reference internal" href="utils.html"><span class="doc">Utils</span></a> - Utility functions and helpers</p></li>
 </ul>
 </section>
@@ -370,14 +415,14 @@ examples in our <a class="reference internal" href="../auto_examples/index.html"
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../auto_examples/simulation/index.html">
+          <a class="prev-page" href="../auto_examples/models/plot_benchmark_models.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Simulation</div>
+                <div class="title">Benchmark Consumption Models</div>
                 
               </div>
             </a>
@@ -385,7 +430,7 @@ examples in our <a class="reference internal" href="../auto_examples/index.html"
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -432,7 +477,7 @@ examples in our <a class="reference internal" href="../auto_examples/index.html"
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Parsing" href="parser.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Model Analysis and Visualization" href="analysis.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Utils - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Utils - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -331,15 +334,16 @@ higher-order derivatives and end-to-end training. Default: False.</p></li>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Nested dictionary of gradients for each tensor symbol and variable:
-<code class="docutils literal notranslate"><span class="pre">{tensor_sym:</span> <span class="pre">{var_name:</span> <span class="pre">gradient}}</span></code>. Gradient is <code class="docutils literal notranslate"><span class="pre">None</span></code> if and
-only if the variable does not require gradients or no computational
-graph path exists from the variable to the target tensor. A zero
-tensor is returned when the dependency exists but evaluates to zero.
-Callers should treat <code class="docutils literal notranslate"><span class="pre">None</span></code> as structural independence, not as a
-zero gradient.</p>
+<code class="docutils literal notranslate"><span class="pre">{tensor_sym:</span> <span class="pre">{var_name:</span> <span class="pre">gradient}}</span></code>. A variable with no
+computational graph path to the target receives a zero tensor,
+which is the value of the partial derivative under structural
+independence.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]]</span></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a <code class="docutils literal notranslate"><span class="pre">wrt</span></code> tensor does not have <code class="docutils literal notranslate"><span class="pre">requires_grad=True</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -415,29 +419,41 @@ the object type and shape of vec_a.</p>
 </section>
 <section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
-<section id="working-with-grids">
-<h3>Working with Grids<a class="headerlink" href="#working-with-grids" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
+<section id="calling-a-function-from-a-dictionary-of-values">
+<h3>Calling a Function from a Dictionary of Values<a class="headerlink" href="#calling-a-function-from-a-dictionary-of-values" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">apply_fun_to_vals</span></code> calls a function using only the entries of a dictionary that
+match the function’s named arguments, ignoring the rest:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_fun_to_vals</span>
 
-<span class="c1"># Create a grid configuration</span>
-<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;wealth&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">},</span>
-    <span class="s2">&quot;income&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
-<span class="p">}</span>
 
-<span class="c1"># Create grid</span>
-<span class="n">grid</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">transition</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
 
-<span class="c1"># Access grid points</span>
-<span class="n">wealth_points</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s2">&quot;wealth&quot;</span><span class="p">]</span>
-<span class="n">income_points</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s2">&quot;income&quot;</span><span class="p">]</span>
 
-<span class="c1"># Convert to dictionary</span>
-<span class="n">grid_dict</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="c1"># The extra key &quot;c&quot; is ignored</span>
+<span class="n">apply_fun_to_vals</span><span class="p">(</span><span class="n">transition</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="mf">99.0</span><span class="p">})</span>  <span class="c1"># 3.0</span>
 </pre></div>
 </div>
-<hr class="docutils" />
-<p><em>This page is under construction. Content will be added as the API develops.</em></p>
+</section>
+<section id="smooth-complementarity-conditions">
+<h3>Smooth Complementarity Conditions<a class="headerlink" href="#smooth-complementarity-conditions" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">fischer_burmeister</span></code> replaces the complementarity conditions
+<span class="math notranslate nohighlight">\(a \geq 0,\; h \geq 0,\; ah = 0\)</span> with a single smooth equation, which is useful
+for occasionally binding constraints in loss functions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fischer_burmeister</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">])</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">])</span>
+<span class="n">fischer_burmeister</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>  <span class="c1"># tensor([0., 0., 2.])</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Grid construction tools (<code class="docutils literal notranslate"><span class="pre">Grid</span></code>, <code class="docutils literal notranslate"><span class="pre">make_grid</span></code>, <code class="docutils literal notranslate"><span class="pre">cartesian_product</span></code>) live in
+<code class="docutils literal notranslate"><span class="pre">skagent.grid</span></code> and are documented on the <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a> page.</p>
+</div>
 </section>
 </section>
 </section>
@@ -456,14 +472,14 @@ the object type and shape of vec_a.</p>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="parser.html">
+          <a class="prev-page" href="analysis.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Parsing</div>
+                <div class="title">Model Analysis and Visualization</div>
                 
               </div>
             </a>
@@ -471,7 +487,7 @@ the object type and shape of vec_a.</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -516,7 +532,8 @@ the object type and shape of vec_a.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#example-usage">Example Usage</a><ul>
-<li><a class="reference internal" href="#working-with-grids">Working with Grids</a></li>
+<li><a class="reference internal" href="#calling-a-function-from-a-dictionary-of-values">Calling a Function from a Dictionary of Values</a></li>
+<li><a class="reference internal" href="#smooth-complementarity-conditions">Smooth Complementarity Conditions</a></li>
 </ul>
 </li>
 </ul>
@@ -530,7 +547,7 @@ the object type and shape of vec_a.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

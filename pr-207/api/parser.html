@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Simulation" href="simulation.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Model Analysis and Visualization" href="analysis.html"><link rel="prev" title="Simulation" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Parsing - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Parsing - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -333,20 +336,123 @@ such as random variables and model tags.</p>
 </dd></dl>
 
 </section>
+<section id="rules">
+<h2>Rules<a class="headerlink" href="#rules" title="Link to this heading">¶</a></h2>
+<p>The rule module builds on the parser to extract dependencies and formulas from
+model rules.</p>
+<p id="module-skagent.rule">Universal rule processing module for scikit-agent models.</p>
+<p>This module provides utilities for working with “rules” - the right-hand side
+expressions in structural statements that define model dynamics, controls, and rewards.</p>
+<p>A rule can be:
+- A callable (function, lambda)
+- A Control object
+- A Distribution or tuple with distribution parameters
+- A string expression
+- A constant value</p>
+<p>Key functions:
+- format_rule: Get printable string version of a rule
+- extract_dependencies: Get variables that a rule depends on</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.rule.extract_dependencies">
+<span class="sig-prename descclassname"><span class="pre">skagent.rule.</span></span><span class="sig-name descname"><span class="pre">extract_dependencies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.rule.extract_dependencies" title="Link to this definition">¶</a></dt>
+<dd><p>Extract variable dependencies from a model rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rule</strong> (<em>various</em>) – Can be Control, Distribution, callable, tuple, or string</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of dependency variable names</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.rule.extract_formula">
+<span class="sig-prename descclassname"><span class="pre">skagent.rule.</span></span><span class="sig-name descname"><span class="pre">extract_formula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.rule.extract_formula" title="Link to this definition">¶</a></dt>
+<dd><p>Extract formula as string from a rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rule</strong> (<em>various</em>) – The rule to extract formula from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The formula as string</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.rule.format_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.rule.</span></span><span class="sig-name descname"><span class="pre">format_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.rule.format_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Get a printable (string) version of a rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The variable name (LHS of structural statement)</p></li>
+<li><p><strong>rule</strong> (<em>callable</em><em>, </em><a class="reference internal" href="blocks.html#skagent.block.Control" title="skagent.block.Control"><em>Control</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, or </em><em>any</em>) – The rule to format (RHS of structural statement)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A human-readable string representation of the rule</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.rule.math_text_to_free_variable_names">
+<span class="sig-prename descclassname"><span class="pre">skagent.rule.</span></span><span class="sig-name descname"><span class="pre">math_text_to_free_variable_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">txt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.rule.math_text_to_free_variable_names" title="Link to this definition">¶</a></dt>
+<dd><p>Extract free variable names from mathematical text using SymPy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>txt</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Mathematical expression as string</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of free variable names</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">math_text_to_free_variable_names</span><span class="p">(</span><span class="s2">&quot;10 * x + y **2 - z&quot;</span><span class="p">)</span>
+<span class="go">[&#39;x&#39;, &#39;y&#39;, &#39;z&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
 <section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
 <section id="parsing-mathematical-expressions">
 <h3>Parsing Mathematical Expressions<a class="headerlink" href="#parsing-mathematical-expressions" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">math_text_to_lambda</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 
-<span class="c1"># Convert string expression to callable function</span>
-<span class="n">utility_func</span> <span class="o">=</span> <span class="n">math_text_to_lambda</span><span class="p">(</span><span class="s2">&quot;c**(1-gamma)/(1-gamma)&quot;</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">math_text_to_lambda</span>
 
-<span class="c1"># Use the function</span>
-<span class="n">gamma</span> <span class="o">=</span> <span class="mf">2.0</span>
-<span class="n">c</span> <span class="o">=</span> <span class="mf">1.5</span>
-<span class="n">utility</span> <span class="o">=</span> <span class="n">utility_func</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span>
+<span class="c1"># Convert a string expression to a callable function</span>
+<span class="n">reward_func</span> <span class="o">=</span> <span class="n">math_text_to_lambda</span><span class="p">(</span><span class="s2">&quot;c**(1-rho)/(1-rho)&quot;</span><span class="p">)</span>
+
+<span class="c1"># The positional argument order follows the expression&#39;s free symbols.</span>
+<span class="c1"># Check it before calling the function positionally:</span>
+<span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">reward_func</span><span class="p">)</span>  <span class="c1"># (c, rho)</span>
+
+<span class="n">reward</span> <span class="o">=</span> <span class="n">reward_func</span><span class="p">(</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
 </pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Variable names that collide with built-in SymPy objects are parsed as those
+objects rather than as free variables. For example, <code class="docutils literal notranslate"><span class="pre">gamma</span></code> is parsed as the
+gamma <em>function</em>, so <code class="docutils literal notranslate"><span class="pre">math_text_to_lambda(&quot;c**(1-gamma)/(1-gamma)&quot;)</span></code> raises a
+<code class="docutils literal notranslate"><span class="pre">TypeError</span></code>. Prefer names like <code class="docutils literal notranslate"><span class="pre">rho</span></code> or <code class="docutils literal notranslate"><span class="pre">CRRA</span></code> for curvature parameters.</p>
 </div>
 </section>
 </section>
@@ -357,12 +463,12 @@ such as random variables and model tags.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="utils.html">
+          <a class="next-page" href="analysis.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Utils</div>
+                <div class="title">Model Analysis and Visualization</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -381,7 +487,7 @@ such as random variables and model tags.</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -420,6 +526,13 @@ such as random variables and model tags.</p>
 <li><a class="reference internal" href="#skagent.parser.skagent_loader"><code class="docutils literal notranslate"><span class="pre">skagent_loader()</span></code></a></li>
 <li><a class="reference internal" href="#core-parser-functions">Core Parser Functions</a></li>
 <li><a class="reference internal" href="#parser-classes">Parser Classes</a></li>
+<li><a class="reference internal" href="#rules">Rules</a><ul>
+<li><a class="reference internal" href="#skagent.rule.extract_dependencies"><code class="docutils literal notranslate"><span class="pre">extract_dependencies()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.rule.extract_formula"><code class="docutils literal notranslate"><span class="pre">extract_formula()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.rule.format_rule"><code class="docutils literal notranslate"><span class="pre">format_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.rule.math_text_to_free_variable_names"><code class="docutils literal notranslate"><span class="pre">math_text_to_free_variable_names()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#example-usage">Example Usage</a><ul>
 <li><a class="reference internal" href="#parsing-mathematical-expressions">Parsing Mathematical Expressions</a></li>
 </ul>
@@ -435,7 +548,7 @@ such as random variables and model tags.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

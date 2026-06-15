@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Simulation" href="../simulation/index.html"><link rel="prev" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="API Reference" href="../../api/index.html"><link rel="prev" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Consumption Models - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Benchmark Consumption Models - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 has-children"><a class="reference internal" href="../algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -304,8 +307,8 @@ is spent rather than saved.</p></li>
 <li><p><strong>Consumption is a martingale.</strong> Under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, the <em>change</em> in
 consumption is the fundamental object, not its level. Income shocks of
 standard deviation <span class="math notranslate nohighlight">\(\sigma_\eta\)</span> produce consumption changes of
-standard deviation <span class="math notranslate nohighlight">\((r/R)\,\sigma_\eta\)</span> only, a factor of roughly 30x
-smaller.</p></li>
+standard deviation <span class="math notranslate nohighlight">\((r/R)\,\sigma_\eta\)</span> only, a factor of
+<span class="math notranslate nohighlight">\(R/r \approx 34\)</span> smaller at this calibration.</p></li>
 <li><p><strong>Normalization collapses the state.</strong> Dividing every level variable by
 permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
 what makes neural-network solvers practical for richer models.</p></li>
@@ -365,12 +368,15 @@ Stochastic Optimization Problems</em>. <a class="reference external" href="https
 </div>
 <section id="step-1-what-s-in-the-registry">
 <h3>Step 1: What’s in the Registry<a class="headerlink" href="#step-1-what-s-in-the-registry" title="Link to this heading">¶</a></h3>
-<p>Five of the six entries carry an analytical policy that
+<p>Five of the seven entries carry an analytical policy that
 <code class="docutils literal notranslate"><span class="pre">validate_analytical_solution</span></code> checks against the standard test grid.
 U-3 is registered without one because the borrowing constraint plus
-uncertainty break the linearity that every other entry relies on; the
-helper still reports it as <code class="docutils literal notranslate"><span class="pre">FAILED</span></code> because no policy was found, not
-because anything is wrong with the model.</p>
+uncertainty break the linearity that every other entry relies on, and
+D-4 lacks one because its binding borrowing constraint forecloses a
+closed form (its oracle is the value-function-iteration reference
+policy from <a class="reference internal" href="../../api/models.html#skagent.models.benchmarks.get_reference_policy" title="skagent.models.benchmarks.get_reference_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_reference_policy()</span></code></a>).
+The helper still reports both as <code class="docutils literal notranslate"><span class="pre">FAILED</span></code> because no analytical
+policy was found, not because anything is wrong with the models.</p>
 <p>The registry itself records which models have a closed form, so the
 distinction is queried with
 <a class="reference internal" href="../../api/models.html#skagent.models.benchmarks.has_analytical_policy" title="skagent.models.benchmarks.has_analytical_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">has_analytical_policy()</span></code></a> rather than
@@ -483,7 +489,7 @@ to scaling the discount factor from <span class="math notranslate nohighlight">\
 MPC <span class="math notranslate nohighlight">\(\kappa_s = (R - (s\beta R)^{1/\sigma})/R\)</span> strictly exceeds the
 no-mortality MPC <span class="math notranslate nohighlight">\(\kappa\)</span>, and the wedge widens as <span class="math notranslate nohighlight">\(s\)</span> falls.</p>
 <p>Sweeping <span class="math notranslate nohighlight">\(s \in \{1.0, 0.95, 0.9, 0.8, 0.7\}\)</span> (median lifetime
-falling from infinity to about 3 periods) makes the wedge visible. At
+falling from infinity to about 2 periods) makes the wedge visible. At
 <span class="math notranslate nohighlight">\(s = 0.7\)</span> the agent consumes nearly six times more per dollar of
 total wealth than at <span class="math notranslate nohighlight">\(s = 1\)</span>. Empirical annual mortality at age 30
 is around <span class="math notranslate nohighlight">\(s = 0.999\)</span>, which is essentially indistinguishable from
@@ -800,7 +806,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.064 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.083 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-benchmark-models-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/2cc3c98062c3edf3537ea32dc3909b7c/plot_benchmark_models.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_benchmark_models.ipynb</span></code></a></p>
@@ -822,12 +828,12 @@ Carlo simulators and reinforcement learning loops.</p></li>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../simulation/index.html">
+          <a class="next-page" href="../../api/index.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Simulation</div>
+                <div class="title">API Reference</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -846,7 +852,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -902,7 +908,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../../_static/documentation_options.js?v=b101728d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

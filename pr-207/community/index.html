@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Roadmap" href="roadmap.html"><link rel="prev" title="Utils" href="../api/utils.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Community Guide - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Community Guide - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -313,6 +316,27 @@ on <a class="reference external" href="https://github.com/scikit-agent/scikit-ag
 in <code class="docutils literal notranslate"><span class="pre">docs/auto_examples</span></code>. Please keep the built documentation synced with the raw
 source material.</p>
 </section>
+<section id="pull-requests">
+<h3>Pull requests<a class="headerlink" href="#pull-requests" title="Link to this heading">¶</a></h3>
+<p>We welcome pull requests from contributors.</p>
+<p>We refer to existing best practice for guidelines about how to write a good PR.
+<a class="reference external" href="https://zulip.readthedocs.io/en/latest/contributing/reviewable-prs.html">1</a>
+<a class="reference external" href="https://microsoft.github.io/code-with-engineering-playbook/code-reviews/pull-requests/">2</a>
+<a class="reference external" href="https://engineering.joinknack.com/art-and-science-of-reviewable-prs/">3</a></p>
+<p>As rules of thumb, please:</p>
+<ul class="simple">
+<li><p>Clearly explain the contributions of the PR, referring to existing issues
+solved or addressed by it, if applicable.</p></li>
+<li><p>Take responsibility for adherence to coding standards, and for passing
+automated tests, linters, and documentation builds.</p></li>
+<li><p>Keep PRs as small and focused as possible. Do not include changes that are
+unrelated to the PR scope, and try to narrow the scope of each PR. This makes
+it easier to quickly and thoroughly review your PR.</p></li>
+<li><p>Write clear and concise commit messages for each commit in the PR</p></li>
+<li><p>Explicitly ask questions or raise concerns for community feedback, if
+appropriate</p></li>
+</ul>
+</section>
 </section>
 <section id="code-of-conduct">
 <h2>Code of Conduct<a class="headerlink" href="#code-of-conduct" title="Link to this heading">¶</a></h2>
@@ -361,7 +385,7 @@ community members in any form.</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -400,6 +424,7 @@ community members in any form.</p>
 <li><a class="reference internal" href="#public-repository-and-issue-tracker">Public repository and issue tracker</a></li>
 <li><a class="reference internal" href="#precommit-hooks">Precommit hooks</a></li>
 <li><a class="reference internal" href="#examples-and-documentation">Examples and Documentation</a></li>
+<li><a class="reference internal" href="#pull-requests">Pull requests</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#code-of-conduct">Code of Conduct</a></li>
@@ -414,7 +439,7 @@ community members in any form.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

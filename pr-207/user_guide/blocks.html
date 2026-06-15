@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation Guide" href="simulation.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Block Guide - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -296,14 +299,16 @@ blocks:</p>
 agents act</p></li>
 <li><p><strong>RBlock (Recursive Block)</strong>: Combines multiple blocks into a more complex
 block</p></li>
-<li><p><strong>Bellman Block</strong>: A period of a dynamic model</p></li>
+<li><p><strong>BellmanPeriod</strong>: Wraps a block (it is not itself a <code class="docutils literal notranslate"><span class="pre">Block</span></code>) together with a
+discount variable and calibration, turning it into one period of a dynamic
+program</p></li>
 </ul>
 <p>These blocks all define the ways that <em>variables</em> change. The relationships
 between variables are defined in terms of <em>structural equations</em>, which in
 scikit-agent are represented as functions.</p>
 <p>Some variables are reserved as <strong>control</strong> variables, which are assigned to
-particular agent roles. Agents can choose a decision rule to decide their action
-at each of their control variables.</p>
+particular agent roles. Agents choose a decision rule that determines the value
+of each of their control variables.</p>
 <p>Some variables are reserved as <strong>reward</strong> variables, which provide the agent
 <em>utility</em> or incentive.</p>
 <p>scikit-agent models normally involve agents who are trying to maximize their
@@ -345,17 +350,20 @@ consumption-saving problem:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>This corresponds to the following mathematical model:</p>
-<!--- correct? --->
+<p>This corresponds to the following mathematical model, where the income shock
+<span class="math notranslate nohighlight">\(\theta\)</span> is a mean-one lognormal with log-space standard deviation
+<span class="math notranslate nohighlight">\(\sigma = 0.1\)</span>:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[\begin{split}
-    \theta &amp;\sim LogNormal(1, 0.1) \\
+\begin{aligned}
+    \log \theta &amp;\sim \mathcal{N}(-\sigma^2 / 2,\ \sigma^2) \\
     y &amp;= p \theta \\
     m &amp;= b_{-1} + y \\
     c &amp;= c(m) \\
     a &amp;= m - c \\
-    u &amp;= log(c) \\
+    u &amp;= \log(c)
+\end{aligned}
 \end{split}\]</div>
 </div>
 <p>Here, the agent can choose its level of consumption <span class="math notranslate nohighlight">\(c\)</span> given an <em>information
@@ -395,19 +403,25 @@ functions of state variables.</p>
 </section>
 <section id="calibration">
 <h4>Calibration<a class="headerlink" href="#calibration" title="Link to this heading">¶</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span>
+<p>Shock parameters can be given as strings naming calibration parameters rather
+than as literal values. Calling <code class="docutils literal notranslate"><span class="pre">construct_shocks</span></code> with a calibration dictionary
+then builds the actual distributions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">income_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;income&quot;</span><span class="p">,</span>
+    <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="s2">&quot;TranShkStd&quot;</span><span class="p">})},</span>
+    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">theta</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;CRRA&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># Risk aversion</span>
     <span class="s2">&quot;DiscFac&quot;</span><span class="p">:</span> <span class="mf">0.96</span><span class="p">,</span>  <span class="c1"># Discount factor</span>
     <span class="s2">&quot;Rfree&quot;</span><span class="p">:</span> <span class="mf">1.03</span><span class="p">,</span>  <span class="c1"># Risk-free rate</span>
-    <span class="s2">&quot;EqP&quot;</span><span class="p">:</span> <span class="mf">0.06</span><span class="p">,</span>  <span class="c1"># Equity premium</span>
-    <span class="s2">&quot;RiskyStd&quot;</span><span class="p">:</span> <span class="mf">0.20</span><span class="p">,</span>  <span class="c1"># Stock volatility</span>
     <span class="s2">&quot;PermGroFac&quot;</span><span class="p">:</span> <span class="mf">1.01</span><span class="p">,</span>  <span class="c1"># Permanent income growth</span>
     <span class="s2">&quot;TranShkStd&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># Transitory shock std</span>
-    <span class="s2">&quot;PermShkStd&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span>  <span class="c1"># Permanent shock std</span>
 <span class="p">}</span>
 
 <span class="c1"># Apply calibration to construct actual distributions</span>
-<span class="n">portfolio_block</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
+<span class="n">income_block</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -438,15 +452,26 @@ functions of state variables.</p>
 
 <span class="c1"># Life-cycle model</span>
 <span class="n">lifecycle_model</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">RBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;lifecycle_model&quot;</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">portfolio_block</span><span class="p">,</span> <span class="n">retirement_block</span><span class="p">]</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;lifecycle_model&quot;</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">consumption_block</span><span class="p">,</span> <span class="n">retirement_block</span><span class="p">]</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 <p><em>TODO: Discussion of how the blocks connect – arrival states, again.</em></p>
 </section>
-<section id="bellman-blocks">
-<h3>Bellman Blocks<a class="headerlink" href="#bellman-blocks" title="Link to this heading">¶</a></h3>
-<p><em>TODO: about bellman blocks – how these become MDPs</em></p>
+<section id="bellman-periods">
+<h3>Bellman Periods<a class="headerlink" href="#bellman-periods" title="Link to this heading">¶</a></h3>
+<p>A <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> (from <code class="docutils literal notranslate"><span class="pre">skagent.bellman</span></code>) wraps a block together with its
+discount variable and calibration, turning the block into one period of a
+dynamic stochastic optimization problem. The wrapped period exposes the reward,
+transition, and gradient functions that the neural network solution methods and
+loss functions consume:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
+
+<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">consumption_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See the <a class="reference internal" href="../api/bellman.html"><span class="doc">Bellman Periods</span></a> reference for the period timing notation (arrival
+states, shocks, pre-decision states, controls, and rewards) and the full API.</p>
 <!---
 ## Building Custom Models
 
@@ -578,35 +603,36 @@ aggregate_shock_block = ska.DBlock(
 <section id="examining-model-structure">
 <h3>Examining Model Structure<a class="headerlink" href="#examining-model-structure" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get all variables in the model</span>
-<span class="n">variables</span> <span class="o">=</span> <span class="n">portfolio_block</span><span class="o">.</span><span class="n">get_vars</span><span class="p">()</span>
+<span class="n">variables</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">get_vars</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model variables:&quot;</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
 
 <span class="c1"># Get control variables</span>
-<span class="n">controls</span> <span class="o">=</span> <span class="n">portfolio_block</span><span class="o">.</span><span class="n">get_controls</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Control variables:&quot;</span><span class="p">,</span> <span class="n">controls</span><span class="p">)</span>
+<span class="n">controls</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">get_controls</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Control variables:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">controls</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 
 <span class="c1"># Get shock variables</span>
-<span class="n">shocks</span> <span class="o">=</span> <span class="n">portfolio_block</span><span class="o">.</span><span class="n">get_shocks</span><span class="p">()</span>
+<span class="n">shocks</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">get_shocks</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Shock variables:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">shocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
 </div>
 </section>
 <section id="testing-model-dynamics">
 <h3>Testing Model Dynamics<a class="headerlink" href="#testing-model-dynamics" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test model transition with simple decision rules</span>
+<p>The <code class="docutils literal notranslate"><span class="pre">transition</span></code> method advances the block by one period from a dictionary of
+arrival states and realized shock values:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Arrival states and a realized shock value</span>
 <span class="n">pre_state</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
     <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="s2">&quot;a_prev&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
 <span class="p">}</span>
 
 <span class="n">decision_rules</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.8</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>
-    <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>  <span class="c1"># 60% in risky asset</span>
 <span class="p">}</span>
 
 <span class="c1"># Simulate one period</span>
-<span class="n">post_state</span> <span class="o">=</span> <span class="n">portfolio_block</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><span class="n">pre_state</span><span class="p">,</span> <span class="n">decision_rules</span><span class="p">)</span>
+<span class="n">post_state</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><span class="n">pre_state</span><span class="p">,</span> <span class="n">decision_rules</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Post-transition state:&quot;</span><span class="p">,</span> <span class="n">post_state</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -660,6 +686,10 @@ def make_consumption_block(calibration=None):
 </section>
 <section id="common-patterns">
 <h2>Common Patterns<a class="headerlink" href="#common-patterns" title="Link to this heading">¶</a></h2>
+<p>Recall that a variable referenced before it is assigned within a block is an
+arrival state: in the habit block below, the <code class="docutils literal notranslate"><span class="pre">h</span></code> appearing in the information
+set of <code class="docutils literal notranslate"><span class="pre">c</span></code> and in <code class="docutils literal notranslate"><span class="pre">x</span></code> is last period’s habit stock, while the final equation
+assigns this period’s value.</p>
 <section id="habit-formation-models">
 <h3>Habit Formation Models<a class="headerlink" href="#habit-formation-models" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">habit_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
@@ -667,7 +697,7 @@ def make_consumption_block(calibration=None):
         <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]),</span>
         <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="n">c</span> <span class="o">/</span> <span class="n">h</span><span class="p">,</span>  <span class="c1"># Consumption relative to habit</span>
         <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">),</span>
-        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">h_prev</span><span class="p">,</span> <span class="n">c_prev</span><span class="p">,</span> <span class="n">rho</span><span class="p">:</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">h_prev</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rho</span><span class="p">)</span> <span class="o">*</span> <span class="n">c_prev</span><span class="p">,</span>
+        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">h</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">rho</span><span class="p">:</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">h</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rho</span><span class="p">)</span> <span class="o">*</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># Habit stock update</span>
     <span class="p">}</span>
 <span class="p">)</span>
 </pre></div>
@@ -679,9 +709,10 @@ def make_consumption_block(calibration=None):
     <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
         <span class="s2">&quot;c_nd&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>  <span class="c1"># Non-durable consumption</span>
         <span class="s2">&quot;i_d&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">]),</span>  <span class="c1"># Durable investment</span>
-        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">d_prev</span><span class="p">,</span> <span class="n">i_d</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">delta</span><span class="p">)</span> <span class="o">*</span> <span class="n">d_prev</span> <span class="o">+</span> <span class="n">i_d</span><span class="p">,</span>  <span class="c1"># Durable stock</span>
+        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">,</span> <span class="n">i_d</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">delta</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span> <span class="o">+</span> <span class="n">i_d</span><span class="p">,</span>  <span class="c1"># Durable stock</span>
         <span class="s2">&quot;c_d&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="p">,</span>  <span class="c1"># Durable services</span>
-        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c_nd</span><span class="p">,</span> <span class="n">c_d</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="p">(</span><span class="n">c_nd</span><span class="o">**</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">c_d</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">))</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span>
+        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c_nd</span><span class="p">,</span> <span class="n">c_d</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="p">(</span><span class="n">c_nd</span><span class="o">**</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">c_d</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">))</span>
+        <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span>
         <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">),</span>
     <span class="p">}</span>
 <span class="p">)</span>
@@ -723,7 +754,7 @@ maintaining clear economic interpretation.</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -770,7 +801,7 @@ maintaining clear economic interpretation.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#rblocks-composing-blocks">RBlocks: Composing Blocks</a></li>
-<li><a class="reference internal" href="#bellman-blocks">Bellman Blocks</a></li>
+<li><a class="reference internal" href="#bellman-periods">Bellman Periods</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#model-validation-and-inspection">Model Validation and Inspection</a><ul>
@@ -795,7 +826,7 @@ maintaining clear economic interpretation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

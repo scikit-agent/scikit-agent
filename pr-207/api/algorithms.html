@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Algorithms - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -282,12 +285,13 @@
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="algorithms">
 <h1>Algorithms<a class="headerlink" href="#algorithms" title="Link to this heading">¶</a></h1>
-<p>This section contains the API documentation for solution algorithms and
-optimization methods used to solve economic models.</p>
-<section id="value-function-iteration">
-<h2>Value Function Iteration<a class="headerlink" href="#value-function-iteration" title="Link to this heading">¶</a></h2>
-<p>The Value Function Iteration (VBI) algorithm implements backwards induction to
-derive value functions from model blocks.</p>
+<p>This section contains the API documentation for solution algorithms, neural
+network components, and grid tools used to solve dynamic stochastic optimization
+problems.</p>
+<section id="value-backwards-induction-vbi">
+<h2>Value Backwards Induction (VBI)<a class="headerlink" href="#value-backwards-induction-vbi" title="Link to this heading">¶</a></h2>
+<p>The value backwards induction (VBI) algorithm derives arrival value functions
+from a continuation value function and the stage dynamics of model blocks.</p>
 <p id="module-skagent.algos.vbi">Use backwards induction to derive the arrival value function
 from a continuation value function and stage dynamics.</p>
 <dl class="py function">
@@ -437,21 +441,21 @@ Similarly, shock draws are currently Monte Carlo only; structured draws
 on a panel of states drawn forward through the model dynamics. This
 helper constructs and trains a <a class="reference internal" href="#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a>
 internally and does not currently accept a pre-built shared-backbone
-<code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code>. If value-aware training is
+<a class="reference internal" href="#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a>. If value-aware training is
 needed (e.g. for a Bellman residual loss with a value head), call
-<code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code> directly on a
-<code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code>; a future refactor may add
+<a class="reference internal" href="#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code></a> directly on a
+<a class="reference internal" href="#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a>; a future refactor may add
 value-network support here.</p>
 <p>The loop maps onto the MMW JME’21 algorithm steps as follows:
 <code class="xref py py-func docutils literal notranslate"><span class="pre">_validate_training_inputs()</span></code> and the network construction below
 cover Step 1 (initialize topology and coefficients); the per-iteration
-<code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code> call is Step 2 (minimize the
+<a class="reference internal" href="#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code></a> call is Step 2 (minimize the
 empirical risk <span class="math notranslate nohighlight">\(\Xi^n(\theta)\)</span>); the returned network is the Step 3
 trained approximation <span class="math notranslate nohighlight">\(\varphi(\cdot, \theta)\)</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bellman_period</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></span>) – A model definition containing block dynamics and transitions.</p></li>
+<li><p><strong>bellman_period</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – A model definition containing block dynamics and transitions.</p></li>
 <li><p><strong>loss_function</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – The empirical risk function <span class="math notranslate nohighlight">\(\Xi^n\)</span> from MMW JME’21. This
 function is passed to the neural network training routine as
 <code class="docutils literal notranslate"><span class="pre">loss_function(decision_function,</span> <span class="pre">input_grid)</span> <span class="pre">-&gt;</span> <span class="pre">loss_tensor</span></code>.</p></li>
@@ -510,7 +514,7 @@ after <code class="docutils literal notranslate"><span class="pre">max_iteration
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>states_t</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Grid</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Initial state values.</p></li>
-<li><p><strong>bellman_period</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></span>) – The Bellman period containing model dynamics.</p></li>
+<li><p><strong>bellman_period</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – The Bellman period containing model dynamics.</p></li>
 <li><p><strong>decision_function</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – Function mapping (states, shocks, parameters) to controls.</p></li>
 <li><p><strong>parameters</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Model parameters.</p></li>
 <li><p><strong>big_t</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of time periods to simulate forward. If 0, returns the
@@ -536,7 +540,7 @@ initial states unchanged.</p></li>
 <a class="reference external" href="https://stable-baselines3.readthedocs.io/">Stable-Baselines3</a> backend. The
 agent wraps a model in a gymnasium environment (see <a class="reference internal" href="environments.html"><span class="doc">Environments</span></a>), trains
 PPO, and emits a standard skagent decision rule.</p>
-<p id="module-skagent.algos.sb3">Stable Baselines3 wrappers for <code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> models.</p>
+<p id="module-skagent.algos.sb3">Stable Baselines3 wrappers for <a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a> models.</p>
 <p>Provides <a class="reference internal" href="#skagent.algos.sb3.PPOAgent" title="skagent.algos.sb3.PPOAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">PPOAgent</span></code></a>, a thin wrapper around SB3’s PPO that:</p>
 <ul class="simple">
 <li><p>builds a <a class="reference internal" href="environments.html#skagent.env.GymEnv" title="skagent.env.GymEnv"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.env.GymEnv</span></code></a> from a <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> + initial
@@ -556,7 +560,7 @@ decision-rule API. Actions are unscaled back to real units via
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></span>) – Model definition.</p></li>
+<li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – Model definition.</p></li>
 <li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Maps arrival-state symbols to <code class="docutils literal notranslate"><span class="pre">skagent</span></code> <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> objects,
 used by <code class="xref py py-class docutils literal notranslate"><span class="pre">GymEnv</span></code> to sample fresh initial states on
 <code class="docutils literal notranslate"><span class="pre">reset</span></code>.</p></li>
@@ -788,20 +792,20 @@ registered hooks while the latter silently ignores them.</p>
 </section>
 <section id="blockpolicynet">
 <h3>BlockPolicyNet<a class="headerlink" href="#blockpolicynet" title="Link to this heading">¶</a></h3>
-<p>Specialized neural network for policy functions in economic models.</p>
+<p>A neural network for policy functions in dynamic programming problems.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.ann.BlockPolicyNet">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">BlockPolicyNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_open_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyNet" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriodMixin</span></code>, <a class="reference internal" href="#skagent.ann.Net" title="skagent.ann.Net"><code class="xref py py-class docutils literal notranslate"><span class="pre">Net</span></code></a></p>
 <p>A neural network for policy functions in dynamic programming problems.</p>
 <p>This network wraps a <a class="reference internal" href="#skagent.ann.Net" title="skagent.ann.Net"><code class="xref py py-class docutils literal notranslate"><span class="pre">Net</span></code></a> and integrates with the
-<code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> interface. It automatically
+<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a> interface. It automatically
 determines input/output dimensions from the model block specification
 and enforces control variable bounds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bellman_period</strong> (<em>BellmanPeriod</em>) – The model Bellman Period</p></li>
+<li><p><strong>bellman_period</strong> (<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><em>BellmanPeriod</em></a>) – The model Bellman Period</p></li>
 <li><p><strong>apply_open_bounds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, then the network forward output is normalized by the upper and/or lower bounds,
 computed as a function of the input tensor. These bounds are “open” because output
 can be arbitrarily close to, but not equal to, the bounds. Default is True.</p></li>
@@ -857,8 +861,232 @@ bounds of the decision rule.</p>
 </dd></dl>
 
 </section>
+<section id="blockvaluenet">
+<h3>BlockValueNet<a class="headerlink" href="#blockvaluenet" title="Link to this heading">¶</a></h3>
+<p>A neural network for value functions in dynamic programming problems.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.ann.BlockValueNet">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">BlockValueNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockValueNet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriodMixin</span></code>, <a class="reference internal" href="#skagent.ann.Net" title="skagent.ann.Net"><code class="xref py py-class docutils literal notranslate"><span class="pre">Net</span></code></a></p>
+<p>Standalone value-function network for a Bellman problem.</p>
+<p>Maps a control’s information set (the same pre-decision states a policy
+network sees) to a single unconstrained scalar value. It is the value-only
+counterpart of <a class="reference internal" href="#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a>, kept for algorithms that approximate
+a value function separately from the policy. The Maliar/MMW path in this
+package uses the shared-backbone <a class="reference internal" href="#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a> instead, so
+<code class="docutils literal notranslate"><span class="pre">BlockValueNet</span></code> is not wired into
+<a class="reference internal" href="#skagent.algos.maliar.maliar_training_loop" title="skagent.algos.maliar.maliar_training_loop"><code class="xref py py-func docutils literal notranslate"><span class="pre">maliar_training_loop()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bellman_period</strong> (<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><em>BellmanPeriod</em></a>) – The model Bellman period.</p></li>
+<li><p><strong>control_sym</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Control whose information set defines the value function’s domain.
+Defaults to the first control.</p></li>
+<li><p><strong>width</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Width of hidden layers. Default 32.</p></li>
+<li><p><strong>**kwargs</strong> – Passed to <a class="reference internal" href="#skagent.ann.Net" title="skagent.ann.Net"><code class="xref py py-class docutils literal notranslate"><span class="pre">Net</span></code></a> (activation, n_layers, init_seed, etc.).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockValueNet.get_core_function">
+<span class="sig-name descname"><span class="pre">get_core_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockValueNet.get_core_function" title="Link to this definition">¶</a></dt>
+<dd><p>Return the value function (the trainable core for this net).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockValueNet.get_value_function">
+<span class="sig-name descname"><span class="pre">get_value_function</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockValueNet.get_value_function" title="Link to this definition">¶</a></dt>
+<dd><p>Return a callable <code class="docutils literal notranslate"><span class="pre">(states,</span> <span class="pre">shocks,</span> <span class="pre">parameters)</span> <span class="pre">-&gt;</span> <span class="pre">value</span></code> tensor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockValueNet.value_function">
+<span class="sig-name descname"><span class="pre">value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockValueNet.value_function" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate the value function at the control’s information set.</p>
+<p>Arrival <code class="docutils literal notranslate"><span class="pre">states_t</span></code> (with <code class="docutils literal notranslate"><span class="pre">shocks_t</span></code> and <code class="docutils literal notranslate"><span class="pre">parameters</span></code>) are mapped to
+the control’s information set via
+<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod.compute_pre_state" title="skagent.bellman.BellmanPeriod.compute_pre_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">compute_pre_state()</span></code></a>, mirroring
+<a class="reference internal" href="#skagent.ann.BlockPolicyNet.decision_function" title="skagent.ann.BlockPolicyNet.decision_function"><code class="xref py py-meth docutils literal notranslate"><span class="pre">BlockPolicyNet.decision_function()</span></code></a>, then the network is evaluated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Flattened value estimates, one per input row.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)">torch.Tensor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="blockpolicyvaluenet">
+<h3>BlockPolicyValueNet<a class="headerlink" href="#blockpolicyvaluenet" title="Link to this heading">¶</a></h3>
+<p>A shared-backbone neural network that jointly represents the policy and value
+functions.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">BlockPolicyValueNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_open_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriodMixin</span></code>, <a class="reference internal" href="#skagent.ann.Net" title="skagent.ann.Net"><code class="xref py py-class docutils literal notranslate"><span class="pre">Net</span></code></a></p>
+<p>Single neural network with shared backbone for both policy and value.</p>
+<p>Architecture: shared hidden layers → two output heads:
+- <strong>Policy head</strong> — bounded output (sigmoid-scaled to satisfy constraints)
+- <strong>Value head</strong> — unconstrained scalar output</p>
+<p>Sharing the backbone means one optimizer updates all weights
+simultaneously, and the value head anchors the control <em>level</em> that
+first-order-condition-only training (e.g. an Euler residual loss)
+cannot identify.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bellman_period</strong> (<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><em>BellmanPeriod</em></a>) – The model Bellman Period.</p></li>
+<li><p><strong>control_sym</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Control variable symbol. Defaults to first control.</p></li>
+<li><p><strong>apply_open_bounds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Apply sigmoid/softplus scaling to the policy head. Default True.</p></li>
+<li><p><strong>width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Width of hidden layers. Default 32.</p></li>
+<li><p><strong>**kwargs</strong> – Passed to <a class="reference internal" href="#skagent.ann.Net" title="skagent.ann.Net"><code class="xref py py-class docutils literal notranslate"><span class="pre">Net</span></code></a> (activation, n_layers, init_seed, etc.).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet.decision_function">
+<span class="sig-name descname"><span class="pre">decision_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet.decision_function" title="Link to this definition">¶</a></dt>
+<dd><p>Map states, shocks, and parameters to a controls dict.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states_t</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Arrival state values, <code class="docutils literal notranslate"><span class="pre">symbol</span> <span class="pre">-&gt;</span> <span class="pre">tensor</span></code>.</p></li>
+<li><p><strong>shocks_t</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> or </em><em>None</em>) – Shock values, <code class="docutils literal notranslate"><span class="pre">symbol</span> <span class="pre">-&gt;</span> <span class="pre">tensor</span></code> (<code class="docutils literal notranslate"><span class="pre">None</span></code> is treated as <code class="docutils literal notranslate"><span class="pre">{}</span></code>).</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Model parameters, <code class="docutils literal notranslate"><span class="pre">symbol</span> <span class="pre">-&gt;</span> <span class="pre">value</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{control_sym:</span> <span class="pre">tensor}</span></code> of policy-head outputs. The arrival
+states are mapped to the control’s information set via
+<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod.compute_pre_state" title="skagent.bellman.BellmanPeriod.compute_pre_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">compute_pre_state()</span></code></a> before
+the network is evaluated.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Run shared backbone, then policy head (bounded) + value head.</p>
+<p>Returns the <code class="docutils literal notranslate"><span class="pre">(policy,</span> <span class="pre">value)</span></code> pair. The policy tensor is scaled
+into the control’s open bounds; the value tensor is unconstrained.
+Both have shape <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">1)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet.get_core_function">
+<span class="sig-name descname"><span class="pre">get_core_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet.get_core_function" title="Link to this definition">¶</a></dt>
+<dd><p>Return decision rules (policy head) for use with train_block_nn.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet.get_decision_rule">
+<span class="sig-name descname"><span class="pre">get_decision_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet.get_decision_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Decision rule returning only the policy output.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet.get_policy_and_value_functions">
+<span class="sig-name descname"><span class="pre">get_policy_and_value_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet.get_policy_and_value_functions" title="Link to this definition">¶</a></dt>
+<dd><p>Return both policy decision rules and value function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet.get_value_function">
+<span class="sig-name descname"><span class="pre">get_value_function</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet.get_value_function" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet.value_function">
+<span class="sig-name descname"><span class="pre">value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet.value_function" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate the value head at the control’s information set.</p>
+<p>The input domain mirrors <a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.decision_function" title="skagent.ann.BlockPolicyValueNet.decision_function"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decision_function()</span></code></a>: arrival
+<code class="docutils literal notranslate"><span class="pre">states_t</span></code> (with <code class="docutils literal notranslate"><span class="pre">shocks_t</span></code> and <code class="docutils literal notranslate"><span class="pre">parameters</span></code>) are mapped to the
+control’s information set via
+<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod.compute_pre_state" title="skagent.bellman.BellmanPeriod.compute_pre_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">compute_pre_state()</span></code></a>, then the
+shared backbone’s value head is evaluated on that pre-decision
+representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>states_t</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Arrival state values, <code class="docutils literal notranslate"><span class="pre">symbol</span> <span class="pre">-&gt;</span> <span class="pre">tensor</span></code>.</p></li>
+<li><p><strong>shocks_t</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> or </em><em>None</em><em>, </em><em>optional</em>) – Shock values (<code class="docutils literal notranslate"><span class="pre">None</span></code> is treated as <code class="docutils literal notranslate"><span class="pre">{}</span></code>).</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> or </em><em>None</em><em>, </em><em>optional</em>) – Model parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Flattened value estimates, one per input row.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)">torch.Tensor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="training-functions">
 <h3>Training Functions<a class="headerlink" href="#training-functions" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.ann.train_block_nn">
+<span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">train_block_nn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_policy_nn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_clip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.train_block_nn" title="Link to this definition">¶</a></dt>
+<dd><p>Train a policy network by minimizing a loss function over a grid.</p>
+<p>This is a generic stochastic-gradient-descent driver, not a solution
+algorithm in itself. It runs <code class="docutils literal notranslate"><span class="pre">epochs</span></code> Adam updates that minimize whatever
+<code class="docutils literal notranslate"><span class="pre">loss_function</span></code> is supplied, evaluated on a single, <em>fixed</em> grid of
+<code class="docutils literal notranslate"><span class="pre">inputs</span></code>; it is agnostic to where that grid came from or which method the
+loss encodes (Euler residual, Bellman residual, FOC, or a custom loss).</p>
+<p>Because it trains on whatever <code class="docutils literal notranslate"><span class="pre">inputs</span></code> it is given, accuracy depends on
+the caller re-sampling those states across calls: Maliar, Maliar, and Winant
+(2021) keep the training data “constantly re-sampled,” and minimizing on a
+single fixed grid instead lets the solution over-fit those points while
+drifting elsewhere. Re-draw <code class="docutils literal notranslate"><span class="pre">inputs</span></code> each call (threading the returned
+optimizer back in to keep Adam’s momentum), or use
+<a class="reference internal" href="#skagent.algos.maliar.maliar_training_loop" title="skagent.algos.maliar.maliar_training_loop"><code class="xref py py-func docutils literal notranslate"><span class="pre">maliar_training_loop()</span></code></a>, which wraps this driver
+in the full MMW’21 outer loop: it alternates these inner SGD updates with a
+forward-simulation step that refreshes the training states toward the
+model’s ergodic set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block_policy_nn</strong> (<a class="reference internal" href="#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><em>BlockPolicyNet</em></a><em> or </em><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><em>BlockPolicyValueNet</em></a>) – The network to train. Its <code class="docutils literal notranslate"><span class="pre">get_core_function</span></code> supplies the
+decision rule(s) the loss is evaluated against.</p></li>
+<li><p><strong>inputs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Grid</span></code></a></span>) – Input grid containing states and shocks.</p></li>
+<li><p><strong>loss_function</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – Loss function <code class="docutils literal notranslate"><span class="pre">(decision_function,</span> <span class="pre">input_grid)</span> <span class="pre">-&gt;</span> <span class="pre">loss_tensor</span></code>.</p></li>
+<li><p><strong>epochs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of training epochs (default 50).</p></li>
+<li><p><strong>lr</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Learning rate for Adam optimizer (default 0.01).</p></li>
+<li><p><strong>optimizer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/optim.html#torch.optim.Optimizer" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code></a>]</span>) – Pre-existing optimizer to reuse (preserves momentum across calls).
+If None, a new Adam optimizer is created.</p></li>
+<li><p><strong>grad_clip</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Maximum gradient norm for clipping (default 1.0). Set to None to disable.</p></li>
+<li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Emit a <code class="docutils literal notranslate"><span class="pre">logging.info</span></code> message with the loss every 100 epochs
+(default True). Configure the root logger to suppress these.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(trained_network,</span> <span class="pre">final_loss,</span> <span class="pre">optimizer)</span></code>. The <code class="docutils literal notranslate"><span class="pre">optimizer</span></code> is
+the one passed in, or the Adam instance created internally when none
+was supplied; returning it always lets callers warm-start a later
+call by threading it back in.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.ann.aggregate_net_loss">
 <span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">aggregate_net_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.aggregate_net_loss" title="Link to this definition">¶</a></dt>
@@ -982,8 +1210,6 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 </dl>
 </dd></dl>
 
-<hr class="docutils" />
-<p><em>This page is under construction. Content will be added as the API develops.</em></p>
 </section>
 </section>
 </section>
@@ -1017,7 +1243,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -1051,7 +1277,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Algorithms</a><ul>
-<li><a class="reference internal" href="#value-function-iteration">Value Function Iteration</a><ul>
+<li><a class="reference internal" href="#value-backwards-induction-vbi">Value Backwards Induction (VBI)</a><ul>
 <li><a class="reference internal" href="#skagent.algos.vbi.ar_from_data"><code class="docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vbi.get_action_rule"><code class="docutils literal notranslate"><span class="pre">get_action_rule()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vbi.grid_to_data_array"><code class="docutils literal notranslate"><span class="pre">grid_to_data_array()</span></code></a></li>
@@ -1101,7 +1327,30 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#blockvaluenet">BlockValueNet</a><ul>
+<li><a class="reference internal" href="#skagent.ann.BlockValueNet"><code class="docutils literal notranslate"><span class="pre">BlockValueNet</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.ann.BlockValueNet.get_core_function"><code class="docutils literal notranslate"><span class="pre">BlockValueNet.get_core_function()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockValueNet.get_value_function"><code class="docutils literal notranslate"><span class="pre">BlockValueNet.get_value_function()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockValueNet.value_function"><code class="docutils literal notranslate"><span class="pre">BlockValueNet.value_function()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#blockpolicyvaluenet">BlockPolicyValueNet</a><ul>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.decision_function"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet.decision_function()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.forward"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet.forward()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.get_core_function"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet.get_core_function()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.get_decision_rule"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet.get_decision_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.get_policy_and_value_functions"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet.get_policy_and_value_functions()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.get_value_function"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet.get_value_function()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ann.BlockPolicyValueNet.value_function"><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet.value_function()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#training-functions">Training Functions</a><ul>
+<li><a class="reference internal" href="#skagent.ann.train_block_nn"><code class="docutils literal notranslate"><span class="pre">train_block_nn()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.ann.aggregate_net_loss"><code class="docutils literal notranslate"><span class="pre">aggregate_net_loss()</span></code></a></li>
 </ul>
 </li>
@@ -1140,7 +1389,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

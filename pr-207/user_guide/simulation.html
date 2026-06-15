@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms Guide" href="algorithms.html"><link rel="prev" title="Block Guide" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation Guide - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Simulation Guide - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -297,8 +300,8 @@ all variables in the simulation, that can then be inspected.</p>
 <ul class="simple">
 <li><p><strong>Calibration dictionary</strong>. A dictionary specifying values for any free
 parameters of the model.</p></li>
-<li><p><strong>Model</strong>. A <code class="docutils literal notranslate"><span class="pre">Block</span></code> model, defining states, shocks, control, and reward
-variables of an agent (or population of agents).</p></li>
+<li><p><strong>Model</strong>. A block model (<code class="docutils literal notranslate"><span class="pre">DBlock</span></code> or <code class="docutils literal notranslate"><span class="pre">RBlock</span></code>), defining states, shocks,
+control, and reward variables of an agent (or population of agents).</p></li>
 <li><p><strong>Decision rules</strong>. A dictionary of decision rules governing the informed
 choices of agents at their decision variables.</p></li>
 <li><p><strong>Initial values</strong>. A dictionary of starting values, or starting
@@ -310,13 +313,13 @@ distributions, for arrival state variables.</p></li>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.simulation.monte_carlo</span><span class="w"> </span><span class="kn">import</span> <span class="n">MonteCarloSimulator</span>
 
 <span class="n">simulator</span> <span class="o">=</span> <span class="n">MonteCarloSimulator</span><span class="p">(</span>
-    <span class="n">cons</span><span class="o">.</span><span class="n">calibration</span><span class="p">,</span>
-    <span class="n">cons</span><span class="o">.</span><span class="n">cons_problem</span><span class="p">,</span>
-    <span class="p">{</span>  <span class="c1"># decision rules passed in as dictionary</span>
+    <span class="n">calibration</span><span class="o">=</span><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span><span class="p">,</span>
+    <span class="n">block</span><span class="o">=</span><span class="n">cons</span><span class="o">.</span><span class="n">cons_problem</span><span class="p">,</span>
+    <span class="n">dr</span><span class="o">=</span><span class="p">{</span>  <span class="c1"># decision rules passed in as dictionary</span>
         <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>
     <span class="p">},</span>
-    <span class="p">{</span>  <span class="c1"># distributions of starting values</span>
-        <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="n">Lognormal</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="n">initial</span><span class="o">=</span><span class="p">{</span>  <span class="c1"># distributions of starting values, in levels</span>
+        <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="n">Lognormal</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
     <span class="p">},</span>
     <span class="n">agent_count</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
@@ -377,7 +380,7 @@ averages over agents).</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -425,7 +428,7 @@ averages over agents).</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../_static/documentation_options.js?v=b101728d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

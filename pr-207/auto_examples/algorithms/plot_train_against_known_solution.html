@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="PPO via Stable-Baselines3 on the D-2 Benchmark" href="plot_sb3_ppo.html"><link rel="prev" title="The Maliar Training Loop on a Model With No Closed-Form Solution" href="plot_maliar_training_loop.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="The Maliar Training Loop on a Model With No Closed-Form Solution" href="plot_maliar_training_loop.html"><link rel="prev" title="Algorithms" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Training a Policy Network Against a Known Solution - scikit-agent 0.1.dev564+g296697500</title>
+        <title>Training a Policy Network Against a Known Solution - scikit-agent 0.1.dev582+ge2c38e5b1</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev564+g296697500</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -205,13 +205,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/benchmark_models.html">Benchmark Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../user_guide/science.html">Science</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
 </ul>
 </li>
@@ -221,16 +220,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../simulation/index.html">Simulation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/bellman.html">Bellman Periods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/algorithms.html">Algorithms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/distributions.html">Distributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/simulation.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/analysis.html">Model Analysis and Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utils</a></li>
 </ul>
 </li>
@@ -238,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecosystem/index.html">Ecosystem</a></li>
 </ul>
 
 </div>
@@ -308,14 +311,17 @@ below. Working in ratios to permanent income, the state is normalized assets
 \[V(m) = \max_{c} \; u(c) + \beta \, \mathbb{E}\!\left[ V(m') \right],\]</div>
 </div>
 <p>with constant-relative-risk-aversion utility <span class="math notranslate nohighlight">\(u\)</span> and discount factor
-<span class="math notranslate nohighlight">\(\beta\)</span>. For this calibration the optimal policy is linear in
+<span class="math notranslate nohighlight">\(\beta\)</span>. For this calibration the optimal policy is affine in
 cash-on-hand,</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[c^*(m) = \kappa \, m,\]</div>
+\[c^*(m) = \kappa \, (m + h),\]</div>
 </div>
-<p>where the marginal propensity to consume <span class="math notranslate nohighlight">\(\kappa\)</span> has a closed form. This
-gives us an exact target to check the trained policy against.</p>
+<p>where both the marginal propensity to consume <span class="math notranslate nohighlight">\(\kappa = 1 - \beta\)</span> and
+the normalized human wealth <span class="math notranslate nohighlight">\(h = 1/r\)</span> have closed forms. At this
+calibration <span class="math notranslate nohighlight">\(h = 1/0.03 \approx 33.3\)</span>, so the intercept <span class="math notranslate nohighlight">\(\kappa h\)</span>
+dominates and the consumption function is nearly flat over the training
+range. This gives us an exact target to check the trained policy against.</p>
 </section>
 <section id="why-a-value-head-the-level-identification-problem">
 <h2>Why a value head: the level-identification problem<a class="headerlink" href="#why-a-value-head-the-level-identification-problem" title="Link to this heading">¶</a></h2>
@@ -323,10 +329,10 @@ gives us an exact target to check the trained policy against.</p>
 <span class="math notranslate nohighlight">\(u'(c_t) = \beta R \, \mathbb{E}[u'(c_{t+1})]\)</span> pins down the <em>slope</em> of
 the consumption function but not its <em>level</em>: scaling the whole policy leaves
 the Euler residual nearly unchanged. A
-<code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code> resolves this indeterminacy: it
+<a class="reference internal" href="../../api/algorithms.html#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a> resolves this indeterminacy: it
 shares one hidden backbone between a policy head and a value head, training them
 together under a single optimizer with
-<code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code>. The value head anchors the level
+<a class="reference internal" href="../../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>. The value head anchors the level
 through the Bellman equation <span class="math notranslate nohighlight">\(V(m) = u(c) + \beta \mathbb{E}[V(m')]\)</span>,
 which pins down what the Euler equation alone leaves free.</p>
 </section>
@@ -340,7 +346,7 @@ residuals to zero while the consumption <em>level</em> drifts between them, and 
 error stalls at several percent (and worsens with more epochs). Drawing a fresh
 batch each step instead enforces the residual across the whole domain, which
 pins the level and lets the error fall below one percent. The per-step optimizer
-is <code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code>; the loop in Step 4 supplies the fresh
+is <a class="reference internal" href="../../api/algorithms.html#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code></a>; the loop in Step 4 supplies the fresh
 states and threads Adam’s momentum through. The loss combines the MMW’21
 all-in-one expectation operator (two independent shock copies per state) with
 the Bellman first-order-condition term.</p>
@@ -383,7 +389,7 @@ returns the closed-form solution we will validate against.</p>
 </section>
 <section id="step-2-build-the-shared-backbone-policy-value-network">
 <h3>Step 2: Build the shared-backbone policy/value network<a class="headerlink" href="#step-2-build-the-shared-backbone-policy-value-network" title="Link to this heading">¶</a></h3>
-<p>A single <code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code> carries both a (bounded)
+<p>A single <a class="reference internal" href="../../api/algorithms.html#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a> carries both a (bounded)
 policy head and an unconstrained value head on top of one shared hidden
 stack. One optimizer updates all of its weights together.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.pytorch.org/docs/stable/generated/torch.manual_seed.html#torch.manual_seed" title="torch.manual_seed" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-function"><span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">SEED</span></a><span class="p">)</span>
@@ -393,7 +399,7 @@ stack. One optimizer updates all of its weights together.</p>
 </section>
 <section id="step-3-define-the-bellman-equation-loss">
 <h3>Step 3: Define the Bellman-equation loss<a class="headerlink" href="#step-3-define-the-bellman-equation-loss" title="Link to this heading">¶</a></h3>
-<p><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code> evaluates the residual of
+<p><a class="reference internal" href="../../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a> evaluates the residual of
 <span class="math notranslate nohighlight">\(V(m) = u(c) + \beta \mathbb{E}[V(m')]\)</span> using the network’s own value
 head. <code class="docutils literal notranslate"><span class="pre">foc_weight=1.0</span></code> adds the first-order-condition term (Maliar et al.
 2021, eq. 14), which speeds convergence.</p>
@@ -533,7 +539,7 @@ The lower panel shows the pointwise relative error at the deepest snapshot.</p>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../../_images/sphx_glr_plot_train_against_known_solution_001.png" srcset="../../_images/sphx_glr_plot_train_against_known_solution_001.png" alt="Trained policy converges onto the analytical PIH solution (U-2)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 23.625 seconds)</p>
+<img src="../../_images/sphx_glr_plot_train_against_known_solution_001.png" srcset="../../_images/sphx_glr_plot_train_against_known_solution_001.png" alt="Trained policy converges onto the analytical PIH solution (U-2)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 25.087 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-algorithms-plot-train-against-known-solution-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/1a863498f9cb1cec78d453f5d5b0c1ad/plot_train_against_known_solution.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_train_against_known_solution.ipynb</span></code></a></p>
@@ -555,23 +561,23 @@ The lower panel shows the pointwise relative error at the deepest snapshot.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="plot_sb3_ppo.html">
+          <a class="next-page" href="plot_maliar_training_loop.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">PPO via Stable-Baselines3 on the D-2 Benchmark</div>
+                <div class="title">The Maliar Training Loop on a Model With No Closed-Form Solution</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="plot_maliar_training_loop.html">
+          <a class="prev-page" href="index.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">The Maliar Training Loop on a Model With No Closed-Form Solution</div>
+                <div class="title">Algorithms</div>
                 
               </div>
             </a>
@@ -579,7 +585,7 @@ The lower panel shows the pointwise relative error at the deepest snapshot.</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, scikit-agent Team
+                Copyright &#169; 2026, scikit-agent Team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -635,7 +641,7 @@ The lower panel shows the pointwise relative error at the deepest snapshot.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=012e414b"></script>
+</div><script src="../../_static/documentation_options.js?v=b101728d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
