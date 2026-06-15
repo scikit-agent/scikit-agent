@@ -154,7 +154,7 @@ def compute_gradients_for_tensors(
     tensors_dict: dict[str, torch.Tensor],
     wrt: dict[str, torch.Tensor],
     create_graph: bool = False,
-) -> dict[str, dict[str, torch.Tensor | None]]:
+) -> dict[str, dict[str, torch.Tensor]]:
     """
     Compute gradients for a dictionary of tensors with respect to variables.
 
@@ -186,32 +186,48 @@ def compute_gradients_for_tensors(
 
     Returns
     -------
-    dict[str, dict[str, torch.Tensor | None]]
+    dict[str, dict[str, torch.Tensor]]
         Nested dictionary of gradients for each tensor symbol and variable:
-        ``{tensor_sym: {var_name: gradient}}``. Gradient is ``None`` if and
-        only if the variable does not require gradients or no computational
-        graph path exists from the variable to the target tensor. A zero
-        tensor is returned when the dependency exists but evaluates to zero.
-        Callers should treat ``None`` as structural independence, not as a
-        zero gradient.
-    """
-    from torch.autograd import grad
+        ``{tensor_sym: {var_name: gradient}}``. A variable with no
+        computational graph path to the target receives a zero tensor,
+        which is the value of the partial derivative under structural
+        independence.
 
-    gradients: dict[str, dict[str, torch.Tensor | None]] = {}
+    Raises
+    ------
+    ValueError
+        If a ``wrt`` tensor does not have ``requires_grad=True``.
+    """
+    for var_name, var_tensor in wrt.items():
+        if not var_tensor.requires_grad:
+            raise ValueError(
+                f"Variable '{var_name}' in wrt does not require gradients. "
+                "Set requires_grad=True on the tensor before differentiating."
+            )
+
+    def _zeros(var_tensor: torch.Tensor) -> torch.Tensor:
+        # Under create_graph=True the zero must stay graph-connected so
+        # higher-order differentiation through it remains possible.
+        return var_tensor * 0 if create_graph else torch.zeros_like(var_tensor)
+
+    gradients: dict[str, dict[str, torch.Tensor]] = {}
     for tensor_sym, target_tensor in tensors_dict.items():
         gradients[tensor_sym] = {}
         for var_name, var_tensor in wrt.items():
-            if not var_tensor.requires_grad:
-                gradients[tensor_sym][var_name] = None
+            if not target_tensor.requires_grad:
+                # The target has no graph at all, so every partial is zero.
+                gradients[tensor_sym][var_name] = _zeros(var_tensor)
                 continue
 
-            grad_result = grad(
+            grad_result = torch.autograd.grad(
                 target_tensor.sum(),
                 var_tensor,
                 retain_graph=True,
                 create_graph=create_graph,
                 allow_unused=True,
-            )
-            gradients[tensor_sym][var_name] = grad_result[0]
+            )[0]
+            if grad_result is None:
+                grad_result = _zeros(var_tensor)
+            gradients[tensor_sym][var_name] = grad_result
 
     return gradients
