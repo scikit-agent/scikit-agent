@@ -31,6 +31,8 @@ u(c)                : period utility function
 TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality condition)
 """
 
+from __future__ import annotations
+
 from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
 from skagent.block import Control, DBlock
 import copy

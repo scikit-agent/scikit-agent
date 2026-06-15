@@ -27,6 +27,28 @@ Material in the `examples/` directory is built using Sphinx into documentation
 in `docs/auto_examples`. Please keep the built documentation synced with the raw
 source material.
 
+### Pull requests
+
+We welcome pull requests from contributors.
+
+We refer to existing best practice for guidelines about how to write a good PR.
+[1](https://zulip.readthedocs.io/en/latest/contributing/reviewable-prs.html)
+[2](https://microsoft.github.io/code-with-engineering-playbook/code-reviews/pull-requests/)
+[3](https://engineering.joinknack.com/art-and-science-of-reviewable-prs/)
+
+As rules of thumb, please:
+
+- Clearly explain the contributions of the PR, referring to existing issues
+  solved or addressed by it, if applicable.
+- Take responsibility for adherence to coding standards, and for passing
+  automated tests, linters, and documentation builds.
+- Keep PRs as small and focused as possible. Do not include changes that are
+  unrelated to the PR scope, and try to narrow the scope of each PR. This makes
+  it easier to quickly and thoroughly review your PR.
+- Write clear and concise commit messages for each commit in the PR
+- Explicitly ask questions or raise concerns for community feedback, if
+  appropriate
+
 ## Code of Conduct
 
 We have adopted the NumFOCUS

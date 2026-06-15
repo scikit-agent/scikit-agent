@@ -8,11 +8,11 @@ name = "scikit-agent"
 authors = [
   { name = "scikit-agent Team", email = "spb413@nyu.edu" },
 ]
-description = "A great package."
+description = "Specify, solve, and simulate dynamic stochastic optimization problems."
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
-  "Development Status :: 1 - Planning",
+  "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
@@ -41,7 +41,7 @@ dependencies = [
   "scipy",
   "stable-baselines3",
   "sympy",
-  "torch",
+  "torch >=2.0",
   "xarray",
 ]
 
@@ -60,6 +60,7 @@ docs = [
   "myst_parser>=0.13",
   "sphinx_copybutton",
   "sphinx_autodoc_typehints",
+  "sphinx-autobuild",
   "furo>=2023.08.17",
   "sphinx-gallery",
   "sphinx-design",

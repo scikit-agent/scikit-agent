@@ -15,15 +15,17 @@ blocks:
   agents act
 - **RBlock (Recursive Block)**: Combines multiple blocks into a more complex
   block
-- **Bellman Block**: A period of a dynamic model
+- **BellmanPeriod**: Wraps a block (it is not itself a `Block`) together with a
+  discount variable and calibration, turning it into one period of a dynamic
+  program
 
 These blocks all define the ways that _variables_ change. The relationships
 between variables are defined in terms of _structural equations_, which in
 scikit-agent are represented as functions.
 
 Some variables are reserved as **control** variables, which are assigned to
-particular agent roles. Agents can choose a decision rule to decide their action
-at each of their control variables.
+particular agent roles. Agents choose a decision rule that determines the value
+of each of their control variables.
 
 Some variables are reserved as **reward** variables, which provide the agent
 _utility_ or incentive.
@@ -70,17 +72,19 @@ consumption_block = ska.DBlock(
 )
 ```
 
-This corresponds to the following mathematical model:
-
-<!--- correct? --->
+This corresponds to the following mathematical model, where the income shock
+$\theta$ is a mean-one lognormal with log-space standard deviation
+$\sigma = 0.1$:
 
 $$
-    \theta &\sim LogNormal(1, 0.1) \\
+\begin{aligned}
+    \log \theta &\sim \mathcal{N}(-\sigma^2 / 2,\ \sigma^2) \\
     y &= p \theta \\
     m &= b_{-1} + y \\
     c &= c(m) \\
     a &= m - c \\
-    u &= log(c) \\
+    u &= \log(c)
+\end{aligned}
 $$
 
 Here, the agent can choose its level of consumption $c$ given an _information
@@ -126,20 +130,27 @@ consumption_control = ska.Control(
 
 #### Calibration
 
+Shock parameters can be given as strings naming calibration parameters rather
+than as literal values. Calling `construct_shocks` with a calibration dictionary
+then builds the actual distributions:
+
 ```python
+income_block = ska.DBlock(
+    name="income",
+    shocks={"theta": (MeanOneLogNormal, {"sigma": "TranShkStd"})},
+    dynamics={"y": lambda p, theta: p * theta},
+)
+
 calibration = {
     "CRRA": 2.0,  # Risk aversion
     "DiscFac": 0.96,  # Discount factor
     "Rfree": 1.03,  # Risk-free rate
-    "EqP": 0.06,  # Equity premium
-    "RiskyStd": 0.20,  # Stock volatility
     "PermGroFac": 1.01,  # Permanent income growth
     "TranShkStd": 0.1,  # Transitory shock std
-    "PermShkStd": 0.05,  # Permanent shock std
 }
 
 # Apply calibration to construct actual distributions
-portfolio_block.construct_shocks(calibration)
+income_block.construct_shocks(calibration)
 ```
 
 #### String-Based Dynamics
@@ -171,15 +182,28 @@ retirement_block = ska.DBlock(
 
 # Life-cycle model
 lifecycle_model = ska.RBlock(
-    name="lifecycle_model", blocks=[portfolio_block, retirement_block]
+    name="lifecycle_model", blocks=[consumption_block, retirement_block]
 )
 ```
 
 _TODO: Discussion of how the blocks connect -- arrival states, again._
 
-### Bellman Blocks
+### Bellman Periods
 
-_TODO: about bellman blocks -- how these become MDPs_
+A `BellmanPeriod` (from `skagent.bellman`) wraps a block together with its
+discount variable and calibration, turning the block into one period of a
+dynamic stochastic optimization problem. The wrapped period exposes the reward,
+transition, and gradient functions that the neural network solution methods and
+loss functions consume:
+
+```python
+from skagent.bellman import BellmanPeriod
+
+bp = BellmanPeriod(consumption_block, "DiscFac", calibration)
+```
+
+See the {doc}`../api/bellman` reference for the period timing notation (arrival
+states, shocks, pre-decision states, controls, and rewards) and the full API.
 
 <!---
 ## Building Custom Models
@@ -314,35 +338,37 @@ aggregate_shock_block = ska.DBlock(
 
 ```python
 # Get all variables in the model
-variables = portfolio_block.get_vars()
+variables = consumption_block.get_vars()
 print("Model variables:", variables)
 
 # Get control variables
-controls = portfolio_block.get_controls()
-print("Control variables:", controls)
+controls = consumption_block.get_controls()
+print("Control variables:", list(controls.keys()))
 
 # Get shock variables
-shocks = portfolio_block.get_shocks()
+shocks = consumption_block.get_shocks()
 print("Shock variables:", list(shocks.keys()))
 ```
 
 ### Testing Model Dynamics
 
+The `transition` method advances the block by one period from a dictionary of
+arrival states and realized shock values:
+
 ```python
-# Test model transition with simple decision rules
+# Arrival states and a realized shock value
 pre_state = {
-    "m": 2.0,
+    "b": 1.0,
     "p": 1.0,
-    "a_prev": 1.0,
+    "theta": 1.0,
 }
 
 decision_rules = {
     "c": lambda m: 0.8 * m,
-    "alpha": lambda a: 0.6,  # 60% in risky asset
 }
 
 # Simulate one period
-post_state = portfolio_block.transition(pre_state, decision_rules)
+post_state = consumption_block.transition(pre_state, decision_rules)
 print("Post-transition state:", post_state)
 ```
 
@@ -393,6 +419,11 @@ def make_consumption_block(calibration=None):
 
 ## Common Patterns
 
+Recall that a variable referenced before it is assigned within a block is an
+arrival state: in the habit block below, the `h` appearing in the information
+set of `c` and in `x` is last period's habit stock, while the final equation
+assigns this period's value.
+
 ### Habit Formation Models
 
 ```python
@@ -401,7 +432,7 @@ habit_block = ska.DBlock(
         "c": ska.Control(["m", "h"]),
         "x": lambda c, h: c / h,  # Consumption relative to habit
         "u": lambda x, CRRA: x ** (1 - CRRA) / (1 - CRRA),
-        "h": lambda h_prev, c_prev, rho: rho * h_prev + (1 - rho) * c_prev,
+        "h": lambda h, c, rho: rho * h + (1 - rho) * c,  # Habit stock update
     }
 )
 ```
@@ -413,9 +444,10 @@ durables_block = ska.DBlock(
     dynamics={
         "c_nd": ska.Control(["m"]),  # Non-durable consumption
         "i_d": ska.Control(["m", "d"]),  # Durable investment
-        "d": lambda d_prev, i_d, delta: (1 - delta) * d_prev + i_d,  # Durable stock
+        "d": lambda d, i_d, delta: (1 - delta) * d + i_d,  # Durable stock
         "c_d": lambda d: d,  # Durable services
-        "u": lambda c_nd, c_d, alpha: (c_nd**alpha * c_d ** (1 - alpha)) ** (1 - CRRA)
+        "u": lambda c_nd, c_d, alpha, CRRA: (c_nd**alpha * c_d ** (1 - alpha))
+        ** (1 - CRRA)
         / (1 - CRRA),
     }
 )

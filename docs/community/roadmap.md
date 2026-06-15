@@ -24,7 +24,7 @@ environments and plan to do so in future releases.
   enable agents to interact both interpersonally and through aggregate
   structures, such as markets.
 - **Multiple agent roles**. We will support models with agents varying widely in
-  roles, including different reward and action spaces.
+  roles, including different reward and control spaces.
 - **Strategic equilibrium solvers**. Efficiently solving for strategic
   equilibrium between multiple agents.
 

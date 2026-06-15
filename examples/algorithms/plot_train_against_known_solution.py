@@ -27,15 +27,18 @@ below. Working in ratios to permanent income, the state is normalized assets
     V(m) = \max_{c} \; u(c) + \beta \, \mathbb{E}\!\left[ V(m') \right],
 
 with constant-relative-risk-aversion utility :math:`u` and discount factor
-:math:`\beta`. For this calibration the optimal policy is linear in
+:math:`\beta`. For this calibration the optimal policy is affine in
 cash-on-hand,
 
 .. math::
 
-    c^*(m) = \kappa \, m,
+    c^*(m) = \kappa \, (m + h),
 
-where the marginal propensity to consume :math:`\kappa` has a closed form. This
-gives us an exact target to check the trained policy against.
+where both the marginal propensity to consume :math:`\kappa = 1 - \beta` and
+the normalized human wealth :math:`h = 1/r` have closed forms. At this
+calibration :math:`h = 1/0.03 \approx 33.3`, so the intercept :math:`\kappa h`
+dominates and the consumption function is nearly flat over the training
+range. This gives us an exact target to check the trained policy against.
 
 Why a value head: the level-identification problem
 ===================================================

@@ -106,7 +106,7 @@ git push origin main
 
 ```bash
 # Build docs locally
-pip install ".[docs]"
+uv pip install ".[docs]"
 cd docs
 python -m sphinx -b html . _build
 

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import datetime
 import importlib.metadata
 from typing import Any
 
 project = "scikit-agent"
-copyright = "2025, scikit-agent Team"
+copyright = f"{datetime.date.today().year}, scikit-agent Team"
 author = "scikit-agent Team"
 version = release = importlib.metadata.version("scikit_agent")
 
@@ -25,7 +26,7 @@ sphinx_gallery_conf = {
     "gallery_dirs": "auto_examples",  # path to gallery generated output
     "filename_pattern": "/plot_",  # pattern to match example files
     "ignore_pattern": r"__init__\.py",  # patterns to ignore
-    "plot_gallery": "True",  # create a gallery
+    "plot_gallery": True,  # create a gallery
     "download_all_examples": False,  # don't create zip downloads by default
     "remove_config_comments": True,  # remove config comments from examples
     "expected_failing_examples": [],  # list of examples expected to fail
@@ -101,7 +102,6 @@ html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 
 # Auto-generated API docs
-autosummary_generate = True
 autodoc_typehints = "description"
 autodoc_typehints_description_target = "documented"
 
