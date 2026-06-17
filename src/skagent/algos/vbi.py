@@ -26,17 +26,100 @@ def get_action_rule(action):
 
 def ar_from_data(da):
     """
-    Produce a function from any inputs to a given value.
-    This is useful for constructing decision rules with fixed actions.
-    """
+    Build a decision rule from a fitted policy ``DataArray``.
 
-    def ar(**args):
-        return da.interp(**args).values.tolist()
+    The returned rule follows the library's decision-rule calling convention:
+    it takes the control's information-set values as *positional* arguments, in
+    the order of ``da.dims`` (which :func:`solve` aligns to the control's
+    ``iset``). This matches how ``block.transition`` invokes a rule,
+    ``dr(*[vals[v] for v in iset])``, so a VBI-fitted rule is a drop-in for the
+    rest of the stack.
+
+    Interpolation runs in numpy/xarray space. Scalar arguments return a Python
+    scalar; array-like arguments are interpolated *pointwise* (not as an outer
+    product) and return a numpy array. For a torch-tensor interface, wrap this
+    with :func:`tensor_decision_rule`.
+    """
+    dims = list(da.dims)
+
+    def ar(*args):
+        if len(args) != len(dims):
+            raise TypeError(
+                f"decision rule for dims {dims} expects {len(dims)} positional "
+                f"argument(s), got {len(args)}"
+            )
+        if len(dims) == 0:
+            # empty information set: a constant rule
+            return da.values.tolist()
+
+        batched = any(np.ndim(a) > 0 for a in args)
+        if batched:
+            # vectorized (pointwise) interpolation: share a single dimension
+            # across all coordinate indexers so xarray does not take the outer
+            # product of the inputs.
+            coords = {
+                dim: xr.DataArray(np.asarray(arg).ravel(), dims="_point")
+                for dim, arg in zip(dims, args)
+            }
+            return da.interp(**coords).values
+
+        coords = {dim: arg for dim, arg in zip(dims, args)}
+        return da.interp(**coords).values.tolist()
 
     return ar
 
 
+def tensor_decision_rule(np_rule, dtype=None, device=None):
+    """
+    Wrap a numpy-space decision rule (e.g. from :func:`ar_from_data`, including
+    the rules returned by :func:`solve`) so it speaks torch tensors, for interop
+    with the torch solving stack (``BellmanPeriod`` / ``loss`` / ``solver``).
+
+    Inputs may be torch tensors or numpy/scalars; outputs are torch tensors.
+    Because interpolation runs in numpy, the graph is *severed*: the returned
+    controls are detached. This rule is therefore valid as a fixed /
+    ground-truth / warm-start policy (e.g. an ``other_dr`` or in a value-
+    residual loss), but not as a trainable policy in a loss that differentiates
+    through the control (FOC-weighted Bellman, Euler).
+
+    Defaults to float32 on the stack's device to match grid tensors
+    (``grid.py`` builds them with ``torch.FloatTensor``).
+    """
+    import torch
+    from skagent.grid import device as default_device
+
+    dtype = torch.float32 if dtype is None else dtype
+    device = default_device if device is None else device
+
+    def tdr(*args):
+        np_args = [a.detach().cpu().numpy() if torch.is_tensor(a) else a for a in args]
+        out = np_rule(*np_args)
+        return torch.as_tensor(np.asarray(out), dtype=dtype, device=device)
+
+    return tdr
+
+
 Grid = Mapping[str, Sequence]
+
+
+def align_to_iset(da, iset):
+    """
+    Reduce a fitted policy ``DataArray`` to a control's information set.
+
+    The state grid may carry dimensions outside the control's ``iset`` (e.g. a
+    shock that only enters the transition, like ``psi`` in conftest ``case_3``).
+    A decision rule is a function of the iset alone, so those extra dimensions
+    are reduced by selecting the first slice. This assumes the optimal policy
+    does not vary across non-iset dimensions, which is exactly what it means for
+    a variable to be outside the information set. Remaining dimensions are
+    ordered to match ``iset`` so positional calls line up.
+    """
+    non_iset = [d for d in da.dims if d not in iset]
+    if non_iset:
+        da = da.isel({d: 0 for d in non_iset})
+    if iset:
+        da = da.transpose(*iset)
+    return da
 
 
 def grid_to_data_array(
@@ -171,12 +254,11 @@ def solve(
                 f"Value backup iteration is not yet implemented for stages with {len(controls)} > 1 control variables."
             )
 
-    # use the xarray interpolator to create a decision rule.
+    # use the xarray interpolator to create a decision rule, reduced to each
+    # control's information set so the rule is a function of the iset alone.
     dr_from_data = {
-        c: ar_from_data(
-            policy_data
-        )  # maybe needs to be more sensitive to the information set
-        for i, c in enumerate(controls)
+        c: ar_from_data(align_to_iset(policy_data, list(block.dynamics[c].iset)))
+        for c in controls
     }
 
     dec_vf = block.get_decision_value_function(dr_from_data, continuation)

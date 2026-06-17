@@ -11,8 +11,11 @@ from conftest import (
 import skagent.algos.vbi as vbi
 from skagent.distributions import Bernoulli
 from skagent.block import Control, DBlock
+from skagent.loss import BellmanEquationLoss
+from skagent.grid import device
 import skagent.models.consumer as cons
 import numpy as np
+import torch
 import unittest
 
 
@@ -57,7 +60,7 @@ class test_vbi(unittest.TestCase):
 
         dr, dec_vf, arr_vf = vbi.solve(block_1, lambda a: a, state_grid)
 
-        self.assertAlmostEqual(dr["c"](**{"m": 1}), 0.5)
+        self.assertAlmostEqual(dr["c"](1), 0.5)
 
     def test_solve_block_2(self):
         # no control variable case.
@@ -81,7 +84,7 @@ class test_vbi(unittest.TestCase):
             calibration=cons.calibration,
         )
 
-        self.assertAlmostEqual(dr["c"](**{"m": 1.5}), 1.5)
+        self.assertAlmostEqual(dr["c"](1.5), 1.5)
 
 
 # Terminal continuation: the value of arriving at the next block is zero.
@@ -117,7 +120,7 @@ class test_vbi_conftest(unittest.TestCase):
             calibration=case_0["calibration"],
         )
         for a in [0.2, 0.7, 1.3, 1.8]:
-            self.assertAlmostEqual(dr["c"](a=a), 0.0, delta=self.ATOL)
+            self.assertAlmostEqual(dr["c"](a), 0.0, delta=self.ATOL)
 
     def test_case_1_shock_dependent_policy(self):
         # u = -(theta - c)^2 with theta in the information set -> c* = theta
@@ -132,7 +135,7 @@ class test_vbi_conftest(unittest.TestCase):
             calibration=case_1["calibration"],
         )
         for theta in [-0.6, 0.0, 0.4, 0.9]:
-            self.assertAlmostEqual(dr["c"](a=0.5, theta=theta), theta, delta=self.ATOL)
+            self.assertAlmostEqual(dr["c"](0.5, theta), theta, delta=self.ATOL)
 
     def test_case_3_consume_cash_on_hand(self):
         # u = -(m - c)^2 -> c* = m. The arrival state ``a`` depends on the psi
@@ -148,7 +151,7 @@ class test_vbi_conftest(unittest.TestCase):
             calibration=case_3["calibration"],
         )
         for m in [0.5, 1.0, 1.5]:
-            self.assertAlmostEqual(dr["c"](m=m, psi=0.0), m, delta=self.ATOL)
+            self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
 
     def test_case_5_double_bounded_upper_binds(self):
         # maximize c subject to 0 <= c <= a -> c* = a (upper bound binds)
@@ -160,7 +163,7 @@ class test_vbi_conftest(unittest.TestCase):
             calibration=case_5["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a=a), a, delta=self.ATOL)
+            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
 
     def test_case_6_double_bounded_lower_binds(self):
         # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds)
@@ -172,7 +175,7 @@ class test_vbi_conftest(unittest.TestCase):
             calibration=case_6["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a=a), a, delta=self.ATOL)
+            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
 
     def test_case_7_only_lower_bound(self):
         # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
@@ -185,7 +188,7 @@ class test_vbi_conftest(unittest.TestCase):
             calibration=case_7["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a=a), 1.0, delta=self.ATOL)
+            self.assertAlmostEqual(dr["c"](a), 1.0, delta=self.ATOL)
 
     def test_case_8_only_upper_bound(self):
         # maximize c subject to c <= a (no lower bound) -> c* = a.
@@ -198,7 +201,7 @@ class test_vbi_conftest(unittest.TestCase):
             calibration=case_8["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a=a), a, delta=self.ATOL)
+            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
 
     def test_case_9_empty_information_set(self):
         # u = -(c - 3)^2 with an empty information set -> constant c* = 3
@@ -211,3 +214,63 @@ class test_vbi_conftest(unittest.TestCase):
         )
         # empty iset -> the rule is constant across the grid
         self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
+
+
+class test_vbi_protocol(unittest.TestCase):
+    """
+    Phase 1 deliverable: a VBI-fitted decision rule is a drop-in for the
+    torch-based ``BellmanPeriod`` stack.
+
+    ``vbi.solve`` returns numpy/xarray-space decision rules (positional, in
+    information-set order). ``vbi.tensor_decision_rule`` wraps each so it
+    accepts and returns torch tensors. The wrapped dict then flows, unmodified,
+    through ``BellmanPeriod.compute_controls`` and ``BellmanEquationLoss``.
+    """
+
+    def _solve_tensor_dr(self, case, state_grid):
+        dr, _, _ = vbi.solve(
+            case["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case["calibration"],
+        )
+        return {c: vbi.tensor_decision_rule(rule) for c, rule in dr.items()}
+
+    def test_compute_controls_roundtrip(self):
+        # case_0: u = -c^2, iset = [a] -> c* = 0. The tensorized VBI rule, fed
+        # to BellmanPeriod.compute_controls as a dict of decision rules, returns
+        # a float32 tensor of optimal controls on the batch of states.
+        dr_t = self._solve_tensor_dr(case_0, {"a": np.linspace(0, 2, 11)})
+
+        a = torch.linspace(0.2, 1.8, 5, device=device)
+        controls = case_0["bp"].compute_controls(
+            dr_t, {"a": a}, shocks={}, parameters=case_0["calibration"]
+        )
+
+        self.assertIn("c", controls)
+        self.assertEqual(controls["c"].dtype, torch.float32)
+        self.assertEqual(controls["c"].shape, a.shape)
+        self.assertTrue(torch.allclose(controls["c"], torch.zeros_like(a), atol=1e-3))
+
+    def test_bellman_equation_loss_roundtrip(self):
+        # case_1: u = -(theta - c)^2, iset = [a, theta] -> c* = theta. Under a
+        # zero continuation the VBI policy is exactly optimal, so V(s) = 0 and
+        # the Bellman residual u + beta*E[V(s')] - V(s) vanishes. We only assert
+        # the loss is finite and (here) ~0 -- the point is that the VBI dr is a
+        # valid ``df`` for BellmanEquationLoss.
+        dr_t = self._solve_tensor_dr(
+            case_1,
+            {"a": np.linspace(0, 1, 7), "theta": np.linspace(-1, 1, 7)},
+        )
+
+        def zero_value_function(states, shocks, parameters):
+            return torch.zeros_like(states["a"])
+
+        loss_fn = BellmanEquationLoss(
+            case_1["bp"], zero_value_function, parameters=case_1["calibration"]
+        )
+        # givens[2] carries a, theta_0, theta_1 (two independent shock draws)
+        loss = loss_fn(dr_t, case_1["givens"][2])
+
+        self.assertTrue(torch.isfinite(loss).all())
+        self.assertLess(float(loss.mean()), 1e-3)
