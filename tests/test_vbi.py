@@ -81,7 +81,7 @@ class test_vbi(unittest.TestCase):
             lambda a: 0,
             state_grid,
             disc_params={"theta": {"N": 7}},
-            calibration=cons.calibration,
+            scope=cons.calibration,
         )
 
         self.assertAlmostEqual(dr["c"](1.5), 1.5)
@@ -117,7 +117,7 @@ class test_vbi_conftest(unittest.TestCase):
             case_0["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_0["calibration"],
+            scope=case_0["calibration"],
         )
         for a in [0.2, 0.7, 1.3, 1.8]:
             self.assertAlmostEqual(dr["c"](a), 0.0, delta=self.ATOL)
@@ -132,23 +132,21 @@ class test_vbi_conftest(unittest.TestCase):
             case_1["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_1["calibration"],
+            scope=case_1["calibration"],
         )
         for theta in [-0.6, 0.0, 0.4, 0.9]:
             self.assertAlmostEqual(dr["c"](0.5, theta), theta, delta=self.ATOL)
 
     def test_case_3_consume_cash_on_hand(self):
-        # u = -(m - c)^2 -> c* = m. The arrival state ``a`` depends on the psi
-        # shock, so psi must be in the grid for the transition to evaluate.
-        state_grid = {
-            "m": np.linspace(0.1, 2, 7),
-            "psi": np.array([0.0]),
-        }
+        # u = -(m - c)^2 -> c* = m. The grid is just the iset, [m]. The arrival
+        # state ``a`` depends on the psi shock, so psi is supplied via the
+        # calibration (it only enters the transition, not the decision).
+        state_grid = {"m": np.linspace(0.1, 2, 7)}
         dr, _, _ = vbi.solve(
             case_3["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_3["calibration"],
+            scope={**case_3["calibration"], "psi": 0.0},
         )
         for m in [0.5, 1.0, 1.5]:
             self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
@@ -160,7 +158,7 @@ class test_vbi_conftest(unittest.TestCase):
             case_5["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_5["calibration"],
+            scope=case_5["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
@@ -172,7 +170,7 @@ class test_vbi_conftest(unittest.TestCase):
             case_6["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_6["calibration"],
+            scope=case_6["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
@@ -185,7 +183,7 @@ class test_vbi_conftest(unittest.TestCase):
             case_7["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_7["calibration"],
+            scope=case_7["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), 1.0, delta=self.ATOL)
@@ -198,19 +196,23 @@ class test_vbi_conftest(unittest.TestCase):
             case_8["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_8["calibration"],
+            scope=case_8["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
 
     def test_case_9_empty_information_set(self):
-        # u = -(c - 3)^2 with an empty information set -> constant c* = 3
-        state_grid = {"a": np.linspace(0, 2, 5)}
+        # u = -(c - 3)^2 with an empty information set -> constant c* = 3.
+        # The iset is empty, so the grid is empty too (contract: grid == iset).
+        # The arrival state ``a`` (which the continuation ranges over) is value-
+        # irrelevant under terminal continuation, so it is supplied via the
+        # calibration rather than as a grid axis.
+        state_grid = {}
         dr, _, _ = vbi.solve(
             case_9["block"],
             terminal_continuation,
             state_grid,
-            calibration=case_9["calibration"],
+            scope={**case_9["calibration"], "a": 0.0},
         )
         # empty iset -> the rule is constant across the grid
         self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
@@ -232,7 +234,7 @@ class test_vbi_protocol(unittest.TestCase):
             case["block"],
             terminal_continuation,
             state_grid,
-            calibration=case["calibration"],
+            scope=case["calibration"],
         )
         return {c: vbi.tensor_decision_rule(rule) for c, rule in dr.items()}
 
