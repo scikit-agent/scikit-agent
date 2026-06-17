@@ -83,16 +83,55 @@ the legacy `solve(block, continuation, …)` untouched. The legacy path is the
 deliberate "user controls their own discount factor by folding it into the
 continuation" feature, now documented as the explicit alternative to β.
 
-### Phase 1 — Protocol adapter (no solver-internals change)
+### Phase 1 — Protocol adapter (no solver-internals change) ✅ DONE
 
-- Add a `df(states_t, shocks_t, parameters)`-shaped wrapper around the xarray
-  interpolation, replacing/supplementing `ar_from_data`.
-- Keep a thin back-compat shim for the existing `dr["c"](m=…)` keyword call so
-  the 11 tests keep passing (or migrate them in the same PR).
-- **Deliverable:** a VBI-fitted policy is a drop-in `df` for
-  `BellmanPeriod.compute_controls`, `loss.BellmanEquationLoss`, and `solver`.
-- **Test:** round-trip a VBI `dr` through `BellmanPeriod.compute_controls` and
-  one `BellmanEquationLoss.__call__`.
+Insight that simplified the plan: the library is two-tiered — a low-level
+**decision rule** called positionally in `control.iset` order
+(`block.transition` does `dr[sym](*[vals[v] for v in iset])`; `BlockPolicyNet`
+matches), and a higher-level **decision function**
+`df(states, shocks, parameters)` built on top of it via `compute_pre_state`.
+`ar_from_data` was already a _rule_ generator; it only used the wrong calling
+convention (`ar(**kwargs)` instead of positional). So Phase 1 was a convention
+fix, not a new `df` wrapper — the `df` falls out of the existing
+`compute_pre_state` + rule composition, exactly as the nets get theirs.
+
+Implemented:
+
+- **`ar_from_data(da)`** rewritten to the library convention: positional args in
+  `da.dims` order, numpy/xarray space, scalar→scalar and array→pointwise
+  (shared-dim indexers, not outer product). Empty iset → constant rule.
+- **`tensor_decision_rule(np_rule)`** (new) wraps any numpy rule for the torch
+  stack: tensor in/out, float32 on the grid device, **detached** (numpy interp
+  severs the graph). Valid as a fixed / ground-truth / warm-start policy, not as
+  a trainable FOC/Euler policy.
+- **`solve`** builds each rule from `policy_data.transpose(*control.iset)`, so
+  it owns the contract that the rule's positional args follow `control.iset`
+  regardless of the caller's grid order. (No `align_to_iset` reduction — see
+  Phase 2.)
+- Migrated all VBI tests to the positional convention; added `test_vbi_protocol`
+  round-tripping a tensorized VBI dr through `BellmanPeriod.compute_controls`
+  and `BellmanEquationLoss.__call__`. 13 passing.
+
+**Semantics noted while doing this (older code, divergent from the rest of the
+library):**
+
+- **Full observation.** `solve`'s per-point optimization wraps the candidate
+  action as a _constant_ rule and never integrates over anything — it assumes
+  the iset is sufficient (everything relevant is observed). The only expectation
+  machinery (`discretized_shock_dstn` + `expected`) lives in
+  `get_arrival_value_function`, unused by the optimization. This is why the VBI
+  test set skips `case_2` (hidden shock, optimum `c = E[theta] = 0`), and why
+  `case_3` only passes because `psi` is value-irrelevant under terminal
+  continuation. Hidden-shock / partial-observation problems are out of scope for
+  the legacy `solve`.
+- **`calibration` is a scope bag, not parameters.**
+  `pre_states = calibration.copy(); pre_states.update(state_point)` — so
+  `solve`'s `calibration` argument is the general _scope_ under which
+  dynamics/reward/ continuation are evaluated, and legacy usage puts fixed
+  exogenous values (e.g. a shock realization `psi`) there, not just
+  single-valued parameters. This is broader than `calibration` elsewhere in the
+  library. Read it as "scope" — hence the `solve` argument is renamed
+  `calibration` → `scope`.
 
 ### Phase 2 — Re-base the exact solver on `BellmanPeriod` (standalone completion)
 
@@ -109,6 +148,15 @@ uses `bp` for model mechanics instead of the `DBlock` continuation methods:
   vector with per-control bounds (gap #5); `BlockPolicyNet`'s bound handling is
   the reference. Stays _exact_ — distinct from `solver.solve_multiple_controls`,
   which is neural.
+- **Grid → per-control iset projection:** Phase 1 tightened `solve` so the state
+  grid equals the control's iset (extra scope vars go in `scope`), which works
+  only because terminal continuation makes those vars value-irrelevant. With a
+  real continuation and/or multiple controls, the state grid is legitimately
+  wider than any single control's iset (the value function ranges over all
+  arrival states; per-control isets differ), so `solve_bellman` must project the
+  gridded policy down to each control's iset. This is the reduction that Phase 1
+  removed (`isel` non-iset dims, assuming the optimum is invariant across them —
+  the definition of "outside the iset").
 - Then add **benchmark policy-matching tests** (e.g. D-3 VFI → `c = κ·m` with
   `κ = (R − (βR)^{1/σ})/R`), now expressible because the discounted recursion
   exists.
