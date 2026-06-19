@@ -247,8 +247,8 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
     controls = list(block.get_controls())
 
     # pseudo
-    policy_data = grid_to_data_array(state_grid)
-    value_data = grid_to_data_array(state_grid)
+    policy_array = grid_to_data_array(state_grid)
+    value_array = grid_to_data_array(state_grid)
 
     # loop through every point in the state grid
     for state_point in itertools.product(*state_grid.values()):
@@ -301,10 +301,10 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
             dr_best = {c: get_action_rule(res.x[i]) for i, c in enumerate(controls)}
 
             if res.success:
-                policy_data.sel(**state_vals).variable.data.put(
+                policy_array.sel(**state_vals).variable.data.put(
                     0, res.x[0]
                 )  # will only work for scalar actions
-                value_data.sel(**state_vals).variable.data.put(
+                value_array.sel(**state_vals).variable.data.put(
                     0, srv_function(pre_states, dr_best)
                 )
             else:
@@ -313,8 +313,8 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
 
                 dr_best = {c: get_action_rule(res.x[i]) for i, c in enumerate(controls)}
 
-                policy_data.sel(**state_vals).variable.data.put(0, res.x[0])  # ?
-                value_data.sel(**state_vals).variable.data.put(
+                policy_array.sel(**state_vals).variable.data.put(0, res.x[0])  # ?
+                value_array.sel(**state_vals).variable.data.put(
                     0, srv_function(pre_states, dr_best)
                 )
         elif len(controls) > 1:
@@ -327,7 +327,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
     # makes solve own the contract that the rule's positional arguments follow
     # control.iset, regardless of how the caller ordered the grid.
     dr_from_data = {
-        c: ar_from_data(policy_data.transpose(*block.dynamics[c].iset))
+        c: ar_from_data(policy_array.transpose(*block.dynamics[c].iset))
         for c in controls
     }
 
