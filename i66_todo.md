@@ -163,11 +163,17 @@ uses `bp` for model mechanics instead of the `DBlock` continuation methods:
 
 ### Phase 3 — Bridge / warm-start
 
-- Add `vbi_value_to_net(value_da, bp) -> BlockValueNet` and
-  `vbi_policy_to_net(policy_da, bp) -> BlockPolicyNet` that supervised-fit a net
-  to the exact grid solution.
+- Add `vbi_value_to_net(value_array, bp) -> BlockValueNet` and
+  `vbi_policy_to_net(policy_array, bp) -> BlockPolicyNet` that supervised-fit a
+  net to the exact grid solution.
 - Uses: warm-start `solver.solve_multiple_controls` (initialize nets near the
   exact solution); serve as ground truth in tests comparing neural-VFI output
   against the exact grid.
 - xarray stays VBI-internal; tensors only cross at the Phase-1 callable
   boundary.
+- **Harden the Mechanism-A invariance-assert tol.** Phase 2 ships a flat
+  absolute `1e-3` (test ATOL scale) for the "optimum is invariant across dropped
+  non-iset axes" check. Revisit here once real warm-start/ground-truth use
+  exercises differently-scaled models: make it a parameter and switch to a
+  relative-or-absolute combo (`spread < atol + rtol·|median|`) so the check does
+  not mis-fire on models whose control magnitudes are far from O(1).
