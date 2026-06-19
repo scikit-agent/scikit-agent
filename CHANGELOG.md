@@ -73,6 +73,19 @@ and this project adheres to
   (including its current upper-bound-only scope), how the mechanisms compose,
   and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
   now passes callable bounds, matching the enforced API.
+- `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
+  the per-iteration update of value-function iteration, re-basing the exact grid
+  solver off the legacy `DBlock` continuation API onto the protocol the torch
+  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
+  multi-reward summation (`get_reward_syms`), and empty-shock-safe
+  (deterministic) handling, with a per-point optimizer seed (warm-start, else
+  midpoint of finite bounds, else fallback). Returns
+  `(dr_from_data, value_array, policy_array)` with `policy_array` a
+  `dict[str, DataArray]`. This first slice handles a single control under the
+  grid-equals-information-set contract; multi-control, derived-pre-state
+  reindexing, internal shock discretization, and the `solve_bellman` iteration
+  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
+  deliberate discount-folded-into-continuation path).
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
@@ -115,13 +128,6 @@ and this project adheres to
 - Added the public `has_analytical_policy` registry helper to
   `skagent.models.benchmarks`, replacing duplicated closed-form checks in the
   tests and the gallery
-- Added an **Algorithms** user-guide page documenting the direct (non-recurring)
-  solve workflow — training a `BlockPolicyNet` against reward-based losses
-  (`StaticRewardLoss`, `EstimatedDiscountedLifetimeRewardLoss`) on benchmark
-  models (D-2, U-2), including multiple-control solves — with a runnable
-  `plot_direct_block_solve.py` gallery example
-- Expanded the Algorithms API reference with the `skagent.solver` and
-  `skagent.loss` modules and `skagent.ann.train_block_nn`
 
 ### Removed
 
@@ -152,10 +158,6 @@ and this project adheres to
 - Fixed the `CRRA` calibration in `perfect_foresight_normalized`: it was a
   1-tuple `(2.0,)`, which broke the CRRA utility power; it is now the scalar
   `2.0`.
-- Fixed `skagent.solver.solve_multiple_controls`, which previously crashed on
-  its default loss and passed incorrect arguments to `StaticRewardLoss`; it now
-  trains a policy network per control via a best-response sweep and returns the
-  trained decision rules.
 - `train_block_nn` now halts early with a warning on a non-finite (NaN/Inf) loss
   instead of continuing to train on poisoned weights.
 - Documentation correctness pass across `docs/` and the examples gallery: the
