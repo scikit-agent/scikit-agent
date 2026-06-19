@@ -27,6 +27,19 @@
 
   Cases 7 and 8 specifically validate the open-bound defaults (`±1e12`).
 
+- **Phase 2 PR1 — `vbi.bellman_step` core** (design §9 step 1). One exact value
+  backup on the `BellmanPeriod` protocol: single control, grid-equals-iset
+  (policy projection = `transpose(*iset)`), explicit β via
+  `resolve_discount_factor`, multi-reward summation over `get_reward_syms`,
+  empty-shock-safe, per-point `x0` (warm-start `x0_policy` → midpoint of finite
+  bounds → `x0` fallback). Returns `(dr_from_data, value_array, policy_array)`
+  with `policy_array` a `dict[str, DataArray]` (O1). Scope guards raise
+  `NotImplementedError` for multi-control (PR3), `disc_params` (PR6), grid≠iset
+  / derived-pre-state iset (PR2–3), and unsupplied hidden shocks. New
+  `test_vbi_bellman_step` class in `tests/test_vbi.py` (11 tests, all passing
+  alongside the existing 13): the seven conftest cases under terminal
+  continuation, plus return-contract, warm-start, and guard tests.
+
 ## Context — what `main` already provides
 
 Since this branch was first written, `main` landed a full torch-based solving
@@ -133,10 +146,17 @@ library):**
   library. Read it as "scope" — hence the `solve` argument is renamed
   `calibration` → `scope`.
 
-### Phase 2 — Re-base the exact solver on `BellmanPeriod` (standalone completion)
+### Phase 2 — Re-base the exact solver on `BellmanPeriod` (in progress)
 
-Add `vbi.solve_bellman(bp: BellmanPeriod, continuation_vf, state_grid, …)` that
-uses `bp` for model mechanics instead of the `DBlock` continuation methods:
+Sliced into seven small PRs — see `design.md` §9 for the per-PR breakdown,
+dependencies, and progress. **PR1 (`bellman_step` core) is done** (see Done
+above); PRs 2–7 add Mechanism-B reindex, multi-control, non-trivial
+continuation, the `solve_bellman` iteration loop + benchmark tests, internal
+shock discretization, and the protocol round-trip.
+
+The full Phase-2 target adds
+`vbi.solve_bellman(bp: BellmanPeriod, continuation_vf, state_grid, …)` that uses
+`bp` for model mechanics instead of the `DBlock` continuation methods:
 
 - **Explicit β:** backup becomes `r + β·cv`, β from
   `bp.resolve_discount_factor(post)` (closes gap #1). Keep legacy `solve` as the
