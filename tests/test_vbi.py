@@ -7,6 +7,7 @@ from conftest import (
     case_7,
     case_8,
     case_9,
+    case_10,
 )
 import skagent.algos.vbi as vbi
 from skagent.distributions import Bernoulli
@@ -15,6 +16,7 @@ from skagent.loss import BellmanEquationLoss
 from skagent.grid import device
 import skagent.models.consumer as cons
 import numpy as np
+import xarray as xr
 import torch
 import unittest
 
@@ -216,6 +218,146 @@ class test_vbi_conftest(unittest.TestCase):
         )
         # empty iset -> the rule is constant across the grid
         self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
+
+
+# Terminal continuation on the BellmanPeriod convention: V'(s') = 0 for all
+# next-period arrival states, shocks, and parameters. Distinct from the legacy
+# one-argument ``terminal_continuation`` above (which rides the DBlock API).
+def bp_terminal(states, shocks, parameters):
+    return 0.0
+
+
+class test_vbi_bellman_step(unittest.TestCase):
+    """
+    PR1 of the Phase-2 design (§9 step 1): ``vbi.bellman_step`` — one exact value
+    backup on the ``BellmanPeriod`` protocol, single control, grid-equals-iset.
+
+    Under a terminal (zero) continuation each conftest case reduces to a single
+    backward-induction step whose optimum is the case's analytic ``optimal_dr``.
+    These mirror ``test_vbi_conftest`` (which exercises legacy ``solve``) but
+    drive ``bellman_step`` and assert its 3-tuple return contract.
+    """
+
+    # The optima here are all linear, so grid interpolation is exact and scipy's
+    # optimizer is the only error source.
+    ATOL = 1e-3
+
+    def _step(self, case, state_grid, scope):
+        return vbi.bellman_step(case["bp"], bp_terminal, state_grid, scope=scope)
+
+    def test_case_0_interior_optimum(self):
+        # u = -c^2, unconstrained -> c* = 0 for all a
+        dr, _, _ = self._step(
+            case_0, {"a": np.linspace(0, 2, 11)}, case_0["calibration"]
+        )
+        for a in [0.2, 0.7, 1.3, 1.8]:
+            self.assertAlmostEqual(dr["c"](a), 0.0, delta=self.ATOL)
+
+    def test_case_1_shock_dependent_policy(self):
+        # u = -(theta - c)^2 with theta an OBSERVED shock in the iset -> c* = theta
+        dr, _, _ = self._step(
+            case_1,
+            {"a": np.linspace(0, 1, 7), "theta": np.linspace(-1, 1, 7)},
+            case_1["calibration"],
+        )
+        for theta in [-0.6, 0.0, 0.4, 0.9]:
+            self.assertAlmostEqual(dr["c"](0.5, theta), theta, delta=self.ATOL)
+
+    def test_case_5_double_bounded_upper_binds(self):
+        # maximize c subject to 0 <= c <= a -> c* = a. theta is a HIDDEN shock
+        # (only in the transition); supply a fixed realization via scope (PR1).
+        dr, _, _ = self._step(
+            case_5,
+            {"a": np.linspace(0.2, 1, 5)},
+            {**case_5["calibration"], "theta": 0.0},
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+
+    def test_case_6_double_bounded_lower_binds(self):
+        # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds)
+        dr, _, _ = self._step(
+            case_6,
+            {"a": np.linspace(0.2, 1, 5)},
+            {**case_6["calibration"], "theta": 0.0},
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+
+    def test_case_7_only_lower_bound(self):
+        # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
+        # Exercises the open upper-bound default and the x0 fallback seed.
+        dr, _, _ = self._step(
+            case_7,
+            {"a": np.linspace(0.2, 1, 5)},
+            {**case_7["calibration"], "theta": 0.0},
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a), 1.0, delta=self.ATOL)
+
+    def test_case_8_only_upper_bound(self):
+        # maximize c subject to c <= a (no lower bound) -> c* = a.
+        # Exercises the open lower-bound default.
+        dr, _, _ = self._step(
+            case_8,
+            {"a": np.linspace(0.2, 1, 5)},
+            {**case_8["calibration"], "theta": 0.0},
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+
+    def test_case_9_empty_information_set(self):
+        # u = -(c - 3)^2 with an empty iset -> constant c* = 3. Grid is empty
+        # (grid == iset); the value-irrelevant arrival state a goes in scope.
+        dr, _, policy = self._step(case_9, {}, {**case_9["calibration"], "a": 0.0})
+        self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
+        # empty iset -> 0-dimensional policy array
+        self.assertEqual(policy["c"].ndim, 0)
+
+    def test_return_contract(self):
+        # value_array is a DataArray over the grid; policy_array is a dict of
+        # DataArrays keyed by control symbol (O1).
+        grid = {"a": np.linspace(0, 2, 11)}
+        dr, value_array, policy_array = self._step(case_0, grid, case_0["calibration"])
+        self.assertIsInstance(value_array, xr.DataArray)
+        self.assertEqual(list(value_array.dims), ["a"])
+        self.assertIsInstance(policy_array, dict)
+        self.assertIsInstance(policy_array["c"], xr.DataArray)
+        self.assertEqual(list(policy_array["c"].dims), ["a"])
+        # terminal continuation: V(a) = max_c -c^2 = 0
+        self.assertTrue(np.allclose(value_array.values, 0.0, atol=self.ATOL))
+        # the gridded policy matches the fitted rule at the nodes
+        self.assertTrue(np.allclose(policy_array["c"].values, 0.0, atol=self.ATOL))
+
+    def test_warm_start_x0_policy(self):
+        # Passing a previous iterate's policy_array as x0_policy seeds the
+        # optimizer per point and reproduces the same optimum (the path
+        # solve_bellman uses across iterations).
+        grid = {"a": np.linspace(0, 2, 11)}
+        _, _, policy1 = self._step(case_0, grid, case_0["calibration"])
+        _, _, policy2 = vbi.bellman_step(
+            case_0["bp"],
+            bp_terminal,
+            grid,
+            scope=case_0["calibration"],
+            x0_policy=policy1,
+        )
+        self.assertTrue(
+            np.allclose(policy1["c"].values, policy2["c"].values, atol=self.ATOL)
+        )
+
+    def test_multi_control_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            vbi.bellman_step(case_10["bp"], bp_terminal, {"a": np.linspace(-2, 2, 11)})
+
+    def test_disc_params_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            vbi.bellman_step(
+                case_0["bp"],
+                bp_terminal,
+                {"a": np.linspace(0, 2, 5)},
+                disc_params={"theta": {"N": 3}},
+            )
 
 
 class test_vbi_protocol(unittest.TestCase):
