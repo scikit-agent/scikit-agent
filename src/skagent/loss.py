@@ -391,6 +391,44 @@ class BellmanEquationLoss(_EquationLossBase):
         return loss
 
 
+def _complementarity_residual(f, slack_lower, slack_upper):
+    r"""Smooth complementarity residual for a control's Euler residual ``f``.
+
+    Combines whichever bounds are present using the sign convention that the
+    residual ``f`` is :math:`\geq 0` when an upper bound binds and
+    :math:`\leq 0` when a lower bound binds:
+
+    - upper only: :math:`\text{FB}(f, s_u)`
+    - lower only: :math:`\text{FB}(-f, s_l)`
+    - both: :math:`\text{FB}(s_u, -\text{FB}(s_l, -f))`, a two-sided form that
+      reduces to either one-sided residual when the opposite bound is slack
+      (so a control with a non-binding floor and a binding ceiling matches the
+      upper-only residual, leaving upper-bound benchmarks unchanged).
+
+    Parameters
+    ----------
+    f : torch.Tensor
+        The Euler equation residual for one control.
+    slack_lower, slack_upper : torch.Tensor or None
+        Lower slack ``x - lb`` and upper slack ``ub - x``; ``None`` when the
+        corresponding bound is absent.
+
+    Returns
+    -------
+    torch.Tensor or None
+        The complementarity residual, or ``None`` when the control has neither
+        bound (the caller then uses the one-sided relu fallback).
+    """
+    if slack_upper is not None and slack_lower is not None:
+        inner = fischer_burmeister(slack_lower, -f)
+        return fischer_burmeister(slack_upper, -inner)
+    if slack_upper is not None:
+        return fischer_burmeister(f, slack_upper)
+    if slack_lower is not None:
+        return fischer_burmeister(-f, slack_lower)
+    return None
+
+
 class EulerEquationLoss(_EquationLossBase):
     """
     Creates an Euler equation loss function for the Maliar method.
@@ -420,31 +458,26 @@ class EulerEquationLoss(_EquationLossBase):
 
     **Handling Inequality Constraints (Fischer-Burmeister):**
 
-    When ``constrained=True`` and a control has an ``upper_bound`` defined on its
-    ``Control`` object, the complementarity conditions
+    When ``constrained=True``, a control's declared bounds are turned into a
+    smooth complementarity residual via the Fischer-Burmeister function
+    (Maliar et al. 2021, equation 25), :math:`\\text{FB}(a, b) = a + b -
+    \\sqrt{a^2 + b^2 + \\varepsilon}`, which is zero (up to the regularizer
+    :math:`\\sqrt{\\varepsilon}`) exactly where :math:`a \\geq 0`,
+    :math:`b \\geq 0`, :math:`a \\cdot b = 0`.
 
-    .. math::
+    The sign convention is that the Euler residual :math:`f` is :math:`\\geq 0`
+    when an upper bound binds and :math:`\\leq 0` when a lower bound binds.
+    Writing :math:`s_u = \\overline{x} - x` and :math:`s_l = x - \\underline{x}`
+    for the upper and lower slacks, the per-control residual is
 
-        f \\geq 0, \\quad s \\geq 0, \\quad f \\cdot s = 0
-
-    (where :math:`s` is the constraint slack) are replaced by the smooth
-    Fischer-Burmeister equation (Maliar et al. 2021, equation 25):
-
-    .. math::
-
-        \\text{FB}(f, s) = f + s - \\sqrt{f^2 + s^2} = 0
-
-    For controls without an explicit ``upper_bound``, the loss falls back to the
-    one-sided :math:`\\text{relu}(-f)^2` formulation.
-
-    **Scope: upper bounds only.**
-    The constrained mode currently models the upper-bound side of the
-    complementarity condition: :math:`f \\geq 0`, :math:`s = ub - c \\geq
-    0`, :math:`f \\cdot s = 0`. Although ``Control`` accepts both
-    ``lower_bound`` and ``upper_bound``, lower-bound constraints are not
-    yet handled here; bilateral support requires also flipping the
-    residual sign for lower-binding cases (``FB(-f, c - lb)``) and is
-    left as a follow-up.
+    - upper bound only: :math:`\\text{FB}(f, s_u)`;
+    - lower bound only: :math:`\\text{FB}(-f, s_l)`;
+    - both bounds: :math:`\\text{FB}(s_u, -\\text{FB}(s_l, -f))`, a two-sided
+      form that reduces to either one-sided residual when the opposite bound is
+      slack, so a control with a non-binding floor and a binding ceiling matches
+      the upper-only residual;
+    - no bound: the one-sided fallback :math:`\\text{relu}(-f)`, penalizing only
+      violations of :math:`f \\geq 0`.
 
     Parameters
     ----------
@@ -481,23 +514,30 @@ class EulerEquationLoss(_EquationLossBase):
             raise ValueError(f"weight must be > 0, got {weight}")
         self.weight = weight
         self.constrained = constrained
-        # Cache upper_bound parameter names so _compute_slack does not call
+        # Cache bound parameter names so the slack helpers do not call
         # inspect.signature on every forward pass.
         self._upper_bound_params: dict[str, list[str]] = {}
+        self._lower_bound_params: dict[str, list[str]] = {}
         if self.constrained:
             for sym, rule in bellman_period.block.dynamics.items():
                 if not hasattr(rule, "iset"):
                     continue
                 ub = getattr(rule, "upper_bound", None)
-                if ub is None:
-                    continue
-                self._upper_bound_params[sym] = list(inspect.signature(ub).parameters)
-            if not self._upper_bound_params:
+                if ub is not None:
+                    self._upper_bound_params[sym] = list(
+                        inspect.signature(ub).parameters
+                    )
+                lb = getattr(rule, "lower_bound", None)
+                if lb is not None:
+                    self._lower_bound_params[sym] = list(
+                        inspect.signature(lb).parameters
+                    )
+            if not self._upper_bound_params and not self._lower_bound_params:
                 logger.warning(
-                    "constrained=True but no Control in the block has an upper_bound. "
-                    "The one-sided loss will use relu(-f)^2 as a fallback. "
-                    "Define upper_bound on Control objects to enable the "
-                    "Fischer-Burmeister formulation."
+                    "constrained=True but no Control in the block has a "
+                    "lower_bound or upper_bound. The one-sided loss will use "
+                    "relu(-f)^2 as a fallback. Define a bound on Control "
+                    "objects to enable the Fischer-Burmeister formulation."
                 )
 
     def _compute_slack(
@@ -522,6 +562,28 @@ class EulerEquationLoss(_EquationLossBase):
         ub_value = control_obj.upper_bound(**ub_args)
 
         return ub_value - controls_t[control_sym]
+
+    def _compute_lower_slack(
+        self, control_sym: str, controls_t: dict, states_t: dict, shocks_t: dict
+    ) -> torch.Tensor | None:
+        """Compute lower-bound slack ``control_value - lower_bound``.
+
+        Returns ``None`` if the control has no lower bound defined. Mirrors
+        :meth:`_compute_slack` (the upper-bound side); together they supply the
+        two slacks of the bilateral complementarity condition.
+        """
+        param_names = self._lower_bound_params.get(control_sym)
+        if param_names is None:
+            return None
+
+        control_obj = self.bellman_period.block.dynamics[control_sym]
+        pre_state = self.bellman_period.compute_pre_state(
+            control_sym, states_t, shocks=shocks_t, parameters=self.parameters
+        )
+        lb_args = {k: pre_state[k] for k in param_names if k in pre_state}
+        lb_value = control_obj.lower_bound(**lb_args)
+
+        return controls_t[control_sym] - lb_value
 
     def _aio_residual_pair(self, df: Callable, states_t: dict, shocks: dict):
         """Two Euler residuals sharing the current control, at two independent
@@ -614,15 +676,25 @@ class EulerEquationLoss(_EquationLossBase):
         if self.constrained:
             total = 0.0
             for ctrl_sym in res_a:
-                slack = self._compute_slack(ctrl_sym, controls_t, states_t, shocks_t)
-                if slack is not None:
-                    total = total + fischer_burmeister(
-                        res_a[ctrl_sym], slack
-                    ) * fischer_burmeister(res_b[ctrl_sym], slack)
-                else:
+                slack_upper = self._compute_slack(
+                    ctrl_sym, controls_t, states_t, shocks_t
+                )
+                slack_lower = self._compute_lower_slack(
+                    ctrl_sym, controls_t, states_t, shocks_t
+                )
+                rho_a = _complementarity_residual(
+                    res_a[ctrl_sym], slack_lower, slack_upper
+                )
+                if rho_a is None:
+                    # No bound on this control: one-sided penalty on f >= 0.
                     total = total + torch.relu(-res_a[ctrl_sym]) * torch.relu(
                         -res_b[ctrl_sym]
                     )
+                else:
+                    rho_b = _complementarity_residual(
+                        res_b[ctrl_sym], slack_lower, slack_upper
+                    )
+                    total = total + rho_a * rho_b
             return self.weight * total
 
         # Unconstrained loss: mean of the product estimates (E[f])**2.
