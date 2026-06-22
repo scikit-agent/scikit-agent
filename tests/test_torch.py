@@ -16,7 +16,7 @@ test_block_data = {
     # },
     "dynamics": {
         "m": lambda a, q: a * q,
-        "c": Control(["m"], upper_bound="a"),
+        "c": Control(["m"]),
         "a": lambda m, c, e: m * (1 - sf(c)) + e,
         #'e' : lambda e : e,
         "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
