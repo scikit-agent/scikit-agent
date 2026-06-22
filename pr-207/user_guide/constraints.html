@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Constraining an Optimization Problem" href="constraints.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Benchmark Models" href="benchmark_models.html"><link rel="prev" title="Environments Guide" href="environments.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Environments Guide - scikit-agent 0.1.dev593+g7d908fdf3</title>
+        <title>Constraining an Optimization Problem - scikit-agent 0.1.dev593+g7d908fdf3</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -203,8 +203,8 @@
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Environments Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="constraints.html">Constraining an Optimization Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
 </ul>
 </li>
@@ -263,12 +263,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/user_guide/environments.md?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/user_guide/constraints.md?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/user_guide/environments.md" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/user_guide/constraints.md" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -285,80 +285,156 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section class="tex2jax_ignore mathjax_ignore" id="environments-guide">
-<h1>Environments Guide<a class="headerlink" href="#environments-guide" title="Link to this heading">¶</a></h1>
-<p>This guide introduces <em>environments</em> — the adapters that let an external
-algorithm interact with a scikit-agent model one step at a time. They are the
-bridge between your model and the reinforcement-learning tools described in the
-<a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> guide.</p>
-<section id="why-environments">
-<h2>Why environments?<a class="headerlink" href="#why-environments" title="Link to this heading">¶</a></h2>
-<p>A <a class="reference internal" href="../api/bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a> describes a model: its shocks,
-dynamics, controls, and rewards. Many algorithms, though, expect to <em>drive</em> a
-model interactively — propose an action, see what reward and next state result,
-and repeat. An environment wraps your model in exactly that interactive loop, so
-you don’t have to wire up the stepping logic yourself.</p>
-<p>scikit-agent provides two, depending on who is doing the driving.</p>
-</section>
-<section id="environment-stepping-a-model-in-plain-python">
-<h2><code class="docutils literal notranslate"><span class="pre">Environment</span></code>: stepping a model in plain Python<a class="headerlink" href="#environment-stepping-a-model-in-plain-python" title="Link to this heading">¶</a></h2>
-<p><a class="reference internal" href="../api/environments.html#skagent.env.Environment" title="skagent.env.Environment"><code class="xref py py-class docutils literal notranslate"><span class="pre">Environment</span></code></a> advances a model one period at a time and
-hands back the full transition — the state, the action taken, the reward, the
-next state, the period’s discount factor, and the observation the policy saw.
-You supply a decision rule (a <code class="docutils literal notranslate"><span class="pre">{control:</span> <span class="pre">callable}</span></code> dict) and call <code class="docutils literal notranslate"><span class="pre">step</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uniform</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">d2_block</span><span class="p">,</span> <span class="n">d2_calibration</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
-
-<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">d2_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">d2_calibration</span><span class="p">)</span>
-<span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)},</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-
-<span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-<span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">next_state</span><span class="p">,</span> <span class="n">discount</span><span class="p">,</span> <span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">({</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span> <span class="o">/</span> <span class="mi">2</span><span class="p">})</span>
-</pre></div>
-</div>
-<p>This is useful whenever you want direct control over the simulation loop — for
-custom analysis, or for algorithms that consume full transitions.</p>
-<section id="scoring-a-policy-with-rollouts">
-<h3>Scoring a policy with rollouts<a class="headerlink" href="#scoring-a-policy-with-rollouts" title="Link to this heading">¶</a></h3>
-<p>A common thing to do with an <code class="docutils literal notranslate"><span class="pre">Environment</span></code> is to <em>score</em> a decision rule by the
-total discounted reward it earns over a rollout. The helper
-<a class="reference internal" href="../api/environments.html#skagent.env.discounted_rollout_reward" title="skagent.env.discounted_rollout_reward"><code class="xref py py-func docutils literal notranslate"><span class="pre">discounted_rollout_reward()</span></code></a> does this for you:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">discounted_rollout_reward</span>
-
-<span class="n">total</span> <span class="o">=</span> <span class="n">discounted_rollout_reward</span><span class="p">(</span>
-    <span class="n">bp</span><span class="p">,</span>
-    <span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span> <span class="o">/</span> <span class="mi">2</span><span class="p">},</span>  <span class="c1"># the decision rule to score</span>
-    <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)},</span>  <span class="c1"># initial state distribution</span>
-    <span class="n">steps</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
-    <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+          <section class="tex2jax_ignore mathjax_ignore" id="constraining-an-optimization-problem">
+<h1>Constraining an Optimization Problem<a class="headerlink" href="#constraining-an-optimization-problem" title="Link to this heading">¶</a></h1>
+<p>Most dynamic programs worth solving constrain their decisions. An agent who can
+choose any value of a control faces a different, and often degenerate, problem
+from one whose choice must stay inside a feasible set; for example, a consumer
+who cannot borrow solves a genuinely harder problem than one who can. For
+gradient-based solvers the constraint is a complication in its own right:
+training a neural network means differentiating through the policy, and a hard
+constraint introduces exactly the kind of kink that gradients handle badly.</p>
+<p>scikit-agent addresses this with one declaration and two enforcement mechanisms.
+Bounds are declared once, on the <a class="reference internal" href="../api/blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> object. A
+policy network can then build feasibility into its output layer, and a training
+loss can encode the optimality conditions that hold where the constraint binds.
+The two mechanisms answer different questions. The first guarantees that every
+candidate policy is feasible; the second teaches the solver where the constraint
+should bind. They compose, and for problems with binding constraints they work
+best together.</p>
+<section id="declaring-bounds">
+<h2>Declaring Bounds<a class="headerlink" href="#declaring-bounds" title="Link to this heading">¶</a></h2>
+<p>Each bound on a <a class="reference internal" href="../api/blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> is a callable whose argument
+names refer to variables in the control’s information set. A constant bound is a
+zero-argument callable.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">c</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">],</span>
+    <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+    <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Running this for several policies (and averaging over many rollouts) is a simple
-way to compare how well different decision rules actually perform.</p>
+<p>For example, this declares a decision <span class="math notranslate nohighlight">\(c\)</span> that must stay between a small
+positive floor and the pre-decision state <span class="math notranslate nohighlight">\(m\)</span>; in a consumption-saving model the
+upper bound is a borrowing constraint. Either bound may be omitted, in which
+case the control is unbounded on that side. Passing a raw number such as
+<code class="docutils literal notranslate"><span class="pre">upper_bound=1.0</span></code> raises a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> when a policy network is built from the
+block; write <code class="docutils literal notranslate"><span class="pre">lambda:</span> <span class="pre">1.0</span></code> instead. Everything below reads this single
+declaration, so a model never states its constraints twice.</p>
 </section>
+<section id="feasibility-by-construction-bounded-policy-networks">
+<h2>Feasibility by Construction: Bounded Policy Networks<a class="headerlink" href="#feasibility-by-construction-bounded-policy-networks" title="Link to this heading">¶</a></h2>
+<p><a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a> and
+<a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a> transform the raw network output so
+the policy respects the declared bounds at every point of training. Writing <span class="math notranslate nohighlight">\(z\)</span>
+for the raw output of the last layer and <span class="math notranslate nohighlight">\(\underline{x}\)</span>, <span class="math notranslate nohighlight">\(\overline{x}\)</span> for the
+lower and upper bounds evaluated at the current state, the transform depends on
+which bounds the control declares:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Declared bounds</p></th>
+<th class="head"><p>Transform</p></th>
+<th class="head"><p>Output range</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Both</p></td>
+<td><p><span class="math notranslate nohighlight">\(\underline{x} + \sigma(z)\,(\overline{x} - \underline{x})\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\((\underline{x}, \overline{x})\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Lower only</p></td>
+<td><p><span class="math notranslate nohighlight">\(\underline{x} + \operatorname{softplus}(z)\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\((\underline{x}, \infty)\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>Upper only</p></td>
+<td><p><span class="math notranslate nohighlight">\(\overline{x} - \operatorname{softplus}(z)\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\((-\infty, \overline{x})\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>None</p></td>
+<td><p><span class="math notranslate nohighlight">\(z\)</span></p></td>
+<td><p>unbounded</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Here <span class="math notranslate nohighlight">\(\sigma\)</span> is the logistic sigmoid and
+<span class="math notranslate nohighlight">\(\operatorname{softplus}(z) = \log(1 + e^z)\)</span>. The bounds are <em>open</em>: the output
+approaches but never equals either endpoint, which is why the mechanism is
+called open-bounds scaling. The payoff is robustness. Every policy the optimizer
+visits is feasible, so a reward like <span class="math notranslate nohighlight">\(\log(c)\)</span> is never evaluated at an
+infeasible point mid-training. The limitation is that the transform carries no
+information about <em>whether</em> the constraint should bind; a policy can hug a bound
+without the loss ever being told that a Lagrange multiplier belongs there. The
+transform is on by default and can be disabled with <code class="docutils literal notranslate"><span class="pre">apply_open_bounds=False</span></code>.</p>
 </section>
-<section id="gymenv-a-gymnasium-environment-for-rl-libraries">
-<h2><code class="docutils literal notranslate"><span class="pre">GymEnv</span></code>: a gymnasium environment for RL libraries<a class="headerlink" href="#gymenv-a-gymnasium-environment-for-rl-libraries" title="Link to this heading">¶</a></h2>
-<p><a class="reference internal" href="../api/environments.html#skagent.env.GymEnv" title="skagent.env.GymEnv"><code class="xref py py-class docutils literal notranslate"><span class="pre">GymEnv</span></code></a> presents your model through the standard
-<a class="reference external" href="https://gymnasium.farama.org/">gymnasium</a> interface, so reinforcement-learning
-libraries can train on it directly. It is what
-<a class="reference internal" href="../api/algorithms.html#skagent.algos.sb3.PPOAgent" title="skagent.algos.sb3.PPOAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.sb3.PPOAgent</span></code></a> uses under the hood; most users never need
-to construct it by hand.</p>
-<p>A couple of details worth knowing:</p>
-<ul class="simple">
-<li><p><strong>Actions are normalised.</strong> The agent works with actions in <code class="docutils literal notranslate"><span class="pre">[-1,</span> <span class="pre">1]</span></code>, and
-<code class="docutils literal notranslate"><span class="pre">GymEnv</span></code> automatically rescales them to each control’s real bounds (for
-example, the borrowing constraint <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">≤</span> <span class="pre">m</span></code>) before applying them. Your model’s
-bounds are respected without any extra effort.</p></li>
-<li><p><strong>Single control, single agent.</strong> For now, <code class="docutils literal notranslate"><span class="pre">GymEnv</span></code> handles models with one
-control variable and one agent.</p></li>
-</ul>
-<p>If you are using PPO through <code class="docutils literal notranslate"><span class="pre">PPOAgent</span></code>, this all happens for you — see the
-<a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> guide to get started.</p>
+<section id="optimality-at-the-bound-fischer-burmeister-complementarity">
+<h2>Optimality at the Bound: Fischer-Burmeister Complementarity<a class="headerlink" href="#optimality-at-the-bound-fischer-burmeister-complementarity" title="Link to this heading">¶</a></h2>
+<p>Where a constraint binds, the first-order condition changes. With an Euler
+residual <span class="math notranslate nohighlight">\(f\)</span> and constraint slack <span class="math notranslate nohighlight">\(s = \overline{x} - x\)</span>, optimality requires
+the complementarity conditions</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+f \geq 0, \qquad s \geq 0, \qquad f \cdot s = 0,
+\]</div>
+</div>
+<p>so the residual need not vanish at the bound; the slack must. The equivalent
+equation <span class="math notranslate nohighlight">\(\min(f, s) = 0\)</span> is not differentiable, which is the wrong shape for a
+training loss. Following equation (25) of Maliar, Maliar, and Winant (2021),
+<a class="reference internal" href="../api/utils.html#skagent.utils.fischer_burmeister" title="skagent.utils.fischer_burmeister"><code class="xref py py-func docutils literal notranslate"><span class="pre">fischer_burmeister()</span></code></a> replaces it with the smooth
+Fischer-Burmeister function</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+\operatorname{FB}(f, s) = f + s - \sqrt{f^2 + s^2} = 0,
+\]</div>
+</div>
+<p>which is zero exactly where the complementarity conditions hold and
+differentiable everywhere. Setting <code class="docutils literal notranslate"><span class="pre">constrained=True</span></code> on
+<a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a> builds this residual for every
+control that declares an <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">loss</span> <span class="o">=</span> <span class="n">EulerEquationLoss</span><span class="p">(</span><span class="n">bellman_period</span><span class="p">,</span> <span class="n">constrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The squared expected residual is estimated in all-in-one fashion as the product
+<span class="math notranslate nohighlight">\(\operatorname{FB}(f_a, s) \cdot \operatorname{FB}(f_b, s)\)</span> at two independent
+next-period shock draws, which keeps the estimate unbiased. A control without an
+explicit <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code> falls back to the one-sided penalty
+<span class="math notranslate nohighlight">\(\operatorname{relu}(-f_a) \cdot \operatorname{relu}(-f_b)\)</span>, which punishes only
+violations of <span class="math notranslate nohighlight">\(f \geq 0\)</span>.</p>
+<p>One scope restriction is worth stating plainly: the constrained loss currently
+models the upper-bound side of the complementarity condition only. A
+<code class="docutils literal notranslate"><span class="pre">lower_bound</span></code> declared on a <code class="docutils literal notranslate"><span class="pre">Control</span></code> is respected by the network transform
+above, but it does not yet enter the complementarity residual; bilateral support
+requires flipping the residual sign for lower-binding cases
+(<span class="math notranslate nohighlight">\(\operatorname{FB}(-f, x - \underline{x})\)</span>) and is left as a follow-up.</p>
+</section>
+<section id="using-both-together">
+<h2>Using Both Together<a class="headerlink" href="#using-both-together" title="Link to this heading">¶</a></h2>
+<p>The mechanisms are complementary rather than competing. The bounded network
+keeps every training iterate feasible; the Fischer-Burmeister loss supplies the
+optimality condition that tells the solver where the bound binds and by how
+much. The constrained perfect-foresight benchmark (<code class="docutils literal notranslate"><span class="pre">D-4</span></code> in the
+<a class="reference internal" href="benchmark_models.html"><span class="doc">Benchmark Models</span></a> registry) is the in-package demonstration: a policy
+network trained on <code class="docutils literal notranslate"><span class="pre">EulerEquationLoss(constrained=True)</span></code> matches a
+value-function-iteration oracle to well within one percent on average, on a
+problem whose borrowing constraint binds at low wealth and where an
+unconstrained Euler objective cannot identify the policy level at all. For a
+runnable walkthrough on the buffer-stock model, see
+<a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html"><span class="doc">The Maliar Training Loop on a Model With No Closed-Form Solution</span></a>.</p>
+<p>A practical rule of thumb: if the constraint cannot bind in the region of the
+state space you care about, the default network bounds are enough. If it can
+bind and you train on an Euler or first-order-condition objective, add
+<code class="docutils literal notranslate"><span class="pre">constrained=True</span></code> so the loss knows what optimality looks like at the boundary.</p>
+</section>
+<section id="grid-solvers">
+<h2>Grid Solvers<a class="headerlink" href="#grid-solvers" title="Link to this heading">¶</a></h2>
+<p>Constraint handling is not specific to neural methods. The value backwards
+induction solver (<a class="reference internal" href="../api/algorithms.html#module-skagent.algos.vbi" title="skagent.algos.vbi"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.algos.vbi</span></code></a>) reads the same <code class="docutils literal notranslate"><span class="pre">Control</span></code> bounds
+and passes them to <code class="docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code> as box constraints on each grid
+point’s optimization, with no smooth reformulation needed because no gradient
+flows through the policy.</p>
 </section>
 </section>
 
@@ -367,23 +443,23 @@ control variable and one agent.</p></li>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="constraints.html">
+          <a class="next-page" href="benchmark_models.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Constraining an Optimization Problem</div>
+                <div class="title">Benchmark Models</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="algorithms.html">
+          <a class="prev-page" href="environments.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Algorithms Guide</div>
+                <div class="title">Environments Guide</div>
                 
               </div>
             </a>
@@ -424,13 +500,12 @@ control variable and one agent.</p></li>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Environments Guide</a><ul>
-<li><a class="reference internal" href="#why-environments">Why environments?</a></li>
-<li><a class="reference internal" href="#environment-stepping-a-model-in-plain-python"><code class="docutils literal notranslate"><span class="pre">Environment</span></code>: stepping a model in plain Python</a><ul>
-<li><a class="reference internal" href="#scoring-a-policy-with-rollouts">Scoring a policy with rollouts</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#gymenv-a-gymnasium-environment-for-rl-libraries"><code class="docutils literal notranslate"><span class="pre">GymEnv</span></code>: a gymnasium environment for RL libraries</a></li>
+<li><a class="reference internal" href="#">Constraining an Optimization Problem</a><ul>
+<li><a class="reference internal" href="#declaring-bounds">Declaring Bounds</a></li>
+<li><a class="reference internal" href="#feasibility-by-construction-bounded-policy-networks">Feasibility by Construction: Bounded Policy Networks</a></li>
+<li><a class="reference internal" href="#optimality-at-the-bound-fischer-burmeister-complementarity">Optimality at the Bound: Fischer-Burmeister Complementarity</a></li>
+<li><a class="reference internal" href="#using-both-together">Using Both Together</a></li>
+<li><a class="reference internal" href="#grid-solvers">Grid Solvers</a></li>
 </ul>
 </li>
 </ul>
@@ -450,5 +525,7 @@ control variable and one agent.</p></li>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"tex": {"packages": {"[+]": ["amsmath", "amssymb"]}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
 </html>

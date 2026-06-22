@@ -57,6 +57,25 @@ PPO, and emits a standard skagent decision rule.
    :members:
 ```
 
+## Solvers
+
+High-level routines that drive the neural-network training utilities to solve a
+model. See the {doc}`/user_guide/algorithms` guide for worked examples.
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_multiple_controls
+```
+
+## Loss Functions
+
+Objective functions passed to {func}`skagent.ann.train_block_nn`. The
+reward-based losses ({class}`~skagent.loss.StaticRewardLoss`,
+{class}`~skagent.loss.EstimatedDiscountedLifetimeRewardLoss`) solve a block
+directly for the non-recurring case; the equation-residual losses
+({class}`~skagent.loss.BellmanEquationLoss`,
+{class}`~skagent.loss.EulerEquationLoss`) target the recurring, dynamic case.
+See {doc}`loss` for the full reference.
+
 ## Neural Network Components
 
 ### Net

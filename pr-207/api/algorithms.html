@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev582+ge2c38e5b1</title>
+        <title>Algorithms - scikit-agent 0.1.dev593+g7d908fdf3</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev582+ge2c38e5b1</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev593+g7d908fdf3</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -204,11 +204,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_direct_block_solve.html">Solving a Block Directly (Non-Recurring)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-2 Benchmark</a></li>
@@ -730,6 +732,60 @@ depend on training state.</p>
 
 </dd></dl>
 
+</section>
+<section id="solvers">
+<h2>Solvers<a class="headerlink" href="#solvers" title="Link to this heading">¶</a></h2>
+<p>High-level routines that drive the neural-network training utilities to solve a
+model. See the <a class="reference internal" href="../user_guide/algorithms.html"><span class="doc">Algorithms Guide</span></a> guide for worked examples.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.solver.solve_multiple_controls">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_multiple_controls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_multiple_controls" title="Link to this definition">¶</a></dt>
+<dd><p>Solve a block with more than one control by training a policy network
+for each control in turn.</p>
+<p>Each control is given its own <a class="reference internal" href="#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.ann.BlockPolicyNet</span></code></a>. The
+networks are trained one at a time, in the order given by
+<code class="docutils literal notranslate"><span class="pre">control_order</span></code>, with every network treating the other networks’ current
+policies as fixed. A control may appear in <code class="docutils literal notranslate"><span class="pre">control_order</span></code> more than once
+to refine it after its neighbours have been updated (e.g.
+<code class="docutils literal notranslate"><span class="pre">[&quot;c&quot;,</span> <span class="pre">&quot;d&quot;,</span> <span class="pre">&quot;c&quot;]</span></code>), which is the multi-control analogue of a best-response
+sweep.</p>
+<p>Currently restricted to single-period (non-recurring) reward objectives;
+by default the negative immediate reward
+(<a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.loss.StaticRewardLoss</span></code></a>) is maximized.</p>
+<p>TODO: allow a variable ‘loss function generator’ once the API has solidified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>control_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Control symbols, in the order they should be solved. Symbols may repeat
+to schedule additional refinement passes.</p></li>
+<li><p><strong>bellman_period</strong> (<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><em>BellmanPeriod</em></a>) – The model period whose controls are being solved.</p></li>
+<li><p><strong>givens</strong> (<a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><em>skagent.grid.Grid</em></a>) – Grid of arrival states and shock realizations to train over.</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Calibration parameters passed to the loss function.</p></li>
+<li><p><strong>epochs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Training epochs per pass. Default is 200.</p></li>
+<li><p><strong>loss</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – A loss-function class with signature
+<code class="docutils literal notranslate"><span class="pre">loss(bellman_period,</span> <span class="pre">parameters,</span> <span class="pre">other_dr)</span></code>. Defaults to
+<a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.loss.StaticRewardLoss</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping from each control symbol to its trained decision rule.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="loss-functions">
+<h2>Loss Functions<a class="headerlink" href="#loss-functions" title="Link to this heading">¶</a></h2>
+<p>Objective functions passed to <a class="reference internal" href="#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.ann.train_block_nn()</span></code></a>. The
+reward-based losses (<a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code></a>,
+<a class="reference internal" href="loss.html#skagent.loss.EstimatedDiscountedLifetimeRewardLoss" title="skagent.loss.EstimatedDiscountedLifetimeRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EstimatedDiscountedLifetimeRewardLoss</span></code></a>) solve a block
+directly for the non-recurring case; the equation-residual losses
+(<a class="reference internal" href="loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>,
+<a class="reference internal" href="loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>) target the recurring, dynamic case.
+See <a class="reference internal" href="loss.html"><span class="doc">Loss Functions</span></a> for the full reference.</p>
 </section>
 <section id="neural-network-components">
 <h2>Neural Network Components<a class="headerlink" href="#neural-network-components" title="Link to this heading">¶</a></h2>
@@ -1308,6 +1364,11 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#solvers">Solvers</a><ul>
+<li><a class="reference internal" href="#skagent.solver.solve_multiple_controls"><code class="docutils literal notranslate"><span class="pre">solve_multiple_controls()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#loss-functions">Loss Functions</a></li>
 <li><a class="reference internal" href="#neural-network-components">Neural Network Components</a><ul>
 <li><a class="reference internal" href="#net">Net</a><ul>
 <li><a class="reference internal" href="#skagent.ann.Net"><code class="docutils literal notranslate"><span class="pre">Net</span></code></a><ul>
@@ -1389,7 +1450,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=b101728d"></script>
+</div><script src="../_static/documentation_options.js?v=a98d8e23"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
