@@ -25,12 +25,11 @@ Instead of solving a model with a dedicated dynamic-programming method, you can
 let a reinforcement-learning (RL) agent _learn_ a good decision rule by
 repeatedly interacting with the model and observing the rewards it earns. This
 is handy when a model is hard to solve analytically, or when you simply want a
-quick baseline to compare against.
-What you optimize — this period's immediate reward, a fixed finite horizon, or a
-recurring problem with a continuation value — is determined by the _loss
-function_ you choose in step 3, not by the model objects themselves. This
-section uses reward-based losses; the **Value Function Iteration** section below
-covers the recurring case.
+quick baseline to compare against. What you optimize — this period's immediate
+reward, a fixed finite horizon, or a recurring problem with a continuation value
+— is determined by the _loss function_ you choose in step 3, not by the model
+objects themselves. This section uses reward-based losses; the **Value Function
+Iteration** section below covers the recurring case.
 
 ### 1. Load a model and wrap it
 
