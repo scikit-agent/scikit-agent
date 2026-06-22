@@ -6,10 +6,13 @@ from a continuation value function and stage dynamics.
 from skagent.block import DBlock
 from inspect import signature
 import itertools
+import logging
 import numpy as np
 from scipy.optimize import minimize
 from typing import Mapping, Sequence
 import xarray as xr
+
+logger = logging.getLogger(__name__)
 
 
 def get_action_rule(action):
@@ -123,7 +126,8 @@ def solve(
 
             ## get lower bound.
             ## assumes only one control currently
-            lower_bound = -1e-6  ## a really low number!
+            ## None passes through to scipy as "unbounded on this side".
+            lower_bound = None
             feq = block.dynamics[control_sym].lower_bound
             if feq is not None:
                 lower_bound = feq(
@@ -132,19 +136,14 @@ def solve(
 
             ## get upper bound
             ## assumes only one control currently
-            upper_bound = 1e-12  # a very high number
+            upper_bound = None
             feq = block.dynamics[control_sym].upper_bound
-
-            print(feq)
-
             if feq is not None:
                 upper_bound = feq(
                     *[pre_states[var] for var in signature(feq).parameters]
                 )
 
             bounds = ((lower_bound, upper_bound),)
-
-            print(bounds)
 
             res = minimize(  # choice of
                 negated_value,
@@ -162,8 +161,9 @@ def solve(
                     0, srv_function(pre_states, dr_best)
                 )
             else:
-                print(f"Optimization failure at {state_vals}.")
-                print(res)
+                logger.warning(
+                    "Optimization failure at %s: %s", state_vals, res.message
+                )
 
                 dr_best = {c: get_action_rule(res.x[i]) for i, c in enumerate(controls)}
 
@@ -175,8 +175,6 @@ def solve(
             raise Exception(
                 f"Value backup iteration is not yet implemented for stages with {len(controls)} > 1 control variables."
             )
-
-    print(policy_data)
 
     # use the xarray interpolator to create a decision rule.
     dr_from_data = {
