@@ -90,3 +90,6 @@ packages = ["src/skagent"]
 pythonpath = ["."]
 # Only collect the committed suite; ignore stray *_test.py scripts in the repo root.
 testpaths = ["tests"]
+markers = [
+    "slow: long-running tests (e.g. RL convergence); deselected unless --runslow is passed.",
+]
