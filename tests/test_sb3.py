@@ -9,7 +9,17 @@ from skagent.algos.sb3 import PPOAgent
 from skagent.bellman import BellmanPeriod
 from skagent.distributions import Uniform
 from skagent.env import Environment
-from skagent.models.benchmarks import d2_block, d2_calibration
+from skagent.models.benchmarks import (
+    d2_analytical_policy,
+    d2_block,
+    d2_calibration,
+    u1_analytical_policy,
+    u1_block,
+    u1_calibration,
+    u2_analytical_policy,
+    u2_block,
+    u2_calibration,
+)
 
 from tests.conftest import case_0, case_2, case_5
 
@@ -252,6 +262,140 @@ def test_ppo_converges_to_optimal(case, gym_kwargs, mae_tol, max_err_tol):
     for i in range(obs.shape[0]):
         lo, hi = agent.env._bounds_at_iset(obs[i])
         c_opt[i] = float(np.clip(float(optimal_c(*obs[i])), lo, hi))
+
+    err = c_learned - c_opt
+    mae = float(np.mean(np.abs(err)))
+    max_err = float(np.max(np.abs(err)))
+    assert mae <= mae_tol, f"MAE={mae:.4f} exceeds tolerance {mae_tol}"
+    assert max_err <= max_err_tol, (
+        f"MaxErr={max_err:.4f} exceeds tolerance {max_err_tol}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Convergence tests — analytically solvable benchmark models.
+#
+# Same idea as the conftest convergence factory above, but the targets are the
+# closed-form consumption-savings benchmarks in skagent.models.benchmarks.
+# These are genuine infinite-horizon savings problems, so (unlike the conftest
+# cases, whose myopic optimum already equals the analytical one) PPO only
+# converges with a much larger budget: the longer episodes, bigger rollout
+# buffer, and ~130k timesteps documented in
+# examples/algorithms/plot_sb3_ppo.py. Each run takes ~1 minute, so the whole
+# group is marked ``slow`` and is deselected unless pytest is given --runslow.
+#
+# Settings below mirror that example, and tolerances are derived from the
+# policy's observed MAE/MaxErr against the closed form on this grid (seed 0,
+# 130k steps) with generous headroom for SB3 non-determinism.
+#
+# Excluded benchmarks:
+#   D-1  finite horizon — time-as-state ``t`` ticks toward ``T``; not a single
+#        steady-state truncation this PPO loop can target.
+#   D-3  i.i.d. mortality — under truncated-horizon PPO the agent overconsumes
+#        at high wealth and does not converge to the κ_s analytical rule.
+#   U-3  buffer stock — no closed-form policy to compare against.
+# ---------------------------------------------------------------------------
+
+BENCH_CONVERGENCE_PPO_KWARGS = {
+    "n_steps": 2048,
+    "batch_size": 64,
+    "n_epochs": 10,
+    "learning_rate": 3e-4,
+}
+BENCH_CONVERGENCE_TRAIN_STEPS = 130_000
+BENCH_CONVERGENCE_MAX_EPISODE_STEPS = 200
+# Wide cash-on-hand grid matching the worked example (m ∈ [0.5, 10]).
+BENCH_CONVERGENCE_OBS_GRID = np.linspace(0.5, 10.0, 41, dtype=np.float32).reshape(-1, 1)
+
+
+def _scalar(x):
+    if hasattr(x, "item"):
+        return float(x.item())
+    return float(np.asarray(x).reshape(-1)[0])
+
+
+# Each benchmark control has iset ``[m]`` (cash-on-hand). The analytical
+# policies are keyed on the arrival state, so we invert ``m = a*R + y`` (or the
+# normalized ``m = R*a + 1`` for U-2) to recover it, then evaluate the closed
+# form. The test clips the result to the env's per-state bounds afterwards.
+
+
+def _d2_optimal_c(obs_row):
+    a = (float(obs_row[0]) - d2_calibration["y"]) / d2_calibration["R"]
+    return _scalar(d2_analytical_policy({"a": a}, {}, d2_calibration)["c"])
+
+
+def _u1_optimal_c(obs_row):
+    y = u1_calibration["y_mean"]
+    A = (float(obs_row[0]) - y) / u1_calibration["R"]
+    return _scalar(u1_analytical_policy({"A": A, "y": y}, {}, u1_calibration)["c"])
+
+
+def _u2_optimal_c(obs_row):
+    a = (float(obs_row[0]) - 1.0) / u2_calibration["R"]
+    return _scalar(
+        u2_analytical_policy({"a": torch.tensor([a])}, {}, u2_calibration)["c"]
+    )
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "block,calibration,initial,optimal_fn,mae_tol,max_err_tol",
+    [
+        # D-2: the worked example. Observed MAE=0.68, MaxErr=1.82.
+        (
+            d2_block,
+            d2_calibration,
+            {"a": Uniform(low=0.01, high=5.0)},
+            _d2_optimal_c,
+            1.2,
+            2.5,
+        ),
+        # U-1: Hall PIH with a Normal income shock (noisier). Observed
+        # MAE=0.98, MaxErr=1.99.
+        (
+            u1_block,
+            u1_calibration,
+            {"A": Uniform(low=0.01, high=5.0), "y": Uniform(low=0.9, high=1.1)},
+            _u1_optimal_c,
+            1.5,
+            2.8,
+        ),
+        # U-2: normalized log-utility PIH; converges tightest. Observed
+        # MAE=0.23, MaxErr=0.80.
+        (
+            u2_block,
+            u2_calibration,
+            {"a": Uniform(low=0.01, high=5.0)},
+            _u2_optimal_c,
+            0.5,
+            1.2,
+        ),
+    ],
+    ids=["D-2", "U-1", "U-2"],
+)
+def test_benchmark_ppo_converges_to_analytical(
+    block, calibration, initial, optimal_fn, mae_tol, max_err_tol
+):
+    bp = BellmanPeriod(block, "DiscFac", calibration)
+    agent = PPOAgent(
+        bp,
+        initial,
+        max_episode_steps=BENCH_CONVERGENCE_MAX_EPISODE_STEPS,
+        seed=0,
+        ppo_kwargs=BENCH_CONVERGENCE_PPO_KWARGS,
+    )
+    agent.learn(total_timesteps=BENCH_CONVERGENCE_TRAIN_STEPS)
+
+    obs = BENCH_CONVERGENCE_OBS_GRID
+    c_learned = agent.predict_unscaled(obs)
+
+    # Closed-form action per row, clipped to the per-state bounds the env
+    # enforces — the policy PPO can actually realize in this env.
+    c_opt = np.empty(obs.shape[0], dtype=np.float32)
+    for i in range(obs.shape[0]):
+        lo, hi = agent.env._bounds_at_iset(obs[i])
+        c_opt[i] = float(np.clip(optimal_fn(obs[i]), lo, hi))
 
     err = c_learned - c_opt
     mae = float(np.mean(np.abs(err)))
