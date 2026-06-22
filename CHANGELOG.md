@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Changed
 
+- `compute_gradients_for_tensors` returns a zero tensor (instead of `None`) for
+  a variable with no computational path to the target, and raises `ValueError`
+  when a `wrt` tensor does not require gradients; the `BellmanPeriod` gradient
+  methods (`grad_reward_function`, `grad_transition_function`,
+  `grad_pre_state_function`) inherit the tensor-only contract (#129)
+- Declared `torch >=2.0` as the minimum supported PyTorch version
 - Refactored `BellmanPeriod` with type hints, docstrings, and improved parameter
   handling
 - Introduced `_resolve_parameters`, `_resolve_decision_rules`, and
