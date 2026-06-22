@@ -1,42 +1,41 @@
 # Constraining an Optimization Problem
 
-Most dynamic programs worth solving constrain their decisions. An agent who can
-choose any value of a control faces a different, and often degenerate, problem
-from one whose choice must stay inside a feasible set; for example, a consumer
-who cannot borrow solves a genuinely harder problem than one who can. For
-gradient-based solvers the constraint is a complication in its own right:
-training a neural network means differentiating through the policy, and a hard
-constraint introduces exactly the kind of kink that gradients handle badly.
+Most dynamic programs constrain their decisions: a consumer cannot borrow more
+than a credit limit, a portfolio share must stay between zero and one. This page
+shows how to declare those bounds in scikit-agent and which solvers enforce
+them.
 
-scikit-agent addresses this with one declaration and two enforcement mechanisms.
-Bounds are declared once, on the {py:class}`~skagent.block.Control` object. A
-policy network can then build feasibility into its output layer, and a training
-loss can encode the optimality conditions that hold where the constraint binds.
-The two mechanisms answer different questions. The first guarantees that every
-candidate policy is feasible; the second teaches the solver where the constraint
-should bind. They compose, and for problems with binding constraints they work
-best together.
+You declare a bound once, on the {py:class}`~skagent.block.Control` object. From
+that single declaration two mechanisms act, and they answer different questions:
+
+- a **policy network** can build feasibility into its output layer, so every
+  candidate policy it proposes is feasible;
+- a **training loss** can encode the optimality condition that holds where a
+  constraint binds.
+
+The two are independent. You can use the network bounds alone, and for many
+problems that is enough. The loss-side condition is currently available on one
+loss, {py:class}`~skagent.loss.EulerEquationLoss`, and matters when you train on
+an Euler objective and the constraint actually binds.
 
 ## Declaring Bounds
 
-Each bound on a {py:class}`~skagent.block.Control` is a callable whose argument
-names refer to variables in the control's information set. A constant bound is a
-zero-argument callable.
+A bound on a {py:class}`~skagent.block.Control` is either a number or a callable
+whose argument names are variables in the control's information set. A number is
+a constant bound; a callable is a state-dependent one. Either side may be
+omitted, leaving the control unbounded on that side.
 
 ```python
 c = ska.Control(
     ["m"],
-    lower_bound=lambda: 1e-3,
-    upper_bound=lambda m: m,
+    lower_bound=1e-3,  # constant floor
+    upper_bound=lambda m: m,  # state-dependent ceiling
 )
 ```
 
-For example, this declares a decision $c$ that must stay between a small
-positive floor and the pre-decision state $m$; in a consumption-saving model the
-upper bound is a borrowing constraint. Either bound may be omitted, in which
-case the control is unbounded on that side. Passing a raw number such as
-`upper_bound=1.0` raises a `TypeError` when a policy network is built from the
-block; write `lambda: 1.0` instead. Everything below reads this single
+This declares a decision $c$ that must stay between a small positive floor and
+the pre-decision state $m$. In a consumption-saving model the upper bound
+$c \le m$ is a no-borrowing constraint. Everything below reads this one
 declaration, so a model never states its constraints twice.
 
 ## Feasibility by Construction: Bounded Policy Networks
@@ -57,19 +56,17 @@ which bounds the control declares:
 
 Here $\sigma$ is the logistic sigmoid and
 $\operatorname{softplus}(z) = \log(1 + e^z)$. The bounds are _open_: the output
-approaches but never equals either endpoint, which is why the mechanism is
-called open-bounds scaling. The payoff is robustness. Every policy the optimizer
-visits is feasible, so a reward like $\log(c)$ is never evaluated at an
-infeasible point mid-training. The limitation is that the transform carries no
-information about _whether_ the constraint should bind; a policy can hug a bound
-without the loss ever being told that a Lagrange multiplier belongs there. The
-transform is on by default and can be disabled with `apply_open_bounds=False`.
+approaches but never equals either endpoint, so a reward like $\log(c)$ is never
+evaluated at an infeasible point mid-training. What the transform does _not_ do
+is signal whether a constraint should bind; a policy can hug a bound without the
+loss being told a Lagrange multiplier belongs there. The transform is on by
+default and can be disabled with `apply_open_bounds=False`.
 
 ## Optimality at the Bound: Fischer-Burmeister Complementarity
 
 Where a constraint binds, the first-order condition changes. With an Euler
-residual $f$ and constraint slack $s = \overline{x} - x$, optimality requires
-the complementarity conditions
+residual $f$ and an upper-bound slack $s = \overline{x} - x$, optimality is the
+complementarity condition
 
 $$
 f \geq 0, \qquad s \geq 0, \qquad f \cdot s = 0,
@@ -78,59 +75,89 @@ $$
 so the residual need not vanish at the bound; the slack must. The equivalent
 equation $\min(f, s) = 0$ is not differentiable, which is the wrong shape for a
 training loss. Following equation (25) of Maliar, Maliar, and Winant (2021),
-{py:func}`~skagent.utils.fischer_burmeister` replaces it with the smooth
-Fischer-Burmeister function
+{py:func}`~skagent.utils.fischer_burmeister` replaces it with
 
 $$
-\operatorname{FB}(f, s) = f + s - \sqrt{f^2 + s^2} = 0,
+\operatorname{FB}(f, s) = f + s - \sqrt{f^2 + s^2 + \varepsilon},
 $$
 
-which is zero exactly where the complementarity conditions hold and
-differentiable everywhere. Setting `constrained=True` on
-{py:class}`~skagent.loss.EulerEquationLoss` builds this residual for every
-control that declares an `upper_bound`:
+which is zero (up to $\sqrt{\varepsilon}$) exactly where the complementarity
+conditions hold. The small $\varepsilon$ under the root is a numerical
+regularizer: it keeps the gradient finite at $f = s = 0$, so the residual is
+differentiable everywhere, at the cost of
+$\operatorname{FB}(0, 0) =
+-\sqrt{\varepsilon}$ rather than exactly zero. With
+the default $\varepsilon = 10^{-12}$ this offset is about $10^{-6}$, below
+typical convergence tolerances but worth accounting for in a very tight test.
+
+Set `constrained=True` on {py:class}`~skagent.loss.EulerEquationLoss` to build
+this residual:
 
 ```python
 loss = EulerEquationLoss(bellman_period, constrained=True)
 ```
 
-The squared expected residual is estimated in all-in-one fashion as the product
-$\operatorname{FB}(f_a, s) \cdot \operatorname{FB}(f_b, s)$ at two independent
-next-period shock draws, which keeps the estimate unbiased. A control without an
-explicit `upper_bound` falls back to the one-sided penalty
-$\operatorname{relu}(-f_a) \cdot \operatorname{relu}(-f_b)$, which punishes only
-violations of $f \geq 0$.
+The loss reads each control's declared bounds and forms the complementarity
+residual that matches them:
 
-One scope restriction is worth stating plainly: the constrained loss currently
-models the upper-bound side of the complementarity condition only. A
-`lower_bound` declared on a `Control` is respected by the network transform
-above, but it does not yet enter the complementarity residual; bilateral support
-requires flipping the residual sign for lower-binding cases
-($\operatorname{FB}(-f, x - \underline{x})$) and is left as a follow-up.
+- upper bound only: $\operatorname{FB}(f,\; \overline{x} - x)$;
+- lower bound only: $\operatorname{FB}(-f,\; x - \underline{x})$, the residual
+  sign flipping because a binding lower bound pushes the decision the other way;
+- both bounds: a two-sided form,
+  $\operatorname{FB}\!\big(\overline{x} - x,\; -\operatorname{FB}(x -
+  \underline{x},\; -f)\big)$,
+  which reduces to either one-sided residual when the opposite bound is slack;
+- no bound: a one-sided penalty $\operatorname{relu}(-f)$ on violations of
+  $f \geq 0$.
+
+The squared expected residual is estimated in all-in-one fashion as the product
+of the residuals at two independent next-period shock draws, which keeps the
+estimate unbiased.
 
 ## Using Both Together
 
-The mechanisms are complementary rather than competing. The bounded network
-keeps every training iterate feasible; the Fischer-Burmeister loss supplies the
-optimality condition that tells the solver where the bound binds and by how
-much. The constrained perfect-foresight benchmark (`D-4` in the
+The mechanisms compose: the bounded network keeps every training iterate
+feasible, while the Fischer-Burmeister loss supplies the optimality condition at
+the bound. A minimal Euler-method setup on a constrained consumption-saving
+block looks like this:
+
+```python
+import skagent as ska
+from skagent.ann import BlockPolicyNet, train_block_nn
+from skagent.loss import EulerEquationLoss
+
+# c is bounded below by a floor and above by the no-borrowing ceiling c <= m.
+bellman_period = ska.BellmanPeriod(block, "DiscFac", calibration)
+
+policy_net = BlockPolicyNet(bellman_period)  # feasible by construction
+euler_loss = EulerEquationLoss(
+    bellman_period, constrained=True
+)  # bound-aware optimality
+
+policy_net, _, _ = train_block_nn(policy_net, train_grid, euler_loss, epochs=1)
+```
+
+The constrained perfect-foresight benchmark (`D-4` in the
 {doc}`benchmark_models` registry) is the in-package demonstration: a policy
-network trained on `EulerEquationLoss(constrained=True)` matches a
-value-function-iteration oracle to well within one percent on average, on a
-problem whose borrowing constraint binds at low wealth and where an
-unconstrained Euler objective cannot identify the policy level at all. For a
-runnable walkthrough on the buffer-stock model, see
+network trained this way matches a value-function-iteration oracle to well
+within one percent on average, on a problem whose borrowing constraint binds at
+low wealth and where an unconstrained Euler objective cannot identify the policy
+level at all. For a runnable walkthrough, see
 {doc}`../auto_examples/algorithms/plot_maliar_training_loop`.
 
 A practical rule of thumb: if the constraint cannot bind in the region of the
-state space you care about, the default network bounds are enough. If it can
-bind and you train on an Euler or first-order-condition objective, add
-`constrained=True` so the loss knows what optimality looks like at the boundary.
+state space you care about, the network bounds alone are enough. If it can bind
+and you train on an Euler objective, add `constrained=True`.
 
-## Grid Solvers
+## Where Each Mechanism Is Available
 
-Constraint handling is not specific to neural methods. The value backwards
-induction solver ({py:mod}`skagent.algos.vbi`) reads the same `Control` bounds
-and passes them to `scipy.optimize.minimize` as box constraints on each grid
-point's optimization, with no smooth reformulation needed because no gradient
-flows through the policy.
+| Mechanism            | Where it lives                                  | Bounds handled  |
+| -------------------- | ----------------------------------------------- | --------------- |
+| Open-bounds network  | `BlockPolicyNet`, `BlockPolicyValueNet`         | lower and upper |
+| Complementarity loss | `EulerEquationLoss(constrained=True)`           | lower and upper |
+| Grid box constraints | `skagent.algos.vbi` (value backwards induction) | lower and upper |
+
+The value backwards induction solver ({py:mod}`skagent.algos.vbi`) reads the
+same `Control` bounds and passes them to `scipy.optimize.minimize` as box
+constraints, with no smooth reformulation needed because no gradient flows
+through the policy.
