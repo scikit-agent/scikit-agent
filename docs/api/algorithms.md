@@ -62,11 +62,7 @@ reward-based losses ({class}`~skagent.loss.StaticRewardLoss`,
 directly for the non-recurring case; the equation-residual losses
 ({class}`~skagent.loss.BellmanEquationLoss`,
 {class}`~skagent.loss.EulerEquationLoss`) target the recurring, dynamic case.
-
-```{eval-rst}
-.. automodule:: skagent.loss
-   :members:
-```
+See {doc}`loss` for the full reference.
 
 ## Neural Network Components
 
