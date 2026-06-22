@@ -67,6 +67,12 @@ and this project adheres to
   applied
 - Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
   D-2 benchmark
+- **Constraints** user-guide page documenting the ways to constrain an
+  optimization problem: bound declaration on `Control`, the open-bounds
+  policy-network transforms, the Fischer-Burmeister complementarity loss
+  (including its current upper-bound-only scope), how the mechanisms compose,
+  and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
+  now passes callable bounds, matching the enforced API.
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
@@ -109,6 +115,13 @@ and this project adheres to
 - Added the public `has_analytical_policy` registry helper to
   `skagent.models.benchmarks`, replacing duplicated closed-form checks in the
   tests and the gallery
+- Added an **Algorithms** user-guide page documenting the direct (non-recurring)
+  solve workflow — training a `BlockPolicyNet` against reward-based losses
+  (`StaticRewardLoss`, `EstimatedDiscountedLifetimeRewardLoss`) on benchmark
+  models (D-2, U-2), including multiple-control solves — with a runnable
+  `plot_direct_block_solve.py` gallery example
+- Expanded the Algorithms API reference with the `skagent.solver` and
+  `skagent.loss` modules and `skagent.ann.train_block_nn`
 
 ### Removed
 
@@ -139,6 +152,10 @@ and this project adheres to
 - Fixed the `CRRA` calibration in `perfect_foresight_normalized`: it was a
   1-tuple `(2.0,)`, which broke the CRRA utility power; it is now the scalar
   `2.0`.
+- Fixed `skagent.solver.solve_multiple_controls`, which previously crashed on
+  its default loss and passed incorrect arguments to `StaticRewardLoss`; it now
+  trains a policy network per control via a best-response sweep and returns the
+  trained decision rules.
 - `train_block_nn` now halts early with a warning on a non-finite (NaN/Inf) loss
   instead of continuing to train on poisoned weights.
 - Documentation correctness pass across `docs/` and the examples gallery: the

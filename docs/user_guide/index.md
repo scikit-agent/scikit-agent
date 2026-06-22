@@ -37,6 +37,8 @@ Learn about the fundamental concepts and components:
 - {doc}`algorithms` - Solution methods for solving your models
 - {doc}`environments` - Interactive adapters for reinforcement-learning
   algorithms
+- {doc}`constraints` - The ways to constrain decisions and how solvers enforce
+  them
 
 <!---
 ## Key Design Principles
@@ -73,6 +75,7 @@ blocks
 simulation
 algorithms
 environments
+constraints
 benchmark_models
 ```
 
