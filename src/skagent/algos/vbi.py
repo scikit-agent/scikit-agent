@@ -612,7 +612,11 @@ def bellman_step(
             post = bp.post_function(states, ctrl, shocks=obs, parameters=params)
             beta = bp.resolve_discount_factor(post)
             s_next = bp.transition_function(states, ctrl, shocks=obs, parameters=params)
-            return -(r + beta * continuation_vf(s_next, obs, params))
+            # Coerce to a plain float: a reward like ``crra_utility`` returns a
+            # torch tensor, and scipy.optimize.minimize must see a numpy/python
+            # scalar objective (a leaked torch tensor breaks np.asarray on some
+            # numpy/torch versions: "'torch.dtype' object has no attribute 'type'").
+            return -float(r + beta * continuation_vf(s_next, obs, params))
 
         # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
         if x0_policy is not None:
