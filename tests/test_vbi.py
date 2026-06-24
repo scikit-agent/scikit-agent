@@ -8,6 +8,7 @@ from conftest import (
     case_8,
     case_9,
     case_10,
+    case_11,
 )
 import skagent.algos.vbi as vbi
 from skagent.bellman import BellmanPeriod
@@ -371,6 +372,41 @@ class test_vbi_bellman_step(unittest.TestCase):
         self.assertEqual(set(policy), {"c", "d"})
         self.assertEqual(list(policy["c"].dims), ["a"])
         self.assertEqual(list(policy["d"].dims), ["a"])
+
+    def test_case_11_nontrivial_continuation(self):
+        # A real continuation_vf drives the optimum (design §9 step 4). The
+        # period reward u = -(a - b)^2 is over the ARRIVAL states (a, b) and is
+        # independent of the control c, so the immediate reward alone cannot pin
+        # c. The transition carries c forward as next-period b' (b' = c) while
+        # a' = a + theta; a continuation that rewards b' ~ a' therefore pulls
+        #   c* = a' = a + theta.
+        # This exercises beta*cv and the arrival transition together: the optimum
+        # exists only because of the discounted continuation value.
+        def continuation(states, shocks, parameters):
+            return -((states["a"] - states["b"]) ** 2)
+
+        grid = {
+            "a": np.linspace(-1.5, 1.5, 7),
+            "b": np.linspace(-1.5, 1.5, 5),  # outside c.iset = [a, theta]
+            "theta": np.linspace(-1, 1, 5),
+        }
+        dr, value_array, policy = vbi.bellman_step(
+            case_11["bp"], continuation, grid, agent="agent"
+        )
+        # c.iset = [a, theta]; the b axis is outside it and the optimum is
+        # invariant along it, so Mechanism A drops it -> rule of (a, theta).
+        for a in [-1.0, 0.0, 1.0]:
+            for theta in [-0.5, 0.5]:
+                self.assertAlmostEqual(dr["c"](a, theta), a + theta, delta=self.ATOL)
+        # At the optimum the continuation is driven to zero (b' = c = a + theta =
+        # a'), so the decision value is just the arrival reward V = -(a - b)^2 --
+        # confirming the reward reads the arrival b, not the control.
+        self.assertEqual(list(value_array.dims), ["a", "b", "theta"])
+        a_g, b_g = np.meshgrid(grid["a"], grid["b"], indexing="ij")
+        want_v = -((a_g[:, :, None] - b_g[:, :, None]) ** 2) * np.ones(
+            (1, 1, len(grid["theta"]))
+        )
+        self.assertTrue(np.allclose(value_array.values, want_v, atol=self.ATOL))
 
     def test_project_to_iset_non_invariant_raises(self):
         # Dropping a grid axis outside the iset assumes the optimum is invariant
