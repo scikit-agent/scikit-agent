@@ -27,6 +27,23 @@ the gallery is built from scratch.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="A block describes a single decision period: arrival states and shocks come in, the agent chooses its controls, and a reward is produced. When the period stands on its own — no continuation value to solve for as a fixed point — we can solve it directly by training a policy network to maximize reward. This is the &quot;non-recurring&quot; workflow, in contrast to the dynamic, recurring case that requires value-function iteration or the Bellman/Euler equation losses.">
+
+.. only:: html
+
+  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_direct_block_solve_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/algorithms/plot_direct_block_solve`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Solving a Block Directly (Non-Recurring)</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form.">
 
 .. only:: html
@@ -69,6 +86,7 @@ the gallery is built from scratch.
 .. toctree::
    :hidden:
 
+   /auto_examples/algorithms/plot_direct_block_solve
    /auto_examples/algorithms/plot_train_against_known_solution
    /auto_examples/algorithms/plot_maliar_training_loop
 

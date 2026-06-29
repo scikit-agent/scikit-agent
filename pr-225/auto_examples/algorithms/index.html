@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Training a Policy Network Against a Known Solution" href="plot_train_against_known_solution.html"><link rel="prev" title="Examples" href="../index.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Solving a Block Directly (Non-Recurring)" href="plot_direct_block_solve.html"><link rel="prev" title="Examples" href="../index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev583+g4bc65b65a</title>
+        <title>Algorithms - scikit-agent 0.1.dev596+g2d1eda102</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev583+g4bc65b65a</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev596+g2d1eda102</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,11 +203,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/benchmark_models.html">Benchmark Models</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">Algorithms</a><input aria-label="Toggle navigation of Algorithms" checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="plot_direct_block_solve.html">Solving a Block Directly (Non-Recurring)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 </ul>
@@ -288,7 +290,10 @@ algorithms, and numerical techniques.</p>
 <p>The current examples cover neural network training methods following Maliar,
 Maliar, and Winant (2021). They train networks for several minutes each when
 the gallery is built from scratch.</p>
-<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form."><img alt="" src="../../_images/sphx_glr_plot_train_against_known_solution_thumb.png" />
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="A block describes a single decision period: arrival states and shocks come in, the agent chooses its controls, and a reward is produced. When the period stands on its own — no continuation value to solve for as a fixed point — we can solve it directly by training a policy network to maximize reward. This is the &quot;non-recurring&quot; workflow, in contrast to the dynamic, recurring case that requires value-function iteration or the Bellman/Euler equation losses."><img alt="" src="../../_images/sphx_glr_plot_direct_block_solve_thumb.png" />
+<p><a class="reference internal" href="plot_direct_block_solve.html"><span class="doc">Solving a Block Directly (Non-Recurring)</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Solving a Block Directly (Non-Recurring)</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form."><img alt="" src="../../_images/sphx_glr_plot_train_against_known_solution_thumb.png" />
 <p><a class="reference internal" href="plot_train_against_known_solution.html"><span class="doc">Training a Policy Network Against a Known Solution</span></a></p>
   <div class="sphx-glr-thumbnail-title">Training a Policy Network Against a Known Solution</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="The companion example trains a network on a fixed grid and checks it against a closed-form policy. This one runs the full Maliar, Maliar, and Winant (2021) algorithm, maliar_training_loop, on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem (benchmark U-3). Solving such models is the reason the neural-network method exists, so it is the honest setting in which to show the algorithm at work."><img alt="" src="../../_images/sphx_glr_plot_maliar_training_loop_thumb.png" />
@@ -303,12 +308,12 @@ the gallery is built from scratch.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="plot_train_against_known_solution.html">
+          <a class="next-page" href="plot_direct_block_solve.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Training a Policy Network Against a Known Solution</div>
+                <div class="title">Solving a Block Directly (Non-Recurring)</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -354,7 +359,7 @@ the gallery is built from scratch.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=0e1d6978"></script>
+</div><script src="../../_static/documentation_options.js?v=c031e40b"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

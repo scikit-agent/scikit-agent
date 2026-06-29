@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Benchmark Models" href="benchmark_models.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Constraining an Optimization Problem" href="constraints.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.dev583+g4bc65b65a</title>
+        <title>Algorithms Guide - scikit-agent 0.1.dev596+g2d1eda102</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev583+g4bc65b65a</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev596+g2d1eda102</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,11 +203,13 @@
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_direct_block_solve.html">Solving a Block Directly (Non-Recurring)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
 </ul>
@@ -284,27 +286,209 @@
 <h1>Algorithms Guide<a class="headerlink" href="#algorithms-guide" title="Link to this heading">¶</a></h1>
 <p>This guide covers the solution algorithms and optimization methods available in
 scikit-agent.</p>
-<section id="solution-methods">
-<h2>Solution Methods<a class="headerlink" href="#solution-methods" title="Link to this heading">¶</a></h2>
-<p>Learn about different approaches to solving economic models:</p>
-<ul class="simple">
-<li><p><strong>Maliar-style deep learning methods</strong>: Neural network solvers following
-Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
-objective function</p></li>
-<li><p><strong>Value backwards induction (VBI)</strong>: Classical dynamic programming via
-backwards induction on a grid</p></li>
-</ul>
+<section id="solving-a-block-directly">
+<h2>Solving a block directly<a class="headerlink" href="#solving-a-block-directly" title="Link to this heading">¶</a></h2>
+<p>A <a class="reference internal" href="blocks.html"><span class="doc">block</span></a> describes a single decision period: arrival states and
+shocks come in, the agent chooses its controls, and a reward is produced. The
+most direct use of the deep-learning solver is to train a
+<a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a> so that its decision rule maximizes the
+reward earned within the block, over a grid of starting points.</p>
+<p>What you optimize — this period’s immediate reward, a fixed finite horizon, or a
+recurring problem with a continuation value — is determined by the <em>loss
+function</em> you choose in step 3, not by the model objects themselves. This
+section uses reward-based losses; the <strong>Value Function Iteration</strong> section below
+covers the recurring case.</p>
+<section id="load-a-model-and-wrap-it">
+<h3>1. Load a model and wrap it<a class="headerlink" href="#load-a-model-and-wrap-it" title="Link to this heading">¶</a></h3>
+<p>We use the <strong>D-2</strong> benchmark — an infinite-horizon, perfect-foresight
+consumption–savings model — from <a class="reference internal" href="../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a>. Each model
+in that registry is a <a class="reference internal" href="../api/blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> paired with a
+calibration. Wrap the block in a <a class="reference internal" href="../api/bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a>,
+naming the discount factor variable (<code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>); the wrapper attaches the
+calibration and exposes the methods the solver needs (transitions, decisions,
+rewards).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bellman</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.grid</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">grid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_benchmark_model</span><span class="p">,</span> <span class="n">get_benchmark_calibration</span>
+
+<span class="n">block_d2</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
+<span class="n">calibration</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
+
+<span class="c1"># Build the shock distributions (a no-op for the deterministic D-2, but good</span>
+<span class="c1"># practice — required once a model has live shocks, as U-2 does below).</span>
+<span class="n">block_d2</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
+
+<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block_d2</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In D-2 the agent arrives with assets <code class="docutils literal notranslate"><span class="pre">a</span></code>, cash-on-hand <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">R*a</span> <span class="pre">+</span> <span class="pre">y</span></code> is formed,
+and the single control <code class="docutils literal notranslate"><span class="pre">c</span></code> (consumption) is chosen subject to <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">&lt;=</span> <span class="pre">m</span></code>.</p>
 </section>
-<section id="algorithm-configuration">
-<h2>Algorithm Configuration<a class="headerlink" href="#algorithm-configuration" title="Link to this heading">¶</a></h2>
-<p>Documentation for algorithm parameters and settings will be added here.</p>
+<section id="build-the-grid-of-starting-points">
+<h3>2. Build the grid of starting points<a class="headerlink" href="#build-the-grid-of-starting-points" title="Link to this heading">¶</a></h3>
+<p>The network is trained over a <a class="reference internal" href="../api/algorithms.html#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Grid</span></code></a> of arrival states
+(and shock realizations, if the block has shocks). Each grid point is one
+scenario the policy must do well on. D-2’s only arrival state is <code class="docutils literal notranslate"><span class="pre">a</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">4.0</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">}})</span>
+</pre></div>
+</div>
+</section>
+<section id="choose-a-reward-based-loss">
+<h3>3. Choose a reward-based loss<a class="headerlink" href="#choose-a-reward-based-loss" title="Link to this heading">¶</a></h3>
+<p>To solve the block directly, maximize reward. Two loss functions cover the
+common cases:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../api/loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code></a> — the negative of this period’s
+immediate reward. Use it when only the current period’s reward matters.</p></li>
+<li><p><a class="reference internal" href="../api/loss.html#skagent.loss.EstimatedDiscountedLifetimeRewardLoss" title="skagent.loss.EstimatedDiscountedLifetimeRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EstimatedDiscountedLifetimeRewardLoss</span></code></a> — the negative
+discounted reward accumulated over a fixed horizon of <code class="docutils literal notranslate"><span class="pre">big_t</span></code> simulated
+periods. With <code class="docutils literal notranslate"><span class="pre">big_t=1</span></code> this reduces to the immediate-reward case; larger
+values roll the block forward a known, finite number of steps. Because the
+horizon is fixed, there is still no continuation value to solve for.</p></li>
+</ul>
+<p>Here we give the agent a 10-period planning horizon so it trades off consumption
+over time rather than acting myopically:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent.loss</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">loss</span>
+
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">EstimatedDiscountedLifetimeRewardLoss</span><span class="p">(</span>
+    <span class="n">bp</span><span class="p">,</span> <span class="n">big_t</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">calibration</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="train-and-read-off-the-decision-rule">
+<h3>4. Train and read off the decision rule<a class="headerlink" href="#train-and-read-off-the-decision-rule" title="Link to this heading">¶</a></h3>
+<p><a class="reference internal" href="../api/algorithms.html#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code></a> runs the optimizer. Afterwards, query the
+network’s <a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyNet.decision_function" title="skagent.ann.BlockPolicyNet.decision_function"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decision_function()</span></code></a> to get
+control values, or <a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyNet.get_decision_rule" title="skagent.ann.BlockPolicyNet.get_decision_rule"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_decision_rule()</span></code></a> to
+get a reusable decision rule. Pass the calibration to <code class="docutils literal notranslate"><span class="pre">decision_function</span></code>: the
+control’s information variable <code class="docutils literal notranslate"><span class="pre">m</span></code> is derived from the arrival state and the
+parameters <code class="docutils literal notranslate"><span class="pre">R</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>, so the solver needs them to reconstruct it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent.ann</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ann</span>
+
+<span class="n">policy</span> <span class="o">=</span> <span class="n">ann</span><span class="o">.</span><span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">ann</span><span class="o">.</span><span class="n">train_block_nn</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">250</span><span class="p">)</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">decision_function</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]},</span> <span class="p">{},</span> <span class="n">calibration</span><span class="p">)[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Over a 10-period horizon the agent saves: the learned <code class="docutils literal notranslate"><span class="pre">c</span></code> sits well below
+cash-on-hand <code class="docutils literal notranslate"><span class="pre">m</span></code>, in the neighborhood of D-2’s infinite-horizon optimum.
+Shortening the horizon toward <code class="docutils literal notranslate"><span class="pre">big_t=1</span></code> makes it myopic (consume everything, <code class="docutils literal notranslate"><span class="pre">c</span></code>
+→ <code class="docutils literal notranslate"><span class="pre">m</span></code>); lengthening it pushes the stationary rule toward the infinite-horizon
+policy. That true optimum — D-2 has a known closed form, available via
+<a class="reference internal" href="../api/models.html#skagent.models.benchmarks.get_analytical_policy" title="skagent.models.benchmarks.get_analytical_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.models.benchmarks.get_analytical_policy()</span></code></a> — is solved directly
+with the recurring methods in the <strong>Value Function Iteration</strong> section below.</p>
+</section>
+<section id="working-with-shocks">
+<h3>Working with shocks<a class="headerlink" href="#working-with-shocks" title="Link to this heading">¶</a></h3>
+<p>The <strong>U-2</strong> benchmark adds a permanent-income shock <code class="docutils literal notranslate"><span class="pre">psi</span></code> to a normalized
+log-utility model. To keep the focus on shock handling rather than the planning
+horizon, this example uses <a class="reference internal" href="../api/loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code></a> — a
+single-period (myopic) objective. With this loss, each shock gets a column in
+the grid under its own name (<code class="docutils literal notranslate"><span class="pre">&quot;psi&quot;</span></code>), and the realized shocks are passed to
+<code class="docutils literal notranslate"><span class="pre">decision_function</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The two reward losses use different grid conventions for shocks.
+<a class="reference internal" href="../api/loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code></a> reads each shock by its base name
+(<code class="docutils literal notranslate"><span class="pre">&quot;psi&quot;</span></code>). <a class="reference internal" href="../api/loss.html#skagent.loss.EstimatedDiscountedLifetimeRewardLoss" title="skagent.loss.EstimatedDiscountedLifetimeRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EstimatedDiscountedLifetimeRewardLoss</span></code></a>
+simulates <code class="docutils literal notranslate"><span class="pre">big_t</span></code> periods and reads one draw per period under the
+<code class="docutils literal notranslate"><span class="pre">&lt;shock&gt;_&lt;t&gt;</span></code> convention (<code class="docutils literal notranslate"><span class="pre">&quot;psi_0&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;psi_1&quot;</span></code>, …).</p>
+</div>
+<p>The registry ships U-2 with <code class="docutils literal notranslate"><span class="pre">sigma_psi=0</span></code> (the shock switched off, so the
+permanent-income-hypothesis solution is exact); here we switch it on to
+illustrate shock handling.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">block_u2</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">&quot;U-2&quot;</span><span class="p">)</span>
+<span class="n">calibration</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;U-2&quot;</span><span class="p">)</span>
+<span class="n">calibration</span><span class="p">[</span><span class="s2">&quot;sigma_psi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># switch the permanent-income shock on</span>
+
+<span class="c1"># Construct shocks with an explicit RNG for reproducible draws.</span>
+<span class="n">block_u2</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">calibration</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block_u2</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+
+<span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+        <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">policy</span> <span class="o">=</span> <span class="n">ann</span><span class="o">.</span><span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">StaticRewardLoss</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+<span class="n">ann</span><span class="o">.</span><span class="n">train_block_nn</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">decision_function</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]},</span> <span class="p">{</span><span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">]},</span> <span class="n">calibration</span><span class="p">)[</span>
+    <span class="s2">&quot;c&quot;</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>U-2’s control is bounded (<code class="docutils literal notranslate"><span class="pre">0.01</span> <span class="pre">&lt;=</span> <span class="pre">c</span> <span class="pre">&lt;=</span> <span class="pre">0.1*m</span> <span class="pre">+</span> <span class="pre">2</span></code>), set via the <code class="docutils literal notranslate"><span class="pre">lower_bound</span></code> /
+<code class="docutils literal notranslate"><span class="pre">upper_bound</span></code> arguments to <a class="reference internal" href="../api/blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> in its definition;
+the policy network enforces such bounds automatically.</p>
+</section>
+</section>
+<section id="blocks-with-multiple-controls">
+<h2>Blocks with multiple controls<a class="headerlink" href="#blocks-with-multiple-controls" title="Link to this heading">¶</a></h2>
+<p>When a block has more than one control, train one policy network per control and
+let each network treat the others’ current policies as fixed — a best-response
+sweep. <a class="reference internal" href="../api/algorithms.html#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a> automates this. The
+benchmark registry has no multi-control model, so we use a small illustrative
+block whose reward is maximized at <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">=</span> <span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">=</span> <span class="pre">k</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent.block</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">block</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_multiple_controls</span>
+
+<span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}</span>
+
+<span class="n">b</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;two controls&quot;</span><span class="p">,</span>
+    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;agent&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;agent&quot;</span><span class="p">),</span>  <span class="c1"># empty information set</span>
+        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="o">-</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;agent&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+
+<span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">11</span><span class="p">}})</span>
+
+<span class="c1"># Repeat a symbol to schedule an extra refinement pass after its neighbour</span>
+<span class="c1"># has been updated.</span>
+<span class="n">decision_rules</span> <span class="o">=</span> <span class="n">solve_multiple_controls</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">],</span> <span class="n">bp</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">calibration</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span>
+<span class="p">)</span>
+<span class="c1"># optimal: c = a and d = 3, so the reward u is approximately 0</span>
+</pre></div>
+</div>
+<p>The return value is a dictionary mapping each control symbol to its trained
+decision rule, suitable for passing to <code class="docutils literal notranslate"><span class="pre">reward_function</span></code> or to simulation.</p>
+</section>
+<section id="value-function-iteration">
+<h2>Value Function Iteration<a class="headerlink" href="#value-function-iteration" title="Link to this heading">¶</a></h2>
+<p>Classical dynamic programming for recurring problems, implemented as backwards
+induction over a block’s value function. See <a class="reference internal" href="../api/algorithms.html#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.algos.vbi.solve()</span></code></a>.
+The neural Bellman- and Euler-equation losses
+(<a class="reference internal" href="../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>,
+<a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>) provide deep-learning alternatives
+for the recurring case.</p>
 </section>
 <section id="performance-considerations">
 <h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading">¶</a></h2>
-<p>Documentation for optimization and performance tuning will be added here.</p>
+<ul class="simple">
+<li><p>Start with a narrow network (<code class="docutils literal notranslate"><span class="pre">width=8</span></code>–<code class="docutils literal notranslate"><span class="pre">16</span></code>) and few epochs to confirm the
+model is set up correctly, then scale up.</p></li>
+<li><p>Training is over the grid you supply; a coarse grid trains faster but
+generalizes less well off-grid.</p></li>
+<li><p>Set seeds (<code class="docutils literal notranslate"><span class="pre">torch.manual_seed</span></code> / <code class="docutils literal notranslate"><span class="pre">numpy.random.seed</span></code>) for reproducible runs,
+and construct shocks with an explicit <code class="docutils literal notranslate"><span class="pre">rng</span></code> for deterministic shock draws.</p></li>
+</ul>
 <hr class="docutils" />
-<p><em>This page is under construction. Content will be added as algorithms are
-implemented.</em></p>
+<p><em>For a runnable, end-to-end version of these workflows, see the
+<a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms examples gallery</span></a>.</em></p>
 </section>
 </section>
 
@@ -313,12 +497,12 @@ implemented.</em></p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="benchmark_models.html">
+          <a class="next-page" href="constraints.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Benchmark Models</div>
+                <div class="title">Constraining an Optimization Problem</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -371,8 +555,16 @@ implemented.</em></p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Algorithms Guide</a><ul>
-<li><a class="reference internal" href="#solution-methods">Solution Methods</a></li>
-<li><a class="reference internal" href="#algorithm-configuration">Algorithm Configuration</a></li>
+<li><a class="reference internal" href="#solving-a-block-directly">Solving a block directly</a><ul>
+<li><a class="reference internal" href="#load-a-model-and-wrap-it">1. Load a model and wrap it</a></li>
+<li><a class="reference internal" href="#build-the-grid-of-starting-points">2. Build the grid of starting points</a></li>
+<li><a class="reference internal" href="#choose-a-reward-based-loss">3. Choose a reward-based loss</a></li>
+<li><a class="reference internal" href="#train-and-read-off-the-decision-rule">4. Train and read off the decision rule</a></li>
+<li><a class="reference internal" href="#working-with-shocks">Working with shocks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#blocks-with-multiple-controls">Blocks with multiple controls</a></li>
+<li><a class="reference internal" href="#value-function-iteration">Value Function Iteration</a></li>
 <li><a class="reference internal" href="#performance-considerations">Performance Considerations</a></li>
 </ul>
 </li>
@@ -385,7 +577,7 @@ implemented.</em></p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=0e1d6978"></script>
+</div><script src="../_static/documentation_options.js?v=c031e40b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
