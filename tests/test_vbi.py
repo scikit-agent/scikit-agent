@@ -1,3 +1,13 @@
+from conftest import (
+    case_0,
+    case_1,
+    case_3,
+    case_5,
+    case_6,
+    case_7,
+    case_8,
+    case_9,
+)
 import skagent.algos.vbi as vbi
 from skagent.distributions import Bernoulli
 from skagent.block import Control, DBlock
@@ -72,3 +82,132 @@ class test_vbi(unittest.TestCase):
         )
 
         self.assertAlmostEqual(dr["c"](**{"m": 1.5}), 1.5)
+
+
+# Terminal continuation: the value of arriving at the next block is zero.
+# With this, each conftest case reduces to a single backward-induction step
+# whose optimum is the case's documented ``optimal_dr``.
+def terminal_continuation(a):
+    return 0.0
+
+
+class test_vbi_conftest(unittest.TestCase):
+    """
+    Comprehensive backward-induction tests against the shared conftest suite.
+
+    Each case ships an analytic ``optimal_dr``; here we solve the block with
+    VBI and check the recovered decision rule gets close to that optimum at
+    interior points of the state grid. Together these exercise the full range
+    of the single-control solver: an interior optimum, a shock-dependent
+    policy, both-sided bounds (with either side binding), single-sided bounds
+    (which lean on the open-bound defaults), and an empty information set.
+    """
+
+    # tolerance on the recovered policy; the optima here are all linear, so
+    # grid interpolation is exact and scipy's optimizer is the only error source
+    ATOL = 1e-3
+
+    def test_case_0_interior_optimum(self):
+        # u = -c^2, unconstrained -> c* = 0 for all a
+        state_grid = {"a": np.linspace(0, 2, 11)}
+        dr, _, _ = vbi.solve(
+            case_0["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_0["calibration"],
+        )
+        for a in [0.2, 0.7, 1.3, 1.8]:
+            self.assertAlmostEqual(dr["c"](a=a), 0.0, delta=self.ATOL)
+
+    def test_case_1_shock_dependent_policy(self):
+        # u = -(theta - c)^2 with theta in the information set -> c* = theta
+        state_grid = {
+            "a": np.linspace(0, 1, 7),
+            "theta": np.linspace(-1, 1, 7),
+        }
+        dr, _, _ = vbi.solve(
+            case_1["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_1["calibration"],
+        )
+        for theta in [-0.6, 0.0, 0.4, 0.9]:
+            self.assertAlmostEqual(dr["c"](a=0.5, theta=theta), theta, delta=self.ATOL)
+
+    def test_case_3_consume_cash_on_hand(self):
+        # u = -(m - c)^2 -> c* = m. The arrival state ``a`` depends on the psi
+        # shock, so psi must be in the grid for the transition to evaluate.
+        state_grid = {
+            "m": np.linspace(0.1, 2, 7),
+            "psi": np.array([0.0]),
+        }
+        dr, _, _ = vbi.solve(
+            case_3["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_3["calibration"],
+        )
+        for m in [0.5, 1.0, 1.5]:
+            self.assertAlmostEqual(dr["c"](m=m, psi=0.0), m, delta=self.ATOL)
+
+    def test_case_5_double_bounded_upper_binds(self):
+        # maximize c subject to 0 <= c <= a -> c* = a (upper bound binds)
+        state_grid = {"a": np.linspace(0.2, 1, 5)}
+        dr, _, _ = vbi.solve(
+            case_5["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_5["calibration"],
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a=a), a, delta=self.ATOL)
+
+    def test_case_6_double_bounded_lower_binds(self):
+        # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds)
+        state_grid = {"a": np.linspace(0.2, 1, 5)}
+        dr, _, _ = vbi.solve(
+            case_6["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_6["calibration"],
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a=a), a, delta=self.ATOL)
+
+    def test_case_7_only_lower_bound(self):
+        # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
+        # Exercises the open upper-bound default.
+        state_grid = {"a": np.linspace(0.2, 1, 5)}
+        dr, _, _ = vbi.solve(
+            case_7["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_7["calibration"],
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a=a), 1.0, delta=self.ATOL)
+
+    def test_case_8_only_upper_bound(self):
+        # maximize c subject to c <= a (no lower bound) -> c* = a.
+        # Exercises the open lower-bound default.
+        state_grid = {"a": np.linspace(0.2, 1, 5)}
+        dr, _, _ = vbi.solve(
+            case_8["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_8["calibration"],
+        )
+        for a in [0.4, 0.6, 0.9]:
+            self.assertAlmostEqual(dr["c"](a=a), a, delta=self.ATOL)
+
+    def test_case_9_empty_information_set(self):
+        # u = -(c - 3)^2 with an empty information set -> constant c* = 3
+        state_grid = {"a": np.linspace(0, 2, 5)}
+        dr, _, _ = vbi.solve(
+            case_9["block"],
+            terminal_continuation,
+            state_grid,
+            calibration=case_9["calibration"],
+        )
+        # empty iset -> the rule is constant across the grid
+        self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
