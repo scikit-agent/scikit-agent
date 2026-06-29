@@ -8,6 +8,7 @@ user_guide/index
 auto_examples/index
 api/index
 community/index
+ecosystem/index
 ```
 
 ```{include} ../README.md
