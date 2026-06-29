@@ -52,6 +52,19 @@ and this project adheres to
 
 ### Added
 
+- `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
+  the per-iteration update of value-function iteration, re-basing the exact grid
+  solver off the legacy `DBlock` continuation API onto the protocol the torch
+  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
+  multi-reward summation (`get_reward_syms`), and empty-shock-safe
+  (deterministic) handling, with a per-point optimizer seed (warm-start, else
+  midpoint of finite bounds, else fallback). Returns
+  `(dr_from_data, value_array, policy_array)` with `policy_array` a
+  `dict[str, DataArray]`. This first slice handles a single control under the
+  grid-equals-information-set contract; multi-control, derived-pre-state
+  reindexing, internal shock discretization, and the `solve_bellman` iteration
+  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
+  deliberate discount-folded-into-continuation path).
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss
