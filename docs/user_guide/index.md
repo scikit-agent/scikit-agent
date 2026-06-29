@@ -35,7 +35,8 @@ Learn about the fundamental concepts and components:
 - {doc}`blocks` - Understanding model structure and building custom models
 - {doc}`simulation` - Monte Carlo simulation and analysis
 - {doc}`algorithms` - Solution methods for solving your models
-- {doc}`science` - Scientific concepts and references
+- {doc}`constraints` - The ways to constrain decisions and how solvers enforce
+  them
 
 <!---
 ## Key Design Principles
@@ -71,8 +72,8 @@ quickstart
 blocks
 simulation
 algorithms
+constraints
 benchmark_models
-science
 ```
 
 ## Need Help?

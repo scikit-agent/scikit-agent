@@ -39,7 +39,7 @@ dependencies = [
   "pyyaml",
   "scipy",
   "sympy",
-  "torch",
+  "torch >=2.0",
   "xarray",
 ]
 
