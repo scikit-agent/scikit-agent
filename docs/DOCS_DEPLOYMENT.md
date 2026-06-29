@@ -108,10 +108,10 @@ git push origin main
 # Build docs locally
 uv pip install ".[docs]"
 cd docs
-uv run python -m sphinx -b html . _build
+python -m sphinx -b html . _build
 
 # Serve locally
-uv run python -m http.server 8000 -d _build
+python -m http.server 8000 -d _build
 ```
 
 ## 🐛 Troubleshooting

@@ -1,26 +1,54 @@
 import skagent.ann as ann
-import skagent.loss
+import skagent.loss as loss_module
 
 
 def solve_multiple_controls(
     control_order, bellman_period, givens, calibration, epochs=200, loss=None
 ):
     """
-    Solves a block multiple times, once for each control in control_order.
+    Solve a block with more than one control by training a policy network
+    for each control in turn.
 
-    Currently restricted to static reward loss.
+    Each control is given its own :class:`skagent.ann.BlockPolicyNet`. The
+    networks are trained one at a time, in the order given by
+    ``control_order``, with every network treating the other networks' current
+    policies as fixed. A control may appear in ``control_order`` more than once
+    to refine it after its neighbours have been updated (e.g.
+    ``["c", "d", "c"]``), which is the multi-control analogue of a best-response
+    sweep.
 
-    TODO: all variable 'loss function generator' once API has solidified.
+    Currently restricted to single-period (non-recurring) reward objectives;
+    by default the negative immediate reward
+    (:class:`skagent.loss.StaticRewardLoss`) is maximized.
+
+    TODO: allow a variable 'loss function generator' once the API has solidified.
 
     Parameters
     ----------
-    control_order: list
-        List of control symbols in order to be solved
-    bellman_period: BellmanPeriod
+    control_order : list of str
+        Control symbols, in the order they should be solved. Symbols may repeat
+        to schedule additional refinement passes.
+    bellman_period : BellmanPeriod
+        The model period whose controls are being solved.
+    givens : skagent.grid.Grid
+        Grid of arrival states and shock realizations to train over.
+    calibration : dict
+        Calibration parameters passed to the loss function.
+    epochs : int, optional
+        Training epochs per pass. Default is 200.
+    loss : type, optional
+        A loss-function class with signature
+        ``loss(bellman_period, parameters, other_dr)``. Defaults to
+        :class:`skagent.loss.StaticRewardLoss`.
+
+    Returns
+    -------
+    dict
+        Mapping from each control symbol to its trained decision rule.
     """
 
     if loss is None:
-        loss = skagent.loss.StaticRewardLoss
+        loss = loss_module.StaticRewardLoss
 
     # Control policy networks for each control in the block.
     cpns = {}
@@ -47,7 +75,7 @@ def solve_multiple_controls(
                 calibration,
                 dict_of_decision_rules,
             ),
-            epochs=epochs,  # !!
+            epochs=epochs,
         )
 
     return dict_of_decision_rules
