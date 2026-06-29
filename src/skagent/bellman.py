@@ -40,6 +40,7 @@ from typing import TYPE_CHECKING, Any, Callable
 import numpy as np
 import torch
 
+from skagent.simulation.monte_carlo import draw_shocks
 from skagent.utils import compute_gradients_for_tensors
 
 if TYPE_CHECKING:
@@ -292,6 +293,38 @@ class BellmanPeriod:
                 f"vf has no entry for agent '{agent}'. Available agents: {sorted(vf)}."
             )
         return vf[agent](states, shocks, params)
+
+    def get_action_dim(self):
+        return len(self.get_controls())
+
+    def get_states_dim(self):
+        """Returns the number of arrival states"""
+        return len(self.get_arrival_states(self.calibration))
+
+    def draw_shocks(self, n=None, rng: np.random.Generator | None = None):
+        """
+        Draw values of exogenous shock variables from the underlying block.
+        """
+        shocks = draw_shocks(self.block.get_shocks(), n=n, rng=rng)
+
+        return shocks
+
+    def forward_function(
+        self, states_t, shocks_t, controls_t, parameters=None, decision_rules=None
+    ):
+        decision_rules = (
+            decision_rules
+            if decision_rules
+            else (self.decision_rules if self.decision_rules else {})
+        )
+        parameters = (
+            parameters if parameters else (self.calibration if self.calibration else {})
+        )
+
+        vals = parameters | states_t | shocks_t | controls_t
+        post = self.block.transition(vals, decision_rules, fix=list(controls_t.keys()))
+
+        return post
 
     def transition_function(
         self,
@@ -1199,6 +1232,8 @@ def estimate_euler_residual(
         controls_t = bellman_period.compute_controls(
             df, states_t, shocks=shocks_t, parameters=parameters
         )
+
+    # Compute next period states (t+1) using first shock realization
     states_t_plus_1 = bellman_period.transition_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
