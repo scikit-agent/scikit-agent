@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**04:06.173** total execution time for 4 files **from auto_examples/algorithms**:
+**04:09.913** total execution time for 4 files **from auto_examples/algorithms**:
 
 .. container::
 
@@ -33,14 +33,14 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_sb3_ppo.py` (``plot_sb3_ppo.py``)
-     - 02:42.618
+     - 02:46.948
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_maliar_training_loop.py` (``plot_maliar_training_loop.py``)
-     - 00:53.890
+     - 00:53.520
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_train_against_known_solution.py` (``plot_train_against_known_solution.py``)
-     - 00:23.803
+     - 00:23.467
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_direct_block_solve.py` (``plot_direct_block_solve.py``)
-     - 00:05.863
+     - 00:05.978
      - 0.0

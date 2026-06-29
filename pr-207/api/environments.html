@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Loss Functions" href="loss.html"><link rel="prev" title="Algorithms" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Environments - scikit-agent 0.1.dev596+gded765e66</title>
+        <title>Environments - scikit-agent 0.1.dev599+g219630108</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev596+gded765e66</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev599+g219630108</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -326,7 +326,7 @@ can index by name.</p>
 <li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – Model definition (block dynamics, calibration, discount variable).</p></li>
 <li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Maps arrival-state symbols to <code class="docutils literal notranslate"><span class="pre">skagent</span></code> <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> objects,
 used to sample fresh initial states each <code class="xref py py-meth docutils literal notranslate"><span class="pre">reset()</span></code>.</p></li>
-<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – RNG used for shock and initial-state draws.</p></li>
+<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – RNG used for shock and initial-state draws.</p></li>
 </ul>
 </dd>
 </dl>
@@ -452,7 +452,7 @@ along the leading axis.</p></li>
 <dd class="field-even"><p>Unscaled action values. Always 1-D; scalar inputs return shape <code class="docutils literal notranslate"><span class="pre">(1,)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -475,7 +475,7 @@ consumed by <a class="reference internal" href="#skagent.env.Environment.step" t
 <li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – Maps arrival-state symbols to skagent <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> objects used to
 sample the initial state.</p></li>
 <li><p><strong>steps</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of periods to simulate.</p></li>
-<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – RNG used for the initial-state and shock draws.</p></li>
+<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – RNG used for the initial-state and shock draws.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -574,7 +574,7 @@ sample the initial state.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=ce26f7d1"></script>
+</div><script src="../_static/documentation_options.js?v=016730a9"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

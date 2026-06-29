@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:03.142** total execution time for 3 files **from auto_examples/models**:
+**00:03.183** total execution time for 3 files **from auto_examples/models**:
 
 .. container::
 
@@ -33,11 +33,11 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``plot_benchmark_models.py``)
-     - 00:01.135
+     - 00:01.149
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``plot_consumption_portfolio_model.py``)
-     - 00:01.098
+     - 00:01.095
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``plot_resource_extraction.py``)
-     - 00:00.909
+     - 00:00.940
      - 0.0
