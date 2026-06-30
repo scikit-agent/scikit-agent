@@ -45,6 +45,18 @@ Neural network-based solution methods following Maliar et al.
    :members:
 ```
 
+## Reinforcement Learning (Stable-Baselines3)
+
+Proximal Policy Optimization (PPO) for `BellmanPeriod` models, via a
+[Stable-Baselines3](https://stable-baselines3.readthedocs.io/) backend. The
+agent wraps a model in a gymnasium environment (see {doc}`environments`), trains
+PPO, and emits a standard skagent decision rule.
+
+```{eval-rst}
+.. automodule:: skagent.algos.sb3
+   :members:
+```
+
 ## Solvers
 
 High-level routines that drive the neural-network training utilities to solve a

@@ -105,6 +105,23 @@ the gallery is built from scratch.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm. Rather than re-implementing PPO, scikit-agent wraps a BellmanPeriod in a gymnasium environment and hands it to the robust PPO implementation in Stable-Baselines3 (SB3). The PPOAgent class manages this wrapping, trains the agent, and emits a standard scikit-agent decision rule.">
+
+.. only:: html
+
+  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_sb3_ppo_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/algorithms/plot_sb3_ppo`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">PPO via Stable-Baselines3 on the D-2 Benchmark</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
