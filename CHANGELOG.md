@@ -49,6 +49,21 @@ and this project adheres to
   of its internal Adam optimizer.
 - Consolidated the open-bounds scaling and decision-function plumbing shared by
   `BlockPolicyNet` and `BlockPolicyValueNet` into `BellmanPeriodMixin`.
+- `skagent.algos.vbi.ar_from_data` now produces decision rules that follow the
+  library's calling convention — positional arguments in `control.iset` order
+  (`dr(*iset_values)`) instead of the previous keyword form (`dr(m=…)`) — so a
+  VBI-fitted rule is a drop-in for `BellmanPeriod`, `loss`, and `solver`.
+  `vbi.solve` transposes each fitted policy to `control.iset` order to guarantee
+  the positional argument order regardless of how the caller ordered the grid.
+- Renamed `vbi.solve`'s `calibration` argument to `scope`. VBI uses it as the
+  general evaluation scope (merged with each grid point to form `pre_states`),
+  which legacy usage populates with fixed parameters _and_ fixed exogenous
+  values such as a shock realization — broader than the parameters-only
+  `calibration` used elsewhere in the library.
+- Rewrote `skagent.algos.vbi` docstrings in numpy/scipy style; the module and
+  `solve` docstrings now document VBI's full-observation assumption (the
+  per-point optimization conditions on the complete information set and does not
+  integrate over unobserved variables).
 
 ### Added
 
@@ -122,6 +137,10 @@ and this project adheres to
   `plot_direct_block_solve.py` gallery example
 - Expanded the Algorithms API reference with the `skagent.solver` and
   `skagent.loss` modules and `skagent.ann.train_block_nn`
+- `skagent.algos.vbi.tensor_decision_rule`, which wraps a numpy-space VBI
+  decision rule so it accepts and returns torch tensors (float32 on the grid
+  device, detached) for interop with the torch solving stack. Suitable as a
+  fixed / ground-truth / warm-start policy, not as a trainable FOC/Euler policy.
 
 ### Removed
 
