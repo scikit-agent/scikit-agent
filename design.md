@@ -18,8 +18,10 @@ therefore splits into:
   rebuilds the continuation from the previous iteration's value grid and stops
   on convergence or a max-iteration limit.
 
-Status: **in progress** — PR1 (§9 step 1, `bellman_step` core) is implemented
-and tested; PRs 2–7 remain. See §9 for the per-PR breakdown and progress.
+Status: **in progress** — PRs 1–4 (§9 steps 1–4) are implemented and tested:
+`bellman_step` core, Mechanism-B reindex, multi-control vectorization, and
+non-trivial `continuation_vf`. PRs 5–7 remain. See §9 for the per-PR breakdown
+and progress.
 
 ---
 
@@ -488,6 +490,22 @@ with terminal continuation on a conftest case (loop wiring check).
   across iterations (§3). Multi-start/restarts remain deferred until a test
   forces them.
 
+- **TODO (docs) — in-period dynamics order & arrival-state aliasing.** A
+  non-obvious modeling semantic surfaced building `case_11` and should be
+  documented for end users (block-authoring guide / `block.py` + `bellman.py`
+  docstrings), not just the design: **block `dynamics` run in declaration order
+  within a period, so the same symbol can mean its _arrival_ value early and its
+  _recomputed next-period_ value later.** In `case_11` (`u = -(a-b)^2` declared
+  _before_ `b = c`), the reward reads the arrival `b` while
+  `transition_function` returns `b' = c` — so `reward_function` and
+  `transition_function` see different values for `b`, and a control can reach
+  the objective only through the continuation. Authors who don't know this can
+  write a block whose reward silently uses the wrong (arrival vs. recomputed)
+  value. Document: how `get_arrival_states` infers arrival states from
+  declaration order; that reward symbols read the value as of their declaration
+  point; and a worked `case_11`-style example. (Captured in the agent memory
+  `block_model_semantics.md`; promote to user-facing docs.)
+
 ---
 
 ## 9. Implementation order — one PR per step
@@ -501,9 +519,9 @@ graph allows.
 | PR            | Adds                                                                                                                                                     | Tests it lands                                                                                                                                                         | Depends on     |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | **1 ✅ DONE** | `bellman_step` core: single-control, grid-equals-iset (transpose projection), β + multi-reward + det-safe, per-point `x0` (warm-start/midpoint/fallback) | `case_0/1/5/6/7/8/9` + return-contract, warm-start, and guard tests (`test_vbi_bellman_step`, 11 passing)                                                              | — (foundation) |
-| **2**         | Mechanism B reindex + monotonicity assert (§5)                                                                                                           | `case_3`, D-2 single backup under analytic continuation                                                                                                                | PR1            |
-| **3**         | Multi-control vectorization; `policy_array` → `dict[str, DataArray]` (O1)                                                                                | `case_10`                                                                                                                                                              | PR1            |
-| **4**         | Non-trivial `continuation_vf` (β·cv, arrival transition)                                                                                                 | `case_11`                                                                                                                                                              | PR1            |
+| **2 ✅ DONE** | Mechanism B reindex + monotonicity assert (§5)                                                                                                           | `case_3`, D-2 single backup under analytic continuation                                                                                                                | PR1            |
+| **3 ✅ DONE** | Multi-control vectorization; `policy_array` → `dict[str, DataArray]` (O1)                                                                                | `case_10`                                                                                                                                                              | PR1            |
+| **4 ✅ DONE** | Non-trivial `continuation_vf` (β·cv, arrival transition)                                                                                                 | `case_11`                                                                                                                                                              | PR1            |
 | **5**         | `value_array_to_function` + `solve_bellman` loop (warm-start `x0_policy`, non-conv warn — O5)                                                            | Tier 1: D-2 closed form, **D-4 vs `d4_vfi_reference_policy`**, U-2 closed form                                                                                         | PR2, PR4       |
 | **6**         | Discretized shock expectation (§4): hidden-shock `expected` in the backup + observed-shock node integration in `value_array_to_function`                 | `case_2` (hidden unit test), then Tier 2: D-3 discrete, U-1 continuous                                                                                                 | PR5            |
 | **7**         | Protocol round-trip + convergence-sanity                                                                                                                 | round-trip through `compute_controls`/`BellmanEquationLoss`; `solve_bellman(max_iter=1)` ≡ `bellman_step`. (D-1 finite-horizon, U-3 property-only = optional stretch.) | PR5            |
