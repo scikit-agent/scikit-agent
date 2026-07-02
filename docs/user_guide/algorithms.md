@@ -3,13 +3,19 @@
 This guide covers the solution algorithms and optimization methods available in
 scikit-agent.
 
-## Solution Methods
+## Solving a block directly
 
-Learn about different approaches to solving economic models:
+A {doc}`block <blocks>` describes a single decision period: arrival states and
+shocks come in, the agent chooses its controls, and a reward is produced. The
+most direct use of the deep-learning solver is to train a
+{py:class}`~skagent.ann.BlockPolicyNet` so that its decision rule maximizes the
+reward earned within the block, over a grid of starting points.
 
-- **All-in-One Deep Learning Methods** : Deep learning solvers that use an
-  All-in-One (AiO) objective function
-- **Value Function Iteration**: Classical dynamic programming approaches
+- **Maliar-style deep learning methods**: Neural network solvers following
+  Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
+  objective function
+- **Value backwards induction (VBI)**: Classical dynamic programming via
+  backwards induction on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
   the model, using established RL libraries (see below)
 
@@ -275,5 +281,5 @@ for the recurring case.
 
 ---
 
-_This page is under construction. Content will be added as algorithms are
-implemented._
+_For a runnable, end-to-end version of these workflows, see the
+{doc}`Algorithms examples gallery </auto_examples/algorithms/index>`._
