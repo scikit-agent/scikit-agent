@@ -16,6 +16,7 @@ Provides :class:`PPOAgent`, a thin wrapper around SB3's PPO that:
 
 from __future__ import annotations
 
+import io
 from typing import Any, Callable, Optional
 
 import numpy as np
@@ -25,6 +26,75 @@ from stable_baselines3.common.callbacks import BaseCallback, CallbackList
 
 from skagent.bellman import BellmanPeriod
 from skagent.env import GymEnv
+
+
+def _predict_unscaled(env: GymEnv, predict, obs, deterministic: bool) -> np.ndarray:
+    """Shared body of ``predict_unscaled`` for agents and snapshots.
+
+    ``predict`` maps ``(obs_batch, deterministic)`` to a (scaled) SB3 action
+    array; ``env`` supplies the unscaling. Returns a 1-D array of shape ``(N,)``.
+    """
+    obs_arr = np.atleast_2d(np.asarray(obs, dtype=np.float32))
+    action = predict(obs_arr, deterministic)
+    return env.unscale_action(action, obs_arr)
+
+
+def _decision_rule(env: GymEnv, predict, deterministic: bool) -> dict[str, Callable]:
+    """Shared body of ``decision_rule`` for agents and snapshots."""
+    iset_len = len(env.iset)
+
+    def rule(*iset_values):
+        if len(iset_values) != iset_len:
+            raise TypeError(
+                f"decision rule for {env.control_sym!r} expects "
+                f"{iset_len} iset arguments {env.iset}, got {len(iset_values)}"
+            )
+        cols = [
+            np.asarray(
+                v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else v,
+                dtype=np.float32,
+            ).reshape(-1)
+            for v in iset_values
+        ]
+        n = max(c.size for c in cols)
+        cols = [np.broadcast_to(c, (n,)) for c in cols]
+        obs = np.stack(cols, axis=1)
+        action = predict(obs, deterministic)
+        unscaled = env.unscale_action(action, obs)
+        return torch.as_tensor(unscaled, dtype=torch.float32)
+
+    return {env.control_sym: rule}
+
+
+class PolicySnapshot:
+    """Frozen copy of a trained policy, decoupled from further training.
+
+    Returned by :meth:`PPOAgent.snapshot`. Holds a deep copy of the policy
+    network taken at snapshot time, so subsequent ``learn`` calls on the source
+    agent do not change its predictions. Exposes the same
+    :meth:`predict_unscaled` and :meth:`decision_rule` interface as
+    :class:`PPOAgent`.
+
+    The :class:`~skagent.env.GymEnv` is shared with the source agent (not
+    copied): it is used only for stateless action unscaling, which does not
+    depend on training state.
+    """
+
+    def __init__(self, policy, env: GymEnv) -> None:
+        self._policy = policy
+        self.env = env
+
+    def _predict(self, obs, deterministic: bool):
+        action, _ = self._policy.predict(obs, deterministic=deterministic)
+        return action
+
+    def predict_unscaled(self, obs, deterministic: bool = True) -> np.ndarray:
+        """Predict an unscaled action for ``obs``; see :meth:`PPOAgent.predict_unscaled`."""
+        return _predict_unscaled(self.env, self._predict, obs, deterministic)
+
+    def decision_rule(self, deterministic: bool = True) -> dict[str, Callable]:
+        """Return a skagent decision rule; see :meth:`PPOAgent.decision_rule`."""
+        return _decision_rule(self.env, self._predict, deterministic)
 
 
 class _EpisodeRewardLogger(BaseCallback):
@@ -150,7 +220,30 @@ class PPOAgent:
         self.model.learn(total_timesteps=total_timesteps, callback=cb, **kwargs)
         return self
 
+    def snapshot(self) -> PolicySnapshot:
+        """Capture the current trained policy as a frozen :class:`PolicySnapshot`.
+
+        The snapshot holds an independent copy of the policy network, so it is
+        unaffected by later :meth:`learn` calls. This is the supported way to
+        retain the policy at intermediate points during training (e.g. to
+        compare checkpoints) without re-running training or re-implementing the
+        unscaling logic.
+        """
+        # The policy network cannot be ``copy.deepcopy``'d (torch refuses
+        # non-leaf graph tensors), so we clone it via SB3's own policy
+        # save/load through an in-memory buffer.
+        buf = io.BytesIO()
+        self.model.policy.save(buf)
+        buf.seek(0)
+        policy = self.model.policy.__class__.load(buf, device=self.model.device)
+        policy.set_training_mode(False)
+        return PolicySnapshot(policy, self.env)
+
     # ---- inference ------------------------------------------------------
+
+    def _predict(self, obs, deterministic: bool):
+        action, _ = self.model.predict(obs, deterministic=deterministic)
+        return action
 
     def predict_unscaled(self, obs, deterministic: bool = True) -> np.ndarray:
         """Predict an unscaled action for ``obs``.
@@ -158,9 +251,7 @@ class PPOAgent:
         ``obs`` may be a single observation (shape ``(|iset|,)``) or a batch
         (``(N, |iset|)``). Returns a 1-D array of shape ``(N,)``.
         """
-        obs_arr = np.atleast_2d(np.asarray(obs, dtype=np.float32))
-        action, _ = self.model.predict(obs_arr, deterministic=deterministic)
-        return self.env.unscale_action(action, obs_arr)
+        return _predict_unscaled(self.env, self._predict, obs, deterministic)
 
     def decision_rule(self, deterministic: bool = True) -> dict[str, Callable]:
         """Return a skagent decision rule that uses the trained policy.
@@ -178,32 +269,7 @@ class PPOAgent:
             Whether to use a deterministic (mean) policy. Default ``True`` —
             matches typical skagent decision-rule semantics.
         """
-        env = self.env
-        model = self.model
-        iset_len = len(env.iset)
-
-        def rule(*iset_values):
-            if len(iset_values) != iset_len:
-                raise TypeError(
-                    f"decision rule for {env.control_sym!r} expects "
-                    f"{iset_len} iset arguments {env.iset}, got "
-                    f"{len(iset_values)}"
-                )
-            cols = [
-                np.asarray(
-                    v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else v,
-                    dtype=np.float32,
-                ).reshape(-1)
-                for v in iset_values
-            ]
-            n = max(c.size for c in cols)
-            cols = [np.broadcast_to(c, (n,)) for c in cols]
-            obs = np.stack(cols, axis=1)
-            action, _ = model.predict(obs, deterministic=deterministic)
-            unscaled = env.unscale_action(action, obs)
-            return torch.as_tensor(unscaled, dtype=torch.float32)
-
-        return {env.control_sym: rule}
+        return _decision_rule(self.env, self._predict, deterministic)
 
     # ---- internals ------------------------------------------------------
 

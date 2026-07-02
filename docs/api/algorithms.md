@@ -1,13 +1,12 @@
 # Algorithms
 
-This section contains the API documentation for solution algorithms, neural
-network components, and grid tools used to solve dynamic stochastic optimization
-problems.
+This section contains the API documentation for solution algorithms and
+optimization methods used to solve economic models.
 
-## Value Backwards Induction (VBI)
+## Value Function Iteration
 
-The value backwards induction (VBI) algorithm derives arrival value functions
-from a continuation value function and the stage dynamics of model blocks.
+The Value Function Iteration (VBI) algorithm implements backwards induction to
+derive value functions from model blocks.
 
 ```{eval-rst}
 .. automodule:: skagent.algos.vbi
@@ -45,13 +44,16 @@ Neural network-based solution methods following Maliar et al.
    :members:
 ```
 
-## Solvers
+## Reinforcement Learning (Stable-Baselines3)
 
-High-level routines that drive the neural-network training utilities to solve a
-model. See the {doc}`/user_guide/algorithms` guide for worked examples.
+Proximal Policy Optimization (PPO) for `BellmanPeriod` models, via a
+[Stable-Baselines3](https://stable-baselines3.readthedocs.io/) backend. The
+agent wraps a model in a gymnasium environment (see {doc}`environments`), trains
+PPO, and emits a standard skagent decision rule.
 
 ```{eval-rst}
-.. autofunction:: skagent.solver.solve_multiple_controls
+.. automodule:: skagent.algos.sb3
+   :members:
 ```
 
 ## Loss Functions
@@ -79,7 +81,7 @@ Base neural network class with device management.
 
 ### BlockPolicyNet
 
-A neural network for policy functions in dynamic programming problems.
+Specialized neural network for policy functions in economic models.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.BlockPolicyNet
@@ -119,6 +121,10 @@ functions.
 
 ```{eval-rst}
 .. autofunction:: skagent.ann.aggregate_net_loss
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_multiple_controls
 ```
 
 ## Grid and Computational Tools

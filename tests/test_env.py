@@ -7,8 +7,9 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 
 from skagent.bellman import BellmanPeriod
+from skagent.block import Control, DBlock
 from skagent.distributions import Uniform
-from skagent.env import Environment, GymEnv
+from skagent.env import Environment, GymEnv, discounted_rollout_reward
 from skagent.models.benchmarks import d2_block, d2_calibration
 
 from tests.conftest import case_0, case_1, case_5, case_7, case_10
@@ -115,3 +116,60 @@ def test_ppo_learn_smoke(d2_env):
     obs, _ = d2_env.reset()
     action, _ = model.predict(obs, deterministic=True)
     assert action.shape == (1,)
+
+
+# ---------------------------------------------------------------------------
+# discounted_rollout_reward
+# ---------------------------------------------------------------------------
+
+
+def test_discounted_rollout_reward_matches_geometric_sum():
+    # Constant reward (c = 1 each period) under a constant discount β = 0.5
+    # gives a closed-form discounted return: Σ_{t=0}^{T-1} β^t.
+    block = DBlock(
+        **{
+            "name": "rollout_const",
+            "dynamics": {
+                "c": Control(["a"]),
+                "a": lambda a: a,  # state persists
+                "u": lambda c: c,  # reward equals the control
+            },
+            "reward": {"u": "consumer"},
+        }
+    )
+    bp = BellmanPeriod(block, "beta", {"beta": 0.5})
+    dr = {"c": lambda a: a * 0.0 + 1.0}  # constant 1, shape-matched to a
+
+    T = 5
+    expected = sum(0.5**t for t in range(T))
+    got = discounted_rollout_reward(
+        bp, dr, {"a": Uniform(low=0.0, high=1.0)}, T, np.random.default_rng(0)
+    )
+    assert got == pytest.approx(expected)
+
+
+def test_discounted_rollout_reward_zero_for_optimal_policy():
+    # case_1: u = -(θ - c)². The optimal rule c = θ yields zero reward every
+    # period regardless of the realized shocks, so the discounted return is 0.
+    bp = case_1["bp"]
+    got = discounted_rollout_reward(
+        bp,
+        case_1["optimal_dr"],
+        {"a": Uniform(low=0.0, high=1.0)},
+        10,
+        np.random.default_rng(0),
+    )
+    assert got == pytest.approx(0.0, abs=1e-6)
+
+
+def test_discounted_rollout_reward_is_seed_reproducible():
+    bp = case_1["bp"]
+    dr = {"c": lambda a, theta: a}  # suboptimal → shock-dependent, nonzero reward
+    initial = {"a": Uniform(low=0.0, high=1.0)}
+
+    r1 = discounted_rollout_reward(bp, dr, initial, 8, np.random.default_rng(7))
+    r2 = discounted_rollout_reward(bp, dr, initial, 8, np.random.default_rng(7))
+    r3 = discounted_rollout_reward(bp, dr, initial, 8, np.random.default_rng(99))
+
+    assert r1 == pytest.approx(r2)  # same seed → identical rollout
+    assert r1 != pytest.approx(r3)  # different seed → different rollout

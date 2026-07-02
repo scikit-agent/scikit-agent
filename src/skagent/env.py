@@ -124,6 +124,50 @@ class Environment:
         return state_t, action, reward, state_t_plus, discount, obs
 
 
+def discounted_rollout_reward(
+    bp: BellmanPeriod,
+    decision_rule: dict,
+    initial: dict,
+    steps: int,
+    rng: np.random.Generator | None = None,
+) -> float:
+    """Realized discounted reward of a single rollout under ``decision_rule``.
+
+    Simulates one episode of ``steps`` periods through an :class:`Environment`,
+    accumulating per-period rewards weighted by the running product of the
+    model's (possibly per-period) discount factor.
+
+    Parameters
+    ----------
+    bp : BellmanPeriod
+        Model definition.
+    decision_rule : dict[str, Callable]
+        Maps control symbol to a callable on the control's information set, as
+        consumed by :meth:`Environment.step`.
+    initial : dict[str, Distribution]
+        Maps arrival-state symbols to skagent ``Distribution`` objects used to
+        sample the initial state.
+    steps : int
+        Number of periods to simulate.
+    rng : numpy.random.Generator, optional
+        RNG used for the initial-state and shock draws.
+
+    Returns
+    -------
+    float
+        ``sum_t (prod_{s<t} discount_s) * reward_t``.
+    """
+    env = Environment(bp, initial, rng=rng)
+    env.reset()
+    total = 0.0
+    discount_acc = 1.0
+    for _ in range(steps):
+        _, _, reward, _, discount, _ = env.step(decision_rule)
+        total += discount_acc * sum(_to_scalar(v) for v in reward.values())
+        discount_acc *= _to_scalar(discount)
+    return total
+
+
 # ---------------------------------------------------------------------------
 # Gymnasium adapter
 # ---------------------------------------------------------------------------
@@ -240,6 +284,12 @@ class GymEnv(gym.Env):
     # -- gymnasium API ----------------------------------------------------
 
     def reset(self, *, seed: int | None = None, options=None):
+        """Sample a fresh initial state and return ``(observation, info)``.
+
+        Draws arrival states from ``initial`` and the first period's shocks,
+        then returns the observation over the control's information set. ``info``
+        is an empty dict. Reseeds the internal RNG when ``seed`` is given.
+        """
         if seed is not None:
             self._rng = np.random.default_rng(seed)
 
@@ -251,6 +301,15 @@ class GymEnv(gym.Env):
         return obs, {}
 
     def step(self, action):
+        """Apply a normalised ``action`` and return the gymnasium 5-tuple.
+
+        ``action`` is a 1-element array in ``[-1, 1]``; it is unscaled to the
+        control's per-state bounds before being applied. Returns
+        ``(observation, reward, terminated, truncated, info)``, where
+        ``terminated`` is always ``False`` and ``truncated`` fires at
+        ``max_episode_steps``. ``info`` carries the resolved ``discount``, the
+        ``action_unscaled`` value, and the ``bounds`` used for unscaling.
+        """
         if self._state is None:
             raise RuntimeError("Call reset() before step().")
 
