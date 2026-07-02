@@ -228,4 +228,4 @@ and this project adheres to
 
 ...
 
-[Unreleased]: https://github.com/user/repo/commits/main
+[Unreleased]: https://github.com/scikit-agent/scikit-agent/commits/main

@@ -1,12 +1,13 @@
 # Algorithms
 
-This section contains the API documentation for solution algorithms and
-optimization methods used to solve economic models.
+This section contains the API documentation for solution algorithms, neural
+network components, and grid tools used to solve dynamic stochastic optimization
+problems.
 
-## Value Function Iteration
+## Value Backwards Induction (VBI)
 
-The Value Function Iteration (VBI) algorithm implements backwards induction to
-derive value functions from model blocks.
+The value backwards induction (VBI) algorithm derives arrival value functions
+from a continuation value function and the stage dynamics of model blocks.
 
 ```{eval-rst}
 .. automodule:: skagent.algos.vbi
@@ -81,7 +82,7 @@ Base neural network class with device management.
 
 ### BlockPolicyNet
 
-Specialized neural network for policy functions in economic models.
+A neural network for policy functions in dynamic programming problems.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.BlockPolicyNet
