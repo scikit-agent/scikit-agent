@@ -70,15 +70,13 @@ jobs:
           # Add .nojekyll to prevent GitHub Pages from processing files with underscores
           touch _build/.nojekyll
 
-      - name: Setup Pages
-        if: steps.path.outputs.is-pr == 'false'
-        uses: actions/configure-pages@v6
-
       - name: Upload artifact for main branch
         if: steps.path.outputs.is-pr == 'false'
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
+          name: docs-main
           path: docs/_build
+          retention-days: 30
 
       - name: Upload artifact for PR
         if: steps.path.outputs.is-pr == 'true'
@@ -90,16 +88,45 @@ jobs:
 
   deploy-main:
     name: Deploy to GitHub Pages (Main)
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs: build-docs
     if: needs.build-docs.outputs.is-pr == 'false'
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Checkout gh-pages
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: docs-main
+          path: ./docs-main
+
+      - name: Deploy main documentation
+        run: |
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'pr-*' -exec rm -rf {} +
+          cp -a docs-main/. .
+          rm -rf docs-main
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy main documentation"
+            echo "Pushing changes to gh-pages branch..."
+            git push origin gh-pages
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-pr:
     name: Deploy PR Preview
