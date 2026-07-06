@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Changed
 
+- `compute_gradients_for_tensors` returns a zero tensor (instead of `None`) for
+  a variable with no computational path to the target, and raises `ValueError`
+  when a `wrt` tensor does not require gradients; the `BellmanPeriod` gradient
+  methods (`grad_reward_function`, `grad_transition_function`,
+  `grad_pre_state_function`) inherit the tensor-only contract (#129)
+- Declared `torch >=2.0` as the minimum supported PyTorch version
 - Refactored `BellmanPeriod` with type hints, docstrings, and improved parameter
   handling
 - Introduced `_resolve_parameters`, `_resolve_decision_rules`, and
@@ -43,9 +49,48 @@ and this project adheres to
   of its internal Adam optimizer.
 - Consolidated the open-bounds scaling and decision-function plumbing shared by
   `BlockPolicyNet` and `BlockPolicyValueNet` into `BellmanPeriodMixin`.
+- `skagent.algos.vbi.ar_from_data` now produces decision rules that follow the
+  library's calling convention — positional arguments in `control.iset` order
+  (`dr(*iset_values)`) instead of the previous keyword form (`dr(m=…)`) — so a
+  VBI-fitted rule is a drop-in for `BellmanPeriod`, `loss`, and `solver`.
+  `vbi.solve` transposes each fitted policy to `control.iset` order to guarantee
+  the positional argument order regardless of how the caller ordered the grid.
+- Renamed `vbi.solve`'s `calibration` argument to `scope`. VBI uses it as the
+  general evaluation scope (merged with each grid point to form `pre_states`),
+  which legacy usage populates with fixed parameters _and_ fixed exogenous
+  values such as a shock realization — broader than the parameters-only
+  `calibration` used elsewhere in the library.
+- Rewrote `skagent.algos.vbi` docstrings in numpy/scipy style; the module and
+  `solve` docstrings now document VBI's full-observation assumption (the
+  per-point optimization conditions on the complete information set and does not
+  integrate over unobserved variables).
 
 ### Added
 
+- `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
+  the per-iteration update of value-function iteration on the interface the
+  torch stack speaks, with explicit discount factor, multi-reward summation, and
+  deterministic (empty-shock) handling. Returns
+  `(dr_from_data, value_array, policy_array)`. Optimizes one or more controls
+  jointly (`scipy.optimize.minimize` over the stacked control vector) and
+  reprojects each policy onto its own information set (design §5): drops grid
+  axes outside a control's iset (Mechanism A) and reindexes a derived pre-state
+  like `m = a·R + y` onto its own coordinate (Mechanism B). Legacy `vbi.solve`
+  is unchanged (the deliberate discount-folded-into-continuation path).
+- `vbi.solve_bellman`: value-function iteration driving `bellman_step` to a
+  fixed point — each backup takes the previous iterate's value grid as its
+  continuation (via the new `vbi.value_array_to_function`) and warm-starts the
+  optimizer from the previous policy. Stops on the sup-norm value change
+  (`converged`, `n_iter`, `residual` reported on `value_array.attrs`);
+  non-convergence warns, or raises under `raise_on_nonconvergence`.
+  Deterministic scope: internal shock discretization (`disc_params`) is not yet
+  implemented.
+- **Constraints** user-guide page documenting the ways to constrain an
+  optimization problem: bound declaration on `Control`, the open-bounds
+  policy-network transforms, the Fischer-Burmeister complementarity loss
+  (including its current upper-bound-only scope), how the mechanisms compose,
+  and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
+  now passes callable bounds, matching the enforced API.
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
@@ -78,6 +123,21 @@ and this project adheres to
   term to the Bellman loss (Maliar et al. 2021, equation 14)
 - `BlockPolicyValueNet` (shared-backbone single network with policy and value
   heads) for use with `BellmanEquationLoss` under a single optimizer
+- PPO solution algorithm via Stable-Baselines3: `skagent.algos.sb3.PPOAgent`
+  wraps a `BellmanPeriod` in a gymnasium environment, trains SB3's PPO, and
+  emits a standard skagent decision rule (`#205`)
+- `PPOAgent.snapshot()` and the `PolicySnapshot` class, capturing a frozen copy
+  of the trained policy (unaffected by later `learn` calls) for comparing
+  checkpoints during training
+- `skagent.env` module with `Environment` (single-transition stepping of a
+  `BellmanPeriod`) and `GymEnv` (gymnasium adapter for Stable-Baselines3)
+- `skagent.env.discounted_rollout_reward` for scoring a decision rule by its
+  realized discounted return over a rollout
+- `skagent.models.benchmarks.d2_constrained_optimal_c`, the D-2 closed-form
+  consumption function keyed on cash-on-hand with the borrowing constraint
+  applied
+- Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
+  D-2 benchmark
 - NumFOCUS Code of Conduct adopted
 - Created a working `Consumption-Saving Model` example in the documentation
   gallery
@@ -88,6 +148,17 @@ and this project adheres to
 - Added the public `has_analytical_policy` registry helper to
   `skagent.models.benchmarks`, replacing duplicated closed-form checks in the
   tests and the gallery
+- Added an **Algorithms** user-guide page documenting the direct (non-recurring)
+  solve workflow — training a `BlockPolicyNet` against reward-based losses
+  (`StaticRewardLoss`, `EstimatedDiscountedLifetimeRewardLoss`) on benchmark
+  models (D-2, U-2), including multiple-control solves — with a runnable
+  `plot_direct_block_solve.py` gallery example
+- Expanded the Algorithms API reference with the `skagent.solver` and
+  `skagent.loss` modules and `skagent.ann.train_block_nn`
+- `skagent.algos.vbi.tensor_decision_rule`, which wraps a numpy-space VBI
+  decision rule so it accepts and returns torch tensors (float32 on the grid
+  device, detached) for interop with the torch solving stack. Suitable as a
+  fixed / ground-truth / warm-start policy, not as a trainable FOC/Euler policy.
 
 ### Removed
 
@@ -105,6 +176,9 @@ and this project adheres to
 
 ### Fixed
 
+- The D-2 benchmark's consumption control had no lower bound, so an exact solver
+  could drive `c` negative (where CRRA utility is unbounded); added the `c >= 0`
+  floor the sibling blocks already carry.
 - The U-1 (Hall random walk) benchmark passed `mean`/`std` to `Normal`, whose
   constructor takes `mu`/`sigma`, so `construct_shocks("U-1")` raised
   `TypeError` and the model was unusable. The income shock is now
@@ -118,6 +192,10 @@ and this project adheres to
 - Fixed the `CRRA` calibration in `perfect_foresight_normalized`: it was a
   1-tuple `(2.0,)`, which broke the CRRA utility power; it is now the scalar
   `2.0`.
+- Fixed `skagent.solver.solve_multiple_controls`, which previously crashed on
+  its default loss and passed incorrect arguments to `StaticRewardLoss`; it now
+  trains a policy network per control via a best-response sweep and returns the
+  trained decision rules.
 - `train_block_nn` now halts early with a warning on a non-finite (NaN/Inf) loss
   instead of continuing to train on poisoned weights.
 - Documentation correctness pass across `docs/` and the examples gallery: the
@@ -158,4 +236,4 @@ and this project adheres to
 
 ...
 
-[Unreleased]: https://github.com/scikit-agent/scikit-agent/commits/main
+[Unreleased]: https://github.com/user/repo/commits/main

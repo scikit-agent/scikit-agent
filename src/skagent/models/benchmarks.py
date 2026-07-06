@@ -241,7 +241,12 @@ d2_block = DBlock(
         "shocks": {},
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
-            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
+            "c": Control(
+                ["m"],
+                lower_bound=lambda m: 0.0,  # can't consume negative
+                upper_bound=lambda m: m,
+                agent="consumer",
+            ),
             "a": lambda m, c: m - c,
             "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
