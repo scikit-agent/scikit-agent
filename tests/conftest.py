@@ -1,7 +1,28 @@
+import pytest
+
 from skagent.bellman import BellmanPeriod
 from skagent.distributions import Normal, Uniform
 import skagent.grid as grid
 from skagent.block import Control, DBlock
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--runslow",
+        action="store_true",
+        default=False,
+        help="run tests marked @pytest.mark.slow (e.g. RL convergence tests)",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
 
 case_0 = {
     "block": DBlock(

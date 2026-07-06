@@ -35,10 +35,12 @@ Learn about the fundamental concepts and components:
 - {doc}`blocks` - Understanding model structure and building custom models
 - {doc}`simulation` - Monte Carlo simulation and analysis
 - {doc}`algorithms` - Solution methods for solving your models
+- {doc}`environments` - Interactive adapters for reinforcement-learning
+  algorithms
 - {doc}`constraints` - The ways to constrain decisions and how solvers enforce
-  them
-
+them
 <!---
+
 ## Key Design Principles
 
 ### Block-Based Models
@@ -72,6 +74,7 @@ quickstart
 blocks
 simulation
 algorithms
+environments
 constraints
 benchmark_models
 ```

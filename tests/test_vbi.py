@@ -108,6 +108,21 @@ class test_vbi_conftest(unittest.TestCase):
     of the single-control solver: an interior optimum, a shock-dependent
     policy, both-sided bounds (with either side binding), single-sided bounds
     (which lean on the open-bound defaults), and an empty information set.
+
+    Each case solves *once* and checks both value functions ``solve`` returns
+    alongside the policy, so the value functions are covered without re-running
+    the solver. Under ``terminal_continuation`` (a zero continuation) the value
+    at the optimum is just the period reward ``u(c*)``, giving a closed form:
+
+    - ``dec_vf(pre)`` is the decision-node value (after shocks); it runs the
+      full transition, so it is checked on the shock-free / shock-in-iset cases
+      (0, 1, 9) where every variable the transition needs is available.
+    - ``arr_vf(arrival)`` is the arrival value; it discretizes the block's
+      shocks and integrates ``dec_vf`` over them. It is checked on the bounded
+      cases (5-8) whose reward does not depend on the shock, so the expectation
+      collapses to the analytic value. ``disc_params`` only feeds ``arr_vf``
+      construction and does not affect the policy solve (VBI is full-observation
+      and never integrates over shocks in its per-point optimization).
     """
 
     # tolerance on the recovered policy; the optima here are all linear, so
@@ -115,9 +130,9 @@ class test_vbi_conftest(unittest.TestCase):
     ATOL = 1e-3
 
     def test_case_0_interior_optimum(self):
-        # u = -c^2, unconstrained -> c* = 0 for all a
+        # u = -c^2, unconstrained -> c* = 0 for all a; V(a) = 0.
         state_grid = {"a": np.linspace(0, 2, 11)}
-        dr, _, _ = vbi.solve(
+        dr, dec_vf, _ = vbi.solve(
             case_0["block"],
             terminal_continuation,
             state_grid,
@@ -125,14 +140,18 @@ class test_vbi_conftest(unittest.TestCase):
         )
         for a in [0.2, 0.7, 1.3, 1.8]:
             self.assertAlmostEqual(dr["c"](a), 0.0, delta=self.ATOL)
+            self.assertAlmostEqual(
+                float(dec_vf({**case_0["calibration"], "a": a})), 0.0, delta=self.ATOL
+            )
 
     def test_case_1_shock_dependent_policy(self):
-        # u = -(theta - c)^2 with theta in the information set -> c* = theta
+        # u = -(theta - c)^2 with theta in the information set -> c* = theta;
+        # V(a, theta) = 0. theta is in the iset, so dec_vf conditions on it.
         state_grid = {
             "a": np.linspace(0, 1, 7),
             "theta": np.linspace(-1, 1, 7),
         }
-        dr, _, _ = vbi.solve(
+        dr, dec_vf, _ = vbi.solve(
             case_1["block"],
             terminal_continuation,
             state_grid,
@@ -140,11 +159,21 @@ class test_vbi_conftest(unittest.TestCase):
         )
         for theta in [-0.6, 0.0, 0.4, 0.9]:
             self.assertAlmostEqual(dr["c"](0.5, theta), theta, delta=self.ATOL)
+            self.assertAlmostEqual(
+                float(dec_vf({**case_1["calibration"], "a": 0.5, "theta": theta})),
+                0.0,
+                delta=self.ATOL,
+            )
 
     def test_case_3_consume_cash_on_hand(self):
         # u = -(m - c)^2 -> c* = m. The grid is just the iset, [m]. The arrival
         # state ``a`` depends on the psi shock, so psi is supplied via the
         # calibration (it only enters the transition, not the decision).
+        #
+        # Policy-only: the value functions are awkward here because ``m`` is a
+        # computed intermediate (m = a + theta), so evaluating dec_vf/arr_vf
+        # would require the pre-``m`` arrival state, not the [m] iset the rule
+        # conditions on. The other cases cover the value functions.
         state_grid = {"m": np.linspace(0.1, 2, 7)}
         dr, _, _ = vbi.solve(
             case_3["block"],
@@ -156,54 +185,68 @@ class test_vbi_conftest(unittest.TestCase):
             self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
 
     def test_case_5_double_bounded_upper_binds(self):
-        # maximize c subject to 0 <= c <= a -> c* = a (upper bound binds)
+        # maximize c subject to 0 <= c <= a -> c* = a (upper bound binds);
+        # V(a) = a. theta only enters next period's a, so arr_vf collapses to a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, _ = vbi.solve(
+        case_5["block"].construct_shocks(case_5["calibration"])
+        dr, _, arr_vf = vbi.solve(
             case_5["block"],
             terminal_continuation,
             state_grid,
+            disc_params={"theta": {"N": 7}},
             scope=case_5["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+            self.assertAlmostEqual(float(arr_vf({"a": a})), a, delta=self.ATOL)
 
     def test_case_6_double_bounded_lower_binds(self):
-        # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds)
+        # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds);
+        # u = -c, so V(a) = -a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, _ = vbi.solve(
+        case_6["block"].construct_shocks(case_6["calibration"])
+        dr, _, arr_vf = vbi.solve(
             case_6["block"],
             terminal_continuation,
             state_grid,
+            disc_params={"theta": {"N": 7}},
             scope=case_6["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+            self.assertAlmostEqual(float(arr_vf({"a": a})), -a, delta=self.ATOL)
 
     def test_case_7_only_lower_bound(self):
         # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
-        # Exercises the open upper-bound default.
+        # Exercises the open upper-bound default. u = -c, so V(a) = -1.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, _ = vbi.solve(
+        case_7["block"].construct_shocks(case_7["calibration"])
+        dr, _, arr_vf = vbi.solve(
             case_7["block"],
             terminal_continuation,
             state_grid,
+            disc_params={"theta": {"N": 7}},
             scope=case_7["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), 1.0, delta=self.ATOL)
+            self.assertAlmostEqual(float(arr_vf({"a": a})), -1.0, delta=self.ATOL)
 
     def test_case_8_only_upper_bound(self):
         # maximize c subject to c <= a (no lower bound) -> c* = a.
-        # Exercises the open lower-bound default.
+        # Exercises the open lower-bound default. u = c, so V(a) = a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, _ = vbi.solve(
+        case_8["block"].construct_shocks(case_8["calibration"])
+        dr, _, arr_vf = vbi.solve(
             case_8["block"],
             terminal_continuation,
             state_grid,
+            disc_params={"theta": {"N": 7}},
             scope=case_8["calibration"],
         )
         for a in [0.4, 0.6, 0.9]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+            self.assertAlmostEqual(float(arr_vf({"a": a})), a, delta=self.ATOL)
 
     def test_case_9_empty_information_set(self):
         # u = -(c - 3)^2 with an empty information set -> constant c* = 3.
@@ -212,7 +255,7 @@ class test_vbi_conftest(unittest.TestCase):
         # irrelevant under terminal continuation, so it is supplied via the
         # calibration rather than as a grid axis.
         state_grid = {}
-        dr, _, _ = vbi.solve(
+        dr, dec_vf, _ = vbi.solve(
             case_9["block"],
             terminal_continuation,
             state_grid,
@@ -220,6 +263,10 @@ class test_vbi_conftest(unittest.TestCase):
         )
         # empty iset -> the rule is constant across the grid
         self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
+        # V = -(c* - 3)^2 = 0 at the (constant) optimum
+        self.assertAlmostEqual(
+            float(dec_vf({**case_9["calibration"], "a": 0.0})), 0.0, delta=self.ATOL
+        )
 
 
 # Terminal continuation on the BellmanPeriod convention: V'(s') = 0 for all

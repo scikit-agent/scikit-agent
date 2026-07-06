@@ -45,13 +45,16 @@ Neural network-based solution methods following Maliar et al.
    :members:
 ```
 
-## Solvers
+## Reinforcement Learning (Stable-Baselines3)
 
-High-level routines that drive the neural-network training utilities to solve a
-model. See the {doc}`/user_guide/algorithms` guide for worked examples.
+Proximal Policy Optimization (PPO) for `BellmanPeriod` models, via a
+[Stable-Baselines3](https://stable-baselines3.readthedocs.io/) backend. The
+agent wraps a model in a gymnasium environment (see {doc}`environments`), trains
+PPO, and emits a standard skagent decision rule.
 
 ```{eval-rst}
-.. autofunction:: skagent.solver.solve_multiple_controls
+.. automodule:: skagent.algos.sb3
+   :members:
 ```
 
 ## Loss Functions
@@ -119,6 +122,10 @@ functions.
 
 ```{eval-rst}
 .. autofunction:: skagent.ann.aggregate_net_loss
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_multiple_controls
 ```
 
 ## Grid and Computational Tools
