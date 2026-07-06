@@ -49,24 +49,37 @@ and this project adheres to
   of its internal Adam optimizer.
 - Consolidated the open-bounds scaling and decision-function plumbing shared by
   `BlockPolicyNet` and `BlockPolicyValueNet` into `BellmanPeriodMixin`.
+- `skagent.algos.vbi.ar_from_data` now produces decision rules that follow the
+  library's calling convention — positional arguments in `control.iset` order
+  (`dr(*iset_values)`) instead of the previous keyword form (`dr(m=…)`) — so a
+  VBI-fitted rule is a drop-in for `BellmanPeriod`, `loss`, and `solver`.
+  `vbi.solve` transposes each fitted policy to `control.iset` order to guarantee
+  the positional argument order regardless of how the caller ordered the grid.
+- Renamed `vbi.solve`'s `calibration` argument to `scope`. VBI uses it as the
+  general evaluation scope (merged with each grid point to form `pre_states`),
+  which legacy usage populates with fixed parameters _and_ fixed exogenous
+  values such as a shock realization — broader than the parameters-only
+  `calibration` used elsewhere in the library.
+- Rewrote `skagent.algos.vbi` docstrings in numpy/scipy style; the module and
+  `solve` docstrings now document VBI's full-observation assumption (the
+  per-point optimization conditions on the complete information set and does not
+  integrate over unobserved variables).
 
 ### Added
 
-- PPO solution algorithm via Stable-Baselines3: `skagent.algos.sb3.PPOAgent`
-  wraps a `BellmanPeriod` in a gymnasium environment, trains SB3's PPO, and
-  emits a standard skagent decision rule (`#205`)
-- `PPOAgent.snapshot()` and the `PolicySnapshot` class, capturing a frozen copy
-  of the trained policy (unaffected by later `learn` calls) for comparing
-  checkpoints during training
-- `skagent.env` module with `Environment` (single-transition stepping of a
-  `BellmanPeriod`) and `GymEnv` (gymnasium adapter for Stable-Baselines3)
-- `skagent.env.discounted_rollout_reward` for scoring a decision rule by its
-  realized discounted return over a rollout
-- `skagent.models.benchmarks.d2_constrained_optimal_c`, the D-2 closed-form
-  consumption function keyed on cash-on-hand with the borrowing constraint
-  applied
-- Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
-  D-2 benchmark
+- `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
+  the per-iteration update of value-function iteration, re-basing the exact grid
+  solver off the legacy `DBlock` continuation API onto the protocol the torch
+  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
+  multi-reward summation (`get_reward_syms`), and empty-shock-safe
+  (deterministic) handling, with a per-point optimizer seed (warm-start, else
+  midpoint of finite bounds, else fallback). Returns
+  `(dr_from_data, value_array, policy_array)` with `policy_array` a
+  `dict[str, DataArray]`. This first slice handles a single control under the
+  grid-equals-information-set contract; multi-control, derived-pre-state
+  reindexing, internal shock discretization, and the `solve_bellman` iteration
+  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
+  deliberate discount-folded-into-continuation path).
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss
@@ -105,6 +118,21 @@ and this project adheres to
   term to the Bellman loss (Maliar et al. 2021, equation 14)
 - `BlockPolicyValueNet` (shared-backbone single network with policy and value
   heads) for use with `BellmanEquationLoss` under a single optimizer
+- PPO solution algorithm via Stable-Baselines3: `skagent.algos.sb3.PPOAgent`
+  wraps a `BellmanPeriod` in a gymnasium environment, trains SB3's PPO, and
+  emits a standard skagent decision rule (`#205`)
+- `PPOAgent.snapshot()` and the `PolicySnapshot` class, capturing a frozen copy
+  of the trained policy (unaffected by later `learn` calls) for comparing
+  checkpoints during training
+- `skagent.env` module with `Environment` (single-transition stepping of a
+  `BellmanPeriod`) and `GymEnv` (gymnasium adapter for Stable-Baselines3)
+- `skagent.env.discounted_rollout_reward` for scoring a decision rule by its
+  realized discounted return over a rollout
+- `skagent.models.benchmarks.d2_constrained_optimal_c`, the D-2 closed-form
+  consumption function keyed on cash-on-hand with the borrowing constraint
+  applied
+- Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
+  D-2 benchmark
 - NumFOCUS Code of Conduct adopted
 - Created a working `Consumption-Saving Model` example in the documentation
   gallery
@@ -122,6 +150,10 @@ and this project adheres to
   `plot_direct_block_solve.py` gallery example
 - Expanded the Algorithms API reference with the `skagent.solver` and
   `skagent.loss` modules and `skagent.ann.train_block_nn`
+- `skagent.algos.vbi.tensor_decision_rule`, which wraps a numpy-space VBI
+  decision rule so it accepts and returns torch tensors (float32 on the grid
+  device, detached) for interop with the torch solving stack. Suitable as a
+  fixed / ground-truth / warm-start policy, not as a trainable FOC/Euler policy.
 
 ### Removed
 
