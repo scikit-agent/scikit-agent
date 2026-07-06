@@ -3,17 +3,15 @@
 This guide covers the solution algorithms and optimization methods available in
 scikit-agent.
 
-## Solving a block directly
+## Overview
 
-A {doc}`block <blocks>` describes a single decision period: arrival states and
-shocks come in, the agent chooses its controls, and a reward is produced. The
-most direct use of the deep-learning solver is to train a
-{py:class}`~skagent.ann.BlockPolicyNet` so that its decision rule maximizes the
-reward earned within the block, over a grid of starting points.
+scikit-agent offers several ways to turn a {doc}`block <blocks>` into a decision
+rule. Which one fits depends on whether the problem is a single period, a fixed
+horizon, or a recurring problem with a continuation value:
 
 - **Maliar-style deep learning methods**: Neural network solvers following
-  Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
-  objective function
+  Maliar, Maliar, and Winant (2021), which train on an all-in-one objective; see
+  {doc}`maliar`
 - **Value backwards induction (VBI)**: Classical dynamic programming via
   backwards induction on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
@@ -268,7 +266,8 @@ induction over a block's value function. See {py:func}`skagent.algos.vbi.solve`.
 The neural Bellman- and Euler-equation losses
 ({py:class}`~skagent.loss.BellmanEquationLoss`,
 {py:class}`~skagent.loss.EulerEquationLoss`) provide deep-learning alternatives
-for the recurring case.
+for the recurring case; the {doc}`Maliar method <maliar>` page explains those
+losses and the training loop that fits them.
 
 ## Performance Considerations
 

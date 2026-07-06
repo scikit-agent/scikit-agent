@@ -35,6 +35,7 @@ Learn about the fundamental concepts and components:
 - {doc}`blocks` - Understanding model structure and building custom models
 - {doc}`simulation` - Monte Carlo simulation and analysis
 - {doc}`algorithms` - Solution methods for solving your models
+- {doc}`maliar` - Neural-network solution via the Maliar method
 - {doc}`environments` - Interactive adapters for reinforcement-learning
   algorithms
 - {doc}`constraints` - The ways to constrain decisions and how solvers enforce
@@ -74,6 +75,7 @@ quickstart
 blocks
 simulation
 algorithms
+maliar
 environments
 constraints
 benchmark_models

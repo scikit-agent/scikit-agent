@@ -91,6 +91,12 @@ and this project adheres to
   policy-network transforms, the bilateral Fischer-Burmeister complementarity
   loss, how the mechanisms compose, and VBI's box-constraint handling, with a
   table of where each mechanism is available (#191).
+- **Maliar method** user-guide page explaining the all-in-one expectation
+  operator, the Euler and Bellman residual losses (and the slope-versus-level
+  identification difference between them), `maliar_training_loop`, and how
+  bounded controls connect to the constraints page (#215). The Algorithms guide
+  now links to it and its duplicate "Solving a block directly" heading is
+  retitled to "Overview".
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
