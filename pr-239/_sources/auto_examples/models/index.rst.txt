@@ -1,0 +1,92 @@
+
+
+.. _sphx_glr_auto_examples_models:
+
+Economic Models
+----------------
+
+This section contains examples demonstrating how to use and create economic models
+with scikit-agent. These examples show how to implement various economic theories
+and models using the framework.
+
+Examples include consumption-savings models, portfolio choice problems, and other
+standard economic models that can be solved using reinforcement learning and
+other computational methods.
+
+
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_resource_extraction_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_resource_extraction`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Resource Extraction Model</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="The consumption-saving problem is one of the central models of modern macroeconomics and household finance. An agent with uncertain income must decide each period how much to consume and how much to save, trading off current utility against future resources.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_consumption_portfolio_model_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_consumption_portfolio_model`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Consumption-Saving-Portfolio Model</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of :pyskagent.models.benchmarks. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_benchmark_models_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_benchmark_models`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Benchmark Consumption Models</div>
+    </div>
+
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/models/plot_resource_extraction
+   /auto_examples/models/plot_consumption_portfolio_model
+   /auto_examples/models/plot_benchmark_models
+
