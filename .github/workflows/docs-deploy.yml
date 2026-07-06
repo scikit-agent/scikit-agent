@@ -114,7 +114,7 @@ jobs:
 
       - name: Deploy main documentation
         run: |
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'pr-*' -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'pr-*' ! -name 'docs-main' -exec rm -rf {} +
           cp -a docs-main/. .
           rm -rf docs-main
           git add -A
