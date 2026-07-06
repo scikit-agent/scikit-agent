@@ -615,17 +615,11 @@ def bellman_step(
             post = bp.post_function(states, ctrl, shocks=obs, parameters=params)
             beta = bp.resolve_discount_factor(post)
             s_next = bp.transition_function(states, ctrl, shocks=obs, parameters=params)
-            return -(r + beta * continuation_vf(s_next, obs, params))
 
-        # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
-        if x0_policy is not None:
-            seed = float(x0_policy[control_sym].values[idx])
-        elif lower_func is not None and upper_func is not None:
-            seed = (lb + ub) / 2
-        else:
-            seed = x0
+            # coerce to float
+            return -float(r + beta * continuation_vf(s_next, obs, params))
 
-        res = minimize(negated_value, [seed], bounds=[(lb, ub)])
+        res = minimize(negated_value, seed_vec, bounds=bounds)
         if not res.success:
             logging.warning(
                 "bellman_step optimization did not converge at %s: %s",
