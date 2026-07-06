@@ -67,21 +67,19 @@ and this project adheres to
 
 ### Added
 
-- PPO solution algorithm via Stable-Baselines3: `skagent.algos.sb3.PPOAgent`
-  wraps a `BellmanPeriod` in a gymnasium environment, trains SB3's PPO, and
-  emits a standard skagent decision rule (`#205`)
-- `PPOAgent.snapshot()` and the `PolicySnapshot` class, capturing a frozen copy
-  of the trained policy (unaffected by later `learn` calls) for comparing
-  checkpoints during training
-- `skagent.env` module with `Environment` (single-transition stepping of a
-  `BellmanPeriod`) and `GymEnv` (gymnasium adapter for Stable-Baselines3)
-- `skagent.env.discounted_rollout_reward` for scoring a decision rule by its
-  realized discounted return over a rollout
-- `skagent.models.benchmarks.d2_constrained_optimal_c`, the D-2 closed-form
-  consumption function keyed on cash-on-hand with the borrowing constraint
-  applied
-- Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
-  D-2 benchmark
+- `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
+  the per-iteration update of value-function iteration, re-basing the exact grid
+  solver off the legacy `DBlock` continuation API onto the protocol the torch
+  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
+  multi-reward summation (`get_reward_syms`), and empty-shock-safe
+  (deterministic) handling, with a per-point optimizer seed (warm-start, else
+  midpoint of finite bounds, else fallback). Returns
+  `(dr_from_data, value_array, policy_array)` with `policy_array` a
+  `dict[str, DataArray]`. This first slice handles a single control under the
+  grid-equals-information-set contract; multi-control, derived-pre-state
+  reindexing, internal shock discretization, and the `solve_bellman` iteration
+  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
+  deliberate discount-folded-into-continuation path).
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss
