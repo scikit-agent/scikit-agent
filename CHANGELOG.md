@@ -49,6 +49,21 @@ and this project adheres to
   of its internal Adam optimizer.
 - Consolidated the open-bounds scaling and decision-function plumbing shared by
   `BlockPolicyNet` and `BlockPolicyValueNet` into `BellmanPeriodMixin`.
+- `skagent.algos.vbi.ar_from_data` now produces decision rules that follow the
+  library's calling convention — positional arguments in `control.iset` order
+  (`dr(*iset_values)`) instead of the previous keyword form (`dr(m=…)`) — so a
+  VBI-fitted rule is a drop-in for `BellmanPeriod`, `loss`, and `solver`.
+  `vbi.solve` transposes each fitted policy to `control.iset` order to guarantee
+  the positional argument order regardless of how the caller ordered the grid.
+- Renamed `vbi.solve`'s `calibration` argument to `scope`. VBI uses it as the
+  general evaluation scope (merged with each grid point to form `pre_states`),
+  which legacy usage populates with fixed parameters _and_ fixed exogenous
+  values such as a shock realization — broader than the parameters-only
+  `calibration` used elsewhere in the library.
+- Rewrote `skagent.algos.vbi` docstrings in numpy/scipy style; the module and
+  `solve` docstrings now document VBI's full-observation assumption (the
+  per-point optimization conditions on the complete information set and does not
+  integrate over unobserved variables).
 
 ### Added
 
@@ -86,6 +101,12 @@ and this project adheres to
   reindexing, internal shock discretization, and the `solve_bellman` iteration
   loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
   deliberate discount-folded-into-continuation path).
+- **Constraints** user-guide page documenting the ways to constrain an
+  optimization problem: bound declaration on `Control`, the open-bounds
+  policy-network transforms, the Fischer-Burmeister complementarity loss
+  (including its current upper-bound-only scope), how the mechanisms compose,
+  and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
+  now passes callable bounds, matching the enforced API.
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
@@ -143,6 +164,17 @@ and this project adheres to
 - Added the public `has_analytical_policy` registry helper to
   `skagent.models.benchmarks`, replacing duplicated closed-form checks in the
   tests and the gallery
+- Added an **Algorithms** user-guide page documenting the direct (non-recurring)
+  solve workflow — training a `BlockPolicyNet` against reward-based losses
+  (`StaticRewardLoss`, `EstimatedDiscountedLifetimeRewardLoss`) on benchmark
+  models (D-2, U-2), including multiple-control solves — with a runnable
+  `plot_direct_block_solve.py` gallery example
+- Expanded the Algorithms API reference with the `skagent.solver` and
+  `skagent.loss` modules and `skagent.ann.train_block_nn`
+- `skagent.algos.vbi.tensor_decision_rule`, which wraps a numpy-space VBI
+  decision rule so it accepts and returns torch tensors (float32 on the grid
+  device, detached) for interop with the torch solving stack. Suitable as a
+  fixed / ground-truth / warm-start policy, not as a trainable FOC/Euler policy.
 
 ### Removed
 
@@ -173,6 +205,10 @@ and this project adheres to
 - Fixed the `CRRA` calibration in `perfect_foresight_normalized`: it was a
   1-tuple `(2.0,)`, which broke the CRRA utility power; it is now the scalar
   `2.0`.
+- Fixed `skagent.solver.solve_multiple_controls`, which previously crashed on
+  its default loss and passed incorrect arguments to `StaticRewardLoss`; it now
+  trains a policy network per control via a best-response sweep and returns the
+  trained decision rules.
 - `train_block_nn` now halts early with a warning on a non-finite (NaN/Inf) loss
   instead of continuing to train on poisoned weights.
 - Documentation correctness pass across `docs/` and the examples gallery: the
