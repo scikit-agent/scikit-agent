@@ -57,15 +57,6 @@ PPO, and emits a standard skagent decision rule.
    :members:
 ```
 
-## Solvers
-
-High-level routines that drive the neural-network training utilities to solve a
-model. See the {doc}`/user_guide/algorithms` guide for worked examples.
-
-```{eval-rst}
-.. autofunction:: skagent.solver.solve_multiple_controls
-```
-
 ## Loss Functions
 
 Objective functions passed to {func}`skagent.ann.train_block_nn`. The
@@ -91,7 +82,7 @@ Base neural network class with device management.
 
 ### BlockPolicyNet
 
-A neural network for policy functions in dynamic programming problems.
+Specialized neural network for policy functions in economic models.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.BlockPolicyNet
@@ -131,6 +122,10 @@ functions.
 
 ```{eval-rst}
 .. autofunction:: skagent.ann.aggregate_net_loss
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_multiple_controls
 ```
 
 ## Grid and Computational Tools

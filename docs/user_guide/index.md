@@ -38,9 +38,9 @@ Learn about the fundamental concepts and components:
 - {doc}`environments` - Interactive adapters for reinforcement-learning
   algorithms
 - {doc}`constraints` - The ways to constrain decisions and how solvers enforce
-  them
-
+them
 <!---
+
 ## Key Design Principles
 
 ### Block-Based Models

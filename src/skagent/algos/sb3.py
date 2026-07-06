@@ -102,6 +102,44 @@ class PolicySnapshot:
         return _decision_rule(self.env, self._predict, deterministic)
 
 
+def _predict_unscaled(env: GymEnv, predict, obs, deterministic: bool) -> np.ndarray:
+    """Shared body of ``predict_unscaled`` for agents and snapshots.
+
+    ``predict`` maps ``(obs_batch, deterministic)`` to a (scaled) SB3 action
+    array; ``env`` supplies the unscaling. Returns a 1-D array of shape ``(N,)``.
+    """
+    obs_arr = np.atleast_2d(np.asarray(obs, dtype=np.float32))
+    action = predict(obs_arr, deterministic)
+    return env.unscale_action(action, obs_arr)
+
+
+def _decision_rule(env: GymEnv, predict, deterministic: bool) -> dict[str, Callable]:
+    """Shared body of ``decision_rule`` for agents and snapshots."""
+    iset_len = len(env.iset)
+
+    def rule(*iset_values):
+        if len(iset_values) != iset_len:
+            raise TypeError(
+                f"decision rule for {env.control_sym!r} expects "
+                f"{iset_len} iset arguments {env.iset}, got {len(iset_values)}"
+            )
+        cols = [
+            np.asarray(
+                v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else v,
+                dtype=np.float32,
+            ).reshape(-1)
+            for v in iset_values
+        ]
+        n = max(c.size for c in cols)
+        cols = [np.broadcast_to(c, (n,)) for c in cols]
+        obs = np.stack(cols, axis=1)
+        action = predict(obs, deterministic)
+        unscaled = env.unscale_action(action, obs)
+        return torch.as_tensor(unscaled, dtype=torch.float32)
+
+    return {env.control_sym: rule}
+
+
 class _EpisodeRewardLogger(BaseCallback):
     """Append each completed episode's undiscounted reward to a list.
 
