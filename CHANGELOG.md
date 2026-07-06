@@ -68,18 +68,18 @@ and this project adheres to
 ### Added
 
 - `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
-  the per-iteration update of value-function iteration, re-basing the exact grid
-  solver off the legacy `DBlock` continuation API onto the protocol the torch
-  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
-  multi-reward summation (`get_reward_syms`), and empty-shock-safe
-  (deterministic) handling, with a per-point optimizer seed (warm-start, else
-  midpoint of finite bounds, else fallback). Returns
-  `(dr_from_data, value_array, policy_array)` with `policy_array` a
-  `dict[str, DataArray]`. This first slice handles a single control under the
-  grid-equals-information-set contract; multi-control, derived-pre-state
-  reindexing, internal shock discretization, and the `solve_bellman` iteration
-  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
-  deliberate discount-folded-into-continuation path).
+  the per-iteration update of value-function iteration on the protocol the torch
+  stack speaks, with explicit discount factor, multi-reward summation, and
+  deterministic (empty-shock) handling. Returns
+  `(dr_from_data, value_array, policy_array)`. Handles one or more controls
+  jointly (a single `scipy.optimize.minimize` over the stacked control vector),
+  reprojecting each fitted policy onto its own information set (design §5):
+  drops grid axes outside a control's iset (Mechanism A) and reindexes a derived
+  pre-state like `m = a·R + y` onto its own coordinate (Mechanism B), failing
+  loudly on scattered/non-monotone/non-invariant projections. Internal shock
+  discretization (`disc_params`) and the `solve_bellman` loop are still to come;
+  hidden shocks are supplied as fixed realizations via `scope`. Legacy
+  `vbi.solve` is unchanged.
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss
