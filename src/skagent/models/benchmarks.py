@@ -234,6 +234,10 @@ d2_calibration = {
     "y": 1.0,
     "description": "D-2: Infinite horizon CRRA perfect foresight",
 }
+# Human wealth H = y / r: PV of the constant future income, a fixed model
+# parameter (module header: W_t = m_t + H_t). The closed form borrows against
+# it, so the feasible upper bound is m + H (limit a' >= -H), not m.
+_D2_HUMAN_WEALTH = d2_calibration["y"] / _human_wealth_rate(d2_calibration["R"])
 
 d2_block = DBlock(
     **{
@@ -241,7 +245,9 @@ d2_block = DBlock(
         "shocks": {},
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
-            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
+            "c": Control(
+                ["m"], upper_bound=lambda m: m + _D2_HUMAN_WEALTH, agent="consumer"
+            ),
             "a": lambda m, c: m - c,
             "u": lambda c, CRRA: crra_utility(c, CRRA),
         },
@@ -394,6 +400,9 @@ d3_calibration = {
     # Note: liv=1.0 is the initial STATE, not a parameter, so it's passed in initial_states
     "description": "D-3: Blanchard discrete-time mortality",
 }
+# Human wealth H = y / r (mortality scales the MPC, not H); the feasible upper
+# bound is total wealth m + H, matching _validate_d2_d3_solution's c < m + H.
+_D3_HUMAN_WEALTH = d3_calibration["y"] / _human_wealth_rate(d3_calibration["R"])
 
 d3_block = DBlock(
     **{
@@ -403,7 +412,9 @@ d3_block = DBlock(
         },
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
-            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
+            "c": Control(
+                ["m"], upper_bound=lambda m: m + _D3_HUMAN_WEALTH, agent="consumer"
+            ),
             "a": lambda m, c: m - c,
             "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
             "u": lambda c, liv, CRRA: liv

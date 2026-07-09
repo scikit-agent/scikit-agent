@@ -435,9 +435,12 @@ class GymEnv(gym.Env):
             if self.control.upper_bound is not None
             else self.default_upper
         )
-        if hi <= lo:
+        # lo == hi is a valid single-point feasible set (the natural borrowing
+        # limit collapses the choice to one action); only a truly inverted
+        # bound (hi < lo) is an error.
+        if hi < lo:
             raise ValueError(
-                f"Control {self.control_sym!r} has degenerate bounds at "
+                f"Control {self.control_sym!r} has inverted bounds at "
                 f"pre-state {pre}: lo={lo}, hi={hi}"
             )
         return lo, hi
