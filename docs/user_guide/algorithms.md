@@ -108,7 +108,9 @@ bp = bellman.BellmanPeriod(block_d2, "DiscFac", calibration)
 ```
 
 In D-2 the agent arrives with assets `a`, cash-on-hand `m = R*a + y` is formed,
-and the single control `c` (consumption) is chosen subject to `c <= m`.
+and the single control `c` (consumption) is chosen subject to the natural
+borrowing limit `c <= m + H`, where `H = y/(R-1)` is human wealth (the agent may
+borrow against future income).
 
 ### 2. Build the grid of starting points
 

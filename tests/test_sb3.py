@@ -133,10 +133,11 @@ def test_predict_unscaled_respects_per_state_bounds(d2_agent):
     d2_agent.learn(total_timesteps=64)
     obs = np.array([[1.0], [2.5], [5.0]], dtype=np.float32)
     c = d2_agent.predict_unscaled(obs)
-    # D-2: lo=0 (default), hi=m (Control.upper_bound).
+    # D-2 is unconstrained: lo=0 (default), hi=m+H (natural borrowing limit).
+    ub = d2_block.dynamics["c"].upper_bound(obs.reshape(-1))
     assert c.shape == (3,)
     assert np.all(c >= 0.0)
-    assert np.all(c <= obs.reshape(-1))
+    assert np.all(c <= ub)
 
 
 def test_decision_rule_drives_environment(d2_agent):
@@ -154,7 +155,8 @@ def test_decision_rule_drives_environment(d2_agent):
         state, action, reward, _, _, _ = env.step(dr)
         c = float(action["c"][0])
         m = float(state["a"][0]) * d2_calibration["R"] + d2_calibration["y"]
-        assert 0.0 <= c <= m  # respects D-2 borrowing constraint
+        ub = d2_block.dynamics["c"].upper_bound(m)  # m + H, natural borrowing limit
+        assert 0.0 <= c <= ub  # respects D-2 natural borrowing limit
         assert torch.is_tensor(reward["u"])
 
 
@@ -207,7 +209,8 @@ def test_snapshot_decision_rule_drives_environment(d2_agent):
         state, action, reward, _, _, _ = env.step(dr)
         c = float(action["c"][0])
         m = float(state["a"][0]) * d2_calibration["R"] + d2_calibration["y"]
-        assert 0.0 <= c <= m  # respects D-2 borrowing constraint
+        ub = d2_block.dynamics["c"].upper_bound(m)  # m + H, natural borrowing limit
+        assert 0.0 <= c <= ub  # respects D-2 natural borrowing limit
 
 
 def test_snapshot_decision_rule_rejects_wrong_iset_arity(d2_agent):

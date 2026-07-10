@@ -58,6 +58,14 @@ fixed meaning throughout every model on this page:
 The normalized models (U-2, U-3) additionally use lowercase :math:`m, c, a`
 for ratios to permanent income :math:`P_t`.
 
+Because a perfect-foresight agent can borrow against future income, the
+deterministic models (D-2, D-3) are feasible up to total wealth,
+:math:`c_t \le m_t + H_t` (the natural borrowing limit :math:`A_t \ge -H_t`),
+not merely cash-on-hand. The limit tightens to :math:`c_t \le m_t` only when the
+worst-case future income is zero, i.e. with income uncertainty whose support
+reaches zero (U-3) or a borrowing constraint imposed by construction (D-4); that
+binding constraint is what forecloses a closed form.
+
 References
 ==========
 
