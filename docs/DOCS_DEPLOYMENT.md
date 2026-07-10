@@ -44,8 +44,8 @@ The deployment workflow consists of several jobs:
 1. **Enable GitHub Pages**:
 
    - Go to Settings → Pages
-   - Source: "GitHub Actions"
-   - No need to select a branch
+   - Source: "Deploy from a branch"
+   - Branch: `gh-pages` / `/ (root)`
 
 2. **Workflow Permissions**:
    - Go to Settings → Actions → General
@@ -121,7 +121,7 @@ python -m http.server 8000 -d _build
 1. **Deployment Fails**:
 
    - Check workflow permissions in repository settings
-   - Ensure GitHub Pages is enabled with "GitHub Actions" source
+   - Ensure GitHub Pages is enabled with the `gh-pages` branch as the source
 
 2. **PR Comment Not Created**:
 
