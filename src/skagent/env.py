@@ -415,6 +415,9 @@ class GymEnv(gym.Env):
     # -- internal helpers -------------------------------------------------
 
     def _unscale_one(self, a_norm: float, lo: float, hi: float) -> float:
+        # At a degenerate feasible set (lo == hi, the natural borrowing limit
+        # m = -H) the 1e-12 floor keeps c strictly interior rather than exactly
+        # c = lo, which for CRRA utility would be a c = 0 singularity (-inf).
         span = max(hi - lo, 1e-12)
         eps = self.bound_clearance * span
         a = float(np.clip(a_norm, -1.0, 1.0))
