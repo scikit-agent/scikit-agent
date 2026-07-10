@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev648+ga8f569a10</title>
+        <title>Algorithms - scikit-agent 0.1.dev651+g586c23345</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev648+ga8f569a10</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev651+g586c23345</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -520,9 +520,9 @@ the control (FOC-weighted Bellman, Euler).</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>np_rule</strong> (<em>callable</em>) – A numpy-space decision rule taking positional information-set arguments
 and returning numpy/scalar values.</p></li>
-<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.12)"><em>torch.dtype</em></a><em>, </em><em>optional</em>) – Output tensor dtype. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.float32</span></code> to match grid tensors
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.13)"><em>torch.dtype</em></a><em>, </em><em>optional</em>) – Output tensor dtype. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.float32</span></code> to match grid tensors
 (<code class="docutils literal notranslate"><span class="pre">grid.py</span></code> builds them with <code class="docutils literal notranslate"><span class="pre">torch.FloatTensor</span></code>).</p></li>
-<li><p><strong>device</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.12)"><em>torch.device</em></a><em>, </em><em>optional</em>) – Output tensor device. Defaults to the stack’s device
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.13)"><em>torch.device</em></a><em>, </em><em>optional</em>) – Output tensor device. Defaults to the stack’s device
 (<code class="docutils literal notranslate"><span class="pre">skagent.grid.device</span></code>).</p></li>
 </ul>
 </dd>
@@ -1016,7 +1016,7 @@ See <a class="reference internal" href="loss.html"><span class="doc">Loss Functi
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.ann.Net">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">Net</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'silu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_weights_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.Net" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>A flexible feedforward neural network with configurable architecture.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1189,7 +1189,7 @@ the control’s information set via
 <dd class="field-odd"><p>Flattened value estimates, one per input row.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)">torch.Tensor</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.13)">torch.Tensor</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1257,7 +1257,7 @@ into the control’s open bounds; the value tensor is unconstrained.
 Both have shape <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">1)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1307,7 +1307,7 @@ representation.</p>
 <dd class="field-even"><p>Flattened value estimates, one per input row.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.13)">torch.Tensor</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1345,7 +1345,7 @@ decision rule(s) the loss is evaluated against.</p></li>
 <li><p><strong>loss_function</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – Loss function <code class="docutils literal notranslate"><span class="pre">(decision_function,</span> <span class="pre">input_grid)</span> <span class="pre">-&gt;</span> <span class="pre">loss_tensor</span></code>.</p></li>
 <li><p><strong>epochs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of training epochs (default 50).</p></li>
 <li><p><strong>lr</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Learning rate for Adam optimizer (default 0.01).</p></li>
-<li><p><strong>optimizer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/optim.html#torch.optim.Optimizer" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code></a>]</span>) – Pre-existing optimizer to reuse (preserves momentum across calls).
+<li><p><strong>optimizer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/optim.html#torch.optim.Optimizer" title="(in PyTorch v2.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code></a>]</span>) – Pre-existing optimizer to reuse (preserves momentum across calls).
 If None, a new Adam optimizer is created.</p></li>
 <li><p><strong>grad_clip</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Maximum gradient norm for clipping (default 1.0). Set to None to disable.</p></li>
 <li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Emit a <code class="docutils literal notranslate"><span class="pre">logging.info</span></code> message with the loss every 100 epochs
@@ -1709,7 +1709,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=5cf04ac0"></script>
+</div><script src="../_static/documentation_options.js?v=ff768b69"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

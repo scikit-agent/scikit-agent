@@ -77,6 +77,14 @@ fixed meaning throughout every model on this page:
 The normalized models (U-2, U-3) additionally use lowercase :math:`m, c, a`
 for ratios to permanent income :math:`P_t`.
 
+Because a perfect-foresight agent can borrow against future income, the
+deterministic models (D-2, D-3) are feasible up to total wealth,
+:math:`c_t \le m_t + H_t` (the natural borrowing limit :math:`A_t \ge -H_t`),
+not merely cash-on-hand. The limit tightens to :math:`c_t \le m_t` only when the
+worst-case future income is zero, i.e. with income uncertainty whose support
+reaches zero (U-3) or a borrowing constraint imposed by construction (D-4); that
+binding constraint is what forecloses a closed form.
+
 References
 ==========
 
@@ -87,7 +95,7 @@ References
 * Carroll, C.D. (2024). *Solution Methods for Solving Microeconomic Dynamic
   Stochastic Optimization Problems*. https://llorracc.github.io/SolvingMicroDSOPs/
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-86
+.. GENERATED FROM PYTHON SOURCE LINES 80-94
 
 .. code-block:: Python
 
@@ -112,7 +120,7 @@ References
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 87-104
+.. GENERATED FROM PYTHON SOURCE LINES 95-112
 
 Step 1: What's in the Registry
 ------------------------------
@@ -132,7 +140,7 @@ distinction is queried with
 :py:func:`~skagent.models.benchmarks.has_analytical_policy` rather than
 re-derived here.
 
-.. GENERATED FROM PYTHON SOURCE LINES 104-112
+.. GENERATED FROM PYTHON SOURCE LINES 112-120
 
 .. code-block:: Python
 
@@ -163,7 +171,7 @@ re-derived here.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 113-140
+.. GENERATED FROM PYTHON SOURCE LINES 121-148
 
 Step 2: Finite Horizons Fade Away (D-1 → D-2)
 ---------------------------------------------
@@ -193,7 +201,7 @@ horizon and decays geometrically as :math:`T - t \to \infty`. Holding
 wealth fixed at :math:`W = 5` and sweeping :math:`T`, the gap is already
 below 1% of the limit by :math:`T = 30`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 140-178
+.. GENERATED FROM PYTHON SOURCE LINES 148-186
 
 .. code-block:: Python
 
@@ -247,7 +255,7 @@ below 1% of the limit by :math:`T = 30`.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 179-219
+.. GENERATED FROM PYTHON SOURCE LINES 187-227
 
 Step 3: Mortality Erodes Patience (D-3)
 ---------------------------------------
@@ -290,7 +298,7 @@ is around :math:`s = 0.999`, which is essentially indistinguishable from
 the no-mortality limit at this scale, but life-cycle models that
 aggregate over many decades pick up a measurable mortality wedge.
 
-.. GENERATED FROM PYTHON SOURCE LINES 219-251
+.. GENERATED FROM PYTHON SOURCE LINES 227-259
 
 .. code-block:: Python
 
@@ -338,7 +346,7 @@ aggregate over many decades pick up a measurable mortality wedge.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 252-290
+.. GENERATED FROM PYTHON SOURCE LINES 260-298
 
 Step 4: Hall's Martingale (U-1)
 -------------------------------
@@ -379,7 +387,7 @@ while :math:`\eta_t` spreads out by a factor of about :math:`R/r \approx
 saving for consumption volatility. Empirical PIH tests are precisely
 tests of whether this picture survives in real data.
 
-.. GENERATED FROM PYTHON SOURCE LINES 290-370
+.. GENERATED FROM PYTHON SOURCE LINES 298-378
 
 .. code-block:: Python
 
@@ -475,7 +483,7 @@ tests of whether this picture survives in real data.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 371-405
+.. GENERATED FROM PYTHON SOURCE LINES 379-413
 
 Step 5: Normalization Collapses the State Space (U-2)
 -----------------------------------------------------
@@ -512,7 +520,7 @@ onto the single curve :math:`c = (1-\beta)(m + 1/r)`. The four
 line-styles all trace the same curve; the visual coincidence is the
 state-space collapse.
 
-.. GENERATED FROM PYTHON SOURCE LINES 405-438
+.. GENERATED FROM PYTHON SOURCE LINES 413-446
 
 .. code-block:: Python
 
@@ -561,7 +569,7 @@ state-space collapse.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 439-470
+.. GENERATED FROM PYTHON SOURCE LINES 447-478
 
 Step 6: When the Closed Form Breaks (U-3)
 -----------------------------------------
@@ -595,7 +603,7 @@ and approaches D-2's :math:`\kappa` only as :math:`m \to \infty`.
 Neither bend nor approach has a closed form, which is exactly why U-3
 is in the registry as ``"numerical only"``.
 
-.. GENERATED FROM PYTHON SOURCE LINES 470-521
+.. GENERATED FROM PYTHON SOURCE LINES 478-529
 
 .. code-block:: Python
 
@@ -669,7 +677,7 @@ is in the registry as ``"numerical only"``.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 522-533
+.. GENERATED FROM PYTHON SOURCE LINES 530-541
 
 Where to Read Next
 ------------------
@@ -683,7 +691,7 @@ Where to Read Next
 - The other examples in this gallery wire benchmark blocks into Monte
   Carlo simulators and reinforcement learning loops.
 
-.. GENERATED FROM PYTHON SOURCE LINES 533-535
+.. GENERATED FROM PYTHON SOURCE LINES 541-543
 
 .. code-block:: Python
 
@@ -699,7 +707,7 @@ Where to Read Next
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.969 seconds)
+   **Total running time of the script:** (0 minutes 1.023 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_benchmark_models.py:

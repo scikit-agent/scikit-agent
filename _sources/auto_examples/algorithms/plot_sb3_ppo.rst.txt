@@ -305,9 +305,9 @@ takes the minimum.
 
     Policy error vs closed form (over m ∈ [0.5, 10.0]):
         checkpoint         MAE      MaxErr
-            70,000      2.1854      4.1429
-            90,000      0.5841      1.3258
-           130,000      0.9656      2.4959
+            70,000     17.9121     20.0948
+            90,000     17.9121     20.0948
+           130,000     17.9121     20.0948
 
 
 
@@ -373,7 +373,7 @@ the trend.
 
 
 .. image-sg:: /auto_examples/algorithms/images/sphx_glr_plot_sb3_ppo_001.png
-   :alt: D-2 policy: MAE=0.966, Training curve (130,000 timesteps)
+   :alt: D-2 policy: MAE=17.912, Training curve (130,000 timesteps)
    :srcset: /auto_examples/algorithms/images/sphx_glr_plot_sb3_ppo_001.png
    :class: sphx-glr-single-img
 
@@ -427,9 +427,9 @@ rollouts use the exact trained policies — no reconstruction needed.
  .. code-block:: none
 
     Discounted return over 200 steps (50 rollouts each):
-          PPO @ 70,000: mean = -24.0400  std = 0.4767
-          PPO @ 90,000: mean = -23.4056  std = 0.7353
-         PPO @ 130,000: mean = -23.3288  std = 0.9396
+          PPO @ 70,000: mean = -17986911990758.4219  std = 5619.3901
+          PPO @ 90,000: mean = -17986911991420.8398  std = 4449.5901
+         PPO @ 130,000: mean = -17986911990482.7266  std = 6111.5485
            closed form: mean = -23.1396  std = 1.0545
 
 
@@ -483,7 +483,7 @@ analytical solution is unavailable.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 34.312 seconds)
+   **Total running time of the script:** (2 minutes 21.283 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_sb3_ppo.py:

@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**04:00.341** total execution time for 7 files **from all galleries**:
+**03:35.459** total execution time for 7 files **from all galleries**:
 
 .. container::
 
@@ -33,23 +33,23 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_sb3_ppo.py` (``../examples/algorithms/plot_sb3_ppo.py``)
-     - 02:34.312
+     - 02:21.283
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_maliar_training_loop.py` (``../examples/algorithms/plot_maliar_training_loop.py``)
-     - 00:53.216
+     - 00:45.452
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_train_against_known_solution.py` (``../examples/algorithms/plot_train_against_known_solution.py``)
-     - 00:24.481
+     - 00:20.157
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_direct_block_solve.py` (``../examples/algorithms/plot_direct_block_solve.py``)
-     - 00:05.552
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``../examples/models/plot_consumption_portfolio_model.py``)
-     - 00:00.994
+     - 00:05.631
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``../examples/models/plot_benchmark_models.py``)
-     - 00:00.969
+     - 00:01.023
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``../examples/models/plot_consumption_portfolio_model.py``)
+     - 00:01.012
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``../examples/models/plot_resource_extraction.py``)
-     - 00:00.817
+     - 00:00.900
      - 0.0

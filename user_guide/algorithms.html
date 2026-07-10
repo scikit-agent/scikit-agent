@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments Guide" href="environments.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.dev648+ga8f569a10</title>
+        <title>Algorithms Guide - scikit-agent 0.1.dev651+g586c23345</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev648+ga8f569a10</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev651+g586c23345</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -386,7 +386,9 @@ rewards).</p>
 </pre></div>
 </div>
 <p>In D-2 the agent arrives with assets <code class="docutils literal notranslate"><span class="pre">a</span></code>, cash-on-hand <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">R*a</span> <span class="pre">+</span> <span class="pre">y</span></code> is formed,
-and the single control <code class="docutils literal notranslate"><span class="pre">c</span></code> (consumption) is chosen subject to <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">&lt;=</span> <span class="pre">m</span></code>.</p>
+and the single control <code class="docutils literal notranslate"><span class="pre">c</span></code> (consumption) is chosen subject to the natural
+borrowing limit <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">&lt;=</span> <span class="pre">m</span> <span class="pre">+</span> <span class="pre">H</span></code>, where <code class="docutils literal notranslate"><span class="pre">H</span> <span class="pre">=</span> <span class="pre">y/(R-1)</span></code> is human wealth (the agent may
+borrow against future income).</p>
 </section>
 <section id="build-the-grid-of-starting-points">
 <h3>2. Build the grid of starting points<a class="headerlink" href="#build-the-grid-of-starting-points" title="Link to this heading">¶</a></h3>
@@ -643,7 +645,7 @@ and construct shocks with an explicit <code class="docutils literal notranslate"
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=5cf04ac0"></script>
+</div><script src="../_static/documentation_options.js?v=ff768b69"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
