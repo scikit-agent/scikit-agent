@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="API Reference" href="../../api/index.html"><link rel="prev" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Consumption Models - scikit-agent 0.1.dev650+g59723fdc9</title>
+        <title>Benchmark Consumption Models - scikit-agent 0.1.dev651+g2c55be3db</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev650+g59723fdc9</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev651+g2c55be3db</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -343,6 +343,13 @@ the present value of expected future income;</p></li>
 </ul>
 <p>The normalized models (U-2, U-3) additionally use lowercase <span class="math notranslate nohighlight">\(m, c, a\)</span>
 for ratios to permanent income <span class="math notranslate nohighlight">\(P_t\)</span>.</p>
+<p>Because a perfect-foresight agent can borrow against future income, the
+deterministic models (D-2, D-3) are feasible up to total wealth,
+<span class="math notranslate nohighlight">\(c_t \le m_t + H_t\)</span> (the natural borrowing limit <span class="math notranslate nohighlight">\(A_t \ge -H_t\)</span>),
+not merely cash-on-hand. The limit tightens to <span class="math notranslate nohighlight">\(c_t \le m_t\)</span> only when the
+worst-case future income is zero, i.e. with income uncertainty whose support
+reaches zero (U-3) or a borrowing constraint imposed by construction (D-4); that
+binding constraint is what forecloses a closed form.</p>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
@@ -808,7 +815,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.197 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.007 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-benchmark-models-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/2cc3c98062c3edf3537ea32dc3909b7c/plot_benchmark_models.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_benchmark_models.ipynb</span></code></a></p>
@@ -910,7 +917,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=00200ce6"></script>
+</div><script src="../../_static/documentation_options.js?v=1bde7740"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
