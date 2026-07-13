@@ -344,115 +344,88 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
 _LOWER_OPEN = -1e12
 _UPPER_OPEN = 1e12
 
-# Tolerance for the Mechanism-B single-axis-dependence check (§5): an iset
-# coordinate is treated as varying along a grid axis when its spread along that
-# axis exceeds this. Flat absolute, matching the test ATOL scale; hardening
-# (parameterize + relative/absolute combo) is deferred to Phase 3 (i66_todo.md).
-_MECHB_TOL = 1e-3
+# A coordinate is treated as varying along a grid axis when its spread there
+# exceeds this; below it, the axis is considered flat (invariant). Flat absolute
+# at the test ATOL scale; relative/absolute hardening is deferred to Phase 3.
+_PROJ_TOL = 1e-3
 
 
 def _project_to_iset(
-    policy_buf: np.ndarray,
+    policy_da: xr.DataArray,
     grid_axes: Sequence[str],
     iset: Sequence[str],
     iset_coords: Mapping[str, np.ndarray],
     control_sym: str,
 ) -> xr.DataArray:
     """
-    Reindex a grid-tabulated policy onto a control's information set when an iset
-    variable is a *derived pre-state* rather than a grid axis (Mechanism B, §5).
+    Re-express a grid-tabulated policy as a function of a control's information
+    set, ready for :func:`ar_from_data` (design §5).
 
-    Legacy :func:`solve` gridded directly over the iset; the ``BellmanPeriod``
-    backup grids over arrival states (and observed shocks) — the value
-    function's domain — so a control whose iset is a derived pre-state (e.g.
-    ``m = a·R + y``) needs its policy re-expressed on that coordinate. Each iset
-    variable is required to map from **exactly one** grid axis by a strictly
-    monotone, otherwise-invariant relation (the 1-axis-per-iset-var case of O3);
-    the policy axes are then relabeled to the iset variables and re-coordinated
-    onto their computed values, so :func:`ar_from_data` can interpolate over the
-    regular iset coordinate.
+    The backup grids over the value function's domain (arrival states + observed
+    shocks); a control conditions on its own ``iset``. Each iset variable must
+    track exactly one grid axis: either it *is* that axis, or it is a derived
+    pre-state (e.g. ``m = a·R + y``) that varies, strictly monotonically, only
+    along it — in which case that axis is relabeled to the variable and
+    recoordinated onto its computed values. Any leftover grid axis is outside the
+    iset, so the optimum must be invariant along it; it is dropped (``isel`` 0).
 
-    Parameters
-    ----------
-    policy_buf : numpy.ndarray
-        The optimal control tabulated over the state grid (shape = grid shape,
-        axes in *grid_axes* order).
-    grid_axes : sequence of str
-        The state-grid axis names, in array order.
-    iset : sequence of str
-        The control's information set (the target coordinates).
-    iset_coords : Mapping[str, numpy.ndarray]
-        The iset-variable values computed over the grid (each shape = grid
-        shape), from :meth:`BellmanPeriod.compute_pre_state` at each point.
-    control_sym : str
-        The control symbol, for error messages.
-
-    Returns
-    -------
-    xarray.DataArray
-        The policy indexed by the iset coordinates, transposed into *iset*
-        order, ready for :func:`ar_from_data`.
-
-    Raises
-    ------
-    NotImplementedError
-        If the grid and iset have different rank (a grid wider than the iset is
-        a Mechanism-A *reduction*, design §9 step 3), or if an iset variable
-        depends on more than one grid axis (general scattered reindexing, O3).
-    ValueError
-        If the grid-axis → iset-coordinate map is not strictly monotone, so the
-        reindex-then-``interp`` would be ill-posed (§5 monotonicity assert).
+    Raises ``NotImplementedError`` if an iset variable varies along more than one
+    grid axis, or two variables share an axis (general scattered reindexing, out
+    of scope); ``ValueError`` if a derived map is non-monotone or a dropped axis
+    is non-invariant (the reprojection would be ill-posed).
     """
-    if len(iset) != len(grid_axes):
-        raise NotImplementedError(
-            f"Projecting control '{control_sym}'s policy from grid axes "
-            f"{list(grid_axes)} onto information set {list(iset)} needs a "
-            "same-rank reindex; a grid wider than the iset is a Mechanism-A "
-            "reduction, which is out of scope here (design §9 step 3)."
-        )
+    da = policy_da
+    claimed: dict[str, str] = {}  # grid axis -> iset variable it represents
+    derived_coords: dict[str, np.ndarray] = {}
 
-    iset_var_at_axis: dict[int, str] = {}  # grid-axis index -> iset variable
-    coord_at_axis: dict[int, np.ndarray] = {}  # grid-axis index -> 1-D coord
     for iv in iset:
-        coord = np.asarray(iset_coords[iv])
-        # Which grid axes does this iset coordinate actually vary along?
-        varying = [
-            k
-            for k in range(coord.ndim)
-            if float(np.abs(coord.max(axis=k) - coord.min(axis=k)).max()) > _MECHB_TOL
-        ]
-        if len(varying) != 1:
+        if iv in grid_axes:
+            axis = iv  # the variable is itself a grid axis
+        else:
+            coord = np.asarray(iset_coords[iv])
+            varying = [
+                k
+                for k in range(coord.ndim)
+                if float(np.abs(coord.max(axis=k) - coord.min(axis=k)).max())
+                > _PROJ_TOL
+            ]
+            if len(varying) != 1:
+                raise NotImplementedError(
+                    f"Information-set variable '{iv}' of control '{control_sym}' "
+                    f"varies along grid axes {[grid_axes[k] for k in varying]} "
+                    "(expected exactly one); scattered reindexing is out of scope."
+                )
+            (k,) = varying
+            axis = grid_axes[k]
+            # 1-D profile along the source axis (flat along all others, checked).
+            line = coord[tuple(slice(None) if j == k else 0 for j in range(coord.ndim))]
+            if not (np.all(np.diff(line) > 0) or np.all(np.diff(line) < 0)):
+                raise ValueError(
+                    f"The map from grid axis '{axis}' to information-set variable "
+                    f"'{iv}' of control '{control_sym}' is not strictly monotone."
+                )
+            derived_coords[iv] = line
+        if axis in claimed:
             raise NotImplementedError(
-                f"Information-set variable '{iv}' of control '{control_sym}' "
-                f"varies along grid axes {[grid_axes[k] for k in varying]} "
-                "(expected exactly one). General multi-axis scattered "
-                "reindexing is out of scope (design §5, O3)."
+                f"Grid axis '{axis}' feeds two information-set variables "
+                f"('{claimed[axis]}', '{iv}') of control '{control_sym}'; "
+                "a one-to-one axis -> variable map is required."
             )
-        k = varying[0]
-        if k in iset_var_at_axis:
-            raise NotImplementedError(
-                f"Grid axis '{grid_axes[k]}' feeds both information-set "
-                f"variables '{iset_var_at_axis[k]}' and '{iv}' of control "
-                f"'{control_sym}'; Mechanism B requires a one-to-one "
-                "grid-axis -> iset-variable map (design §5, O3)."
-            )
-        # Collapse to the coordinate's 1-D profile along its source axis
-        # (it is invariant along every other axis, just checked).
-        line = coord[tuple(slice(None) if j == k else 0 for j in range(coord.ndim))]
-        diffs = np.diff(line)
-        if not (np.all(diffs > 0) or np.all(diffs < 0)):
-            raise ValueError(
-                f"The map from grid axis '{grid_axes[k]}' to information-set "
-                f"variable '{iv}' of control '{control_sym}' is not strictly "
-                "monotone, so the reindex-then-interp would be ill-posed "
-                "(design §5 monotonicity assert)."
-            )
-        iset_var_at_axis[k] = iv
-        coord_at_axis[k] = line
+        claimed[axis] = iv
 
-    dims = [iset_var_at_axis[k] for k in range(len(grid_axes))]
-    coords = {iset_var_at_axis[k]: coord_at_axis[k] for k in range(len(grid_axes))}
-    return xr.DataArray(policy_buf, dims=dims, coords=coords).transpose(*iset)
+    for ax in grid_axes:
+        if ax not in claimed:
+            spread = float(np.abs(da.max(dim=ax) - da.min(dim=ax)).max())
+            if spread > _PROJ_TOL:
+                raise ValueError(
+                    f"Control '{control_sym}'s optimum varies along grid axis "
+                    f"'{ax}' (spread {spread:.3g}), which is outside its "
+                    f"information set {list(iset)}."
+                )
+            da = da.isel({ax: 0})
+
+    da = da.rename({ax: iv for ax, iv in claimed.items() if ax != iv})
+    return da.assign_coords(derived_coords).transpose(*iset)
 
 
 def bellman_step(
@@ -483,14 +456,12 @@ def bellman_step(
     discount factor and multi-reward summation, and is empty-shock-safe.
 
     .. note::
-       This is the **current scope** of the §2 design: a single control, with
-       the policy projected onto the control's information set either by the
-       grid-equals-iset transpose or, when an iset variable is a derived
-       pre-state, by the Mechanism-B reindex (§5); and no internal shock
-       discretization (§4). Hidden shocks must be supplied as fixed
-       realizations via *scope*; multi-control, ``disc_params``, and a grid
-       *wider* than the iset (Mechanism-A reduction) raise
-       :class:`NotImplementedError`.
+       Current scope of the §2 design: one or more controls, jointly optimized
+       by a single :func:`scipy.optimize.minimize` over the stacked control
+       vector with per-control bounds, each policy then reprojected onto its own
+       information set (:func:`_project_to_iset`, §5). There is no internal shock
+       discretization (§4): hidden shocks must be supplied as fixed realizations
+       via *scope*, and ``disc_params`` raises :class:`NotImplementedError`.
 
     Parameters
     ----------
@@ -531,11 +502,10 @@ def bellman_step(
         symbol (a dict for forward-compatibility with multi-control, O1).
     """
     controls = list(bp.get_controls())
-    if len(controls) != 1:
+    if len(controls) == 0:
         raise NotImplementedError(
-            f"bellman_step handles exactly one control; got "
-            f"{len(controls)} {controls}. Multi-control vectorization is not yet "
-            "implemented (design §9 step 3)."
+            "bellman_step needs at least one control; a control-free block has "
+            "no decision to optimize."
         )
     if disc_params:
         raise NotImplementedError(
@@ -544,67 +514,80 @@ def bellman_step(
             "as a fixed value via `scope`."
         )
 
-    control_sym = controls[0]
-    iset = bp.block.dynamics[control_sym].iset
     grid_axes = list(state_grid.keys())
     shock_syms = set(bp.get_shocks())
     arrival = bp.arrival_states
 
-    # The state grid is the value function's domain (arrival states + observed
-    # shocks); the policy is projected onto the control's iset afterwards. When
-    # the grid equals the iset that projection is a transpose; when an
-    # iset variable is a derived pre-state it is the Mechanism-B reindex (§5),
-    # which also owns the rank/monotonicity guards. A grid *wider* than the
-    # iset (Mechanism-A reduction) still raises there (design §9 step 3).
-    grid_equals_iset = set(grid_axes) == set(iset)
+    # Per-control static info: controls may have *different* information sets and
+    # bounds, so everything per-control is keyed by control symbol. The state
+    # grid is the value function's domain (arrival states + observed shocks),
+    # shared across controls; each control's policy is projected onto its own
+    # iset afterwards (§5).
+    iset_by_control = {c: bp.block.dynamics[c].iset for c in controls}
+    lower_by_control = {c: bp.block.dynamics[c].lower_bound for c in controls}
+    upper_by_control = {c: bp.block.dynamics[c].upper_bound for c in controls}
 
     params = {**bp.calibration, **scope}
+    iset_union = {iv for c in controls for iv in iset_by_control[c]}
     for s in shock_syms - set(grid_axes):
         if s not in params:
             raise NotImplementedError(
-                f"Shock '{s}' is hidden (not in control '{control_sym}'s "
-                f"information set) and has no fixed value. For now, supply a "
-                "realization via `scope`; integration over hidden shocks is not "
-                "yet implemented (design §9 step 6)."
+                f"Shock '{s}' is hidden (in no control's information set "
+                f"{sorted(iset_union)}) and has no fixed value. For now, supply "
+                "a realization via `scope`; integration over hidden shocks is "
+                "not yet implemented (design §9 step 6)."
             )
 
     reward_syms = bp.get_reward_syms(agent)
-    lower_func = bp.block.dynamics[control_sym].lower_bound
-    upper_func = bp.block.dynamics[control_sym].upper_bound
 
     shape = tuple(len(state_grid[k]) for k in grid_axes)
-    policy_buf = np.empty(shape)
     value_buf = np.empty(shape)
-    # When the grid is not the iset, the policy must be reindexed onto the
-    # iset's (possibly derived) coordinates; tabulate them alongside the policy.
-    iset_coord_buf = (
-        {iv: np.empty(shape) for iv in iset} if not grid_equals_iset else None
-    )
+    policy_buf = {c: np.empty(shape) for c in controls}
+    # Tabulate each control's information-set coordinates over the grid, in case
+    # a variable is a derived pre-state that must be reprojected (§5).
+    iset_coord_buf = {
+        c: {iv: np.empty(shape) for iv in iset_by_control[c]} for c in controls
+    }
 
     for idx in np.ndindex(*shape):
         point_vals = {k: state_grid[k][i] for k, i in zip(grid_axes, idx)}
         states = {k: v for k, v in point_vals.items() if k in arrival}
         obs = {k: v for k, v in point_vals.items() if k in shock_syms}
 
-        # Per-control bounds, evaluated at this point (pre-state available).
-        pre = bp.compute_pre_state(control_sym, states, shocks=obs, parameters=params)
-        if iset_coord_buf is not None:
-            for iv in iset:
-                iset_coord_buf[iv][idx] = pre[iv]
-        bag = {**params, **obs, **states, **pre}
-        lb = (
-            lower_func(*[bag[v] for v in signature(lower_func).parameters])
-            if lower_func is not None
-            else _LOWER_OPEN
-        )
-        ub = (
-            upper_func(*[bag[v] for v in signature(upper_func).parameters])
-            if upper_func is not None
-            else _UPPER_OPEN
-        )
+        # Per-control bounds and seeds, evaluated at this point (each control's
+        # pre-state is available once the arrival states / observed shocks are
+        # fixed). The optimizer ranges over the stacked control vector, ordered
+        # as ``controls``.
+        bounds = []
+        seed_vec = []
+        for c in controls:
+            pre = bp.compute_pre_state(c, states, shocks=obs, parameters=params)
+            for iv in iset_by_control[c]:
+                iset_coord_buf[c][iv][idx] = pre[iv]
+            bag = {**params, **obs, **states, **pre}
+            lower_func = lower_by_control[c]
+            upper_func = upper_by_control[c]
+            lb = (
+                lower_func(*[bag[v] for v in signature(lower_func).parameters])
+                if lower_func is not None
+                else _LOWER_OPEN
+            )
+            ub = (
+                upper_func(*[bag[v] for v in signature(upper_func).parameters])
+                if upper_func is not None
+                else _UPPER_OPEN
+            )
+            bounds.append((lb, ub))
+            # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
+            if x0_policy is not None:
+                seed_vec.append(float(x0_policy[c].values[idx]))
+            elif lower_func is not None and upper_func is not None:
+                seed_vec.append((lb + ub) / 2)
+            else:
+                seed_vec.append(x0)
 
         def negated_value(a):
-            ctrl = {control_sym: a[0]}
+            ctrl = {c: a[j] for j, c in enumerate(controls)}
             rewards = bp.reward_function(
                 states, ctrl, shocks=obs, parameters=params, agent=agent
             )
@@ -612,45 +595,37 @@ def bellman_step(
             post = bp.post_function(states, ctrl, shocks=obs, parameters=params)
             beta = bp.resolve_discount_factor(post)
             s_next = bp.transition_function(states, ctrl, shocks=obs, parameters=params)
-            # Coerce to a plain float: a reward like ``crra_utility`` returns a
-            # torch tensor, and scipy.optimize.minimize must see a numpy/python
-            # scalar objective (a leaked torch tensor breaks np.asarray on some
-            # numpy/torch versions: "'torch.dtype' object has no attribute 'type'").
+
+            # coerce to float
             return -float(r + beta * continuation_vf(s_next, obs, params))
 
-        # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
-        if x0_policy is not None:
-            seed = float(x0_policy[control_sym].values[idx])
-        elif lower_func is not None and upper_func is not None:
-            seed = (lb + ub) / 2
-        else:
-            seed = x0
-
-        res = minimize(negated_value, [seed], bounds=[(lb, ub)])
+        res = minimize(negated_value, seed_vec, bounds=bounds)
         if not res.success:
             logging.warning(
                 "bellman_step optimization did not converge at %s: %s",
                 point_vals,
                 res.message,
             )
-        policy_buf[idx] = res.x[0]
+        for j, c in enumerate(controls):
+            policy_buf[c][idx] = res.x[j]
         value_buf[idx] = -res.fun
 
     coords = {k: state_grid[k] for k in grid_axes}
-    policy_da = xr.DataArray(policy_buf, dims=grid_axes, coords=coords)
     value_array = xr.DataArray(value_buf, dims=grid_axes, coords=coords)
+    policy_array = {
+        c: xr.DataArray(policy_buf[c], dims=grid_axes, coords=coords) for c in controls
+    }
 
-    # Project the gridded policy onto the control's iset: a transpose when the
-    # grid is the iset, else the Mechanism-B reindex (§5). Only the
-    # decision rule moves to iset coordinates; policy_array stays over the state
-    # grid so solve_bellman can warm-start the next iterate at the same points.
-    if grid_equals_iset:
-        policy_on_iset = policy_da.transpose(*iset)
-    else:
-        policy_on_iset = _project_to_iset(
-            policy_buf, grid_axes, iset, iset_coord_buf, control_sym
+    # The decision rule for each control is its policy re-expressed over its own
+    # information set (§5); policy_array stays over the state grid so
+    # solve_bellman can warm-start the next iterate at the same points.
+    dr_from_data = {
+        c: ar_from_data(
+            _project_to_iset(
+                policy_array[c], grid_axes, iset_by_control[c], iset_coord_buf[c], c
+            )
         )
-    dr_from_data = {control_sym: ar_from_data(policy_on_iset)}
-    policy_array = {control_sym: policy_da}
+        for c in controls
+    }
 
     return dr_from_data, value_array, policy_array

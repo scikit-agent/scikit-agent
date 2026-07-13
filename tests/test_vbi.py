@@ -278,8 +278,10 @@ def bp_terminal(states, shocks, parameters):
 
 class test_vbi_bellman_step(unittest.TestCase):
     """
-    Phase-2 design (§9 steps 1-2): ``vbi.bellman_step`` — one exact value backup
-    on the ``BellmanPeriod`` protocol, single control.
+    Phase-2 design (§9 steps 1-3): ``vbi.bellman_step`` — one exact value backup
+    on the ``BellmanPeriod`` protocol; single- and multi-control (one joint
+    ``scipy.minimize`` over the stacked control vector, per-control iset
+    projection).
 
     Under a terminal (zero) continuation each conftest case reduces to a single
     backward-induction step whose optimum is the case's analytic ``optimal_dr``.
@@ -397,9 +399,34 @@ class test_vbi_bellman_step(unittest.TestCase):
             np.allclose(policy1["c"].values, policy2["c"].values, atol=self.ATOL)
         )
 
-    def test_multi_control_not_implemented(self):
-        with self.assertRaises(NotImplementedError):
-            vbi.bellman_step(case_10["bp"], bp_terminal, {"a": np.linspace(-2, 2, 11)})
+    def test_case_10_multi_control(self):
+        # Two controls with DIFFERENT information sets, jointly optimized by a
+        # single scipy.minimize over the stacked [c, d] vector:
+        #   c.iset = [a] -> c* = a   (grid equals iset, transpose projection)
+        #   d.iset = []  -> d* = k=3 (Mechanism-A reduction drops the a axis)
+        # u = -(a-c)^2 - (k-d)^2 is separable, so the optima are independent.
+        dr, _, policy = self._step(
+            case_10, {"a": np.linspace(-2, 2, 11)}, case_10["calibration"]
+        )
+        for a in [-1.5, -0.5, 0.5, 1.5]:
+            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+        # d's iset is empty -> a constant rule recovered via Mechanism A.
+        self.assertTrue(np.allclose(dr["d"](), 3.0, atol=self.ATOL))
+        # policy_array carries BOTH controls (O1), each over the state grid so
+        # solve_bellman can warm-start; the per-control iset projection is only
+        # applied to the decision rules.
+        self.assertEqual(set(policy), {"c", "d"})
+        self.assertEqual(list(policy["c"].dims), ["a"])
+        self.assertEqual(list(policy["d"].dims), ["a"])
+
+    def test_project_to_iset_non_invariant_raises(self):
+        # Dropping a grid axis outside the iset assumes the optimum is invariant
+        # along it; a policy that actually varies there must fail loudly.
+        policy = xr.DataArray(
+            np.array([0.0, 1.0, 2.0]), dims=["a"], coords={"a": [0.0, 1.0, 2.0]}
+        )
+        with self.assertRaises(ValueError):
+            vbi._project_to_iset(policy, ["a"], [], {}, "c")
 
     def test_disc_params_not_implemented(self):
         with self.assertRaises(NotImplementedError):
@@ -410,9 +437,9 @@ class test_vbi_bellman_step(unittest.TestCase):
                 disc_params={"theta": {"N": 3}},
             )
 
-    # --- Mechanism-B reindex (iset is a derived pre-state, §5) -------------
+    # --- iset is a derived pre-state: reproject onto its coordinate (§5) ----
 
-    def test_case_3_mechanism_b_reindex(self):
+    def test_case_3_derived_iset_reproject(self):
         # u = -(m - c)^2 with iset = [m], m = a + theta a derived pre-state. The
         # grid is over the arrival state a (theta, psi fixed in scope, so the
         # map a -> m = a + theta is 1-D and strictly monotone); bellman_step
@@ -471,23 +498,25 @@ class test_vbi_bellman_step(unittest.TestCase):
                 scope={**case_3["calibration"], "psi": 0.0},
             )
 
-    def test_project_to_iset_rank_mismatch_not_implemented(self):
-        # A grid wider than the iset is a Mechanism-A reduction (§9 step 3), not a
-        # Mechanism-B reindex: the same-rank projection helper rejects it.
-        policy = np.zeros((3, 3))
-        with self.assertRaises(NotImplementedError):
-            vbi._project_to_iset(
-                policy,
-                ["a", "b"],
-                ["m"],
-                {"m": np.add.outer(np.arange(3.0), np.zeros(3))},
-                "c",
-            )
+    def test_project_to_iset_drops_extra_axis_and_reindexes(self):
+        # A grid wider than the iset composes both moves in one pass: the derived
+        # variable m claims its source axis a (reindex), and the leftover axis b
+        # -- invariant here -- is dropped.
+        policy = xr.DataArray(
+            np.tile(np.arange(3.0)[:, None], (1, 3)),  # varies along a, flat in b
+            dims=["a", "b"],
+            coords={"a": [0, 1, 2], "b": [0, 1, 2]},
+        )
+        m_coord = np.add.outer(2.0 * np.arange(3.0), np.zeros(3))  # m = 2a, flat in b
+        out = vbi._project_to_iset(policy, ["a", "b"], ["m"], {"m": m_coord}, "c")
+        self.assertEqual(list(out.dims), ["m"])
+        self.assertTrue(np.allclose(out["m"].values, [0.0, 2.0, 4.0]))
+        self.assertTrue(np.allclose(out.values, [0.0, 1.0, 2.0]))
 
     def test_project_to_iset_non_monotone_raises(self):
         # A non-monotone grid-axis -> iset-coordinate map would make the
-        # reindex-then-interp ill-posed; the monotonicity assert fails loudly.
-        policy = np.zeros(5)
+        # reindex-then-interp ill-posed; the monotonicity check fails loudly.
+        policy = xr.DataArray(np.zeros(5), dims=["a"], coords={"a": np.arange(5.0)})
         non_monotone = np.array([0.0, 1.0, 0.5, 2.0, 1.5])  # not sorted
         with self.assertRaises(ValueError):
             vbi._project_to_iset(policy, ["a"], ["m"], {"m": non_monotone}, "c")
