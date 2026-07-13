@@ -199,9 +199,6 @@ and this project adheres to
 
 ### Fixed
 
-- The D-2 benchmark's consumption control had no lower bound, so an exact solver
-  could drive `c` negative (where CRRA utility is unbounded); added the `c >= 0`
-  floor the sibling blocks already carry.
 - The U-1 (Hall random walk) benchmark passed `mean`/`std` to `Normal`, whose
   constructor takes `mu`/`sigma`, so `construct_shocks("U-1")` raised
   `TypeError` and the model was unusable. The income shock is now
@@ -259,4 +256,4 @@ and this project adheres to
 
 ...
 
-[Unreleased]: https://github.com/user/repo/commits/main
+[Unreleased]: https://github.com/scikit-agent/scikit-agent/commits/main

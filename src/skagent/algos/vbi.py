@@ -1,31 +1,11 @@
 """
-Value backward induction (VBI): an *exact* grid solver.
+Value backward induction (VBI).
 
-At each point of a grid over the decision's information set, an exact
-:func:`scipy.optimize.minimize` finds the control that maximizes the period
-reward plus a continuation value; the tabulated optima are interpolated into a
-decision rule. Unlike the neural solvers in ``solver``/``loss``, this introduces
-no function-approximation error, which makes it the ground-truth / warm-start
-tool of the stack (at the cost of scaling with grid size).
-
-The module exposes two entry points that differ only in the model interface they
-speak:
-
-- :func:`solve` — the legacy path on the ``DBlock`` continuation API. The caller
-  folds any discount factor into the continuation (the backup is
-  ``reward + continuation``), and a single reward / single control / full
-  observation are assumed.
-- :func:`bellman_step` — one exact backup on the :class:`~skagent.bellman.BellmanPeriod`
-  protocol the rest of the torch stack uses. The discount factor is explicit
-  (``reward + β·continuation`` via ``resolve_discount_factor``), rewards are
-  summed over the agent's reward symbols, and the mechanics are empty-shock-safe
-  (deterministic models do not crash). It is the per-iteration update of
-  value-function iteration; under a terminal (zero) continuation it is the
-  single-step solver.
-
-Both produce decision rules in the library's positional, information-set-order
-calling convention (see :func:`ar_from_data`); wrap with
-:func:`tensor_decision_rule` for the torch stack.
+Derive a decision rule, decision value function, and arrival value function for
+a single :class:`~skagent.block.DBlock` stage by backward induction: at each
+point of a grid over the decision's information set, solve an exact
+:func:`scipy.optimize.minimize` for the control that maximizes the period reward
+plus a continuation value.
 """
 
 from skagent.bellman import BellmanPeriod
@@ -616,10 +596,8 @@ def bellman_step(
             post = bp.post_function(states, ctrl, shocks=obs, parameters=params)
             beta = bp.resolve_discount_factor(post)
             s_next = bp.transition_function(states, ctrl, shocks=obs, parameters=params)
-            # Coerce to a plain float: a reward like ``crra_utility`` returns a
-            # torch tensor, and scipy.optimize.minimize must see a numpy/python
-            # scalar objective (a leaked torch tensor breaks np.asarray on some
-            # numpy/torch versions: "'torch.dtype' object has no attribute 'type'").
+
+            # coerce to float
             return -float(r + beta * continuation_vf(s_next, obs, params))
 
         res = minimize(negated_value, seed_vec, bounds=bounds)
