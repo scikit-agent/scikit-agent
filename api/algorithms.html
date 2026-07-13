@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev651+g586c23345</title>
+        <title>Algorithms - scikit-agent 0.1.dev658+g7de15bc94</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev651+g586c23345</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev658+g7de15bc94</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -294,31 +294,12 @@ problems.</p>
 <h2>Value Backwards Induction (VBI)<a class="headerlink" href="#value-backwards-induction-vbi" title="Link to this heading">¶</a></h2>
 <p>The value backwards induction (VBI) algorithm derives arrival value functions
 from a continuation value function and the stage dynamics of model blocks.</p>
-<p id="module-skagent.algos.vbi">Value backward induction (VBI): an <em>exact</em> grid solver.</p>
-<p>At each point of a grid over the decision’s information set, an exact
-<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> finds the control that maximizes the period
-reward plus a continuation value; the tabulated optima are interpolated into a
-decision rule. Unlike the neural solvers in <code class="docutils literal notranslate"><span class="pre">solver</span></code>/<code class="docutils literal notranslate"><span class="pre">loss</span></code>, this introduces
-no function-approximation error, which makes it the ground-truth / warm-start
-tool of the stack (at the cost of scaling with grid size).</p>
-<p>The module exposes two entry points that differ only in the model interface they
-speak:</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> — the legacy path on the <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> continuation API. The caller
-folds any discount factor into the continuation (the backup is
-<code class="docutils literal notranslate"><span class="pre">reward</span> <span class="pre">+</span> <span class="pre">continuation</span></code>), and a single reward / single control / full
-observation are assumed.</p></li>
-<li><p><a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a> — one exact backup on the <a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a>
-protocol the rest of the torch stack uses. The discount factor is explicit
-(<code class="docutils literal notranslate"><span class="pre">reward</span> <span class="pre">+</span> <span class="pre">β·continuation</span></code> via <code class="docutils literal notranslate"><span class="pre">resolve_discount_factor</span></code>), rewards are
-summed over the agent’s reward symbols, and the mechanics are empty-shock-safe
-(deterministic models do not crash). It is the per-iteration update of
-value-function iteration; under a terminal (zero) continuation it is the
-single-step solver.</p></li>
-</ul>
-<p>Both produce decision rules in the library’s positional, information-set-order
-calling convention (see <a class="reference internal" href="#skagent.algos.vbi.ar_from_data" title="skagent.algos.vbi.ar_from_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a>); wrap with
-<a class="reference internal" href="#skagent.algos.vbi.tensor_decision_rule" title="skagent.algos.vbi.tensor_decision_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a> for the torch stack.</p>
+<p id="module-skagent.algos.vbi">Value backward induction (VBI).</p>
+<p>Derive a decision rule, decision value function, and arrival value function for
+a single <a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> stage by backward induction: at each
+point of a grid over the decision’s information set, solve an exact
+<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> for the control that maximizes the period reward
+plus a continuation value.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.vbi.ar_from_data">
 <span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.ar_from_data" title="Link to this definition">¶</a></dt>
@@ -361,18 +342,22 @@ point the optimal control is found with <a class="reference external" href="http
 maximizing the period reward plus the discounted <em>continuation</em> value of the
 resulting arrival states. Under a terminal (zero) continuation,
 <code class="docutils literal notranslate"><span class="pre">continuation_vf</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">s,</span> <span class="pre">sh,</span> <span class="pre">p:</span> <span class="pre">0.0</span></code>, the result is the single-step
-solution. <code class="xref py py-func docutils literal notranslate"><span class="pre">solve_bellman()</span></code> (a later PR) wraps this in the iteration loop.</p>
+solution; the value-iteration wrapper <code class="docutils literal notranslate"><span class="pre">solve_bellman</span></code> (§3) iterates it to a
+fixed point.</p>
 <p>Unlike legacy <a class="reference internal" href="#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> (which rides the <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> continuation API and
 folds the discount factor into the continuation), this speaks the
 <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> protocol the rest of the torch stack uses, with an explicit
 discount factor and multi-reward summation, and is empty-shock-safe.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This is the <strong>PR1 scope</strong> of the §2 design: a single control, the
-grid-equals-iset contract (Mechanism-A reduction lands in PR3, Mechanism-B
-reindex in PR2), and no internal shock discretization (PR6). Hidden shocks
-must be supplied as fixed realizations via <em>scope</em>; multi-control and
-<code class="docutils literal notranslate"><span class="pre">disc_params</span></code> raise <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a>.</p>
+<p>This is the <strong>current scope</strong> of the §2 design: a single control, with
+the policy projected onto the control’s information set either by the
+grid-equals-iset transpose or, when an iset variable is a derived
+pre-state, by the Mechanism-B reindex (§5); and no internal shock
+discretization (§4). Hidden shocks must be supplied as fixed
+realizations via <em>scope</em>; multi-control, <code class="docutils literal notranslate"><span class="pre">disc_params</span></code>, and a grid
+<em>wider</em> than the iset (Mechanism-A reduction) raise
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -385,9 +370,10 @@ convention). Terminal continuation is <code class="docutils literal notranslate"
 decision conditions on (arrival states and/or observed shocks). For an
 empty information set, pass <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
 <li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – If given, the period reward sums only this agent’s reward symbols.</p></li>
-<li><p><strong>scope</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Fixed non-shock exogenous values merged into the model parameters. In PR1
-this is also where a hidden shock’s fixed realization is supplied.</p></li>
-<li><p><strong>disc_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Reserved for internal shock discretization (PR6); must be empty in PR1.</p></li>
+<li><p><strong>scope</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Fixed non-shock exogenous values merged into the model parameters. This
+is also where a hidden shock’s fixed realization is currently supplied
+(pending internal discretization, §4).</p></li>
+<li><p><strong>disc_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Reserved for internal shock discretization (§4); must be empty for now.</p></li>
 <li><p><strong>x0</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Fallback optimizer seed used when a control has an open bound.</p></li>
 <li><p><strong>x0_policy</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code>]]</span>) – Warm-start seeds keyed by control symbol (e.g. a previous iterate’s
 <code class="docutils literal notranslate"><span class="pre">policy_array</span></code>); when given, the seed at each grid point is read from
@@ -1709,7 +1695,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=ff768b69"></script>
+</div><script src="../_static/documentation_options.js?v=a3071386"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
