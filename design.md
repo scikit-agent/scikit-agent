@@ -543,6 +543,59 @@ with terminal continuation on a conftest case (loop wiring check).
   does not regress narrow-double-bound cases (`case_5`/`case_6`), where the
   midpoint is already a good seed, since it is still among the candidates.
 
+- **Artificial borrowing constraint — grid edge as a slack state constraint.**
+  Optional `artificial_borrowing_constraint` flag on `bellman_step` /
+  `solve_bellman` (off by default). When on, each control's bounds are tightened
+  so the next-period arrival state stays inside the value grid, so the
+  continuation is only ever _interpolated_ — never extrapolated past a grid edge
+  into a region it cannot represent (the mechanism that lets value iteration
+  ride a control bound). The grid's lower edge is then a slack artificial
+  borrowing limit (Deaton/Carroll); correctness requires it be **slack** at the
+  states of interest (it only distorts the policy where it binds), which the
+  user ensures by choosing the grid floor, and which is checkable by grid-floor
+  invariance.
+
+  There is a **sweet spot** for the floor, best expressed as a fraction of the
+  natural limit (a fraction of human wealth `H` for these models). Too _high_
+  (e.g. `a_min = 0.5` for D-2) and it binds near the interior test states,
+  depressing the value function there (the ~10% under-consumption of the
+  liquidity-constraint depression). Too _low_ (e.g. `a_min ≈ −0.6·H`) and the
+  near-singular deep-borrowing region (`V → −∞` as `a → −H`) destabilizes the
+  iteration. `a_min = −H/3` sits in the middle: D-2 iterated then recovers
+  `κ(m + H)` to a few percent (`test_d2_iterated_converges_to_analytic`, the
+  former known-failing target). Because β = 0.96 fixes the iteration count (~120
+  at `tol=1e-2`, ~340 at `tol=1e-6`), a loose tol is the main speed lever — the
+  coarse test grid runs ~5 s, a tight solve ~10 s+ regardless of point count —
+  which is the motivation for EGM (§10) at scale.
+
+  The state-box → control-bound mapping is the crux, and it has three tiers of
+  generality (implement lazily, raising a clear `NotImplementedError` at each
+  frontier):
+
+  1. **Affine successor, single control — _implemented_.** When `a'(c)` is
+     affine (e.g. `a' = m − c`, all current benchmarks),
+     `grid_min ≤ a' ≤ grid_max` inverts _exactly_ to a control interval.
+     Recovered by two probe evaluations of the transition and verified by a
+     third (affinity guard); a nonlinear successor raises. Stays on L-BFGS-B — a
+     pure box-bound tweak, no optimizer constraints.
+     (`_tighten_bounds_to_grid`.)
+  2. **Monotone-but-nonlinear successor, single control — _planned_.** Treat
+     `a'(c)` as a black box; bracket with the natural bounds and 1-D root-solve
+     `a'(c) = grid_min` / `= grid_max` (e.g. `scipy.optimize.brentq`), then
+     intersect the resulting `c`-interval with the natural bounds. Monotonicity
+     (already asserted for the iset map, §5) guarantees a unique root and that
+     the state box maps to a single control interval. Still L-BFGS-B; ~2 root
+     solves × gridded-arrival-axis per point. (A one-pass autodiff slope — the
+     §10 EGM device — can seed/replace the bracketed solve where the transition
+     is differentiable.)
+  3. **Multi-control coupled successor — _planned, general_.** When the
+     successor depends on several controls (`a' = m − c − d`), the state box is
+     a _joint_ linear/nonlinear constraint that does **not** reduce to
+     per-control boxes. This needs
+     `scipy.optimize.minimize(..., method="SLSQP" or "trust-constr", constraints=…)`
+     with `grid_min ≤ transition(s, c) ≤ grid_max` as inequality constraints —
+     the only tier that changes the optimizer.
+
 - **TODO (docs) — in-period dynamics order & arrival-state aliasing.** A
   non-obvious modeling semantic surfaced building `case_11` and should be
   documented for end users (block-authoring guide / `block.py` + `bellman.py`
