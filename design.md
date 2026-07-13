@@ -416,8 +416,27 @@ _Tier 1 — deterministic (no `E_e` step; the core benchmark coverage):_
 - **U-2** (`benchmarks.u2_block`, default `sigma_psi=0` ⇒ `MeanOneLogNormal`
   discretizes to a single node at `psi=1` ⇒ a degenerate hidden-shock
   expectation that is trivially exact): recover `c = (1−β)(m + 1/r)` vs
-  `u2_analytical_policy`. Exercises log utility + normalized dynamics; the
-  discretization path handles `psi` with no special casing.
+  `u2_analytical_policy`. Exercises log utility + normalized dynamics.
+  **Deferred to PR6 (§9 step 6, shock discretization).** Although the shock is
+  degenerate at `sigma_psi=0`, `psi` is a _declared_ shock that is hidden from
+  `c`'s information set (`iset = ["m"]`), so today `bellman_step` raises
+  `NotImplementedError` ("Shock 'psi' is hidden … and has no fixed value")
+  rather than treating it as deterministic — for _any_ `sigma_psi`, not just the
+  degenerate one. Both the U-2 **single-step** and **convergence** tests
+  therefore land with PR6 (once the backup integrates the hidden `psi`, or a
+  caller supplies `psi=1` via `scope`); PR5 covers Tier-1 determinism with D-2
+  (closed form) and D-4 (oracle) only.
+
+  Note the two axes are independent: PR6's discretization handles `sigma_psi>0`
+  (multiple nodes) exactly as it handles the `sigma_psi=0` single node — the
+  degeneracy is _not_ a machinery requirement. `sigma_psi=0` is required only by
+  the **oracle**: `u2_analytical_policy`'s closed form `c = (1−β)(m + 1/r)` is
+  the deterministic PIH rule, exact at `sigma_psi=0` (per the benchmark
+  docstring). So PR6 can test U-2 two ways — the degenerate node **vs the closed
+  form**, and a `sigma_psi>0` run that genuinely exercises the hidden-shock
+  `expected()` (validated against an independent VFI or as property-only checks,
+  the U-1/U-3 lane, since the closed form is only asserted exact at
+  `sigma_psi=0`).
 
 _Tier 2 — stochastic (uses the internal-discretization expectation of §4):_
 
@@ -511,7 +530,12 @@ with terminal continuation on a conftest case (loop wiring check).
     the `a`-grid must span the borrowing region (`a ≥ −H`) and the continuation
     must not linearly extrapolate into the `V → −∞` wall at the natural limit
     (naive widening _diverges_); see the D-2/U-2 findings. Multi-start is
-    necessary but may not be sufficient on its own.
+    necessary but may not be sufficient on its own. The near-term principled
+    mitigation is the **slack artificial borrowing limit at the grid edge**
+    (Deaton/Carroll — successors are kept in the trusted grid domain, so the
+    grid floor acts as a slack state constraint verified by an invariance
+    assert); the long-term one that sidesteps the maximization and extrapolation
+    entirely is **EGM (§10)**.
 
   **Agenda for a multi-start pass:** try a small seed set per control — the
   midpoint, the modest scalar `x0` fallback (clamped into the box), and the
@@ -545,15 +569,15 @@ it (no large omnibus PR). The steps below are dependency-sorted, so merging them
 _minimum_ prerequisites so steps can be resequenced or parallelized where the
 graph allows.
 
-| PR            | Adds                                                                                                                                                     | Tests it lands                                                                                                                                                         | Depends on     |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| **1 ✅ DONE** | `bellman_step` core: single-control, grid-equals-iset (transpose projection), β + multi-reward + det-safe, per-point `x0` (warm-start/midpoint/fallback) | `case_0/1/5/6/7/8/9` + return-contract, warm-start, and guard tests (`test_vbi_bellman_step`, 11 passing)                                                              | — (foundation) |
-| **2 ✅ DONE** | Mechanism B reindex + monotonicity assert (§5)                                                                                                           | `case_3`, D-2 single backup under analytic continuation                                                                                                                | PR1            |
-| **3 ✅ DONE** | Multi-control vectorization; `policy_array` → `dict[str, DataArray]` (O1)                                                                                | `case_10`                                                                                                                                                              | PR1            |
-| **4 ✅ DONE** | Non-trivial `continuation_vf` (β·cv, arrival transition)                                                                                                 | `case_11`                                                                                                                                                              | PR1            |
-| **5**         | `value_array_to_function` + `solve_bellman` loop (warm-start `x0_policy`, non-conv warn — O5)                                                            | Tier 1: D-2 closed form, **D-4 vs `d4_vfi_reference_policy`**, U-2 closed form                                                                                         | PR2, PR4       |
-| **6**         | Discretized shock expectation (§4): hidden-shock `expected` in the backup + observed-shock node integration in `value_array_to_function`                 | `case_2` (hidden unit test), then Tier 2: D-3 discrete, U-1 continuous                                                                                                 | PR5            |
-| **7**         | Protocol round-trip + convergence-sanity                                                                                                                 | round-trip through `compute_controls`/`BellmanEquationLoss`; `solve_bellman(max_iter=1)` ≡ `bellman_step`. (D-1 finite-horizon, U-3 property-only = optional stretch.) | PR5            |
+| PR            | Adds                                                                                                                                                     | Tests it lands                                                                                                                                                                       | Depends on     |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| **1 ✅ DONE** | `bellman_step` core: single-control, grid-equals-iset (transpose projection), β + multi-reward + det-safe, per-point `x0` (warm-start/midpoint/fallback) | `case_0/1/5/6/7/8/9` + return-contract, warm-start, and guard tests (`test_vbi_bellman_step`, 11 passing)                                                                            | — (foundation) |
+| **2 ✅ DONE** | Mechanism B reindex + monotonicity assert (§5)                                                                                                           | `case_3`, D-2 single backup under analytic continuation                                                                                                                              | PR1            |
+| **3 ✅ DONE** | Multi-control vectorization; `policy_array` → `dict[str, DataArray]` (O1)                                                                                | `case_10`                                                                                                                                                                            | PR1            |
+| **4 ✅ DONE** | Non-trivial `continuation_vf` (β·cv, arrival transition)                                                                                                 | `case_11`                                                                                                                                                                            | PR1            |
+| **5**         | `value_array_to_function` + `solve_bellman` loop (warm-start `x0_policy`, non-conv warn — O5)                                                            | Tier 1: D-2 closed form, **D-4 vs `d4_vfi_reference_policy`**. (U-2 deferred to PR6 — its `psi` shock, though degenerate at `sigma_psi=0`, is hidden and unhandled until §9 step 6.) | PR2, PR4       |
+| **6**         | Discretized shock expectation (§4): hidden-shock `expected` in the backup + observed-shock node integration in `value_array_to_function`                 | `case_2` (hidden unit test), then Tier 2: D-3 discrete, U-1 continuous, **U-2 single-step + convergence** (degenerate `psi` node)                                                    | PR5            |
+| **7**         | Protocol round-trip + convergence-sanity                                                                                                                 | round-trip through `compute_controls`/`BellmanEquationLoss`; `solve_bellman(max_iter=1)` ≡ `bellman_step`. (D-1 finite-horizon, U-3 property-only = optional stretch.)               | PR5            |
 
 **Dependency notes.**
 
@@ -579,3 +603,94 @@ clear `NotImplementedError` pointing at the owning PR. Hidden shocks are
 supplied as fixed realizations via `scope` in PR1 (proper integration is PR6).
 `policy_array` is already returned as `dict[str, DataArray]` (O1), so PR3 widens
 its contents without changing the shape.
+
+---
+
+## 10. Future stage (Phase 3): Endogenous Grid Method (EGM)
+
+**Status: not scheduled in PRs 1–7.** EGM is a faster, more robust _alternative_
+solver for the differentiable single-continuous-control (consumption-like)
+subclass — Carroll's "method of endogenous gridpoints" (2006). It is the
+long-term answer to the extrapolation / ride-the-bound pathology of §8: because
+it grids over _end-of-period_ assets and constructs the cash-on-hand grid where
+the solution actually lives, it does **no within-loop maximization** (so no seed
+/ multi-start problem) and **no continuation extrapolation** (so no `V → −∞`
+divergence at the natural borrowing limit). The general `bellman_step` maximizer
+(§2) remains the reference implementation and the cross-check oracle; EGM must
+reproduce it on D-2/D-4/U-2 within tolerance.
+
+### 10.1 When EGM applies (guarded specialization, not a replacement)
+
+EGM requires, and the solver must assert:
+
+1. **One continuous control** whose optimum is characterized by an interior
+   **Euler FOC** (not an active bound), i.e. `u'(c) = β R E[V_m(m')]` via the
+   envelope condition `V_m(m) = u'(c(m))`.
+2. **Invertible marginal utility** `u'⁻¹` (closed form for CRRA/log; a monotone
+   1-D root solve otherwise).
+3. A **monotone budget map** from end-of-period assets `a'` to next cash-on-hand
+   `m'` (so the endogenous `m = a' + c` grid is sorted and `interp` is
+   well-posed — the same monotonicity condition Mechanism B already asserts,
+   §5).
+4. A **single occasionally-binding lower constraint** (the borrowing limit),
+   handled as one kink.
+
+Anything outside this class (multiple interacting continuous controls,
+non-Euler/non-differentiable rewards, several binding constraints) falls back to
+`bellman_step`; the extensions (DC-EGM for discrete-continuous, nested/multi-dim
+EGM) are research-grade and explicitly out of scope. The solver raises a clear
+`NotImplementedError` when a block violates 1–4.
+
+### 10.2 One EGM backup (policy-function form)
+
+Given the previous iterate's consumption rule `c_n(·)`:
+
+```
+# exogenous grid over END-OF-PERIOD assets a' (post-decision state)
+for each a'_i in aprime_grid:
+    # integrate the shock(s) with the §4 discretization (empty-safe)
+    def integrand(shock):
+        m1   = bp.<budget>(a'_i, shock, params)        # next cash-on-hand m'
+        c1   = c_n(m1)                                  # next-period consumption
+        return u_prime(c1) * dm1_da(a'_i, shock)        # both via autodiff (§10.3)
+    w_prime = beta * R * expected(integrand, disc)      # post-decision marginal value
+    c_i     = u_prime_inv(w_prime)                      # invert the Euler FOC
+    m_i     = a'_i + c_i                                # ENDOGENOUS cash-on-hand
+# c_i on the endogenous m_i grid IS the updated rule; interp c over m_i (sorted)
+# constraint kink: for m < m_i[0] the limit binds -> c = m - a_min (c = m if a_min=0)
+```
+
+Iterate to a fixed point on the consumption rule (sup-norm), mirroring
+`solve_bellman`'s loop and 3-tuple return contract (`dr`, a value grid rebuilt
+by integrating `u`, and `policy_array`), so EGM is a drop-in faster path for the
+applicable models.
+
+### 10.3 Fit to the block protocol (autodiff, minimal new surface)
+
+The torch stack makes the derivatives free, so EGM needs almost no per-block
+hand-coding:
+
+- **`u_prime`** — `torch.autograd` of the block's reward w.r.t. the control (no
+  hand-differentiation; works for any differentiable reward).
+- **`dm1_da`** — autodiff of the block's `m`-dynamics w.r.t. `a'` (generalizes
+  the affine `∂m'/∂a' = R` used above).
+- **`u_prime_inv`** — closed form dispatched per utility where available (CRRA:
+  `c = w'^{-1/σ}`), else a bracketed 1-D root on the monotone `u'`.
+- Reuses §4 shock discretization (`discretized_shock_dstn` / `expected`) and the
+  Mechanism-B monotone reindex (§5) verbatim.
+
+The one likely protocol addition is a small hook to identify the "Euler control"
+and its budget/marginal-utility symbols (or to infer them from the single
+`Control` + reward), tracked with the Phase-3 items in `i66_todo.md`.
+
+### 10.4 API & dependencies
+
+- New `vbi.solve_egm(bp, aprime_grid, *, disc_params={}, tol=…, max_iter=…)`
+  parallel to `solve_bellman`, same return contract.
+- **Depends on PR6** (§4 discretization) for `E_shock`; the deterministic
+  benchmarks (D-2/D-4/U-2 at `sigma_psi=0`) work with the empty-shock guard even
+  before PR6.
+- **Validation:** must match `solve_bellman` / the closed forms on D-2
+  (`κ(m+H)`), D-4 (vs `d4_vfi_reference_policy`), and U-2 (`(1−β)(m+1/r)`), and
+  should show the grid-independence and no-divergence that the maximizer lacks
+  near the natural borrowing limit.
