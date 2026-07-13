@@ -91,37 +91,23 @@ and this project adheres to
 ### Added
 
 - `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
-  the per-iteration update of value-function iteration, re-basing the exact grid
-  solver off the legacy `DBlock` continuation API onto the protocol the torch
-  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
-  multi-reward summation (`get_reward_syms`), and empty-shock-safe
-  (deterministic) handling, with a per-point optimizer seed (warm-start, else
-  midpoint of finite bounds, else fallback). Returns
-  `(dr_from_data, value_array, policy_array)` with `policy_array` a
-  `dict[str, DataArray]`. This first slice handles a single control under the
-  grid-equals-information-set contract; multi-control, derived-pre-state
-  reindexing, internal shock discretization, and the `solve_bellman` iteration
-  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
-  deliberate discount-folded-into-continuation path).
-- **Constraints** user-guide page documenting the ways to constrain an
-  optimization problem: bound declaration on `Control`, the open-bounds
-  policy-network transforms, the Fischer-Burmeister complementarity loss
-  (including its current upper-bound-only scope), how the mechanisms compose,
-  and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
-  now passes callable bounds, matching the enforced API.
-- `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
-  the per-iteration update of value-function iteration, re-basing the exact grid
-  solver off the legacy `DBlock` continuation API onto the protocol the torch
-  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
-  multi-reward summation (`get_reward_syms`), and empty-shock-safe
-  (deterministic) handling, with a per-point optimizer seed (warm-start, else
-  midpoint of finite bounds, else fallback). Returns
-  `(dr_from_data, value_array, policy_array)` with `policy_array` a
-  `dict[str, DataArray]`. This first slice handles a single control under the
-  grid-equals-information-set contract; multi-control, derived-pre-state
-  reindexing, internal shock discretization, and the `solve_bellman` iteration
-  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
-  deliberate discount-folded-into-continuation path).
+  the per-iteration update of value-function iteration on the interface the
+  torch stack speaks, with explicit discount factor, multi-reward summation, and
+  deterministic (empty-shock) handling. Returns
+  `(dr_from_data, value_array, policy_array)`. Optimizes one or more controls
+  jointly (`scipy.optimize.minimize` over the stacked control vector) and
+  reprojects each policy onto its own information set (design §5): drops grid
+  axes outside a control's iset (Mechanism A) and reindexes a derived pre-state
+  like `m = a·R + y` onto its own coordinate (Mechanism B). Legacy `vbi.solve`
+  is unchanged (the deliberate discount-folded-into-continuation path).
+- `vbi.solve_bellman`: value-function iteration driving `bellman_step` to a
+  fixed point — each backup takes the previous iterate's value grid as its
+  continuation (via the new `vbi.value_array_to_function`) and warm-starts the
+  optimizer from the previous policy. Stops on the sup-norm value change
+  (`converged`, `n_iter`, `residual` reported on `value_array.attrs`);
+  non-convergence warns, or raises under `raise_on_nonconvergence`.
+  Deterministic scope: internal shock discretization (`disc_params`) is not yet
+  implemented.
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss
@@ -213,6 +199,9 @@ and this project adheres to
 
 ### Fixed
 
+- The D-2 benchmark's consumption control had no lower bound, so an exact solver
+  could drive `c` negative (where CRRA utility is unbounded); added the `c >= 0`
+  floor the sibling blocks already carry.
 - The U-1 (Hall random walk) benchmark passed `mean`/`std` to `Normal`, whose
   constructor takes `mu`/`sigma`, so `construct_shocks("U-1")` raised
   `TypeError` and the model was unusable. The income shock is now

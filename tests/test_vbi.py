@@ -22,6 +22,7 @@ import numpy as np
 import xarray as xr
 import torch
 import unittest
+import warnings
 
 
 block_1 = DBlock(
@@ -556,6 +557,119 @@ class test_vbi_bellman_step(unittest.TestCase):
         non_monotone = np.array([0.0, 1.0, 0.5, 2.0, 1.5])  # not sorted
         with self.assertRaises(ValueError):
             vbi._project_to_iset(policy, ["a"], ["m"], {"m": non_monotone}, "c")
+
+
+class test_vbi_solve_bellman(unittest.TestCase):
+    """
+    Phase-2 design (§9 step 5): ``vbi.solve_bellman`` — value-function iteration
+    that drives ``bellman_step`` to a fixed point, rebuilding the continuation
+    from each iterate's value grid via ``vbi.value_array_to_function``.
+
+    The headline test is **D-4**: a deterministic CRRA model with a binding
+    borrowing constraint and impatience, which has *no closed form*. It is
+    validated against the package's own independent oracle
+    ``d4_vfi_reference_policy`` (a dense cash-on-hand VFI) — a solver-vs-solver
+    check that exercises the convergence loop and active-bound handling.
+    """
+
+    def test_d4_converges_to_reference_oracle(self):
+        # D-4 has no closed form; compare the converged policy to the dense-grid
+        # VFI oracle. Two independent exact solvers should agree to ~1% (grid
+        # interpolation error), which is well inside a 2% band.
+        cal = bm.d4_calibration
+        R, y = cal["R"], cal["y"]
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.0, 7.5, 25)}
+        dr, value_array, policy_array = vbi.solve_bellman(
+            bp, grid, scope=cal, tol=1e-6, max_iter=1000
+        )
+        # The loop reports convergence via value_array.attrs (O5).
+        self.assertTrue(value_array.attrs["converged"])
+        self.assertGreater(value_array.attrs["n_iter"], 1)
+        self.assertLess(value_array.attrs["residual"], 1e-6)
+        # Match the oracle across the binding (low m) and slack (high m) regions.
+        for a in [0.5, 1.0, 2.0, 3.0, 5.0]:
+            m = a * R + y
+            got = dr["c"](m)
+            want = float(np.asarray(bm.d4_vfi_reference_policy({"a": a}, {}, cal)["c"]))
+            self.assertAlmostEqual(got, want, delta=2e-2)
+        # Return contract: gridded value + per-control gridded policy.
+        self.assertIsInstance(value_array, xr.DataArray)
+        self.assertEqual(list(policy_array["c"].dims), ["a"])
+
+    def test_max_iter_one_matches_bellman_step(self):
+        # Iteration 1 uses the terminal (zero) continuation, so max_iter=1 is
+        # exactly a single bellman_step under a terminal continuation (loop
+        # wiring check). It cannot converge in one step -> converged=False + warn.
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.5, 5.0, 8)}
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dr_loop, va_loop, _ = vbi.solve_bellman(bp, grid, scope=cal, max_iter=1)
+        dr_step, va_step, _ = vbi.bellman_step(bp, bp_terminal, grid, scope=cal)
+        self.assertFalse(va_loop.attrs["converged"])
+        self.assertEqual(va_loop.attrs["n_iter"], 1)
+        self.assertTrue(np.allclose(va_loop.values, va_step.values))
+        for a in [1.0, 2.0, 3.0]:
+            m = cal["R"] * a + cal["y"]
+            self.assertAlmostEqual(dr_loop["c"](m), dr_step["c"](m), delta=1e-6)
+
+    def test_nonconvergence_warns_then_raises(self):
+        # A one-iteration run never converges: it warns by default (returning the
+        # last iterate, the scipy OptimizeResult.success convention, O5), and
+        # raises only when the caller opts in.
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.5, 5.0, 6)}
+        with self.assertWarns(UserWarning):
+            vbi.solve_bellman(bp, grid, scope=cal, max_iter=1)
+        with self.assertRaises(RuntimeError):
+            vbi.solve_bellman(
+                bp, grid, scope=cal, max_iter=1, raise_on_nonconvergence=True
+            )
+
+    def test_disc_params_not_implemented(self):
+        # Internal shock discretization is a later PR (design §9 step 6).
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        with self.assertRaises(NotImplementedError):
+            vbi.solve_bellman(
+                bp,
+                {"a": np.linspace(0.5, 5.0, 6)},
+                scope=cal,
+                disc_params={"x": {"N": 3}},
+            )
+
+    def test_value_array_to_function_interpolates_and_extrapolates(self):
+        # The continuation reproduces the grid at the nodes, interpolates between
+        # them, and extrapolates linearly past the edges (so an off-grid
+        # next-period state during a backup never returns NaN).
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        value_array = xr.DataArray(
+            np.array([0.0, 1.0, 2.0, 3.0]),  # V = a, slope 1
+            dims=["a"],
+            coords={"a": [0.0, 1.0, 2.0, 3.0]},
+        )
+        wf = vbi.value_array_to_function(value_array, bp)
+        self.assertAlmostEqual(wf({"a": 1.0}, {}, cal), 1.0)  # node
+        self.assertAlmostEqual(wf({"a": 1.5}, {}, cal), 1.5)  # interpolated
+        self.assertAlmostEqual(wf({"a": 5.0}, {}, cal), 5.0)  # extrapolated above
+        self.assertAlmostEqual(wf({"a": -2.0}, {}, cal), -2.0)  # extrapolated below
+
+    def test_value_array_to_function_rejects_shock_axis(self):
+        # Integrating an observed-shock axis out of the arrival value is a later
+        # PR (design §9 step 6); a shock-valued grid axis must fail loudly.
+        cal = bm.u2_calibration
+        bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)  # has shock 'psi'
+        value_array = xr.DataArray(
+            np.zeros((2, 2)),
+            dims=["a", "psi"],
+            coords={"a": [0.0, 1.0], "psi": [0.9, 1.1]},
+        )
+        with self.assertRaises(NotImplementedError):
+            vbi.value_array_to_function(value_array, bp)
 
 
 class test_vbi_protocol(unittest.TestCase):
