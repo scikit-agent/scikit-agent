@@ -607,6 +607,40 @@ class test_vbi_solve_bellman(unittest.TestCase):
         self.assertIsInstance(value_array, xr.DataArray)
         self.assertEqual(list(policy_array["c"].dims), ["a"])
 
+    @unittest.expectedFailure
+    def test_d2_iterated_converges_to_analytic(self):
+        # KNOWN-FAILING TARGET (design §8 + §10; see i208_pr5_d2_u2_findings.md).
+        #
+        # D-2 is infinite-horizon CRRA with the *natural* borrowing limit
+        # c <= m + H (H = y/(R-1) = human wealth). The unconstrained closed form
+        # is c = kappa*(m + H), kappa = (R - (beta*R)^(1/sigma))/R. A single
+        # bellman_step under the exact analytic continuation recovers it (see
+        # test_d2_single_backup_analytic_continuation), but the *iteration*
+        # does not: from V0 = 0 the first backup has no saving motive, so it
+        # rides the upper bound to c = m + H (a' = -H, the singular
+        # "consume all human wealth" point). value_array_to_function then
+        # linearly extrapolates the self-built continuation into the V -> -inf
+        # wall below the grid, and the loop settles on that flat, wrong fixed
+        # point (c ~ 35 vs ~1.2). It "converges" (attrs["converged"] is True) to
+        # the wrong policy.
+        #
+        # This asserts the INTENDED behavior; it is expected to fail until the
+        # slack-artificial-borrowing-limit fix (keep a' in the grid domain,
+        # design §8) or EGM (§10) lands. When it starts passing, unittest flags
+        # an "unexpected success" -> remove this decorator.
+        cal = bm.d2_calibration
+        R, y = cal["R"], cal["y"]
+        bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.5, 8.0, 30)}
+        dr, value_array, policy_array = vbi.solve_bellman(
+            bp, grid, scope=cal, tol=1e-6, max_iter=1000
+        )
+        self.assertTrue(value_array.attrs["converged"])
+        for a in [1.0, 2.0, 3.0, 5.0]:
+            m = a * R + y
+            want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
+            self.assertAlmostEqual(dr["c"](m), want, delta=2e-2)
+
     def test_max_iter_one_matches_bellman_step(self):
         # Iteration 1 uses the terminal (zero) continuation, so max_iter=1 is
         # exactly a single bellman_step under a terminal continuation (loop
