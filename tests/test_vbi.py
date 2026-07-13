@@ -515,8 +515,18 @@ class test_vbi_bellman_step(unittest.TestCase):
             return (kappa * wealth) ** (1 - sigma) / ((1 - sigma) * (1 - rho))
 
         bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.5, 5.0, 12)}
+        # Seed the per-point optimizer near the (modest) optimum. With the
+        # consumption floor restored, ``c``'s bounds are both finite, so the
+        # default seed is the midpoint of ``[0, m + H]`` (~17.7) — far above the
+        # true optimum (~1.2) and outside L-BFGS-B's basin here, so it stalls.
+        # A flat warm-start reproduces the robust pre-floor seeding. The general
+        # fix (multi-start) is deferred to design.md §8.
+        x0_policy = {
+            "c": xr.DataArray(np.ones(grid["a"].size), dims=["a"], coords=grid)
+        }
         dr, _, _ = vbi.bellman_step(
-            bp, d2_continuation, {"a": np.linspace(0.5, 5.0, 12)}, scope=cal
+            bp, d2_continuation, grid, scope=cal, x0_policy=x0_policy
         )
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y

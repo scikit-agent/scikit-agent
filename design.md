@@ -482,13 +482,42 @@ with terminal continuation on a conftest case (loop wiring check).
   ATOL scale). Hardening it (parameterize + relative-or-absolute combo for
   differently-scaled models) is deferred to **Phase 3** (tracked in
   `i66_todo.md`).
-- **Optimizer robustness resolved** — two cheap seeds land in v1: (a) per-point
-  **midpoint `x0`** when both bounds are finite (else the scalar `x0` fallback),
-  replacing the arbitrary constant `1.0` (§2); (b) **warm-start** —
-  `solve_bellman` seeds each backup's `x0_policy` from the previous iterate's
-  `policy_array`, cheap since the gridded policy shares the state-grid axes
-  across iterations (§3). Multi-start/restarts remain deferred until a test
-  forces them.
+- **Optimizer robustness — partially resolved; multi-start now on the agenda.**
+  Two cheap seeds land in v1: (a) per-point **midpoint `x0`** when both bounds
+  are finite (else the scalar `x0` fallback), replacing the arbitrary constant
+  `1.0` (§2); (b) **warm-start** — `solve_bellman` seeds each backup's
+  `x0_policy` from the previous iterate's `policy_array`, cheap since the
+  gridded policy shares the state-grid axes across iterations (§3).
+  Multi-start/restarts were deferred "until a test forces them" — **two Tier-1
+  benchmark cases now force them:**
+
+  - **D-2 single backup (`test_d2_single_backup_analytic_continuation`).** Once
+    the consumption floor is restored (`lower_bound = 0`), `c`'s bounds are both
+    finite, so the midpoint seed is `(0 + (m + H)) / 2 ≈ 17.7` — far above the
+    true optimum (`c ≈ 1.2`) and outside L-BFGS-B's basin, so it stalls at
+    `c ≈ 6.97` even though the backup objective is **unimodal**. The midpoint of
+    a box whose upper bound is the human-wealth-inflated natural borrowing limit
+    `m + H` is a systematically bad seed. **Workaround in place:** the test
+    passes a flat `x0_policy` warm-start (reproducing the robust pre-floor
+    seeding). Multi-start would remove the workaround.
+  - **D-2 / U-2 value iteration.** The iterated `solve_bellman` rides the
+    consumption upper bound at every grid point (D-2: `c = m + H`, the
+    consume-all-human-wealth flat fixed point; U-2: the `0.1·m + 2` cap), while
+    a single backup under a good continuation is interior. The bad midpoint seed
+    biases each per-point backup toward the top of the box, reinforcing the
+    collapse; multi-start (trying a low seed alongside the midpoint/warm-start
+    and keeping the best `res.fun`) is the natural mitigation to evaluate here.
+    **Note:** this failure also has a grid-coverage/extrapolation dimension —
+    the `a`-grid must span the borrowing region (`a ≥ −H`) and the continuation
+    must not linearly extrapolate into the `V → −∞` wall at the natural limit
+    (naive widening _diverges_); see the D-2/U-2 findings. Multi-start is
+    necessary but may not be sufficient on its own.
+
+  **Agenda for a multi-start pass:** try a small seed set per control — the
+  midpoint, the modest scalar `x0` fallback (clamped into the box), and the
+  warm-start when present — and keep the optimum with the best `res.fun`. This
+  does not regress narrow-double-bound cases (`case_5`/`case_6`), where the
+  midpoint is already a good seed, since it is still among the candidates.
 
 - **TODO (docs) — in-period dynamics order & arrival-state aliasing.** A
   non-obvious modeling semantic surfaced building `case_11` and should be
