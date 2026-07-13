@@ -82,7 +82,7 @@ Base neural network class with device management.
 
 ### BlockPolicyNet
 
-A neural network for policy functions in dynamic programming problems.
+Specialized neural network for policy functions in economic models.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.BlockPolicyNet

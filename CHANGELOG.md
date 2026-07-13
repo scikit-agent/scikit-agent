@@ -83,8 +83,8 @@ and this project adheres to
   which legacy usage populates with fixed parameters _and_ fixed exogenous
   values such as a shock realization — broader than the parameters-only
   `calibration` used elsewhere in the library.
-- Rewrote `skagent.algos.vfi` docstrings in numpy/scipy style; the module and
-  `solve` docstrings now document VFI's full-observation assumption (the
+- Rewrote `skagent.algos.vbi` docstrings in numpy/scipy style; the module and
+  `solve` docstrings now document VBI's full-observation assumption (the
   per-point optimization conditions on the complete information set and does not
   integrate over unobserved variables).
 
