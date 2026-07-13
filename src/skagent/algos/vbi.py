@@ -13,6 +13,7 @@ from skagent.block import DBlock
 from inspect import signature
 import itertools
 import logging
+import warnings
 import numpy as np
 from scipy.optimize import minimize
 from typing import Callable, Mapping, Sequence
@@ -629,3 +630,207 @@ def bellman_step(
     }
 
     return dr_from_data, value_array, policy_array
+
+
+def value_array_to_function(
+    value_array: xr.DataArray,
+    bp: BellmanPeriod,
+    disc_params: Mapping = {},
+) -> Callable:
+    """
+    Rebuild a continuation value function from an iterate's value grid (§4).
+
+    :func:`solve_bellman` feeds iteration *n*'s value grid back as iteration
+    *(n+1)*'s continuation. This wraps the grid as a callable in the
+    ``bp.compute_value`` convention ``wf(states, shocks, parameters)``, so it
+    drops straight into :func:`bellman_step`'s ``continuation_vf`` slot.
+
+    The value grid ranges over the arrival states (its axes). ``wf`` interpolates
+    linearly over them and **extrapolates linearly** past the grid edges (via
+    :class:`scipy.interpolate.RegularGridInterpolator`), so an off-grid
+    next-period state during the backup gets a finite, sloped continuation rather
+    than ``NaN`` (which breaks the optimizer) or a flat boundary clamp (which
+    zeroes the marginal value of saving and collapses the policy onto its bound).
+
+    .. note::
+       Current (deterministic) scope: the value grid is assumed to have no
+       observed-shock axes to integrate out — ``disc_params`` and a grid axis
+       that is a model shock both raise :class:`NotImplementedError`. Integrating
+       observed shocks out of the arrival value (``W(s) = E_obs[V(s, obs)]``)
+       lands with the shock-discretization work (design §4, §9 step 6).
+
+    Parameters
+    ----------
+    value_array : xarray.DataArray
+        A gridded value function over arrival states, e.g. the ``value_array``
+        returned by :func:`bellman_step`.
+    bp : BellmanPeriod
+        The recurring period; used to identify shock axes.
+    disc_params : Mapping, optional
+        Reserved for observed-shock integration (§4); must be empty for now.
+
+    Returns
+    -------
+    callable
+        ``wf(states, shocks, parameters)`` returning the interpolated arrival
+        value at ``states``. ``shocks`` and ``parameters`` are accepted for the
+        ``bp.compute_value`` calling convention but unused in this scope.
+    """
+    if disc_params:
+        raise NotImplementedError(
+            "disc_params (observed-shock integration into the arrival value) is "
+            "not yet implemented (design §9 step 6); the continuation is the "
+            "deterministic value grid over arrival states."
+        )
+    axes = list(value_array.dims)
+    shock_axes = [ax for ax in axes if ax in set(bp.get_shocks())]
+    if shock_axes:
+        raise NotImplementedError(
+            f"value_array has observed-shock axes {shock_axes} to integrate out; "
+            "the arrival-value expectation W(s) = E_obs[V(s, obs)] is not yet "
+            "implemented (design §9 step 6)."
+        )
+
+    from scipy.interpolate import RegularGridInterpolator
+
+    points = tuple(np.asarray(value_array[ax].values, dtype=float) for ax in axes)
+    rgi = RegularGridInterpolator(
+        points,
+        np.asarray(value_array.values, dtype=float),
+        bounds_error=False,
+        fill_value=None,  # None -> linear extrapolation past the grid edges
+    )
+
+    def wf(states, shocks, parameters):
+        cols = [np.asarray(states[ax], dtype=float) for ax in axes]
+        scalar = all(c.ndim == 0 for c in cols)
+        # Pointwise (not outer-product) query: one row per evaluation point.
+        query = np.stack([np.atleast_1d(c).ravel() for c in cols], axis=-1)
+        out = rgi(query)
+        return float(out[0]) if scalar else out
+
+    return wf
+
+
+def solve_bellman(
+    bp: BellmanPeriod,
+    state_grid: Grid,
+    *,
+    continuation_vf: Callable | None = None,
+    agent: str | None = None,
+    scope: Mapping = {},
+    disc_params: Mapping = {},
+    tol: float = 1e-6,
+    max_iter: int = 100,
+    x0: float = 1.0,
+    raise_on_nonconvergence: bool = False,
+) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
+    """
+    Solve a recurring ``BellmanPeriod`` by value-function iteration (§3).
+
+    Iterates :func:`bellman_step` to a fixed point: each backup uses the previous
+    iterate's value grid as its continuation (rebuilt via
+    :func:`value_array_to_function`) and warm-starts the per-point optimizer from
+    the previous iterate's ``policy_array``. It stops when the sup-norm change in
+    the value grid falls below *tol*, or after *max_iter* iterations.
+
+    Iteration 1 uses the terminal (zero) continuation, so
+    ``solve_bellman(..., max_iter=1)`` reproduces :func:`bellman_step` under a
+    terminal continuation. For an infinite-horizon problem the loop converges
+    geometrically (modulus the discount factor) to the stationary solution; for a
+    finite horizon of length ``T`` set ``max_iter=T``.
+
+    .. note::
+       Current (deterministic) scope, inherited from :func:`bellman_step` and
+       :func:`value_array_to_function`: no internal shock discretization
+       (``disc_params`` raises :class:`NotImplementedError`); a hidden shock must
+       be supplied as a fixed realization via *scope*, and the value grid must
+       have no observed-shock axes (design §4, §9 step 6).
+
+    Parameters
+    ----------
+    bp : BellmanPeriod
+        The recurring period providing the model mechanics.
+    state_grid : Grid
+        A grid over the value function's domain (arrival states and/or observed
+        shocks); see :func:`bellman_step`.
+    continuation_vf : callable, optional
+        Initial continuation guess ``continuation_vf(states, shocks, parameters)``.
+        Defaults to the terminal (zero) continuation.
+    agent : str, optional
+        If given, the period reward sums only this agent's reward symbols.
+    scope : Mapping, optional
+        Fixed non-shock exogenous values (and, in this scope, any hidden-shock
+        realization) merged into the model parameters.
+    disc_params : Mapping, optional
+        Reserved for internal shock discretization (§4); must be empty for now.
+    tol : float, optional
+        Convergence tolerance on the sup-norm change in the value grid.
+    max_iter : int, optional
+        Maximum number of backups.
+    x0 : float, optional
+        Fallback optimizer seed passed to :func:`bellman_step`.
+    raise_on_nonconvergence : bool, optional
+        If ``True``, raise :class:`RuntimeError` when the loop hits *max_iter*
+        without converging; otherwise emit a :class:`warnings.warn` and return the
+        last iterate (the scipy ``OptimizeResult.success`` convention, O5).
+
+    Returns
+    -------
+    dr_from_data : dict of callable
+        One decision rule per control at the fixed point (see :func:`bellman_step`).
+    value_array : xarray.DataArray
+        The converged value grid. Its ``attrs`` carry ``n_iter``, ``converged``
+        (bool), and ``residual`` (the final sup-norm change).
+    policy_array : dict of xarray.DataArray
+        The gridded optimal control(s) at the fixed point.
+
+    Raises
+    ------
+    RuntimeError
+        If *raise_on_nonconvergence* is ``True`` and the loop does not converge.
+    """
+    if disc_params:
+        raise NotImplementedError(
+            "disc_params (internal shock discretization) is not yet implemented "
+            "(design §9 step 6); for now supply any hidden-shock realization "
+            "as a fixed value via `scope`."
+        )
+    if max_iter < 1:
+        raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
+
+    cont = continuation_vf if continuation_vf is not None else (lambda s, sh, p: 0.0)
+    value_prev = None
+    x0_policy = None  # warm-start: previous iterate's optimum
+    converged = False
+    residual = float("inf")
+    for it in range(max_iter):
+        dr, value_array, policy_array = bellman_step(
+            bp,
+            cont,
+            state_grid,
+            agent=agent,
+            scope=scope,
+            x0=x0,
+            x0_policy=x0_policy,
+        )
+        if value_prev is not None:
+            residual = float(np.abs(value_array - value_prev).max())
+            if residual < tol:
+                converged = True
+                break
+        value_prev = value_array
+        x0_policy = policy_array  # seed the next backup from this optimum
+        cont = value_array_to_function(value_array, bp, disc_params)  # W_n from V_n
+
+    value_array.attrs.update(n_iter=it + 1, converged=converged, residual=residual)
+    if not converged:
+        msg = (
+            f"solve_bellman did not converge in {it + 1} iters "
+            f"(residual={residual}); returning last iterate."
+        )
+        if raise_on_nonconvergence:
+            raise RuntimeError(msg)
+        warnings.warn(msg)
+
+    return dr, value_array, policy_array

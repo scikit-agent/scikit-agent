@@ -91,18 +91,23 @@ and this project adheres to
 ### Added
 
 - `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
-  the per-iteration update of value-function iteration on the protocol the torch
-  stack speaks, with explicit discount factor, multi-reward summation, and
+  the per-iteration update of value-function iteration on the interface the
+  torch stack speaks, with explicit discount factor, multi-reward summation, and
   deterministic (empty-shock) handling. Returns
-  `(dr_from_data, value_array, policy_array)`. Handles one or more controls
-  jointly (a single `scipy.optimize.minimize` over the stacked control vector),
-  reprojecting each fitted policy onto its own information set (design §5):
-  drops grid axes outside a control's iset (Mechanism A) and reindexes a derived
-  pre-state like `m = a·R + y` onto its own coordinate (Mechanism B), failing
-  loudly on scattered/non-monotone/non-invariant projections. Internal shock
-  discretization (`disc_params`) and the `solve_bellman` loop are still to come;
-  hidden shocks are supplied as fixed realizations via `scope`. Legacy
-  `vbi.solve` is unchanged.
+  `(dr_from_data, value_array, policy_array)`. Optimizes one or more controls
+  jointly (`scipy.optimize.minimize` over the stacked control vector) and
+  reprojects each policy onto its own information set (design §5): drops grid
+  axes outside a control's iset (Mechanism A) and reindexes a derived pre-state
+  like `m = a·R + y` onto its own coordinate (Mechanism B). Legacy `vbi.solve`
+  is unchanged (the deliberate discount-folded-into-continuation path).
+- `vbi.solve_bellman`: value-function iteration driving `bellman_step` to a
+  fixed point — each backup takes the previous iterate's value grid as its
+  continuation (via the new `vbi.value_array_to_function`) and warm-starts the
+  optimizer from the previous policy. Stops on the sup-norm value change
+  (`converged`, `n_iter`, `residual` reported on `value_array.attrs`);
+  non-convergence warns, or raises under `raise_on_nonconvergence`.
+  Deterministic scope: internal shock discretization (`disc_params`) is not yet
+  implemented.
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss
