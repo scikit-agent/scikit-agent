@@ -246,7 +246,10 @@ d2_block = DBlock(
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
             "c": Control(
-                ["m"], upper_bound=lambda m: m + _D2_HUMAN_WEALTH, agent="consumer"
+                ["m"],
+                lower_bound=lambda m: 0.0,  # can't consume negative
+                upper_bound=lambda m: m + _D2_HUMAN_WEALTH,
+                agent="consumer",
             ),
             "a": lambda m, c: m - c,
             "u": lambda c, CRRA: crra_utility(c, CRRA),
@@ -413,7 +416,10 @@ d3_block = DBlock(
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
             "c": Control(
-                ["m"], upper_bound=lambda m: m + _D3_HUMAN_WEALTH, agent="consumer"
+                ["m"],
+                lower_bound=lambda m: 0.0,  # can't consume negative
+                upper_bound=lambda m: m + _D3_HUMAN_WEALTH,
+                agent="consumer",
             ),
             "a": lambda m, c: m - c,
             "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
