@@ -10,10 +10,12 @@ from conftest import (
     case_10,
 )
 import skagent.algos.vbi as vbi
+from skagent.bellman import BellmanPeriod
 from skagent.distributions import Bernoulli
 from skagent.block import Control, DBlock
 from skagent.loss import BellmanEquationLoss
 from skagent.grid import device
+import skagent.models.benchmarks as bm
 import skagent.models.consumer as cons
 import numpy as np
 import xarray as xr
@@ -276,13 +278,15 @@ def bp_terminal(states, shocks, parameters):
 
 class test_vbi_bellman_step(unittest.TestCase):
     """
-    PR1 of the Phase-2 design (§9 step 1): ``vbi.bellman_step`` — one exact value
-    backup on the ``BellmanPeriod`` protocol, single control, grid-equals-iset.
+    Phase-2 design (§9 steps 1-2): ``vbi.bellman_step`` — one exact value backup
+    on the ``BellmanPeriod`` protocol, single control.
 
     Under a terminal (zero) continuation each conftest case reduces to a single
     backward-induction step whose optimum is the case's analytic ``optimal_dr``.
     These mirror ``test_vbi_conftest`` (which exercises legacy ``solve``) but
-    drive ``bellman_step`` and assert its 3-tuple return contract.
+    drive ``bellman_step`` and assert its 3-tuple return contract. The
+    Mechanism-B reindex (§5) is also exercised: a control whose information set
+    is a derived pre-state (``case_3``'s ``m = a + theta``, D-2's ``m = a·R + y``).
     """
 
     # The optima here are all linear, so grid interpolation is exact and scipy's
@@ -312,7 +316,7 @@ class test_vbi_bellman_step(unittest.TestCase):
 
     def test_case_5_double_bounded_upper_binds(self):
         # maximize c subject to 0 <= c <= a -> c* = a. theta is a HIDDEN shock
-        # (only in the transition); supply a fixed realization via scope (PR1).
+        # (only in the transition); supply a fixed realization via scope.
         dr, _, _ = self._step(
             case_5,
             {"a": np.linspace(0.2, 1, 5)},
@@ -405,6 +409,88 @@ class test_vbi_bellman_step(unittest.TestCase):
                 {"a": np.linspace(0, 2, 5)},
                 disc_params={"theta": {"N": 3}},
             )
+
+    # --- Mechanism-B reindex (iset is a derived pre-state, §5) -------------
+
+    def test_case_3_mechanism_b_reindex(self):
+        # u = -(m - c)^2 with iset = [m], m = a + theta a derived pre-state. The
+        # grid is over the arrival state a (theta, psi fixed in scope, so the
+        # map a -> m = a + theta is 1-D and strictly monotone); bellman_step
+        # reindexes the policy onto the m coordinate -> c* = m. theta is held at
+        # a non-zero value so the m axis genuinely differs from the a axis.
+        theta0 = 0.5
+        dr, _, policy = self._step(
+            case_3,
+            {"a": np.linspace(0.1, 2.0, 8)},
+            {**case_3["calibration"], "theta": theta0, "psi": 0.0},
+        )
+        # m ranges over [0.1 + theta0, 2.0 + theta0]; probe interior values.
+        for m in [1.0, 1.5, 2.0]:
+            self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
+        # policy_array stays over the *state grid* (axis a), for warm-starting;
+        # only the decision rule moves to the m coordinate.
+        self.assertEqual(list(policy["c"].dims), ["a"])
+
+    def test_d2_single_backup_analytic_continuation(self):
+        # D-2 (infinite-horizon CRRA, no shocks): a single backup under the
+        # *exact* arrival value function recovers the analytic policy
+        # c = kappa*(m + H). Exercises Mechanism B with m = a*R + y and a
+        # non-trivial continuation, decoupled from the iteration loop (§3).
+        cal = bm.d2_calibration
+        beta, R, sigma, y = cal["DiscFac"], cal["R"], cal["CRRA"], cal["y"]
+        H = y / (R - 1)  # human wealth
+        kappa = (R - (beta * R) ** (1 / sigma)) / R
+        # Closed-form CRRA value in total wealth W: with c = kappa*W and
+        # W' = (beta*R)^(1/sigma) * W, V(W) = (kappa*W)^(1-sigma) /
+        # ((1-sigma)(1-rho)), rho = beta*(beta*R)^((1-sigma)/sigma). At an
+        # arrival state a', next-period wealth is W' = R*(a' + H).
+        rho = beta * (beta * R) ** ((1 - sigma) / sigma)
+
+        def d2_continuation(states, shocks, parameters):
+            wealth = R * (states["a"] + H)
+            return (kappa * wealth) ** (1 - sigma) / ((1 - sigma) * (1 - rho))
+
+        bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
+        dr, _, _ = vbi.bellman_step(
+            bp, d2_continuation, {"a": np.linspace(0.5, 5.0, 12)}, scope=cal
+        )
+        for a in [1.0, 2.0, 3.0]:
+            m = a * R + y
+            want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
+            self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
+
+    def test_mechanism_b_multi_axis_not_implemented(self):
+        # Gridding case_3 over BOTH a and theta makes m = a + theta vary along
+        # two grid axes -> general scattered reindexing, out of scope in v1
+        # (design §5, O3): fail loudly rather than interpolate wrongly.
+        with self.assertRaises(NotImplementedError):
+            vbi.bellman_step(
+                case_3["bp"],
+                bp_terminal,
+                {"a": np.linspace(0.1, 2.0, 5), "theta": np.linspace(-1, 1, 5)},
+                scope={**case_3["calibration"], "psi": 0.0},
+            )
+
+    def test_project_to_iset_rank_mismatch_not_implemented(self):
+        # A grid wider than the iset is a Mechanism-A reduction (§9 step 3), not a
+        # Mechanism-B reindex: the same-rank projection helper rejects it.
+        policy = np.zeros((3, 3))
+        with self.assertRaises(NotImplementedError):
+            vbi._project_to_iset(
+                policy,
+                ["a", "b"],
+                ["m"],
+                {"m": np.add.outer(np.arange(3.0), np.zeros(3))},
+                "c",
+            )
+
+    def test_project_to_iset_non_monotone_raises(self):
+        # A non-monotone grid-axis -> iset-coordinate map would make the
+        # reindex-then-interp ill-posed; the monotonicity assert fails loudly.
+        policy = np.zeros(5)
+        non_monotone = np.array([0.0, 1.0, 0.5, 2.0, 1.5])  # not sorted
+        with self.assertRaises(ValueError):
+            vbi._project_to_iset(policy, ["a"], ["m"], {"m": non_monotone}, "c")
 
 
 class test_vbi_protocol(unittest.TestCase):
