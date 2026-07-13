@@ -45,6 +45,28 @@ Neural network-based solution methods following Maliar et al.
    :members:
 ```
 
+## Reinforcement Learning (Stable-Baselines3)
+
+Proximal Policy Optimization (PPO) for `BellmanPeriod` models, via a
+[Stable-Baselines3](https://stable-baselines3.readthedocs.io/) backend. The
+agent wraps a model in a gymnasium environment (see {doc}`environments`), trains
+PPO, and emits a standard skagent decision rule.
+
+```{eval-rst}
+.. automodule:: skagent.algos.sb3
+   :members:
+```
+
+## Loss Functions
+
+Objective functions passed to {func}`skagent.ann.train_block_nn`. The
+reward-based losses ({class}`~skagent.loss.StaticRewardLoss`,
+{class}`~skagent.loss.EstimatedDiscountedLifetimeRewardLoss`) solve a block
+directly for the non-recurring case; the equation-residual losses
+({class}`~skagent.loss.BellmanEquationLoss`,
+{class}`~skagent.loss.EulerEquationLoss`) target the recurring, dynamic case.
+See {doc}`loss` for the full reference.
+
 ## Neural Network Components
 
 ### Net
@@ -100,6 +122,10 @@ functions.
 
 ```{eval-rst}
 .. autofunction:: skagent.ann.aggregate_net_loss
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_multiple_controls
 ```
 
 ## Grid and Computational Tools

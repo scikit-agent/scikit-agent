@@ -31,6 +31,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
   "cairosvg",
+  "gymnasium",
   "ipython",
   "matplotlib",
   "numba",
@@ -38,8 +39,9 @@ dependencies = [
   "pydot",
   "pyyaml",
   "scipy",
+  "stable-baselines3",
   "sympy",
-  "torch",
+  "torch >=2.0",
   "xarray",
 ]
 
@@ -81,3 +83,13 @@ packages = ["src/skagent"]
 # For editable installs
 [tool.hatch.build.targets.editable]
 packages = ["src/skagent"]
+
+[tool.pytest.ini_options]
+# Put the project root on sys.path so tests can do `from tests.conftest import ...`
+# under a plain `pytest` invocation (not just `python -m pytest`).
+pythonpath = ["."]
+# Only collect the committed suite; ignore stray *_test.py scripts in the repo root.
+testpaths = ["tests"]
+markers = [
+    "slow: long-running tests (e.g. RL convergence); deselected unless --runslow is passed.",
+]

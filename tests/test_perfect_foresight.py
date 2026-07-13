@@ -429,7 +429,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         Human wealth: H = y/r
         MPC bounds: 0 < κ < 1 (marginal propensity to consume)
         Feasibility: 0 < c < m + H (total wealth constraint)
-        Note: DBlock imposes c <= m, which may not hold for all parameter values
+        Note: the DBlock imposes the natural borrowing limit c <= m + H.
         """
         model_id = "D-3"
         calibration = get_benchmark_calibration(model_id)
@@ -493,7 +493,7 @@ class TestPerfectForesightLifetimeReward(unittest.TestCase):
         Human wealth: H = y/r
         MPC bounds: 0 < κ < 1 (marginal propensity to consume)
         Feasibility: 0 < c < m + H (total wealth constraint)
-        Note: DBlock imposes c <= m, which may not hold for all parameter values
+        Note: the DBlock imposes the natural borrowing limit c <= m + H.
         """
         model_id = "D-2"
         calibration = get_benchmark_calibration(model_id)

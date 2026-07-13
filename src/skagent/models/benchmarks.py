@@ -234,6 +234,10 @@ d2_calibration = {
     "y": 1.0,
     "description": "D-2: Infinite horizon CRRA perfect foresight",
 }
+# Human wealth H = y / (R - 1): present value of the constant future income
+# stream (module header: W_t = m_t + H_t). The closed form borrows against it,
+# so the feasible upper bound is total wealth m + H, not cash-on-hand m.
+_D2_HUMAN_WEALTH = d2_calibration["y"] / _human_wealth_rate(d2_calibration["R"])
 
 d2_block = DBlock(
     **{
@@ -242,10 +246,7 @@ d2_block = DBlock(
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
             "c": Control(
-                ["m"],
-                lower_bound=lambda m: 0.0,  # can't consume negative
-                upper_bound=lambda m: m,
-                agent="consumer",
+                ["m"], upper_bound=lambda m: m + _D2_HUMAN_WEALTH, agent="consumer"
             ),
             "a": lambda m, c: m - c,
             "u": lambda c, CRRA: crra_utility(c, CRRA),
@@ -340,6 +341,34 @@ def d2_analytical_policy(states, shocks, parameters):
     return {"c": c_optimal}
 
 
+def d2_constrained_optimal_c(m):
+    """D-2 constrained closed-form consumption ``c = min(κ(m + H), m)``.
+
+    Keyed on cash-on-hand ``m`` (the information set of the D-2 control), this
+    inverts ``m = aR + y`` to recover arrival assets, delegates the
+    unconstrained closed form to :func:`d2_analytical_policy`, and applies the
+    borrowing constraint ``c ≤ m`` that :func:`d2_analytical_policy` does not
+    impose.
+
+    Parameters
+    ----------
+    m : scalar, numpy array, or torch.Tensor
+        Cash-on-hand value(s).
+
+    Returns
+    -------
+    numpy.ndarray
+        1-D array of constrained optimal consumption values.
+    """
+    m_arr = np.asarray(
+        m.detach().cpu().numpy() if isinstance(m, torch.Tensor) else m,
+        dtype=np.float32,
+    ).reshape(-1)
+    a = (m_arr - d2_calibration["y"]) / d2_calibration["R"]
+    c_unconstrained = d2_analytical_policy({"a": a}, {}, d2_calibration)["c"]
+    return np.minimum(np.asarray(c_unconstrained, dtype=np.float32), m_arr)
+
+
 # D-3: Blanchard Discrete-Time Mortality
 # ---------------------------------------
 # Extension of D-2 with i.i.d. survival risk. Each period, the agent survives
@@ -371,6 +400,9 @@ d3_calibration = {
     # Note: liv=1.0 is the initial STATE, not a parameter, so it's passed in initial_states
     "description": "D-3: Blanchard discrete-time mortality",
 }
+# Human wealth H = y / (R - 1) (mortality scales the MPC, not H); the feasible
+# upper bound is total wealth m + H, matching _validate_d2_d3_solution's c<m+H.
+_D3_HUMAN_WEALTH = d3_calibration["y"] / _human_wealth_rate(d3_calibration["R"])
 
 d3_block = DBlock(
     **{
@@ -380,7 +412,9 @@ d3_block = DBlock(
         },
         "dynamics": {
             "m": lambda a, R, y: a * R + y,
-            "c": Control(["m"], upper_bound=lambda m: m, agent="consumer"),
+            "c": Control(
+                ["m"], upper_bound=lambda m: m + _D3_HUMAN_WEALTH, agent="consumer"
+            ),
             "a": lambda m, c: m - c,
             "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
             "u": lambda c, liv, CRRA: liv

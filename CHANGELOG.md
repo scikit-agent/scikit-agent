@@ -8,7 +8,30 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Benchmark blocks `d2_block` and `d3_block` imposed a no-borrowing constraint
+  (`c <= m`, i.e. end-of-period assets `a' >= 0`) that contradicts their
+  unconstrained perfect-foresight closed-form policies, which borrow against
+  human wealth. The blocks now use the natural borrowing limit `c <= m + H`,
+  with `H = y / r` derived from each calibration as a module-level constant, so
+  each coded model matches the analytical policy it is validated against. The
+  mismatch was latent until a solver exercised the control bounds; single-step
+  and analytical-policy tests missed it because their test states (`a >= 0.5`)
+  never reach the borrowing region.
+
+### Added
+
+- `tests/test_benchmark_bound_consistency.py`: regression test asserting each
+  unconstrained closed-form benchmark's analytical policy is feasible under the
+  block's own control bounds on states that reach the borrowing region
+  (`a' < 0`).
+
 ### Changed
+
+- `GymEnv._bounds_at` treats a single-point feasible set (`lo == hi`, which the
+  natural borrowing limit produces at `m = -H`) as valid, returning that point;
+  it now raises only on a genuinely inverted bound (`hi < lo`).
 
 - `compute_gradients_for_tensors` returns a zero tensor (instead of `None`) for
   a variable with no computational path to the target, and raises `ValueError`
@@ -236,4 +259,4 @@ and this project adheres to
 
 ...
 
-[Unreleased]: https://github.com/user/repo/commits/main
+[Unreleased]: https://github.com/scikit-agent/scikit-agent/commits/main
