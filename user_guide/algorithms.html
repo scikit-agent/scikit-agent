@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments Guide" href="environments.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.dev672+gb0bd68a13</title>
+        <title>Algorithms Guide - scikit-agent 0.1.dev698+g68a7083ad</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev672+gb0bd68a13</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev698+g68a7083ad</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -541,17 +541,42 @@ The neural Bellman- and Euler-equation losses
 (<a class="reference internal" href="../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>,
 <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>) provide deep-learning alternatives
 for the recurring case.</p>
-</section>
-<section id="performance-considerations">
-<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>Start with a narrow network (<code class="docutils literal notranslate"><span class="pre">width=8</span></code>–<code class="docutils literal notranslate"><span class="pre">16</span></code>) and few epochs to confirm the
-model is set up correctly, then scale up.</p></li>
-<li><p>Training is over the grid you supply; a coarse grid trains faster but
-generalizes less well off-grid.</p></li>
-<li><p>Set seeds (<code class="docutils literal notranslate"><span class="pre">torch.manual_seed</span></code> / <code class="docutils literal notranslate"><span class="pre">numpy.random.seed</span></code>) for reproducible runs,
-and construct shocks with an explicit <code class="docutils literal notranslate"><span class="pre">rng</span></code> for deterministic shock draws.</p></li>
-</ul>
+<p>One way to do this is to integrate with an established RL library. scikit-agent
+adapts your model into a standard environment (see <a class="reference internal" href="environments.html"><span class="doc">Environments Guide</span></a>) and
+hands it to <a class="reference external" href="https://stable-baselines3.readthedocs.io/">Stable-Baselines3</a>,
+which provides <strong>PPO</strong> (Proximal Policy Optimization), a robust, general-purpose
+algorithm.</p>
+<p>The entry point is <a class="reference internal" href="../api/algorithms.html#skagent.algos.sb3.PPOAgent" title="skagent.algos.sb3.PPOAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">PPOAgent</span></code></a>. You give it a model
+(<code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code>) and a distribution of starting states, train for a number of
+timesteps, and ask for a decision rule:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.algos.sb3</span><span class="w"> </span><span class="kn">import</span> <span class="n">PPOAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uniform</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">d2_block</span><span class="p">,</span> <span class="n">d2_calibration</span>
+
+<span class="c1"># Wrap a model block together with its discount variable and calibration.</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">d2_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">d2_calibration</span><span class="p">)</span>
+
+<span class="c1"># Train PPO, sampling fresh initial states from this distribution each episode.</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">PPOAgent</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)},</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_timesteps</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
+
+<span class="c1"># Get a standard skagent decision rule and use it like any other.</span>
+<span class="n">dr</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">decision_rule</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The returned <code class="docutils literal notranslate"><span class="pre">dr</span></code> is an ordinary <code class="docutils literal notranslate"><span class="pre">{control:</span> <span class="pre">callable}</span></code> decision rule — the same
+shape produced by other solvers — so it plugs straight into simulators and the
+rest of the toolkit.</p>
+<p>For a complete, runnable walkthrough — training PPO on a benchmark with a known
+closed-form solution and comparing the learned policy against it — see the
+<a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html"><span class="doc">PPO via Stable-Baselines3 on the D-2 Benchmark</span></a> example.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>PPO uses a single, constant discount factor (<code class="docutils literal notranslate"><span class="pre">gamma</span></code>), taken from your model’s
+discount variable. Models whose discount factor varies with the state are not
+yet supported through this path.</p>
+</div>
 <hr class="docutils" />
 <p><em>For a runnable, end-to-end version of these workflows, see the
 <a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms examples gallery</span></a>.</em></p>
@@ -633,7 +658,6 @@ and construct shocks with an explicit <code class="docutils literal notranslate"
 </li>
 <li><a class="reference internal" href="#blocks-with-multiple-controls">Blocks with multiple controls</a></li>
 <li><a class="reference internal" href="#value-function-iteration">Value Function Iteration</a></li>
-<li><a class="reference internal" href="#performance-considerations">Performance Considerations</a></li>
 </ul>
 </li>
 </ul>
@@ -645,7 +669,7 @@ and construct shocks with an explicit <code class="docutils literal notranslate"
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d9c25f18"></script>
+</div><script src="../_static/documentation_options.js?v=0e4a4df1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
