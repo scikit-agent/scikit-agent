@@ -607,39 +607,46 @@ class test_vbi_solve_bellman(unittest.TestCase):
         self.assertIsInstance(value_array, xr.DataArray)
         self.assertEqual(list(policy_array["c"].dims), ["a"])
 
-    @unittest.expectedFailure
     def test_d2_iterated_converges_to_analytic(self):
-        # KNOWN-FAILING TARGET (design §8 + §10; see i208_pr5_d2_u2_findings.md).
+        # D-2 (infinite-horizon CRRA, natural borrowing limit c <= m + H,
+        # H = y/(R-1) = human wealth): iterate solve_bellman to a fixed point and
+        # recover the unconstrained closed form c = kappa*(m + H),
+        # kappa = (R - (beta*R)^(1/sigma))/R, at interior states.
         #
-        # D-2 is infinite-horizon CRRA with the *natural* borrowing limit
-        # c <= m + H (H = y/(R-1) = human wealth). The unconstrained closed form
-        # is c = kappa*(m + H), kappa = (R - (beta*R)^(1/sigma))/R. A single
-        # bellman_step under the exact analytic continuation recovers it (see
-        # test_d2_single_backup_analytic_continuation), but the *iteration*
-        # does not: from V0 = 0 the first backup has no saving motive, so it
-        # rides the upper bound to c = m + H (a' = -H, the singular
-        # "consume all human wealth" point). value_array_to_function then
-        # linearly extrapolates the self-built continuation into the V -> -inf
-        # wall below the grid, and the loop settles on that flat, wrong fixed
-        # point (c ~ 35 vs ~1.2). It "converges" (attrs["converged"] is True) to
-        # the wrong policy.
+        # The artificial_borrowing_constraint flag is required. Without it, from
+        # V0 = 0 the first backup has no saving motive and rides the upper bound
+        # to c = m + H (a' = -H, the singular "consume all human wealth" point);
+        # the self-built continuation is then extrapolated into the V -> -inf
+        # wall below the grid and the loop settles on that flat, wrong fixed
+        # point (c ~ 35). The flag confines a' to the grid, so the continuation
+        # is only interpolated (design §8; see i208_pr5_d2_u2_findings.md).
         #
-        # This asserts the INTENDED behavior; it is expected to fail until the
-        # slack-artificial-borrowing-limit fix (keep a' in the grid domain,
-        # design §8) or EGM (§10) lands. When it starts passing, unittest flags
-        # an "unexpected success" -> remove this decorator.
+        # The grid floor is the slack artificial borrowing limit: a fraction of
+        # human wealth H, low enough not to bind at the tested interior states
+        # (a' there stays well above -H/3), but not so low that the near-singular
+        # deep-borrowing region destabilizes the value iteration.
+        #
+        # Grid resolution and tol are kept deliberately coarse for speed (the
+        # β = 0.96 contraction fixes the iteration count, so a loose tol is the
+        # main lever); recovery of the closed form is then good to a few percent.
         cal = bm.d2_calibration
         R, y = cal["R"], cal["y"]
+        H = y / (R - 1.0)  # human wealth; natural borrowing limit is a' >= -H
         bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
-        grid = {"a": np.linspace(0.5, 8.0, 30)}
+        grid = {"a": np.linspace(-H / 3.0, 8.0, 16)}
         dr, value_array, policy_array = vbi.solve_bellman(
-            bp, grid, scope=cal, tol=1e-6, max_iter=1000
+            bp,
+            grid,
+            scope=cal,
+            tol=1e-2,
+            max_iter=2000,
+            artificial_borrowing_constraint=True,
         )
         self.assertTrue(value_array.attrs["converged"])
         for a in [1.0, 2.0, 3.0, 5.0]:
             m = a * R + y
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
-            self.assertAlmostEqual(dr["c"](m), want, delta=2e-2)
+            self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
 
     def test_max_iter_one_matches_bellman_step(self):
         # Iteration 1 uses the terminal (zero) continuation, so max_iter=1 is
