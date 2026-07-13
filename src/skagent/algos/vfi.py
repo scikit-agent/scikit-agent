@@ -1,8 +1,8 @@
 """
-Value backward induction (VBI).
+Value function iteration (VFI).
 
 Derive a decision rule, decision value function, and arrival value function for
-a single :class:`~skagent.block.DBlock` stage by backward induction: at each
+a single :class:`~skagent.block.DBlock` stage by value function iteration: at each
 point of a grid over the decision's information set, solve an exact
 :func:`scipy.optimize.minimize` for the control that maximizes the period reward
 plus a continuation value.
@@ -50,7 +50,7 @@ def ar_from_data(da):
     takes the control's information-set values as *positional* arguments, in the
     order of ``da.dims`` (which :func:`solve` aligns to ``control.iset``). This
     matches how ``block.transition`` invokes a rule,
-    ``dr(*[vals[v] for v in iset])``, so a VBI-fitted rule is a drop-in for the
+    ``dr(*[vals[v] for v in iset])``, so a VFI-fitted rule is a drop-in for the
     rest of the stack.
 
     Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
@@ -184,14 +184,14 @@ def grid_to_data_array(
 
 def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={}):
     """
-    Solve a ``DBlock`` stage by backward induction on the value function.
+    Solve a ``DBlock`` stage by value function iteration.
 
     At each point of *state_grid*, the optimal control(s) are found with
     :func:`scipy.optimize.minimize`, maximizing the period reward plus the
     *continuation* value of the resulting states. The tabulated optima are then
     interpolated into a decision rule.
 
-    VBI assumes *full observation*: the decision conditions on its complete
+    VFI assumes *full observation*: the decision conditions on its complete
     information set and the per-point optimization never integrates over
     unobserved variables. (The only expectation machinery in this module is in
     ``block.get_arrival_value_function``; the optimization here does not use it.)
@@ -223,7 +223,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
 
         .. note::
            This is broader than ``calibration`` elsewhere in the library, which
-           denotes fixed, single-valued *parameters* only. Here (legacy VBI
+           denotes fixed, single-valued *parameters* only. Here (legacy VFI
            usage) it is a general scope bag that also holds fixed exogenous
            values outside the information set, such as a shock realization
            ``psi``. Read it as "scope," not "parameters."
@@ -245,7 +245,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
         continuation, screen=True
     )
 
-    # get_controls() returns a dict[sym, Control]; VBI works with the
+    # get_controls() returns a dict[sym, Control]; VFI works with the
     # ordered list of control symbols.
     controls = list(block.get_controls())
 

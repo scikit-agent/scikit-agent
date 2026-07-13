@@ -1,13 +1,13 @@
 # i208 Phase-2 PR5 — D-2 and U-2 closed-form discrepancies
 
-**Status:** findings for specialist review. The `vbi.solve_bellman` machinery is
+**Status:** findings for specialist review. The `vfi.solve_bellman` machinery is
 implemented and validated; the two closed-form benchmark checks below do **not**
 pass, and the reasons are model-level (benchmark definitions vs. their stated
 analytical policies), not solver bugs. The D-2/U-2 closed-form tests were
 therefore deliberately **not** added to the suite pending this review.
 
-Context: PR5 adds `vbi.solve_bellman` (value-function iteration driving
-`bellman_step` to a fixed point) and `vbi.value_array_to_function` (rebuild a
+Context: PR5 adds `vfi.solve_bellman` (value-function iteration driving
+`bellman_step` to a fixed point) and `vfi.value_array_to_function` (rebuild a
 continuation from a value grid). See `design.md` §3–§4, §9 row 5.
 
 ---
@@ -188,13 +188,13 @@ single-backup vs iteration), `exp_matrix.py` (optimizer-method matrix).
 Minimal D-2 comparison:
 
 ```python
-import numpy as np, skagent.algos.vbi as vbi
+import numpy as np, skagent.algos.vfi as vfi
 from skagent.bellman import BellmanPeriod
 import skagent.models.benchmarks as bm
 
 cal = bm.d2_calibration
 bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
-dr, va, _ = vbi.solve_bellman(
+dr, va, _ = vfi.solve_bellman(
     bp, {"a": np.linspace(0, 8, 60)}, scope=cal, tol=1e-7, max_iter=6000
 )
 for a in [1.0, 2.0, 3.0]:

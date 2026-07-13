@@ -1,9 +1,9 @@
-# i208 Phase 2 — Design: `vbi.bellman_step` + `vbi.solve_bellman`
+# i208 Phase 2 — Design: `vfi.bellman_step` + `vfi.solve_bellman`
 
 Re-base the exact (per-grid-point `scipy.optimize`) backward-induction solver
-onto the `BellmanPeriod` protocol, so VBI speaks the same model interface as the
+onto the `BellmanPeriod` protocol, so VFI speaks the same model interface as the
 rest of the torch stack (`bellman.py`, `loss.py`, `ann.py`, `solver.py`). Legacy
-`vbi.solve(block, continuation, …)` is left untouched as the deliberate
+`vfi.solve(block, continuation, …)` is left untouched as the deliberate
 "β-folded-into-continuation" path.
 
 A `BellmanPeriod` represents one _recurring_ period of an
@@ -47,7 +47,7 @@ point** (value-function iteration), since `BellmanPeriod` is a recurring period.
 Shock handling is upgraded relative to legacy `solve`: because
 `distributions.py` can discretize a shock into nodes+weights (§4), the per-point
 backup integrates **hidden** shocks inside the `max` and the iteration
-integrates **observed** shocks into the arrival value — so VBI's old
+integrates **observed** shocks into the arrival value — so VFI's old
 full-observation restriction is lifted (hidden-shock optima like `case_2` are
 now in scope).
 
@@ -363,7 +363,7 @@ wrong interpolation. (Mirror of Mechanism A's invariance assert.)
 
 ---
 
-## 6. Helpers to add / refactor in `vbi.py`
+## 6. Helpers to add / refactor in `vfi.py`
 
 - `bellman_step(...)` — single exact backup (§2).
 - `solve_bellman(...)` — value-iteration wrapper (§3).
@@ -380,7 +380,7 @@ No changes to `bellman.py`, `block.py`, `ann.py`, `loss.py`.
 
 ---
 
-## 7. Test plan (`tests/test_vbi.py`)
+## 7. Test plan (`tests/test_vfi.py`)
 
 **`test_bellman_step` (single backup, terminal continuation → `optimal_dr`):**
 reuse conftest cases — `continuation = lambda s, sh, p: 0.0`.
@@ -462,7 +462,7 @@ _Finite-horizon flavor (separate from fixed-point iteration):_
 **convergence sanity:** `solve_bellman(max_iter=1)` reproduces `bellman_step`
 with terminal continuation on a conftest case (loop wiring check).
 
-**Protocol round-trips** (parallel to Phase-1 `test_vbi_protocol`):
+**Protocol round-trips** (parallel to Phase-1 `test_vfi_protocol`):
 `tensor_decision_rule(dr["c"])` flows through `bp.compute_controls` and
 `BellmanEquationLoss`; `value_array`/`policy_array` are well-formed.
 
@@ -624,7 +624,7 @@ graph allows.
 
 | PR            | Adds                                                                                                                                                     | Tests it lands                                                                                                                                                                       | Depends on     |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
-| **1 ✅ DONE** | `bellman_step` core: single-control, grid-equals-iset (transpose projection), β + multi-reward + det-safe, per-point `x0` (warm-start/midpoint/fallback) | `case_0/1/5/6/7/8/9` + return-contract, warm-start, and guard tests (`test_vbi_bellman_step`, 11 passing)                                                                            | — (foundation) |
+| **1 ✅ DONE** | `bellman_step` core: single-control, grid-equals-iset (transpose projection), β + multi-reward + det-safe, per-point `x0` (warm-start/midpoint/fallback) | `case_0/1/5/6/7/8/9` + return-contract, warm-start, and guard tests (`test_vfi_bellman_step`, 11 passing)                                                                            | — (foundation) |
 | **2 ✅ DONE** | Mechanism B reindex + monotonicity assert (§5)                                                                                                           | `case_3`, D-2 single backup under analytic continuation                                                                                                                              | PR1            |
 | **3 ✅ DONE** | Multi-control vectorization; `policy_array` → `dict[str, DataArray]` (O1)                                                                                | `case_10`                                                                                                                                                                            | PR1            |
 | **4 ✅ DONE** | Non-trivial `continuation_vf` (β·cv, arrival transition)                                                                                                 | `case_11`                                                                                                                                                                            | PR1            |
@@ -738,7 +738,7 @@ and its budget/marginal-utility symbols (or to infer them from the single
 
 ### 10.4 API & dependencies
 
-- New `vbi.solve_egm(bp, aprime_grid, *, disc_params={}, tol=…, max_iter=…)`
+- New `vfi.solve_egm(bp, aprime_grid, *, disc_params={}, tol=…, max_iter=…)`
   parallel to `solve_bellman`, same return contract.
 - **Depends on PR6** (§4 discretization) for `E_shock`; the deterministic
   benchmarks (D-2/D-4/U-2 at `sigma_psi=0`) work with the empty-shock guard even
