@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev658+g7de15bc94</title>
+        <title>Algorithms - scikit-agent 0.1.dev672+gb0bd68a13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev658+g7de15bc94</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev672+gb0bd68a13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -350,14 +350,12 @@ folds the discount factor into the continuation), this speaks the
 discount factor and multi-reward summation, and is empty-shock-safe.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This is the <strong>current scope</strong> of the §2 design: a single control, with
-the policy projected onto the control’s information set either by the
-grid-equals-iset transpose or, when an iset variable is a derived
-pre-state, by the Mechanism-B reindex (§5); and no internal shock
-discretization (§4). Hidden shocks must be supplied as fixed
-realizations via <em>scope</em>; multi-control, <code class="docutils literal notranslate"><span class="pre">disc_params</span></code>, and a grid
-<em>wider</em> than the iset (Mechanism-A reduction) raise
-<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a>.</p>
+<p>Current scope of the §2 design: one or more controls, jointly optimized
+by a single <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> over the stacked control
+vector with per-control bounds, each policy then reprojected onto its own
+information set (<code class="xref py py-func docutils literal notranslate"><span class="pre">_project_to_iset()</span></code>, §5). There is no internal shock
+discretization (§4): hidden shocks must be supplied as fixed realizations
+via <em>scope</em>, and <code class="docutils literal notranslate"><span class="pre">disc_params</span></code> raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1695,7 +1693,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=a3071386"></script>
+</div><script src="../_static/documentation_options.js?v=d9c25f18"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
