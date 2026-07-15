@@ -21,8 +21,6 @@ def solve_multiple_controls(
     by default the negative immediate reward
     (:class:`skagent.loss.StaticRewardLoss`) is maximized.
 
-    TODO: allow a variable 'loss function generator' once the API has solidified.
-
     Parameters
     ----------
     control_order : list of str
@@ -47,6 +45,8 @@ def solve_multiple_controls(
         Mapping from each control symbol to its trained decision rule.
     """
 
+    # TODO: allow a variable 'loss function generator' once the API has
+    # solidified.
     if loss is None:
         loss = loss_module.StaticRewardLoss
 
