@@ -3,7 +3,6 @@
 [![Actions Status][actions-badge]][actions-link]
 [![Documentation][docs-badge]][docs-link]
 [![PyPI version][pypi-version]][pypi-link]
-[![Conda-Forge][conda-badge]][conda-link]
 [![PyPI platforms][pypi-platforms]][pypi-link]
 [![GitHub Discussion][github-discussions-badge]][github-discussions-link]
 
@@ -86,8 +85,6 @@ examples, and the full API reference.
 <!-- prettier-ignore-start -->
 [actions-badge]:            https://github.com/scikit-agent/scikit-agent/workflows/CI/badge.svg
 [actions-link]:             https://github.com/scikit-agent/scikit-agent/actions
-[conda-badge]:              https://img.shields.io/conda/vn/conda-forge/scikit-agent
-[conda-link]:               https://github.com/conda-forge/scikit-agent-feedstock
 [docs-badge]:               https://img.shields.io/badge/docs-latest-blue
 [docs-link]:                https://scikit-agent.github.io/scikit-agent/
 [github-discussions-badge]: https://img.shields.io/static/v1?label=Discussions&message=Ask&color=blue&logo=github
