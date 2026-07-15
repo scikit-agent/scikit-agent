@@ -341,14 +341,15 @@ def d2_analytical_policy(states, shocks, parameters):
     return {"c": c_optimal}
 
 
-def d2_constrained_optimal_c(m):
-    """D-2 constrained closed-form consumption ``c = min(κ(m + H), m)``.
+def d2_optimal_c(m):
+    """D-2 closed-form consumption ``c = κ(m + H)``, keyed on cash-on-hand ``m``.
 
-    Keyed on cash-on-hand ``m`` (the information set of the D-2 control), this
-    inverts ``m = aR + y`` to recover arrival assets, delegates the
-    unconstrained closed form to :func:`d2_analytical_policy`, and applies the
-    borrowing constraint ``c ≤ m`` that :func:`d2_analytical_policy` does not
-    impose.
+    The D-2 control's information set is cash-on-hand ``m``, whereas
+    :func:`d2_analytical_policy` is keyed on arrival assets. This helper inverts
+    the block's transition ``m = aR + y`` to recover assets and delegates to that
+    policy. Because the MPC ``κ < 1``, the result always respects the block's
+    natural borrowing limit ``c ≤ m + H`` (``H`` is human wealth), so no clipping
+    is applied — it is the exact optimum for the D-2 block.
 
     Parameters
     ----------
@@ -358,15 +359,15 @@ def d2_constrained_optimal_c(m):
     Returns
     -------
     numpy.ndarray
-        1-D array of constrained optimal consumption values.
+        1-D array of optimal consumption values.
     """
     m_arr = np.asarray(
         m.detach().cpu().numpy() if isinstance(m, torch.Tensor) else m,
         dtype=np.float32,
     ).reshape(-1)
     a = (m_arr - d2_calibration["y"]) / d2_calibration["R"]
-    c_unconstrained = d2_analytical_policy({"a": a}, {}, d2_calibration)["c"]
-    return np.minimum(np.asarray(c_unconstrained, dtype=np.float32), m_arr)
+    c = d2_analytical_policy({"a": a}, {}, d2_calibration)["c"]
+    return np.asarray(c, dtype=np.float32)
 
 
 # D-3: Blanchard Discrete-Time Mortality

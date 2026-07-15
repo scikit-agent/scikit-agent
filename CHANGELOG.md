@@ -156,9 +156,8 @@ and this project adheres to
   `BellmanPeriod`) and `GymEnv` (gymnasium adapter for Stable-Baselines3)
 - `skagent.env.discounted_rollout_reward` for scoring a decision rule by its
   realized discounted return over a rollout
-- `skagent.models.benchmarks.d2_constrained_optimal_c`, the D-2 closed-form
-  consumption function keyed on cash-on-hand with the borrowing constraint
-  applied
+- `skagent.models.benchmarks.d2_optimal_c`, the D-2 closed-form consumption
+  function `c = κ(m + H)` keyed on cash-on-hand
 - Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
   D-2 benchmark
 - NumFOCUS Code of Conduct adopted

@@ -22,8 +22,10 @@ Model Structure
 
 - **State variable**: :math:`a_t` — assets carried into period :math:`t`.
 - **Information variable**: :math:`m_t = a_t R + y` — cash-on-hand.
-- **Control variable**: :math:`c_t` — consumption, constrained by
-  :math:`0 \leq c_t \leq m_t` (no borrowing).
+- **Control variable**: :math:`c_t` — consumption, bounded above by the natural
+  borrowing limit :math:`c_t \leq m_t + H`, where :math:`H` is human wealth. The
+  agent may borrow against future income, so :math:`c_t` can exceed cash-on-hand
+  :math:`m_t` at low wealth.
 
 The agent maximizes expected discounted CRRA utility,
 
@@ -48,9 +50,10 @@ consume :math:`\kappa`:
     H = \frac{y}{R - 1},
 
 where :math:`H` is human wealth (the present value of the constant income
-stream). Near the borrowing constraint this unconstrained rule can exceed
-:math:`m_t`, so the true constrained optimum is
-:math:`c_t = \min(\kappa(m_t + H),\, m_t)`.
+stream). Because :math:`\kappa < 1`, this rule always satisfies
+:math:`c_t = \kappa(m_t + H) < m_t + H`, so it stays within the block's natural
+borrowing limit and is the exact optimum PPO targets. At low cash-on-hand the
+agent optimally borrows, consuming more than :math:`m_t`.
 
 .. note::
 
@@ -69,10 +72,9 @@ from skagent.bellman import BellmanPeriod
 from skagent.distributions import Uniform
 from skagent.env import discounted_rollout_reward
 from skagent.models.benchmarks import (
-    d2_analytical_policy,
     d2_block,
     d2_calibration,
-    d2_constrained_optimal_c,
+    d2_optimal_c,
 )
 
 # %%
@@ -100,15 +102,17 @@ for param, value in d2_calibration.items():
 # ======================
 #
 # The benchmark module provides
-# :func:`skagent.models.benchmarks.d2_constrained_optimal_c`, the closed-form
-# consumption function keyed on cash-on-hand :math:`m` with the borrowing
-# constraint :math:`c \leq m` applied. We use it both for the grid comparison
-# below and, wrapped as a skagent decision rule, for the rollouts.
+# :func:`skagent.models.benchmarks.d2_optimal_c`, the closed-form consumption
+# function :math:`c = \kappa(m + H)` keyed on cash-on-hand :math:`m` (the
+# information set of the D-2 control). Because :math:`\kappa < 1`, it always
+# respects the block's natural borrowing limit :math:`c \leq m + H`, so it is
+# the exact optimum PPO targets. We use it both for the grid comparison below
+# and, wrapped as a skagent decision rule, for the rollouts.
 
 
 def optimal_decision_rule():
-    """Wrap :func:`d2_constrained_optimal_c` as a skagent decision rule."""
-    return {"c": lambda m: torch.as_tensor(d2_constrained_optimal_c(m))}
+    """Wrap :func:`d2_optimal_c` as a skagent decision rule."""
+    return {"c": lambda m: torch.as_tensor(d2_optimal_c(m))}
 
 
 # %%
@@ -168,16 +172,12 @@ episode_rewards = np.asarray(agent.episode_rewards, dtype=np.float32)
 # Compare Against the Closed-Form Optimum
 # =======================================
 #
-# We evaluate the closed-form consumption rule on the same grid. The
-# unconstrained rule :math:`c = \kappa(m + H)` can exceed :math:`m` at low
-# cash-on-hand, where the borrowing constraint binds; the constrained optimum
-# takes the minimum.
+# We evaluate the closed-form rule :math:`c = \kappa(m + H)` on the same grid.
+# It is the exact optimum for the block, which permits borrowing up to the
+# natural limit :math:`c \leq m + H`; at low cash-on-hand it exceeds :math:`m`,
+# so the agent optimally borrows against future income.
 
-a_grid = (m_grid - d2_calibration["y"]) / d2_calibration["R"]
-c_optimal_unc = np.asarray(
-    d2_analytical_policy({"a": a_grid}, {}, d2_calibration)["c"], dtype=np.float32
-)
-c_optimal = d2_constrained_optimal_c(m_grid)
+c_optimal = d2_optimal_c(m_grid)
 
 print(f"Policy error vs closed form (over m ∈ [{m_grid[0]}, {m_grid[-1]}]):")
 print(f"  {'checkpoint':>12}  {'MAE':>10}  {'MaxErr':>10}")
@@ -205,15 +205,8 @@ for checkpoint in CHECKPOINTS:
         c_learned_by_checkpoint[checkpoint],
         label=f"PPO @ {checkpoint:,} steps",
     )
-axes[0].plot(m_grid, c_optimal, label="closed form (constrained)", linestyle="--")
-axes[0].plot(
-    m_grid,
-    c_optimal_unc,
-    label="closed form (unconstrained)",
-    linestyle="--",
-    alpha=0.4,
-)
-axes[0].plot(m_grid, m_grid, label="c = m (upper bound)", linestyle=":", alpha=0.5)
+axes[0].plot(m_grid, c_optimal, label="closed form", linestyle="--")
+axes[0].plot(m_grid, m_grid, label="c = m (45° reference)", linestyle=":", alpha=0.5)
 axes[0].set_xlabel("m (cash-on-hand)")
 axes[0].set_ylabel("c (consumption)")
 axes[0].set_title(f"D-2 policy: MAE={mae:.3f}")
