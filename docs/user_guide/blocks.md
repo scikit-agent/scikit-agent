@@ -191,8 +191,6 @@ lifecycle_model = ska.RBlock(
 )
 ```
 
-_TODO: Discussion of how the blocks connect -- arrival states, again._
-
 ### Bellman Periods
 
 A `BellmanPeriod` (from `skagent.bellman`) wraps a block together with its
