@@ -1,218 +1,243 @@
 # Quickstart Guide
 
-Get up and running with scikit-agent in minutes. This guide covers the basic
-concepts and shows you how to create, solve, and simulate your first economic
-model.
+Get up and running with scikit-agent in minutes. This guide takes you through
+the full loop: build a model, simulate it, and then **solve** it for an optimal
+policy.
 
 ## Installation
-
-First, install scikit-agent:
 
 ```bash
 pip install scikit-agent
 ```
 
-For development installation:
-
-```bash
-git clone https://github.com/scikit-agent/scikit-agent.git
-cd scikit-agent
-pip install -e ".[dev,docs]"
-```
+See the {doc}`installation` guide for development installs and system
+dependencies.
 
 ## Core Concepts
 
-scikit-agent is built around several key concepts:
+scikit-agent is built around a few key objects:
 
-### DBlock (Dynamic Block)
+- **`DBlock` (Dynamic Block)** — one period of model behavior, defined by its
+  **shocks** (random variables), **dynamics** (transition equations),
+  **controls** (decision variables agents choose), and **rewards** (what agents
+  maximize).
+- **`RBlock` (Recursive Block)** — several blocks chained together, e.g. to
+  carry state from one period into the next.
+- **`BellmanPeriod`** — wraps a block with its discount variable and
+  calibration, turning it into one period of a dynamic optimization problem.
+  This is the object the solvers consume.
+- **`Grid`** — a discretized set of states to solve or evaluate a model over.
+- **`MonteCarloSimulator`** — generates synthetic panel data from a model and a
+  set of decision rules.
 
-A `DBlock` represents a "block" of model behavior with:
+## Simulate a Prebuilt Model
 
-- **Shocks**: Random variables that affect the model
-- **Dynamics**: Equations describing how variables evolve
-- **Controls**: Decision variables that agents optimize
-- **Rewards**: Objective functions that agents maximize
-
-### Grid
-
-A `Grid` represents discrete state spaces for numerical solutions.
-
-### Simulators
-
-Monte Carlo simulation engines for analyzing model behavior.
-
-## Your First Model: Consumption-Saving
-
-Let's create a simple consumption-saving model step by step.
+Let's start with the consumption-saving model that ships with scikit-agent.
 
 ### Step 1: Import scikit-agent
 
 ```python
 import numpy as np
 import skagent as ska
-from skagent.models.consumer import consumption_block, cons_problem, calibration
+from skagent.models.consumer import (
+    consumption_block_normalized,
+    cons_problem,
+    calibration,
+)
 ```
 
-### Step 2: Examine the Pre-built Model
+### Step 2: Examine the Model
 
-The consumption block defines a standard consumption-saving problem:
+`consumption_block_normalized` describes a single period of a normalized
+consumption-saving problem — market resources `m` arrive, the agent chooses
+consumption `c`, and end-of-period assets `a` remain:
 
 ```python
-print("Model dynamics:")
-for var, eq in consumption_block.dynamics.items():
+print("Dynamics:")
+for var, eq in consumption_block_normalized.dynamics.items():
     print(f"  {var}: {eq}")
 
-print("\nModel shocks:")
-for shock, dist in consumption_block.shocks.items():
-    print(f"  {shock}: {dist}")
+print("Shocks:", list(consumption_block_normalized.shocks.keys()))
 ```
 
-### Step 3: Set Up Model Parameters
-
-```python
-# Use the default calibration or modify it
-my_calibration = calibration.copy()
-my_calibration.update(
-    {
-        "DiscFac": 0.95,  # Discount factor
-        "CRRA": 2.5,  # Risk aversion
-        "R": 1.04,  # Interest rate
-    }
-)
-
-print("Calibration:")
-for param, value in my_calibration.items():
-    print(f"  {param}: {value}")
-```
-
-### Step 4: Assemble the Recursive Problem
-
-A single `DBlock` describes one period of behavior. To simulate over time, the
-end-of-period assets `a` must become next period's capital `k`. The prebuilt
-`cons_problem` is an `RBlock` that chains a normalized consumption block with a
-small "tick" block doing exactly that:
+A single `DBlock` is only one period. To simulate over time, end-of-period
+assets `a` must become next period's capital `k`. The prebuilt `cons_problem` is
+an `RBlock` that chains the consumption block with a small "tick" block doing
+exactly that:
 
 ```python
 print("Recursive problem blocks:")
-for block in cons_problem.blocks:
-    print(f"  {block.name}: {list(block.get_dynamics().keys())}")
+for blk in cons_problem.blocks:
+    print(f"  {blk.name}: {list(blk.get_dynamics().keys())}")
 ```
 
 There is no need to construct the shock distributions by hand; the simulator
 builds them from the calibration internally.
 
-### Step 5: Create a Simple Decision Rule
-
-For this example, we'll use a simple consumption rule (consume 90% of
-resources):
+### Step 3: Set Up Model Parameters
 
 ```python
-def simple_consumption_rule(m):
-    """Simple rule: consume 90% of market resources"""
-    return 0.9 * m
-
-
-# Wrap in the format expected by the simulator
-decision_rules = {"c": simple_consumption_rule}
+# Start from the default calibration and adjust a few parameters.
+my_calibration = calibration.copy()
+my_calibration.update(
+    {
+        "DiscFac": 0.95,  # Discount factor
+        "CRRA": 2.5,  # Risk aversion
+    }
+)
 ```
 
-### Step 6: Run a Simulation
+### Step 4: Simulate
+
+A **decision rule** maps an agent's information to its choice. For now we supply
+a simple hand-picked rule — consume 90% of market resources — just to see the
+model run. (The next section replaces it with a rule a solver *finds*.)
 
 ```python
-# Set up initial conditions
-initial_conditions = {
-    "k": 1.0,  # Initial capital
-}
-
-# Create simulator
 simulator = ska.MonteCarloSimulator(
     calibration=my_calibration,
     block=cons_problem,
-    dr=decision_rules,
-    initial=initial_conditions,
+    dr={"c": lambda m: 0.9 * m},  # decision rule for the control `c`
+    initial={"k": 1.0},  # starting capital for every agent
     agent_count=1000,
     T_sim=50,
     seed=42,
 )
 
-# Run simulation
-print("Running simulation...")
 simulator.initialize_sim()
-results = simulator.simulate()
+history = simulator.simulate()
 
-print(f"Simulation completed. History keys: {list(results.keys())}")
+print("History keys:", list(history.keys()))
 ```
 
-### Step 7: Analyze Results
+### Step 5: Analyze Results
+
+Each entry of `simulator.history` is a NumPy array of shape
+`(T_sim, agent_count)`, so averaging over `axis=1` gives the cross-agent mean at
+each period:
 
 ```python
 import matplotlib.pyplot as plt
 
-# Plot average consumption over time. The history values are numpy
-# arrays of shape (T_sim, agent_count).
-if "c" in simulator.history:
-    consumption_data = simulator.history["c"]
-    mean_consumption = np.mean(consumption_data, axis=1)
+mean_consumption = simulator.history["c"].mean(axis=1)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(mean_consumption)
-    plt.title("Average Consumption Over Time")
-    plt.xlabel("Period")
-    plt.ylabel("Consumption")
-    plt.grid(True)
-    plt.show()
+plt.plot(mean_consumption)
+plt.title("Average Consumption Over Time")
+plt.xlabel("Period")
+plt.ylabel("Consumption")
+plt.grid(True)
+plt.show()
 ```
 
-## Working with Grids
+## Solve for an Optimal Policy
 
-For more sophisticated solution methods, you'll work with grids:
+The rule above was picked by hand. The point of scikit-agent is to *solve* for
+the optimal one. scikit-agent offers several solution methods (see the
+{doc}`algorithms` guide); here we use the most direct: train a policy network to
+maximize the reward earned within a block.
+
+To see the machinery clearly, we use a deliberately tiny block whose optimal
+policy we already know. The agent chooses a control `c` to match a random shock
+`theta`, with reward `-(theta - c)**2`, so the optimum is simply `c = theta`.
+Recovering that confirms the training loop works before you point it at a model
+whose answer you *don't* know.
+
+### Step 1: Define the block and wrap it
 
 ```python
-# Create a grid for wealth
-wealth_grid_config = {"m": {"min": 0.1, "max": 10.0, "count": 50}}
+import torch
+import skagent.ann as ann
+import skagent.bellman as bellman
+import skagent.block as block
+import skagent.grid as grid
+import skagent.loss as loss
+from skagent.distributions import Normal
 
-wealth_grid = ska.Grid.from_config(wealth_grid_config)
-print(f"Grid shape: {wealth_grid.shape()}")
-print(f"First few wealth points: {wealth_grid['m'][:5]}")
+track_calibration = {"beta": 0.9}
+
+track_block = block.DBlock(
+    name="track the shock",
+    shocks={"theta": (Normal, {"mu": 0, "sigma": 1})},
+    dynamics={
+        "c": block.Control(["a", "theta"]),  # may condition its choice on theta
+        "a": lambda a, c, theta: a - c + theta,
+        "u": lambda theta, c: -((theta - c) ** 2),  # maximized at c = theta
+    },
+    reward={"u": "consumer"},
+)
+
+# Wrap the block as one period of an optimization problem, naming its
+# discount variable.
+bp = bellman.BellmanPeriod(track_block, "beta", track_calibration)
 ```
 
-## Neural Network Solutions
+### Step 2: Build a grid of starting points
 
-scikit-agent supports neural network-based solution methods. Policy networks are
-built on a `BellmanPeriod`, which wraps a block together with its discount
-variable and calibration:
+The network is trained over a `Grid` of states (and shock realizations). Each
+grid point is one scenario the policy must do well on:
 
 ```python
-from skagent.bellman import BellmanPeriod
-
-# Wrap the block as a Bellman period, then create a policy network
-bp = BellmanPeriod(consumption_block, "DiscFac", my_calibration)
-policy_net = ska.BlockPolicyNet(bp, width=64)
-
-print(f"Neural network input size: {policy_net.layers[0].in_features}")
-print(f"Neural network output size: {policy_net.output.out_features}")
+states = grid.Grid.from_config(
+    {
+        "a": {"min": 0, "max": 1, "count": 7},
+        "theta": {"min": -1, "max": 1, "count": 7},
+    }
+)
 ```
+
+### Step 3: Train a policy network
+
+`StaticRewardLoss` is the negative of this period's reward, so minimizing it
+maximizes reward. `train_block_nn` runs the optimizer:
+
+```python
+policy = ska.BlockPolicyNet(bp, width=16)
+loss_fn = loss.StaticRewardLoss(bp, track_calibration)
+ann.train_block_nn(policy, states, loss_fn, epochs=500)
+```
+
+### Step 4: Read off the learned policy
+
+`decision_function` returns the control values the trained network chooses at
+each grid point. We compare them against the known optimum `c = theta`:
+
+```python
+learned_c = (
+    policy.decision_function({"a": states["a"]}, {"theta": states["theta"]}, {})["c"]
+    .detach()
+    .flatten()
+    .cpu()
+    .numpy()
+)
+theta = states["theta"].flatten().cpu().numpy()
+
+print("Max deviation from optimum:", np.max(np.abs(learned_c - theta)))
+# a small number: the network has recovered c = theta
+```
+
+For a reusable rule you can hand to the simulator, call
+`policy.get_decision_rule()`.
 
 ## Next Steps
 
-After completing this quickstart:
-
-- **Learn more about blocks**: Read the {doc}`blocks` guide to understand
-  different model types and how to create custom models
-- **Explore algorithms**: Check out the {doc}`algorithms` guide for different
-  solution methods including value function iteration and neural network
-  approaches
-- **Master simulation**: See the {doc}`simulation` guide for advanced simulation
-  techniques and analysis methods
-- **Browse examples**: Look at the {doc}`../auto_examples/index` for more
-  complex examples and use cases
+- **Solve real economic models**: the {doc}`algorithms` guide covers value
+  backwards induction, the Maliar deep-learning method, and reinforcement
+  learning, with runnable versions in the
+  {doc}`../auto_examples/algorithms/index`.
+- **Build custom models**: the {doc}`blocks` guide explains blocks, controls,
+  and how to compose them.
+- **Constrained problems**: the {doc}`constraints` guide covers borrowing
+  limits and other bounds.
+- **Simulation in depth**: the {doc}`simulation` guide covers analysis and
+  visualization.
 
 ## Key Takeaways
 
-- **DBlocks** are the fundamental building blocks for economic models
-- **Grids** discretize continuous state spaces for numerical methods
-- **Simulators** generate synthetic data from solved models
-- **Decision rules** map states to optimal actions
-- The package follows scikit-learn conventions for a familiar API
+- **Blocks** (`DBlock`, `RBlock`) are the building units of economic models.
+- **Decision rules** map an agent's information to its choices; a **solver**
+  finds the rule that is optimal.
+- **`BellmanPeriod`** turns a block into a period a solver can optimize.
+- **`Grid`s** discretize the states to solve or evaluate over.
+- **Simulators** generate synthetic data from a model and its decision rules.
 
-You're now ready to build more sophisticated economic models with scikit-agent!
+You're now ready to build and solve more sophisticated models with scikit-agent!
