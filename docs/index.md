@@ -106,11 +106,3 @@ Want to dive deeper? Check out:
 ## Community & Support
 
 - **GitHub Repository**: [github.com/scikit-agent/scikit-agent](https://github.com/scikit-agent/scikit-agent)
-
----
-
-## Indices and tables
-
-- {ref}`genindex`
-- {ref}`modindex`
-- {ref}`search`
