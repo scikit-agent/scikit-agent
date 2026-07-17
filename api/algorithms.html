@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev698+g68a7083ad</title>
+        <title>Algorithms - scikit-agent 0.1.dev701+gc6af91ee7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev698+g68a7083ad</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev701+gc6af91ee7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -364,9 +364,12 @@ via <em>scope</em>, and <code class="docutils literal notranslate"><span class="
 <li><p><strong>continuation_vf</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – The continuation value function, called <code class="docutils literal notranslate"><span class="pre">continuation_vf(states,</span> <span class="pre">shocks,</span>
 <span class="pre">parameters)</span></code> on the next-period arrival states (the <code class="docutils literal notranslate"><span class="pre">bp.compute_value</span></code>
 convention). Terminal continuation is <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">s,</span> <span class="pre">sh,</span> <span class="pre">p:</span> <span class="pre">0.0</span></code>.</p></li>
-<li><p><strong>state_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>]</span>) – A grid over the control’s information set: one axis per variable the
-decision conditions on (arrival states and/or observed shocks). For an
-empty information set, pass <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+<li><p><strong>state_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>]</span>) – The shared backup grid of arrival states and any observed shocks: one
+axis per variable (arrival-state or observed-shock symbol). This grid
+covers the full set of variables the Bellman loop iterates over and is
+not necessarily equal to any individual control’s information set (a
+control’s iset may be a strict subset). For an empty grid, pass
+<code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
 <li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – If given, the period reward sums only this agent’s reward symbols.</p></li>
 <li><p><strong>scope</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Fixed non-shock exogenous values merged into the model parameters. This
 is also where a hidden shock’s fixed realization is currently supplied
@@ -1797,7 +1800,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=0e4a4df1"></script>
+</div><script src="../_static/documentation_options.js?v=f82d9342"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
