@@ -7,8 +7,8 @@
 [![GitHub Discussion][github-discussions-badge]][github-discussions-link]
 
 A scientific Python toolkit for agent-based economic modeling: build models from
-modular blocks, solve them with deep learning or classical numerical methods, and
-simulate.
+modular blocks, solve them with deep learning or classical numerical methods,
+and simulate.
 
 📖 **[Documentation][docs-link]** &nbsp;·&nbsp;
 [Quickstart](https://scikit-agent.github.io/scikit-agent/user_guide/quickstart.html)
@@ -38,8 +38,9 @@ simulator.initialize_sim()
 history = simulator.simulate()
 ```
 
-The [Quickstart](https://scikit-agent.github.io/scikit-agent/user_guide/quickstart.html)
-goes further, *solving* the model for an optimal policy instead of hand-coding a
+The
+[Quickstart](https://scikit-agent.github.io/scikit-agent/user_guide/quickstart.html)
+goes further, _solving_ the model for an optimal policy instead of hand-coding a
 rule.
 
 <!-- SPHINX-START -->
@@ -59,7 +60,8 @@ Our goal is for `scikit-agent` to be for computational social science what
   composable blocks of structural equations.
 - ⚡ **Solution algorithms.** Solve models with deep-learning methods (following
   Maliar, Maliar, and Winant, 2021), value backwards induction, and
-  reinforcement learning via [Stable-Baselines3](https://stable-baselines3.readthedocs.io/).
+  reinforcement learning via
+  [Stable-Baselines3](https://stable-baselines3.readthedocs.io/).
 - 📊 **Simulation tools.** Generate synthetic data and run policy experiments
   with a Monte Carlo engine.
 - 🐍 **Built on Scientific Python and PyTorch** for easy integration with the

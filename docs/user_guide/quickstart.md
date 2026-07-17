@@ -91,7 +91,7 @@ my_calibration.update(
 
 A **decision rule** maps an agent's information to its choice. For now we supply
 a simple hand-picked rule — consume 90% of market resources — just to see the
-model run. (The next section replaces it with a rule a solver *finds*.)
+model run. (The next section replaces it with a rule a solver _finds_.)
 
 ```python
 simulator = ska.MonteCarloSimulator(
@@ -131,7 +131,7 @@ plt.show()
 
 ## Solve for an Optimal Policy
 
-The rule above was picked by hand. The point of scikit-agent is to *solve* for
+The rule above was picked by hand. The point of scikit-agent is to _solve_ for
 the optimal one. scikit-agent offers several solution methods (see the
 {doc}`algorithms` guide); here we use the most direct: train a policy network to
 maximize the reward earned within a block.
@@ -140,7 +140,7 @@ To see the machinery clearly, we use a deliberately tiny block whose optimal
 policy we already know. The agent chooses a control `c` to match a random shock
 `theta`, with reward `-(theta - c)**2`, so the optimum is simply `c = theta`.
 Recovering that confirms the training loop works before you point it at a model
-whose answer you *don't* know.
+whose answer you _don't_ know.
 
 ### Step 1: Define the block and wrap it
 
@@ -226,8 +226,8 @@ For a reusable rule you can hand to the simulator, call
   {doc}`../auto_examples/algorithms/index`.
 - **Build custom models**: the {doc}`blocks` guide explains blocks, controls,
   and how to compose them.
-- **Constrained problems**: the {doc}`constraints` guide covers borrowing
-  limits and other bounds.
+- **Constrained problems**: the {doc}`constraints` guide covers borrowing limits
+  and other bounds.
 - **Simulation in depth**: the {doc}`simulation` guide covers analysis and
   visualization.
 
