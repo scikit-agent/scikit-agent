@@ -473,9 +473,12 @@ def bellman_step(
         parameters)`` on the next-period arrival states (the ``bp.compute_value``
         convention). Terminal continuation is ``lambda s, sh, p: 0.0``.
     state_grid : Grid
-        A grid over the control's information set: one axis per variable the
-        decision conditions on (arrival states and/or observed shocks). For an
-        empty information set, pass ``{}``.
+        The shared backup grid of arrival states and any observed shocks: one
+        axis per variable (arrival-state or observed-shock symbol). This grid
+        covers the full set of variables the Bellman loop iterates over and is
+        not necessarily equal to any individual control's information set (a
+        control's iset may be a strict subset). For an empty grid, pass
+        ``{}``.
     agent : str, optional
         If given, the period reward sums only this agent's reward symbols.
     scope : Mapping, optional

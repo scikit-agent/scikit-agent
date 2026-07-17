@@ -99,12 +99,11 @@ def _prepare_loss_inputs(
     return states, shock_vals, fresh_dr
 
 
+# TODO: CustomLoss is left ambiguously about Blocks and BellmanPeriods for now.
 class CustomLoss:
     """
     A custom loss function that computes the negative reward for a block,
     assuming it is executed just once (a non-dynamic model)
-
-    TODO: leaving this as ambiguously about Blocks and BellmanPeriods for now
     """
 
     def __init__(self, loss_function, block, parameters=None, other_dr=None):
