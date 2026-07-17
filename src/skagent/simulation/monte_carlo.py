@@ -36,7 +36,6 @@ def draw_shocks(
     conditions: Sequence[int]
         An array of conditions, one for each agent.
         Typically these will be agent ages.
-        # TODO: generalize this to wider range of inputs.
 
     n : int (optional)
         Number of draws to do. An alternative to a conditions sequence.
@@ -52,6 +51,8 @@ def draw_shocks(
     """
     draws = {}
 
+    # TODO: generalize `conditions` to a wider range of inputs (currently
+    # expected to be a per-agent sequence such as ages).
     if n is None:
         n = len(conditions)
 
