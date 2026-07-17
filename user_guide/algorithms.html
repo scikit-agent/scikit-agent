@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments Guide" href="environments.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.dev701+gc6af91ee7</title>
+        <title>Algorithms Guide - scikit-agent 0.1.dev711+g9d2c5ffa7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -16,7 +16,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=b485e546" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=83e65f8c" />
     
     
 
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev701+gc6af91ee7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev711+g9d2c5ffa7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -289,13 +289,11 @@
 <h1>Algorithms Guide<a class="headerlink" href="#algorithms-guide" title="Link to this heading">¶</a></h1>
 <p>This guide covers the solution algorithms and optimization methods available in
 scikit-agent.</p>
-<section id="solving-a-block-directly">
-<h2>Solving a block directly<a class="headerlink" href="#solving-a-block-directly" title="Link to this heading">¶</a></h2>
-<p>A <a class="reference internal" href="blocks.html"><span class="doc">block</span></a> describes a single decision period: arrival states and
-shocks come in, the agent chooses its controls, and a reward is produced. The
-most direct use of the deep-learning solver is to train a
-<a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a> so that its decision rule maximizes the
-reward earned within the block, over a grid of starting points.</p>
+<section id="solution-methods">
+<h2>Solution methods<a class="headerlink" href="#solution-methods" title="Link to this heading">¶</a></h2>
+<p>scikit-agent offers several families of solution method, each producing a
+standard <code class="docutils literal notranslate"><span class="pre">{control:</span> <span class="pre">callable}</span></code> decision rule that plugs into simulators and the
+rest of the toolkit:</p>
 <ul class="simple">
 <li><p><strong>Maliar-style deep learning methods</strong>: Neural network solvers following
 Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
@@ -305,6 +303,7 @@ backwards induction on a grid</p></li>
 <li><p><strong>Reinforcement Learning</strong>: Learn a policy by trial-and-error interaction with
 the model, using established RL libraries (see below)</p></li>
 </ul>
+<p>The rest of this guide covers these in turn.</p>
 </section>
 <section id="reinforcement-learning">
 <h2>Reinforcement Learning<a class="headerlink" href="#reinforcement-learning" title="Link to this heading">¶</a></h2>
@@ -350,8 +349,8 @@ discount variable. Models whose discount factor varies with the state are not
 yet supported through this path.</p>
 </div>
 </section>
-<section id="id1">
-<h2>Solving a block directly<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<section id="solving-a-block-directly">
+<h2>Solving a block directly<a class="headerlink" href="#solving-a-block-directly" title="Link to this heading">¶</a></h2>
 <p>A <a class="reference internal" href="blocks.html"><span class="doc">block</span></a> describes a single decision period: arrival states and
 shocks come in, the agent chooses its controls, and a reward is produced. The
 most direct use of the deep-learning solver is to train a
@@ -541,42 +540,6 @@ The neural Bellman- and Euler-equation losses
 (<a class="reference internal" href="../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>,
 <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>) provide deep-learning alternatives
 for the recurring case.</p>
-<p>One way to do this is to integrate with an established RL library. scikit-agent
-adapts your model into a standard environment (see <a class="reference internal" href="environments.html"><span class="doc">Environments Guide</span></a>) and
-hands it to <a class="reference external" href="https://stable-baselines3.readthedocs.io/">Stable-Baselines3</a>,
-which provides <strong>PPO</strong> (Proximal Policy Optimization), a robust, general-purpose
-algorithm.</p>
-<p>The entry point is <a class="reference internal" href="../api/algorithms.html#skagent.algos.sb3.PPOAgent" title="skagent.algos.sb3.PPOAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">PPOAgent</span></code></a>. You give it a model
-(<code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code>) and a distribution of starting states, train for a number of
-timesteps, and ask for a decision rule:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.algos.sb3</span><span class="w"> </span><span class="kn">import</span> <span class="n">PPOAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uniform</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">d2_block</span><span class="p">,</span> <span class="n">d2_calibration</span>
-
-<span class="c1"># Wrap a model block together with its discount variable and calibration.</span>
-<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">d2_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">d2_calibration</span><span class="p">)</span>
-
-<span class="c1"># Train PPO, sampling fresh initial states from this distribution each episode.</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">PPOAgent</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)},</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">agent</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_timesteps</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
-
-<span class="c1"># Get a standard skagent decision rule and use it like any other.</span>
-<span class="n">dr</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">decision_rule</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>The returned <code class="docutils literal notranslate"><span class="pre">dr</span></code> is an ordinary <code class="docutils literal notranslate"><span class="pre">{control:</span> <span class="pre">callable}</span></code> decision rule — the same
-shape produced by other solvers — so it plugs straight into simulators and the
-rest of the toolkit.</p>
-<p>For a complete, runnable walkthrough — training PPO on a benchmark with a known
-closed-form solution and comparing the learned policy against it — see the
-<a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html"><span class="doc">PPO via Stable-Baselines3 on the D-2 Benchmark</span></a> example.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>PPO uses a single, constant discount factor (<code class="docutils literal notranslate"><span class="pre">gamma</span></code>), taken from your model’s
-discount variable. Models whose discount factor varies with the state are not
-yet supported through this path.</p>
-</div>
 <hr class="docutils" />
 <p><em>For a runnable, end-to-end version of these workflows, see the
 <a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms examples gallery</span></a>.</em></p>
@@ -646,9 +609,9 @@ yet supported through this path.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Algorithms Guide</a><ul>
-<li><a class="reference internal" href="#solving-a-block-directly">Solving a block directly</a></li>
+<li><a class="reference internal" href="#solution-methods">Solution methods</a></li>
 <li><a class="reference internal" href="#reinforcement-learning">Reinforcement Learning</a></li>
-<li><a class="reference internal" href="#id1">Solving a block directly</a><ul>
+<li><a class="reference internal" href="#solving-a-block-directly">Solving a block directly</a><ul>
 <li><a class="reference internal" href="#load-a-model-and-wrap-it">1. Load a model and wrap it</a></li>
 <li><a class="reference internal" href="#build-the-grid-of-starting-points">2. Build the grid of starting points</a></li>
 <li><a class="reference internal" href="#choose-a-reward-based-loss">3. Choose a reward-based loss</a></li>
@@ -669,7 +632,7 @@ yet supported through this path.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=f82d9342"></script>
+</div><script src="../_static/documentation_options.js?v=4ce8bc02"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="User Guide" href="user_guide/index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>scikit-agent 0.1.dev701+gc6af91ee7</title>
+        <title>scikit-agent 0.1.dev711+g9d2c5ffa7</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -16,7 +16,7 @@
     <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=b485e546" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=83e65f8c" />
     
     
 
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">scikit-agent 0.1.dev701+gc6af91ee7</div></a>
+      <a href="#"><div class="brand">scikit-agent 0.1.dev711+g9d2c5ffa7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -292,20 +292,23 @@
 <p><strong>scikit-agent</strong> is a scientific Python toolkit for agent-based economic
 modeling and multi-agent systems design. It provides a unified interface for
 creating, solving, and simulating economic models using modern computational
-methods including deep learning as well as more traditional numerical
+methods — including deep learning — alongside more traditional numerical
 techniques.</p>
-<p>Our goal is for <code class="docutils literal notranslate"><span class="pre">scikit-agent</span></code> to be for computational social scientific
-modeling and statistics what <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> is for machine learning.</p>
+<p>Our goal is for <code class="docutils literal notranslate"><span class="pre">scikit-agent</span></code> to be for computational social science what
+<code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> is for machine learning.</p>
 <section id="key-features">
 <h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><strong>Built on Scientific Python and Torch</strong> for easy integration with the Python
-ecosystem</p></li>
-<li><p><strong>Modular modeling system</strong>. Construct multi-agent environments from modular
-blocks of structural equations.</p></li>
-<li><p><strong>Solution algorithms</strong> including deep learning methods.</p></li>
-<li><p><strong>Simulation tools</strong> for generating synthetic data and running policy
-experiments</p></li>
+<li><p>🧱 <strong>Modular modeling system.</strong> Construct multi-agent environments from
+composable blocks of structural equations.</p></li>
+<li><p>⚡ <strong>Solution algorithms.</strong> Solve models with deep-learning methods (following
+Maliar, Maliar, and Winant, 2021), value backwards induction, and
+reinforcement learning via
+<a class="reference external" href="https://stable-baselines3.readthedocs.io/">Stable-Baselines3</a>.</p></li>
+<li><p>📊 <strong>Simulation tools.</strong> Generate synthetic data and run policy experiments
+with a Monte Carlo engine.</p></li>
+<li><p>🐍 <strong>Built on Scientific Python and PyTorch</strong> for easy integration with the
+wider Python ecosystem.</p></li>
 </ul>
 </section>
 <section id="installation">
@@ -313,12 +316,14 @@ experiments</p></li>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>scikit-agent
 </pre></div>
 </div>
-<p>For development installation:</p>
+<p>For a development installation:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/scikit-agent/scikit-agent.git
 <span class="nb">cd</span><span class="w"> </span>scikit-agent
 pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev,docs]&quot;</span>
 </pre></div>
 </div>
+<p>See the <a class="reference external" href="https://scikit-agent.github.io/scikit-agent/">documentation</a> for the user guide, a gallery of runnable
+examples, and the full API reference.</p>
 <!-- prettier-ignore-start -->
 <!-- prettier-ignore-end -->
 </section>
@@ -411,56 +416,6 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </div>
 </div>
 </div>
-<!---
-## What Can You Build?
-
-### **Consumption-Saving Models**
-
-- Life-cycle consumption with income uncertainty
-- Precautionary saving with borrowing constraints
-- Habit formation and durable goods
-
-### **Portfolio Choice Models**
-
-- Mean-variance optimization with labor income
-- Multi-asset allocation problems
-- Portfolio constraints and transaction costs
-
-### **General Equilibrium Models**
-
-- Overlapping generations models
-- Heterogeneous agent models with aggregate shocks
-- Market clearing and equilibrium computation
-
-### **Policy Analysis**
-
-- Tax and transfer policy evaluation
-- Social Security and pension reform
-- Regulatory impact assessment
-
-
-## Why scikit-agent?
-
-### 🧱 **Modular Design**
-
-Build complex economic models using intuitive building blocks. Compose **DBlocks** and **RBlocks**
-to represent different stages of economic behavior with clear separation of shocks, dynamics,
-controls, and rewards.
-
-### 🔬 **Multiple Solution Methods**
-
-Choose from traditional methods like value function iteration or modern neural network approaches.
-All algorithms follow consistent APIs and integrate seamlessly with the model framework.
-
-### 📊 **Rich Simulation Engine**
-
-Generate synthetic data with sophisticated Monte Carlo simulators that handle agent heterogeneity,
-life-cycle dynamics, and complex stochastic processes.
-
-### 🐍 **Scikit-Learn Compatible**
-
-Familiar fit-predict patterns, consistent APIs, and integration with the broader Python scientific ecosystem.
---->
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
@@ -476,20 +431,6 @@ Familiar fit-predict patterns, consistent APIs, and integration with the broader
 <h2>Community &amp; Support<a class="headerlink" href="#community-support" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>GitHub Repository</strong>: <a class="reference external" href="https://github.com/scikit-agent/scikit-agent">github.com/scikit-agent/scikit-agent</a></p></li>
-</ul>
-<!---
-- **Issue Tracker**: Report bugs and request features
-- **Discussions**: Ask questions and share examples
-- **Contributing**: Help improve scikit-agent for everyone
---->
-</section>
-<hr class="docutils" />
-<section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
 </section>
 </section>
@@ -553,7 +494,6 @@ Familiar fit-predict patterns, consistent APIs, and integration with the broader
 <li><a class="reference internal" href="#quick-links">Quick Links</a></li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
 <li><a class="reference internal" href="#community-support">Community &amp; Support</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
 </ul>
@@ -565,7 +505,7 @@ Familiar fit-predict patterns, consistent APIs, and integration with the broader
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=f82d9342"></script>
+</div><script src="_static/documentation_options.js?v=4ce8bc02"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
