@@ -159,7 +159,8 @@ and this project adheres to
 - `skagent.models.benchmarks.d2_optimal_c`, the D-2 closed-form consumption
   function `c = κ(m + H)` keyed on cash-on-hand
 - Gallery example `examples/algorithms/plot_sb3_ppo.py` demonstrating PPO on the
-  D-2 benchmark
+  D-4 benchmark (binding borrowing constraint, no closed form; validated against
+  a VFI reference)
 - NumFOCUS Code of Conduct adopted
 - Created a working `Consumption-Saving Model` example in the documentation
   gallery
