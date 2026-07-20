@@ -111,14 +111,14 @@ a dynamic equation, the modeler specifies an information set -- what information
 #### Constraints
 
 Control variables can be upper and lower bound to values that are themselves
-functions of state variables. Each bound is a callable; a constant bound is a
-zero-argument callable.
+functions of state variables. Each bound is a number (a constant bound) or a
+callable of variables in the control's information set.
 
 ```python
 consumption_control = ska.Control(
     iset=["m", "p"],  # Information set
-    lower_bound=lambda: 0.001,  # Minimum consumption
-    upper_bound=lambda m: 0.99 * m,  # Maximum consumption
+    lower_bound=0.001,  # Minimum consumption (constant)
+    upper_bound=lambda m: 0.99 * m,  # Maximum consumption (state-dependent)
     agent="consumer",  # Agent assignment
 )
 ```

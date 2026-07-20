@@ -10,8 +10,8 @@ standard `{control: callable}` decision rule that plugs into simulators and the
 rest of the toolkit:
 
 - **Maliar-style deep learning methods**: Neural network solvers following
-  Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
-  objective function
+  Maliar, Maliar, and Winant (2021), which train on an all-in-one objective; see
+  {doc}`maliar`
 - **Value backwards induction (VBI)**: Classical dynamic programming via
   backwards induction on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
@@ -270,7 +270,8 @@ induction over a block's value function. See {py:func}`skagent.algos.vbi.solve`.
 The neural Bellman- and Euler-equation losses
 ({py:class}`~skagent.loss.BellmanEquationLoss`,
 {py:class}`~skagent.loss.EulerEquationLoss`) provide deep-learning alternatives
-for the recurring case.
+for the recurring case; the {doc}`Maliar method <maliar>` page explains those
+losses and the training loop that fits them.
 
 ---
 

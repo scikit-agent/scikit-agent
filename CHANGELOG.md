@@ -51,7 +51,11 @@ and this project adheres to
 - `EulerEquationLoss` no longer takes a `discount_factor` parameter; the
   discount factor is now resolved from `bellman_period.discount_variable`
 - `EulerEquationLoss` constrained mode uses the Fischer-Burmeister function
-  (equation 25) when controls have an `upper_bound` defined
+  (equation 25) for both the lower-bound and upper-bound sides of the
+  complementarity condition. A control with an `upper_bound` uses
+  `FB(f, ub - x)`, a `lower_bound` uses `FB(-f, x - lb)`, and a control with
+  both uses a two-sided form that reduces to either one-sided residual when the
+  opposite bound is slack (#191)
 - `EulerEquationLoss` now estimates the squared expected Euler residual with the
   all-in-one operator: the _product_ of two residuals at independent next-period
   shock draws (Maliar, Maliar, and Winant 2021, JME), rather than the square of
@@ -61,8 +65,10 @@ and this project adheres to
   unchanged.
 - `estimate_euler_residual` resolves the discount factor dynamically from the
   model and supports multi-control models (returns a dict for >1 controls)
-- Control bounds (`lower_bound`, `upper_bound`) must now be callables; numeric
-  values raise a clear `TypeError` instead of being silently ignored.
+- Control bounds (`lower_bound`, `upper_bound`) accept either a number (a
+  constant bound) or a callable of the control's information-set variables.
+  Numbers are normalized to zero-argument callables at the `Control` boundary,
+  so every downstream consumer sees a uniform callable interface (#191).
 - Introduced `mortality_block` (and `mortal_cons_problem`) to demonstrate how to
   encode stochastic mortality and agent rebirth as a composable `DBlock`.
 - `train_block_nn` now always returns a 3-tuple
@@ -110,10 +116,15 @@ and this project adheres to
   implemented.
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
-  policy-network transforms, the Fischer-Burmeister complementarity loss
-  (including its current upper-bound-only scope), how the mechanisms compose,
-  and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
-  now passes callable bounds, matching the enforced API.
+  policy-network transforms, the bilateral Fischer-Burmeister complementarity
+  loss, how the mechanisms compose, and VBI's box-constraint handling, with a
+  table of where each mechanism is available (#191).
+- **Maliar method** user-guide page explaining the all-in-one expectation
+  operator, the Euler and Bellman residual losses (and the slope-versus-level
+  identification difference between them), `maliar_training_loop`, and how
+  bounded controls connect to the constraints page (#215). The Algorithms guide
+  now links to it and its duplicate "Solving a block directly" heading is
+  retitled to "Overview".
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
   (renamed from `plot_maliar_training.py`): trains a shared-backbone
