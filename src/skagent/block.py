@@ -217,7 +217,6 @@ def simulate_dynamics(
     dynamics: Mapping[str, Callable]
         Maps variable names to functions from variables to values.
         Can include Controls
-        ## TODO: Make collection of equations into a named type
 
 
     pre : Mapping[str, Any]
@@ -466,6 +465,7 @@ class DBlock(Block):
     name: str = ""
     description: str = ""
     shocks: dict = field(default_factory=dict)
+    # TODO: make this collection of equations into a named type.
     dynamics: dict = field(default_factory=dict)
     reward: dict = field(default_factory=dict)
 
@@ -523,8 +523,10 @@ class DBlock(Block):
         """
         Returns the variables that are created/modified by the Block.
         Does *not* include variables that are only used as arguments to
-        the dynamics. TODO: Get a way to find these.
+        the dynamics.
         """
+        # TODO: find a way to also enumerate the variables that are only used
+        # as arguments to the dynamics (currently excluded from this list).
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
     def transition(self, pre, dr, screen=False, until=None, fix=None):
@@ -639,10 +641,9 @@ class DBlock(Block):
         Given a decision rule and a continuation value function,
         return a function for the value at the decision step/tac,
         after the shock have been realized.
-
-        ## TODO: it would be better to systematize these value functions per block
-        ## better, then construct them with 'partial' methods
         """
+        # TODO: it would be better to systematize these value functions per
+        # block, then construct them with 'partial' methods.
         srvf = self.get_state_rule_value_function_from_continuation(continuation)
 
         def decision_value_function(shpre):

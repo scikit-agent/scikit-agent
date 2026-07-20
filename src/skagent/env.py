@@ -415,6 +415,9 @@ class GymEnv(gym.Env):
     # -- internal helpers -------------------------------------------------
 
     def _unscale_one(self, a_norm: float, lo: float, hi: float) -> float:
+        # At a degenerate feasible set (lo == hi, the natural borrowing limit
+        # m = -H) the 1e-12 floor keeps c strictly interior rather than exactly
+        # c = lo, which for CRRA utility would be a c = 0 singularity (-inf).
         span = max(hi - lo, 1e-12)
         eps = self.bound_clearance * span
         a = float(np.clip(a_norm, -1.0, 1.0))
@@ -435,9 +438,12 @@ class GymEnv(gym.Env):
             if self.control.upper_bound is not None
             else self.default_upper
         )
-        if hi <= lo:
+        # lo == hi is a valid single-point feasible set (the natural borrowing
+        # limit collapses the choice to one action); only a truly inverted
+        # bound (hi < lo) is an error.
+        if hi < lo:
             raise ValueError(
-                f"Control {self.control_sym!r} has degenerate bounds at "
+                f"Control {self.control_sym!r} has inverted bounds at "
                 f"pre-state {pre}: lo={lo}, hi={hi}"
             )
         return lo, hi

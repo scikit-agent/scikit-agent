@@ -8,7 +8,30 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Benchmark blocks `d2_block` and `d3_block` imposed a no-borrowing constraint
+  (`c <= m`, i.e. end-of-period assets `a' >= 0`) that contradicts their
+  unconstrained perfect-foresight closed-form policies, which borrow against
+  human wealth. The blocks now use the natural borrowing limit `c <= m + H`,
+  with `H = y / r` derived from each calibration as a module-level constant, so
+  each coded model matches the analytical policy it is validated against. The
+  mismatch was latent until a solver exercised the control bounds; single-step
+  and analytical-policy tests missed it because their test states (`a >= 0.5`)
+  never reach the borrowing region.
+
+### Added
+
+- `tests/test_benchmark_bound_consistency.py`: regression test asserting each
+  unconstrained closed-form benchmark's analytical policy is feasible under the
+  block's own control bounds on states that reach the borrowing region
+  (`a' < 0`).
+
 ### Changed
+
+- `GymEnv._bounds_at` treats a single-point feasible set (`lo == hi`, which the
+  natural borrowing limit produces at `m = -H`) as valid, returning that point;
+  it now raises only on a genuinely inverted bound (`hi < lo`).
 
 - `compute_gradients_for_tensors` returns a zero tensor (instead of `None`) for
   a variable with no computational path to the target, and raises `ValueError`
@@ -74,18 +97,23 @@ and this project adheres to
 ### Added
 
 - `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
-  the per-iteration update of value-function iteration, re-basing the exact grid
-  solver off the legacy `DBlock` continuation API onto the protocol the torch
-  stack speaks. Adds an explicit discount factor (`resolve_discount_factor`),
-  multi-reward summation (`get_reward_syms`), and empty-shock-safe
-  (deterministic) handling, with a per-point optimizer seed (warm-start, else
-  midpoint of finite bounds, else fallback). Returns
-  `(dr_from_data, value_array, policy_array)` with `policy_array` a
-  `dict[str, DataArray]`. This first slice handles a single control under the
-  grid-equals-information-set contract; multi-control, derived-pre-state
-  reindexing, internal shock discretization, and the `solve_bellman` iteration
-  loop follow in subsequent changes. Legacy `vbi.solve` is unchanged (the
-  deliberate discount-folded-into-continuation path).
+  the per-iteration update of value-function iteration on the interface the
+  torch stack speaks, with explicit discount factor, multi-reward summation, and
+  deterministic (empty-shock) handling. Returns
+  `(dr_from_data, value_array, policy_array)`. Optimizes one or more controls
+  jointly (`scipy.optimize.minimize` over the stacked control vector) and
+  reprojects each policy onto its own information set (design §5): drops grid
+  axes outside a control's iset (Mechanism A) and reindexes a derived pre-state
+  like `m = a·R + y` onto its own coordinate (Mechanism B). Legacy `vbi.solve`
+  is unchanged (the deliberate discount-folded-into-continuation path).
+- `vbi.solve_bellman`: value-function iteration driving `bellman_step` to a
+  fixed point — each backup takes the previous iterate's value grid as its
+  continuation (via the new `vbi.value_array_to_function`) and warm-starts the
+  optimizer from the previous policy. Stops on the sup-norm value change
+  (`converged`, `n_iter`, `residual` reported on `value_array.attrs`);
+  non-convergence warns, or raises under `raise_on_nonconvergence`.
+  Deterministic scope: internal shock discretization (`disc_params`) is not yet
+  implemented.
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the bilateral Fischer-Burmeister complementarity
