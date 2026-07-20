@@ -534,9 +534,12 @@ class EulerEquationLoss(_EquationLossBase):
             if not self._upper_bound_params and not self._lower_bound_params:
                 logger.warning(
                     "constrained=True but no Control in the block has a "
-                    "lower_bound or upper_bound. The one-sided loss will use "
-                    "relu(-f)^2 as a fallback. Define a bound on Control "
-                    "objects to enable the Fischer-Burmeister formulation."
+                    "lower_bound or upper_bound. The loss will fall back to "
+                    "the one-sided residual relu(-f), combined across the two "
+                    "independent shock draws as the all-in-one product "
+                    "relu(-f_a) * relu(-f_b), which penalizes only violations "
+                    "of f >= 0. Define a bound on Control objects to enable "
+                    "the Fischer-Burmeister formulation."
                 )
 
     def _compute_slack(
