@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments Guide" href="environments.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Solving Models with the Maliar Method - scikit-agent 0.1.dev718+g64905d365</title>
+        <title>Solving Models with the Maliar Method - scikit-agent 0.1.dev720+gdcc3eb66e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev718+g64905d365</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev720+gdcc3eb66e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -288,37 +288,76 @@
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="solving-models-with-the-maliar-method">
 <h1>Solving Models with the Maliar Method<a class="headerlink" href="#solving-models-with-the-maliar-method" title="Link to this heading">¶</a></h1>
-<p>Many dynamic programs have no closed-form solution, and discretizing the state
-space scales badly as states accumulate. The Maliar method (Maliar, Maliar, and
-Winant 2021) sidesteps both problems: it represents the decision rule as a
-neural network and turns the search for a policy into minimizing an
-equation-residual loss over a sample of states. This page explains what the
-method minimizes, the two residual losses scikit-agent provides, and how to run
-the training loop.</p>
+<p>Grid-based methods such as <a class="reference internal" href="algorithms.html"><span class="doc">value backwards induction</span></a> solve a
+model by covering its state space with points, and that approach collapses as
+states accumulate. Ten points per state is 100 points in two states, and a
+million in six. Refining the grid or adding a state multiplies the work rather
+than adding to it, which is the curse of dimensionality.</p>
+<p>The Maliar method (Maliar, Maliar, and Winant 2021) gets around it in two ways.
+It represents the decision rule as a neural network, so the policy is stored in
+a fixed set of weights instead of a structure that grows with the state space.
+It then redraws its own training states by simulating the model forward, so the
+network keeps being retrained on the region the model actually visits rather
+than on whatever region a fixed grid happened to cover.</p>
+<p>The method is also model-based, and that separates it from the
+reinforcement-learning approaches described in <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a>. An RL
+algorithm such as PPO treats the model as a black box, learning only from
+rewards it observes by interacting with it. The Maliar method reads the model’s
+equations directly and differentiates them, so what it drives to zero is the
+model’s own optimality condition rather than a return estimated from sampled
+experience.</p>
+<p>This page explains what the method minimizes, the two residual losses
+scikit-agent provides, and how to run the training loop.</p>
 <section id="the-all-in-one-expectation-operator">
 <h2>The All-in-One Expectation Operator<a class="headerlink" href="#the-all-in-one-expectation-operator" title="Link to this heading">¶</a></h2>
-<p>A dynamic optimality condition holds in expectation over next period’s shocks.
-Write <span class="math notranslate nohighlight">\(f\)</span> for the residual of that condition, the quantity that is zero when the
-policy is optimal. We want to drive the squared expected residual
-<span class="math notranslate nohighlight">\((\mathbb{E}[f])^2\)</span> to zero across the sampled states.</p>
-<p>The obvious estimator, squaring a single simulated residual, is biased. Because
-<span class="math notranslate nohighlight">\(\mathbb{E}[f^2] = (\mathbb{E}[f])^2 + \mathrm{Var}(f)\)</span>, minimizing it rewards a
-policy for suppressing the residual’s sampling noise rather than for satisfying
-the condition in expectation, and that extra variance term distorts the solution
-of any stochastic model. The Maliar method instead draws two independent shock
-realizations, evaluates the residual at each while holding the current control
-fixed, and multiplies the two. Call these residuals <span class="math notranslate nohighlight">\(f_a\)</span> and <span class="math notranslate nohighlight">\(f_b\)</span>; because the
-draws are independent,</p>
+<p>Training a network means minimizing a number, so the first question is what
+number measures a policy’s badness. This section builds that number. It takes
+one step that is not the obvious one, and the reason is worth following, because
+skipping it silently produces the wrong answer.</p>
+<p>Start with what the model gives you. An optimality condition here is a formula
+that takes a state, the choice made in it, and one random draw of next period’s
+shocks, and returns a number called the <em>residual</em>, written <span class="math notranslate nohighlight">\(f\)</span>. The condition
+does not say that <span class="math notranslate nohighlight">\(f\)</span> is zero for each individual draw. It says <span class="math notranslate nohighlight">\(f\)</span> is zero <em>on
+average</em> across draws. So the quantity to drive to zero is <span class="math notranslate nohighlight">\((\mathbb{E}[f])^2\)</span>,
+the squared average residual, and the square is there so overshooting counts as
+badly as undershooting.</p>
+<p>Now the trap. The obvious way to estimate this is to simulate one shock draw and
+square the residual you get. That does not estimate <span class="math notranslate nohighlight">\((\mathbb{E}[f])^2\)</span>; it
+estimates <span class="math notranslate nohighlight">\(\mathbb{E}[f^2]\)</span>, and the two differ by a term that is positive
+whenever the residual genuinely varies across draws:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+\mathbb{E}[f^2] = (\mathbb{E}[f])^2 + \mathrm{Var}(f).
+\]</div>
+</div>
+<p>An optimizer handed <span class="math notranslate nohighlight">\(\mathbb{E}[f^2]\)</span> can lower it two ways: by satisfying the
+condition on average, which is the intent, or by making the residual vary less
+from draw to draw, which is not. Nothing stops it from buying the cheaper of the
+two. The result is a policy tuned partly to suppress the model’s own randomness,
+and in any model with real uncertainty that policy is wrong.</p>
+<p>The fix costs one extra shock draw. Draw next period’s shocks twice,
+independently, evaluate the residual under each while holding this period’s
+control fixed, and multiply the two results rather than squaring either one.
+Call them <span class="math notranslate nohighlight">\(f_a\)</span> and <span class="math notranslate nohighlight">\(f_b\)</span>. Because the draws are independent, the expectation of
+their product splits into the product of their expectations:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
 \mathbb{E}[f_a\, f_b] = \mathbb{E}[f_a]\,\mathbb{E}[f_b] = (\mathbb{E}[f])^2,
 \]</div>
 </div>
-<p>so the product is an unbiased estimator of the target. scikit-agent calls this
-the “all-in-one” operator. The two draws enter the training grid under a
-two-copy naming convention: a shock <code class="docutils literal notranslate"><span class="pre">psi</span></code> appears as <code class="docutils literal notranslate"><span class="pre">psi_0</span></code> and <code class="docutils literal notranslate"><span class="pre">psi_1</span></code>, and
-<code class="docutils literal notranslate"><span class="pre">shock_copies=2</span></code> requests them.</p>
+<p>which is the target on the nose, with no variance term riding along.
+scikit-agent calls this the “all-in-one” operator. In a deterministic model the
+two draws coincide, the product reduces to <span class="math notranslate nohighlight">\(f^2\)</span>, and nothing is lost, since
+there is no sampling noise to be fooled by in the first place.</p>
+<p>One piece of mechanics is easy to misread. The training grid does carry two
+copies of every shock, so a shock <code class="docutils literal notranslate"><span class="pre">psi</span></code> appears as <code class="docutils literal notranslate"><span class="pre">psi_0</span></code> and <code class="docutils literal notranslate"><span class="pre">psi_1</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">shock_copies=2</span></code> is what requests them. Those two copies are the period <span class="math notranslate nohighlight">\(t\)</span> and
+period <span class="math notranslate nohighlight">\(t+1\)</span> shocks, though, not the all-in-one pair: the residual spans two
+periods and needs a draw for each. The second next-period draw, the one that
+makes <span class="math notranslate nohighlight">\(f_b\)</span> independent of <span class="math notranslate nohighlight">\(f_a\)</span>, is generated inside the loss itself, so you
+never supply it.</p>
 </section>
 <section id="two-residual-losses">
 <h2>Two Residual Losses<a class="headerlink" href="#two-residual-losses" title="Link to this heading">¶</a></h2>
@@ -327,23 +366,41 @@ optimality condition the residual <span class="math notranslate nohighlight">\(f
 <section id="the-euler-loss">
 <h3>The Euler Loss<a class="headerlink" href="#the-euler-loss" title="Link to this heading">¶</a></h3>
 <p>The Euler loss, <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>, encodes the
-first-order condition. For a consumption-saving model it equates the marginal
-utility of consuming today with the discounted expected marginal utility of
-consuming tomorrow. Let <span class="math notranslate nohighlight">\(u\)</span> be the utility function, <span class="math notranslate nohighlight">\(c_t\)</span> consumption in period
-<span class="math notranslate nohighlight">\(t\)</span>, <span class="math notranslate nohighlight">\(\beta\)</span> the discount factor (read from the model’s discount variable), and
-<span class="math notranslate nohighlight">\(R\)</span> the gross return on savings. The residual is</p>
+first-order condition of the Bellman equation, which ties marginal rewards in
+adjacent periods together. It applies to any block, not just consumption models,
+so it is worth seeing in the general form the solver actually differentiates.
+Let <span class="math notranslate nohighlight">\(u\)</span> be the period reward, <span class="math notranslate nohighlight">\(x_t\)</span> a control, <span class="math notranslate nohighlight">\(s_{t+1}\)</span> the next-period arrival
+states, <span class="math notranslate nohighlight">\(m'\)</span> the pre-decision states, and <span class="math notranslate nohighlight">\(\beta\)</span> the discount factor (read from
+the model’s discount variable). The residual is</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
-f = u'(c_t) - \beta\, \mathbb{E}_t\!\left[\,R\, u'(c_{t+1})\,\right],
+f = u'(x_t) + \beta\, u'(x_{t+1}) \sum_s
+    \frac{\partial s_{t+1}}{\partial x_t}\,
+    \frac{\partial m'}{\partial s_{t+1}},
 \]</div>
 </div>
-<p>which is zero at the optimum. A first-order condition constrains the <em>slope</em> of
-the policy, how the control responds to the state, but leaves its overall
-<em>level</em> unpinned. Training on the Euler residual alone can therefore learn a
-policy of the right shape sitting at the wrong height. The loss needs only a
-decision rule, so it pairs with a policy-only network,
-<a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a>.</p>
+<p>and the policy is optimal where <span class="math notranslate nohighlight">\(\mathbb{E}_t[f] = 0\)</span>. The sum runs over every
+channel by which today’s control moves tomorrow’s states, and each derivative in
+it is taken from the block’s own dynamics, so nothing has to be derived by hand
+for a new model.</p>
+<p>Consumption-saving is the special case most readers will recognize. The control
+is consumption <span class="math notranslate nohighlight">\(c_t\)</span>, the reward is utility, and the single channel to next
+period runs through savings earning a gross return <span class="math notranslate nohighlight">\(R\)</span>. Spending one more unit
+today leaves one less unit of assets, so the derivative product in the sum is
+just <span class="math notranslate nohighlight">\(-R\)</span>, and the general residual collapses to the textbook Euler equation</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+f = u'(c_t) - \beta\, R\, u'(c_{t+1}),
+\]</div>
+</div>
+<p>marginal utility today set against discounted marginal utility tomorrow.</p>
+<p>A first-order condition constrains the <em>slope</em> of the policy, how the control
+responds to the state, but leaves its overall <em>level</em> unpinned. Training on the
+Euler residual alone can therefore learn a policy of the right shape sitting at
+the wrong height. The loss needs only a decision rule, so it pairs with a
+policy-only network, <a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a>.</p>
 </section>
 <section id="the-bellman-loss">
 <h3>The Bellman Loss<a class="headerlink" href="#the-bellman-loss" title="Link to this heading">¶</a></h3>
@@ -423,16 +480,47 @@ parameters settle or a maximum iteration count is reached.</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Resampling is what makes this more than gradient descent on a fixed grid:
-trained only on the initial grid, the network would learn the policy where the
-grid happens to sit, not where the model actually spends its time. The loop
-returns the trained policy network and the final panel of training states.</p>
+<p>The loop returns the trained policy network and the final panel of training
+states, the latter being where resampling has carried the training distribution
+by the time training stops.</p>
+<section id="setting-the-arguments">
+<h3>Setting the Arguments<a class="headerlink" href="#setting-the-arguments" title="Link to this heading">¶</a></h3>
+<p>One of these arguments is fixed by the method and the rest are genuinely tuned,
+which is a useful distinction when a run misbehaves.</p>
+<p><code class="docutils literal notranslate"><span class="pre">shock_copies</span></code> is the fixed one. It sets how many independent realizations of
+each shock the training grid carries, named <code class="docutils literal notranslate"><span class="pre">psi_0</span></code>, <code class="docutils literal notranslate"><span class="pre">psi_1</span></code>, and so on. Both
+losses shipped with scikit-agent are two-period residuals, comparing period <span class="math notranslate nohighlight">\(t\)</span>
+against period <span class="math notranslate nohighlight">\(t+1\)</span>, so both require exactly the two copies that
+<code class="docutils literal notranslate"><span class="pre">shock_copies=2</span></code> supplies. In a model with shocks, passing fewer raises a
+<code class="docutils literal notranslate"><span class="pre">KeyError</span></code> naming the shock keys it could not find. This is not a knob that
+trades accuracy against cost. Raising it above 2 just draws shocks the loss
+never reads, and the extra next-period draw behind the all-in-one product is
+generated inside the loss rather than requested here. A custom loss spanning
+more periods would state its own requirement.</p>
+<p>The remaining arguments are ordinary training knobs. Start each one small,
+confirm the model is wired up correctly, and scale up from there:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">network_width</span></code> is the hidden-layer width, and it sets how much curvature the
+policy can represent. Widen it when the learned rule looks flatter than the
+true one.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> and <code class="docutils literal notranslate"><span class="pre">tolerance</span></code> govern the outer loop, which stops when
+either the parameters or the loss move by less than <code class="docutils literal notranslate"><span class="pre">tolerance</span></code> between
+iterations, or when the iteration cap is reached. Which of the two ended a run
+matters: stopping at the cap means training had not converged, so raise the
+cap before trusting the result.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simulation_steps</span></code> sets how far the states are simulated forward between
+resampling rounds. Larger values reach more of the state space per round, at
+proportionate cost.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">epochs_per_iteration</span></code> and <code class="docutils literal notranslate"><span class="pre">lr</span></code> are the inner gradient-descent budget and step
+size, and behave as they do in any other network training loop.</p></li>
+</ul>
 <p>Because <a class="reference internal" href="../api/algorithms.html#skagent.algos.maliar.maliar_training_loop" title="skagent.algos.maliar.maliar_training_loop"><code class="xref py py-func docutils literal notranslate"><span class="pre">maliar_training_loop()</span></code></a> builds a
 policy-only network internally, it pairs naturally with the Euler loss. To train
 with a value head instead, build a <a class="reference internal" href="../api/algorithms.html#skagent.ann.BlockPolicyValueNet" title="skagent.ann.BlockPolicyValueNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></a>
 and drive it with <a class="reference internal" href="../api/algorithms.html#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">train_block_nn()</span></code></a> and
 <a class="reference internal" href="../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a> directly, resampling the states
 between batches yourself. The known-solution example below does exactly this.</p>
+</section>
 </section>
 <section id="constrained-controls">
 <h2>Constrained Controls<a class="headerlink" href="#constrained-controls" title="Link to this heading">¶</a></h2>
@@ -531,7 +619,10 @@ percent.</p></li>
 <li><a class="reference internal" href="#choosing-between-them">Choosing Between Them</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-the-training-loop">Running the Training Loop</a></li>
+<li><a class="reference internal" href="#running-the-training-loop">Running the Training Loop</a><ul>
+<li><a class="reference internal" href="#setting-the-arguments">Setting the Arguments</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#constrained-controls">Constrained Controls</a></li>
 <li><a class="reference internal" href="#worked-examples">Worked Examples</a></li>
 </ul>
@@ -545,7 +636,7 @@ percent.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=200cd56d"></script>
+</div><script src="../_static/documentation_options.js?v=c0b98247"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
