@@ -619,7 +619,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         # the self-built continuation is then extrapolated into the V -> -inf
         # wall below the grid and the loop settles on that flat, wrong fixed
         # point (c ~ 35). The flag confines a' to the grid, so the continuation
-        # is only interpolated (design §8; see i208_pr5_d2_u2_findings.md).
+        # is only interpolated (design §8).
         #
         # The grid floor is the slack artificial borrowing limit: a fraction of
         # human wealth H, low enough not to bind at the tested interior states
