@@ -25,7 +25,7 @@ from .ann import Net, BlockPolicyNet
 from .simulation.monte_carlo import MonteCarloSimulator
 
 # Algorithm imports
-from .algos import vbi
+from .algos import vfi
 from .algos import maliar
 
 # Utility functions
@@ -48,7 +48,7 @@ __all__ = [
     # Simulation
     "MonteCarloSimulator",
     # Modules
-    "vbi",
+    "vfi",
     "maliar",
     "utils",
     "parser",

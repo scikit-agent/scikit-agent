@@ -12,8 +12,8 @@ rest of the toolkit:
 - **Maliar-style deep learning methods**: Neural network solvers following
   Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
   objective function
-- **Value backwards induction (VBI)**: Classical dynamic programming via
-  backwards induction on a grid
+- **Value function iteration (VFI)**: Classical dynamic programming via value
+  function iteration on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
   the model, using established RL libraries (see below)
 
@@ -266,7 +266,7 @@ decision rule, suitable for passing to `reward_function` or to simulation.
 ## Value Function Iteration
 
 Classical dynamic programming for recurring problems, implemented as backwards
-induction over a block's value function. See {py:func}`skagent.algos.vbi.solve`.
+induction over a block's value function. See {py:func}`skagent.algos.vfi.solve`.
 The neural Bellman- and Euler-equation losses
 ({py:class}`~skagent.loss.BellmanEquationLoss`,
 {py:class}`~skagent.loss.EulerEquationLoss`) provide deep-learning alternatives
