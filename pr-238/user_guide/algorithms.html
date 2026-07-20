@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.dev651+g9cc652b6a</title>
+        <title>Algorithms Guide - scikit-agent 0.1.dev718+g64905d365</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -16,7 +16,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=b485e546" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=83e65f8c" />
     
     
 
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev651+g9cc652b6a</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev718+g64905d365</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -290,11 +290,11 @@
 <h1>Algorithms Guide<a class="headerlink" href="#algorithms-guide" title="Link to this heading">¶</a></h1>
 <p>This guide covers the solution algorithms and optimization methods available in
 scikit-agent.</p>
-<section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>scikit-agent offers several ways to turn a <a class="reference internal" href="blocks.html"><span class="doc">block</span></a> into a decision
-rule. Which one fits depends on whether the problem is a single period, a fixed
-horizon, or a recurring problem with a continuation value:</p>
+<section id="solution-methods">
+<h2>Solution methods<a class="headerlink" href="#solution-methods" title="Link to this heading">¶</a></h2>
+<p>scikit-agent offers several families of solution method, each producing a
+standard <code class="docutils literal notranslate"><span class="pre">{control:</span> <span class="pre">callable}</span></code> decision rule that plugs into simulators and the
+rest of the toolkit:</p>
 <ul class="simple">
 <li><p><strong>Maliar-style deep learning methods</strong>: Neural network solvers following
 Maliar, Maliar, and Winant (2021), which train on an all-in-one objective; see
@@ -304,6 +304,7 @@ backwards induction on a grid</p></li>
 <li><p><strong>Reinforcement Learning</strong>: Learn a policy by trial-and-error interaction with
 the model, using established RL libraries (see below)</p></li>
 </ul>
+<p>The rest of this guide covers these in turn.</p>
 </section>
 <section id="reinforcement-learning">
 <h2>Reinforcement Learning<a class="headerlink" href="#reinforcement-learning" title="Link to this heading">¶</a></h2>
@@ -385,7 +386,9 @@ rewards).</p>
 </pre></div>
 </div>
 <p>In D-2 the agent arrives with assets <code class="docutils literal notranslate"><span class="pre">a</span></code>, cash-on-hand <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">R*a</span> <span class="pre">+</span> <span class="pre">y</span></code> is formed,
-and the single control <code class="docutils literal notranslate"><span class="pre">c</span></code> (consumption) is chosen subject to <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">&lt;=</span> <span class="pre">m</span></code>.</p>
+and the single control <code class="docutils literal notranslate"><span class="pre">c</span></code> (consumption) is chosen subject to the natural
+borrowing limit <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">&lt;=</span> <span class="pre">m</span> <span class="pre">+</span> <span class="pre">H</span></code>, where <code class="docutils literal notranslate"><span class="pre">H</span> <span class="pre">=</span> <span class="pre">y/(R-1)</span></code> is human wealth (the agent may
+borrow against future income).</p>
 </section>
 <section id="build-the-grid-of-starting-points">
 <h3>2. Build the grid of starting points<a class="headerlink" href="#build-the-grid-of-starting-points" title="Link to this heading">¶</a></h3>
@@ -539,17 +542,6 @@ The neural Bellman- and Euler-equation losses
 <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>) provide deep-learning alternatives
 for the recurring case; the <a class="reference internal" href="maliar.html"><span class="doc">Maliar method</span></a> page explains those
 losses and the training loop that fits them.</p>
-</section>
-<section id="performance-considerations">
-<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>Start with a narrow network (<code class="docutils literal notranslate"><span class="pre">width=8</span></code>–<code class="docutils literal notranslate"><span class="pre">16</span></code>) and few epochs to confirm the
-model is set up correctly, then scale up.</p></li>
-<li><p>Training is over the grid you supply; a coarse grid trains faster but
-generalizes less well off-grid.</p></li>
-<li><p>Set seeds (<code class="docutils literal notranslate"><span class="pre">torch.manual_seed</span></code> / <code class="docutils literal notranslate"><span class="pre">numpy.random.seed</span></code>) for reproducible runs,
-and construct shocks with an explicit <code class="docutils literal notranslate"><span class="pre">rng</span></code> for deterministic shock draws.</p></li>
-</ul>
 <hr class="docutils" />
 <p><em>For a runnable, end-to-end version of these workflows, see the
 <a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms examples gallery</span></a>.</em></p>
@@ -619,7 +611,7 @@ and construct shocks with an explicit <code class="docutils literal notranslate"
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Algorithms Guide</a><ul>
-<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#solution-methods">Solution methods</a></li>
 <li><a class="reference internal" href="#reinforcement-learning">Reinforcement Learning</a></li>
 <li><a class="reference internal" href="#solving-a-block-directly">Solving a block directly</a><ul>
 <li><a class="reference internal" href="#load-a-model-and-wrap-it">1. Load a model and wrap it</a></li>
@@ -631,7 +623,6 @@ and construct shocks with an explicit <code class="docutils literal notranslate"
 </li>
 <li><a class="reference internal" href="#blocks-with-multiple-controls">Blocks with multiple controls</a></li>
 <li><a class="reference internal" href="#value-function-iteration">Value Function Iteration</a></li>
-<li><a class="reference internal" href="#performance-considerations">Performance Considerations</a></li>
 </ul>
 </li>
 </ul>
@@ -643,7 +634,7 @@ and construct shocks with an explicit <code class="docutils literal notranslate"
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=83aa10a1"></script>
+</div><script src="../_static/documentation_options.js?v=200cd56d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

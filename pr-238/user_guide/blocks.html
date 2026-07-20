@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation Guide" href="simulation.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.1.dev651+g9cc652b6a</title>
+        <title>Block Guide - scikit-agent 0.1.dev718+g64905d365</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -16,7 +16,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=b485e546" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=83e65f8c" />
     
     
 
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev651+g9cc652b6a</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev718+g64905d365</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -316,7 +316,6 @@ of each of their control variables.</p>
 <em>utility</em> or incentive.</p>
 <p>scikit-agent models normally involve agents who are trying to maximize their
 reward through their choices.</p>
-<!--- - **Aggregate**: Represents aggregate (economy-wide) shocks --->
 </section>
 <section id="dblocks">
 <h3>DBlocks<a class="headerlink" href="#dblocks" title="Link to this heading">¶</a></h3>
@@ -371,10 +370,8 @@ consumption-saving problem:</p>
 </div>
 <p>Here, the agent can choose its level of consumption <span class="math notranslate nohighlight">\(c\)</span> given an <em>information
 set</em> <span class="math notranslate nohighlight">\(m\)</span>. It receives <span class="math notranslate nohighlight">\(u\)</span> as a reward.</p>
-<!--- 2025-10-15 edits stopped here--->
 <section id="arrival-states">
 <h4>Arrival states<a class="headerlink" href="#arrival-states" title="Link to this heading">¶</a></h4>
-<!--- More block features here --->
 <p>Dynamic equations are interpreted in sequence. Each variable is assigned based
 on the values of other variables in scope. If a variable is referenced in a
 dynamic equation before it is assigned, it is an <em>arrival state</em>, or <em>lag
@@ -463,7 +460,6 @@ then builds the actual distributions:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p><em>TODO: Discussion of how the blocks connect – arrival states, again.</em></p>
 </section>
 <section id="bellman-periods">
 <h3>Bellman Periods<a class="headerlink" href="#bellman-periods" title="Link to this heading">¶</a></h3>
@@ -479,130 +475,6 @@ loss functions consume:</p>
 </div>
 <p>See the <a class="reference internal" href="../api/bellman.html"><span class="doc">Bellman Periods</span></a> reference for the period timing notation (arrival
 states, shocks, pre-decision states, controls, and rewards) and the full API.</p>
-<!---
-## Building Custom Models
-
-### Step-by-Step Model Creation
-
-Let's build a portfolio choice model from scratch:
-
-#### Step 1: Define the Economic Problem
-
-We want to model an agent who:
-
-1. Receives labor income with shocks
-2. Chooses consumption and savings
-3. Allocates savings between safe and risky assets
-4. Maximizes expected utility
-
-#### Step 2: Set Up Shocks
-
-```python
-from skagent.distributions import Lognormal, MeanOneLogNormal
-
-# Define all random variables
-shocks = {
-    "theta": (MeanOneLogNormal, {"sigma": "TranShkStd"}),  # Transitory income shock
-    "psi": (MeanOneLogNormal, {"sigma": "PermShkStd"}),  # Permanent income shock
-    "risky_return": (
-        Lognormal,
-        {"mean": "EqP", "std": "RiskyStd"},
-    ),  # Risky asset return
-}
-```
-
-#### Step 3: Define State Transitions
-
-```python
-# Economic dynamics
-dynamics = {
-    # Income process
-    "y": lambda p, theta: p * theta,
-    "p": lambda p_prev, psi, PermGroFac: p_prev * psi * PermGroFac,
-    # Portfolio returns
-    "R_portfolio": lambda alpha, Rfree, risky_return: (
-        Rfree + alpha * (risky_return - Rfree)
-    ),
-    # Market resources
-    "b": lambda a_prev, R_portfolio: a_prev * R_portfolio,
-    "m": lambda b, y: b + y,
-    # Decisions (controls)
-    "c": ska.Control(["m"], upper_bound=lambda m: m),
-    "alpha": ska.Control(["a"], lower_bound=0.0, upper_bound=1.0),
-    # End-of-period states
-    "a": lambda m, c: m - c,
-    # Utility
-    "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
-}
-
-# Create the block
-portfolio_block = ska.DBlock(
-    name="portfolio_choice", shocks=shocks, dynamics=dynamics, reward={"u": "investor"}
-)
-```
-
---->
-<!---
-## Working with Predefined Models
-
-scikit-agent includes several predefined models in `skagent.models`:
-
-### Consumer Models
-
-```python
-from skagent.models.consumer import (
-    consumption_block,
-    consumption_block_normalized,
-    portfolio_block,
-    calibration,
-)
-
-# Use predefined consumption-saving model
-print("Available dynamics:")
-for var, eq in consumption_block.dynamics.items():
-    print(f"  {var}: {eq}")
-```
-
-### Benchmark Models
-
-```python
-from skagent.models.benchmarks import U6HabitSolver
-
-# Access benchmark problem specifications
-solver = U6HabitSolver()
-```
-
-### Perfect Foresight Models
-
-```python
-from skagent.models import perfect_foresight
-
-# Simple deterministic model
-pf_model = perfect_foresight.get_perfect_foresight_model()
-```
-
---->
-<!---
-### Aggregate Shocks
-
-Model economy-wide shocks that affect all agents identically:
-
-```python
-aggregate_shock_block = ska.DBlock(
-    shocks={
-        "TFP": ska.Aggregate(
-            Lognormal(mean=1.0, std=0.02)
-        ),  # Total factor productivity
-        "theta": MeanOneLogNormal(sigma=0.1),  # Idiosyncratic shock
-    },
-    dynamics={
-        "Y": lambda TFP, L: TFP * L,  # Aggregate production
-        "w": lambda TFP: TFP,  # Wage rate
-        "y": lambda w, theta: w * theta,  # Individual income
-    },
-)
-```
---->
 </section>
 </section>
 <section id="model-validation-and-inspection">
@@ -643,44 +515,6 @@ arrival states and realized shock values:</p>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Post-transition state:&quot;</span><span class="p">,</span> <span class="n">post_state</span><span class="p">)</span>
 </pre></div>
 </div>
-<!---
-### Code Organization
-
-```python
-# Organize related models in modules
-# my_models.py
-
-from skagent import DBlock, Control
-from skagent.distributions import MeanOneLogNormal
-
-# Standard calibration for consumption models
-CONSUMPTION_CALIBRATION = {
-    "CRRA": 2.0,
-    "DiscFac": 0.96,
-    "Rfree": 1.03,
-    # ... other parameters
-}
-
-
-def make_consumption_block(calibration=None):
-    """Factory function for consumption blocks."""
-    if calibration is None:
-        calibration = CONSUMPTION_CALIBRATION
-
-    block = DBlock(
-        name="consumption",
-        shocks={"theta": (MeanOneLogNormal, {"sigma": "TranShkStd"})},
-        dynamics={
-            "c": Control(["m"]),
-            "u": "c**(1-CRRA)/(1-CRRA)",
-            # ... other dynamics
-        },
-    )
-
-    block.construct_shocks(calibration)
-    return block
-```
---->
 </section>
 </section>
 <section id="next-steps">
@@ -833,7 +667,7 @@ maintaining clear economic interpretation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=83aa10a1"></script>
+</div><script src="../_static/documentation_options.js?v=200cd56d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

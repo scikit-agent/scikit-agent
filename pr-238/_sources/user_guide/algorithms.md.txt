@@ -3,11 +3,11 @@
 This guide covers the solution algorithms and optimization methods available in
 scikit-agent.
 
-## Overview
+## Solution methods
 
-scikit-agent offers several ways to turn a {doc}`block <blocks>` into a decision
-rule. Which one fits depends on whether the problem is a single period, a fixed
-horizon, or a recurring problem with a continuation value:
+scikit-agent offers several families of solution method, each producing a
+standard `{control: callable}` decision rule that plugs into simulators and the
+rest of the toolkit:
 
 - **Maliar-style deep learning methods**: Neural network solvers following
   Maliar, Maliar, and Winant (2021), which train on an all-in-one objective; see
@@ -16,6 +16,8 @@ horizon, or a recurring problem with a continuation value:
   backwards induction on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
   the model, using established RL libraries (see below)
+
+The rest of this guide covers these in turn.
 
 ## Reinforcement Learning
 
@@ -106,7 +108,9 @@ bp = bellman.BellmanPeriod(block_d2, "DiscFac", calibration)
 ```
 
 In D-2 the agent arrives with assets `a`, cash-on-hand `m = R*a + y` is formed,
-and the single control `c` (consumption) is chosen subject to `c <= m`.
+and the single control `c` (consumption) is chosen subject to the natural
+borrowing limit `c <= m + H`, where `H = y/(R-1)` is human wealth (the agent may
+borrow against future income).
 
 ### 2. Build the grid of starting points
 
@@ -268,15 +272,6 @@ The neural Bellman- and Euler-equation losses
 {py:class}`~skagent.loss.EulerEquationLoss`) provide deep-learning alternatives
 for the recurring case; the {doc}`Maliar method <maliar>` page explains those
 losses and the training loop that fits them.
-
-## Performance Considerations
-
-- Start with a narrow network (`width=8`–`16`) and few epochs to confirm the
-  model is set up correctly, then scale up.
-- Training is over the grid you supply; a coarse grid trains faster but
-  generalizes less well off-grid.
-- Set seeds (`torch.manual_seed` / `numpy.random.seed`) for reproducible runs,
-  and construct shocks with an explicit `rng` for deterministic shock draws.
 
 ---
 

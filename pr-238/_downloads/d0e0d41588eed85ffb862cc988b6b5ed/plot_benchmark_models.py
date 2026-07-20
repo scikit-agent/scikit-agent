@@ -3,12 +3,12 @@ r"""
 Benchmark Consumption Models
 ##############################
 
-A guided tour of :py:mod:`skagent.models.benchmarks`. Consumption economics
-asks how a household should split each period's resources between spending now
-and saving for later. The closed-form policies in this registry are the classic
-answers, and they retrace the theory in roughly the order the field discovered
-it. Each model teaches a fact the previous ones could not. Reading from top to
-bottom:
+A guided tour of scikit-agent's benchmark consumption models. Consumption
+economics asks how a household should split each period's resources between
+spending now and saving for later. The closed-form policies in this registry
+are the classic answers, and they retrace the theory in roughly the order the
+field discovered it. Each model teaches a fact the previous ones could not.
+Reading from top to bottom:
 
 #. **Finite horizons fade.** Once the distance to the terminal date
    :math:`T - t` is large, the finite-horizon rule is indistinguishable from
@@ -32,7 +32,8 @@ The short registry keys in the code and figure labels below (``D-1`` through
 ``U-3``) are internal identifiers; the section titles give the names the models
 actually go by.
 
-This example is the runnable companion to :doc:`/user_guide/benchmark_models`.
+The models live in :py:mod:`skagent.models.benchmarks`; this example is the
+runnable companion to :doc:`/user_guide/benchmark_models`.
 The code is intentionally verbose; production code should compose helpers,
 but here every step is written out so the reader can follow the algebra.
 
@@ -57,6 +58,14 @@ fixed meaning throughout every model on this page:
 
 The normalized models (U-2, U-3) additionally use lowercase :math:`m, c, a`
 for ratios to permanent income :math:`P_t`.
+
+Because a perfect-foresight agent can borrow against future income, the
+deterministic models (D-2, D-3) are feasible up to total wealth,
+:math:`c_t \le m_t + H_t` (the natural borrowing limit :math:`A_t \ge -H_t`),
+not merely cash-on-hand. The limit tightens to :math:`c_t \le m_t` only when the
+worst-case future income is zero, i.e. with income uncertainty whose support
+reaches zero (U-3) or a borrowing constraint imposed by construction (D-4); that
+binding constraint is what forecloses a closed form.
 
 References
 ==========

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Block Guide" href="blocks.html"><link rel="prev" title="Installation" href="installation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Quickstart Guide - scikit-agent 0.1.dev651+g9cc652b6a</title>
+        <title>Quickstart Guide - scikit-agent 0.1.dev718+g64905d365</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -16,7 +16,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=b485e546" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=83e65f8c" />
     
     
 
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev651+g9cc652b6a</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev718+g64905d365</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -288,215 +288,238 @@
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="quickstart-guide">
 <h1>Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Link to this heading">¶</a></h1>
-<p>Get up and running with scikit-agent in minutes. This guide covers the basic
-concepts and shows you how to create, solve, and simulate your first economic
-model.</p>
+<p>Get up and running with scikit-agent in minutes. This guide takes you through
+the full loop: build a model, simulate it, and then <strong>solve</strong> it for an optimal
+policy.</p>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
-<p>First, install scikit-agent:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>scikit-agent
 </pre></div>
 </div>
-<p>For development installation:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/scikit-agent/scikit-agent.git
-<span class="nb">cd</span><span class="w"> </span>scikit-agent
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev,docs]&quot;</span>
-</pre></div>
-</div>
+<p>See the <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a> guide for development installs and system
+dependencies.</p>
 </section>
 <section id="core-concepts">
 <h2>Core Concepts<a class="headerlink" href="#core-concepts" title="Link to this heading">¶</a></h2>
-<p>scikit-agent is built around several key concepts:</p>
-<section id="dblock-dynamic-block">
-<h3>DBlock (Dynamic Block)<a class="headerlink" href="#dblock-dynamic-block" title="Link to this heading">¶</a></h3>
-<p>A <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> represents a “block” of model behavior with:</p>
+<p>scikit-agent is built around a few key objects:</p>
 <ul class="simple">
-<li><p><strong>Shocks</strong>: Random variables that affect the model</p></li>
-<li><p><strong>Dynamics</strong>: Equations describing how variables evolve</p></li>
-<li><p><strong>Controls</strong>: Decision variables that agents optimize</p></li>
-<li><p><strong>Rewards</strong>: Objective functions that agents maximize</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">DBlock</span></code> (Dynamic Block)</strong> — one period of model behavior, defined by its
+<strong>shocks</strong> (random variables), <strong>dynamics</strong> (transition equations),
+<strong>controls</strong> (decision variables agents choose), and <strong>rewards</strong> (what agents
+maximize).</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">RBlock</span></code> (Recursive Block)</strong> — several blocks chained together, e.g. to
+carry state from one period into the next.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></strong> — wraps a block with its discount variable and
+calibration, turning it into one period of a dynamic optimization problem.
+This is the object the solvers consume.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">Grid</span></code></strong> — a discretized set of states to solve or evaluate a model over.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">MonteCarloSimulator</span></code></strong> — generates synthetic panel data from a model and a
+set of decision rules.</p></li>
 </ul>
 </section>
-<section id="grid">
-<h3>Grid<a class="headerlink" href="#grid" title="Link to this heading">¶</a></h3>
-<p>A <code class="docutils literal notranslate"><span class="pre">Grid</span></code> represents discrete state spaces for numerical solutions.</p>
-</section>
-<section id="simulators">
-<h3>Simulators<a class="headerlink" href="#simulators" title="Link to this heading">¶</a></h3>
-<p>Monte Carlo simulation engines for analyzing model behavior.</p>
-</section>
-</section>
-<section id="your-first-model-consumption-saving">
-<h2>Your First Model: Consumption-Saving<a class="headerlink" href="#your-first-model-consumption-saving" title="Link to this heading">¶</a></h2>
-<p>Let’s create a simple consumption-saving model step by step.</p>
+<section id="simulate-a-prebuilt-model">
+<h2>Simulate a Prebuilt Model<a class="headerlink" href="#simulate-a-prebuilt-model" title="Link to this heading">¶</a></h2>
+<p>Let’s start with the consumption-saving model that ships with scikit-agent.</p>
 <section id="step-1-import-scikit-agent">
 <h3>Step 1: Import scikit-agent<a class="headerlink" href="#step-1-import-scikit-agent" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="kn">import</span> <span class="n">consumption_block</span><span class="p">,</span> <span class="n">cons_problem</span><span class="p">,</span> <span class="n">calibration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.consumer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">consumption_block_normalized</span><span class="p">,</span>
+    <span class="n">cons_problem</span><span class="p">,</span>
+    <span class="n">calibration</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="step-2-examine-the-pre-built-model">
-<h3>Step 2: Examine the Pre-built Model<a class="headerlink" href="#step-2-examine-the-pre-built-model" title="Link to this heading">¶</a></h3>
-<p>The consumption block defines a standard consumption-saving problem:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model dynamics:&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<section id="step-2-examine-the-model">
+<h3>Step 2: Examine the Model<a class="headerlink" href="#step-2-examine-the-model" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">consumption_block_normalized</span></code> describes a single period of a normalized
+consumption-saving problem — market resources <code class="docutils literal notranslate"><span class="pre">m</span></code> arrive, the agent chooses
+consumption <code class="docutils literal notranslate"><span class="pre">c</span></code>, and end-of-period assets <code class="docutils literal notranslate"><span class="pre">a</span></code> remain:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dynamics:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">consumption_block_normalized</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">eq</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Model shocks:&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">shock</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">shocks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">shock</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">dist</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Shocks:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">consumption_block_normalized</span><span class="o">.</span><span class="n">shocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
 </div>
-</section>
-<section id="step-3-set-up-model-parameters">
-<h3>Step 3: Set Up Model Parameters<a class="headerlink" href="#step-3-set-up-model-parameters" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use the default calibration or modify it</span>
-<span class="n">my_calibration</span> <span class="o">=</span> <span class="n">calibration</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="n">my_calibration</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-    <span class="p">{</span>
-        <span class="s2">&quot;DiscFac&quot;</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># Discount factor</span>
-        <span class="s2">&quot;CRRA&quot;</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span>  <span class="c1"># Risk aversion</span>
-        <span class="s2">&quot;R&quot;</span><span class="p">:</span> <span class="mf">1.04</span><span class="p">,</span>  <span class="c1"># Interest rate</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Calibration:&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">my_calibration</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="step-4-assemble-the-recursive-problem">
-<h3>Step 4: Assemble the Recursive Problem<a class="headerlink" href="#step-4-assemble-the-recursive-problem" title="Link to this heading">¶</a></h3>
-<p>A single <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> describes one period of behavior. To simulate over time, the
-end-of-period assets <code class="docutils literal notranslate"><span class="pre">a</span></code> must become next period’s capital <code class="docutils literal notranslate"><span class="pre">k</span></code>. The prebuilt
-<code class="docutils literal notranslate"><span class="pre">cons_problem</span></code> is an <code class="docutils literal notranslate"><span class="pre">RBlock</span></code> that chains a normalized consumption block with a
-small “tick” block doing exactly that:</p>
+<p>A single <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> is only one period. To simulate over time, end-of-period
+assets <code class="docutils literal notranslate"><span class="pre">a</span></code> must become next period’s capital <code class="docutils literal notranslate"><span class="pre">k</span></code>. The prebuilt <code class="docutils literal notranslate"><span class="pre">cons_problem</span></code> is
+an <code class="docutils literal notranslate"><span class="pre">RBlock</span></code> that chains the consumption block with a small “tick” block doing
+exactly that:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Recursive problem blocks:&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">cons_problem</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">block</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">get_dynamics</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">blk</span> <span class="ow">in</span> <span class="n">cons_problem</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">get_dynamics</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>There is no need to construct the shock distributions by hand; the simulator
 builds them from the calibration internally.</p>
 </section>
-<section id="step-5-create-a-simple-decision-rule">
-<h3>Step 5: Create a Simple Decision Rule<a class="headerlink" href="#step-5-create-a-simple-decision-rule" title="Link to this heading">¶</a></h3>
-<p>For this example, we’ll use a simple consumption rule (consume 90% of
-resources):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">simple_consumption_rule</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple rule: consume 90% of market resources&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">m</span>
-
-
-<span class="c1"># Wrap in the format expected by the simulator</span>
-<span class="n">decision_rules</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">simple_consumption_rule</span><span class="p">}</span>
+<section id="step-3-set-up-model-parameters">
+<h3>Step 3: Set Up Model Parameters<a class="headerlink" href="#step-3-set-up-model-parameters" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start from the default calibration and adjust a few parameters.</span>
+<span class="n">my_calibration</span> <span class="o">=</span> <span class="n">calibration</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">my_calibration</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;DiscFac&quot;</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># Discount factor</span>
+        <span class="s2">&quot;CRRA&quot;</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span>  <span class="c1"># Risk aversion</span>
+    <span class="p">}</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="step-6-run-a-simulation">
-<h3>Step 6: Run a Simulation<a class="headerlink" href="#step-6-run-a-simulation" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set up initial conditions</span>
-<span class="n">initial_conditions</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># Initial capital</span>
-<span class="p">}</span>
-
-<span class="c1"># Create simulator</span>
-<span class="n">simulator</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">MonteCarloSimulator</span><span class="p">(</span>
+<section id="step-4-simulate">
+<h3>Step 4: Simulate<a class="headerlink" href="#step-4-simulate" title="Link to this heading">¶</a></h3>
+<p>A <strong>decision rule</strong> maps an agent’s information to its choice. For now we supply
+a simple hand-picked rule — consume 90% of market resources — just to see the
+model run. (The next section replaces it with a rule a solver <em>finds</em>.)</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">simulator</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">MonteCarloSimulator</span><span class="p">(</span>
     <span class="n">calibration</span><span class="o">=</span><span class="n">my_calibration</span><span class="p">,</span>
     <span class="n">block</span><span class="o">=</span><span class="n">cons_problem</span><span class="p">,</span>
-    <span class="n">dr</span><span class="o">=</span><span class="n">decision_rules</span><span class="p">,</span>
-    <span class="n">initial</span><span class="o">=</span><span class="n">initial_conditions</span><span class="p">,</span>
+    <span class="n">dr</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">m</span><span class="p">},</span>  <span class="c1"># decision rule for the control `c`</span>
+    <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>  <span class="c1"># starting capital for every agent</span>
     <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># Run simulation</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running simulation...&quot;</span><span class="p">)</span>
 <span class="n">simulator</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">()</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
+<span class="n">history</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Simulation completed. History keys: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;History keys:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">history</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
 </div>
 </section>
-<section id="step-7-analyze-results">
-<h3>Step 7: Analyze Results<a class="headerlink" href="#step-7-analyze-results" title="Link to this heading">¶</a></h3>
+<section id="step-5-analyze-results">
+<h3>Step 5: Analyze Results<a class="headerlink" href="#step-5-analyze-results" title="Link to this heading">¶</a></h3>
+<p>Each entry of <code class="docutils literal notranslate"><span class="pre">simulator.history</span></code> is a NumPy array of shape
+<code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">agent_count)</span></code>, so averaging over <code class="docutils literal notranslate"><span class="pre">axis=1</span></code> gives the cross-agent mean at
+each period:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="c1"># Plot average consumption over time. The history values are numpy</span>
-<span class="c1"># arrays of shape (T_sim, agent_count).</span>
-<span class="k">if</span> <span class="s2">&quot;c&quot;</span> <span class="ow">in</span> <span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">:</span>
-    <span class="n">consumption_data</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span>
-    <span class="n">mean_consumption</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">consumption_data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">mean_consumption</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mean_consumption</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Average Consumption Over Time&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Period&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Consumption&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mean_consumption</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Average Consumption Over Time&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Period&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Consumption&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </section>
 </section>
-<section id="working-with-grids">
-<h2>Working with Grids<a class="headerlink" href="#working-with-grids" title="Link to this heading">¶</a></h2>
-<p>For more sophisticated solution methods, you’ll work with grids:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a grid for wealth</span>
-<span class="n">wealth_grid_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">}}</span>
+<section id="solve-for-an-optimal-policy">
+<h2>Solve for an Optimal Policy<a class="headerlink" href="#solve-for-an-optimal-policy" title="Link to this heading">¶</a></h2>
+<p>The rule above was picked by hand. The point of scikit-agent is to <em>solve</em> for
+the optimal one. scikit-agent offers several solution methods (see the
+<a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> guide); here we use the most direct: train a policy network to
+maximize the reward earned within a block.</p>
+<p>To see the machinery clearly, we use a deliberately tiny block whose optimal
+policy we already know. The agent chooses a control <code class="docutils literal notranslate"><span class="pre">c</span></code> to match a random shock
+<code class="docutils literal notranslate"><span class="pre">theta</span></code>, with reward <code class="docutils literal notranslate"><span class="pre">-(theta</span> <span class="pre">-</span> <span class="pre">c)**2</span></code>, so the optimum is simply <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">=</span> <span class="pre">theta</span></code>.
+Recovering that confirms the training loop works before you point it at a model
+whose answer you <em>don’t</em> know.</p>
+<section id="step-1-define-the-block-and-wrap-it">
+<h3>Step 1: Define the block and wrap it<a class="headerlink" href="#step-1-define-the-block-and-wrap-it" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.ann</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ann</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bellman</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.block</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">block</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.grid</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">grid</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skagent.loss</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">loss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Normal</span>
 
-<span class="n">wealth_grid</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">wealth_grid_config</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Grid shape: </span><span class="si">{</span><span class="n">wealth_grid</span><span class="o">.</span><span class="n">shape</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;First few wealth points: </span><span class="si">{</span><span class="n">wealth_grid</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">track_calibration</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}</span>
+
+<span class="n">track_block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;track the shock&quot;</span><span class="p">,</span>
+    <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Normal</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;mu&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})},</span>
+    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;theta&quot;</span><span class="p">]),</span>  <span class="c1"># may condition its choice on theta</span>
+        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">a</span> <span class="o">-</span> <span class="n">c</span> <span class="o">+</span> <span class="n">theta</span><span class="p">,</span>
+        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">theta</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="o">-</span><span class="p">((</span><span class="n">theta</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># maximized at c = theta</span>
+    <span class="p">},</span>
+    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;consumer&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="c1"># Wrap the block as one period of an optimization problem, naming its</span>
+<span class="c1"># discount variable.</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">track_block</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="n">track_calibration</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="neural-network-solutions">
-<h2>Neural Network Solutions<a class="headerlink" href="#neural-network-solutions" title="Link to this heading">¶</a></h2>
-<p>scikit-agent supports neural network-based solution methods. Policy networks are
-built on a <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code>, which wraps a block together with its discount
-variable and calibration:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
-
-<span class="c1"># Wrap the block as a Bellman period, then create a policy network</span>
-<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">consumption_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">my_calibration</span><span class="p">)</span>
-<span class="n">policy_net</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Neural network input size: </span><span class="si">{</span><span class="n">policy_net</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">in_features</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Neural network output size: </span><span class="si">{</span><span class="n">policy_net</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">out_features</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<section id="step-2-build-a-grid-of-starting-points">
+<h3>Step 2: Build a grid of starting points<a class="headerlink" href="#step-2-build-a-grid-of-starting-points" title="Link to this heading">¶</a></h3>
+<p>The network is trained over a <code class="docutils literal notranslate"><span class="pre">Grid</span></code> of states (and shock realizations). Each
+grid point is one scenario the policy must do well on:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">},</span>
+        <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">},</span>
+    <span class="p">}</span>
+<span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section id="step-3-train-a-policy-network">
+<h3>Step 3: Train a policy network<a class="headerlink" href="#step-3-train-a-policy-network" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code> is the negative of this period’s reward, so minimizing it
+maximizes reward. <code class="docutils literal notranslate"><span class="pre">train_block_nn</span></code> runs the optimizer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">policy</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">StaticRewardLoss</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">track_calibration</span><span class="p">)</span>
+<span class="n">ann</span><span class="o">.</span><span class="n">train_block_nn</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-4-read-off-the-learned-policy">
+<h3>Step 4: Read off the learned policy<a class="headerlink" href="#step-4-read-off-the-learned-policy" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">decision_function</span></code> returns the control values the trained network chooses at
+each grid point. We compare them against the known optimum <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">=</span> <span class="pre">theta</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">learned_c</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">policy</span><span class="o">.</span><span class="n">decision_function</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]},</span> <span class="p">{</span><span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]},</span> <span class="p">{})[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span>
+    <span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Max deviation from optimum:&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">learned_c</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)))</span>
+<span class="c1"># a small number: the network has recovered c = theta</span>
+</pre></div>
+</div>
+<p>For a reusable rule you can hand to the simulator, call
+<code class="docutils literal notranslate"><span class="pre">policy.get_decision_rule()</span></code>.</p>
+</section>
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
-<p>After completing this quickstart:</p>
 <ul class="simple">
-<li><p><strong>Learn more about blocks</strong>: Read the <a class="reference internal" href="blocks.html"><span class="doc">Block Guide</span></a> guide to understand
-different model types and how to create custom models</p></li>
-<li><p><strong>Explore algorithms</strong>: Check out the <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> guide for different
-solution methods including value function iteration and neural network
-approaches</p></li>
-<li><p><strong>Master simulation</strong>: See the <a class="reference internal" href="simulation.html"><span class="doc">Simulation Guide</span></a> guide for advanced simulation
-techniques and analysis methods</p></li>
-<li><p><strong>Browse examples</strong>: Look at the <a class="reference internal" href="../auto_examples/index.html"><span class="doc">Examples</span></a> for more
-complex examples and use cases</p></li>
+<li><p><strong>Solve real economic models</strong>: the <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> guide covers value
+backwards induction, the Maliar deep-learning method, and reinforcement
+learning, with runnable versions in the
+<a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms</span></a>.</p></li>
+<li><p><strong>Build custom models</strong>: the <a class="reference internal" href="blocks.html"><span class="doc">Block Guide</span></a> guide explains blocks, controls,
+and how to compose them.</p></li>
+<li><p><strong>Constrained problems</strong>: the <a class="reference internal" href="constraints.html"><span class="doc">Constraining an Optimization Problem</span></a> guide covers borrowing limits
+and other bounds.</p></li>
+<li><p><strong>Simulation in depth</strong>: the <a class="reference internal" href="simulation.html"><span class="doc">Simulation Guide</span></a> guide covers analysis and
+visualization.</p></li>
 </ul>
 </section>
 <section id="key-takeaways">
 <h2>Key Takeaways<a class="headerlink" href="#key-takeaways" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><strong>DBlocks</strong> are the fundamental building blocks for economic models</p></li>
-<li><p><strong>Grids</strong> discretize continuous state spaces for numerical methods</p></li>
-<li><p><strong>Simulators</strong> generate synthetic data from solved models</p></li>
-<li><p><strong>Decision rules</strong> map states to optimal actions</p></li>
-<li><p>The package follows scikit-learn conventions for a familiar API</p></li>
+<li><p><strong>Blocks</strong> (<code class="docutils literal notranslate"><span class="pre">DBlock</span></code>, <code class="docutils literal notranslate"><span class="pre">RBlock</span></code>) are the building units of economic models.</p></li>
+<li><p><strong>Decision rules</strong> map an agent’s information to its choices; a <strong>solver</strong>
+finds the rule that is optimal.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></strong> turns a block into a period a solver can optimize.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">Grid</span></code>s</strong> discretize the states to solve or evaluate over.</p></li>
+<li><p><strong>Simulators</strong> generate synthetic data from a model and its decision rules.</p></li>
 </ul>
-<p>You’re now ready to build more sophisticated economic models with scikit-agent!</p>
+<p>You’re now ready to build and solve more sophisticated models with scikit-agent!</p>
 </section>
 </section>
 
@@ -564,24 +587,22 @@ complex examples and use cases</p></li>
             <ul>
 <li><a class="reference internal" href="#">Quickstart Guide</a><ul>
 <li><a class="reference internal" href="#installation">Installation</a></li>
-<li><a class="reference internal" href="#core-concepts">Core Concepts</a><ul>
-<li><a class="reference internal" href="#dblock-dynamic-block">DBlock (Dynamic Block)</a></li>
-<li><a class="reference internal" href="#grid">Grid</a></li>
-<li><a class="reference internal" href="#simulators">Simulators</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#your-first-model-consumption-saving">Your First Model: Consumption-Saving</a><ul>
+<li><a class="reference internal" href="#core-concepts">Core Concepts</a></li>
+<li><a class="reference internal" href="#simulate-a-prebuilt-model">Simulate a Prebuilt Model</a><ul>
 <li><a class="reference internal" href="#step-1-import-scikit-agent">Step 1: Import scikit-agent</a></li>
-<li><a class="reference internal" href="#step-2-examine-the-pre-built-model">Step 2: Examine the Pre-built Model</a></li>
+<li><a class="reference internal" href="#step-2-examine-the-model">Step 2: Examine the Model</a></li>
 <li><a class="reference internal" href="#step-3-set-up-model-parameters">Step 3: Set Up Model Parameters</a></li>
-<li><a class="reference internal" href="#step-4-assemble-the-recursive-problem">Step 4: Assemble the Recursive Problem</a></li>
-<li><a class="reference internal" href="#step-5-create-a-simple-decision-rule">Step 5: Create a Simple Decision Rule</a></li>
-<li><a class="reference internal" href="#step-6-run-a-simulation">Step 6: Run a Simulation</a></li>
-<li><a class="reference internal" href="#step-7-analyze-results">Step 7: Analyze Results</a></li>
+<li><a class="reference internal" href="#step-4-simulate">Step 4: Simulate</a></li>
+<li><a class="reference internal" href="#step-5-analyze-results">Step 5: Analyze Results</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#working-with-grids">Working with Grids</a></li>
-<li><a class="reference internal" href="#neural-network-solutions">Neural Network Solutions</a></li>
+<li><a class="reference internal" href="#solve-for-an-optimal-policy">Solve for an Optimal Policy</a><ul>
+<li><a class="reference internal" href="#step-1-define-the-block-and-wrap-it">Step 1: Define the block and wrap it</a></li>
+<li><a class="reference internal" href="#step-2-build-a-grid-of-starting-points">Step 2: Build a grid of starting points</a></li>
+<li><a class="reference internal" href="#step-3-train-a-policy-network">Step 3: Train a policy network</a></li>
+<li><a class="reference internal" href="#step-4-read-off-the-learned-policy">Step 4: Read off the learned policy</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
 <li><a class="reference internal" href="#key-takeaways">Key Takeaways</a></li>
 </ul>
@@ -595,7 +616,7 @@ complex examples and use cases</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=83aa10a1"></script>
+</div><script src="../_static/documentation_options.js?v=200cd56d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

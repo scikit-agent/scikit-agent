@@ -315,7 +315,7 @@ The residual reward confirms convergence: with the optimal policy the reward
  .. code-block:: none
 
     /home/runner/work/scikit-agent/scikit-agent/examples/algorithms/plot_direct_block_solve.py:174: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
-    Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:838.)
+    Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:822.)
       print(f"max |u| over the grid: {float(rewards['u'].abs().max()):.2e}")
     max |u| over the grid: 2.50e-05
 
@@ -325,7 +325,7 @@ The residual reward confirms convergence: with the optimal policy the reward
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.558 seconds)
+   **Total running time of the script:** (0 minutes 5.788 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_direct_block_solve.py:

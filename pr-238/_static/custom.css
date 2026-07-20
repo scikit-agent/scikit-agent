@@ -36,3 +36,27 @@ table.docutils td {
 .admonition.warning {
   border-left-color: #f39c12;
 }
+
+/* API reference: make autodoc field lists (Parameters, Returns, Raises,
+   Return type, ...) read as small titled sections rather than furo's
+   shrunken small-caps default. furo's own rules are not !important, so these
+   win regardless of its higher selector specificity. Scoped to .field-list so
+   function signatures and prose definition lists are left untouched, and no
+   colors are set so light and dark modes both work. */
+.field-list > dt {
+  text-transform: none !important;
+  font-size: 1em !important;
+  font-weight: 700;
+  margin-top: 0.9rem;
+}
+
+/* Lay parameters out as spaced rows instead of a bulleted list. */
+.field-list > dd > ul {
+  list-style: none !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+.field-list > dd > ul > li {
+  margin-bottom: 0.45rem;
+}

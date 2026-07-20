@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="API Reference" href="../../api/index.html"><link rel="prev" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Consumption Models - scikit-agent 0.1.dev651+g9cc652b6a</title>
+        <title>Benchmark Consumption Models - scikit-agent 0.1.dev718+g64905d365</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -16,7 +16,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=b485e546" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=83e65f8c" />
     
     
 
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev651+g9cc652b6a</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.dev718+g64905d365</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -293,12 +293,12 @@ to download the full example code.</p>
 </div>
 <section class="sphx-glr-example-title" id="benchmark-consumption-models">
 <span id="sphx-glr-auto-examples-models-plot-benchmark-models-py"></span><h1>Benchmark Consumption Models<a class="headerlink" href="#benchmark-consumption-models" title="Link to this heading">¶</a></h1>
-<p>A guided tour of <a class="reference internal" href="../../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a>. Consumption economics
-asks how a household should split each period’s resources between spending now
-and saving for later. The closed-form policies in this registry are the classic
-answers, and they retrace the theory in roughly the order the field discovered
-it. Each model teaches a fact the previous ones could not. Reading from top to
-bottom:</p>
+<p>A guided tour of scikit-agent’s benchmark consumption models. Consumption
+economics asks how a household should split each period’s resources between
+spending now and saving for later. The closed-form policies in this registry
+are the classic answers, and they retrace the theory in roughly the order the
+field discovered it. Each model teaches a fact the previous ones could not.
+Reading from top to bottom:</p>
 <ol class="arabic simple">
 <li><p><strong>Finite horizons fade.</strong> Once the distance to the terminal date
 <span class="math notranslate nohighlight">\(T - t\)</span> is large, the finite-horizon rule is indistinguishable from
@@ -321,7 +321,8 @@ closed-form policy, and the registry keeps it around for limit-checking.</p></li
 <p>The short registry keys in the code and figure labels below (<code class="docutils literal notranslate"><span class="pre">D-1</span></code> through
 <code class="docutils literal notranslate"><span class="pre">U-3</span></code>) are internal identifiers; the section titles give the names the models
 actually go by.</p>
-<p>This example is the runnable companion to <a class="reference internal" href="../../user_guide/benchmark_models.html"><span class="doc">Benchmark Models</span></a>.
+<p>The models live in <a class="reference internal" href="../../api/models.html#module-skagent.models.benchmarks" title="skagent.models.benchmarks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.benchmarks</span></code></a>; this example is the
+runnable companion to <a class="reference internal" href="../../user_guide/benchmark_models.html"><span class="doc">Benchmark Models</span></a>.
 The code is intentionally verbose; production code should compose helpers,
 but here every step is written out so the reader can follow the algebra.</p>
 <section id="notation">
@@ -344,6 +345,13 @@ the present value of expected future income;</p></li>
 </ul>
 <p>The normalized models (U-2, U-3) additionally use lowercase <span class="math notranslate nohighlight">\(m, c, a\)</span>
 for ratios to permanent income <span class="math notranslate nohighlight">\(P_t\)</span>.</p>
+<p>Because a perfect-foresight agent can borrow against future income, the
+deterministic models (D-2, D-3) are feasible up to total wealth,
+<span class="math notranslate nohighlight">\(c_t \le m_t + H_t\)</span> (the natural borrowing limit <span class="math notranslate nohighlight">\(A_t \ge -H_t\)</span>),
+not merely cash-on-hand. The limit tightens to <span class="math notranslate nohighlight">\(c_t \le m_t\)</span> only when the
+worst-case future income is zero, i.e. with income uncertainty whose support
+reaches zero (U-3) or a borrowing constraint imposed by construction (D-4); that
+binding constraint is what forecloses a closed form.</p>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
@@ -809,7 +817,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.150 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.017 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-benchmark-models-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/2cc3c98062c3edf3537ea32dc3909b7c/plot_benchmark_models.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_benchmark_models.ipynb</span></code></a></p>
@@ -911,7 +919,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=83aa10a1"></script>
+</div><script src="../../_static/documentation_options.js?v=200cd56d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
