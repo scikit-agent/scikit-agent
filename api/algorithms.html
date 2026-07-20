@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev711+g9d2c5ffa7</title>
+        <title>Algorithms - scikit-agent 0.1.dev737+g3e2930ac7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev711+g9d2c5ffa7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev737+g3e2930ac7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -290,28 +290,28 @@
 <p>This section contains the API documentation for solution algorithms, neural
 network components, and grid tools used to solve dynamic stochastic optimization
 problems.</p>
-<section id="value-backwards-induction-vbi">
-<h2>Value Backwards Induction (VBI)<a class="headerlink" href="#value-backwards-induction-vbi" title="Link to this heading">¶</a></h2>
-<p>The value backwards induction (VBI) algorithm derives arrival value functions
+<section id="value-function-iteration-vfi">
+<h2>Value Function Iteration (VFI)<a class="headerlink" href="#value-function-iteration-vfi" title="Link to this heading">¶</a></h2>
+<p>The value function iteration (VFI) algorithm derives arrival value functions
 from a continuation value function and the stage dynamics of model blocks.</p>
-<p id="module-skagent.algos.vbi">Value backward induction (VBI).</p>
+<p id="module-skagent.algos.vfi">Value function iteration (VFI).</p>
 <p>Derive a decision rule, decision value function, and arrival value function for
-a single <a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> stage by backward induction: at each
+a single <a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> stage by value function iteration: at each
 point of a grid over the decision’s information set, solve an exact
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> for the control that maximizes the period reward
 plus a continuation value.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.ar_from_data">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.ar_from_data" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.vfi.ar_from_data">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.ar_from_data" title="Link to this definition">¶</a></dt>
 <dd><p>Build a decision rule from a fitted policy <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p>
 <p>The returned rule follows the library’s decision-rule calling convention: it
 takes the control’s information-set values as <em>positional</em> arguments, in the
-order of <code class="docutils literal notranslate"><span class="pre">da.dims</span></code> (which <a class="reference internal" href="#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> aligns to <code class="docutils literal notranslate"><span class="pre">control.iset</span></code>). This
+order of <code class="docutils literal notranslate"><span class="pre">da.dims</span></code> (which <a class="reference internal" href="#skagent.algos.vfi.solve" title="skagent.algos.vfi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> aligns to <code class="docutils literal notranslate"><span class="pre">control.iset</span></code>). This
 matches how <code class="docutils literal notranslate"><span class="pre">block.transition</span></code> invokes a rule,
-<code class="docutils literal notranslate"><span class="pre">dr(*[vals[v]</span> <span class="pre">for</span> <span class="pre">v</span> <span class="pre">in</span> <span class="pre">iset])</span></code>, so a VBI-fitted rule is a drop-in for the
+<code class="docutils literal notranslate"><span class="pre">dr(*[vals[v]</span> <span class="pre">for</span> <span class="pre">v</span> <span class="pre">in</span> <span class="pre">iset])</span></code>, so a VFI-fitted rule is a drop-in for the
 rest of the stack.</p>
 <p>Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
-the result with <a class="reference internal" href="#skagent.algos.vbi.tensor_decision_rule" title="skagent.algos.vbi.tensor_decision_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a>.</p>
+the result with <a class="reference internal" href="#skagent.algos.vfi.tensor_decision_rule" title="skagent.algos.vfi.tensor_decision_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
@@ -334,8 +334,8 @@ array.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.bellman_step">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">bellman_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.bellman_step" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.vfi.bellman_step">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">bellman_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.bellman_step" title="Link to this definition">¶</a></dt>
 <dd><p>One exact value backup over <em>state_grid</em> on the <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> protocol.</p>
 <p>This is the per-iteration update of value-function iteration: at each grid
 point the optimal control is found with <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a>,
@@ -344,7 +344,7 @@ resulting arrival states. Under a terminal (zero) continuation,
 <code class="docutils literal notranslate"><span class="pre">continuation_vf</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">s,</span> <span class="pre">sh,</span> <span class="pre">p:</span> <span class="pre">0.0</span></code>, the result is the single-step
 solution; the value-iteration wrapper <code class="docutils literal notranslate"><span class="pre">solve_bellman</span></code> (§3) iterates it to a
 fixed point.</p>
-<p>Unlike legacy <a class="reference internal" href="#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> (which rides the <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> continuation API and
+<p>Unlike legacy <a class="reference internal" href="#skagent.algos.vfi.solve" title="skagent.algos.vfi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> (which rides the <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> continuation API and
 folds the discount factor into the continuation), this speaks the
 <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> protocol the rest of the torch stack uses, with an explicit
 discount factor and multi-reward summation, and is empty-shock-safe.</p>
@@ -378,7 +378,16 @@ is also where a hidden shock’s fixed realization is currently supplied
 <li><p><strong>x0</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Fallback optimizer seed used when a control has an open bound.</p></li>
 <li><p><strong>x0_policy</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code>]]</span>) – Warm-start seeds keyed by control symbol (e.g. a previous iterate’s
 <code class="docutils literal notranslate"><span class="pre">policy_array</span></code>); when given, the seed at each grid point is read from
-here. Supplied by <a class="reference internal" href="#skagent.algos.vbi.solve_bellman" title="skagent.algos.vbi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a>.</p></li>
+here. Supplied by <a class="reference internal" href="#skagent.algos.vfi.solve_bellman" title="skagent.algos.vfi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a>.</p></li>
+<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code>, tighten each control’s bounds so the next-period arrival
+state stays inside the state grid (<code class="xref py py-func docutils literal notranslate"><span class="pre">_tighten_bounds_to_grid()</span></code>), an
+artificial state (borrowing) limit at the grid’s lower edge (design §8).
+This keeps the continuation interpolated rather than extrapolated past
+the grid edges, so value iteration cannot ride a control bound by
+over-crediting off-grid successors. Single control with an affine
+successor only (raises otherwise). The limit must be <em>slack</em> at the
+states of interest (it is just the grid floor), or it biases the policy
+where it binds.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -398,8 +407,8 @@ symbol (a dict for forward-compatibility with multi-control, O1).</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.get_action_rule">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">get_action_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.get_action_rule" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.vfi.get_action_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">get_action_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.get_action_rule" title="Link to this definition">¶</a></dt>
 <dd><p>Build a constant decision rule that ignores its inputs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -416,8 +425,8 @@ candidate action as a decision rule during the per-point optimization.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.grid_to_data_array">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">grid_to_data_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.grid_to_data_array" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.vfi.grid_to_data_array">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">grid_to_data_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.grid_to_data_array" title="Link to this definition">¶</a></dt>
 <dd><p>Construct a zero-valued <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> over the coordinates of a grid.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -434,14 +443,14 @@ empty mapping yields a zero-dimensional array.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.solve">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.solve" title="Link to this definition">¶</a></dt>
-<dd><p>Solve a <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> stage by backward induction on the value function.</p>
+<dt class="sig sig-object py" id="skagent.algos.vfi.solve">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve" title="Link to this definition">¶</a></dt>
+<dd><p>Solve a <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> stage by value function iteration.</p>
 <p>At each point of <em>state_grid</em>, the optimal control(s) are found with
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a>, maximizing the period reward plus the
 <em>continuation</em> value of the resulting states. The tabulated optima are then
 interpolated into a decision rule.</p>
-<p>VBI assumes <em>full observation</em>: the decision conditions on its complete
+<p>VFI assumes <em>full observation</em>: the decision conditions on its complete
 information set and the per-point optimization never integrates over
 unobserved variables. (The only expectation machinery in this module is in
 <code class="docutils literal notranslate"><span class="pre">block.get_arrival_value_function</span></code>; the optimization here does not use it.)
@@ -468,7 +477,7 @@ continuation are evaluated.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This is broader than <code class="docutils literal notranslate"><span class="pre">calibration</span></code> elsewhere in the library, which
-denotes fixed, single-valued <em>parameters</em> only. Here (legacy VBI
+denotes fixed, single-valued <em>parameters</em> only. Here (legacy VFI
 usage) it is a general scope bag that also holds fixed exogenous
 values outside the information set, such as a shock realization
 <code class="docutils literal notranslate"><span class="pre">psi</span></code>. Read it as “scope,” not “parameters.”</p>
@@ -490,23 +499,23 @@ expectation via <em>disc_params</em>).</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.solve_bellman">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">solve_bellman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_nonconvergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.solve_bellman" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.vfi.solve_bellman">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_bellman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_nonconvergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve_bellman" title="Link to this definition">¶</a></dt>
 <dd><p>Solve a recurring <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> by value-function iteration (§3).</p>
-<p>Iterates <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a> to a fixed point: each backup uses the previous
+<p>Iterates <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a> to a fixed point: each backup uses the previous
 iterate’s value grid as its continuation (rebuilt via
-<a class="reference internal" href="#skagent.algos.vbi.value_array_to_function" title="skagent.algos.vbi.value_array_to_function"><code class="xref py py-func docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a>) and warm-starts the per-point optimizer from
+<a class="reference internal" href="#skagent.algos.vfi.value_array_to_function" title="skagent.algos.vfi.value_array_to_function"><code class="xref py py-func docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a>) and warm-starts the per-point optimizer from
 the previous iterate’s <code class="docutils literal notranslate"><span class="pre">policy_array</span></code>. It stops when the sup-norm change in
 the value grid falls below <em>tol</em>, or after <em>max_iter</em> iterations.</p>
 <p>Iteration 1 uses the terminal (zero) continuation, so
-<code class="docutils literal notranslate"><span class="pre">solve_bellman(...,</span> <span class="pre">max_iter=1)</span></code> reproduces <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a> under a
+<code class="docutils literal notranslate"><span class="pre">solve_bellman(...,</span> <span class="pre">max_iter=1)</span></code> reproduces <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a> under a
 terminal continuation. For an infinite-horizon problem the loop converges
 geometrically (modulus the discount factor) to the stationary solution; for a
 finite horizon of length <code class="docutils literal notranslate"><span class="pre">T</span></code> set <code class="docutils literal notranslate"><span class="pre">max_iter=T</span></code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Current (deterministic) scope, inherited from <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a> and
-<a class="reference internal" href="#skagent.algos.vbi.value_array_to_function" title="skagent.algos.vbi.value_array_to_function"><code class="xref py py-func docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a>: no internal shock discretization
+<p>Current (deterministic) scope, inherited from <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a> and
+<a class="reference internal" href="#skagent.algos.vfi.value_array_to_function" title="skagent.algos.vfi.value_array_to_function"><code class="xref py py-func docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a>: no internal shock discretization
 (<code class="docutils literal notranslate"><span class="pre">disc_params</span></code> raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a>); a hidden shock must
 be supplied as a fixed realization via <em>scope</em>, and the value grid must
 have no observed-shock axes (design §4, §9 step 6).</p>
@@ -516,7 +525,7 @@ have no observed-shock axes (design §4, §9 step 6).</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – The recurring period providing the model mechanics.</p></li>
 <li><p><strong>state_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>]</span>) – A grid over the value function’s domain (arrival states and/or observed
-shocks); see <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
+shocks); see <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
 <li><p><strong>continuation_vf</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span>) – Initial continuation guess <code class="docutils literal notranslate"><span class="pre">continuation_vf(states,</span> <span class="pre">shocks,</span> <span class="pre">parameters)</span></code>.
 Defaults to the terminal (zero) continuation.</p></li>
 <li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – If given, the period reward sums only this agent’s reward symbols.</p></li>
@@ -525,10 +534,13 @@ realization) merged into the model parameters.</p></li>
 <li><p><strong>disc_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Reserved for internal shock discretization (§4); must be empty for now.</p></li>
 <li><p><strong>tol</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Convergence tolerance on the sup-norm change in the value grid.</p></li>
 <li><p><strong>max_iter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Maximum number of backups.</p></li>
-<li><p><strong>x0</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Fallback optimizer seed passed to <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
+<li><p><strong>x0</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Fallback optimizer seed passed to <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
 <li><p><strong>raise_on_nonconvergence</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, raise <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></a> when the loop hits <em>max_iter</em>
 without converging; otherwise emit a <code class="xref py py-class docutils literal notranslate"><span class="pre">warnings.warn</span></code> and return the
 last iterate (the scipy <code class="docutils literal notranslate"><span class="pre">OptimizeResult.success</span></code> convention, O5).</p></li>
+<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>: confine next-period arrival states to
+the state grid (grid edge = slack artificial borrowing limit, design §8),
+so the rebuilt continuation is never extrapolated off-grid.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -536,7 +548,7 @@ last iterate (the scipy <code class="docutils literal notranslate"><span class="
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><ul class="simple">
-<li><p><strong>dr_from_data</strong> (<em>dict of callable</em>) – One decision rule per control at the fixed point (see <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>).</p></li>
+<li><p><strong>dr_from_data</strong> (<em>dict of callable</em>) – One decision rule per control at the fixed point (see <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>).</p></li>
 <li><p><strong>value_array</strong> (<em>xarray.DataArray</em>) – The converged value grid. Its <code class="docutils literal notranslate"><span class="pre">attrs</span></code> carry <code class="docutils literal notranslate"><span class="pre">n_iter</span></code>, <code class="docutils literal notranslate"><span class="pre">converged</span></code>
 (bool), and <code class="docutils literal notranslate"><span class="pre">residual</span></code> (the final sup-norm change).</p></li>
 <li><p><strong>policy_array</strong> (<em>dict of xarray.DataArray</em>) – The gridded optimal control(s) at the fixed point.</p></li>
@@ -550,11 +562,11 @@ last iterate (the scipy <code class="docutils literal notranslate"><span class="
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.tensor_decision_rule">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">tensor_decision_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">np_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.tensor_decision_rule" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.vfi.tensor_decision_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">tensor_decision_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">np_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.tensor_decision_rule" title="Link to this definition">¶</a></dt>
 <dd><p>Wrap a numpy-space decision rule so it speaks torch tensors.</p>
-<p>Adapts a rule (e.g. from <a class="reference internal" href="#skagent.algos.vbi.ar_from_data" title="skagent.algos.vbi.ar_from_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a>, including the rules returned
-by <a class="reference internal" href="#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a>) for interop with the torch solving stack
+<p>Adapts a rule (e.g. from <a class="reference internal" href="#skagent.algos.vfi.ar_from_data" title="skagent.algos.vfi.ar_from_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a>, including the rules returned
+by <a class="reference internal" href="#skagent.algos.vfi.solve" title="skagent.algos.vfi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a>) for interop with the torch solving stack
 (<code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> / <code class="docutils literal notranslate"><span class="pre">loss</span></code> / <code class="docutils literal notranslate"><span class="pre">solver</span></code>). Inputs may be torch tensors or
 numpy/scalars; outputs are torch tensors.</p>
 <p>Because interpolation runs in numpy, the autograd graph is <em>severed</em>: the
@@ -584,13 +596,13 @@ returning a detached torch tensor on <em>device</em> with dtype <em>dtype</em>.<
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.algos.vbi.value_array_to_function">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">value_array_to_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vbi.value_array_to_function" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.vfi.value_array_to_function">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">value_array_to_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.value_array_to_function" title="Link to this definition">¶</a></dt>
 <dd><p>Rebuild a continuation value function from an iterate’s value grid (§4).</p>
-<p><a class="reference internal" href="#skagent.algos.vbi.solve_bellman" title="skagent.algos.vbi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a> feeds iteration <em>n</em>’s value grid back as iteration
+<p><a class="reference internal" href="#skagent.algos.vfi.solve_bellman" title="skagent.algos.vfi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a> feeds iteration <em>n</em>’s value grid back as iteration
 <em>(n+1)</em>’s continuation. This wraps the grid as a callable in the
 <code class="docutils literal notranslate"><span class="pre">bp.compute_value</span></code> convention <code class="docutils literal notranslate"><span class="pre">wf(states,</span> <span class="pre">shocks,</span> <span class="pre">parameters)</span></code>, so it
-drops straight into <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>’s <code class="docutils literal notranslate"><span class="pre">continuation_vf</span></code> slot.</p>
+drops straight into <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>’s <code class="docutils literal notranslate"><span class="pre">continuation_vf</span></code> slot.</p>
 <p>The value grid ranges over the arrival states (its axes). <code class="docutils literal notranslate"><span class="pre">wf</span></code> interpolates
 linearly over them and <strong>extrapolates linearly</strong> past the grid edges (via
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RegularGridInterpolator.html#scipy.interpolate.RegularGridInterpolator" title="(in SciPy v1.18.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.RegularGridInterpolator</span></code></a>), so an off-grid
@@ -609,7 +621,7 @@ lands with the shock-discretization work (design §4, §9 step 6).</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>value_array</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code></span>) – A gridded value function over arrival states, e.g. the <code class="docutils literal notranslate"><span class="pre">value_array</span></code>
-returned by <a class="reference internal" href="#skagent.algos.vbi.bellman_step" title="skagent.algos.vbi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
+returned by <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
 <li><p><strong>bp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – The recurring period; used to identify shock axes.</p></li>
 <li><p><strong>disc_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Reserved for observed-shock integration (§4); must be empty for now.</p></li>
 </ul>
@@ -625,17 +637,17 @@ value at <code class="docutils literal notranslate"><span class="pre">states</sp
 </dl>
 </dd></dl>
 
-<section id="core-vbi-functions">
-<h3>Core VBI Functions<a class="headerlink" href="#core-vbi-functions" title="Link to this heading">¶</a></h3>
+<section id="core-vfi-functions">
+<h3>Core VFI Functions<a class="headerlink" href="#core-vfi-functions" title="Link to this heading">¶</a></h3>
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Solve a <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> stage by backward induction on the value function.</p>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Solve a <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> stage by value function iteration.</p>
 <p>At each point of <em>state_grid</em>, the optimal control(s) are found with
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a>, maximizing the period reward plus the
 <em>continuation</em> value of the resulting states. The tabulated optima are then
 interpolated into a decision rule.</p>
-<p>VBI assumes <em>full observation</em>: the decision conditions on its complete
+<p>VFI assumes <em>full observation</em>: the decision conditions on its complete
 information set and the per-point optimization never integrates over
 unobserved variables. (The only expectation machinery in this module is in
 <code class="docutils literal notranslate"><span class="pre">block.get_arrival_value_function</span></code>; the optimization here does not use it.)
@@ -662,7 +674,7 @@ continuation are evaluated.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This is broader than <code class="docutils literal notranslate"><span class="pre">calibration</span></code> elsewhere in the library, which
-denotes fixed, single-valued <em>parameters</em> only. Here (legacy VBI
+denotes fixed, single-valued <em>parameters</em> only. Here (legacy VFI
 usage) it is a general scope bag that also holds fixed exogenous
 values outside the information set, such as a shock realization
 <code class="docutils literal notranslate"><span class="pre">psi</span></code>. Read it as “scope,” not “parameters.”</p>
@@ -685,7 +697,7 @@ expectation via <em>disc_params</em>).</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">get_action_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">get_action_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Build a constant decision rule that ignores its inputs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -703,16 +715,16 @@ candidate action as a decision rule during the per-point optimization.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Build a decision rule from a fitted policy <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p>
 <p>The returned rule follows the library’s decision-rule calling convention: it
 takes the control’s information-set values as <em>positional</em> arguments, in the
-order of <code class="docutils literal notranslate"><span class="pre">da.dims</span></code> (which <a class="reference internal" href="#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> aligns to <code class="docutils literal notranslate"><span class="pre">control.iset</span></code>). This
+order of <code class="docutils literal notranslate"><span class="pre">da.dims</span></code> (which <a class="reference internal" href="#skagent.algos.vfi.solve" title="skagent.algos.vfi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> aligns to <code class="docutils literal notranslate"><span class="pre">control.iset</span></code>). This
 matches how <code class="docutils literal notranslate"><span class="pre">block.transition</span></code> invokes a rule,
-<code class="docutils literal notranslate"><span class="pre">dr(*[vals[v]</span> <span class="pre">for</span> <span class="pre">v</span> <span class="pre">in</span> <span class="pre">iset])</span></code>, so a VBI-fitted rule is a drop-in for the
+<code class="docutils literal notranslate"><span class="pre">dr(*[vals[v]</span> <span class="pre">for</span> <span class="pre">v</span> <span class="pre">in</span> <span class="pre">iset])</span></code>, so a VFI-fitted rule is a drop-in for the
 rest of the stack.</p>
 <p>Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
-the result with <a class="reference internal" href="#skagent.algos.vbi.tensor_decision_rule" title="skagent.algos.vbi.tensor_decision_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a>.</p>
+the result with <a class="reference internal" href="#skagent.algos.vfi.tensor_decision_rule" title="skagent.algos.vfi.tensor_decision_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
@@ -736,7 +748,7 @@ array.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vbi.</span></span><span class="sig-name descname"><span class="pre">grid_to_data_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">grid_to_data_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Construct a zero-valued <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> over the coordinates of a grid.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1681,16 +1693,16 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Algorithms</a><ul>
-<li><a class="reference internal" href="#value-backwards-induction-vbi">Value Backwards Induction (VBI)</a><ul>
-<li><a class="reference internal" href="#skagent.algos.vbi.ar_from_data"><code class="docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.vbi.bellman_step"><code class="docutils literal notranslate"><span class="pre">bellman_step()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.vbi.get_action_rule"><code class="docutils literal notranslate"><span class="pre">get_action_rule()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.vbi.grid_to_data_array"><code class="docutils literal notranslate"><span class="pre">grid_to_data_array()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.vbi.solve"><code class="docutils literal notranslate"><span class="pre">solve()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.vbi.solve_bellman"><code class="docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.vbi.tensor_decision_rule"><code class="docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.vbi.value_array_to_function"><code class="docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a></li>
-<li><a class="reference internal" href="#core-vbi-functions">Core VBI Functions</a></li>
+<li><a class="reference internal" href="#value-function-iteration-vfi">Value Function Iteration (VFI)</a><ul>
+<li><a class="reference internal" href="#skagent.algos.vfi.ar_from_data"><code class="docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.vfi.bellman_step"><code class="docutils literal notranslate"><span class="pre">bellman_step()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.vfi.get_action_rule"><code class="docutils literal notranslate"><span class="pre">get_action_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.vfi.grid_to_data_array"><code class="docutils literal notranslate"><span class="pre">grid_to_data_array()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.vfi.solve"><code class="docutils literal notranslate"><span class="pre">solve()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.vfi.solve_bellman"><code class="docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.vfi.tensor_decision_rule"><code class="docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.vfi.value_array_to_function"><code class="docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a></li>
+<li><a class="reference internal" href="#core-vfi-functions">Core VFI Functions</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#maliar-style-algorithms">Maliar-Style Algorithms</a><ul>
@@ -1799,7 +1811,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=4ce8bc02"></script>
+</div><script src="../_static/documentation_options.js?v=b5093ff4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

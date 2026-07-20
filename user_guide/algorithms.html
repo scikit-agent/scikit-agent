@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments Guide" href="environments.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.dev711+g9d2c5ffa7</title>
+        <title>Algorithms Guide - scikit-agent 0.1.dev737+g3e2930ac7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev711+g9d2c5ffa7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev737+g3e2930ac7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -298,8 +298,8 @@ rest of the toolkit:</p>
 <li><p><strong>Maliar-style deep learning methods</strong>: Neural network solvers following
 Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
 objective function</p></li>
-<li><p><strong>Value backwards induction (VBI)</strong>: Classical dynamic programming via
-backwards induction on a grid</p></li>
+<li><p><strong>Value function iteration (VFI)</strong>: Classical dynamic programming via value
+function iteration on a grid</p></li>
 <li><p><strong>Reinforcement Learning</strong>: Learn a policy by trial-and-error interaction with
 the model, using established RL libraries (see below)</p></li>
 </ul>
@@ -535,7 +535,7 @@ decision rule, suitable for passing to <code class="docutils literal notranslate
 <section id="value-function-iteration">
 <h2>Value Function Iteration<a class="headerlink" href="#value-function-iteration" title="Link to this heading">¶</a></h2>
 <p>Classical dynamic programming for recurring problems, implemented as backwards
-induction over a block’s value function. See <a class="reference internal" href="../api/algorithms.html#skagent.algos.vbi.solve" title="skagent.algos.vbi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.algos.vbi.solve()</span></code></a>.
+induction over a block’s value function. See <a class="reference internal" href="../api/algorithms.html#skagent.algos.vfi.solve" title="skagent.algos.vfi.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.algos.vfi.solve()</span></code></a>.
 The neural Bellman- and Euler-equation losses
 (<a class="reference internal" href="../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>,
 <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>) provide deep-learning alternatives
@@ -632,7 +632,7 @@ for the recurring case.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=4ce8bc02"></script>
+</div><script src="../_static/documentation_options.js?v=b5093ff4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

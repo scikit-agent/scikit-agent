@@ -4,35 +4,35 @@ This section contains the API documentation for solution algorithms, neural
 network components, and grid tools used to solve dynamic stochastic optimization
 problems.
 
-## Value Backwards Induction (VBI)
+## Value Function Iteration (VFI)
 
-The value backwards induction (VBI) algorithm derives arrival value functions
+The value function iteration (VFI) algorithm derives arrival value functions
 from a continuation value function and the stage dynamics of model blocks.
 
 ```{eval-rst}
-.. automodule:: skagent.algos.vbi
+.. automodule:: skagent.algos.vfi
    :members:
 ```
 
-### Core VBI Functions
+### Core VFI Functions
 
 ```{eval-rst}
-.. autofunction:: skagent.algos.vbi.solve
+.. autofunction:: skagent.algos.vfi.solve
    :no-index:
 ```
 
 ```{eval-rst}
-.. autofunction:: skagent.algos.vbi.get_action_rule
+.. autofunction:: skagent.algos.vfi.get_action_rule
    :no-index:
 ```
 
 ```{eval-rst}
-.. autofunction:: skagent.algos.vbi.ar_from_data
+.. autofunction:: skagent.algos.vfi.ar_from_data
    :no-index:
 ```
 
 ```{eval-rst}
-.. autofunction:: skagent.algos.vbi.grid_to_data_array
+.. autofunction:: skagent.algos.vfi.grid_to_data_array
    :no-index:
 ```
 
