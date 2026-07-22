@@ -22,6 +22,11 @@ and this project adheres to
 
 ### Added
 
+- `skagent.relevance`: strategic-relevance analysis via the Koller & Milch
+  s-reachability criterion. `is_s_reachable` and a `RelevanceGraph` wrapper
+  (`relies_on`, `is_acyclic`, `sccs`, `condensation`, `draw`) over an
+  influence-diagram `networkx.DiGraph`. Validated against Koller & Milch (2001)
+  Fig. 3 (a)-(e).
 - `tests/test_benchmark_bound_consistency.py`: regression test asserting each
   unconstrained closed-form benchmark's analytical policy is feasible under the
   block's own control bounds on states that reach the borrowing region
@@ -38,6 +43,8 @@ and this project adheres to
   when a `wrt` tensor does not require gradients; the `BellmanPeriod` gradient
   methods (`grad_reward_function`, `grad_transition_function`,
   `grad_pre_state_function`) inherit the tensor-only contract (#129)
+- Declared `networkx >=3.3` as a dependency (previously transitive); the floor
+  provides `is_d_separator`, used by `skagent.relevance`
 - Declared `torch >=2.0` as the minimum supported PyTorch version
 - Refactored `BellmanPeriod` with type hints, docstrings, and improved parameter
   handling
