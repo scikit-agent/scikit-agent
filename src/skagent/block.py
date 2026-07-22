@@ -13,6 +13,7 @@ from skagent.distributions import (
 from inspect import signature
 import numpy as np
 from skagent.model_analyzer import ModelAnalyzer
+from skagent.relevance import RelevanceGraph
 from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
@@ -297,6 +298,47 @@ class Block:
 
         return maybe_lag_variables
 
+    def relevance_graph(self, calibration=None):
+        """Return the strategic-relevance graph over this block's controls.
+
+        Nodes are the block's control (decision) variables; a directed edge
+        ``d1 -> d2`` means decision ``d1`` strategically relies on decision
+        ``d2`` (Koller & Milch s-reachability). See :mod:`skagent.relevance`.
+
+        Parameters
+        ----------
+        calibration : dict, optional
+            Calibration parameters, used only to identify parameter symbols.
+            Relevance is a structural property, so this defaults to an empty
+            dict.
+
+        Returns
+        -------
+        skagent.relevance.RelevanceGraph
+        """
+        scim = ModelAnalyzer(self, calibration or {}).analyze().influence_graph()
+        return RelevanceGraph.from_scim(*scim)
+
+    def relies_on(self, first, second, calibration=None):
+        """Whether control ``first`` strategically relies on control ``second``.
+
+        ``first`` relies on ``second`` when, to optimize the decision rule at
+        ``first``, the agent must account for the decision rule at ``second``.
+
+        Parameters
+        ----------
+        first, second : str
+            Control variable names in this block. A name that is not a control
+            raises ``ValueError``.
+        calibration : dict, optional
+            See :meth:`relevance_graph`.
+
+        Returns
+        -------
+        bool
+        """
+        return self.relevance_graph(calibration).relies_on(first, second)
+
     def visualize(self, calibration):
         """
         Return a PyDot graph visualization of this block.
@@ -578,8 +620,13 @@ class DBlock(Block):
 
         def state_rule_value_function(pre, dr):
             vals = self.transition(pre, dr, screen=screen)
-            r = list(self.calc_reward(vals).values())[0]  # a hack; to be improved
-            # this assumes a single reward variable; instead, a named could be passed in.
+            # TODO(roadmap: multi-reward): this takes the sole reward value and
+            # so assumes exactly one reward variable per block. Models may
+            # legitimately declare several reward symbols per agent (an
+            # additively decomposed utility, e.g. the Tree Killer benchmark);
+            # supporting that here -- summing an agent's reward symbols, and
+            # selecting the relevant agent -- is future roadmap work.
+            r = list(self.calc_reward(vals).values())[0]
             cv = continuation(
                 *[vals[var] for var in signature(continuation).parameters]
             )

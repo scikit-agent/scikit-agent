@@ -31,6 +31,13 @@ and this project adheres to
   consumed by `skagent.relevance` -- chance/decision/utility nodes with causal
   edges, parameter nodes dropped -- as a named tuple that unpacks into
   `RelevanceGraph.from_scim`.
+- `Block.relevance_graph()` and `Block.relies_on()`: strategic-relevance API on
+  any block (`calibration` defaults to empty, since relevance is structural).
+- Tree Killer benchmark (`skagent.models.benchmarks.tree_killer_block`), the
+  Koller & Milch (2001) Fig. 1 multi-agent influence diagram, with chance nodes
+  encoded as structural CPDs (deterministic mechanism plus an exogenous shock)
+  and binary decisions relaxed to `[0, 1]` controls. Cross-checked against
+  PyCID's `tree_doctor` example.
 - `tests/test_benchmark_bound_consistency.py`: regression test asserting each
   unconstrained closed-form benchmark's analytical policy is feasible under the
   block's own control bounds on states that reach the borrowing region
