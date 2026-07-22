@@ -9,8 +9,16 @@ Key concepts:
 - shock edge: dependency from an exogenous shock
 """
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
+
+import networkx as nx
+
 from skagent.rule import extract_dependencies
+
+
+SCIM = namedtuple(
+    "SCIM", ["graph", "decisions", "parents", "agent_utilities", "decision_agent"]
+)
 
 
 class ModelAnalyzer:
@@ -37,6 +45,7 @@ class ModelAnalyzer:
         self.block_agent = block_agent
 
         # Storage
+        self.G = nx.DiGraph()  # annotated dependency graph: the source of truth
         self.node_meta = {}
         self.edges = {"instant": [], "lag": [], "param": [], "shock": []}
         self.plates = {}
@@ -47,11 +56,16 @@ class ModelAnalyzer:
         self._time_deps = set()
 
     def analyze(self):
-        """Run the full analysis pipeline."""
+        """Run the full analysis pipeline.
+
+        The annotated dependency graph ``self.G`` is the source of truth; the
+        public ``node_meta`` / ``edges`` / ``plates`` are derived from it.
+        """
         self._collect_nodes()
         self._collect_dependencies()
         self._identify_time_dependencies()
-        self._assemble_edges()
+        self._build_graph()
+        self._derive_node_meta_and_edges()
         self._collect_plates()
         self._add_lag_variables()
         return self
@@ -143,24 +157,42 @@ class ModelAnalyzer:
                     if dep in arrival_states:
                         self._time_deps.add((var, dep))
 
-    def _assemble_edges(self):
-        """Convert dependencies into classified edge lists."""
+    def _classify_edge(self, source, target):
+        """Return the edge kind for a ``source -> target`` dependency."""
+        if (target, source) in self._time_deps:
+            return "lag"
+        if source in self.calibration:
+            return "param"
+        if self.node_meta.get(source, {}).get("kind") == "shock":
+            return "shock"
+        return "instant"
+
+    def _build_graph(self):
+        """Build the annotated dependency graph ``self.G`` (the source of truth).
+
+        Nodes carry ``kind`` / ``agent`` / ``plate`` / ``observed``; each edge
+        carries a ``kind`` attribute (instant / lag / param / shock), replacing
+        the former four parallel edge lists.
+        """
+        for var, meta in self.node_meta.items():
+            self.G.add_node(var, **meta)
+
         for target, deps in self._raw_deps.items():
             for source in deps:
                 if source == target and (target, source) not in self._time_deps:
                     continue
+                self.G.add_edge(
+                    source, target, kind=self._classify_edge(source, target)
+                )
 
-                if (target, source) in self._time_deps:
-                    self.edges["lag"].append((source, target))
-                elif source in self.calibration:
-                    self.edges["param"].append((source, target))
-                elif self.node_meta.get(source, {}).get("kind") == "shock":
-                    self.edges["shock"].append((source, target))
-                else:
-                    self.edges["instant"].append((source, target))
+    def _derive_node_meta_and_edges(self):
+        """Derive the public ``node_meta`` and classified ``edges`` from ``self.G``."""
+        self.node_meta = {n: dict(self.G.nodes[n]) for n in self.G.nodes}
 
-        for edge_type in self.edges:
-            self.edges[edge_type] = sorted(set(self.edges[edge_type]))
+        edges = {"instant": [], "lag": [], "param": [], "shock": []}
+        for source, target, data in self.G.edges(data=True):
+            edges[data["kind"]].append((source, target))
+        self.edges = {kind: sorted(set(pairs)) for kind, pairs in edges.items()}
 
     def _collect_plates(self):
         """
@@ -198,6 +230,57 @@ class ModelAnalyzer:
             if source in self.node_meta and lag_var not in self.node_meta:
                 self.node_meta[lag_var] = self.node_meta[source].copy()
                 self.node_meta[lag_var]["observed"] = False
+
+    def influence_graph(self):
+        """Return the SCIM (influence-diagram) view for strategic-relevance analysis.
+
+        The graph :mod:`skagent.relevance` consumes: chance / decision / utility
+        nodes with the causal (instant + shock) edges between them. Parameter
+        nodes are dropped -- they are deterministic constants, not random
+        variables, and leaving them in would open spurious d-connection paths
+        (an un-conditioned fork ``A <- p -> B``) that corrupt s-reachability.
+        Lag edges are excluded here (single-period scope); cross-period reliance
+        is handled by the unrolling machinery separately.
+
+        Returns
+        -------
+        SCIM
+            Named tuple ``(graph, decisions, parents, agent_utilities,
+            decision_agent)`` matching
+            :meth:`skagent.relevance.RelevanceGraph.from_scim`.
+        """
+        kind_map = {
+            "shock": "chance",
+            "state": "chance",
+            "control": "decision",
+            "reward": "utility",
+        }
+
+        scim = nx.DiGraph()
+        for node in self.G.nodes:
+            attrs = self.G.nodes[node]
+            scim_kind = kind_map.get(attrs["kind"])
+            if scim_kind is None:  # drop parameter nodes
+                continue
+            scim.add_node(node, kind=scim_kind, agent=attrs["agent"])
+
+        for source, target, data in self.G.edges(data=True):
+            if (
+                data["kind"] in ("instant", "shock")
+                and source in scim
+                and target in scim
+            ):
+                scim.add_edge(source, target)
+
+        decisions = [n for n in scim.nodes if scim.nodes[n]["kind"] == "decision"]
+        parents = {n: list(scim.predecessors(n)) for n in scim.nodes}
+        decision_agent = {d: scim.nodes[d]["agent"] for d in decisions}
+        agent_utilities = defaultdict(list)
+        for node in scim.nodes:
+            if scim.nodes[node]["kind"] == "utility":
+                agent_utilities[scim.nodes[node]["agent"]].append(node)
+
+        return SCIM(scim, decisions, parents, dict(agent_utilities), decision_agent)
 
     def to_dict(self):
         """Return a JSON-serializable dict of the analysis."""
