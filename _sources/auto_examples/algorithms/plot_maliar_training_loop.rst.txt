@@ -258,7 +258,7 @@ slice is deterministic. Then we check the two buffer-stock properties.
     Trained over 200 ergodic-set states in the final round.
     Borrowing constraint 0 < c <= m holds on the test grid: True
     APC c/m near the constraint: 0.75
-    APC c/m at high wealth:      0.45
+    APC c/m at high wealth:      0.43
     APC falls as the buffer grows (buffer-stock signature): True
 
 
@@ -319,7 +319,7 @@ wealth grows.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 45.090 seconds)
+   **Total running time of the script:** (0 minutes 28.792 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_maliar_training_loop.py:
