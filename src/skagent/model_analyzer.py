@@ -1,6 +1,13 @@
 """
-ModelAnalyzer: Extracts structured metadata from scikit-agent DBlock/RBlock models
-for visualization (e.g., plate-notation drawing).
+ModelAnalyzer: Extracts structured metadata from scikit-agent DBlock/RBlock models.
+
+The analyzer builds an annotated dependency graph (``self.G``) as its source of
+truth and exposes it in two forms:
+
+- ``to_dict()`` -- node metadata and classified edges for visualization
+  (e.g., plate-notation drawing via ModelVisualizer).
+- ``influence_graph()`` -- the influence-diagram (SCIM) view consumed by
+  :mod:`skagent.relevance` for strategic-relevance analysis.
 
 Key concepts:
 - instant edge: dependency within the same time period
@@ -19,6 +26,24 @@ from skagent.rule import extract_dependencies
 SCIM = namedtuple(
     "SCIM", ["graph", "decisions", "parents", "agent_utilities", "decision_agent"]
 )
+SCIM.__doc__ = """The influence-diagram (SCIM) view of a model.
+
+Fields
+------
+graph : networkx.DiGraph
+    Chance / decision / utility nodes with causal edges (parameters dropped).
+decisions : list
+    The decision (control) nodes.
+parents : dict
+    ``parents[node]`` is the node's parents in ``graph`` (a decision's is its
+    information set).
+agent_utilities : dict
+    ``agent_utilities[agent]`` is the list of utility nodes owned by ``agent``.
+decision_agent : dict
+    ``decision_agent[decision]`` is the agent that owns each decision.
+
+Unpacks directly into :meth:`skagent.relevance.RelevanceGraph.from_scim`.
+"""
 
 
 class ModelAnalyzer:
