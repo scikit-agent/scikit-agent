@@ -33,7 +33,7 @@ TVC                 : lim_{T→∞} E_0[β^T u'(c_T) A_T] = 0 (transversality co
 
 from __future__ import annotations
 
-from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli, Uniform
+from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
 from skagent.block import Control, DBlock
 import copy
 import logging
@@ -1105,107 +1105,6 @@ def _validate_d2_d3_solution(
 
     # If we get here, validation passed
     return {"success": True, "validation": "PASSED"}
-
-
-# ============================================
-# GAME-THEORETIC (MAID) BENCHMARKS
-# ============================================
-# These are multi-agent influence diagrams used to exercise strategic-relevance
-# analysis (Block.relevance_graph / relies_on). Unlike the economic benchmarks
-# above they are not solved for a policy, so they are kept out of
-# BENCHMARK_MODELS; only their graphical structure (information sets, agent
-# ownership, dependencies) is meaningful. Functional forms are placeholders.
-
-# Tree Killer (Koller & Milch 2001, Fig. 1)
-# -----------------------------------------
-# Alice considers poisoning her neighbour Bob's tree (PT) to improve the view
-# from a patio she is deciding whether to build (BP); Bob observes whether the
-# tree is sick (TS) and decides whether to call a tree doctor (TDoc). The
-# relevance graph (KM Fig. 4a) is PT -> BP, PT -> TDoc, BP -> TDoc: Alice's
-# poison decision relies on both other decisions, her patio decision relies on
-# Bob's, and Bob's tree-doctor decision relies on nothing.
-#
-# DEPARTURE FROM KOLLER & MILCH (2001): the original presents chance nodes as
-# conditional probability distributions P(node | parents) attached directly to
-# the node. Here we instead use the structural causal representation: each
-# chance node is a deterministic mechanism of its endogenous parents plus an
-# explicit exogenous noise variable (a shock). So the tree becomes sick (TS) as
-# a parent-conditioned Bernoulli via the inverse-CDF trick on a Uniform noise
-# u_TS, and likewise TDead. The two formulations are equivalent in distribution
-# (any CPD can be written as a function of its parents plus independent noise),
-# but the structural form makes the noise a first-class graph node -- matching
-# scikit-agent's shock/dynamics vocabulary. Because these noise nodes are
-# single-child exogenous roots, they cannot lie on any d-connecting path between
-# other nodes, so the relevance graph is identical to the CPD formulation's.
-#
-# Utility nodes are deterministic functions of their parents (as influence
-# diagrams require). The probabilities/payoffs are still illustrative; only the
-# graphical structure is used by relevance analysis, and this model is not yet
-# solvable as a game (no equilibrium solver exists).
-#
-# Dynamics are listed in topological order so no within-period dependency is
-# mistaken for an arrival-state (lag) edge. Structure matches PyCID's
-# story_macids.tree_doctor, the cross-check oracle (the explicit noise nodes,
-# being single-child exogenous roots, do not change the relevance graph).
-tree_killer_block = DBlock(
-    **{
-        "name": "tree_killer",
-        "shocks": {
-            "u_TS": Uniform(0.0, 1.0),  # noise driving the tree-sick CPD
-            "u_TDead": Uniform(0.0, 1.0),  # noise driving the tree-death CPD
-        },
-        # Decisions are binary in the original game (poison or not, call the
-        # doctor or not, build or not). scikit-agent has no discrete-action
-        # support yet, so each is modelled as a continuous [0, 1] relaxation
-        # (read as an intensity / probability of the action). The bound
-        # functions take the control's information set as positional arguments,
-        # per the Control convention (cf. d1_block), though the bounds here are
-        # constant. Bounds do not affect relevance analysis.
-        "dynamics": {
-            "PT": Control(
-                [],
-                lower_bound=lambda: 0.0,
-                upper_bound=lambda: 1.0,
-                agent="alice",
-            ),  # poison tree
-            # P(sick) rises with poisoning: Bernoulli via inverse-CDF on u_TS.
-            "TS": lambda PT, u_TS: (u_TS < 0.1 + 0.7 * PT).float(),
-            "TDoc": Control(
-                ["TS"],
-                lower_bound=lambda TS: 0.0,
-                upper_bound=lambda TS: 1.0,
-                agent="bob",
-            ),  # call tree doctor
-            # P(death) rises with sickness, falls if the doctor is called.
-            "TDead": lambda TS, TDoc, u_TDead: (
-                u_TDead < 0.1 + 0.7 * TS - 0.5 * TDoc
-            ).float(),
-            "BP": Control(
-                ["PT", "TDoc"],
-                lower_bound=lambda PT, TDoc: 0.0,
-                upper_bound=lambda PT, TDoc: 1.0,
-                agent="alice",
-            ),  # build patio
-            "E": lambda PT: -PT,  # Alice's poisoning-effort/expense utility
-            "V": lambda TDead, BP: BP * (1.0 - TDead),  # Alice's view utility
-            "Tree": lambda TDead: -TDead,  # Bob's tree-health utility
-            "Cost": lambda TDoc: -TDoc,  # Bob's doctor-cost utility
-        },
-        # TODO(roadmap: multi-reward): each agent has an additively decomposed
-        # utility (Alice: E + V; Bob: Tree + Cost), which is the intended syntax
-        # for multiple reward variables per agent. The relevance machinery
-        # aggregates these correctly, but the single-agent solver path currently
-        # assumes one reward variable per block (see Block
-        # get_state_rule_value_function_from_continuation). Handling additive
-        # multi-utility in the solver is future roadmap work.
-        "reward": {
-            "E": "alice",
-            "V": "alice",
-            "Tree": "bob",
-            "Cost": "bob",
-        },
-    }
-)
 
 
 BENCHMARK_MODELS = {

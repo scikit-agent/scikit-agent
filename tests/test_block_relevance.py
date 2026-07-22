@@ -13,7 +13,7 @@ import copy
 
 import pytest
 
-from skagent.models.benchmarks import tree_killer_block
+from skagent.models.macid import tree_killer_block
 from skagent.models.consumer import consumption_block
 
 # Pristine copy: other suites mutate the shared consumption_block in place.
