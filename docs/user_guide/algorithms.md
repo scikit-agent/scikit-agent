@@ -58,8 +58,9 @@ The returned `dr` is an ordinary `{control: callable}` decision rule — the sam
 shape produced by other solvers — so it plugs straight into simulators and the
 rest of the toolkit.
 
-For a complete, runnable walkthrough — training PPO on a benchmark with a known
-closed-form solution and comparing the learned policy against it — see the
+For a complete, runnable walkthrough — training PPO on a benchmark with a
+binding borrowing constraint (and no closed-form solution) and comparing the
+learned policy against a numerical value-function-iteration reference — see the
 {doc}`../auto_examples/algorithms/plot_sb3_ppo` example.
 
 ```{note}
