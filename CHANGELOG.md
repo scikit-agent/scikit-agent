@@ -10,6 +10,11 @@ and this project adheres to
 
 ### Fixed
 
+- `u2_block`'s cash-on-hand dynamic guarded a division with `torch.clamp`, which
+  rejects the numpy/scalar inputs the VFI solver passes, so the block could not
+  be solved by `vfi`. A `_clamp_min` helper now clamps on both torch tensors and
+  numpy/Python scalars, leaving the tensor path unchanged.
+
 - Benchmark blocks `d2_block` and `d3_block` imposed a no-borrowing constraint
   (`c <= m`, i.e. end-of-period assets `a' >= 0`) that contradicts their
   unconstrained perfect-foresight closed-form policies, which borrow against
@@ -106,8 +111,14 @@ and this project adheres to
   optimizer from the previous policy. Stops on the sup-norm value change
   (`converged`, `n_iter`, `residual` reported on `value_array.attrs`);
   non-convergence warns, or raises under `raise_on_nonconvergence`.
-  Deterministic scope: internal shock discretization (`disc_params`) is not yet
-  implemented.
+- Discretized shock expectations in VFI (`disc_params`): `bellman_step`
+  integrates _hidden_ shocks (in no control's information set) inside the
+  per-point `max` via `Distribution.discretize` + `expected`, and
+  `vfi.value_array_to_function` integrates _observed_-shock grid axes out of the
+  arrival value (`W(s) = E_obs[V(s, obs)]`); `solve_bellman` threads
+  `disc_params` through both. This lifts VFI's old full-observation restriction,
+  so problems whose optimum is an expectation over an unobserved shock (and the
+  U-2 log-utility permanent-income benchmark) are now solvable.
 - **Constraints** user-guide page documenting the ways to constrain an
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss

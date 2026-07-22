@@ -59,6 +59,20 @@ def crra_utility(c, gamma):
     return c_tensor ** (1 - gamma) / (1 - gamma)
 
 
+def _clamp_min(x, lo):
+    """Lower-clamp that works on torch tensors *and* numpy/Python scalars.
+
+    ``torch.clamp`` rejects non-tensor input, so a block dynamic that guards a
+    division with it (e.g. ``m = R*a/torch.clamp(psi, min=eps)``) is unusable on
+    the numpy path that :mod:`skagent.algos.vfi` drives its grid backup over. This
+    helper preserves the exact tensor behaviour (``torch.clamp(x, min=lo)``) while
+    also accepting the numpy/Python floats the VFI solver passes in.
+    """
+    if torch.is_tensor(x):
+        return torch.clamp(x, min=lo)
+    return np.maximum(x, lo)
+
+
 def _human_wealth_rate(R):
     """Return r = R - 1, raising ValueError if R <= 1.
 
@@ -718,7 +732,7 @@ u2_block = DBlock(
             # The "+1" represents E[θ] = 1, the mean of normalized transitory income.
             # In full buffer stock models (U-3), θ would be a shock; here it's deterministic.
             # Note: psi is strictly positive from MeanOneLogNormal, but we clamp for safety.
-            "m": lambda a, R, psi: R * a / torch.clamp(psi, min=1e-8) + 1,
+            "m": lambda a, R, psi: R * a / _clamp_min(psi, 1e-8) + 1,
             # Normalized consumption - network sees only m
             # U-2 is UNCONSTRAINED PIH: agent can borrow against human wealth h = 1/r.
             # At m = 0, the analytical solution is c = (1-β)/r ≈ 1.33.

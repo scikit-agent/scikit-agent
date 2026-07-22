@@ -10,6 +10,7 @@ plus a continuation value.
 
 from skagent.bellman import BellmanPeriod
 from skagent.block import DBlock
+from skagent.distributions import expected
 from inspect import signature
 import itertools
 import logging
@@ -429,6 +430,44 @@ def _project_to_iset(
     return da.assign_coords(derived_coords).transpose(*iset)
 
 
+def _discretize_shocks(bp, shock_syms, params, disc_params):
+    """Build the joint discrete distribution over *shock_syms* (design §4).
+
+    The shocks are pulled from the block (constructed from *params* if still in
+    constructor-tuple form), discretized — with the per-shock ``disc_params``
+    arguments where given, else the distribution's default — and combined into a
+    single joint :class:`DiscreteDistribution`. Already-discrete shocks (e.g.
+    ``Bernoulli``) discretize to themselves, so ``disc_params`` is optional per
+    shock.
+
+    Returns ``(joint_dist, means)`` where *means* maps each shock symbol to the
+    mean of its discretized marginal — used to fix the shock when computing a
+    control's pre-state / bounds, which must be a single value even though the
+    objective integrates over the whole distribution (§2).
+    """
+    from skagent.block import construct_shocks
+    from skagent.distributions import (
+        DiscreteDistributionLabeled,
+        combine_indep_dstns,
+    )
+
+    shock_data = {s: bp.get_shocks()[s] for s in shock_syms}
+    constructed = construct_shocks(shock_data, params)
+
+    labeled = []
+    means = {}
+    for s in shock_syms:
+        dist = constructed[s]
+        disc = (
+            dist.discretize(**disc_params[s]) if s in disc_params else dist.discretize()
+        )
+        labeled.append(DiscreteDistributionLabeled.from_unlabeled(disc, var_names=[s]))
+        pts = np.asarray(disc.points, dtype=float)
+        wts = np.asarray(disc.weights, dtype=float)
+        means[s] = float(np.sum(pts * wts) / np.sum(wts))
+    return combine_indep_dstns(*labeled), means
+
+
 # Two evaluations pin an affine map; a third checks the affinity assumption.
 _ABC_PROBES = (1.0, 2.0, 3.0)
 
@@ -505,13 +544,26 @@ def bellman_step(
     ``BellmanPeriod`` protocol the rest of the torch stack uses, with an explicit
     discount factor and multi-reward summation, and is empty-shock-safe.
 
+    Shocks are handled by their information role (§4). A shock in some control's
+    information set is *observed* and enters as a grid axis; a shock in no
+    control's information set is *hidden* and is integrated out inside the
+    per-point ``max`` via internal discretization (:func:`_discretize_shocks` +
+    ``expected``), so an optimum that is characterized by an expectation over an
+    unobserved shock is in scope. A hidden shock may still be pinned to a fixed
+    realization by supplying it in *scope*, which takes precedence over
+    discretization.
+
     .. note::
        Current scope of the §2 design: one or more controls, jointly optimized
        by a single :func:`scipy.optimize.minimize` over the stacked control
        vector with per-control bounds, each policy then reprojected onto its own
-       information set (:func:`_project_to_iset`, §5). There is no internal shock
-       discretization (§4): hidden shocks must be supplied as fixed realizations
-       via *scope*, and ``disc_params`` raises :class:`NotImplementedError`.
+       information set (:func:`_project_to_iset`, §5). A control's pre-state and
+       bounds are evaluated with each hidden shock fixed at its (discretized)
+       mean, since a single value is required there even though the objective
+       integrates the shock. This is exact when the pre-state does not depend on
+       the hidden shock, or when the hidden shock is degenerate (a single
+       discretization node); a pre-state that depends on a non-degenerate hidden
+       shock is only approximate.
 
     Parameters
     ----------
@@ -531,11 +583,15 @@ def bellman_step(
     agent : str, optional
         If given, the period reward sums only this agent's reward symbols.
     scope : Mapping, optional
-        Fixed non-shock exogenous values merged into the model parameters. This
-        is also where a hidden shock's fixed realization is currently supplied
-        (pending internal discretization, §4).
+        Fixed non-shock exogenous values merged into the model parameters. A
+        shock supplied here is pinned to that fixed realization instead of being
+        integrated (it takes precedence over discretization).
     disc_params : Mapping, optional
-        Reserved for internal shock discretization (§4); must be empty for now.
+        Per-shock discretization arguments, keyed by shock symbol (e.g.
+        ``{"theta": {"N": 7}}``), forwarded to each hidden shock's
+        ``Distribution.discretize`` (§4). A shock without an entry uses its
+        distribution's default discretization (exact for already-discrete
+        shocks).
     x0 : float, optional
         Fallback optimizer seed used when a control has an open bound.
     x0_policy : Mapping[str, DataArray], optional
@@ -570,12 +626,6 @@ def bellman_step(
             "bellman_step needs at least one control; a control-free block has "
             "no decision to optimize."
         )
-    if disc_params:
-        raise NotImplementedError(
-            "disc_params (internal shock discretization) is not yet implemented "
-            "(design §9 step 6); for now supply any hidden-shock realization "
-            "as a fixed value via `scope`."
-        )
 
     grid_axes = list(state_grid.keys())
     shock_syms = set(bp.get_shocks())
@@ -591,15 +641,21 @@ def bellman_step(
     upper_by_control = {c: bp.block.dynamics[c].upper_bound for c in controls}
 
     params = {**bp.calibration, **scope}
-    iset_union = {iv for c in controls for iv in iset_by_control[c]}
-    for s in shock_syms - set(grid_axes):
-        if s not in params:
-            raise NotImplementedError(
-                f"Shock '{s}' is hidden (in no control's information set "
-                f"{sorted(iset_union)}) and has no fixed value. For now, supply "
-                "a realization via `scope`; integration over hidden shocks is "
-                "not yet implemented (design §9 step 6)."
-            )
+
+    # Classify each shock by its information role (§4). A shock that is a grid
+    # axis is observed (gridded over its nodes); one pinned in ``scope`` is a
+    # fixed realization; the rest are hidden and integrated out inside the
+    # per-point max via discretization. Hidden shocks are fixed at their mean
+    # when computing a control's pre-state and bounds (a single value is needed
+    # there), and swept over their nodes only inside the objective.
+    hidden_syms = [s for s in shock_syms if s not in grid_axes and s not in params]
+    disc_hidden = None
+    hidden_mean = {}
+    if hidden_syms:
+        disc_hidden, hidden_mean = _discretize_shocks(
+            bp, hidden_syms, params, disc_params
+        )
+    hidden_names = list(disc_hidden.var_names) if disc_hidden is not None else []
 
     reward_syms = bp.get_reward_syms(agent)
 
@@ -635,6 +691,11 @@ def bellman_step(
         states = {k: v for k, v in point_vals.items() if k in arrival}
         obs = {k: v for k, v in point_vals.items() if k in shock_syms}
 
+        # Shocks seen when computing a control's pre-state and bounds: observed
+        # nodes at this point, plus each hidden shock fixed at its mean (a single
+        # value is required here; the objective integrates the hidden shocks).
+        pre_shocks = {**obs, **hidden_mean}
+
         # Per-control bounds and seeds, evaluated at this point (each control's
         # pre-state is available once the arrival states / observed shocks are
         # fixed). The optimizer ranges over the stacked control vector, ordered
@@ -642,10 +703,10 @@ def bellman_step(
         bounds = []
         seed_vec = []
         for c in controls:
-            pre = bp.compute_pre_state(c, states, shocks=obs, parameters=params)
+            pre = bp.compute_pre_state(c, states, shocks=pre_shocks, parameters=params)
             for iv in iset_by_control[c]:
                 iset_coord_buf[c][iv][idx] = pre[iv]
-            bag = {**params, **obs, **states, **pre}
+            bag = {**params, **pre_shocks, **states, **pre}
             lower_func = lower_by_control[c]
             upper_func = upper_by_control[c]
             lb = (
@@ -660,7 +721,7 @@ def bellman_step(
             )
             if grid_box is not None:
                 lb, ub = _tighten_bounds_to_grid(
-                    bp, c, states, obs, params, grid_box, lb, ub
+                    bp, c, states, pre_shocks, params, grid_box, lb, ub
                 )
             bounds.append((lb, ub))
             # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
@@ -671,18 +732,33 @@ def bellman_step(
             else:
                 seed_vec.append(x0)
 
-        def negated_value(a):
+        def value_at(a, extra_shocks):
+            # One evaluation of the backup objective at control vector ``a`` and
+            # a single hidden-shock realization (``extra_shocks``; empty when
+            # there are no hidden shocks to integrate).
             ctrl = {c: a[j] for j, c in enumerate(controls)}
+            sh = {**obs, **extra_shocks}
             rewards = bp.reward_function(
-                states, ctrl, shocks=obs, parameters=params, agent=agent
+                states, ctrl, shocks=sh, parameters=params, agent=agent
             )
             r = sum(rewards[s] for s in reward_syms)
-            post = bp.post_function(states, ctrl, shocks=obs, parameters=params)
+            post = bp.post_function(states, ctrl, shocks=sh, parameters=params)
             beta = bp.resolve_discount_factor(post)
-            s_next = bp.transition_function(states, ctrl, shocks=obs, parameters=params)
+            s_next = bp.transition_function(states, ctrl, shocks=sh, parameters=params)
+            return float(r + beta * continuation_vf(s_next, sh, params))
 
-            # coerce to float
-            return -float(r + beta * continuation_vf(s_next, obs, params))
+        def negated_value(a):
+            if disc_hidden is None:
+                return -value_at(a, {})
+
+            # Integrate the hidden shocks inside the max: E_hidden[objective].
+            # The realization arrives keyed by shock name (indexed by name so the
+            # single- and multi-shock joint distributions share one code path).
+            def obj(shock_value_array):
+                extra = {s: shock_value_array[s] for s in hidden_names}
+                return value_at(a, extra)
+
+            return -float(expected(obj, disc_hidden))
 
         res = minimize(negated_value, seed_vec, bounds=bounds)
         if not res.success:
@@ -716,6 +792,42 @@ def bellman_step(
     return dr_from_data, value_array, policy_array
 
 
+def _integrate_observed_shocks(value_array, bp, shock_axes, disc_params):
+    """Integrate observed-shock axes out of a decision value grid (§4).
+
+    Returns ``W(s) = E_obs[V(s, obs)]`` over the arrival-state axes, summing each
+    shock axis against the weights of that shock's discretized distribution. The
+    axis coordinate must equal the discretization node values (in order), since
+    the weights are matched to the nodes positionally; a grid axis built from
+    other values raises :class:`ValueError` rather than mis-weighting.
+    """
+    from skagent.block import construct_shocks
+
+    constructed = construct_shocks(
+        {s: bp.get_shocks()[s] for s in shock_axes}, dict(bp.calibration)
+    )
+    for ax in shock_axes:
+        dist = constructed[ax]
+        disc = (
+            dist.discretize(**disc_params[ax])
+            if ax in disc_params
+            else dist.discretize()
+        )
+        nodes = np.asarray(disc.points, dtype=float)
+        weights = np.asarray(disc.weights, dtype=float)
+        axis_coords = np.asarray(value_array[ax].values, dtype=float)
+        if axis_coords.shape != nodes.shape or not np.allclose(axis_coords, nodes):
+            raise ValueError(
+                f"Observed-shock axis '{ax}' has coordinate {axis_coords} but its "
+                f"discretization nodes are {nodes}; the grid axis must be built "
+                "from the shock's discretization nodes so the expectation weights "
+                "align. Adjust the grid axis or the disc_params."
+            )
+        w_da = xr.DataArray(weights, dims=[ax], coords={ax: value_array[ax]})
+        value_array = (value_array * w_da).sum(ax)
+    return value_array
+
+
 def value_array_to_function(
     value_array: xr.DataArray,
     bp: BellmanPeriod,
@@ -729,51 +841,50 @@ def value_array_to_function(
     ``bp.compute_value`` convention ``wf(states, shocks, parameters)``, so it
     drops straight into :func:`bellman_step`'s ``continuation_vf`` slot.
 
-    The value grid ranges over the arrival states (its axes). ``wf`` interpolates
-    linearly over them and **extrapolates linearly** past the grid edges (via
-    :class:`scipy.interpolate.RegularGridInterpolator`), so an off-grid
-    next-period state during the backup gets a finite, sloped continuation rather
-    than ``NaN`` (which breaks the optimizer) or a flat boundary clamp (which
-    zeroes the marginal value of saving and collapses the policy onto its bound).
+    The decision value grid ranges over arrival states and any *observed*-shock
+    axes. Those shock axes are first integrated out into the arrival value
+    ``W(s) = E_obs[V(s, obs)]`` (§4), using the weights of the same discretized
+    distribution that produced the axis nodes; a grid built from other node
+    values raises :class:`ValueError`. ``wf`` then interpolates linearly over the
+    remaining arrival-state axes and **extrapolates linearly** past the grid
+    edges (via :class:`scipy.interpolate.RegularGridInterpolator`), so an
+    off-grid next-period state during the backup gets a finite, sloped
+    continuation rather than ``NaN`` (which breaks the optimizer) or a flat
+    boundary clamp (which zeroes the marginal value of saving and collapses the
+    policy onto its bound).
 
-    .. note::
-       Current (deterministic) scope: the value grid is assumed to have no
-       observed-shock axes to integrate out — ``disc_params`` and a grid axis
-       that is a model shock both raise :class:`NotImplementedError`. Integrating
-       observed shocks out of the arrival value (``W(s) = E_obs[V(s, obs)]``)
-       lands with the shock-discretization work (design §4, §9 step 6).
+    When the value grid has no observed-shock axes (the deterministic and
+    hidden-shock-only cases, where the backup already integrated any hidden
+    shocks), the expectation step is a no-op and the value grid over arrival
+    states *is* ``W``.
 
     Parameters
     ----------
     value_array : xarray.DataArray
-        A gridded value function over arrival states, e.g. the ``value_array``
-        returned by :func:`bellman_step`.
+        A gridded decision value function, e.g. the ``value_array`` returned by
+        :func:`bellman_step`; its axes are arrival states and any observed-shock
+        nodes.
     bp : BellmanPeriod
-        The recurring period; used to identify shock axes.
+        The recurring period; used to identify and discretize the shock axes.
     disc_params : Mapping, optional
-        Reserved for observed-shock integration (§4); must be empty for now.
+        Per-shock discretization arguments for the observed-shock axes, keyed by
+        shock symbol (§4). A shock axis without an entry uses its distribution's
+        default discretization.
 
     Returns
     -------
     callable
         ``wf(states, shocks, parameters)`` returning the interpolated arrival
         value at ``states``. ``shocks`` and ``parameters`` are accepted for the
-        ``bp.compute_value`` calling convention but unused in this scope.
+        ``bp.compute_value`` calling convention but unused.
     """
-    if disc_params:
-        raise NotImplementedError(
-            "disc_params (observed-shock integration into the arrival value) is "
-            "not yet implemented (design §9 step 6); the continuation is the "
-            "deterministic value grid over arrival states."
-        )
     axes = list(value_array.dims)
     shock_axes = [ax for ax in axes if ax in set(bp.get_shocks())]
     if shock_axes:
-        raise NotImplementedError(
-            f"value_array has observed-shock axes {shock_axes} to integrate out; "
-            "the arrival-value expectation W(s) = E_obs[V(s, obs)] is not yet "
-            "implemented (design §9 step 6)."
+        value_array = _integrate_observed_shocks(
+            value_array, bp, shock_axes, disc_params
         )
+        axes = list(value_array.dims)
 
     from scipy.interpolate import RegularGridInterpolator
 
@@ -825,12 +936,10 @@ def solve_bellman(
     geometrically (modulus the discount factor) to the stationary solution; for a
     finite horizon of length ``T`` set ``max_iter=T``.
 
-    .. note::
-       Current (deterministic) scope, inherited from :func:`bellman_step` and
-       :func:`value_array_to_function`: no internal shock discretization
-       (``disc_params`` raises :class:`NotImplementedError`); a hidden shock must
-       be supplied as a fixed realization via *scope*, and the value grid must
-       have no observed-shock axes (design §4, §9 step 6).
+    Shocks are discretized internally (§4): *disc_params* is threaded into every
+    backup (hidden shocks integrated inside the max) and into
+    :func:`value_array_to_function` (observed-shock axes integrated into the
+    arrival value between iterations).
 
     Parameters
     ----------
@@ -848,7 +957,9 @@ def solve_bellman(
         Fixed non-shock exogenous values (and, in this scope, any hidden-shock
         realization) merged into the model parameters.
     disc_params : Mapping, optional
-        Reserved for internal shock discretization (§4); must be empty for now.
+        Per-shock discretization arguments (§4), threaded into each backup (for
+        hidden shocks) and into :func:`value_array_to_function` (for observed
+        shocks); see :func:`bellman_step`.
     tol : float, optional
         Convergence tolerance on the sup-norm change in the value grid.
     max_iter : int, optional
@@ -879,12 +990,6 @@ def solve_bellman(
     RuntimeError
         If *raise_on_nonconvergence* is ``True`` and the loop does not converge.
     """
-    if disc_params:
-        raise NotImplementedError(
-            "disc_params (internal shock discretization) is not yet implemented "
-            "(design §9 step 6); for now supply any hidden-shock realization "
-            "as a fixed value via `scope`."
-        )
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
 
@@ -900,6 +1005,7 @@ def solve_bellman(
             state_grid,
             agent=agent,
             scope=scope,
+            disc_params=disc_params,
             x0=x0,
             x0_policy=x0_policy,
             artificial_borrowing_constraint=artificial_borrowing_constraint,
