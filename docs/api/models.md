@@ -83,3 +83,14 @@ below.
 .. automodule:: skagent.models.resource_extraction
    :members:
 ```
+
+## Multi-Agent Influence Diagrams (MAIDs)
+
+Game-theoretic influence diagrams from the literature, encoded to illustrate
+strategic-relevance analysis (`Block.relevance_graph` / `Block.relies_on`).
+These are not solved for a policy; only their graphical structure is used.
+
+```{eval-rst}
+.. automodule:: skagent.models.macid
+   :members:
+```

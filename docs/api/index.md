@@ -32,7 +32,8 @@ The scikit-agent API is organized into several main modules:
 - {doc}`distributions` - Distributions for shocks and initial conditions
 - {doc}`simulation` - Simulation tools and analysis functions
 - {doc}`parser` - Parsing strings into mathematical expressions
-- {doc}`analysis` - Model analysis and visualization
+- {doc}`analysis` - Model analysis, strategic-relevance graphs, and
+  visualization
 - {doc}`utils` - Utility functions and helpers
 
 ## Quick Reference

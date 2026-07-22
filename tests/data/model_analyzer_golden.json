@@ -1,0 +1,329 @@
+{
+  "cons_portfolio_problem": {
+    "edges": {
+      "instant": [
+        ["a", "k"],
+        ["a", "stigma"],
+        ["b", "m"],
+        ["c", "a"],
+        ["c", "u"],
+        ["m", "a"],
+        ["m", "c"],
+        ["stigma", "R"]
+      ],
+      "lag": [["k", "b"]],
+      "param": [
+        ["CRRA", "u"],
+        ["EqP", "risky_return"],
+        ["PermGroFac", "b"],
+        ["R", "b"],
+        ["Rfree", "R"],
+        ["Rfree", "risky_return"],
+        ["RiskyStd", "risky_return"],
+        ["TranShkStd", "theta"]
+      ],
+      "shock": [
+        ["risky_return", "R"],
+        ["theta", "m"]
+      ]
+    },
+    "node_meta": {
+      "CRRA": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "DiscFac": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "EqP": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "LivPrb": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "PermGroFac": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "R": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "Rfree": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "RiskyStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "TranShkStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "a": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "b": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "c": {
+        "agent": "consumer",
+        "kind": "control",
+        "observed": true,
+        "plate": null
+      },
+      "k": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "k*": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "kInitStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "m": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "pInitStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "risky_return": {
+        "agent": "global",
+        "kind": "shock",
+        "observed": false,
+        "plate": null
+      },
+      "stigma": {
+        "agent": "consumer",
+        "kind": "control",
+        "observed": true,
+        "plate": null
+      },
+      "theta": {
+        "agent": "global",
+        "kind": "shock",
+        "observed": false,
+        "plate": null
+      },
+      "u": {
+        "agent": "consumer",
+        "kind": "reward",
+        "observed": true,
+        "plate": null
+      }
+    },
+    "plates": {
+      "consumer": {
+        "label": "Consumer",
+        "size": ""
+      }
+    }
+  },
+  "consumption_block": {
+    "edges": {
+      "instant": [
+        ["b", "m"],
+        ["c", "a"],
+        ["c", "u"],
+        ["m", "a"],
+        ["m", "c"],
+        ["y", "m"]
+      ],
+      "lag": [
+        ["k", "b"],
+        ["p", "p"],
+        ["p", "y"]
+      ],
+      "param": [
+        ["CRRA", "u"],
+        ["PermGroFac", "p"],
+        ["R", "b"],
+        ["TranShkStd", "theta"]
+      ],
+      "shock": [["theta", "y"]]
+    },
+    "node_meta": {
+      "CRRA": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "DiscFac": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "EqP": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "LivPrb": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "PermGroFac": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "R": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "Rfree": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "RiskyStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "TranShkStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "a": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "b": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "c": {
+        "agent": "consumer",
+        "kind": "control",
+        "observed": true,
+        "plate": null
+      },
+      "k": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "k*": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "kInitStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "m": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "p": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "p*": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      },
+      "pInitStd": {
+        "agent": "global",
+        "kind": "param",
+        "observed": false,
+        "plate": null
+      },
+      "theta": {
+        "agent": "global",
+        "kind": "shock",
+        "observed": false,
+        "plate": null
+      },
+      "u": {
+        "agent": "consumer",
+        "kind": "reward",
+        "observed": true,
+        "plate": null
+      },
+      "y": {
+        "agent": "global",
+        "kind": "state",
+        "observed": false,
+        "plate": null
+      }
+    },
+    "plates": {
+      "consumer": {
+        "label": "Consumer",
+        "size": ""
+      }
+    }
+  }
+}

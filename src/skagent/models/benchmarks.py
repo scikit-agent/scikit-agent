@@ -115,8 +115,9 @@ d1_block = DBlock(
         "shocks": {},
         "dynamics": {
             "c": Control(["W", "t"], upper_bound=lambda W, t: W, agent="consumer"),
-            "u": lambda c, t, T: (as_tensor(t) < as_tensor(T)).float()
-            * crra_utility(c, 1.0),  # Utility cutoff at T (life ends)
+            "u": lambda c, t, T: (
+                (as_tensor(t) < as_tensor(T)).float() * crra_utility(c, 1.0)
+            ),  # Utility cutoff at T (life ends)
             "W": lambda W, c, R: (W - c) * R,  # Next period wealth
             "t": lambda t: t + 1,  # Time counter
         },
@@ -423,8 +424,9 @@ d3_block = DBlock(
             ),
             "a": lambda m, c: m - c,
             "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
-            "u": lambda c, liv, CRRA: liv
-            * crra_utility(c, CRRA),  # Utility with survival
+            "u": lambda c, liv, CRRA: (
+                liv * crra_utility(c, CRRA)
+            ),  # Utility with survival
         },
         "reward": {"u": "consumer"},
     }
@@ -574,8 +576,9 @@ u1_block = DBlock(
                 agent="consumer",
             ),
             "A": lambda m, c: m - c,  # End-of-period assets
-            "u": lambda c, quad_a, quad_b: quad_a * c
-            - quad_b * c**2 / 2,  # Quadratic utility
+            "u": lambda c, quad_a, quad_b: (
+                quad_a * c - quad_b * c**2 / 2
+            ),  # Quadratic utility
         },
         "reward": {"u": "consumer"},
     }
@@ -728,8 +731,9 @@ u2_block = DBlock(
             "c": Control(
                 ["m"],  # Control depends ONLY on m (network input)
                 lower_bound=lambda m: 0.01,  # Ensure c > 0 for log utility
-                upper_bound=lambda m: 0.1 * m
-                + 2,  # Loose bound; analytical c ≈ 0.04*m + 1.33
+                upper_bound=lambda m: (
+                    0.1 * m + 2
+                ),  # Loose bound; analytical c ≈ 0.04*m + 1.33
                 agent="consumer",
             ),
             # Normalized assets (for transition to next period)
