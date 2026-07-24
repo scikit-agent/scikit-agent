@@ -89,7 +89,7 @@ jobs:
 
       - name: Test package
         run: >-
-          uv run --frozen --extra test pytest -ra --cov --cov-report=xml
+          uv run --frozen --no-sync pytest -ra --cov --cov-report=xml
           --cov-report=term --durations=20
 
       - name: Upload coverage report

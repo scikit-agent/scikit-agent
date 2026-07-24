@@ -53,13 +53,14 @@ Sync the test extra (includes `pytest-xdist`), then run the suite:
 
 ```bash
 uv sync --extra test
-uv run --extra test pytest
+uv run --no-sync pytest
 ```
 
 # Coverage
 
 ```bash
-uv run --extra test pytest --cov=skagent
+uv sync --extra test
+uv run --no-sync pytest --cov=skagent
 ```
 
 # Building docs
