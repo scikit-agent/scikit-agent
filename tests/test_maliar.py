@@ -16,9 +16,10 @@ from skagent.models.benchmarks import (
     get_benchmark_calibration,
     get_analytical_policy,
     get_reference_policy,
+    crra_utility,
 )
 from skagent.simulation.monte_carlo import draw_shocks
-from skagent.utils import reconcile
+from skagent.utils import reconcile, fischer_burmeister
 from test_benchmarks import assert_consumption_policy_diagnostics
 
 # Deterministic test seed - change this single value to modify all seeding
@@ -185,9 +186,9 @@ class TestBellmanLossFunctions(unittest.TestCase):
                     upper_bound=lambda wealth: wealth,
                     agent="consumer",
                 ),
-                "wealth": lambda wealth, income, consumption: wealth
-                + income
-                - consumption,
+                "wealth": lambda wealth, income, consumption: (
+                    wealth + income - consumption
+                ),
                 "utility": lambda consumption: torch.log(
                     consumption + 1e-8
                 ),  # Add small constant to avoid log(0)
@@ -1217,6 +1218,133 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
             0.02,
             f"Euler+FB pointwise gap to VFI should stay tight even at the "
             f"constraint kink. Got max relative error: {max_rel_error:.4%}",
+        )
+
+
+class TestBilateralFischerBurmeister(unittest.TestCase):
+    """EulerEquationLoss(constrained=True) models the lower-bound side of the
+    complementarity condition, not only the upper-bound side.
+
+    Addresses the PR #223 review: a ``lower_bound`` declared on a ``Control``
+    must enter the Fischer-Burmeister residual as ``FB(-f, x - lb)``, and a
+    control with both bounds must reduce to the existing upper-bound residual
+    when the lower bound is slack (so upper-bound benchmarks like D-4 are
+    unaffected). These are deterministic models, so the all-in-one product of
+    two draws collapses to the square of a single complementarity residual.
+    """
+
+    def _det_crra_block(self, lower_bound=None, upper_bound=None):
+        return model.DBlock(
+            **{
+                "name": "bilateral_fb_test",
+                "shocks": {},
+                "dynamics": {
+                    "m": lambda a, R, y: a * R + y,
+                    "c": model.Control(
+                        ["m"],
+                        lower_bound=lower_bound,
+                        upper_bound=upper_bound,
+                        agent="consumer",
+                    ),
+                    "a": lambda m, c: m - c,
+                    "u": lambda c, CRRA: crra_utility(c, CRRA),
+                },
+                "reward": {"u": "consumer"},
+            }
+        )
+
+    def test_lower_bound_enters_complementarity_residual(self):
+        torch.manual_seed(TEST_SEED)
+        cal = {"DiscFac": 0.92, "R": 1.04, "y": 1.0, "CRRA": 2.0}
+        R, y = cal["R"], cal["y"]
+
+        # Lower bound only: c >= 0.5 m. The policy is pinned to the bound, so the
+        # lower bound binds (slack c - 0.5 m = 0) at every state.
+        block = self._det_crra_block(lower_bound=lambda m: 0.5 * m)
+        block.construct_shocks(cal)
+        bp = bellman.BellmanPeriod(block, "DiscFac", cal)
+
+        def df_at_lower_bound(states_t, shocks_t, parameters):
+            m = R * states_t["a"] + y
+            return {"c": 0.5 * m}
+
+        a_test = torch.linspace(0.5, 4.0, 16)
+        states = {"a": a_test}
+        input_grid = grid.Grid.from_dict({"a": a_test})
+
+        loss_fn = loss.EulerEquationLoss(bp, parameters=cal, constrained=True)
+        actual = loss_fn(df_at_lower_bound, input_grid)
+
+        # Expected: FB(-f, slack) squared, with slack = c - lb = 0.
+        f = euler_residual_of(bp, df_at_lower_bound, states, {}, cal)
+        slack_lower = torch.zeros_like(f)
+        expected = fischer_burmeister(-f, slack_lower) ** 2
+
+        self.assertTrue(
+            torch.allclose(actual, expected, atol=1e-6),
+            f"binding lower bound should give FB(-f, c-lb)^2; got {actual} "
+            f"vs expected {expected}",
+        )
+        # Regression guard: must NOT collapse to the upper-only relu fallback.
+        relu_fallback = torch.relu(-f) ** 2
+        self.assertFalse(
+            torch.allclose(actual, relu_fallback, atol=1e-6),
+            "lower-bound loss collapsed to relu(-f)^2; bilateral FB not applied",
+        )
+
+    def test_complementarity_residual_reductions_and_kkt_zeros(self):
+        """The combiner reduces exactly to the one-sided residuals and is
+        exactly zero at every KKT point of a box-constrained control.
+
+        These exact properties (not pointwise equality away from optimum) are
+        what guarantee the two-sided form leaves upper-bound benchmarks like
+        D-4 converging to the same policy.
+        """
+        f = torch.linspace(-2.0, 2.0, 9)
+        s = torch.full_like(f, 0.5)
+
+        # One-sided cases match the bare Fischer-Burmeister residual exactly.
+        self.assertTrue(
+            torch.allclose(
+                loss._complementarity_residual(f, None, s),
+                fischer_burmeister(f, s),
+            ),
+            "upper-only combiner must equal FB(f, s_u)",
+        )
+        self.assertTrue(
+            torch.allclose(
+                loss._complementarity_residual(f, s, None),
+                fischer_burmeister(-f, s),
+            ),
+            "lower-only combiner must equal FB(-f, s_l)",
+        )
+        # No bound -> None (caller uses the relu fallback).
+        self.assertIsNone(loss._complementarity_residual(f, None, None))
+
+        # Two-sided KKT zeros (exact to the FB regularization eps).
+        zero = torch.zeros(5)
+        big = torch.full((5,), 7.0)
+        f_pos = torch.linspace(0.1, 3.0, 5)  # f >= 0
+        # Upper binds: s_u = 0, f >= 0, lower slack -> residual 0.
+        self.assertTrue(
+            torch.allclose(
+                loss._complementarity_residual(f_pos, big, zero), zero, atol=1e-5
+            ),
+            "two-sided residual must vanish when the upper bound binds (f>=0)",
+        )
+        # Lower binds: s_l = 0, f <= 0, upper slack -> residual 0.
+        self.assertTrue(
+            torch.allclose(
+                loss._complementarity_residual(-f_pos, zero, big), zero, atol=1e-5
+            ),
+            "two-sided residual must vanish when the lower bound binds (f<=0)",
+        )
+        # Interior: f = 0, both slacks positive -> residual 0.
+        self.assertTrue(
+            torch.allclose(
+                loss._complementarity_residual(zero, big, big), zero, atol=1e-5
+            ),
+            "two-sided residual must vanish at an interior optimum (f=0)",
         )
 
 

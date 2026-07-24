@@ -11,7 +11,7 @@ rest of the toolkit:
 
 - **Maliar-style deep learning methods**: Neural network solvers following
   Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
-  objective function
+  objective function; see {doc}`maliar`
 - **Value function iteration (VFI)**: Classical dynamic programming via value
   function iteration on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
@@ -58,8 +58,9 @@ The returned `dr` is an ordinary `{control: callable}` decision rule — the sam
 shape produced by other solvers — so it plugs straight into simulators and the
 rest of the toolkit.
 
-For a complete, runnable walkthrough — training PPO on a benchmark with a known
-closed-form solution and comparing the learned policy against it — see the
+For a complete, runnable walkthrough — training PPO on a benchmark with a
+binding borrowing constraint (and no closed-form solution) and comparing the
+learned policy against a numerical value-function-iteration reference — see the
 {doc}`../auto_examples/algorithms/plot_sb3_ppo` example.
 
 ```{note}
@@ -270,7 +271,8 @@ induction over a block's value function. See {py:func}`skagent.algos.vfi.solve`.
 The neural Bellman- and Euler-equation losses
 ({py:class}`~skagent.loss.BellmanEquationLoss`,
 {py:class}`~skagent.loss.EulerEquationLoss`) provide deep-learning alternatives
-for the recurring case.
+for the recurring case; the {doc}`Maliar method <maliar>` page explains those
+losses and the training loop that fits them.
 
 ---
 

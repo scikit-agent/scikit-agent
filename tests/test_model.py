@@ -51,6 +51,44 @@ class test_Control(unittest.TestCase):
     def test_attributes(self):
         self.assertEqual(self.test_control_A.agent, "myagent")
 
+    def test_numeric_bounds_become_constant_callables(self):
+        """A raw number bound is normalized to a zero-argument callable so
+        every consumer sees a uniform callable interface."""
+        c = model.Control(["m"], lower_bound=1e-3, upper_bound=2)
+        self.assertTrue(callable(c.lower_bound))
+        self.assertTrue(callable(c.upper_bound))
+        self.assertAlmostEqual(c.lower_bound(), 1e-3)
+        # An int upper bound is coerced to float.
+        self.assertEqual(c.upper_bound(), 2.0)
+        self.assertIsInstance(c.upper_bound(), float)
+
+    def test_callable_bounds_pass_through_unchanged(self):
+        """A callable bound is stored as-is, not re-wrapped."""
+        ub = lambda m: m  # noqa: E731
+        c = model.Control(["m"], upper_bound=ub)
+        self.assertIs(c.upper_bound, ub)
+
+    def test_omitted_bounds_are_none(self):
+        c = model.Control(["m"])
+        self.assertIsNone(c.lower_bound)
+        self.assertIsNone(c.upper_bound)
+
+    def test_bool_bound_rejected(self):
+        """``True`` must not be silently read as the numeric bound ``1.0``."""
+        with self.assertRaises(TypeError):
+            model.Control(["m"], upper_bound=True)
+
+    def test_non_numeric_non_callable_bound_rejected(self):
+        with self.assertRaises(TypeError):
+            model.Control(["m"], lower_bound="zero")
+
+    def test_normalize_bound_helper(self):
+        self.assertIsNone(model.normalize_bound(None))
+        f = model.normalize_bound(0.5)
+        self.assertEqual(f(), 0.5)
+        g = lambda a: a  # noqa: E731
+        self.assertIs(model.normalize_bound(g), g)
+
 
 class test_DBlock(unittest.TestCase):
     def setUp(self):
