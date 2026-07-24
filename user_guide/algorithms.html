@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments Guide" href="environments.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.dev744+g61ac0312b</title>
+        <title>Algorithms Guide - scikit-agent 0.1.dev754+g75ecb6142</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev744+g61ac0312b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev754+g75ecb6142</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
@@ -297,7 +298,7 @@ rest of the toolkit:</p>
 <ul class="simple">
 <li><p><strong>Maliar-style deep learning methods</strong>: Neural network solvers following
 Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
-objective function</p></li>
+objective function; see <a class="reference internal" href="maliar.html"><span class="doc">Solving Models with the Maliar Method</span></a></p></li>
 <li><p><strong>Value function iteration (VFI)</strong>: Classical dynamic programming via value
 function iteration on a grid</p></li>
 <li><p><strong>Reinforcement Learning</strong>: Learn a policy by trial-and-error interaction with
@@ -540,7 +541,8 @@ induction over a block’s value function. See <a class="reference internal" hre
 The neural Bellman- and Euler-equation losses
 (<a class="reference internal" href="../api/loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>,
 <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>) provide deep-learning alternatives
-for the recurring case.</p>
+for the recurring case; the <a class="reference internal" href="maliar.html"><span class="doc">Maliar method</span></a> page explains those
+losses and the training loop that fits them.</p>
 <hr class="docutils" />
 <p><em>For a runnable, end-to-end version of these workflows, see the
 <a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms examples gallery</span></a>.</em></p>
@@ -552,12 +554,12 @@ for the recurring case.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="environments.html">
+          <a class="next-page" href="maliar.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Environments Guide</div>
+                <div class="title">Solving Models with the Maliar Method</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -633,7 +635,7 @@ for the recurring case.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1ad424bd"></script>
+</div><script src="../_static/documentation_options.js?v=7914dfc1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

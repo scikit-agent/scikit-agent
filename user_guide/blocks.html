@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation Guide" href="simulation.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.1.dev744+g61ac0312b</title>
+        <title>Block Guide - scikit-agent 0.1.dev754+g75ecb6142</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev744+g61ac0312b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev754+g75ecb6142</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
@@ -390,12 +391,12 @@ a dynamic equation, the modeler specifies an information set – what informatio
 <section id="constraints">
 <h4>Constraints<a class="headerlink" href="#constraints" title="Link to this heading">¶</a></h4>
 <p>Control variables can be upper and lower bound to values that are themselves
-functions of state variables. Each bound is a callable; a constant bound is a
-zero-argument callable.</p>
+functions of state variables. Each bound is a number (a constant bound) or a
+callable of variables in the control’s information set.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">consumption_control</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
     <span class="n">iset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">],</span>  <span class="c1"># Information set</span>
-    <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>  <span class="c1"># Minimum consumption</span>
-    <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>  <span class="c1"># Maximum consumption</span>
+    <span class="n">lower_bound</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>  <span class="c1"># Minimum consumption (constant)</span>
+    <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>  <span class="c1"># Maximum consumption (state-dependent)</span>
     <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;consumer&quot;</span><span class="p">,</span>  <span class="c1"># Agent assignment</span>
 <span class="p">)</span>
 </pre></div>
@@ -666,7 +667,7 @@ maintaining clear economic interpretation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1ad424bd"></script>
+</div><script src="../_static/documentation_options.js?v=7914dfc1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

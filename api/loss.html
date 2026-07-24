@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Distributions" href="distributions.html"><link rel="prev" title="Environments" href="environments.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Loss Functions - scikit-agent 0.1.dev744+g61ac0312b</title>
+        <title>Loss Functions - scikit-agent 0.1.dev754+g75ecb6142</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev744+g61ac0312b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev754+g75ecb6142</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
@@ -359,28 +360,26 @@ the next-period arrival state, and <span class="math notranslate nohighlight">\(
 computed per control.  The loss sums over all controls:
 <span class="math notranslate nohighlight">\(L = \sum_j w \cdot f_j^2\)</span>.</p>
 <p><strong>Handling Inequality Constraints (Fischer-Burmeister):</strong></p>
-<p>When <code class="docutils literal notranslate"><span class="pre">constrained=True</span></code> and a control has an <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code> defined on its
-<code class="docutils literal notranslate"><span class="pre">Control</span></code> object, the complementarity conditions</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[f \geq 0, \quad s \geq 0, \quad f \cdot s = 0\]</div>
-</div>
-<p>(where <span class="math notranslate nohighlight">\(s\)</span> is the constraint slack) are replaced by the smooth
-Fischer-Burmeister equation (Maliar et al. 2021, equation 25):</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\text{FB}(f, s) = f + s - \sqrt{f^2 + s^2} = 0\]</div>
-</div>
-<p>For controls without an explicit <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code>, the loss falls back to the
-one-sided <span class="math notranslate nohighlight">\(\text{relu}(-f)^2\)</span> formulation.</p>
-<p><strong>Scope: upper bounds only.</strong>
-The constrained mode currently models the upper-bound side of the
-complementarity condition: <span class="math notranslate nohighlight">\(f \geq 0\)</span>, <span class="math notranslate nohighlight">\(s = ub - c \geq
-0\)</span>, <span class="math notranslate nohighlight">\(f \cdot s = 0\)</span>. Although <code class="docutils literal notranslate"><span class="pre">Control</span></code> accepts both
-<code class="docutils literal notranslate"><span class="pre">lower_bound</span></code> and <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code>, lower-bound constraints are not
-yet handled here; bilateral support requires also flipping the
-residual sign for lower-binding cases (<code class="docutils literal notranslate"><span class="pre">FB(-f,</span> <span class="pre">c</span> <span class="pre">-</span> <span class="pre">lb)</span></code>) and is
-left as a follow-up.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">constrained=True</span></code>, a control’s declared bounds are turned into a
+smooth complementarity residual via the Fischer-Burmeister function
+(Maliar et al. 2021, equation 25), <span class="math notranslate nohighlight">\(\text{FB}(a, b) = a + b -
+\sqrt{a^2 + b^2 + \varepsilon}\)</span>, which is zero (up to the regularizer
+<span class="math notranslate nohighlight">\(\sqrt{\varepsilon}\)</span>) exactly where <span class="math notranslate nohighlight">\(a \geq 0\)</span>,
+<span class="math notranslate nohighlight">\(b \geq 0\)</span>, <span class="math notranslate nohighlight">\(a \cdot b = 0\)</span>.</p>
+<p>The sign convention is that the Euler residual <span class="math notranslate nohighlight">\(f\)</span> is <span class="math notranslate nohighlight">\(\geq 0\)</span>
+when an upper bound binds and <span class="math notranslate nohighlight">\(\leq 0\)</span> when a lower bound binds.
+Writing <span class="math notranslate nohighlight">\(s_u = \overline{x} - x\)</span> and <span class="math notranslate nohighlight">\(s_l = x - \underline{x}\)</span>
+for the upper and lower slacks, the per-control residual is</p>
+<ul class="simple">
+<li><p>upper bound only: <span class="math notranslate nohighlight">\(\text{FB}(f, s_u)\)</span>;</p></li>
+<li><p>lower bound only: <span class="math notranslate nohighlight">\(\text{FB}(-f, s_l)\)</span>;</p></li>
+<li><p>both bounds: <span class="math notranslate nohighlight">\(\text{FB}(s_u, -\text{FB}(s_l, -f))\)</span>, a two-sided
+form that reduces to either one-sided residual when the opposite bound is
+slack, so a control with a non-binding floor and a binding ceiling matches
+the upper-only residual;</p></li>
+<li><p>no bound: the one-sided fallback <span class="math notranslate nohighlight">\(\text{relu}(-f)\)</span>, penalizing only
+violations of <span class="math notranslate nohighlight">\(f \geq 0\)</span>.</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -508,7 +507,7 @@ assuming it is executed just once (a non-dynamic model)</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1ad424bd"></script>
+</div><script src="../_static/documentation_options.js?v=7914dfc1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

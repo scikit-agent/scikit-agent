@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Installation" href="installation.html"><link rel="prev" title="scikit-agent" href="../index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>User Guide - scikit-agent 0.1.dev744+g61ac0312b</title>
+        <title>User Guide - scikit-agent 0.1.dev754+g75ecb6142</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev744+g61ac0312b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev754+g75ecb6142</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
@@ -318,6 +319,7 @@ code.</p>
 <li><p><a class="reference internal" href="blocks.html"><span class="doc">Block Guide</span></a> - Understanding model structure and building custom models</p></li>
 <li><p><a class="reference internal" href="simulation.html"><span class="doc">Simulation Guide</span></a> - Monte Carlo simulation and analysis</p></li>
 <li><p><a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> - Solution methods for solving your models</p></li>
+<li><p><a class="reference internal" href="maliar.html"><span class="doc">Solving Models with the Maliar Method</span></a> - Neural-network solution via the Maliar method</p></li>
 <li><p><a class="reference internal" href="environments.html"><span class="doc">Environments Guide</span></a> - Interactive adapters for reinforcement-learning
 algorithms</p></li>
 <li><p><a class="reference internal" href="constraints.html"><span class="doc">Constraining an Optimization Problem</span></a> - The ways to constrain decisions and how solvers enforce
@@ -390,6 +392,14 @@ Parameters can be:
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html#value-function-iteration">Value Function Iteration</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="maliar.html">Solving Models with the Maliar Method</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html#the-all-in-one-expectation-operator">The All-in-One Expectation Operator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html#two-residual-losses">Two Residual Losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html#running-the-training-loop">Running the Training Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html#constrained-controls">Constrained Controls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html#worked-examples">Worked Examples</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="environments.html">Environments Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="environments.html#why-environments">Why environments?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html#environment-stepping-a-model-in-plain-python"><code class="docutils literal notranslate"><span class="pre">Environment</span></code>: stepping a model in plain Python</a></li>
@@ -401,7 +411,7 @@ Parameters can be:
 <li class="toctree-l2"><a class="reference internal" href="constraints.html#feasibility-by-construction-bounded-policy-networks">Feasibility by Construction: Bounded Policy Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constraints.html#optimality-at-the-bound-fischer-burmeister-complementarity">Optimality at the Bound: Fischer-Burmeister Complementarity</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constraints.html#using-both-together">Using Both Together</a></li>
-<li class="toctree-l2"><a class="reference internal" href="constraints.html#grid-solvers">Grid Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constraints.html#where-each-mechanism-is-available">Where Each Mechanism Is Available</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a><ul>
@@ -521,7 +531,7 @@ you’re:</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1ad424bd"></script>
+</div><script src="../_static/documentation_options.js?v=7914dfc1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

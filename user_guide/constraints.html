@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Benchmark Models" href="benchmark_models.html"><link rel="prev" title="Environments Guide" href="environments.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Constraining an Optimization Problem - scikit-agent 0.1.dev744+g61ac0312b</title>
+        <title>Constraining an Optimization Problem - scikit-agent 0.1.dev754+g75ecb6142</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev744+g61ac0312b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev754+g75ecb6142</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
@@ -287,39 +288,38 @@
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="constraining-an-optimization-problem">
 <h1>Constraining an Optimization Problem<a class="headerlink" href="#constraining-an-optimization-problem" title="Link to this heading">¶</a></h1>
-<p>Most dynamic programs worth solving constrain their decisions. An agent who can
-choose any value of a control faces a different, and often degenerate, problem
-from one whose choice must stay inside a feasible set; for example, a consumer
-who cannot borrow solves a genuinely harder problem than one who can. For
-gradient-based solvers the constraint is a complication in its own right:
-training a neural network means differentiating through the policy, and a hard
-constraint introduces exactly the kind of kink that gradients handle badly.</p>
-<p>scikit-agent addresses this with one declaration and two enforcement mechanisms.
-Bounds are declared once, on the <a class="reference internal" href="../api/blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> object. A
-policy network can then build feasibility into its output layer, and a training
-loss can encode the optimality conditions that hold where the constraint binds.
-The two mechanisms answer different questions. The first guarantees that every
-candidate policy is feasible; the second teaches the solver where the constraint
-should bind. They compose, and for problems with binding constraints they work
-best together.</p>
+<p>Most dynamic programs constrain their decisions: a consumer cannot borrow more
+than a credit limit, a portfolio share must stay between zero and one. This page
+shows how to declare those bounds in scikit-agent and which solvers enforce
+them.</p>
+<p>You declare a bound once, on the <a class="reference internal" href="../api/blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> object. From
+that single declaration two mechanisms act, and they answer different questions:</p>
+<ul class="simple">
+<li><p>a <strong>policy network</strong> can build feasibility into its output layer, so every
+candidate policy it proposes is feasible;</p></li>
+<li><p>a <strong>training loss</strong> can encode the optimality condition that holds where a
+constraint binds.</p></li>
+</ul>
+<p>The two are independent. You can use the network bounds alone, and for many
+problems that is enough. The loss-side condition is currently available on one
+loss, <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a>, and matters when you train on
+an Euler objective and the constraint actually binds.</p>
 <section id="declaring-bounds">
 <h2>Declaring Bounds<a class="headerlink" href="#declaring-bounds" title="Link to this heading">¶</a></h2>
-<p>Each bound on a <a class="reference internal" href="../api/blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> is a callable whose argument
-names refer to variables in the control’s information set. A constant bound is a
-zero-argument callable.</p>
+<p>A bound on a <a class="reference internal" href="../api/blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> is either a number or a callable
+whose argument names are variables in the control’s information set. A number is
+a constant bound; a callable is a state-dependent one. Either side may be
+omitted, leaving the control unbounded on that side.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">c</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
     <span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">],</span>
-    <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
-    <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="p">,</span>
+    <span class="n">lower_bound</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>  <span class="c1"># constant floor</span>
+    <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="p">,</span>  <span class="c1"># state-dependent ceiling</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>For example, this declares a decision <span class="math notranslate nohighlight">\(c\)</span> that must stay between a small
-positive floor and the pre-decision state <span class="math notranslate nohighlight">\(m\)</span>; in a consumption-saving model the
-upper bound is a borrowing constraint. Either bound may be omitted, in which
-case the control is unbounded on that side. Passing a raw number such as
-<code class="docutils literal notranslate"><span class="pre">upper_bound=1.0</span></code> raises a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> when a policy network is built from the
-block; write <code class="docutils literal notranslate"><span class="pre">lambda:</span> <span class="pre">1.0</span></code> instead. Everything below reads this single
+<p>This declares a decision <span class="math notranslate nohighlight">\(c\)</span> that must stay between a small positive floor and
+the pre-decision state <span class="math notranslate nohighlight">\(m\)</span>. In a consumption-saving model the upper bound
+<span class="math notranslate nohighlight">\(c \le m\)</span> is a no-borrowing constraint. Everything below reads this one
 declaration, so a model never states its constraints twice.</p>
 </section>
 <section id="feasibility-by-construction-bounded-policy-networks">
@@ -360,19 +360,17 @@ which bounds the control declares:</p>
 </div>
 <p>Here <span class="math notranslate nohighlight">\(\sigma\)</span> is the logistic sigmoid and
 <span class="math notranslate nohighlight">\(\operatorname{softplus}(z) = \log(1 + e^z)\)</span>. The bounds are <em>open</em>: the output
-approaches but never equals either endpoint, which is why the mechanism is
-called open-bounds scaling. The payoff is robustness. Every policy the optimizer
-visits is feasible, so a reward like <span class="math notranslate nohighlight">\(\log(c)\)</span> is never evaluated at an
-infeasible point mid-training. The limitation is that the transform carries no
-information about <em>whether</em> the constraint should bind; a policy can hug a bound
-without the loss ever being told that a Lagrange multiplier belongs there. The
-transform is on by default and can be disabled with <code class="docutils literal notranslate"><span class="pre">apply_open_bounds=False</span></code>.</p>
+approaches but never equals either endpoint, so a reward like <span class="math notranslate nohighlight">\(\log(c)\)</span> is never
+evaluated at an infeasible point mid-training. What the transform does <em>not</em> do
+is signal whether a constraint should bind; a policy can hug a bound without the
+loss being told a Lagrange multiplier belongs there. The transform is on by
+default and can be disabled with <code class="docutils literal notranslate"><span class="pre">apply_open_bounds=False</span></code>.</p>
 </section>
 <section id="optimality-at-the-bound-fischer-burmeister-complementarity">
 <h2>Optimality at the Bound: Fischer-Burmeister Complementarity<a class="headerlink" href="#optimality-at-the-bound-fischer-burmeister-complementarity" title="Link to this heading">¶</a></h2>
 <p>Where a constraint binds, the first-order condition changes. With an Euler
-residual <span class="math notranslate nohighlight">\(f\)</span> and constraint slack <span class="math notranslate nohighlight">\(s = \overline{x} - x\)</span>, optimality requires
-the complementarity conditions</p>
+residual <span class="math notranslate nohighlight">\(f\)</span> and an upper-bound slack <span class="math notranslate nohighlight">\(s = \overline{x} - x\)</span>, optimality is the
+complementarity condition</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
@@ -382,59 +380,105 @@ f \geq 0, \qquad s \geq 0, \qquad f \cdot s = 0,
 <p>so the residual need not vanish at the bound; the slack must. The equivalent
 equation <span class="math notranslate nohighlight">\(\min(f, s) = 0\)</span> is not differentiable, which is the wrong shape for a
 training loss. Following equation (25) of Maliar, Maliar, and Winant (2021),
-<a class="reference internal" href="../api/utils.html#skagent.utils.fischer_burmeister" title="skagent.utils.fischer_burmeister"><code class="xref py py-func docutils literal notranslate"><span class="pre">fischer_burmeister()</span></code></a> replaces it with the smooth
-Fischer-Burmeister function</p>
+<a class="reference internal" href="../api/utils.html#skagent.utils.fischer_burmeister" title="skagent.utils.fischer_burmeister"><code class="xref py py-func docutils literal notranslate"><span class="pre">fischer_burmeister()</span></code></a> replaces it with</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
-\operatorname{FB}(f, s) = f + s - \sqrt{f^2 + s^2} = 0,
+\operatorname{FB}(f, s) = f + s - \sqrt{f^2 + s^2 + \varepsilon},
 \]</div>
 </div>
-<p>which is zero exactly where the complementarity conditions hold and
-differentiable everywhere. Setting <code class="docutils literal notranslate"><span class="pre">constrained=True</span></code> on
-<a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a> builds this residual for every
-control that declares an <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code>:</p>
+<p>which is zero (up to <span class="math notranslate nohighlight">\(\sqrt{\varepsilon}\)</span>) exactly where the complementarity
+conditions hold. The small <span class="math notranslate nohighlight">\(\varepsilon\)</span> under the root is a numerical
+regularizer: it keeps the gradient finite at <span class="math notranslate nohighlight">\(f = s = 0\)</span>, so the residual is
+differentiable everywhere, at the cost of
+<span class="math notranslate nohighlight">\(\operatorname{FB}(0, 0) =
+-\sqrt{\varepsilon}\)</span> rather than exactly zero. With
+the default <span class="math notranslate nohighlight">\(\varepsilon = 10^{-12}\)</span> this offset is about <span class="math notranslate nohighlight">\(10^{-6}\)</span>, below
+typical convergence tolerances but worth accounting for in a very tight test.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">constrained=True</span></code> on <a class="reference internal" href="../api/loss.html#skagent.loss.EulerEquationLoss" title="skagent.loss.EulerEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EulerEquationLoss</span></code></a> to build
+this residual:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">loss</span> <span class="o">=</span> <span class="n">EulerEquationLoss</span><span class="p">(</span><span class="n">bellman_period</span><span class="p">,</span> <span class="n">constrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>The loss reads each control’s declared bounds and forms the complementarity
+residual that matches them:</p>
+<ul class="simple">
+<li><p>upper bound only: <span class="math notranslate nohighlight">\(\operatorname{FB}(f,\; \overline{x} - x)\)</span>;</p></li>
+<li><p>lower bound only: <span class="math notranslate nohighlight">\(\operatorname{FB}(-f,\; x - \underline{x})\)</span>, the residual
+sign flipping because a binding lower bound pushes the decision the other way;</p></li>
+<li><p>both bounds: a two-sided form,
+<span class="math notranslate nohighlight">\(\operatorname{FB}\!\big(\overline{x} - x,\; -\operatorname{FB}(x -
+\underline{x},\; -f)\big)\)</span>,
+which reduces to either one-sided residual when the opposite bound is slack;</p></li>
+<li><p>no bound: a one-sided penalty <span class="math notranslate nohighlight">\(\operatorname{relu}(-f)\)</span> on violations of
+<span class="math notranslate nohighlight">\(f \geq 0\)</span>.</p></li>
+</ul>
 <p>The squared expected residual is estimated in all-in-one fashion as the product
-<span class="math notranslate nohighlight">\(\operatorname{FB}(f_a, s) \cdot \operatorname{FB}(f_b, s)\)</span> at two independent
-next-period shock draws, which keeps the estimate unbiased. A control without an
-explicit <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code> falls back to the one-sided penalty
-<span class="math notranslate nohighlight">\(\operatorname{relu}(-f_a) \cdot \operatorname{relu}(-f_b)\)</span>, which punishes only
-violations of <span class="math notranslate nohighlight">\(f \geq 0\)</span>.</p>
-<p>One scope restriction is worth stating plainly: the constrained loss currently
-models the upper-bound side of the complementarity condition only. A
-<code class="docutils literal notranslate"><span class="pre">lower_bound</span></code> declared on a <code class="docutils literal notranslate"><span class="pre">Control</span></code> is respected by the network transform
-above, but it does not yet enter the complementarity residual; bilateral support
-requires flipping the residual sign for lower-binding cases
-(<span class="math notranslate nohighlight">\(\operatorname{FB}(-f, x - \underline{x})\)</span>) and is left as a follow-up.</p>
+of the residuals at two independent next-period shock draws, which keeps the
+estimate unbiased.</p>
 </section>
 <section id="using-both-together">
 <h2>Using Both Together<a class="headerlink" href="#using-both-together" title="Link to this heading">¶</a></h2>
-<p>The mechanisms are complementary rather than competing. The bounded network
-keeps every training iterate feasible; the Fischer-Burmeister loss supplies the
-optimality condition that tells the solver where the bound binds and by how
-much. The constrained perfect-foresight benchmark (<code class="docutils literal notranslate"><span class="pre">D-4</span></code> in the
+<p>The mechanisms compose: the bounded network keeps every training iterate
+feasible, while the Fischer-Burmeister loss supplies the optimality condition at
+the bound. A minimal Euler-method setup on a constrained consumption-saving
+block looks like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ska</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.ann</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlockPolicyNet</span><span class="p">,</span> <span class="n">train_block_nn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">EulerEquationLoss</span>
+
+<span class="c1"># c is bounded below by a floor and above by the no-borrowing ceiling c &lt;= m.</span>
+<span class="n">bellman_period</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+
+<span class="n">policy_net</span> <span class="o">=</span> <span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bellman_period</span><span class="p">)</span>  <span class="c1"># feasible by construction</span>
+<span class="n">euler_loss</span> <span class="o">=</span> <span class="n">EulerEquationLoss</span><span class="p">(</span>
+    <span class="n">bellman_period</span><span class="p">,</span> <span class="n">constrained</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>  <span class="c1"># bound-aware optimality</span>
+
+<span class="n">policy_net</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_block_nn</span><span class="p">(</span><span class="n">policy_net</span><span class="p">,</span> <span class="n">train_grid</span><span class="p">,</span> <span class="n">euler_loss</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The constrained perfect-foresight benchmark (<code class="docutils literal notranslate"><span class="pre">D-4</span></code> in the
 <a class="reference internal" href="benchmark_models.html"><span class="doc">Benchmark Models</span></a> registry) is the in-package demonstration: a policy
-network trained on <code class="docutils literal notranslate"><span class="pre">EulerEquationLoss(constrained=True)</span></code> matches a
-value-function-iteration oracle to well within one percent on average, on a
-problem whose borrowing constraint binds at low wealth and where an
-unconstrained Euler objective cannot identify the policy level at all. For a
-runnable walkthrough on the buffer-stock model, see
+network trained this way matches a value-function-iteration oracle to well
+within one percent on average, on a problem whose borrowing constraint binds at
+low wealth and where an unconstrained Euler objective cannot identify the policy
+level at all. For a runnable walkthrough, see
 <a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html"><span class="doc">The Maliar Training Loop on a Model With No Closed-Form Solution</span></a>.</p>
 <p>A practical rule of thumb: if the constraint cannot bind in the region of the
-state space you care about, the default network bounds are enough. If it can
-bind and you train on an Euler or first-order-condition objective, add
-<code class="docutils literal notranslate"><span class="pre">constrained=True</span></code> so the loss knows what optimality looks like at the boundary.</p>
+state space you care about, the network bounds alone are enough. If it can bind
+and you train on an Euler objective, add <code class="docutils literal notranslate"><span class="pre">constrained=True</span></code>.</p>
 </section>
-<section id="grid-solvers">
-<h2>Grid Solvers<a class="headerlink" href="#grid-solvers" title="Link to this heading">¶</a></h2>
-<p>Constraint handling is not specific to neural methods. The value backwards
-induction solver (<a class="reference internal" href="../api/algorithms.html#module-skagent.algos.vfi" title="skagent.algos.vfi"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.algos.vfi</span></code></a>) reads the same <code class="docutils literal notranslate"><span class="pre">Control</span></code> bounds
-and passes them to <code class="docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code> as box constraints on each grid
-point’s optimization, with no smooth reformulation needed because no gradient
-flows through the policy.</p>
+<section id="where-each-mechanism-is-available">
+<h2>Where Each Mechanism Is Available<a class="headerlink" href="#where-each-mechanism-is-available" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Mechanism</p></th>
+<th class="head"><p>Where it lives</p></th>
+<th class="head"><p>Bounds handled</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Open-bounds network</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code>, <code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code></p></td>
+<td><p>lower and upper</p></td>
+</tr>
+<tr class="row-odd"><td><p>Complementarity loss</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">EulerEquationLoss(constrained=True)</span></code></p></td>
+<td><p>lower and upper</p></td>
+</tr>
+<tr class="row-even"><td><p>Grid box constraints</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">skagent.algos.vfi</span></code> (value function iteration)</p></td>
+<td><p>lower and upper</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The value function iteration solver (<a class="reference internal" href="../api/algorithms.html#module-skagent.algos.vfi" title="skagent.algos.vfi"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.algos.vfi</span></code></a>) reads the same
+<code class="docutils literal notranslate"><span class="pre">Control</span></code> bounds and passes them to <code class="docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code> as box
+constraints, with no smooth reformulation needed because no gradient flows
+through the policy.</p>
 </section>
 </section>
 
@@ -505,7 +549,7 @@ flows through the policy.</p>
 <li><a class="reference internal" href="#feasibility-by-construction-bounded-policy-networks">Feasibility by Construction: Bounded Policy Networks</a></li>
 <li><a class="reference internal" href="#optimality-at-the-bound-fischer-burmeister-complementarity">Optimality at the Bound: Fischer-Burmeister Complementarity</a></li>
 <li><a class="reference internal" href="#using-both-together">Using Both Together</a></li>
-<li><a class="reference internal" href="#grid-solvers">Grid Solvers</a></li>
+<li><a class="reference internal" href="#where-each-mechanism-is-available">Where Each Mechanism Is Available</a></li>
 </ul>
 </li>
 </ul>
@@ -517,7 +561,7 @@ flows through the policy.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1ad424bd"></script>
+</div><script src="../_static/documentation_options.js?v=7914dfc1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
