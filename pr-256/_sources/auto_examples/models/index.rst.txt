@@ -14,6 +14,10 @@ standard economic models that can be solved using reinforcement learning and
 other computational methods.
 
 
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
+
 
 .. raw:: html
 

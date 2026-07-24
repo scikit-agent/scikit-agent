@@ -248,8 +248,8 @@ symbol in the order list schedules an extra refinement pass for it.
 
  .. code-block:: none
 
-    /home/runner/work/scikit-agent/scikit-agent/.venv/lib/python3.12/site-packages/torch/nn/init.py:566: UserWarning: Initializing zero-element tensors is a no-op
-      warnings.warn("Initializing zero-element tensors is a no-op")
+    /home/runner/work/scikit-agent/scikit-agent/.venv/lib/python3.12/site-packages/torch/nn/modules/linear.py:124: UserWarning: Initializing zero-element tensors is a no-op
+      init.kaiming_uniform_(self.weight, a=math.sqrt(5))
 
 
 
@@ -315,7 +315,7 @@ The residual reward confirms convergence: with the optimal policy the reward
  .. code-block:: none
 
     /home/runner/work/scikit-agent/scikit-agent/examples/algorithms/plot_direct_block_solve.py:174: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
-    Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:822.)
       print(f"max |u| over the grid: {float(rewards['u'].abs().max()):.2e}")
     max |u| over the grid: 2.50e-05
 
@@ -325,7 +325,7 @@ The residual reward confirms convergence: with the optimal policy the reward
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 10.044 seconds)
+   **Total running time of the script:** (0 minutes 12.513 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_direct_block_solve.py:
