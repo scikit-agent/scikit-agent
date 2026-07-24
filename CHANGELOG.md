@@ -72,13 +72,13 @@ and this project adheres to
   of its internal Adam optimizer.
 - Consolidated the open-bounds scaling and decision-function plumbing shared by
   `BlockPolicyNet` and `BlockPolicyValueNet` into `BellmanPeriodMixin`.
-- `skagent.algos.vbi.ar_from_data` now produces decision rules that follow the
+- `skagent.algos.vfi.ar_from_data` now produces decision rules that follow the
   library's calling convention — positional arguments in `control.iset` order
   (`dr(*iset_values)`) instead of the previous keyword form (`dr(m=…)`) — so a
-  VBI-fitted rule is a drop-in for `BellmanPeriod`, `loss`, and `solver`.
-  `vbi.solve` transposes each fitted policy to `control.iset` order to guarantee
+  VFI-fitted rule is a drop-in for `BellmanPeriod`, `loss`, and `solver`.
+  `vfi.solve` transposes each fitted policy to `control.iset` order to guarantee
   the positional argument order regardless of how the caller ordered the grid.
-- Renamed `vbi.solve`'s `calibration` argument to `scope`. VBI uses it as the
+- Renamed `vfi.solve`'s `calibration` argument to `scope`. VFI uses it as the
   general evaluation scope (merged with each grid point to form `pre_states`),
   which legacy usage populates with fixed parameters _and_ fixed exogenous
   values such as a shock realization — broader than the parameters-only
@@ -90,7 +90,7 @@ and this project adheres to
 
 ### Added
 
-- `vbi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
+- `vfi.bellman_step`: one exact value backup on the `BellmanPeriod` protocol —
   the per-iteration update of value-function iteration on the interface the
   torch stack speaks, with explicit discount factor, multi-reward summation, and
   deterministic (empty-shock) handling. Returns
@@ -98,11 +98,11 @@ and this project adheres to
   jointly (`scipy.optimize.minimize` over the stacked control vector) and
   reprojects each policy onto its own information set (design §5): drops grid
   axes outside a control's iset (Mechanism A) and reindexes a derived pre-state
-  like `m = a·R + y` onto its own coordinate (Mechanism B). Legacy `vbi.solve`
+  like `m = a·R + y` onto its own coordinate (Mechanism B). Legacy `vfi.solve`
   is unchanged (the deliberate discount-folded-into-continuation path).
-- `vbi.solve_bellman`: value-function iteration driving `bellman_step` to a
+- `vfi.solve_bellman`: value-function iteration driving `bellman_step` to a
   fixed point — each backup takes the previous iterate's value grid as its
-  continuation (via the new `vbi.value_array_to_function`) and warm-starts the
+  continuation (via the new `vfi.value_array_to_function`) and warm-starts the
   optimizer from the previous policy. Stops on the sup-norm value change
   (`converged`, `n_iter`, `residual` reported on `value_array.attrs`);
   non-convergence warns, or raises under `raise_on_nonconvergence`.
@@ -112,7 +112,7 @@ and this project adheres to
   optimization problem: bound declaration on `Control`, the open-bounds
   policy-network transforms, the Fischer-Burmeister complementarity loss
   (including its current upper-bound-only scope), how the mechanisms compose,
-  and VBI's box-constraint handling (#191). The `blocks.md` portfolio example
+  and VFI's box-constraint handling (#191). The `blocks.md` portfolio example
   now passes callable bounds, matching the enforced API.
 - `fischer_burmeister(a, h)` utility for smooth complementarity conditions
 - `examples/algorithms/plot_train_against_known_solution.py` gallery example
@@ -178,7 +178,7 @@ and this project adheres to
   `plot_direct_block_solve.py` gallery example
 - Expanded the Algorithms API reference with the `skagent.solver` and
   `skagent.loss` modules and `skagent.ann.train_block_nn`
-- `skagent.algos.vbi.tensor_decision_rule`, which wraps a numpy-space VBI
+- `skagent.algos.vfi.tensor_decision_rule`, which wraps a numpy-space VFI
   decision rule so it accepts and returns torch tensors (float32 on the grid
   device, detached) for interop with the torch solving stack. Suitable as a
   fixed / ground-truth / warm-start policy, not as a trainable FOC/Euler policy.
@@ -199,6 +199,9 @@ and this project adheres to
 
 ### Fixed
 
+- The D-2 benchmark's consumption control had no lower bound, so an exact solver
+  could drive `c` negative (where CRRA utility is unbounded); added the `c >= 0`
+  floor the sibling blocks already carry.
 - The U-1 (Hall random walk) benchmark passed `mean`/`std` to `Normal`, whose
   constructor takes `mu`/`sigma`, so `construct_shocks("U-1")` raised
   `TypeError` and the model was unusable. The income shock is now

@@ -67,7 +67,7 @@ Learn to build custom models using DBlocks and economic building blocks
 :link: user_guide/algorithms
 :link-type: doc
 
-Explore solution methods from value backwards induction to neural networks
+Explore solution methods from value function iteration to neural networks
 :::
 
 :::{grid-item-card} 📈 Simulation Guide

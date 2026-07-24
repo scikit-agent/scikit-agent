@@ -1,8 +1,8 @@
 """
-Value backward induction (VBI).
+Value function iteration (VFI).
 
 Derive a decision rule, decision value function, and arrival value function for
-a single :class:`~skagent.block.DBlock` stage by backward induction: at each
+a single :class:`~skagent.block.DBlock` stage by value function iteration: at each
 point of a grid over the decision's information set, solve an exact
 :func:`scipy.optimize.minimize` for the control that maximizes the period reward
 plus a continuation value.
@@ -50,7 +50,7 @@ def ar_from_data(da):
     takes the control's information-set values as *positional* arguments, in the
     order of ``da.dims`` (which :func:`solve` aligns to ``control.iset``). This
     matches how ``block.transition`` invokes a rule,
-    ``dr(*[vals[v] for v in iset])``, so a VBI-fitted rule is a drop-in for the
+    ``dr(*[vals[v] for v in iset])``, so a VFI-fitted rule is a drop-in for the
     rest of the stack.
 
     Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
@@ -184,14 +184,14 @@ def grid_to_data_array(
 
 def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={}):
     """
-    Solve a ``DBlock`` stage by backward induction on the value function.
+    Solve a ``DBlock`` stage by value function iteration.
 
     At each point of *state_grid*, the optimal control(s) are found with
     :func:`scipy.optimize.minimize`, maximizing the period reward plus the
     *continuation* value of the resulting states. The tabulated optima are then
     interpolated into a decision rule.
 
-    VBI assumes *full observation*: the decision conditions on its complete
+    VFI assumes *full observation*: the decision conditions on its complete
     information set and the per-point optimization never integrates over
     unobserved variables. (The only expectation machinery in this module is in
     ``block.get_arrival_value_function``; the optimization here does not use it.)
@@ -223,7 +223,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
 
         .. note::
            This is broader than ``calibration`` elsewhere in the library, which
-           denotes fixed, single-valued *parameters* only. Here (legacy VBI
+           denotes fixed, single-valued *parameters* only. Here (legacy VFI
            usage) it is a general scope bag that also holds fixed exogenous
            values outside the information set, such as a shock realization
            ``psi``. Read it as "scope," not "parameters."
@@ -245,7 +245,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
         continuation, screen=True
     )
 
-    # get_controls() returns a dict[sym, Control]; VBI works with the
+    # get_controls() returns a dict[sym, Control]; VFI works with the
     # ordered list of control symbols.
     controls = list(block.get_controls())
 
@@ -429,6 +429,54 @@ def _project_to_iset(
     return da.assign_coords(derived_coords).transpose(*iset)
 
 
+# Two evaluations pin an affine map; a third checks the affinity assumption.
+_ABC_PROBES = (1.0, 2.0, 3.0)
+
+
+def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
+    """Tighten ``(lb, ub)`` so the successor arrival state stays in *grid_box*.
+
+    Implements the optional artificial borrowing constraint (design §8):
+    confining each next-period arrival state to the value grid guarantees the
+    continuation is only ever *interpolated*, never linearly *extrapolated* past
+    a grid edge into a region it cannot represent. The grid's lower edge thereby
+    acts as a slack artificial state (borrowing) constraint.
+
+    For a single control whose successor ``a'(c)`` is **affine** in ``c`` (e.g.
+    ``a' = m − c``), the state-box constraint ``grid_min ≤ a' ≤ grid_max``
+    inverts *exactly* to a control interval — so this stays a plain box-bound
+    tweak (L-BFGS-B unchanged), no optimizer constraints needed. The affine map
+    is recovered from two probe evaluations and verified by a third; a nonlinear
+    successor raises (use the general monotone root-solve path, design §8).
+    """
+    probe = {
+        p: bp.transition_function(states, {control: p}, shocks=obs, parameters=params)
+        for p in _ABC_PROBES
+    }
+    for k, (lo, hi) in grid_box.items():
+        a0, a1, a2 = (float(np.asarray(probe[p][k])) for p in _ABC_PROBES)
+        slope = a1 - a0  # (a'(2) − a'(1)) / (2 − 1)
+        intercept = a0 - slope * _ABC_PROBES[0]
+        # Affinity guard: the third probe must lie on the line built from the
+        # first two. A nonlinear successor is outside this fast path.
+        if not np.isfinite(a2) or abs(
+            a2 - (intercept + slope * _ABC_PROBES[2])
+        ) > 1e-8 * (1.0 + abs(a2)):
+            raise NotImplementedError(
+                f"artificial_borrowing_constraint: successor arrival state '{k}' "
+                f"is not affine in control '{control}', so the state-grid box does "
+                "not invert to a control interval. Use the general monotone "
+                "root-solve path (design §8)."
+            )
+        if abs(slope) < 1e-12:
+            continue  # this successor axis does not depend on the control
+        c_at_lo = (lo - intercept) / slope
+        c_at_hi = (hi - intercept) / slope
+        c_min, c_max = sorted((c_at_lo, c_at_hi))
+        lb, ub = max(lb, c_min), min(ub, c_max)
+    return lb, ub
+
+
 def bellman_step(
     bp: BellmanPeriod,
     continuation_vf: Callable,
@@ -439,6 +487,7 @@ def bellman_step(
     disc_params: Mapping = {},
     x0: float = 1.0,
     x0_policy: Mapping[str, xr.DataArray] | None = None,
+    artificial_borrowing_constraint: bool = False,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
     One exact value backup over *state_grid* on the ``BellmanPeriod`` protocol.
@@ -493,6 +542,16 @@ def bellman_step(
         Warm-start seeds keyed by control symbol (e.g. a previous iterate's
         ``policy_array``); when given, the seed at each grid point is read from
         here. Supplied by :func:`solve_bellman`.
+    artificial_borrowing_constraint : bool, optional
+        When ``True``, tighten each control's bounds so the next-period arrival
+        state stays inside the state grid (:func:`_tighten_bounds_to_grid`), an
+        artificial state (borrowing) limit at the grid's lower edge (design §8).
+        This keeps the continuation interpolated rather than extrapolated past
+        the grid edges, so value iteration cannot ride a control bound by
+        over-crediting off-grid successors. Single control with an affine
+        successor only (raises otherwise). The limit must be *slack* at the
+        states of interest (it is just the grid floor), or it biases the policy
+        where it binds.
 
     Returns
     -------
@@ -544,6 +603,24 @@ def bellman_step(
 
     reward_syms = bp.get_reward_syms(agent)
 
+    # Artificial borrowing constraint (§8): the box of arrival-state grid axes
+    # that successors must stay within. Single-control only for now — with >1
+    # control the successor couples them into a joint constraint that no longer
+    # reduces to per-control box bounds (that is the general SLSQP path, §8).
+    grid_box = None
+    if artificial_borrowing_constraint:
+        if len(controls) != 1:
+            raise NotImplementedError(
+                "artificial_borrowing_constraint supports a single control for "
+                "now; a multi-control successor is a coupled (joint) constraint, "
+                "not per-control box bounds — use the general path (design §8)."
+            )
+        grid_box = {
+            k: (float(np.min(state_grid[k])), float(np.max(state_grid[k])))
+            for k in grid_axes
+            if k in arrival
+        }
+
     shape = tuple(len(state_grid[k]) for k in grid_axes)
     value_buf = np.empty(shape)
     policy_buf = {c: np.empty(shape) for c in controls}
@@ -581,6 +658,10 @@ def bellman_step(
                 if upper_func is not None
                 else _UPPER_OPEN
             )
+            if grid_box is not None:
+                lb, ub = _tighten_bounds_to_grid(
+                    bp, c, states, obs, params, grid_box, lb, ub
+                )
             bounds.append((lb, ub))
             # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
             if x0_policy is not None:
@@ -727,6 +808,7 @@ def solve_bellman(
     max_iter: int = 100,
     x0: float = 1.0,
     raise_on_nonconvergence: bool = False,
+    artificial_borrowing_constraint: bool = False,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
     Solve a recurring ``BellmanPeriod`` by value-function iteration (§3).
@@ -777,6 +859,10 @@ def solve_bellman(
         If ``True``, raise :class:`RuntimeError` when the loop hits *max_iter*
         without converging; otherwise emit a :class:`warnings.warn` and return the
         last iterate (the scipy ``OptimizeResult.success`` convention, O5).
+    artificial_borrowing_constraint : bool, optional
+        Forwarded to :func:`bellman_step`: confine next-period arrival states to
+        the state grid (grid edge = slack artificial borrowing limit, design §8),
+        so the rebuilt continuation is never extrapolated off-grid.
 
     Returns
     -------
@@ -816,6 +902,7 @@ def solve_bellman(
             scope=scope,
             x0=x0,
             x0_policy=x0_policy,
+            artificial_borrowing_constraint=artificial_borrowing_constraint,
         )
         if value_prev is not None:
             residual = float(np.abs(value_array - value_prev).max())

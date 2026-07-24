@@ -10,7 +10,7 @@ from conftest import (
     case_10,
     case_11,
 )
-import skagent.algos.vbi as vbi
+import skagent.algos.vfi as vfi
 from skagent.bellman import BellmanPeriod
 from skagent.distributions import Bernoulli
 from skagent.block import Control, DBlock
@@ -27,7 +27,7 @@ import warnings
 
 block_1 = DBlock(
     **{
-        "name": "vbi_test_1",
+        "name": "vfi_test_1",
         "shocks": {
             "coin": Bernoulli(p=0.5),
         },
@@ -43,7 +43,7 @@ block_1 = DBlock(
 
 block_2 = DBlock(  # has no control variable
     **{
-        "name": "vbi_test_1",
+        "name": "vfi_test_1",
         "shocks": {
             "coin": Bernoulli(p=0.5),
         },
@@ -57,14 +57,14 @@ block_2 = DBlock(  # has no control variable
 )
 
 
-class test_vbi(unittest.TestCase):
+class test_vfi(unittest.TestCase):
     # def setUp(self):
     #    pass
 
     def test_solve_block_1(self):
         state_grid = {"m": np.linspace(0, 2, 10)}
 
-        dr, dec_vf, arr_vf = vbi.solve(block_1, lambda a: a, state_grid)
+        dr, dec_vf, arr_vf = vfi.solve(block_1, lambda a: a, state_grid)
 
         self.assertAlmostEqual(dr["c"](1), 0.5)
 
@@ -72,7 +72,7 @@ class test_vbi(unittest.TestCase):
         # no control variable case.
         state_grid = {"m": np.linspace(0, 2, 10)}
 
-        dr, dec_vf, arr_vf = vbi.solve(block_2, lambda a: a, state_grid)
+        dr, dec_vf, arr_vf = vfi.solve(block_2, lambda a: a, state_grid)
 
         # arrival value function gives the correct expect value of continuation
         self.assertAlmostEqual(arr_vf({"y": 10}), 9.5)
@@ -82,7 +82,7 @@ class test_vbi(unittest.TestCase):
 
         print(cons.consumption_block_normalized.dynamics["c"])
 
-        dr, dec_vf, arr_vf = vbi.solve(
+        dr, dec_vf, arr_vf = vfi.solve(
             cons.consumption_block_normalized,
             lambda a: 0,
             state_grid,
@@ -100,12 +100,12 @@ def terminal_continuation(a):
     return 0.0
 
 
-class test_vbi_conftest(unittest.TestCase):
+class test_vfi_conftest(unittest.TestCase):
     """
     Comprehensive backward-induction tests against the shared conftest suite.
 
     Each case ships an analytic ``optimal_dr``; here we solve the block with
-    VBI and check the recovered decision rule gets close to that optimum at
+    VFI and check the recovered decision rule gets close to that optimum at
     interior points of the state grid. Together these exercise the full range
     of the single-control solver: an interior optimum, a shock-dependent
     policy, both-sided bounds (with either side binding), single-sided bounds
@@ -123,7 +123,7 @@ class test_vbi_conftest(unittest.TestCase):
       shocks and integrates ``dec_vf`` over them. It is checked on the bounded
       cases (5-8) whose reward does not depend on the shock, so the expectation
       collapses to the analytic value. ``disc_params`` only feeds ``arr_vf``
-      construction and does not affect the policy solve (VBI is full-observation
+      construction and does not affect the policy solve (VFI is full-observation
       and never integrates over shocks in its per-point optimization).
     """
 
@@ -134,7 +134,7 @@ class test_vbi_conftest(unittest.TestCase):
     def test_case_0_interior_optimum(self):
         # u = -c^2, unconstrained -> c* = 0 for all a; V(a) = 0.
         state_grid = {"a": np.linspace(0, 2, 11)}
-        dr, dec_vf, _ = vbi.solve(
+        dr, dec_vf, _ = vfi.solve(
             case_0["block"],
             terminal_continuation,
             state_grid,
@@ -153,7 +153,7 @@ class test_vbi_conftest(unittest.TestCase):
             "a": np.linspace(0, 1, 7),
             "theta": np.linspace(-1, 1, 7),
         }
-        dr, dec_vf, _ = vbi.solve(
+        dr, dec_vf, _ = vfi.solve(
             case_1["block"],
             terminal_continuation,
             state_grid,
@@ -177,7 +177,7 @@ class test_vbi_conftest(unittest.TestCase):
         # would require the pre-``m`` arrival state, not the [m] iset the rule
         # conditions on. The other cases cover the value functions.
         state_grid = {"m": np.linspace(0.1, 2, 7)}
-        dr, _, _ = vbi.solve(
+        dr, _, _ = vfi.solve(
             case_3["block"],
             terminal_continuation,
             state_grid,
@@ -191,7 +191,7 @@ class test_vbi_conftest(unittest.TestCase):
         # V(a) = a. theta only enters next period's a, so arr_vf collapses to a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
         case_5["block"].construct_shocks(case_5["calibration"])
-        dr, _, arr_vf = vbi.solve(
+        dr, _, arr_vf = vfi.solve(
             case_5["block"],
             terminal_continuation,
             state_grid,
@@ -207,7 +207,7 @@ class test_vbi_conftest(unittest.TestCase):
         # u = -c, so V(a) = -a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
         case_6["block"].construct_shocks(case_6["calibration"])
-        dr, _, arr_vf = vbi.solve(
+        dr, _, arr_vf = vfi.solve(
             case_6["block"],
             terminal_continuation,
             state_grid,
@@ -223,7 +223,7 @@ class test_vbi_conftest(unittest.TestCase):
         # Exercises the open upper-bound default. u = -c, so V(a) = -1.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
         case_7["block"].construct_shocks(case_7["calibration"])
-        dr, _, arr_vf = vbi.solve(
+        dr, _, arr_vf = vfi.solve(
             case_7["block"],
             terminal_continuation,
             state_grid,
@@ -239,7 +239,7 @@ class test_vbi_conftest(unittest.TestCase):
         # Exercises the open lower-bound default. u = c, so V(a) = a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
         case_8["block"].construct_shocks(case_8["calibration"])
-        dr, _, arr_vf = vbi.solve(
+        dr, _, arr_vf = vfi.solve(
             case_8["block"],
             terminal_continuation,
             state_grid,
@@ -257,7 +257,7 @@ class test_vbi_conftest(unittest.TestCase):
         # irrelevant under terminal continuation, so it is supplied via the
         # calibration rather than as a grid axis.
         state_grid = {}
-        dr, dec_vf, _ = vbi.solve(
+        dr, dec_vf, _ = vfi.solve(
             case_9["block"],
             terminal_continuation,
             state_grid,
@@ -278,16 +278,16 @@ def bp_terminal(states, shocks, parameters):
     return 0.0
 
 
-class test_vbi_bellman_step(unittest.TestCase):
+class test_vfi_bellman_step(unittest.TestCase):
     """
-    Phase-2 design (§9 steps 1-3): ``vbi.bellman_step`` — one exact value backup
+    Phase-2 design (§9 steps 1-3): ``vfi.bellman_step`` — one exact value backup
     on the ``BellmanPeriod`` protocol; single- and multi-control (one joint
     ``scipy.minimize`` over the stacked control vector, per-control iset
     projection).
 
     Under a terminal (zero) continuation each conftest case reduces to a single
     backward-induction step whose optimum is the case's analytic ``optimal_dr``.
-    These mirror ``test_vbi_conftest`` (which exercises legacy ``solve``) but
+    These mirror ``test_vfi_conftest`` (which exercises legacy ``solve``) but
     drive ``bellman_step`` and assert its 3-tuple return contract. The
     Mechanism-B reindex (§5) is also exercised: a control whose information set
     is a derived pre-state (``case_3``'s ``m = a + theta``, D-2's ``m = a·R + y``).
@@ -298,7 +298,7 @@ class test_vbi_bellman_step(unittest.TestCase):
     ATOL = 1e-3
 
     def _step(self, case, state_grid, scope):
-        return vbi.bellman_step(case["bp"], bp_terminal, state_grid, scope=scope)
+        return vfi.bellman_step(case["bp"], bp_terminal, state_grid, scope=scope)
 
     def test_case_0_interior_optimum(self):
         # u = -c^2, unconstrained -> c* = 0 for all a
@@ -390,7 +390,7 @@ class test_vbi_bellman_step(unittest.TestCase):
         # solve_bellman uses across iterations).
         grid = {"a": np.linspace(0, 2, 11)}
         _, _, policy1 = self._step(case_0, grid, case_0["calibration"])
-        _, _, policy2 = vbi.bellman_step(
+        _, _, policy2 = vfi.bellman_step(
             case_0["bp"],
             bp_terminal,
             grid,
@@ -438,7 +438,7 @@ class test_vbi_bellman_step(unittest.TestCase):
             "b": np.linspace(-1.5, 1.5, 5),  # outside c.iset = [a, theta]
             "theta": np.linspace(-1, 1, 5),
         }
-        dr, value_array, policy = vbi.bellman_step(
+        dr, value_array, policy = vfi.bellman_step(
             case_11["bp"], continuation, grid, agent="agent"
         )
         # c.iset = [a, theta]; the b axis is outside it and the optimum is
@@ -463,11 +463,11 @@ class test_vbi_bellman_step(unittest.TestCase):
             np.array([0.0, 1.0, 2.0]), dims=["a"], coords={"a": [0.0, 1.0, 2.0]}
         )
         with self.assertRaises(ValueError):
-            vbi._project_to_iset(policy, ["a"], [], {}, "c")
+            vfi._project_to_iset(policy, ["a"], [], {}, "c")
 
     def test_disc_params_not_implemented(self):
         with self.assertRaises(NotImplementedError):
-            vbi.bellman_step(
+            vfi.bellman_step(
                 case_0["bp"],
                 bp_terminal,
                 {"a": np.linspace(0, 2, 5)},
@@ -515,8 +515,18 @@ class test_vbi_bellman_step(unittest.TestCase):
             return (kappa * wealth) ** (1 - sigma) / ((1 - sigma) * (1 - rho))
 
         bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
-        dr, _, _ = vbi.bellman_step(
-            bp, d2_continuation, {"a": np.linspace(0.5, 5.0, 12)}, scope=cal
+        grid = {"a": np.linspace(0.5, 5.0, 12)}
+        # Seed the per-point optimizer near the (modest) optimum. With the
+        # consumption floor restored, ``c``'s bounds are both finite, so the
+        # default seed is the midpoint of ``[0, m + H]`` (~17.7) — far above the
+        # true optimum (~1.2) and outside L-BFGS-B's basin here, so it stalls.
+        # A flat warm-start reproduces the robust pre-floor seeding. The general
+        # fix (multi-start) is deferred to design.md §8.
+        x0_policy = {
+            "c": xr.DataArray(np.ones(grid["a"].size), dims=["a"], coords=grid)
+        }
+        dr, _, _ = vfi.bellman_step(
+            bp, d2_continuation, grid, scope=cal, x0_policy=x0_policy
         )
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y
@@ -528,7 +538,7 @@ class test_vbi_bellman_step(unittest.TestCase):
         # two grid axes -> general scattered reindexing, out of scope in v1
         # (design §5, O3): fail loudly rather than interpolate wrongly.
         with self.assertRaises(NotImplementedError):
-            vbi.bellman_step(
+            vfi.bellman_step(
                 case_3["bp"],
                 bp_terminal,
                 {"a": np.linspace(0.1, 2.0, 5), "theta": np.linspace(-1, 1, 5)},
@@ -545,7 +555,7 @@ class test_vbi_bellman_step(unittest.TestCase):
             coords={"a": [0, 1, 2], "b": [0, 1, 2]},
         )
         m_coord = np.add.outer(2.0 * np.arange(3.0), np.zeros(3))  # m = 2a, flat in b
-        out = vbi._project_to_iset(policy, ["a", "b"], ["m"], {"m": m_coord}, "c")
+        out = vfi._project_to_iset(policy, ["a", "b"], ["m"], {"m": m_coord}, "c")
         self.assertEqual(list(out.dims), ["m"])
         self.assertTrue(np.allclose(out["m"].values, [0.0, 2.0, 4.0]))
         self.assertTrue(np.allclose(out.values, [0.0, 1.0, 2.0]))
@@ -556,14 +566,14 @@ class test_vbi_bellman_step(unittest.TestCase):
         policy = xr.DataArray(np.zeros(5), dims=["a"], coords={"a": np.arange(5.0)})
         non_monotone = np.array([0.0, 1.0, 0.5, 2.0, 1.5])  # not sorted
         with self.assertRaises(ValueError):
-            vbi._project_to_iset(policy, ["a"], ["m"], {"m": non_monotone}, "c")
+            vfi._project_to_iset(policy, ["a"], ["m"], {"m": non_monotone}, "c")
 
 
-class test_vbi_solve_bellman(unittest.TestCase):
+class test_vfi_solve_bellman(unittest.TestCase):
     """
-    Phase-2 design (§9 step 5): ``vbi.solve_bellman`` — value-function iteration
+    Phase-2 design (§9 step 5): ``vfi.solve_bellman`` — value-function iteration
     that drives ``bellman_step`` to a fixed point, rebuilding the continuation
-    from each iterate's value grid via ``vbi.value_array_to_function``.
+    from each iterate's value grid via ``vfi.value_array_to_function``.
 
     The headline test is **D-4**: a deterministic CRRA model with a binding
     borrowing constraint and impatience, which has *no closed form*. It is
@@ -580,7 +590,7 @@ class test_vbi_solve_bellman(unittest.TestCase):
         R, y = cal["R"], cal["y"]
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
         grid = {"a": np.linspace(0.0, 7.5, 25)}
-        dr, value_array, policy_array = vbi.solve_bellman(
+        dr, value_array, policy_array = vfi.solve_bellman(
             bp, grid, scope=cal, tol=1e-6, max_iter=1000
         )
         # The loop reports convergence via value_array.attrs (O5).
@@ -597,6 +607,47 @@ class test_vbi_solve_bellman(unittest.TestCase):
         self.assertIsInstance(value_array, xr.DataArray)
         self.assertEqual(list(policy_array["c"].dims), ["a"])
 
+    def test_d2_iterated_converges_to_analytic(self):
+        # D-2 (infinite-horizon CRRA, natural borrowing limit c <= m + H,
+        # H = y/(R-1) = human wealth): iterate solve_bellman to a fixed point and
+        # recover the unconstrained closed form c = kappa*(m + H),
+        # kappa = (R - (beta*R)^(1/sigma))/R, at interior states.
+        #
+        # The artificial_borrowing_constraint flag is required. Without it, from
+        # V0 = 0 the first backup has no saving motive and rides the upper bound
+        # to c = m + H (a' = -H, the singular "consume all human wealth" point);
+        # the self-built continuation is then extrapolated into the V -> -inf
+        # wall below the grid and the loop settles on that flat, wrong fixed
+        # point (c ~ 35). The flag confines a' to the grid, so the continuation
+        # is only interpolated (design §8).
+        #
+        # The grid floor is the slack artificial borrowing limit: a fraction of
+        # human wealth H, low enough not to bind at the tested interior states
+        # (a' there stays well above -H/3), but not so low that the near-singular
+        # deep-borrowing region destabilizes the value iteration.
+        #
+        # Grid resolution and tol are kept deliberately coarse for speed (the
+        # β = 0.96 contraction fixes the iteration count, so a loose tol is the
+        # main lever); recovery of the closed form is then good to a few percent.
+        cal = bm.d2_calibration
+        R, y = cal["R"], cal["y"]
+        H = y / (R - 1.0)  # human wealth; natural borrowing limit is a' >= -H
+        bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
+        grid = {"a": np.linspace(-H / 3.0, 8.0, 16)}
+        dr, value_array, policy_array = vfi.solve_bellman(
+            bp,
+            grid,
+            scope=cal,
+            tol=1e-2,
+            max_iter=2000,
+            artificial_borrowing_constraint=True,
+        )
+        self.assertTrue(value_array.attrs["converged"])
+        for a in [1.0, 2.0, 3.0, 5.0]:
+            m = a * R + y
+            want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
+            self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
+
     def test_max_iter_one_matches_bellman_step(self):
         # Iteration 1 uses the terminal (zero) continuation, so max_iter=1 is
         # exactly a single bellman_step under a terminal continuation (loop
@@ -606,8 +657,8 @@ class test_vbi_solve_bellman(unittest.TestCase):
         grid = {"a": np.linspace(0.5, 5.0, 8)}
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            dr_loop, va_loop, _ = vbi.solve_bellman(bp, grid, scope=cal, max_iter=1)
-        dr_step, va_step, _ = vbi.bellman_step(bp, bp_terminal, grid, scope=cal)
+            dr_loop, va_loop, _ = vfi.solve_bellman(bp, grid, scope=cal, max_iter=1)
+        dr_step, va_step, _ = vfi.bellman_step(bp, bp_terminal, grid, scope=cal)
         self.assertFalse(va_loop.attrs["converged"])
         self.assertEqual(va_loop.attrs["n_iter"], 1)
         self.assertTrue(np.allclose(va_loop.values, va_step.values))
@@ -623,9 +674,9 @@ class test_vbi_solve_bellman(unittest.TestCase):
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
         grid = {"a": np.linspace(0.5, 5.0, 6)}
         with self.assertWarns(UserWarning):
-            vbi.solve_bellman(bp, grid, scope=cal, max_iter=1)
+            vfi.solve_bellman(bp, grid, scope=cal, max_iter=1)
         with self.assertRaises(RuntimeError):
-            vbi.solve_bellman(
+            vfi.solve_bellman(
                 bp, grid, scope=cal, max_iter=1, raise_on_nonconvergence=True
             )
 
@@ -634,7 +685,7 @@ class test_vbi_solve_bellman(unittest.TestCase):
         cal = bm.d4_calibration
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
         with self.assertRaises(NotImplementedError):
-            vbi.solve_bellman(
+            vfi.solve_bellman(
                 bp,
                 {"a": np.linspace(0.5, 5.0, 6)},
                 scope=cal,
@@ -652,7 +703,7 @@ class test_vbi_solve_bellman(unittest.TestCase):
             dims=["a"],
             coords={"a": [0.0, 1.0, 2.0, 3.0]},
         )
-        wf = vbi.value_array_to_function(value_array, bp)
+        wf = vfi.value_array_to_function(value_array, bp)
         self.assertAlmostEqual(wf({"a": 1.0}, {}, cal), 1.0)  # node
         self.assertAlmostEqual(wf({"a": 1.5}, {}, cal), 1.5)  # interpolated
         self.assertAlmostEqual(wf({"a": 5.0}, {}, cal), 5.0)  # extrapolated above
@@ -669,31 +720,31 @@ class test_vbi_solve_bellman(unittest.TestCase):
             coords={"a": [0.0, 1.0], "psi": [0.9, 1.1]},
         )
         with self.assertRaises(NotImplementedError):
-            vbi.value_array_to_function(value_array, bp)
+            vfi.value_array_to_function(value_array, bp)
 
 
-class test_vbi_protocol(unittest.TestCase):
+class test_vfi_protocol(unittest.TestCase):
     """
-    Phase 1 deliverable: a VBI-fitted decision rule is a drop-in for the
+    Phase 1 deliverable: a VFI-fitted decision rule is a drop-in for the
     torch-based ``BellmanPeriod`` stack.
 
-    ``vbi.solve`` returns numpy/xarray-space decision rules (positional, in
-    information-set order). ``vbi.tensor_decision_rule`` wraps each so it
+    ``vfi.solve`` returns numpy/xarray-space decision rules (positional, in
+    information-set order). ``vfi.tensor_decision_rule`` wraps each so it
     accepts and returns torch tensors. The wrapped dict then flows, unmodified,
     through ``BellmanPeriod.compute_controls`` and ``BellmanEquationLoss``.
     """
 
     def _solve_tensor_dr(self, case, state_grid):
-        dr, _, _ = vbi.solve(
+        dr, _, _ = vfi.solve(
             case["block"],
             terminal_continuation,
             state_grid,
             scope=case["calibration"],
         )
-        return {c: vbi.tensor_decision_rule(rule) for c, rule in dr.items()}
+        return {c: vfi.tensor_decision_rule(rule) for c, rule in dr.items()}
 
     def test_compute_controls_roundtrip(self):
-        # case_0: u = -c^2, iset = [a] -> c* = 0. The tensorized VBI rule, fed
+        # case_0: u = -c^2, iset = [a] -> c* = 0. The tensorized VFI rule, fed
         # to BellmanPeriod.compute_controls as a dict of decision rules, returns
         # a float32 tensor of optimal controls on the batch of states.
         dr_t = self._solve_tensor_dr(case_0, {"a": np.linspace(0, 2, 11)})
@@ -710,9 +761,9 @@ class test_vbi_protocol(unittest.TestCase):
 
     def test_bellman_equation_loss_roundtrip(self):
         # case_1: u = -(theta - c)^2, iset = [a, theta] -> c* = theta. Under a
-        # zero continuation the VBI policy is exactly optimal, so V(s) = 0 and
+        # zero continuation the VFI policy is exactly optimal, so V(s) = 0 and
         # the Bellman residual u + beta*E[V(s')] - V(s) vanishes. We only assert
-        # the loss is finite and (here) ~0 -- the point is that the VBI dr is a
+        # the loss is finite and (here) ~0 -- the point is that the VFI dr is a
         # valid ``df`` for BellmanEquationLoss.
         dr_t = self._solve_tensor_dr(
             case_1,

@@ -130,7 +130,7 @@ bind and you train on an Euler or first-order-condition objective, add
 ## Grid Solvers
 
 Constraint handling is not specific to neural methods. The value backwards
-induction solver ({py:mod}`skagent.algos.vbi`) reads the same `Control` bounds
+induction solver ({py:mod}`skagent.algos.vfi`) reads the same `Control` bounds
 and passes them to `scipy.optimize.minimize` as box constraints on each grid
 point's optimization, with no smooth reformulation needed because no gradient
 flows through the policy.
