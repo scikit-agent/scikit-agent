@@ -64,16 +64,14 @@ uv sync --extra dev --extra docs
 
 ## Verify Installation
 
-After a uv sync, either activate `.venv` or use `uv run`:
-
-```bash
-uv run python -c "import skagent; print(skagent.__version__)"
-```
-
-Or, with the environment activated:
-
 ```python
 import skagent
 
 print(skagent.__version__)
+```
+
+For a source install managed by uv, you can instead run:
+
+```bash
+uv run python -c "import skagent; print(skagent.__version__)"
 ```
