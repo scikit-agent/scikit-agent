@@ -9,8 +9,8 @@ scikit-agent requires Python 3.9 or higher. Its main runtime dependencies are:
 - Matplotlib
 - cairosvg, pydot, PyYAML, and IPython (model visualization)
 
-See `pyproject.toml` for the authoritative dependency list; `pip` installs all
-of these automatically.
+See `pyproject.toml` for the authoritative dependency list; installing the
+package pulls these in automatically.
 
 ### System Dependencies
 
@@ -43,22 +43,23 @@ pip install scikit-agent
 
 ## Install from Source
 
-To install the latest development version:
+Source and development installs use [uv](https://docs.astral.sh/uv/). To install
+the latest development version:
 
 ```bash
 git clone https://github.com/scikit-agent/scikit-agent.git
 cd scikit-agent
-pip install -e .
+uv sync
 ```
 
 ## Development Installation
 
-For development, install with additional dependencies:
+For development, sync with the additional extras:
 
 ```bash
 git clone https://github.com/scikit-agent/scikit-agent.git
 cd scikit-agent
-pip install -e ".[dev,docs]"
+uv sync --extra dev --extra docs
 ```
 
 ## Verify Installation

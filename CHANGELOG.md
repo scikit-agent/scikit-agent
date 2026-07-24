@@ -29,6 +29,11 @@ and this project adheres to
 
 ### Changed
 
+- Development and CI use [uv](https://docs.astral.sh/uv/) instead of pip:
+  `uv.lock` is committed, GitHub Actions install via `astral-sh/setup-uv` and
+  `uv sync --frozen`, and source/contributor docs use `uv sync` / `uv run`. The
+  public PyPI install remains `pip install scikit-agent` (#166).
+
 - `GymEnv._bounds_at` treats a single-point feasible set (`lo == hi`, which the
   natural borrowing limit produces at `m = -H`) as valid, returning that point;
   it now raises only on a genuinely inverted bound (`hi < lo`).

@@ -50,10 +50,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
 
       - name: Install OpenBLAS on Ubuntu
         if: runner.os == 'Linux'
@@ -86,13 +87,11 @@ jobs:
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ".[test]"
+        run: uv sync --frozen --extra test
 
-      - name: Test package (Linux/macOS)
+      - name: Test package
         run: >-
-          python -m pytest -ra --cov --cov-report=xml --cov-report=term
+          uv run --frozen pytest -ra --cov --cov-report=xml --cov-report=term
           --durations=20
 
       - name: Upload coverage report
