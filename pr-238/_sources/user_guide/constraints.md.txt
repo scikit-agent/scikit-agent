@@ -151,13 +151,13 @@ and you train on an Euler objective, add `constrained=True`.
 
 ## Where Each Mechanism Is Available
 
-| Mechanism            | Where it lives                                  | Bounds handled  |
-| -------------------- | ----------------------------------------------- | --------------- |
-| Open-bounds network  | `BlockPolicyNet`, `BlockPolicyValueNet`         | lower and upper |
-| Complementarity loss | `EulerEquationLoss(constrained=True)`           | lower and upper |
-| Grid box constraints | `skagent.algos.vbi` (value backwards induction) | lower and upper |
+| Mechanism            | Where it lives                                 | Bounds handled  |
+| -------------------- | ---------------------------------------------- | --------------- |
+| Open-bounds network  | `BlockPolicyNet`, `BlockPolicyValueNet`        | lower and upper |
+| Complementarity loss | `EulerEquationLoss(constrained=True)`          | lower and upper |
+| Grid box constraints | `skagent.algos.vfi` (value function iteration) | lower and upper |
 
-The value backwards induction solver ({py:mod}`skagent.algos.vbi`) reads the
-same `Control` bounds and passes them to `scipy.optimize.minimize` as box
+The value function iteration solver ({py:mod}`skagent.algos.vfi`) reads the same
+`Control` bounds and passes them to `scipy.optimize.minimize` as box
 constraints, with no smooth reformulation needed because no gradient flows
 through the policy.
