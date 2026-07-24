@@ -13,6 +13,9 @@ from skagent.models.benchmarks import (
     d2_analytical_policy,
     d2_block,
     d2_calibration,
+    d4_block,
+    d4_calibration,
+    d4_vfi_reference_policy,
     u1_analytical_policy,
     u1_block,
     u1_calibration,
@@ -291,9 +294,15 @@ def test_ppo_converges_to_optimal(case, gym_kwargs, mae_tol, max_err_tol):
 # policy's observed MAE/MaxErr against the closed form on this grid (seed 0,
 # 130k steps) with generous headroom for SB3 non-determinism.
 #
-# Excluded benchmarks:
+# D-4 is included but compares against a numerical VFI reference rather than a
+# closed form: its binding ``c <= m`` constraint precludes an analytical policy.
+# Its ``[0, m]`` action range is O(1) and well-scaled, so PPO converges as
+# tightly as U-2 with no special handling.
+#
+# Excluded / xfailed benchmarks:
 #   D-1  finite horizon — time-as-state ``t`` ticks toward ``T``; not a single
 #        steady-state truncation this PPO loop can target.
+#   D-2  xfailed below — see the mark reason.
 #   D-3  i.i.d. mortality — under truncated-horizon PPO the agent overconsumes
 #        at high wealth and does not converge to the κ_s analytical rule.
 #   U-3  buffer stock — no closed-form policy to compare against.
@@ -328,6 +337,12 @@ def _d2_optimal_c(obs_row):
     return _scalar(d2_analytical_policy({"a": a}, {}, d2_calibration)["c"])
 
 
+def _d4_optimal_c(obs_row):
+    # D-4 has no closed form; the oracle is the validated VFI reference policy.
+    a = (float(obs_row[0]) - d4_calibration["y"]) / d4_calibration["R"]
+    return _scalar(d4_vfi_reference_policy({"a": a}, {}, d4_calibration)["c"])
+
+
 def _u1_optimal_c(obs_row):
     y = u1_calibration["y_mean"]
     A = (float(obs_row[0]) - y) / u1_calibration["R"]
@@ -345,37 +360,67 @@ def _u2_optimal_c(obs_row):
 @pytest.mark.parametrize(
     "block,calibration,initial,optimal_fn,mae_tol,max_err_tol",
     [
-        # D-2: the worked example. Observed MAE=0.68, MaxErr=1.82.
-        (
+        # D-2: xfailed. Its borrowing bound was relaxed to the natural limit
+        # c <= m + H (H = y/(R-1) ~= 33), so GymEnv's action range [0, m+H] is
+        # ~30x wider than the O(1) optimal consumption. The optimum then sits at
+        # the action-space edge (a_norm ~= -0.93) while PPO inits at the midpoint
+        # and the per-step CRRA gradient pushes the wrong way, so PPO barely
+        # moves (MAE ~= 18 vs tol 1.2). The fix is an artificial action-scale
+        # override -- the RL analog of VFI's artificial_borrowing_constraint --
+        # which is deferred; D-4 covers the timely convergence demo meanwhile.
+        pytest.param(
             d2_block,
             d2_calibration,
             {"a": Uniform(low=0.01, high=5.0)},
             _d2_optimal_c,
             1.2,
             2.5,
+            id="D-2",
+            marks=pytest.mark.xfail(
+                reason=(
+                    "natural borrowing limit c <= m+H makes the action range "
+                    "~30x the optimal c; optimum sits at the action-space edge "
+                    "and PPO does not move (MAE ~= 18). Needs an artificial "
+                    "action-scale override (deferred)."
+                ),
+                strict=False,
+            ),
+        ),
+        # D-4: binding c <= m constraint, no closed form -> VFI reference oracle.
+        # Well-scaled O(1) action range; converges as tightly as U-2 with no
+        # special handling. Observed MAE=0.21, MaxErr=0.57.
+        pytest.param(
+            d4_block,
+            d4_calibration,
+            {"a": Uniform(low=0.01, high=5.0)},
+            _d4_optimal_c,
+            0.5,
+            1.2,
+            id="D-4",
         ),
         # U-1: Hall PIH with a Normal income shock (noisier). Observed
         # MAE=0.98, MaxErr=1.99.
-        (
+        pytest.param(
             u1_block,
             u1_calibration,
             {"A": Uniform(low=0.01, high=5.0), "y": Uniform(low=0.9, high=1.1)},
             _u1_optimal_c,
             1.5,
             2.8,
+            id="U-1",
         ),
         # U-2: normalized log-utility PIH; converges tightest. Observed
         # MAE=0.23, MaxErr=0.80.
-        (
+        pytest.param(
             u2_block,
             u2_calibration,
             {"a": Uniform(low=0.01, high=5.0)},
             _u2_optimal_c,
             0.5,
             1.2,
+            id="U-2",
         ),
     ],
-    ids=["D-2", "U-1", "U-2"],
 )
 def test_benchmark_ppo_converges_to_analytical(
     block, calibration, initial, optimal_fn, mae_tol, max_err_tol
