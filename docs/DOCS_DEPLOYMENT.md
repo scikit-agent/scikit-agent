@@ -107,7 +107,7 @@ git push origin main
 ```bash
 # Build docs locally
 uv sync --extra docs
-uv run python -m sphinx -b html docs docs/_build
+uv run --extra docs python -m sphinx -b html docs docs/_build
 
 # Serve locally
 python -m http.server 8000 -d docs/_build

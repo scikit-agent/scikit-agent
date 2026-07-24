@@ -60,14 +60,15 @@ jobs:
         run: sudo apt-get update && sudo apt-get install graphviz
 
       - name: Install dependencies
-        run: uv sync --frozen --extra docs
+        run: |
+          uv lock --check
+          uv sync --frozen --extra docs
 
       - name: Build documentation
         run: |
-          cd docs
-          uv run --frozen python -m sphinx -b html -W --keep-going . _build
+          uv run --frozen --extra docs python -m sphinx -b html -W --keep-going docs docs/_build
           # Add .nojekyll to prevent GitHub Pages from processing files with underscores
-          touch _build/.nojekyll
+          touch docs/_build/.nojekyll
 
       - name: Upload artifact for main branch
         if: steps.path.outputs.is-pr == 'false'
