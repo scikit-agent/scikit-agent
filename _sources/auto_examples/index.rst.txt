@@ -118,7 +118,7 @@ the gallery is built from scratch.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">PPO via Stable-Baselines3 on the D-2 Benchmark</div>
+      <div class="sphx-glr-thumbnail-title">PPO via Stable-Baselines3 on the D-4 Benchmark</div>
     </div>
 
 
