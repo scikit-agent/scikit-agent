@@ -1,6 +1,6 @@
 r"""
 ##############################################
-PPO via Stable-Baselines3 on the D-2 Benchmark
+PPO via Stable-Baselines3 on the D-4 Benchmark
 ##############################################
 
 This example shows how to solve a scikit-agent model with **Proximal Policy
@@ -12,18 +12,23 @@ the robust PPO implementation in
 :class:`~skagent.algos.sb3.PPOAgent` class manages this wrapping, trains the
 agent, and emits a standard scikit-agent decision rule.
 
-We test it on the **D-2 benchmark**: the canonical infinite-horizon,
-perfect-foresight consumption-savings problem with CRRA utility. Because D-2 has
-a known closed-form solution, it is an ideal yardstick for checking that a
-learned policy converges toward the true optimum.
+We test it on the **D-4 benchmark**: a deterministic, impatient CRRA
+consumption-savings problem with a **binding borrowing constraint**
+:math:`c_t \leq m_t` (no borrowing). Unlike the perfect-foresight D-2 model,
+D-4 has **no closed-form solution** — the binding constraint kinks the
+consumption function — so we validate the learned policy against a numerical
+**value-function-iteration (VFI) reference**. This is precisely the setting
+where a general-purpose RL solver earns its keep: no model-specific structure
+is available to exploit.
 
 Model Structure
 ===============
 
 - **State variable**: :math:`a_t` — assets carried into period :math:`t`.
 - **Information variable**: :math:`m_t = a_t R + y` — cash-on-hand.
-- **Control variable**: :math:`c_t` — consumption, constrained by
-  :math:`0 \leq c_t \leq m_t` (no borrowing).
+- **Control variable**: :math:`c_t` — consumption, bounded by the borrowing
+  constraint :math:`10^{-3} \leq c_t \leq m_t`. The agent **cannot** borrow, so
+  consumption can never exceed cash-on-hand.
 
 The agent maximizes expected discounted CRRA utility,
 
@@ -34,23 +39,21 @@ The agent maximizes expected discounted CRRA utility,
     \qquad
     a_{t+1} = (a_t + y - c_t) R .
 
-Closed-Form Solution
-====================
+Why No Closed Form
+==================
 
-Under the return-impatience condition :math:`(\beta R)^{1/\sigma} < R`,
-consumption is **linear in total wealth** with a constant marginal propensity to
-consume :math:`\kappa`:
+D-4 is calibrated to be **impatient**: :math:`\beta R = 0.9568 < 1`, so the
+agent would like to front-load consumption and borrow against future income —
+but the constraint :math:`c_t \leq m_t` forbids it. The constraint therefore
+**binds** at low wealth, where the agent consumes all its cash-on-hand
+(:math:`c_t = m_t`), and only slackens at higher wealth. This kink rules out the
+linear-in-wealth closed form that D-2 enjoys, so there is no analytical policy
+to compare against.
 
-.. math::
-
-    c_t = \kappa \, (m_t + H), \qquad
-    \kappa = \frac{R - (\beta R)^{1/\sigma}}{R}, \qquad
-    H = \frac{y}{R - 1},
-
-where :math:`H` is human wealth (the present value of the constant income
-stream). Near the borrowing constraint this unconstrained rule can exceed
-:math:`m_t`, so the true constrained optimum is
-:math:`c_t = \min(\kappa(m_t + H),\, m_t)`.
+Instead we use :func:`skagent.models.benchmarks.d4_vfi_reference_policy`, an
+independent numerical oracle that solves the model by value-function iteration
+on a dense cash-on-hand grid. Because it is expensive, we solve it **once** up
+front and interpolate the resulting policy wherever we need it below.
 
 .. note::
 
@@ -69,10 +72,9 @@ from skagent.bellman import BellmanPeriod
 from skagent.distributions import Uniform
 from skagent.env import discounted_rollout_reward
 from skagent.models.benchmarks import (
-    d2_analytical_policy,
-    d2_block,
-    d2_calibration,
-    d2_constrained_optimal_c,
+    d4_block,
+    d4_calibration,
+    d4_vfi_reference_policy,
 )
 
 # %%
@@ -90,38 +92,56 @@ EVAL_ROLLOUT_STEPS = 200
 INITIAL_A_LOW = 0.01
 INITIAL_A_HIGH = 5.0
 
-print("D-2 calibration:")
-for param, value in d2_calibration.items():
+print("D-4 calibration:")
+for param, value in d4_calibration.items():
     print(f"  {param}: {value}")
 
 
 # %%
-# The Closed-Form Policy
-# ======================
+# The VFI Reference Policy
+# ========================
 #
-# The benchmark module provides
-# :func:`skagent.models.benchmarks.d2_constrained_optimal_c`, the closed-form
-# consumption function keyed on cash-on-hand :math:`m` with the borrowing
-# constraint :math:`c \leq m` applied. We use it both for the grid comparison
-# below and, wrapped as a skagent decision rule, for the rollouts.
+# Because D-4 has no closed form, we solve it numerically with
+# :func:`skagent.models.benchmarks.d4_vfi_reference_policy`. Each call runs a
+# full value-function iteration, so we evaluate it **once** on a dense
+# cash-on-hand grid and wrap the result in a cheap interpolant. This same
+# reference policy serves both the grid comparison and the rollouts below. The
+# VFI oracle is keyed on the arrival state :math:`a`, so we invert
+# :math:`m = aR + y` to query it on a grid of cash-on-hand values.
+
+_REF_M = np.linspace(0.5, 10.0, 200, dtype=np.float32)
+_REF_A = (_REF_M - d4_calibration["y"]) / d4_calibration["R"]
+_REF_C = (
+    d4_vfi_reference_policy({"a": _REF_A}, {}, d4_calibration)["c"]
+    .detach()
+    .cpu()
+    .numpy()
+    .astype(np.float32)
+)
 
 
-def optimal_decision_rule():
-    """Wrap :func:`d2_constrained_optimal_c` as a skagent decision rule."""
-    return {"c": lambda m: torch.as_tensor(d2_constrained_optimal_c(m))}
+def reference_c(m):
+    """Interpolate the precomputed VFI reference consumption at cash-on-hand ``m``."""
+    m_arr = np.asarray(m, dtype=np.float32).reshape(-1)
+    return np.interp(m_arr, _REF_M, _REF_C).astype(np.float32)
+
+
+def reference_decision_rule():
+    """Wrap the precomputed VFI reference as a skagent decision rule."""
+    return {"c": lambda m: torch.as_tensor(reference_c(m))}
 
 
 # %%
 # Build the Environment and Agent
 # ===============================
 #
-# A :class:`~skagent.bellman.BellmanPeriod` packages the D-2 block together with
+# A :class:`~skagent.bellman.BellmanPeriod` packages the D-4 block together with
 # its discount variable and calibration. ``PPOAgent`` wraps it in a gymnasium
 # environment and sets up SB3's PPO; the discount factor ``gamma`` defaults to
 # the model's ``DiscFac``. We sample initial assets uniformly so the agent sees
 # a range of starting states during training.
 
-bp = BellmanPeriod(d2_block, "DiscFac", d2_calibration)
+bp = BellmanPeriod(d4_block, "DiscFac", d4_calibration)
 initial = {"a": Uniform(low=INITIAL_A_LOW, high=INITIAL_A_HIGH)}
 
 agent = PPOAgent(
@@ -165,21 +185,17 @@ total_timesteps = CHECKPOINTS[-1]
 episode_rewards = np.asarray(agent.episode_rewards, dtype=np.float32)
 
 # %%
-# Compare Against the Closed-Form Optimum
-# =======================================
+# Compare Against the VFI Reference
+# =================================
 #
-# We evaluate the closed-form consumption rule on the same grid. The
-# unconstrained rule :math:`c = \kappa(m + H)` can exceed :math:`m` at low
-# cash-on-hand, where the borrowing constraint binds; the constrained optimum
-# takes the minimum.
+# We evaluate the precomputed VFI reference policy on the same grid. At low
+# cash-on-hand the borrowing constraint binds and the reference tracks the
+# :math:`c = m` line (the agent consumes everything); at higher wealth the
+# constraint slackens and consumption falls below :math:`m` as the agent saves.
 
-a_grid = (m_grid - d2_calibration["y"]) / d2_calibration["R"]
-c_optimal_unc = np.asarray(
-    d2_analytical_policy({"a": a_grid}, {}, d2_calibration)["c"], dtype=np.float32
-)
-c_optimal = d2_constrained_optimal_c(m_grid)
+c_optimal = reference_c(m_grid)
 
-print(f"Policy error vs closed form (over m ∈ [{m_grid[0]}, {m_grid[-1]}]):")
+print(f"Policy error vs VFI reference (over m ∈ [{m_grid[0]}, {m_grid[-1]}]):")
 print(f"  {'checkpoint':>12}  {'MAE':>10}  {'MaxErr':>10}")
 mae_by_checkpoint = {}
 for checkpoint in CHECKPOINTS:
@@ -193,9 +209,8 @@ mae = mae_by_checkpoint[CHECKPOINTS[-1]]
 # =====================
 #
 # The left panel shows the learned consumption function at each checkpoint
-# converging toward the closed-form solution. The right panel shows the
-# undiscounted episode reward over training, with a rolling mean to highlight
-# the trend.
+# converging toward the VFI reference. The right panel shows the undiscounted
+# episode reward over training, with a rolling mean to highlight the trend.
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -205,18 +220,13 @@ for checkpoint in CHECKPOINTS:
         c_learned_by_checkpoint[checkpoint],
         label=f"PPO @ {checkpoint:,} steps",
     )
-axes[0].plot(m_grid, c_optimal, label="closed form (constrained)", linestyle="--")
+axes[0].plot(m_grid, c_optimal, label="VFI reference", linestyle="--")
 axes[0].plot(
-    m_grid,
-    c_optimal_unc,
-    label="closed form (unconstrained)",
-    linestyle="--",
-    alpha=0.4,
+    m_grid, m_grid, label="c = m (borrowing constraint)", linestyle=":", alpha=0.5
 )
-axes[0].plot(m_grid, m_grid, label="c = m (upper bound)", linestyle=":", alpha=0.5)
 axes[0].set_xlabel("m (cash-on-hand)")
 axes[0].set_ylabel("c (consumption)")
-axes[0].set_title(f"D-2 policy: MAE={mae:.3f}")
+axes[0].set_title(f"D-4 policy: MAE={mae:.3f}")
 axes[0].legend()
 
 if len(episode_rewards) > 0:
@@ -244,8 +254,8 @@ plt.show()
 # ========================================
 #
 # We also score the policies by their realized discounted return over many
-# rollouts, comparing all three checkpoints against the closed-form optimum.
-# Each checkpoint's frozen snapshot exposes a ``decision_rule`` directly, so the
+# rollouts, comparing all three checkpoints against the VFI reference. Each
+# checkpoint's frozen snapshot exposes a ``decision_rule`` directly, so the
 # rollouts use the exact trained policies — no reconstruction needed.
 
 rng = np.random.default_rng(SEED + 1)
@@ -256,9 +266,9 @@ for checkpoint in CHECKPOINTS:
         discounted_rollout_reward(bp, dr, initial, EVAL_ROLLOUT_STEPS, rng)
         for _ in range(N_EVAL_ROLLOUTS)
     ]
-returns_by_policy["closed form"] = [
+returns_by_policy["VFI reference"] = [
     discounted_rollout_reward(
-        bp, optimal_decision_rule(), initial, EVAL_ROLLOUT_STEPS, rng
+        bp, reference_decision_rule(), initial, EVAL_ROLLOUT_STEPS, rng
     )
     for _ in range(N_EVAL_ROLLOUTS)
 ]
@@ -273,7 +283,7 @@ for label, returns in returns_by_policy.items():
 # %%
 # The boxplots summarize the distribution of discounted returns for each policy.
 # As training progresses, the PPO return distribution shifts toward the
-# closed-form benchmark on the right.
+# VFI-reference benchmark on the right.
 
 labels = list(returns_by_policy)
 fig2, ax = plt.subplots(figsize=(8, 5))
@@ -290,8 +300,10 @@ plt.show()
 # Takeaways
 # =========
 #
-# PPO learns a consumption policy that tracks the closed-form optimum reasonably
-# well, and the gap in discounted return shrinks across checkpoints — even
-# though no model-specific structure was supplied to the solver. This makes the
-# SB3 integration a useful, general-purpose baseline for models where an
-# analytical solution is unavailable.
+# PPO learns a consumption policy that tracks the VFI reference reasonably well
+# — hugging the ``c = m`` borrowing constraint at low wealth and saving at high
+# wealth — and the gap in discounted return shrinks across checkpoints, even
+# though no model-specific structure was supplied to the solver. D-4 has no
+# closed-form solution, so this is exactly the regime where the SB3 integration
+# is most useful: a general-purpose baseline for models an analytical method
+# cannot reach.
