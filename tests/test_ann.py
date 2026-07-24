@@ -21,6 +21,8 @@ import skagent.models.perfect_foresight as pfm
 import torch
 import unittest
 
+from skagent.block import Control, DBlock
+
 # Deterministic test seed - change this single value to modify all seeding
 # Using same seed as test_maliar.py for consistency across test suite
 TEST_SEED = 10077693
@@ -270,6 +272,46 @@ class test_ann_lr(unittest.TestCase):
 
         self.assertTrue(
             torch.allclose(c_ann.flatten(), given_0_N["a"].flatten(), atol=0.03)
+        )
+
+    def test_numeric_bounds_match_callable_bounds(self):
+        """Raw-number bounds build a policy network identical to one declared
+        with equivalent zero-argument callables, and both respect the open
+        bounds. Would fail if the numeric-bound path were dropped or scaled
+        differently from the callable path."""
+
+        def _block(lb, ub):
+            return DBlock(
+                **{
+                    "name": "numeric-vs-callable bounds",
+                    "shocks": {},
+                    "dynamics": {
+                        "c": Control(["a"], lower_bound=lb, upper_bound=ub),
+                        "a2": lambda a, c: a - c,
+                        "u": lambda c: c,
+                    },
+                    "reward": {"u": "consumer"},
+                }
+            )
+
+        cal = {"beta": 0.9}
+        bp_num = bellman.BellmanPeriod(_block(0.0, 1.0), "beta", cal)
+        bp_cb = bellman.BellmanPeriod(_block(lambda: 0.0, lambda: 1.0), "beta", cal)
+
+        net_num = ann.BlockPolicyNet(bp_num, width=8, init_seed=TEST_SEED)
+        net_cb = ann.BlockPolicyNet(bp_cb, width=8, init_seed=TEST_SEED)
+
+        states = {"a": torch.linspace(0.1, 2.0, 16, device=device)}
+        c_num = net_num.decision_function(states, {}, {})["c"]
+        c_cb = net_cb.decision_function(states, {}, {})["c"]
+
+        self.assertTrue(
+            torch.allclose(c_num, c_cb),
+            "numeric and callable bound declarations gave different policies",
+        )
+        self.assertTrue(
+            bool((c_num > 0.0).all()) and bool((c_num < 1.0).all()),
+            f"numeric-bounded policy escaped the open interval (0, 1): {c_num}",
         )
 
     def test_case_9_empty_information_set(self):
