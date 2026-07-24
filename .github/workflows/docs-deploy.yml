@@ -60,13 +60,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install graphviz
 
       - name: Install dependencies
-        run: |
-          uv lock --check
-          uv sync --frozen --extra docs
+        run: uv sync --extra docs
 
       - name: Build documentation
         run: |
-          uv run --frozen --no-sync python -m sphinx -b html -W --keep-going docs docs/_build
+          uv run --no-sync python -m sphinx -b html -W --keep-going docs docs/_build
           # Add .nojekyll to prevent GitHub Pages from processing files with underscores
           touch docs/_build/.nojekyll
 

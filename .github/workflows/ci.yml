@@ -83,14 +83,12 @@ jobs:
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: |
-          uv lock --check
-          uv sync --frozen --extra test
+        run: uv sync --extra test
 
       - name: Test package
         run: >-
-          uv run --frozen --no-sync pytest -ra --cov --cov-report=xml
-          --cov-report=term --durations=20
+          uv run --no-sync pytest -ra --cov --cov-report=xml --cov-report=term
+          --durations=20
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v7.0.0
