@@ -28,10 +28,11 @@ environment for each run. This project's nox sessions prefer
 # Setting up a development environment manually
 
 Install [uv](https://docs.astral.sh/uv/), then sync the project into a local
-`.venv`:
+`.venv`. `uv sync` is exact, so list every extra you need in one command (`test`
+covers the pytest stack used below; `docs` is for local Sphinx builds):
 
 ```bash
-uv sync --extra dev --extra docs
+uv sync --extra test --extra docs
 ```
 
 # Pre-commit
@@ -49,17 +50,13 @@ You can also/alternatively run `pre-commit run` (changes only) or
 
 # Testing
 
-Sync the test extra (includes `pytest-xdist`), then run the suite:
-
 ```bash
-uv sync --extra test
 uv run --no-sync pytest
 ```
 
 # Coverage
 
 ```bash
-uv sync --extra test
 uv run --no-sync pytest --cov=skagent
 ```
 

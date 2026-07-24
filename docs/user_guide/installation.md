@@ -54,12 +54,13 @@ uv sync
 
 ## Development Installation
 
-For development, sync with the additional extras:
+For development, sync with the test and docs extras (`uv sync` is exact, so
+include every extra you need in one command):
 
 ```bash
 git clone https://github.com/scikit-agent/scikit-agent.git
 cd scikit-agent
-uv sync --extra dev --extra docs
+uv sync --extra test --extra docs
 ```
 
 ## Verify Installation

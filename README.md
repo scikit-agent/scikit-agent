@@ -78,7 +78,7 @@ For a development installation ([uv](https://docs.astral.sh/uv/) required):
 ```bash
 git clone https://github.com/scikit-agent/scikit-agent.git
 cd scikit-agent
-uv sync --extra dev --extra docs
+uv sync --extra test --extra docs
 ```
 
 See the [documentation][docs-link] for the user guide, a gallery of runnable
