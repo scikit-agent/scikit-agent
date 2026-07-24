@@ -1,5 +1,6 @@
 import inspect
 import logging
+from skagent.block import normalize_bound
 from skagent.grid import Grid
 import torch
 from skagent.utils import create_vectorized_function_wrapper_with_mapping
@@ -57,21 +58,17 @@ class BellmanPeriodMixin:
         self.iset = list(self.cobj.iset)
 
     def _setup_bound(self, bound_func, bound_name):
-        """Set up a vectorized bound function from a callable or None.
+        """Set up a vectorized bound function from a callable, number, or None.
 
-        Numeric bounds (e.g. ``lower_bound=0.0``) must be supplied as
-        zero-argument callables (e.g. ``lambda: 0.0``); a plain numeric value
-        is rejected so it cannot silently disable the bound through a
-        truthiness check.
+        The bound is normalized with :func:`skagent.block.normalize_bound`: a
+        number becomes a zero-argument callable, a callable is used as-is, and
+        ``None`` disables the bound on that side. ``Control`` already
+        normalizes its bounds at construction, so this is normally a no-op;
+        it also covers bounds set directly on the control object.
         """
+        bound_func = normalize_bound(bound_func, bound_name)
         if bound_func is None:
             return None, None
-        if not callable(bound_func):
-            raise TypeError(
-                f"{bound_name} must be a callable or None; got "
-                f"{type(bound_func).__name__}. Wrap numeric constants in a "
-                f"zero-argument callable, e.g. `lambda: {bound_func}`."
-            )
         sig = inspect.signature(bound_func)
         param_names = list(sig.parameters.keys())
         param_to_column = {}

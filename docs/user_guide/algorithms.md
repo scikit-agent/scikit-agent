@@ -11,7 +11,7 @@ rest of the toolkit:
 
 - **Maliar-style deep learning methods**: Neural network solvers following
   Maliar, Maliar, and Winant (2021), which train on an all-in-one (AiO)
-  objective function
+  objective function; see {doc}`maliar`
 - **Value function iteration (VFI)**: Classical dynamic programming via value
   function iteration on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
@@ -271,7 +271,8 @@ induction over a block's value function. See {py:func}`skagent.algos.vfi.solve`.
 The neural Bellman- and Euler-equation losses
 ({py:class}`~skagent.loss.BellmanEquationLoss`,
 {py:class}`~skagent.loss.EulerEquationLoss`) provide deep-learning alternatives
-for the recurring case.
+for the recurring case; the {doc}`Maliar method <maliar>` page explains those
+losses and the training loop that fits them.
 
 ---
 

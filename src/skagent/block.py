@@ -31,6 +31,50 @@ class Aggregate:
         self.dist = dist
 
 
+def normalize_bound(bound, bound_name="bound"):
+    """Normalize a control bound to a callable or ``None``.
+
+    A bound may be declared as:
+
+    - ``None`` -- the control is unbounded on that side;
+    - a number (``int`` or ``float``) -- a constant bound, wrapped into a
+      zero-argument callable so every consumer sees a uniform callable
+      interface;
+    - a callable -- an 'equation function' whose parameter names are drawn
+      from the control's information set.
+
+    Booleans are rejected so that ``upper_bound=True`` is not silently read
+    as the numeric bound ``1.0``.
+
+    Parameters
+    ----------
+    bound : None, int, float, or callable
+        The bound as declared on a :class:`Control`.
+    bound_name : str
+        Name used in error messages (e.g. ``"lower_bound"``).
+
+    Returns
+    -------
+    callable or None
+        ``None`` if the bound is absent, otherwise a callable.
+    """
+    if bound is None:
+        return None
+    if isinstance(bound, bool):
+        raise TypeError(
+            f"{bound_name} must be None, a number, or a callable; got bool {bound!r}."
+        )
+    if isinstance(bound, (int, float)):
+        value = float(bound)
+        return lambda: value
+    if callable(bound):
+        return bound
+    raise TypeError(
+        f"{bound_name} must be None, a number, or a callable; got "
+        f"{type(bound).__name__}."
+    )
+
+
 class Control:
     """
     Used to designate a variable that is a control variable.
@@ -40,11 +84,15 @@ class Control:
     iset : list of str
         The labels of the variables that are in the information set of this control.
 
-    lower_bound : function
-        An 'equation function' which evaluates to the lower bound of the control variable.
+    lower_bound : number, callable, or None
+        The lower bound of the control variable. A number is treated as a
+        constant bound; a callable is an 'equation function' whose parameter
+        names are variables in ``iset``. ``None`` leaves the control unbounded
+        below.
 
-    upper_bound : function
-        An 'equation function' which evaluates to the upper bound of the control variable.
+    upper_bound : number, callable, or None
+        The upper bound of the control variable, declared the same way as
+        ``lower_bound``. ``None`` leaves the control unbounded above.
 
     agent : str
         A label identifying the agent role to which this control is attributed.
@@ -52,8 +100,8 @@ class Control:
 
     def __init__(self, iset, lower_bound=None, upper_bound=None, agent=None):
         self.iset = iset
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
+        self.lower_bound = normalize_bound(lower_bound, "lower_bound")
+        self.upper_bound = normalize_bound(upper_bound, "upper_bound")
         self.agent = agent
 
 
