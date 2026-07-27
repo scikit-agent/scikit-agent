@@ -15,8 +15,8 @@ Implements the *s-reachability* graphical criterion of Koller & Milch,
 
 The algorithm operates on a plain annotated ``networkx.DiGraph`` -- the "SCIM
 view" of a block: chance / decision / utility nodes with directed causal edges.
-Construction of that graph from a scikit-agent Block lives in a separate adapter
-(see ``i251_design.md``); this module deliberately depends only on networkx so
+Construction of that graph from a scikit-agent Block lives in a separate adapter;
+this module deliberately depends only on networkx so
 the criterion can be developed and tested in isolation.
 """
 

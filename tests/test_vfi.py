@@ -1,6 +1,7 @@
 from conftest import (
     case_0,
     case_1,
+    case_2,
     case_3,
     case_5,
     case_6,
@@ -465,14 +466,91 @@ class test_vfi_bellman_step(unittest.TestCase):
         with self.assertRaises(ValueError):
             vfi._project_to_iset(policy, ["a"], [], {}, "c")
 
-    def test_disc_params_not_implemented(self):
-        with self.assertRaises(NotImplementedError):
-            vfi.bellman_step(
-                case_0["bp"],
-                bp_terminal,
-                {"a": np.linspace(0, 2, 5)},
-                disc_params={"theta": {"N": 3}},
+    def test_case_2_hidden_shock_expectation(self):
+        # u = -(theta - c)^2 with theta a HIDDEN shock (iset = [a], so theta is
+        # in no control's information set). The backup integrates theta out
+        # inside the max: E_theta[-(theta - c)^2] = -(Var[theta] + (E[theta]-c)^2)
+        # is maximized at c = E[theta] = 0, independent of a. This is the minimal
+        # unit test of the §4 hidden-shock discretization (design §9 step 6).
+        dr, value_array, _ = vfi.bellman_step(
+            case_2["bp"],
+            bp_terminal,
+            {"a": np.linspace(0, 1, 5)},
+            scope=case_2["calibration"],
+            disc_params={"theta": {"N": 7}},
+        )
+        for a in [0.2, 0.5, 0.8]:
+            self.assertAlmostEqual(dr["c"](a), 0.0, delta=self.ATOL)
+        # At the optimum c = E[theta] the value is -Var[theta] = -1 (standard
+        # normal), the irreducible variance the agent cannot hedge.
+        self.assertTrue(np.allclose(value_array.values, -1.0, atol=1e-2))
+
+    def test_u2_single_backup_analytic_continuation(self):
+        # U-2 (log utility, normalized permanent-income shock psi, no borrowing
+        # constraint): psi is a HIDDEN shock (c.iset = [m], m = R*a/psi + 1). At
+        # the default sigma_psi = 0, psi discretizes to a single degenerate node
+        # at psi = 1, so the hidden-shock expectation is exact. Under the exact
+        # log-utility arrival value function, a single backup recovers the PIH
+        # policy c = (1 - beta)(m + 1/r). Exercises §4 hidden-shock integration
+        # with a pre-state (m) that depends on the (degenerate) hidden shock.
+        cal = bm.u2_calibration
+        beta, R = cal["DiscFac"], cal["R"]
+        h = 1.0 / (R - 1.0)  # human wealth (normalized)
+        # V(W) = A + B*log(W), B = 1/(1-beta), on total wealth W = m + h. The
+        # additive constant A does not shift argmax_c, so it is dropped. At an
+        # arrival state a', next-period total wealth is W' = R*(a' + h).
+        B = 1.0 / (1.0 - beta)
+
+        def u2_continuation(states, shocks, parameters):
+            return B * np.log(R * (states["a"] + h))
+
+        bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.5, 5.0, 12)}
+        dr, _, _ = vfi.bellman_step(bp, u2_continuation, grid, scope=cal)
+        for a in [1.0, 2.0, 3.0]:
+            m = R * a + 1.0  # psi = 1 at sigma_psi = 0
+            want = float(
+                bm.u2_analytical_policy({"a": torch.tensor(float(a))}, {}, cal)["c"]
             )
+            self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
+
+    def test_u2_hidden_shock_multinode_expectation(self):
+        # sigma_psi > 0: psi is now spread over several discretization nodes, so
+        # the per-point backup integrates a genuine E_psi[...] inside the max
+        # (design §4), rather than collapsing to the single degenerate node of
+        # the default calibration. Unlike sigma_psi = 0, the PIH closed form is
+        # NOT exact here — the backup grids over arrival assets a and fixes m's
+        # hidden psi at its mean for the iset reindex, an approximation (design
+        # §7's U-1/U-3 property-only lane) — so this is a property check that the
+        # multi-node expectation runs, changes the answer, and yields a sane rule.
+        beta, R = bm.u2_calibration["DiscFac"], bm.u2_calibration["R"]
+        h = 1.0 / (R - 1.0)
+        B = 1.0 / (1.0 - beta)
+
+        def u2_continuation(states, shocks, parameters):
+            # additive constant dropped; irrelevant to argmax_c (see above test)
+            return B * np.log(R * (states["a"] + h))
+
+        grid = {"a": np.linspace(0.5, 8.0, 16)}
+        ms = [R * a + 1.0 for a in [1.0, 2.0, 3.0, 5.0]]
+
+        def solve(sigma_psi):
+            cal = {**bm.u2_calibration, "sigma_psi": sigma_psi}
+            bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
+            dr, _, _ = vfi.bellman_step(
+                bp, u2_continuation, grid, scope=cal, disc_params={"psi": {"N": 7}}
+            )
+            return np.array([dr["c"](m) for m in ms])
+
+        c_spread = solve(0.2)  # 7 lognormal nodes genuinely integrated
+        c_degenerate = solve(0.0)  # single node at psi = 1
+
+        # A sane consumption rule: positive and increasing in cash-on-hand.
+        self.assertTrue(np.all(c_spread > 0))
+        self.assertTrue(np.all(np.diff(c_spread) > 0))
+        # The multi-node expectation actually does work: spreading psi shifts the
+        # policy away from the degenerate (single-node) solution.
+        self.assertGreater(float(np.abs(c_spread - c_degenerate).max()), 1e-3)
 
     # --- iset is a derived pre-state: reproject onto its coordinate (§5) ----
 
@@ -680,17 +758,41 @@ class test_vfi_solve_bellman(unittest.TestCase):
                 bp, grid, scope=cal, max_iter=1, raise_on_nonconvergence=True
             )
 
-    def test_disc_params_not_implemented(self):
-        # Internal shock discretization is a later PR (design §9 step 6).
-        cal = bm.d4_calibration
-        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
-        with self.assertRaises(NotImplementedError):
-            vfi.solve_bellman(
-                bp,
-                {"a": np.linspace(0.5, 5.0, 6)},
-                scope=cal,
-                disc_params={"x": {"N": 3}},
+    def test_u2_iterated_converges_to_analytic(self):
+        # U-2 (log utility, normalized, no borrowing constraint): a hidden
+        # permanent-income shock psi that is degenerate at sigma_psi = 0 (single
+        # node at psi = 1), so the §4 hidden-shock expectation in each backup is
+        # exact. Iterate solve_bellman to a fixed point and recover the PIH
+        # closed form c = (1 - beta)(m + 1/r) at interior states.
+        #
+        # Like D-2, U-2 borrows against human wealth h = 1/r, so the iteration
+        # rides the control bound without the artificial_borrowing_constraint
+        # flag; with it, next-period assets stay on the grid and the continuation
+        # is only interpolated (design §8). The grid floor is a slack fraction of
+        # human wealth: -h/2 sits between the liquidity-depression bias of too
+        # high a floor and the deep-borrowing instability of too low one. tol is
+        # coarse for speed (the beta = 0.96 contraction fixes the iteration
+        # count), giving recovery to a few percent.
+        cal = bm.u2_calibration
+        R = cal["R"]
+        h = 1.0 / (R - 1.0)  # human wealth (normalized); natural limit a >= -h
+        bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
+        grid = {"a": np.linspace(-h / 2.0, 8.0, 20)}
+        dr, value_array, _ = vfi.solve_bellman(
+            bp,
+            grid,
+            scope=cal,
+            tol=1e-2,
+            max_iter=2000,
+            artificial_borrowing_constraint=True,
+        )
+        self.assertTrue(value_array.attrs["converged"])
+        for a in [1.0, 2.0, 3.0, 5.0]:
+            m = R * a + 1.0  # psi = 1 at sigma_psi = 0
+            want = float(
+                bm.u2_analytical_policy({"a": torch.tensor(float(a))}, {}, cal)["c"]
             )
+            self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
 
     def test_value_array_to_function_interpolates_and_extrapolates(self):
         # The continuation reproduces the grid at the nodes, interpolates between
@@ -709,18 +811,45 @@ class test_vfi_solve_bellman(unittest.TestCase):
         self.assertAlmostEqual(wf({"a": 5.0}, {}, cal), 5.0)  # extrapolated above
         self.assertAlmostEqual(wf({"a": -2.0}, {}, cal), -2.0)  # extrapolated below
 
-    def test_value_array_to_function_rejects_shock_axis(self):
-        # Integrating an observed-shock axis out of the arrival value is a later
-        # PR (design §9 step 6); a shock-valued grid axis must fail loudly.
-        cal = bm.u2_calibration
-        bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)  # has shock 'psi'
+    def test_value_array_to_function_integrates_observed_shock_axis(self):
+        # An observed-shock axis is integrated out of the arrival value:
+        # W(s) = E_obs[V(s, obs)] (design §4, §9 step 6). Build V(a, theta) over
+        # case_1's Normal shock theta on its discretization nodes; the continuation
+        # must return the shock-weighted expectation over the theta axis.
+        from skagent.distributions import Normal
+
+        disc = Normal(0, 1).discretize(N=5)
+        theta_nodes = np.asarray(disc.points)
+        a_axis = np.linspace(0.0, 1.0, 4)
+        # V(a, theta) = a + theta^2  ->  W(a) = a + E[theta^2] = a + 1.
+        V = a_axis[:, None] + theta_nodes[None, :] ** 2
         value_array = xr.DataArray(
-            np.zeros((2, 2)),
-            dims=["a", "psi"],
-            coords={"a": [0.0, 1.0], "psi": [0.9, 1.1]},
+            V, dims=["a", "theta"], coords={"a": a_axis, "theta": theta_nodes}
         )
-        with self.assertRaises(NotImplementedError):
-            vfi.value_array_to_function(value_array, bp)
+        wf = vfi.value_array_to_function(
+            value_array, case_1["bp"], disc_params={"theta": {"N": 5}}
+        )
+        for a in [0.0, 0.5, 1.0]:
+            self.assertAlmostEqual(
+                wf({"a": np.float64(a)}, {}, case_1["calibration"]), a + 1.0, delta=1e-9
+            )
+
+    def test_value_array_to_function_rejects_misaligned_shock_axis(self):
+        # The expectation weights are matched to the discretization nodes
+        # positionally, so a shock axis whose coordinate is not those nodes must
+        # fail loudly rather than mis-weight.
+        from skagent.distributions import Normal
+
+        theta_nodes = np.asarray(Normal(0, 1).discretize(N=5).points)
+        value_array = xr.DataArray(
+            np.zeros((4, 5)),
+            dims=["a", "theta"],
+            coords={"a": np.linspace(0, 1, 4), "theta": theta_nodes + 0.5},
+        )
+        with self.assertRaises(ValueError):
+            vfi.value_array_to_function(
+                value_array, case_1["bp"], disc_params={"theta": {"N": 5}}
+            )
 
 
 class test_vfi_protocol(unittest.TestCase):
