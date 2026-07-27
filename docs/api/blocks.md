@@ -4,6 +4,18 @@ This section contains the API documentation for model building blocks.
 
 ## Block Classes
 
+### Block
+
+Base class for all blocks. Provides shared analysis methods, including
+strategic-relevance analysis (`relevance_graph`, `relies_on`).
+
+```{eval-rst}
+.. autoclass:: skagent.block.Block
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
 ### DBlock
 
 ```{eval-rst}
