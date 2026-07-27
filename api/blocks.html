@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.dev774+gbe75fb210</title>
+        <title>Blocks - scikit-agent 0.1.dev780+gd038b1443</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev774+gbe75fb210</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev780+gd038b1443</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -291,12 +291,152 @@
 <p>This section contains the API documentation for model building blocks.</p>
 <section id="block-classes">
 <h2>Block Classes<a class="headerlink" href="#block-classes" title="Link to this heading">¶</a></h2>
+<section id="block">
+<h3>Block<a class="headerlink" href="#block" title="Link to this heading">¶</a></h3>
+<p>Base class for all blocks. Provides shared analysis methods, including
+strategic-relevance analysis (<code class="docutils literal notranslate"><span class="pre">relevance_graph</span></code>, <code class="docutils literal notranslate"><span class="pre">relies_on</span></code>).</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.block.Block">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">Block</span></span><a class="headerlink" href="#skagent.block.Block" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.display">
+<span class="sig-name descname"><span class="pre">display</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.display" title="Link to this definition">¶</a></dt>
+<dd><p>Displays (as in a notebook) an SVG of the visualized graph of this block.</p>
+<p>Base style configuration is in model_visualizatio_config.yaml</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li></li>
+<li><p><strong>img</strong> (<em>matplotlib.image.mpimg</em>)</p></li>
+<li><p><strong>svg_content</strong> (<em>str</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.display_formulas">
+<span class="sig-name descname"><span class="pre">display_formulas</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.display_formulas" title="Link to this definition">¶</a></dt>
+<dd><p>Prints the model’s formulas.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.formulas">
+<span class="sig-name descname"><span class="pre">formulas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.formulas" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of string representations of the block’s dynamic formulas.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.get_arrival_states">
+<span class="sig-name descname"><span class="pre">get_arrival_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.get_arrival_states" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Return a list of symbols that are:</dt><dd><ul class="simple">
+<li><p>required by the dynamic equations of the block</p></li>
+<li><p>dynamic variables themselves (controlled by dynamic equations)</p></li>
+</ul>
+</dd>
+</dl>
+<p>This is the list of symbols that are implicitly ‘lagged’,
+or must be provided ‘on arrival’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.get_attributions">
+<span class="sig-name descname"><span class="pre">get_attributions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.get_attributions" title="Link to this definition">¶</a></dt>
+<dd><p>Return the agent assignments of variables as a dict of
+the form {“agent1” : [“var1”, “var2”, … ], “agent2” : [“var3”, “var4”, …]}</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.get_controls">
+<span class="sig-name descname"><span class="pre">get_controls</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.get_controls" title="Link to this definition">¶</a></dt>
+<dd><p>Returns only the Control variables from the Block dynamics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.relevance_graph">
+<span class="sig-name descname"><span class="pre">relevance_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.relevance_graph" title="Link to this definition">¶</a></dt>
+<dd><p>Return the strategic-relevance graph over this block’s controls.</p>
+<p>Nodes are the block’s control (decision) variables; a directed edge
+<code class="docutils literal notranslate"><span class="pre">d1</span> <span class="pre">-&gt;</span> <span class="pre">d2</span></code> means decision <code class="docutils literal notranslate"><span class="pre">d1</span></code> strategically relies on decision
+<code class="docutils literal notranslate"><span class="pre">d2</span></code> (Koller &amp; Milch s-reachability). See <a class="reference internal" href="analysis.html#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Calibration parameters, used only to identify parameter symbols.
+Relevance is a structural property, so this defaults to an empty
+dict.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="analysis.html#skagent.relevance.RelevanceGraph" title="skagent.relevance.RelevanceGraph">skagent.relevance.RelevanceGraph</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.relies_on">
+<span class="sig-name descname"><span class="pre">relies_on</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.relies_on" title="Link to this definition">¶</a></dt>
+<dd><p>Whether control <code class="docutils literal notranslate"><span class="pre">first</span></code> strategically relies on control <code class="docutils literal notranslate"><span class="pre">second</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">first</span></code> relies on <code class="docutils literal notranslate"><span class="pre">second</span></code> when, to optimize the decision rule at
+<code class="docutils literal notranslate"><span class="pre">first</span></code>, the agent must account for the decision rule at <code class="docutils literal notranslate"><span class="pre">second</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Control variable names in this block. A name that is not a control
+raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
+<li><p><strong>second</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Control variable names in this block. A name that is not a control
+raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – See <a class="reference internal" href="#skagent.block.Block.relevance_graph" title="skagent.block.Block.relevance_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relevance_graph()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.visualize">
+<span class="sig-name descname"><span class="pre">visualize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.visualize" title="Link to this definition">¶</a></dt>
+<dd><p>Return a PyDot graph visualization of this block.</p>
+<p>Base style configuration is in model_visualization_config.yaml</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li></li>
+<li><p><strong>graph</strong> (<em>pydot.core.Dot</em>) – A PyDot graph representation of the model.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="dblock">
 <h3>DBlock<a class="headerlink" href="#dblock" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.block.DBlock">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">DBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a></p>
 <p>Represents a ‘block’ of model behavior.
 It prioritizes a representation of the dynamics of the block.
 Control variables are designated by the appropriate dynamic rule.</p>
@@ -467,7 +607,7 @@ the dynamics.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.block.RBlock">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">RBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.RBlock" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a></p>
 <p>A recursive block.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -475,13 +615,13 @@ the dynamics.</p>
 <li><p><strong>...</strong></p></li>
 <li><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
 <li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
-<li><p><strong>blocks</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code>]</span>)</p></li>
+<li><p><strong>blocks</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a>]</span>)</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="skagent.block.RBlock.blocks">
-<span class="sig-name descname"><span class="pre">blocks</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Block</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#skagent.block.RBlock.blocks" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">blocks</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><span class="pre">Block</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#skagent.block.RBlock.blocks" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -747,6 +887,21 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
             <ul>
 <li><a class="reference internal" href="#">Blocks</a><ul>
 <li><a class="reference internal" href="#block-classes">Block Classes</a><ul>
+<li><a class="reference internal" href="#block">Block</a><ul>
+<li><a class="reference internal" href="#skagent.block.Block"><code class="docutils literal notranslate"><span class="pre">Block</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.block.Block.display"><code class="docutils literal notranslate"><span class="pre">Block.display()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.display_formulas"><code class="docutils literal notranslate"><span class="pre">Block.display_formulas()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.formulas"><code class="docutils literal notranslate"><span class="pre">Block.formulas()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.get_arrival_states"><code class="docutils literal notranslate"><span class="pre">Block.get_arrival_states()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.get_attributions"><code class="docutils literal notranslate"><span class="pre">Block.get_attributions()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.get_controls"><code class="docutils literal notranslate"><span class="pre">Block.get_controls()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.relevance_graph"><code class="docutils literal notranslate"><span class="pre">Block.relevance_graph()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.relies_on"><code class="docutils literal notranslate"><span class="pre">Block.relies_on()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.visualize"><code class="docutils literal notranslate"><span class="pre">Block.visualize()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#dblock">DBlock</a><ul>
 <li><a class="reference internal" href="#skagent.block.DBlock"><code class="docutils literal notranslate"><span class="pre">DBlock</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.block.DBlock.calc_reward"><code class="docutils literal notranslate"><span class="pre">DBlock.calc_reward()</span></code></a></li>
@@ -823,7 +978,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=a527ad28"></script>
+</div><script src="../_static/documentation_options.js?v=32fa196f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#"><link rel="search" title="Search" href="search.html">
 
-    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - scikit-agent 0.1.dev774+gbe75fb210</title>
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - scikit-agent 0.1.dev780+gd038b1443</title>
 <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -166,7 +166,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">scikit-agent 0.1.dev774+gbe75fb210</div></a>
+      <a href="index.html"><div class="brand">scikit-agent 0.1.dev780+gd038b1443</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -315,6 +315,8 @@
 </li>
         <li><a href="api/distributions.html#skagent.distributions.Bernoulli">Bernoulli (class in skagent.distributions)</a>
 </li>
+        <li><a href="api/blocks.html#skagent.block.Block">Block (class in skagent.block)</a>
+</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/bellman.html#skagent.bellman.BellmanPeriod.block">block (skagent.bellman.BellmanPeriod attribute)</a>
@@ -429,10 +431,10 @@
 </li>
         <li><a href="api/environments.html#skagent.env.discounted_rollout_reward">discounted_rollout_reward() (in module skagent.env)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/distributions.html#skagent.distributions.DiscreteDistribution">DiscreteDistribution (class in skagent.distributions)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/distributions.html#skagent.distributions.DiscreteDistributionLabeled">DiscreteDistributionLabeled (class in skagent.distributions)</a>
 </li>
         <li><a href="api/blocks.html#skagent.block.DBlock.discretize">discretize() (skagent.block.DBlock method)</a>
@@ -452,6 +454,10 @@
 </li>
         </ul></li>
         <li><a href="api/blocks.html#skagent.block.discretized_shock_dstn">discretized_shock_dstn() (in module skagent.block)</a>
+</li>
+        <li><a href="api/blocks.html#skagent.block.Block.display">display() (skagent.block.Block method)</a>
+</li>
+        <li><a href="api/blocks.html#skagent.block.Block.display_formulas">display_formulas() (skagent.block.Block method)</a>
 </li>
         <li><a href="api/distributions.html#skagent.distributions.Distribution">Distribution (class in skagent.distributions)</a>
 </li>
@@ -525,6 +531,8 @@
 </li>
         <li><a href="api/parser.html#skagent.rule.format_rule">format_rule() (in module skagent.rule)</a>
 </li>
+        <li><a href="api/blocks.html#skagent.block.Block.formulas">formulas() (skagent.block.Block method)</a>
+</li>
         <li><a href="api/algorithms.html#skagent.ann.BlockPolicyNet.forward">forward() (skagent.ann.BlockPolicyNet method)</a>
 
         <ul>
@@ -560,8 +568,14 @@
         <li><a href="api/models.html#skagent.models.benchmarks.get_analytical_policy">get_analytical_policy() (in module skagent.models.benchmarks)</a>
 </li>
         <li><a href="api/bellman.html#skagent.bellman.BellmanPeriod.get_arrival_states">get_arrival_states() (skagent.bellman.BellmanPeriod method)</a>
+
+        <ul>
+          <li><a href="api/blocks.html#skagent.block.Block.get_arrival_states">(skagent.block.Block method)</a>
 </li>
+        </ul></li>
         <li><a href="api/blocks.html#skagent.block.DBlock.get_arrival_value_function">get_arrival_value_function() (skagent.block.DBlock method)</a>
+</li>
+        <li><a href="api/blocks.html#skagent.block.Block.get_attributions">get_attributions() (skagent.block.Block method)</a>
 </li>
         <li><a href="api/models.html#skagent.models.benchmarks.get_benchmark_calibration">get_benchmark_calibration() (in module skagent.models.benchmarks)</a>
 </li>
@@ -570,6 +584,8 @@
         <li><a href="api/bellman.html#skagent.bellman.BellmanPeriod.get_controls">get_controls() (skagent.bellman.BellmanPeriod method)</a>
 
         <ul>
+          <li><a href="api/blocks.html#skagent.block.Block.get_controls">(skagent.block.Block method)</a>
+</li>
           <li><a href="api/blocks.html#skagent.block.RBlock.get_controls">(skagent.block.RBlock method)</a>
 </li>
         </ul></li>
@@ -763,6 +779,8 @@
 </li>
           <li><a href="api/models.html#module-skagent.models.fisher">skagent.models.fisher</a>
 </li>
+          <li><a href="api/models.html#module-skagent.models.macid">skagent.models.macid</a>
+</li>
           <li><a href="api/models.html#module-skagent.models.perfect_foresight">skagent.models.perfect_foresight</a>
 </li>
           <li><a href="api/models.html#module-skagent.models.perfect_foresight_normalized">skagent.models.perfect_foresight_normalized</a>
@@ -838,14 +856,20 @@
 </li>
         <li><a href="api/utils.html#skagent.utils.reconcile">reconcile() (in module skagent.utils)</a>
 </li>
+        <li><a href="api/blocks.html#skagent.block.Block.relevance_graph">relevance_graph() (skagent.block.Block method)</a>
+</li>
         <li><a href="api/analysis.html#skagent.relevance.RelevanceGraph">RelevanceGraph (class in skagent.relevance)</a>
 </li>
-        <li><a href="api/analysis.html#skagent.relevance.RelevanceGraph.relies_on">relies_on() (skagent.relevance.RelevanceGraph method)</a>
+        <li><a href="api/blocks.html#skagent.block.Block.relies_on">relies_on() (skagent.block.Block method)</a>
+
+        <ul>
+          <li><a href="api/analysis.html#skagent.relevance.RelevanceGraph.relies_on">(skagent.relevance.RelevanceGraph method)</a>
 </li>
-        <li><a href="api/environments.html#skagent.env.GymEnv.reset">reset() (skagent.env.GymEnv method)</a>
-</li>
+        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/environments.html#skagent.env.GymEnv.reset">reset() (skagent.env.GymEnv method)</a>
+</li>
         <li><a href="api/simulation.html#skagent.simulation.monte_carlo.Simulator.reset_rng">reset_rng() (skagent.simulation.monte_carlo.Simulator method)</a>
 </li>
         <li><a href="api/bellman.html#skagent.bellman.BellmanPeriod.resolve_discount_factor">resolve_discount_factor() (skagent.bellman.BellmanPeriod method)</a>
@@ -970,6 +994,13 @@
 
         <ul>
           <li><a href="api/models.html#module-skagent.models.fisher">module</a>
+</li>
+        </ul></li>
+        <li>
+    skagent.models.macid
+
+        <ul>
+          <li><a href="api/models.html#module-skagent.models.macid">module</a>
 </li>
         </ul></li>
         <li>
@@ -1123,6 +1154,8 @@
           <li><a href="api/algorithms.html#skagent.ann.BlockValueNet.value_function">(skagent.ann.BlockValueNet method)</a>
 </li>
         </ul></li>
+        <li><a href="api/blocks.html#skagent.block.Block.visualize">visualize() (skagent.block.Block method)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -1166,7 +1199,7 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=a527ad28"></script>
+</div><script src="_static/documentation_options.js?v=32fa196f"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

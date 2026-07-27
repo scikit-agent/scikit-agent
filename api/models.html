@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.dev774+gbe75fb210</title>
+        <title>Models - scikit-agent 0.1.dev780+gd038b1443</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev774+gbe75fb210</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev780+gd038b1443</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1074,6 +1074,33 @@ the agent prefers extraction over indefinite accumulation.</p>
 </dd></dl>
 
 </section>
+<section id="multi-agent-influence-diagrams-maids">
+<h2>Multi-Agent Influence Diagrams (MAIDs)<a class="headerlink" href="#multi-agent-influence-diagrams-maids" title="Link to this heading">¶</a></h2>
+<p>Game-theoretic influence diagrams from the literature, encoded to illustrate
+strategic-relevance analysis (<code class="docutils literal notranslate"><span class="pre">Block.relevance_graph</span></code> / <code class="docutils literal notranslate"><span class="pre">Block.relies_on</span></code>).
+These are not solved for a policy; only their graphical structure is used.</p>
+<p id="module-skagent.models.macid">Multi-agent influence diagram (MAID) illustration models.</p>
+<p>These are game-theoretic influence diagrams from the literature, encoded as
+scikit-agent blocks to illustrate and exercise strategic-relevance analysis
+(<code class="docutils literal notranslate"><span class="pre">Block.relevance_graph</span></code> / <code class="docutils literal notranslate"><span class="pre">Block.relies_on</span></code>). Unlike the consumption-saving
+models in <code class="docutils literal notranslate"><span class="pre">benchmarks.py</span></code>, they are not solved for a policy – scikit-agent
+has no equilibrium solver yet – so only their graphical structure (information
+sets, agent ownership, dependencies) is meaningful; the functional forms and
+probabilities/payoffs are illustrative.</p>
+<p>Encoding conventions (a deliberate departure from the source presentations):</p>
+<ul class="simple">
+<li><p>Chance nodes are given in structural-causal form rather than as conditional
+probability distributions P(node | parents): each chance node is a
+deterministic mechanism of its endogenous parents plus an explicit exogenous
+noise variable (a shock). This is equivalent in distribution (any CPD can be
+written as a function of its parents plus independent noise) but makes the
+noise a first-class graph node, matching scikit-agent’s shock/dynamics
+vocabulary. Because the noise nodes are single-child exogenous roots, they
+cannot lie on any d-connecting path and so do not change the relevance graph.</p></li>
+<li><p>Binary decisions are relaxed to continuous <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code> controls, pending
+discrete-action support.</p></li>
+</ul>
+</section>
 </section>
 
         </article>
@@ -1187,6 +1214,7 @@ the agent prefers extraction over indefinite accumulation.</p>
 <li><a class="reference internal" href="#skagent.models.resource_extraction.make_optimal_decision_rule"><code class="docutils literal notranslate"><span class="pre">make_optimal_decision_rule()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#multi-agent-influence-diagrams-maids">Multi-Agent Influence Diagrams (MAIDs)</a></li>
 </ul>
 </li>
 </ul>
@@ -1198,7 +1226,7 @@ the agent prefers extraction over indefinite accumulation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=a527ad28"></script>
+</div><script src="../_static/documentation_options.js?v=32fa196f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
