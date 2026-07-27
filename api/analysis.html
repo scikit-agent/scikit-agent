@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.1.dev767+g1f2f50152</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.1.dev774+gbe75fb210</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev767+g1f2f50152</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev774+gbe75fb210</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -292,8 +292,15 @@
 decision structure, and render them as plate-notation diagrams.</p>
 <section id="module-skagent.model_analyzer">
 <span id="model-analyzer"></span><h2>Model Analyzer<a class="headerlink" href="#module-skagent.model_analyzer" title="Link to this heading">¶</a></h2>
-<p>ModelAnalyzer: Extracts structured metadata from scikit-agent DBlock/RBlock models
-for visualization (e.g., plate-notation drawing).</p>
+<p>ModelAnalyzer: Extracts structured metadata from scikit-agent DBlock/RBlock models.</p>
+<p>The analyzer builds an annotated dependency graph (<code class="docutils literal notranslate"><span class="pre">self.G</span></code>) as its source of
+truth and exposes it in two forms:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">to_dict()</span></code> – node metadata and classified edges for visualization
+(e.g., plate-notation drawing via ModelVisualizer).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">influence_graph()</span></code> – the influence-diagram (SCIM) view consumed by
+<a class="reference internal" href="#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a> for strategic-relevance analysis.</p></li>
+</ul>
 <p>Key concepts:
 - instant edge: dependency within the same time period
 - lag edge: dependency from previous time period (including self-lag like p_{t-1} → p_t)
@@ -314,6 +321,31 @@ for visualization (e.g., plate-notation drawing).</p>
 <dt class="sig sig-object py" id="skagent.model_analyzer.ModelAnalyzer.analyze">
 <span class="sig-name descname"><span class="pre">analyze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer.analyze" title="Link to this definition">¶</a></dt>
 <dd><p>Run the full analysis pipeline.</p>
+<p>The annotated dependency graph <code class="docutils literal notranslate"><span class="pre">self.G</span></code> is the source of truth; the
+public <code class="docutils literal notranslate"><span class="pre">node_meta</span></code> / <code class="docutils literal notranslate"><span class="pre">edges</span></code> / <code class="docutils literal notranslate"><span class="pre">plates</span></code> are derived from it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.model_analyzer.ModelAnalyzer.influence_graph">
+<span class="sig-name descname"><span class="pre">influence_graph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer.influence_graph" title="Link to this definition">¶</a></dt>
+<dd><p>Return the SCIM (influence-diagram) view for strategic-relevance analysis.</p>
+<p>The graph <a class="reference internal" href="#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a> consumes: chance / decision / utility
+nodes with the causal (instant + shock) edges between them. Parameter
+nodes are dropped – they are deterministic constants, not random
+variables, and leaving them in would open spurious d-connection paths
+(an un-conditioned fork <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">&lt;-</span> <span class="pre">p</span> <span class="pre">-&gt;</span> <span class="pre">B</span></code>) that corrupt s-reachability.
+Lag edges are excluded here (single-period scope); cross-period reliance
+is handled by the unrolling machinery separately.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Named tuple <code class="docutils literal notranslate"><span class="pre">(graph,</span> <span class="pre">decisions,</span> <span class="pre">parents,</span> <span class="pre">agent_utilities,</span>
+<span class="pre">decision_agent)</span></code> matching
+<a class="reference internal" href="#skagent.relevance.RelevanceGraph.from_scim" title="skagent.relevance.RelevanceGraph.from_scim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.relevance.RelevanceGraph.from_scim()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.model_analyzer.SCIM" title="skagent.model_analyzer.SCIM">SCIM</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -322,6 +354,59 @@ for visualization (e.g., plate-notation drawing).</p>
 <dd><p>Return a JSON-serializable dict of the analysis.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.model_analyzer.</span></span><span class="sig-name descname"><span class="pre">SCIM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decisions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_utilities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.SCIM" title="Link to this definition">¶</a></dt>
+<dd><p>The influence-diagram (SCIM) view of a model.</p>
+<section id="fields">
+<h3>Fields<a class="headerlink" href="#fields" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>graph<span class="classifier">networkx.DiGraph</span></dt><dd><p>Chance / decision / utility nodes with causal edges (parameters dropped).</p>
+</dd>
+<dt>decisions<span class="classifier">list</span></dt><dd><p>The decision (control) nodes.</p>
+</dd>
+<dt>parents<span class="classifier">dict</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">parents[node]</span></code> is the node’s parents in <code class="docutils literal notranslate"><span class="pre">graph</span></code> (a decision’s is its
+information set).</p>
+</dd>
+<dt>agent_utilities<span class="classifier">dict</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">agent_utilities[agent]</span></code> is the list of utility nodes owned by <code class="docutils literal notranslate"><span class="pre">agent</span></code>.</p>
+</dd>
+<dt>decision_agent<span class="classifier">dict</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">decision_agent[decision]</span></code> is the agent that owns each decision.</p>
+</dd>
+</dl>
+<p>Unpacks directly into <a class="reference internal" href="#skagent.relevance.RelevanceGraph.from_scim" title="skagent.relevance.RelevanceGraph.from_scim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.relevance.RelevanceGraph.from_scim()</span></code></a>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.agent_utilities">
+<span class="sig-name descname"><span class="pre">agent_utilities</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.agent_utilities" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.decision_agent">
+<span class="sig-name descname"><span class="pre">decision_agent</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.decision_agent" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.decisions">
+<span class="sig-name descname"><span class="pre">decisions</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.decisions" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.graph">
+<span class="sig-name descname"><span class="pre">graph</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.graph" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.parents">
+<span class="sig-name descname"><span class="pre">parents</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.parents" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+</section>
 </dd></dl>
 
 </section>
@@ -510,7 +595,16 @@ nodes with directed causal edges.</p></li>
 <li><a class="reference internal" href="#module-skagent.model_analyzer">Model Analyzer</a><ul>
 <li><a class="reference internal" href="#skagent.model_analyzer.ModelAnalyzer"><code class="docutils literal notranslate"><span class="pre">ModelAnalyzer</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.model_analyzer.ModelAnalyzer.analyze"><code class="docutils literal notranslate"><span class="pre">ModelAnalyzer.analyze()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.model_analyzer.ModelAnalyzer.influence_graph"><code class="docutils literal notranslate"><span class="pre">ModelAnalyzer.influence_graph()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.model_analyzer.ModelAnalyzer.to_dict"><code class="docutils literal notranslate"><span class="pre">ModelAnalyzer.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.model_analyzer.SCIM"><code class="docutils literal notranslate"><span class="pre">SCIM</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.agent_utilities"><code class="docutils literal notranslate"><span class="pre">SCIM.agent_utilities</span></code></a></li>
+<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.decision_agent"><code class="docutils literal notranslate"><span class="pre">SCIM.decision_agent</span></code></a></li>
+<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.decisions"><code class="docutils literal notranslate"><span class="pre">SCIM.decisions</span></code></a></li>
+<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.graph"><code class="docutils literal notranslate"><span class="pre">SCIM.graph</span></code></a></li>
+<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.parents"><code class="docutils literal notranslate"><span class="pre">SCIM.parents</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -542,7 +636,7 @@ nodes with directed causal edges.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=e626b964"></script>
+</div><script src="../_static/documentation_options.js?v=a527ad28"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
