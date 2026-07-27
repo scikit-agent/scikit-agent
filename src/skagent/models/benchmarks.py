@@ -438,10 +438,19 @@ d3_block = DBlock(
                 agent="consumer",
             ),
             "a": lambda m, c: m - c,
-            "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
-            "u": lambda c, liv, CRRA: (
-                liv * crra_utility(c, CRRA)
-            ),  # Utility with survival
+            # Blanchard timing: the agent consumes and enjoys utility *while
+            # alive this period*, then faces the mortality shock. So ``u`` must
+            # read the *arrival* ``liv`` — it is declared BEFORE ``liv`` is
+            # updated below. (Declaring it after would gate this period's utility
+            # on surviving the current shock, a different model whose optimal MPC
+            # differs from the Blanchard closed form ``kappa_s`` by O(1 - s); see
+            # design.md §7/§8.) ``crra_utility`` always returns a torch tensor, so
+            # ``liv`` is coerced with ``as_tensor`` — a bare ``numpy * tensor``
+            # (the VFI grid-backup path) would raise TypeError.
+            "u": lambda c, liv, CRRA: as_tensor(liv) * crra_utility(c, CRRA),
+            # Survival update for next period: liv' = 0 if the agent dies
+            # (live = 0). E[liv'] = s * liv is the mortality-as-discount channel.
+            "liv": lambda liv, live: liv * live,
         },
         "reward": {"u": "consumer"},
     }
