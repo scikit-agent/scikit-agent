@@ -281,7 +281,7 @@ def bp_terminal(states, shocks, parameters):
 
 class test_vfi_bellman_step(unittest.TestCase):
     """
-    Phase-2 design (§9 steps 1-3): ``vfi.bellman_step`` — one exact value backup
+    Phase-2 design: ``vfi.bellman_step`` — one exact value backup
     on the ``BellmanPeriod`` protocol; single- and multi-control (one joint
     ``scipy.minimize`` over the stacked control vector, per-control iset
     projection).
@@ -290,7 +290,7 @@ class test_vfi_bellman_step(unittest.TestCase):
     backward-induction step whose optimum is the case's analytic ``optimal_dr``.
     These mirror ``test_vfi_conftest`` (which exercises legacy ``solve``) but
     drive ``bellman_step`` and assert its 3-tuple return contract. The
-    Mechanism-B reindex (§5) is also exercised: a control whose information set
+    Mechanism-B reindex is also exercised: a control whose information set
     is a derived pre-state (``case_3``'s ``m = a + theta``, D-2's ``m = a·R + y``).
     """
 
@@ -423,8 +423,8 @@ class test_vfi_bellman_step(unittest.TestCase):
         self.assertEqual(list(policy["d"].dims), ["a"])
 
     def test_case_11_nontrivial_continuation(self):
-        # A real continuation_vf drives the optimum (design §9 step 4). The
-        # period reward u = -(a - b)^2 is over the ARRIVAL states (a, b) and is
+        # A real continuation_vf drives the optimum. The period reward
+        # u = -(a - b)^2 is over the ARRIVAL states (a, b) and is
         # independent of the control c, so the immediate reward alone cannot pin
         # c. The transition carries c forward as next-period b' (b' = c) while
         # a' = a + theta; a continuation that rewards b' ~ a' therefore pulls
@@ -471,7 +471,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # in no control's information set). The backup integrates theta out
         # inside the max: E_theta[-(theta - c)^2] = -(Var[theta] + (E[theta]-c)^2)
         # is maximized at c = E[theta] = 0, independent of a. This is the minimal
-        # unit test of the §4 hidden-shock discretization (design §9 step 6).
+        # unit test of the hidden-shock discretization.
         dr, value_array, _ = vfi.bellman_step(
             case_2["bp"],
             bp_terminal,
@@ -491,7 +491,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # the default sigma_psi = 0, psi discretizes to a single degenerate node
         # at psi = 1, so the hidden-shock expectation is exact. Under the exact
         # log-utility arrival value function, a single backup recovers the PIH
-        # policy c = (1 - beta)(m + 1/r). Exercises §4 hidden-shock integration
+        # policy c = (1 - beta)(m + 1/r). Exercises hidden-shock integration
         # with a pre-state (m) that depends on the (degenerate) hidden shock.
         cal = bm.u2_calibration
         beta, R = cal["DiscFac"], cal["R"]
@@ -516,13 +516,14 @@ class test_vfi_bellman_step(unittest.TestCase):
 
     def test_u2_hidden_shock_multinode_expectation(self):
         # sigma_psi > 0: psi is now spread over several discretization nodes, so
-        # the per-point backup integrates a genuine E_psi[...] inside the max
-        # (design §4), rather than collapsing to the single degenerate node of
-        # the default calibration. Unlike sigma_psi = 0, the PIH closed form is
-        # NOT exact here — the backup grids over arrival assets a and fixes m's
-        # hidden psi at its mean for the iset reindex, an approximation (design
-        # §7's U-1/U-3 property-only lane) — so this is a property check that the
-        # multi-node expectation runs, changes the answer, and yields a sane rule.
+        # the per-point backup integrates a genuine E_psi[...] inside the max,
+        # rather than collapsing to the single degenerate node of the default
+        # calibration. Unlike sigma_psi = 0, the PIH closed form is NOT exact
+        # here — the backup grids over arrival assets a and fixes m's hidden psi
+        # at its mean for the iset reindex, an approximation (the same one that
+        # puts U-1 and U-3 in the property-only lane) — so this is a property
+        # check that the multi-node expectation runs, changes the answer, and
+        # yields a sane rule.
         beta, R = bm.u2_calibration["DiscFac"], bm.u2_calibration["R"]
         h = 1.0 / (R - 1.0)
         B = 1.0 / (1.0 - beta)
@@ -552,7 +553,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # policy away from the degenerate (single-node) solution.
         self.assertGreater(float(np.abs(c_spread - c_degenerate).max()), 1e-3)
 
-    # --- iset is a derived pre-state: reproject onto its coordinate (§5) ----
+    # --- iset is a derived pre-state: reproject onto its coordinate ----
 
     def test_case_3_derived_iset_reproject(self):
         # u = -(m - c)^2 with iset = [m], m = a + theta a derived pre-state. The
@@ -577,7 +578,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # D-2 (infinite-horizon CRRA, no shocks): a single backup under the
         # *exact* arrival value function recovers the analytic policy
         # c = kappa*(m + H). Exercises Mechanism B with m = a*R + y and a
-        # non-trivial continuation, decoupled from the iteration loop (§3).
+        # non-trivial continuation, decoupled from the iteration loop.
         cal = bm.d2_calibration
         beta, R, sigma, y = cal["DiscFac"], cal["R"], cal["CRRA"], cal["y"]
         H = y / (R - 1)  # human wealth
@@ -613,10 +614,11 @@ class test_vfi_bellman_step(unittest.TestCase):
         # indicator ``liv'`` (dead => 0) -- a single backup recovers the analytic
         # policy c = kappa_s*(m + H). The block reads the *arrival* ``liv``
         # (utility while alive), so E_live supplies the mortality discount and the
-        # Euler FOC is exact: this is the discrete-shock Tier-2 benchmark
-        # (design.md §7). Full iterated convergence additionally needs the
-        # out-of-grid absorbing-state continuation (§8, roadmap PR10) -- a single
-        # backup under the exact continuation does not, so it is validated here.
+        # Euler FOC is exact: this is the discrete-shock Tier-2 benchmark.
+        # Supplying that continuation is what lets this test leave ``liv`` off the
+        # grid; iterating instead rebuilds the continuation from the value grid,
+        # which must then carry ``liv`` as an axis -- see
+        # test_d3_iterated_converges_to_analytic.
         cal = bm.d3_calibration
         beta, R, sigma = cal["DiscFac"], cal["R"], cal["CRRA"]
         s, y = cal["SurvivalProb"], cal["y"]
@@ -648,8 +650,8 @@ class test_vfi_bellman_step(unittest.TestCase):
 
     def test_mechanism_b_multi_axis_not_implemented(self):
         # Gridding case_3 over BOTH a and theta makes m = a + theta vary along
-        # two grid axes -> general scattered reindexing, out of scope in v1
-        # (design §5, O3): fail loudly rather than interpolate wrongly.
+        # two grid axes -> general scattered reindexing, out of scope in v1:
+        # fail loudly rather than interpolate wrongly.
         with self.assertRaises(NotImplementedError):
             vfi.bellman_step(
                 case_3["bp"],
@@ -684,7 +686,7 @@ class test_vfi_bellman_step(unittest.TestCase):
 
 class test_vfi_solve_bellman(unittest.TestCase):
     """
-    Phase-2 design (§9 step 5): ``vfi.solve_bellman`` — value-function iteration
+    Phase-2 design: ``vfi.solve_bellman`` — value-function iteration
     that drives ``bellman_step`` to a fixed point, rebuilding the continuation
     from each iterate's value grid via ``vfi.value_array_to_function``.
 
@@ -732,7 +734,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         # the self-built continuation is then extrapolated into the V -> -inf
         # wall below the grid and the loop settles on that flat, wrong fixed
         # point (c ~ 35). The flag confines a' to the grid, so the continuation
-        # is only interpolated (design §8).
+        # is only interpolated.
         #
         # The grid floor is the slack artificial borrowing limit: a fraction of
         # human wealth H, low enough not to bind at the tested interior states
@@ -848,14 +850,14 @@ class test_vfi_solve_bellman(unittest.TestCase):
     def test_u2_iterated_converges_to_analytic(self):
         # U-2 (log utility, normalized, no borrowing constraint): a hidden
         # permanent-income shock psi that is degenerate at sigma_psi = 0 (single
-        # node at psi = 1), so the §4 hidden-shock expectation in each backup is
+        # node at psi = 1), so the hidden-shock expectation in each backup is
         # exact. Iterate solve_bellman to a fixed point and recover the PIH
         # closed form c = (1 - beta)(m + 1/r) at interior states.
         #
         # Like D-2, U-2 borrows against human wealth h = 1/r, so the iteration
         # rides the control bound without the artificial_borrowing_constraint
         # flag; with it, next-period assets stay on the grid and the continuation
-        # is only interpolated (design §8). The grid floor is a slack fraction of
+        # is only interpolated. The grid floor is a slack fraction of
         # human wealth: -h/2 sits between the liquidity-depression bias of too
         # high a floor and the deep-borrowing instability of too low one. tol is
         # coarse for speed (the beta = 0.96 contraction fixes the iteration
@@ -900,7 +902,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
 
     def test_value_array_to_function_integrates_observed_shock_axis(self):
         # An observed-shock axis is integrated out of the arrival value:
-        # W(s) = E_obs[V(s, obs)] (design §4, §9 step 6). Build V(a, theta) over
+        # W(s) = E_obs[V(s, obs)]. Build V(a, theta) over
         # case_1's Normal shock theta on its discretization nodes; the continuation
         # must return the shock-weighted expectation over the theta axis.
         from skagent.distributions import Normal
