@@ -10,6 +10,22 @@ and this project adheres to
 
 ### Fixed
 
+- A continuation rebuilt by `vfi.value_array_to_function` read only the axes of
+  the value grid, so an arrival state that was not gridded was silently
+  discarded. It now raises `ValueError` when handed one. This was not academic:
+  with D-3's survival state `liv` off the grid, the continuation could not
+  depend on `liv'`, the survival probability cancelled out of the backup, and
+  value iteration converged to the no-mortality MPC.
+
+- `vfi.bellman_step` marks a grid point's optimum **unidentified** when the
+  backup objective is constant in the controls (two interior probes match the
+  reported optimum), and the information-set projection now takes its invariance
+  check and its surviving slice over identified points only. Previously an
+  absorbing state with zero reward and continuation -- D-3's dead `liv = 0`
+  slice, where every control is optimal and the optimizer returns its seed --
+  made the projection raise on a policy spread that carried no information. The
+  probes run only when some control's information set is narrower than the grid.
+
 - `d3_block` (Blanchard mortality) was unusable by the `vfi` solver and did not
   match its own analytical policy. Two fixes: the reward `liv * crra_utility(c)`
   now coerces `liv` with `as_tensor` (a bare `numpy * tensor` raised `TypeError`
@@ -39,8 +55,8 @@ and this project adheres to
 - D-3 (Blanchard mortality) VFI benchmark:
   `test_d3_single_backup_analytic_continuation` recovers `c = kappa_s * (m + H)`
   from a single `bellman_step`, integrating the hidden 2-node `Bernoulli`
-  survival shock. Full iterated D-3 convergence is scheduled as a Phase-2
-  follow-on (design.md §9.1, PR10).
+  survival shock. `test_d3_iterated_converges_to_analytic` reaches the same
+  policy by value iteration, with the survival state `liv` on the state grid.
 
 - `skagent.relevance`: strategic-relevance analysis via the Koller & Milch
   s-reachability criterion. `is_s_reachable` and a `RelevanceGraph` wrapper

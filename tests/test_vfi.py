@@ -772,6 +772,58 @@ class test_vfi_solve_bellman(unittest.TestCase):
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
             self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
 
+    def test_d3_iterated_converges_to_analytic(self):
+        # D-3 (Blanchard mortality) iterated to a fixed point, with the survival
+        # state liv ON THE GRID. That is what makes the mortality channel visible
+        # to the loop: the continuation rebuilt from the value grid is a function
+        # of both a' and liv', so E_live[W(a', liv')] = s*W(a', 1) supplies the
+        # survival discount and the liv = 1 slice is exactly D-2 at beta -> beta*s,
+        # recovering c = kappa_s*(m + H). With liv left off the grid the
+        # continuation cannot depend on liv', the 2-node expectation over `live`
+        # has a live-free integrand, s cancels, and the loop converges to the
+        # no-mortality kappa instead -- which is why value_array_to_function now
+        # refuses an ungridded arrival state rather than discarding it.
+        #
+        # The dead slice is degenerate: at liv = 0 reward and continuation are both
+        # 0, so the objective is constant in c and the optimizer returns its seed.
+        # bellman_step marks those points UNIDENTIFIED and the iset projection
+        # takes its invariance check and its surviving slice over identified points
+        # only (liv is outside c's iset = [m], so the axis is dropped).
+        cal = bm.d3_calibration
+        R, y = cal["R"], cal["y"]
+        beta, sigma = cal["DiscFac"], cal["CRRA"]
+        H = y / (R - 1.0)
+        # Grid floor / coarse tol as in test_d2_iterated_converges_to_analytic: the
+        # slack artificial borrowing limit at -H/3 keeps the continuation
+        # interpolated, and beta*s = 0.9504 fixes the iteration count.
+        bp = BellmanPeriod(bm.d3_block, "DiscFac", cal)
+        grid = {"a": np.linspace(-H / 3.0, 8.0, 16), "liv": np.array([0.0, 1.0])}
+        dr, value_array, _ = vfi.solve_bellman(
+            bp,
+            grid,
+            scope=cal,
+            tol=1e-2,
+            max_iter=2000,
+            artificial_borrowing_constraint=True,
+        )
+        self.assertTrue(value_array.attrs["converged"])
+        # V(a, 0) = 0 exactly at every iterate (zero reward, zero continuation).
+        self.assertEqual(float(np.abs(value_array.sel(liv=0.0)).max()), 0.0)
+
+        # Two assertions: the policy is near kappa_s, and -- the point of the
+        # benchmark -- it is nearer kappa_s than the no-mortality kappa, which the
+        # solver produced before the survival state entered the grid. The residual
+        # is a systematic ~4% under-consumption from the coarse grid and the
+        # liquidity-constraint depression at the grid floor (tightening tol alone
+        # does not shrink it), the same character as D-2's few-percent recovery.
+        kappa = (R - (beta * R) ** (1 / sigma)) / R  # mortality ignored
+        for a in [1.0, 2.0, 3.0, 5.0]:
+            m = a * R + y
+            got = dr["c"](m)
+            want = float(np.asarray(bm.d3_analytical_policy({"a": a}, {}, cal)["c"]))
+            self.assertAlmostEqual(got, want, delta=8e-2)
+            self.assertLess(abs(got - want), abs(got - kappa * (m + H)))
+
     def test_max_iter_one_matches_bellman_step(self):
         # Iteration 1 uses the terminal (zero) continuation, so max_iter=1 is
         # exactly a single bellman_step under a terminal continuation (loop
@@ -879,6 +931,24 @@ class test_vfi_solve_bellman(unittest.TestCase):
             self.assertAlmostEqual(
                 wf({"a": np.float64(a)}, {}, case_1["calibration"]), a + 1.0, delta=1e-9
             )
+
+    def test_value_array_to_function_rejects_ungridded_arrival_state(self):
+        # A value grid missing an arrival state cannot represent any dependence on
+        # it, so a continuation rebuilt from that grid would silently discard the
+        # value it is handed. D-3's survival state liv is the live example: dropping
+        # it cancels the mortality discount and yields the no-mortality policy, a
+        # plausible number for a different model. Refuse instead.
+        cal = bm.d3_calibration
+        bp = BellmanPeriod(bm.d3_block, "DiscFac", cal)
+        value_array = xr.DataArray(
+            np.linspace(0.0, 3.0, 4), dims=["a"], coords={"a": np.linspace(0.0, 3.0, 4)}
+        )
+        wf = vfi.value_array_to_function(value_array, bp)
+        with self.assertRaises(ValueError):
+            wf({"a": 1.0, "liv": 1.0}, {}, cal)
+        # Only the value actually handed over is an error; an ``a``-only query is
+        # still well posed (nothing is being discarded).
+        self.assertAlmostEqual(wf({"a": 1.0}, {}, cal), 1.0)
 
     def test_value_array_to_function_rejects_misaligned_shock_axis(self):
         # The expectation weights are matched to the discretization nodes

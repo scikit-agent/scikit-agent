@@ -351,6 +351,18 @@ _UPPER_OPEN = 1e12
 # at the test ATOL scale; relative/absolute hardening is deferred to Phase 3.
 _PROJ_TOL = 1e-3
 
+# The backup objective is treated as constant in the controls -- so the argmax is
+# *not identified* -- when its spread over well-separated interior probes is below
+# this (relative to the objective's own scale). Exactly-flat slices, the case this
+# exists for, spread by 0.
+_FLAT_TOL = 1e-10
+
+# Interior probe positions (as fractions of the bound interval) used to test the
+# objective for flatness. Interior on purpose: a bound may be singular (CRRA
+# utility at c = 0), and a concave objective agreeing at two well-separated
+# interior points and at its own optimum is constant between them.
+_FLAT_PROBES = (0.25, 0.75)
+
 
 def _project_to_iset(
     policy_da: xr.DataArray,
@@ -358,6 +370,7 @@ def _project_to_iset(
     iset: Sequence[str],
     iset_coords: Mapping[str, np.ndarray],
     control_sym: str,
+    identified: np.ndarray | None = None,
 ) -> xr.DataArray:
     """
     Re-express a grid-tabulated policy as a function of a control's information
@@ -369,12 +382,22 @@ def _project_to_iset(
     pre-state (e.g. ``m = a·R + y``) that varies, strictly monotonically, only
     along it — in which case that axis is relabeled to the variable and
     recoordinated onto its computed values. Any leftover grid axis is outside the
-    iset, so the optimum must be invariant along it; it is dropped (``isel`` 0).
+    iset, so the optimum must be invariant along it; it is dropped.
+
+    Where the backup objective is constant in the controls the argmax is **not
+    identified** — the optimizer returns whatever its seed gave — so those points
+    carry no information about whether the policy depends on a dropped axis. This
+    happens generically at an absorbing state whose reward and continuation both
+    vanish (D-3's dead ``liv = 0`` slice). *identified* marks the points where the
+    optimum is pinned down; the invariance check and the surviving slice are both
+    taken over identified points only. With *identified* ``None`` every point
+    counts (the objective is assumed non-degenerate everywhere).
 
     Raises ``NotImplementedError`` if an iset variable varies along more than one
     grid axis, or two variables share an axis (general scattered reindexing, out
-    of scope); ``ValueError`` if a derived map is non-monotone or a dropped axis
-    is non-invariant (the reprojection would be ill-posed).
+    of scope); ``ValueError`` if a derived map is non-monotone, a dropped axis is
+    non-invariant, or the policy is nowhere identified along a dropped axis (the
+    reprojection would be ill-posed).
     """
     da = policy_da
     claimed: dict[str, str] = {}  # grid axis -> iset variable it represents
@@ -415,16 +438,47 @@ def _project_to_iset(
             )
         claimed[axis] = iv
 
+    mask = (
+        None
+        if identified is None
+        else xr.DataArray(
+            np.asarray(identified, dtype=bool), dims=grid_axes, coords=policy_da.coords
+        )
+    )
+
     for ax in grid_axes:
-        if ax not in claimed:
-            spread = float(np.abs(da.max(dim=ax) - da.min(dim=ax)).max())
-            if spread > _PROJ_TOL:
+        if ax in claimed:
+            continue
+        if mask is None:
+            witness = da
+        else:
+            # A point whose optimum is unidentified testifies to nothing about
+            # dependence on ``ax``; drop it from both the check and the selection.
+            if bool((mask.sum(dim=ax) == 0).any()):
                 raise ValueError(
-                    f"Control '{control_sym}'s optimum varies along grid axis "
-                    f"'{ax}' (spread {spread:.3g}), which is outside its "
-                    f"information set {list(iset)}."
+                    f"Control '{control_sym}'s optimum is unidentified (the backup "
+                    f"objective is constant in the controls) at every point of grid "
+                    f"axis '{ax}', which is outside its information set "
+                    f"{list(iset)}, so no value along that axis can be carried "
+                    "forward. Add the axis to the information set, or grid a state "
+                    "where the objective is non-degenerate."
                 )
+            witness = da.where(mask)
+        spread = float(np.abs(witness.max(dim=ax) - witness.min(dim=ax)).max())
+        if spread > _PROJ_TOL:
+            raise ValueError(
+                f"Control '{control_sym}'s optimum varies along grid axis "
+                f"'{ax}' (spread {spread:.3g}), which is outside its "
+                f"information set {list(iset)}."
+            )
+        # Identified values along ``ax`` agree to within _PROJ_TOL, so the first
+        # identified one represents the line (index 0 when all are identified,
+        # i.e. exactly the plain drop).
+        if mask is None:
             da = da.isel({ax: 0})
+        else:
+            da = da.isel({ax: mask.argmax(dim=ax)}).drop_vars(ax, errors="ignore")
+            mask = mask.any(dim=ax)
 
     da = da.rename({ax: iv for ax, iv in claimed.items() if ax != iv})
     return da.assign_coords(derived_coords).transpose(*iset)
@@ -514,6 +568,21 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
         c_min, c_max = sorted((c_at_lo, c_at_hi))
         lb, ub = max(lb, c_min), min(ub, c_max)
     return lb, ub
+
+
+def _flat_probe_points(x_opt, bounds):
+    """Interior control vectors at which to probe the objective for flatness (§5).
+
+    One vector per :data:`_FLAT_PROBES` fraction of each control's bound interval.
+    An open bound carries no scale, so there the interval is a unit window around
+    the reported optimum instead.
+    """
+    spans = []
+    for xj, (lo, hi) in zip(np.asarray(x_opt, dtype=float), bounds):
+        if lo <= _LOWER_OPEN or hi >= _UPPER_OPEN:
+            lo, hi = max(lo, xj - 1.0), min(hi, xj + 1.0)
+        spans.append((lo, hi))
+    return [np.array([lo + f * (hi - lo) for lo, hi in spans]) for f in _FLAT_PROBES]
 
 
 def bellman_step(
@@ -685,6 +754,13 @@ def bellman_step(
     iset_coord_buf = {
         c: {iv: np.empty(shape) for iv in iset_by_control[c]} for c in controls
     }
+    # Whether each point's optimum is identified, i.e. the objective is not
+    # constant in the controls (§5). Only needed when some control's iset is
+    # narrower than the grid, so a grid axis may be dropped in the projection --
+    # otherwise no point's optimum has to testify about a dropped axis and the two
+    # probes per point are pure cost.
+    check_identified = any(len(iset_by_control[c]) < len(grid_axes) for c in controls)
+    identified_buf = np.ones(shape, dtype=bool)
 
     for idx in np.ndindex(*shape):
         point_vals = {k: state_grid[k][i] for k, i in zip(grid_axes, idx)}
@@ -771,6 +847,16 @@ def bellman_step(
             policy_buf[c][idx] = res.x[j]
         value_buf[idx] = -res.fun
 
+        if check_identified:
+            # Two well-separated interior probes: if the objective there matches
+            # its own optimum, it is constant in the controls and ``res.x`` is
+            # just the seed, not an argmax.
+            spread = max(
+                abs(negated_value(p) - res.fun)
+                for p in _flat_probe_points(res.x, bounds)
+            )
+            identified_buf[idx] = spread > _FLAT_TOL * (1.0 + abs(res.fun))
+
     coords = {k: state_grid[k] for k in grid_axes}
     value_array = xr.DataArray(value_buf, dims=grid_axes, coords=coords)
     policy_array = {
@@ -783,7 +869,12 @@ def bellman_step(
     dr_from_data = {
         c: ar_from_data(
             _project_to_iset(
-                policy_array[c], grid_axes, iset_by_control[c], iset_coord_buf[c], c
+                policy_array[c],
+                grid_axes,
+                iset_by_control[c],
+                iset_coord_buf[c],
+                c,
+                identified=identified_buf if check_identified else None,
             )
         )
         for c in controls
@@ -858,6 +949,13 @@ def value_array_to_function(
     shocks), the expectation step is a no-op and the value grid over arrival
     states *is* ``W``.
 
+    ``wf`` reads only the axes it has, so an arrival state absent from the value
+    grid could only be discarded — the continuation cannot represent dependence on
+    it. Rather than do that silently (which reports a plausible value for a
+    different model: with D-3's survival state ``liv`` left off the grid, the
+    mortality discount cancels out of the backup and the loop converges to the
+    no-mortality policy), ``wf`` raises :class:`ValueError` when handed one.
+
     Parameters
     ----------
     value_array : xarray.DataArray
@@ -896,7 +994,21 @@ def value_array_to_function(
         fill_value=None,  # None -> linear extrapolation past the grid edges
     )
 
+    # An arrival state with no axis in the value grid would be read out of
+    # ``states`` by nobody and silently discarded, turning a modeling omission into
+    # a plausible wrong number. Refuse instead (§6): the caller must grid it.
+    ungridded = sorted(set(bp.arrival_states) - set(axes))
+
     def wf(states, shocks, parameters):
+        if ungridded:
+            dropped = [k for k in ungridded if k in states]
+            if dropped:
+                raise ValueError(
+                    f"Continuation was rebuilt from a value grid over {axes}, which "
+                    f"has no axis for arrival state(s) {dropped}; their values would "
+                    "be silently discarded, so the continuation cannot represent "
+                    "any dependence on them. Include them in the state grid."
+                )
         cols = [np.asarray(states[ax], dtype=float) for ax in axes]
         scalar = all(c.ndim == 0 for c in cols)
         # Pointwise (not outer-product) query: one row per evaluation point.
