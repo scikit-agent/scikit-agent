@@ -351,13 +351,11 @@ _UPPER_OPEN = 1e12
 # at the test ATOL scale; relative/absolute hardening is deferred to Phase 3.
 _PROJ_TOL = 1e-3
 
-# The objective counts as constant in the controls -- so its argmax is *not
-# identified* -- when it matches its own optimum, to within this relative
-# tolerance, at both these fractions of the bound interval. Two probes, so at most
-# one can be the optimum itself; interior, since a bound may be singular (CRRA
-# utility at c = 0). Exactly-flat slices, the case this exists for, spread by 0.
-_FLAT_TOL = 1e-10
-_FLAT_PROBES = (0.25, 0.75)
+# Two multi-start optima count as equally good -- so the argmax is *not
+# identified* if they disagree by more than _PROJ_TOL -- when their objectives
+# differ by less than this, relative to the objective's own scale. A constant
+# objective, the case this exists for, returns each seed at exactly equal value.
+_TIE_TOL = 1e-10
 
 
 def _project_to_iset(
@@ -592,9 +590,10 @@ def bellman_step(
 
     .. note::
        Current scope of the §2 design: one or more controls, jointly optimized
-       by a single :func:`scipy.optimize.minimize` over the stacked control
-       vector with per-control bounds, each policy then reprojected onto its own
-       information set (:func:`_project_to_iset`, §5). A control's pre-state and
+       by :func:`scipy.optimize.minimize` over the stacked control vector with
+       per-control bounds — restarted from each seed candidate, keeping the best
+       optimum (§8) — each policy then reprojected onto its own information set
+       (:func:`_project_to_iset`, §5). A control's pre-state and
        bounds are evaluated with each hidden shock fixed at its (discretized)
        mean, since a single value is required there even though the objective
        integrates the shock. This is exact when the pre-state does not depend on
@@ -630,11 +629,14 @@ def bellman_step(
         distribution's default discretization (exact for already-discrete
         shocks).
     x0 : float, optional
-        Fallback optimizer seed used when a control has an open bound.
+        A modest optimizer seed, clamped into each control's bounds. One of the
+        multi-start candidates at every point (§8), not just a fallback: it is what
+        covers a box whose midpoint is far from the optimum, e.g. the natural
+        borrowing limit's ``[0, m + H]``.
     x0_policy : Mapping[str, DataArray], optional
         Warm-start seeds keyed by control symbol (e.g. a previous iterate's
-        ``policy_array``); when given, the seed at each grid point is read from
-        here. Supplied by :func:`solve_bellman`.
+        ``policy_array``); supplies the first multi-start candidate at each grid
+        point, and wins ties. Supplied by :func:`solve_bellman`.
     artificial_borrowing_constraint : bool, optional
         When ``True``, tighten each control's bounds so the next-period arrival
         state stays inside the state grid (:func:`_tighten_bounds_to_grid`), an
@@ -743,7 +745,7 @@ def bellman_step(
         # fixed). The optimizer ranges over the stacked control vector, ordered
         # as ``controls``.
         bounds = []
-        seed_vec = []
+        seed_cands = []
         for c in controls:
             pre = bp.compute_pre_state(c, states, shocks=pre_shocks, parameters=params)
             for iv in iset_by_control[c]:
@@ -766,13 +768,14 @@ def bellman_step(
                     bp, c, states, pre_shocks, params, grid_box, lb, ub
                 )
             bounds.append((lb, ub))
-            # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
-            if x0_policy is not None:
-                seed_vec.append(float(x0_policy[c].values[idx]))
-            elif lower_func is not None and upper_func is not None:
-                seed_vec.append((lb + ub) / 2)
-            else:
-                seed_vec.append(x0)
+            # Multi-start candidates, in tie-breaking order (§8): the warm start,
+            # the midpoint of finite bounds, and the modest ``x0`` clamped into the
+            # box. Every one is tried; a bad seed can no longer decide the answer.
+            cands = [] if x0_policy is None else [float(x0_policy[c].values[idx])]
+            if lower_func is not None and upper_func is not None:
+                cands.append((lb + ub) / 2)
+            cands.append(min(max(x0, lb), ub))
+            seed_cands.append(cands)
 
         def value_at(a, extra_shocks):
             # One evaluation of the backup objective at control vector ``a`` and
@@ -802,7 +805,32 @@ def bellman_step(
 
             return -float(expected(obj, disc_hidden))
 
-        res = minimize(negated_value, seed_vec, bounds=bounds)
+        # Start vectors are *aligned*, not crossed: candidate j for every control
+        # at once, so the count is the longest candidate list rather than its power
+        # (a control with fewer candidates repeats its last). Duplicates are
+        # dropped, since restarting from the same point learns nothing.
+        starts = []
+        for j in range(max(len(s) for s in seed_cands)):
+            v = np.array([s[min(j, len(s) - 1)] for s in seed_cands])
+            if not any(np.allclose(v, w, atol=_PROJ_TOL) for w in starts):
+                starts.append(v)
+
+        # Optimize from the first candidate, then from any other whose *seed*
+        # already matches or beats that optimum: such a seed sits in a region the
+        # incumbent search missed, which is exactly the midpoint-of-``[0, m + H]``
+        # pathology. A seed strictly worse than the incumbent optimum cannot lead
+        # to a better one for the unimodal objectives in scope (§2), so it is
+        # skipped -- which is what keeps this affordable, since a warm start that
+        # has converged strictly beats every other seed. Matching (not just
+        # beating) also triggers, so a constant objective runs every start and its
+        # argmax is exposed as unidentified below.
+        results = [minimize(negated_value, starts[0], bounds=bounds)]
+        for v in starts[1:]:
+            if negated_value(v) <= results[0].fun + _TIE_TOL * (
+                1.0 + abs(results[0].fun)
+            ):
+                results.append(minimize(negated_value, v, bounds=bounds))
+        res = min(results, key=lambda r: r.fun)  # ties keep the earliest candidate
         if not res.success:
             logging.warning(
                 "bellman_step optimization did not converge at %s: %s",
@@ -813,19 +841,17 @@ def bellman_step(
             policy_buf[c][idx] = res.x[j]
         value_buf[idx] = -res.fun
 
-        # If the objective at both interior probes matches its own optimum, it is
-        # constant in the controls and ``res.x`` is just the seed, not an argmax.
-        # An open bound has no interval to probe, so flatness is not demonstrable
-        # there and the point stays (optimistically) identified.
-        if check_identified and all(
-            lo > _LOWER_OPEN and hi < _UPPER_OPEN for lo, hi in bounds
-        ):
-            probes = [
-                np.array([lo + f * (hi - lo) for lo, hi in bounds])
-                for f in _FLAT_PROBES
-            ]
-            spread = max(abs(negated_value(p) - res.fun) for p in probes)
-            identified_buf[idx] = spread > _FLAT_TOL * (1.0 + abs(res.fun))
+        # Identifiability, free from the restarts (§5): an equally good optimum at
+        # a materially different control vector means the argmax is not pinned
+        # down -- what happens where the objective is constant, since each start
+        # then returns its own seed. A single start cannot show this, so it leaves
+        # the point (optimistically) identified.
+        if check_identified:
+            identified_buf[idx] = not any(
+                abs(r.fun - res.fun) <= _TIE_TOL * (1.0 + abs(res.fun))
+                and float(np.max(np.abs(r.x - res.x))) > _PROJ_TOL
+                for r in results
+            )
 
     coords = {k: state_grid[k] for k in grid_axes}
     value_array = xr.DataArray(value_buf, dims=grid_axes, coords=coords)
@@ -1003,9 +1029,11 @@ def solve_bellman(
 
     Iterates :func:`bellman_step` to a fixed point: each backup uses the previous
     iterate's value grid as its continuation (rebuilt via
-    :func:`value_array_to_function`) and warm-starts the per-point optimizer from
-    the previous iterate's ``policy_array``. It stops when the sup-norm change in
-    the value grid falls below *tol*, or after *max_iter* iterations.
+    :func:`value_array_to_function`) and offers the previous iterate's
+    ``policy_array`` as a per-point warm start — one multi-start candidate among
+    the others (§8), so a collapsed iterate cannot entrench itself by seeding the
+    next backup at its own bound. It stops when the sup-norm change in the value
+    grid falls below *tol*, or after *max_iter* iterations.
 
     Iteration 1 uses the terminal (zero) continuation, so
     ``solve_bellman(..., max_iter=1)`` reproduces :func:`bellman_step` under a
@@ -1042,7 +1070,7 @@ def solve_bellman(
     max_iter : int, optional
         Maximum number of backups.
     x0 : float, optional
-        Fallback optimizer seed passed to :func:`bellman_step`.
+        Modest multi-start seed candidate passed to :func:`bellman_step`.
     raise_on_nonconvergence : bool, optional
         If ``True``, raise :class:`RuntimeError` when the loop hits *max_iter*
         without converging; otherwise emit a :class:`warnings.warn` and return the

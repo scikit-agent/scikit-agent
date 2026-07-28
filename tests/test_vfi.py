@@ -594,18 +594,11 @@ class test_vfi_bellman_step(unittest.TestCase):
 
         bp = BellmanPeriod(bm.d2_block, "DiscFac", cal)
         grid = {"a": np.linspace(0.5, 5.0, 12)}
-        # Seed the per-point optimizer near the (modest) optimum. With the
-        # consumption floor restored, ``c``'s bounds are both finite, so the
-        # default seed is the midpoint of ``[0, m + H]`` (~17.7) — far above the
-        # true optimum (~1.2) and outside L-BFGS-B's basin here, so it stalls.
-        # A flat warm-start reproduces the robust pre-floor seeding. The general
-        # fix (multi-start) is deferred to design.md §8.
-        x0_policy = {
-            "c": xr.DataArray(np.ones(grid["a"].size), dims=["a"], coords=grid)
-        }
-        dr, _, _ = vfi.bellman_step(
-            bp, d2_continuation, grid, scope=cal, x0_policy=x0_policy
-        )
+        # No seeding hint: multi-start covers this box. The midpoint of
+        # ``[0, m + H]`` is ~17.7, far above the true optimum (~1.2) and outside
+        # L-BFGS-B's basin, so on that seed alone the backup stalls at ~6.97; the
+        # clamped ``x0`` candidate lands in the basin and wins on ``res.fun``.
+        dr, _, _ = vfi.bellman_step(bp, d2_continuation, grid, scope=cal)
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
@@ -642,16 +635,12 @@ class test_vfi_bellman_step(unittest.TestCase):
         bp = BellmanPeriod(bm.d3_block, "DiscFac", cal)
         grid = {"a": np.linspace(0.5, 5.0, 12)}
         # ``liv`` is an (ungridded) arrival state -> fix the alive slice in scope;
-        # the continuation sees the transitioned liv' = live in {0, 1}. Warm-start
-        # near the modest optimum (the [0, m + H] midpoint seed stalls, same as
-        # D-2; design.md §8 / roadmap PR11).
+        # the continuation sees the transitioned liv' = live in {0, 1}. This
+        # continuation is supplied, not rebuilt from a value grid, so the
+        # ungridded-arrival-state guard does not apply. No seeding hint: as in D-2,
+        # multi-start covers the [0, m + H] box whose midpoint stalls.
         scope = {**cal, "liv": 1.0}
-        x0_policy = {
-            "c": xr.DataArray(np.ones(grid["a"].size), dims=["a"], coords=grid)
-        }
-        dr, _, _ = vfi.bellman_step(
-            bp, d3_continuation, grid, scope=scope, x0_policy=x0_policy
-        )
+        dr, _, _ = vfi.bellman_step(bp, d3_continuation, grid, scope=scope)
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y
             want = float(np.asarray(bm.d3_analytical_policy({"a": a}, {}, cal)["c"]))
