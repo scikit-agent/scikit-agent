@@ -883,6 +883,71 @@ class test_vfi_solve_bellman(unittest.TestCase):
             )
             self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
 
+    def test_d1_finite_horizon_converges_to_analytic(self):
+        # D-1 (finite-horizon log utility, T = 5): the time-varying rule
+        # c_t = (1-beta)/(1-beta^(T-t)) * W, the only benchmark with a
+        # non-stationary policy and an integer time axis.
+        #
+        # The finite horizon needs no special code path, because ``t`` is an
+        # ordinary arrival state (``t: lambda t: t + 1``) and the horizon lives in
+        # the reward's ``(t < T)`` cutoff. Gridding ``t`` alongside ``W`` makes
+        # backward induction an ordinary fixed point in the extended state space:
+        # each backup carries information one period further back, so the residual
+        # falls to ~0 after about one pass per period and stays there. Hence the
+        # iteration count below is O(T) even at tol = 1e-9, against the ~124 that
+        # D-2's beta = 0.96 contraction needs at a far looser tol -- the signature
+        # of exact propagation rather than geometric convergence.
+        #
+        # The t axis must extend to T + 1, one slice PAST the last period the
+        # reward is nonzero. t' = t + 1 steps off the top of the axis, where the
+        # continuation extrapolates linearly (value_array_to_function); with the
+        # axis stopping at T, the last two slices are V(.,T-1) = log W and
+        # V(.,T) = 0, so the extrapolated "afterlife" at t = T+1 is -log W. The
+        # backup then maximizes that, the residual diverges, and the policy
+        # collapses. Two identically-zero slices (t = T and t = T+1) make the
+        # extrapolation flat at zero, which is the correct terminal condition.
+        #
+        # W is spaced geometrically: linear interpolation of V = alpha_t + log W
+        # has derivative error O(log r) in the grid ratio r, and the Euler equation
+        # u'(c) = beta*R*V_W(W') carries that straight into the same relative error
+        # in c. Geometric spacing equalizes log r across the grid; r ~ 1.06 here
+        # holds the recovery inside ~1.2%.
+        cal = bm.d1_calibration
+        T = cal["T"]
+        bp = BellmanPeriod(bm.d1_block, "DiscFac", cal)
+        grid = {"W": np.geomspace(0.02, 8.0, 100), "t": np.arange(0, T + 2)}
+        dr, value_array, policy_array = vfi.solve_bellman(
+            bp, grid, scope=cal, tol=1e-9, max_iter=30
+        )
+        self.assertTrue(value_array.attrs["converged"])
+        # One pass per period plus one to detect no further change; emphatically
+        # not the hundreds a discounted infinite-horizon contraction needs.
+        self.assertLessEqual(value_array.attrs["n_iter"], T + 2)
+        self.assertGreater(value_array.attrs["n_iter"], 1)
+
+        # Past the horizon the reward is cut off and the continuation is zero, so
+        # the value is exactly zero -- the terminal condition, derived not declared.
+        self.assertEqual(float(np.abs(value_array.sel(t=T)).max()), 0.0)
+        self.assertEqual(float(np.abs(value_array.sel(t=T + 1)).max()), 0.0)
+
+        # The time-varying rule, at every period the agent actually consumes.
+        for t in range(T):
+            for W in [0.5, 1.0, 2.0, 3.0]:
+                got = float(dr["c"](W, t))
+                want = float(
+                    np.asarray(bm.d1_analytical_policy({"W": W, "t": t}, {}, cal)["c"])
+                )
+                self.assertAlmostEqual(got / want, 1.0, delta=2e-2)
+
+        # The point of a finite horizon: the MPC rises as the horizon shortens,
+        # and in the last consuming period the agent consumes everything.
+        for W in [1.0, 2.0]:
+            mpcs = [float(dr["c"](W, t)) / W for t in range(T)]
+            self.assertTrue(all(np.diff(mpcs) > 0), f"MPC not rising: {mpcs}")
+            self.assertAlmostEqual(float(dr["c"](W, T - 1)), W, delta=1e-3)
+
+        self.assertEqual(list(policy_array["c"].dims), ["W", "t"])
+
     def test_value_array_to_function_interpolates_and_extrapolates(self):
         # The continuation reproduces the grid at the nodes, interpolates between
         # them, and extrapolates linearly past the edges (so an off-grid

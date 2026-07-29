@@ -45,6 +45,14 @@ and this project adheres to
   the solver recovers `c = kappa_s * (m + H)` exactly instead of drifting off by
   `O(1 - s)`. Perfect-foresight (`live = 1`) simulations are unchanged.
 
+- `d1_block`'s consumption control declared an upper bound but no lower bound,
+  so the `vfi` solver optimized over `[-1e12, W]` and its line search reached
+  the `log(c < 0)` region. The optimizer then aborted and returned its own seed,
+  which presented as a converged flat objective: `c = W` at every period,
+  reported `converged=True` with a zero residual, and insensitive to grid
+  refinement. `c` now has a `1e-4` floor, as `d4_block` and `u2_block` already
+  do.
+
 - `u2_block`'s cash-on-hand dynamic guarded a division with `torch.clamp`, which
   rejects the numpy/scalar inputs the VFI solver passes, so the block could not
   be solved by `vfi`. A `_clamp_min` helper now clamps on both torch tensors and
@@ -67,6 +75,17 @@ and this project adheres to
   from a single `bellman_step`, integrating the hidden 2-node `Bernoulli`
   survival shock. `test_d3_iterated_converges_to_analytic` reaches the same
   policy by value iteration, with the survival state `liv` on the state grid.
+
+- D-1 (finite-horizon log utility) VFI benchmark:
+  `test_d1_finite_horizon_converges_to_analytic` recovers the non-stationary
+  rule `c_t = (1 - beta)/(1 - beta^(T-t)) * W` to ~1% by ordinary value
+  iteration, with the time counter `t` on the state grid. No finite-horizon code
+  path is needed: `t` is an arrival state and the horizon is the reward's
+  `(t < T)` cutoff, so backward induction is a fixed point in the extended state
+  space, reached in O(T) iterations. The `t` axis must extend one slice past the
+  last nonzero reward, so that the continuation's linear extrapolation off the
+  top of the axis is flat at zero rather than a reflection of the last consuming
+  period.
 
 - `skagent.relevance`: strategic-relevance analysis via the Koller & Milch
   s-reachability criterion. `is_s_reachable` and a `RelevanceGraph` wrapper
