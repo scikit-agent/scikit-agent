@@ -572,6 +572,100 @@ class test_vfi_bellman_step(unittest.TestCase):
 
         np.testing.assert_allclose(solve(0.2), solve(0.0), atol=1e-4)
 
+    def test_u1_continuous_shock_recovers_pih_closed_form(self):
+        # U-1 (Hall random walk): eta ~ Normal reaches the objective only through
+        # the pre-state m = R*A + y_mean + eta that c conditions on, so it becomes
+        # a Gauss-Hermite node axis and m varies along both A and eta. Under the
+        # analytic PIH continuation a single backup recovers c = (r/R)(m + H)
+        # exactly. The only benchmark-level exercise of a continuous shock, and so
+        # of disc_params.
+        cal = bm.get_benchmark_calibration("U-1")
+        quad_a, quad_b = cal["quad_a"], cal["quad_b"]
+        R, y_mean = cal["R"], cal["y_mean"]
+        r = R - 1.0
+        H = y_mean / r  # present value of the expected income stream
+        kappa = r / R  # annuity factor
+
+        def u1_continuation(states, shocks, parameters):
+            # V(m) = a*m - (b*kappa/2)(m + H)^2 integrated over next period's
+            # income; the Var(eta) term is constant in the control and dropped.
+            m_next = R * states["A"] + y_mean
+            return quad_a * m_next - (quad_b * kappa / 2.0) * (m_next + H) ** 2
+
+        bp = BellmanPeriod(bm.u1_block, "DiscFac", cal)
+        dr, _, _ = vfi.bellman_step(
+            bp,
+            u1_continuation,
+            {"A": np.linspace(0.5, 6.0, 14)},
+            scope=cal,
+            disc_params={"eta": {"N": 7}},
+        )
+        for A in [1.0, 2.0, 3.0, 5.0]:
+            m = R * A + y_mean
+            self.assertAlmostEqual(dr["c"](m), kappa * (m + H), delta=1e-4)
+
+    def test_u3_two_prestate_shocks_degenerate_limit(self):
+        # U-3 has *two* shocks feeding the pre-state m = R*a/psi + theta, so both
+        # become node axes and m varies along all three grid axes -- and m pins
+        # down neither shock individually, which is where the gather-and-fit
+        # consistency check is load-bearing rather than vacuous.
+        #
+        # U-3 has no closed form in general. At sigma_theta = 0 (theta collapses to
+        # a point mass at 1) with CRRA = 1 it *is* U-2, so the PIH closed form
+        # applies while the two-shock joint node axis is still exercised.
+        cal = {
+            **bm.get_benchmark_calibration("U-3"),
+            "CRRA": 1.0,
+            "sigma_theta": 0.0,
+        }
+        beta, R = cal["DiscFac"], cal["R"]
+        h = 1.0 / (R - 1.0)
+        B = 1.0 / (1.0 - beta)
+
+        def u3_continuation(states, shocks, parameters):
+            return B * np.log(R * (states["a"] + h))
+
+        bp = BellmanPeriod(bm.u3_block, "DiscFac", cal)
+        dr, _, _ = vfi.bellman_step(
+            bp,
+            u3_continuation,
+            {"a": np.linspace(0.5, 8.0, 14)},
+            scope=cal,
+            disc_params={"psi": {"N": 5}, "theta": {"N": 5}},
+        )
+        for A in [1.0, 2.0, 3.0, 5.0]:
+            m = R * A + 1.0
+            self.assertAlmostEqual(dr["c"](m), (1.0 - beta) * (m + h), delta=1e-4)
+
+    def test_u3_two_prestate_shocks_properties(self):
+        # U-3 at its own calibration: CRRA = 2 and a genuinely spread theta, so
+        # both shocks are non-degenerate node axes. No closed form exists, so this
+        # asserts only what does not depend on the supplied continuation being the
+        # model's own: the rule is positive, non-decreasing in cash-on-hand, and
+        # respects the block's borrowing constraint c <= m.
+        cal = bm.get_benchmark_calibration("U-3")
+        R, sigma = cal["R"], cal["CRRA"]
+        h = 1.0 / (R - 1.0)
+        B = 1.0 / (1.0 - cal["DiscFac"])
+
+        def u3_continuation(states, shocks, parameters):
+            wealth = np.maximum(R * (states["a"] + h), 1e-8)
+            return B * wealth ** (1 - sigma) / (1 - sigma)
+
+        bp = BellmanPeriod(bm.u3_block, "DiscFac", cal)
+        dr, _, _ = vfi.bellman_step(
+            bp,
+            u3_continuation,
+            {"a": np.linspace(0.5, 8.0, 14)},
+            scope=cal,
+            disc_params={"psi": {"N": 5}, "theta": {"N": 5}},
+        )
+        ms = np.array([2.0, 3.0, 4.0, 6.0, 8.0])
+        c = np.array([dr["c"](m) for m in ms])
+        self.assertTrue(np.all(c > 0))
+        self.assertTrue(np.all(np.diff(c) > 0))
+        self.assertTrue(np.all(c <= ms + self.ATOL))
+
     # --- iset is a derived pre-state: reproject onto its coordinate ----
 
     def test_case_3_derived_iset_reproject(self):
