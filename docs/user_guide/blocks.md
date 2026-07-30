@@ -102,6 +102,52 @@ Arrival states can be provided by a previous block (see _RBlocks_, below), in a
 previous time period (see _BellmanPeriod_), or by _initialization data_ before a
 simulation.
 
+#### Declaration order and symbol aliasing
+
+Because dynamic equations are interpreted in sequence, **the same symbol can
+mean two different things at two points in one block**: its arrival value before
+it is reassigned, and its newly computed value afterwards. This matters most for
+rewards, because a reward equation reads its inputs _as of its own declaration
+point_.
+
+Consider a block whose reward penalizes the distance between an asset `a` and a
+target `b` that the control sets for next period:
+
+```python
+tracking_block = ska.DBlock(
+    name="tracking",
+    dynamics={
+        "c": ska.Control(["a"]),
+        "u": lambda a, b: -((a - b) ** 2),  # reads the ARRIVAL b
+        "b": lambda c: c,  # assigns next period's b
+    },
+    reward={"u": "tracker"},
+)
+```
+
+`u` is declared _before_ `b`, so the reward sees last period's `b` while the
+transition reports `b = c` for next period. Today's choice therefore does not
+enter today's reward at all: `c` influences the objective only through the
+continuation value. Swapping the last two equations gives a different model.
+
+The practical rule is to **place a reward equation where you want its inputs
+read from**. A survival model makes the stakes concrete, with an alive indicator
+`liv` and a survival shock `live`:
+
+```python
+# Utility accrues to those alive on ARRIVAL, so u is declared BEFORE liv updates.
+dynamics = {
+    "c": ska.Control(["m"]),
+    "u": lambda liv, c: liv * math.log(c),
+    "liv": lambda liv, live: liv * live,
+}
+```
+
+Declaring `u` after the `liv` update instead means utility requires _surviving_
+the period. That is a different model, and it differs from the intended one only
+by a term of order $1 - \mathbb{E}[\texttt{live}]$ — small enough to read as a
+numerical problem rather than as the specification error it is.
+
 ### Control Variables
 
 A **Control** variable is under the control of some agent. Instead of providing
@@ -202,6 +248,90 @@ bp = BellmanPeriod(consumption_block, "DiscFac", calibration)
 See the {doc}`../api/bellman` reference for the period timing notation (arrival
 states, shocks, pre-decision states, controls, and rewards) and the full API.
 
+## Authoring Blocks for Dynamic Programming
+
+A block that simulates correctly can still be difficult to _solve_. Three
+authoring choices matter to the solvers, and each one has produced a
+plausible-looking wrong answer rather than an error.
+
+### Declare both bounds when the reward is undefined outside the feasible set
+
+Log and CRRA utility are undefined at $c \le 0$. If such a control declares no
+`lower_bound`, its feasible box extends into the region where the objective is
+not a number, and a gradient-based optimizer can step there: the line search
+fails, the optimizer terminates abnormally, and it **returns its own starting
+point unchanged**.
+
+Nothing raises. Because the returned point is the point the solver started from,
+value iteration sees no change between iterations and reports a converged solve
+with a residual of exactly zero — and the answer is insensitive to grid
+refinement, which normally rules out numerical explanations. Declare the bound
+even when it feels implied by the economics:
+
+```python
+{
+    "c": ska.Control(["m"], lower_bound=lambda m: 1e-4, upper_bound=lambda m: m),
+}
+```
+
+See {doc}`constraints` for how the solvers enforce bounds and how to handle
+constraints that bind at the optimum.
+
+### Extend a terminal or absorbing axis one step past the last nonzero reward
+
+A finite-horizon model can carry its own time index as an ordinary arrival
+state, with the horizon living in the reward:
+
+```python
+dynamics = {
+    "c": ska.Control(["W", "t"], lower_bound=lambda W: 1e-4, upper_bound=lambda W: W),
+    "u": lambda t, T, c: (t < T) * math.log(c),  # no reward from period T on
+    "W": lambda W, c, R: (W - c) * R,
+    "t": lambda t: t + 1,
+}
+```
+
+When solving such a model on a grid, **the `t` axis must extend to `T + 1`**,
+one slice beyond the last period with a nonzero reward. Value functions are
+interpolated over the grid and _extrapolated linearly_ past its edges, which is
+deliberate: a flat clamp at the boundary would zero out the marginal value of
+saving. But if the axis stops at `T`, the last two slices are a nonzero value
+and zero, so the linear extrapolation invents a nonzero value at `t = T + 1`
+with the wrong sign — an afterlife — and the backup happily maximizes it. The
+residual diverges instead of converging.
+
+Two identically-zero slices (`t = T` and `t = T + 1`) make the extrapolation
+flat at zero, which is the correct terminal condition. The same requirement
+applies to any absorbing state whose value is zero.
+
+### Keep dynamics agnostic about array types
+
+The same block runs under two numeric backends: torch tensors for the neural
+solvers and their autodiff, and plain numpy floats for grid-based backward
+induction. Equations written for only one of them fail on the other —
+`numpy_array * torch_tensor` raises, and `torch.clamp` rejects non-tensor input,
+so a guard like `m = R * a / torch.clamp(psi, min=1e-8)` makes the block
+unsolvable on the numpy path.
+
+Prefer plain arithmetic, which broadcasts across both, and route anything else
+through a helper that accepts either:
+
+```python
+import numpy as np
+import torch
+
+
+def clamp_min(x, lo):
+    """Lower-clamp that works on torch tensors and numpy/Python scalars."""
+    if torch.is_tensor(x):
+        return torch.clamp(x, min=lo)
+    return np.maximum(x, lo)
+```
+
+`skagent.models.benchmarks` uses exactly this pattern, alongside `as_tensor` for
+comparisons that need to hold on both paths. When a block is intended for both,
+exercise it on both.
+
 ## Model Validation and Inspection
 
 ### Examining Model Structure
@@ -253,7 +383,9 @@ print("Post-transition state:", post_state)
 Recall that a variable referenced before it is assigned within a block is an
 arrival state: in the habit block below, the `h` appearing in the information
 set of `c` and in `x` is last period's habit stock, while the final equation
-assigns this period's value.
+assigns this period's value. Both patterns below rely on that aliasing, so they
+are worth reading against the rule described under _Declaration order and symbol
+aliasing_ above.
 
 ### Habit Formation Models
 
@@ -283,6 +415,12 @@ durables_block = ska.DBlock(
     }
 )
 ```
+
+Note the deliberate use of declaration order here: `i_d`'s information set reads
+the _arrival_ durable stock `d`, while `c_d` is declared after the stock updates
+and so measures services from the _post-investment_ stock. Moving `c_d` above
+the `d` equation would make this period's utility depend on last period's stock
+instead.
 
 This guide provides the foundation for building and working with economic models
 in scikit-agent. The block-based architecture provides flexibility while

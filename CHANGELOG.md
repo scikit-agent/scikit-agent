@@ -107,6 +107,12 @@ and this project adheres to
   unconstrained closed-form benchmark's analytical policy is feasible under the
   block's own control bounds on states that reach the borrowing region
   (`a' < 0`).
+- Block guide: declaration order and symbol aliasing (a reward reads its inputs
+  as of its own declaration point, so reward and transition can see different
+  values for one symbol), plus three authoring rules for solvable blocks --
+  declare both control bounds when the reward is undefined outside the feasible
+  set, extend a terminal axis one slice past the last nonzero reward, and keep
+  dynamics agnostic about torch vs numpy input.
 
 ### Changed
 
