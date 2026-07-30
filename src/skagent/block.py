@@ -387,6 +387,40 @@ class Block:
         """
         return self.relevance_graph(calibration).relies_on(first, second)
 
+    def shock_roles(self, calibration=None):
+        """How each shock relates to each control's information set.
+
+        For every control, classifies every shock as ``observed`` (the
+        information set accounts for it, so a solver may condition on it),
+        ``hidden`` (it must be integrated out inside the maximization), or
+        ``mixed`` (partly informed and separately relevant, which needs
+        filtering). See :mod:`skagent.information` for the criterion.
+
+        Parameters
+        ----------
+        calibration : dict, optional
+            Calibration parameters, used only to identify parameter symbols.
+            Defaults to empty, as for :meth:`relevance_graph`.
+
+        Returns
+        -------
+        dict
+            ``{control: {shock: role}}``.
+        """
+        from skagent.information import objectives, shock_roles
+
+        scim = (
+            ModelAnalyzer(self, calibration or {})
+            .analyze()
+            .influence_graph(dynamic=True)
+        )
+        controls = list(self.get_controls())
+        targets = {
+            d: objectives(scim.graph, d, scim.agent_utilities, scim.decision_agent)
+            for d in controls
+        }
+        return shock_roles(scim.graph, self.get_shocks(), controls, targets)
+
     def visualize(self, calibration):
         """
         Return a PyDot graph visualization of this block.
