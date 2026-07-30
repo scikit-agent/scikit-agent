@@ -11,6 +11,7 @@ plus a continuation value.
 from skagent.bellman import BellmanPeriod
 from skagent.block import DBlock
 from skagent.distributions import expected
+from skagent.information import HIDDEN, MIXED, OBSERVED
 from inspect import signature
 import itertools
 import logging
@@ -358,6 +359,63 @@ _PROJ_TOL = 1e-3
 _TIE_TOL = 1e-10
 
 
+def _gather_and_fit(policy_da, grid_axes, iset_var, coord, identified):
+    """Fit a policy as a 1-D function of an information-set variable.
+
+    Collects every ``(coordinate, control)`` pair the backup produced, sorts by
+    the coordinate, and returns a 1-D :class:`~xarray.DataArray` ready for
+    :func:`ar_from_data`. Used where the coordinate varies along several grid
+    axes, so no axis can be relabelled to it. The result carries a sorted
+    irregular coordinate rather than a regular grid.
+
+    *identified* masks out points whose optimum is not pinned down; ``None``
+    treats every point as identified.
+
+    Raises
+    ------
+    ValueError
+        If two points sharing a coordinate disagree in the control by more than
+        ``_PROJ_TOL``, so the control depends on more than *iset_var*; or if no
+        point is identified.
+    """
+    coords = np.asarray(coord, dtype=float).ravel()
+    policy = np.asarray(policy_da.transpose(*grid_axes).values, dtype=float).ravel()
+
+    if identified is not None:
+        keep = np.asarray(identified, dtype=bool).ravel()
+        coords, policy = coords[keep], policy[keep]
+    if coords.size == 0:
+        raise ValueError(
+            "No grid point has an identified optimum, so the policy over "
+            f"'{iset_var}' cannot be built."
+        )
+
+    order = np.argsort(coords, kind="stable")
+    coords, policy = coords[order], policy[order]
+
+    # Equal coordinate => equal control. The coordinate tolerance is tight, since
+    # this asks whether two samples are the *same* point of the information set,
+    # while the control tolerance is the projection tolerance.
+    same = np.diff(coords) <= 1e-9 * (1.0 + np.abs(coords[:-1]))
+    disagrees = same & (np.abs(np.diff(policy)) > _PROJ_TOL)
+    if disagrees.any():
+        i = int(np.argmax(disagrees))
+        raise ValueError(
+            f"Two grid points share information-set coordinate "
+            f"{iset_var}={coords[i]:.6g} but disagree in the control "
+            f"({policy[i]:.6g} vs {policy[i + 1]:.6g}), so it depends on more "
+            f"than '{iset_var}'."
+        )
+
+    # Interpolation needs a strictly increasing coordinate. Coincident samples
+    # agree to within tolerance by the check above, so keeping one is enough.
+    unique = np.ones(coords.size, dtype=bool)
+    unique[1:] = ~same
+    return xr.DataArray(
+        policy[unique], dims=[iset_var], coords={iset_var: coords[unique]}
+    )
+
+
 def _project_to_iset(
     policy_da: xr.DataArray,
     grid_axes: Sequence[str],
@@ -406,11 +464,25 @@ def _project_to_iset(
                 if float(np.abs(coord.max(axis=k) - coord.min(axis=k)).max())
                 > _PROJ_TOL
             ]
+            if len(varying) > 1:
+                # The coordinate tracks no single axis, so there is nothing to
+                # relabel; gather its samples instead. Only well posed as a
+                # 1-D fit, hence the single-variable restriction.
+                if len(iset) == 1:
+                    return _gather_and_fit(policy_da, grid_axes, iv, coord, identified)
+                raise NotImplementedError(
+                    f"Information-set variable '{iv}' of control '{control_sym}' "
+                    f"varies along grid axes {[grid_axes[k] for k in varying]}, "
+                    f"and its information set {list(iset)} has other variables. "
+                    "Gathering a multi-axis coordinate is implemented only for a "
+                    "single-variable information set, since each slice of the "
+                    "remaining variables would gather a different coordinate."
+                )
             if len(varying) != 1:
                 raise NotImplementedError(
                     f"Information-set variable '{iv}' of control '{control_sym}' "
-                    f"varies along grid axes {[grid_axes[k] for k in varying]} "
-                    "(expected exactly one); scattered reindexing is out of scope."
+                    f"does not vary along any grid axis, so the grid pins it to a "
+                    "single value and cannot support a rule over it."
                 )
             (k,) = varying
             axis = grid_axes[k]
@@ -463,6 +535,98 @@ def _project_to_iset(
 
     da = da.rename({ax: iv for ax, iv in claimed.items() if ax != iv})
     return da.assign_coords(derived_coords).transpose(*iset)
+
+
+def _shock_nodes(bp, shock, disc_params):
+    """The discretization nodes of one *shock*, as a 1-D array.
+
+    Built from ``bp.calibration`` rather than from a caller's ``scope`` so the
+    nodes match the weights :func:`_integrate_observed_shocks` recomputes when it
+    integrates the axis back out; a mismatch there raises rather than
+    mis-weighting.
+    """
+    from skagent.block import construct_shocks
+
+    dist = construct_shocks({shock: bp.get_shocks()[shock]}, dict(bp.calibration))[
+        shock
+    ]
+    disc = (
+        dist.discretize(**disc_params[shock])
+        if shock in disc_params
+        else dist.discretize()
+    )
+    return np.asarray(disc.points, dtype=float).ravel()
+
+
+def _resolve_shock_roles(bp, params, grid_axes):
+    """Resolve each shock's information role once for the whole backup.
+
+    A role is a property of the block, not of a grid point, so it is settled
+    before the per-point loop and the loop consumes only the resulting partition.
+
+    Returns ``{shock: role}`` over the shocks the criterion governs -- those not
+    pinned to a fixed value in *params*, which are caller-supplied realizations
+    rather than variables to integrate.
+
+    Raises
+    ------
+    NotImplementedError
+        If a shock is ``MIXED``, so posing the declared problem needs the
+        conditional law of the shock given the information set; or if its role
+        differs across controls, which this backup cannot represent because it
+        grids or integrates a shock for the period as a whole.
+    ValueError
+        If a shock already on the state grid is not ``OBSERVED``. A grid axis
+        conditions the decision on that shock's realization, so gridding one no
+        information set accounts for would solve an information structure the
+        block does not declare.
+
+    Notes
+    -----
+    The criterion reads the block's structure from ``bp.calibration`` alone, not
+    from *params*. Pinning a value in a caller's ``scope`` fixes it for this solve
+    but does not make the symbol a structural constant: an arrival state pinned
+    there is still reassigned in-period by dynamics that may depend on a shock, so
+    treating it as a parameter would sever that route and misclassify the shock.
+    *params* governs only which shocks are fixed realizations.
+    """
+    per_control = bp.block.shock_roles(bp.calibration)
+    resolved = {}
+
+    for shock in bp.get_shocks():
+        if shock in params:
+            continue
+        by_control = {c: roles[shock] for c, roles in per_control.items()}
+        distinct = set(by_control.values())
+
+        if MIXED in distinct:
+            raise NotImplementedError(
+                f"Shock '{shock}' is partly revealed by an information set that "
+                "conditions on it while also reaching the objective around that "
+                "information set, so posing the declared problem requires the "
+                "conditional law of the shock given the information set. Either "
+                "add it to the information set of every control that sees it, or "
+                "keep it out of the reward and transition."
+            )
+        if len(distinct) > 1:
+            raise NotImplementedError(
+                f"Shock '{shock}' has different information roles across controls "
+                f"({by_control}); this backup grids or integrates a shock for the "
+                "period as a whole, so it cannot serve controls that see it "
+                "differently."
+            )
+        resolved[shock] = distinct.pop()
+
+    for shock, role in resolved.items():
+        if shock in grid_axes and role != OBSERVED:
+            raise ValueError(
+                f"Shock '{shock}' is a state-grid axis, which conditions the "
+                f"decision on its realization, but the block makes it '{role}': "
+                "no control's information set accounts for it. Drop it from the "
+                "grid so it is integrated out, or widen an information set."
+            )
+
+    return resolved
 
 
 def _discretize_shocks(bp, shock_syms, params, disc_params):
@@ -580,27 +744,27 @@ def bellman_step(
     ``BellmanPeriod`` protocol the rest of the torch stack uses, with an explicit
     discount factor and multi-reward summation, and is empty-shock-safe.
 
-    Shocks are handled by their information role. A shock in some control's
-    information set is *observed* and enters as a grid axis; a shock in no
-    control's information set is *hidden* and is integrated out inside the
+    Shocks are handled by their information role, which is derived from the
+    block's own structure (:mod:`skagent.information`) rather than inferred from
+    the grid the caller supplies. A shock some control's information set accounts
+    for becomes a grid axis over its discretization nodes, so its pre-state and
+    bounds are computed per realization; the rest are integrated out inside the
     per-point ``max`` via internal discretization (:func:`_discretize_shocks` +
-    ``expected``), so an optimum that is characterized by an expectation over an
-    unobserved shock is in scope. A hidden shock may still be pinned to a fixed
-    realization by supplying it in *scope*, which takes precedence over
-    discretization.
+    ``expected``), so an optimum characterized by an expectation over an
+    unobserved shock is in scope. Any shock may instead be pinned to a fixed
+    realization by supplying it in *scope*, which takes precedence over both.
 
     .. note::
-       Current scope: one or more controls, jointly optimized
-       by :func:`scipy.optimize.minimize` over the stacked control vector with
+       Current scope: one or more controls, jointly optimized by
+       :func:`scipy.optimize.minimize` over the stacked control vector with
        per-control bounds — restarted from each seed candidate, keeping the best
        optimum — each policy then reprojected onto its own information set
-       (:func:`_project_to_iset`). A control's pre-state and
-       bounds are evaluated with each hidden shock fixed at its (discretized)
-       mean, since a single value is required there even though the objective
-       integrates the shock. This is exact when the pre-state does not depend on
-       the hidden shock, or when the hidden shock is degenerate (a single
-       discretization node); a pre-state that depends on a non-degenerate hidden
-       shock is only approximate.
+       (:func:`_project_to_iset`). A control's pre-state and bounds are evaluated
+       with each integrated-out shock fixed at its (discretized) mean, since a
+       single value is required there even though the objective integrates the
+       shock. That is exact when the pre-state does not depend on such a shock,
+       and a shock the pre-state *does* depend on is a grid axis rather than an
+       integrated one, so it does not arise for a well-formed block.
 
     Parameters
     ----------
@@ -611,24 +775,26 @@ def bellman_step(
         parameters)`` on the next-period arrival states (the ``bp.compute_value``
         convention). Terminal continuation is ``lambda s, sh, p: 0.0``.
     state_grid : Grid
-        The shared backup grid of arrival states and any observed shocks: one
-        axis per variable (arrival-state or observed-shock symbol). This grid
-        covers the full set of variables the Bellman loop iterates over and is
-        not necessarily equal to any individual control's information set (a
-        control's iset may be a strict subset). For an empty grid, pass
-        ``{}``.
+        The shared backup grid over arrival states: one axis per variable. Axes
+        for the shocks an information set accounts for are added automatically
+        from their discretization nodes, so supplying one is optional and
+        idempotent. This grid covers the variables the Bellman loop iterates over
+        and is not necessarily equal to any individual control's information set
+        (a control's iset may be a strict subset). For an empty grid, pass ``{}``.
     agent : str, optional
         If given, the period reward sums only this agent's reward symbols.
     scope : Mapping, optional
         Fixed non-shock exogenous values merged into the model parameters. A
         shock supplied here is pinned to that fixed realization instead of being
-        integrated (it takes precedence over discretization).
+        gridded or integrated. Note this fixes a value for the solve; it does not
+        make the symbol a model parameter, so it does not affect any shock's
+        information role.
     disc_params : Mapping, optional
         Per-shock discretization arguments, keyed by shock symbol (e.g.
-        ``{"theta": {"N": 7}}``), forwarded to each hidden shock's
-        ``Distribution.discretize``. A shock without an entry uses its
-        distribution's default discretization (exact for already-discrete
-        shocks).
+        ``{"theta": {"N": 7}}``), forwarded to that shock's
+        ``Distribution.discretize`` whether it becomes a grid axis or is
+        integrated out. A shock without an entry uses its distribution's default
+        discretization (exact for already-discrete shocks).
     x0 : float, optional
         A modest optimizer seed, clamped into each control's bounds. One of the
         multi-start candidates at every point, not just a fallback: it is what
@@ -682,13 +848,28 @@ def bellman_step(
 
     params = {**bp.calibration, **scope}
 
-    # Classify each shock by its information role. A shock that is a grid
-    # axis is observed (gridded over its nodes); one pinned in ``scope`` is a
-    # fixed realization; the rest are hidden and integrated out inside the
-    # per-point max via discretization. Hidden shocks are fixed at their mean
-    # when computing a control's pre-state and bounds (a single value is needed
-    # there), and swept over their nodes only inside the objective.
-    hidden_syms = [s for s in shock_syms if s not in grid_axes and s not in params]
+    # Each shock's information role, resolved once from the block's own structure
+    # rather than inferred from what the caller happened to grid. A shock pinned
+    # in ``scope`` is a fixed realization and is governed by neither branch below.
+    roles = _resolve_shock_roles(bp, params, grid_axes)
+
+    # A shock some information set accounts for becomes a node axis, so the
+    # pre-state and each control's bounds are computed *per node* rather than at
+    # one summary value: the control conditions on its realization, so the
+    # decision problem is posed separately for each. Idempotent for a shock the
+    # caller already gridded. ``_integrate_observed_shocks`` integrates these axes
+    # back out into the arrival value.
+    state_grid = dict(state_grid)
+    for shock, role in roles.items():
+        if role == OBSERVED and shock not in grid_axes:
+            state_grid[shock] = _shock_nodes(bp, shock, disc_params)
+            grid_axes.append(shock)
+
+    # What remains is integrated out *inside* the per-point max, since no
+    # information set says anything about it. Such a shock is fixed at its mean
+    # when computing a pre-state or bound, where a single value is required, and
+    # swept over its nodes only inside the objective.
+    hidden_syms = [s for s, role in roles.items() if role == HIDDEN]
     disc_hidden = None
     hidden_mean = {}
     if hidden_syms:
