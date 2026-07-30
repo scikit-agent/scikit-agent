@@ -64,6 +64,10 @@ and this project adheres to
   be solved by `vfi`. A `_clamp_min` helper now clamps on both torch tensors and
   numpy/Python scalars, leaving the tensor path unchanged.
 
+- `u3_block`'s cash-on-hand dynamic carried the same `torch.clamp` guard and so
+  was likewise unsolvable by `vfi`; it now uses `_clamp_min`. The tensor path is
+  unchanged. Latent because no test had solved U-3 on the numpy path.
+
 - Benchmark blocks `d2_block` and `d3_block` imposed a no-borrowing constraint
   (`c <= m`, i.e. end-of-period assets `a' >= 0`) that contradicts their
   unconstrained perfect-foresight closed-form policies, which borrow against
@@ -92,6 +96,23 @@ and this project adheres to
   last nonzero reward, so that the continuation's linear extrapolation off the
   top of the axis is flat at zero rather than a reflection of the last consuming
   period.
+
+- U-1 (Hall random walk) VFI benchmark:
+  `test_u1_continuous_shock_recovers_pih_closed_form` recovers
+  `c = (r/R)(m + H)` from a single `bellman_step` under an analytic PIH
+  continuation. The first benchmark with a continuous shock, and so the only
+  benchmark-level exercise of `disc_params`: `eta ~ Normal` becomes a
+  Gauss-Hermite node axis, and `m` then varies along both it and the asset axis.
+
+- U-3 (buffer stock, two income shocks) VFI benchmarks. Both `psi` and `theta`
+  feed the pre-state `m`, so both become node axes and `m` varies along all
+  three grid axes while pinning down neither shock individually -- the case
+  where the gather-and-fit consistency check is load-bearing.
+  `test_u3_two_prestate_shocks_degenerate_limit` recovers the PIH closed form in
+  the limit where U-3 reduces to U-2 (`sigma_theta = 0`, `CRRA = 1`), the only
+  limit in which U-3 has one. `test_u3_two_prestate_shocks_properties` asserts,
+  at U-3's own calibration, the properties that do not depend on the supplied
+  continuation being the model's own.
 
 - `skagent.information`: classifies each shock, per control, by whether the
   control's information set accounts for it -- `observed` (every route to the
