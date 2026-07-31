@@ -20,7 +20,10 @@ decision structure, and render them as plate-notation diagrams.
 ## Strategic Relevance
 
 Analysis of strategic reliance between decisions, using the Koller & Milch
-s-reachability criterion, and the resulting relevance graph.
+s-reachability criterion, and the resulting relevance graph. The order a
+relevance graph implies, {meth}`~skagent.relevance.RelevanceGraph.condensation`,
+is what {class}`skagent.algos.best_response.TabularBestResponseSolver` solves a
+block in; see {doc}`algorithms`.
 
 ```{eval-rst}
 .. automodule:: skagent.relevance
