@@ -70,8 +70,11 @@ Our goal is for `scikit-agent` to be for computational social science what
 ## Installation
 
 ```bash
-pip install scikit-agent
+uv add scikit-agent
 ```
+
+Or, outside a uv project, `uv pip install scikit-agent` (or plain
+`pip install scikit-agent`).
 
 For a development installation ([uv](https://docs.astral.sh/uv/) required):
 

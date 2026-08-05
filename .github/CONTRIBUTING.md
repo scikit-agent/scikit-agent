@@ -3,29 +3,7 @@ description of best practices for developing scientific packages.
 
 [spc-dev-intro]: https://learn.scientific-python.org/development/
 
-# Quick development
-
-The fastest way to start with development is to use nox. If you don't have nox,
-you can use `uvx nox` (or `pipx run nox`) to run it without installing, or
-install it with `uv tool install nox` / `pipx install nox`. If you use macOS,
-nox is also in brew: `brew install nox`.
-
-To use, run `nox`. This will lint and test using every installed version of
-Python on your system, skipping ones that are not installed. You can also run
-specific jobs:
-
-```console
-$ nox -s lint  # Lint only
-$ nox -s tests  # Python tests
-$ nox -s docs  # Build and serve the docs
-$ nox -s build  # Make an SDist and wheel
-```
-
-Nox handles everything for you, including setting up a temporary virtual
-environment for each run. This project's nox sessions prefer
-[uv](https://docs.astral.sh/uv/) when it is available.
-
-# Setting up a development environment manually
+# Setting up a development environment
 
 Install [uv](https://docs.astral.sh/uv/), then sync the project into a local
 `.venv`. `uv sync` is exact, so list every extra you need in one command (`test`
@@ -62,14 +40,21 @@ uv run --no-sync pytest --cov=skagent
 
 # Building docs
 
-You can build and serve the docs using:
+Building the docs requires graphviz to be installed (`apt-get install graphviz`
+or `brew install graphviz`). To build them the same way CI does:
 
 ```bash
-nox -s docs
+uv run --no-sync python -m sphinx -b html -W --keep-going docs docs/_build
 ```
 
-You can build the docs only with:
+To build and serve them with live reload while you edit:
 
 ```bash
-nox -s docs --non-interactive
+uv run --no-sync sphinx-autobuild docs docs/_build/html
+```
+
+# Building an SDist and wheel
+
+```bash
+uv build
 ```
