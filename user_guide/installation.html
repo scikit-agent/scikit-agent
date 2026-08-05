@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Quickstart Guide" href="quickstart.html"><link rel="prev" title="User Guide" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Installation - scikit-agent 0.1.dev780+gd038b1443</title>
+        <title>Installation - scikit-agent 0.1.dev788+gc39b865b4</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev780+gd038b1443</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev788+gc39b865b4</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -297,8 +297,8 @@
 <li><p>Matplotlib</p></li>
 <li><p>cairosvg, pydot, PyYAML, and IPython (model visualization)</p></li>
 </ul>
-<p>See <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> for the authoritative dependency list; <code class="docutils literal notranslate"><span class="pre">pip</span></code> installs all
-of these automatically.</p>
+<p>See <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> for the authoritative dependency list; installing the
+package pulls these in automatically.</p>
 <section id="system-dependencies">
 <h3>System Dependencies<a class="headerlink" href="#system-dependencies" title="Link to this heading">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">cairosvg</span></code> and <code class="docutils literal notranslate"><span class="pre">pydot</span></code> packages link against the Cairo and Graphviz system
@@ -325,28 +325,33 @@ libraries, which must be installed separately for model visualization.</p>
 </section>
 <section id="install-from-source">
 <h2>Install from Source<a class="headerlink" href="#install-from-source" title="Link to this heading">¶</a></h2>
-<p>To install the latest development version:</p>
+<p>Source and development installs use <a class="reference external" href="https://docs.astral.sh/uv/">uv</a>. To install
+the latest development version:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/scikit-agent/scikit-agent.git
 <span class="nb">cd</span><span class="w"> </span>scikit-agent
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+uv<span class="w"> </span>sync
 </pre></div>
 </div>
 </section>
 <section id="development-installation">
 <h2>Development Installation<a class="headerlink" href="#development-installation" title="Link to this heading">¶</a></h2>
-<p>For development, install with additional dependencies:</p>
+<p>For development, sync with the test and docs extras (<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> is exact, so
+include every extra you need in one command):</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/scikit-agent/scikit-agent.git
 <span class="nb">cd</span><span class="w"> </span>scikit-agent
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev,docs]&quot;</span>
+uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--extra<span class="w"> </span>docs
 </pre></div>
 </div>
 </section>
 <section id="verify-installation">
 <h2>Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading">¶</a></h2>
-<p>To verify your installation:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">skagent</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For a source install managed by uv, you can instead run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import skagent; print(skagent.__version__)&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -434,7 +439,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=32fa196f"></script>
+</div><script src="../_static/documentation_options.js?v=88a13d47"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
