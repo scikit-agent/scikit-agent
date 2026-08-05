@@ -6,11 +6,9 @@ description of best practices for developing scientific packages.
 # Quick development
 
 The fastest way to start with development is to use nox. If you don't have nox,
-you can use `pipx run nox` to run it without installing, or `pipx install nox`.
-If you don't have pipx (pip for applications), then you can install with
-`pip install pipx` (the only case were installing an application with regular
-pip is reasonable). If you use macOS, then pipx and nox are both in brew, use
-`brew install pipx nox`.
+you can use `uvx nox` (or `pipx run nox`) to run it without installing, or
+install it with `uv tool install nox` / `pipx install nox`. If you use macOS,
+nox is also in brew: `brew install nox`.
 
 To use, run `nox`. This will lint and test using every installed version of
 Python on your system, skipping ones that are not installed. You can also run
@@ -23,26 +21,18 @@ $ nox -s docs  # Build and serve the docs
 $ nox -s build  # Make an SDist and wheel
 ```
 
-Nox handles everything for you, including setting up an temporary virtual
-environment for each run.
+Nox handles everything for you, including setting up a temporary virtual
+environment for each run. This project's nox sessions prefer
+[uv](https://docs.astral.sh/uv/) when it is available.
 
 # Setting up a development environment manually
 
-You can set up a development environment by running:
+Install [uv](https://docs.astral.sh/uv/), then sync the project into a local
+`.venv`. `uv sync` is exact, so list every extra you need in one command (`test`
+covers the pytest stack used below; `docs` is for local Sphinx builds):
 
 ```bash
-python3 -m venv .venv
-source ./.venv/bin/activate
-pip install -v -e .[dev]
-```
-
-If you have the
-[Python Launcher for Unix](https://github.com/brettcannon/python-launcher), you
-can instead do:
-
-```bash
-py -m venv .venv
-py -m install -v -e .[dev]
+uv sync --extra test --extra docs
 ```
 
 # Pre-commit
@@ -51,7 +41,7 @@ You should prepare pre-commit, which will help you by checking that commits pass
 required checks:
 
 ```bash
-pip install pre-commit # or brew install pre-commit on macOS
+uv tool install pre-commit # or brew install pre-commit on macOS
 pre-commit install # Will install a pre-commit hook into the git repo
 ```
 
@@ -60,18 +50,14 @@ You can also/alternatively run `pre-commit run` (changes only) or
 
 # Testing
 
-Use pytest to run the unit checks:
-
 ```bash
-pytest
+uv run --no-sync pytest
 ```
 
 # Coverage
 
-Use pytest-cov to generate coverage reports:
-
 ```bash
-pytest --cov=scikit-agent
+uv run --no-sync pytest --cov=skagent
 ```
 
 # Building docs
