@@ -998,21 +998,10 @@ def bellman_step(
             if not any(np.allclose(v, w, atol=_PROJ_TOL) for w in starts):
                 starts.append(v)
 
-        # Optimize from the first candidate, then from any other whose *seed*
-        # already matches or beats that optimum: such a seed sits in a region the
-        # incumbent search missed, which is exactly the midpoint-of-``[0, m + H]``
-        # pathology. A seed strictly worse than the incumbent optimum cannot lead
-        # to a better one for the unimodal objectives in scope, so it is
-        # skipped -- which is what keeps this affordable, since a warm start that
-        # has converged strictly beats every other seed. Matching (not just
-        # beating) also triggers, so a constant objective runs every start and its
-        # argmax is exposed as unidentified below.
-        results = [minimize(negated_value, starts[0], bounds=bounds)]
-        for v in starts[1:]:
-            if negated_value(v) <= results[0].fun + _TIE_TOL * (
-                1.0 + abs(results[0].fun)
-            ):
-                results.append(minimize(negated_value, v, bounds=bounds))
+        # Optimize from every start candidate and keep the best result. The per-point
+        # objective need not be unimodal for general blocks, so skipping a candidate
+        # based on its seed value can miss a better optimum.
+        results = [minimize(negated_value, v, bounds=bounds) for v in starts]
         res = min(results, key=lambda r: r.fun)  # ties keep the earliest candidate
         if not res.success:
             logging.warning(
