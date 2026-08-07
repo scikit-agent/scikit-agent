@@ -4,10 +4,15 @@ Multi-agent influence diagram (MAID) illustration models.
 These are game-theoretic influence diagrams from the literature, encoded as
 scikit-agent blocks to illustrate and exercise strategic-relevance analysis
 (``Block.relevance_graph`` / ``Block.relies_on``). Unlike the consumption-saving
-models in ``benchmarks.py``, they are not solved for a policy -- scikit-agent
-has no equilibrium solver yet -- so only their graphical structure (information
-sets, agent ownership, dependencies) is meaningful; the functional forms and
-probabilities/payoffs are illustrative.
+models in ``benchmarks.py``, these are games rather than dynamic programs: what
+they pin down is graphical structure (information sets, agent ownership,
+dependencies), and their functional forms and payoff magnitudes are illustrative.
+The magnitudes are nonetheless chosen so that each game is strategically
+non-degenerate -- no decision has an optimum that is independent of the others --
+so that a solver exercises the structure rather than sidestepping it. Games whose
+relevance graph is acyclic can be solved by
+``skagent.algos.best_response.TabularBestResponseSolver``; a cyclic one needs a joint
+equilibrium solution, which the library does not offer.
 
 Encoding conventions (a deliberate departure from the source presentations):
 
@@ -48,8 +53,9 @@ tree_killer_block = DBlock(
     **{
         "name": "tree_killer",
         "shocks": {
-            "u_TS": Uniform(0.0, 1.0),  # noise driving the tree-sick CPD
-            "u_TDead": Uniform(0.0, 1.0),  # noise driving the tree-death CPD
+            # noise driving the tree-sick and tree-death CPDs
+            "u_TS": (Uniform, {"low": 0.0, "high": 1.0}),
+            "u_TDead": (Uniform, {"low": 0.0, "high": 1.0}),
         },
         # Decisions are binary in the original game (poison or not, call the
         # doctor or not, build or not). scikit-agent has no discrete-action
@@ -66,7 +72,7 @@ tree_killer_block = DBlock(
                 agent="alice",
             ),  # poison tree
             # P(sick) rises with poisoning: Bernoulli via inverse-CDF on u_TS.
-            "TS": lambda PT, u_TS: (u_TS < 0.1 + 0.7 * PT).float(),
+            "TS": lambda PT, u_TS: (u_TS < 0.1 + 0.7 * PT) * 1.0,
             "TDoc": Control(
                 ["TS"],
                 lower_bound=lambda TS: 0.0,
@@ -74,19 +80,30 @@ tree_killer_block = DBlock(
                 agent="bob",
             ),  # call tree doctor
             # P(death) rises with sickness, falls if the doctor is called.
-            "TDead": lambda TS, TDoc, u_TDead: (
-                u_TDead < 0.1 + 0.7 * TS - 0.5 * TDoc
-            ).float(),
+            "TDead": lambda TS, TDoc, u_TDead: (u_TDead < 0.1 + 0.7 * TS - 0.5 * TDoc)
+            * 1.0,
             "BP": Control(
                 ["PT", "TDoc"],
                 lower_bound=lambda PT, TDoc: 0.0,
                 upper_bound=lambda PT, TDoc: 1.0,
                 agent="alice",
             ),  # build patio
-            "E": lambda PT: -PT,  # Alice's poisoning-effort/expense utility
-            "V": lambda TDead, BP: BP * (1.0 - TDead),  # Alice's view utility
-            "Tree": lambda TDead: -TDead,  # Bob's tree-health utility
-            "Cost": lambda TDoc: -TDoc,  # Bob's doctor-cost utility
+            # Payoffs. Alice pays for the poison and values a patio with an
+            # unobstructed view, so the dead tree is what makes building worth
+            # the construction cost; Bob values the tree and pays the doctor.
+            # The magnitudes are chosen so that no decision is optimal
+            # independently of the others: poisoning pays only if the tree
+            # actually dies, building pays only if the view is clear, and the
+            # doctor is worth calling only for a sick tree.
+            # Alice's poison expense
+            "E": lambda PT: -PT,
+            # Alice's patio: the view is worth 3.0 with the tree dead, and
+            # building costs 0.5.
+            "V": lambda TDead, BP: BP * (3.0 * TDead - 0.5),
+            # Bob's tree-health utility
+            "Tree": lambda TDead: -TDead,
+            # Bob's doctor fee
+            "Cost": lambda TDoc: -0.2 * TDoc,
         },
         # TODO(roadmap: multi-reward): each agent has an additively decomposed
         # utility (Alice: E + V; Bob: Tree + Cost), which is the intended syntax

@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Fixed
 
+- `tree_killer_block`'s chance mechanisms called torch's `.float()`, so the
+  model could not be simulated on the numpy path its shocks declare. Its payoffs
+  also left every decision optimal independently of the others: the patio's
+  value now rises when the tree dies, and the magnitudes give the game strategic
+  tension. Its shocks are now declared in constructor-tuple form, so
+  `construct_shocks` can seed them.
 - A continuation rebuilt by `vfi.value_array_to_function` read only the axes of
   the value grid, so an arrival state that was not gridded was silently
   discarded. It now raises `ValueError` when handed one. This was not academic:
@@ -120,6 +126,17 @@ and this project adheres to
   Fig. 1 MAID. Chance nodes are encoded as structural CPDs (deterministic
   mechanism plus an exogenous shock) and binary decisions relaxed to `[0, 1]`
   controls; cross-checked against PyCID's `tree_doctor` example.
+- `skagent.algos.best_response`: solves a block's decisions one at a time in the
+  order its relevance graph implies, each maximizing its own agent's payoff
+  conditional on what it observes. `TabularBestResponseSolver` (`solve`,
+  `best_response`, `conditional_payoffs`, `mixed_rule`) and `TabulatedRule`, a
+  decision rule tabulated over information cells. A cyclic relevance graph
+  raises rather than returning rules that are not best responses.
+- `Block.calc_reward` takes an optional `agent`, computing only that agent's
+  reward variables; their sum is the agent's payoff.
+- `examples/models/plot_tree_killer_relevance.py`: computes the Tree Killer's
+  relevance graph, reads a solution order off it, solves the game in that order,
+  and checks each reliance claim numerically.
 - `tests/test_benchmark_bound_consistency.py`: regression test asserting each
   unconstrained closed-form benchmark's analytical policy is feasible under the
   block's own control bounds on states that reach the borrowing region

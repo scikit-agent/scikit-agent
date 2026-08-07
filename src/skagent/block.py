@@ -674,13 +674,31 @@ class DBlock(Block):
 
         return simulate_dynamics(dyn, pre, dr)
 
-    def calc_reward(self, vals):
+    def calc_reward(self, vals, agent=None):
         """
         Computes the reward for a given set of variable values
+
+        Parameters
+        ----------
+        vals : Mapping[str, Any]
+            Values for every variable the reward formulas depend on.
+
+        agent : str, optional
+            If given, compute only the reward variables attributed to this
+            agent. Their sum is that agent's payoff. Defaults to all reward
+            variables in the block.
+
+        Returns
+        -------
+        dict
+            Mapping from reward variable to value.
         """
         rvals = {}
 
         for sym in self.reward:
+            if agent is not None and self.reward[sym] != agent:
+                continue
+
             update_fn = self.dynamics[sym]
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()
