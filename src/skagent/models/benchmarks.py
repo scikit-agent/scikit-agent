@@ -128,7 +128,12 @@ d1_block = DBlock(
         "name": "d1_finite_log",
         "shocks": {},
         "dynamics": {
-            "c": Control(["W", "t"], upper_bound=lambda W, t: W, agent="consumer"),
+            "c": Control(
+                ["W", "t"],
+                lower_bound=lambda W: 1e-4,  # c > 0 for log utility
+                upper_bound=lambda W, t: W,
+                agent="consumer",
+            ),
             "u": lambda c, t, T: (
                 (as_tensor(t) < as_tensor(T)).float() * crra_utility(c, 1.0)
             ),  # Utility cutoff at T (life ends)
