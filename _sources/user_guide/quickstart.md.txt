@@ -7,8 +7,11 @@ policy.
 ## Installation
 
 ```bash
-pip install scikit-agent
+uv add scikit-agent
 ```
+
+Or, outside a uv project, `uv pip install scikit-agent` (or plain
+`pip install scikit-agent`).
 
 See the {doc}`installation` guide for development installs and system
 dependencies.

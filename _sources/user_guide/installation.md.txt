@@ -2,7 +2,7 @@
 
 ## Requirements
 
-scikit-agent requires Python 3.9 or higher. Its main runtime dependencies are:
+scikit-agent requires Python 3.10 or higher. Its main runtime dependencies are:
 
 - NumPy, SciPy, SymPy, Numba, and xarray
 - PyTorch
@@ -37,9 +37,14 @@ sudo apt-get install libcairo2 graphviz
 
 ## Install from PyPI
 
+To add scikit-agent to a uv project:
+
 ```bash
-pip install scikit-agent
+uv add scikit-agent
 ```
+
+To install it into a standalone environment, use `uv pip install scikit-agent`
+(or plain `pip install scikit-agent`).
 
 ## Install from Source
 
