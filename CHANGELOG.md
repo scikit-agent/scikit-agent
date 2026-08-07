@@ -58,6 +58,10 @@ and this project adheres to
   be solved by `vfi`. A `_clamp_min` helper now clamps on both torch tensors and
   numpy/Python scalars, leaving the tensor path unchanged.
 
+- `u3_block`'s cash-on-hand dynamic carried the same `torch.clamp` guard and so
+  was likewise unsolvable by `vfi`; it now uses `_clamp_min`. The tensor path is
+  unchanged. Latent because no test had solved U-3 on the numpy path.
+
 - Benchmark blocks `d2_block` and `d3_block` imposed a no-borrowing constraint
   (`c <= m`, i.e. end-of-period assets `a' >= 0`) that contradicts their
   unconstrained perfect-foresight closed-form policies, which borrow against
@@ -86,6 +90,23 @@ and this project adheres to
   last nonzero reward, so that the continuation's linear extrapolation off the
   top of the axis is flat at zero rather than a reflection of the last consuming
   period.
+
+- U-1 (Hall random walk) VFI benchmark:
+  `test_u1_continuous_shock_recovers_pih_closed_form` recovers
+  `c = (r/R)(m + H)` from a single `bellman_step` under an analytic PIH
+  continuation. The first benchmark with a continuous shock, and so the only
+  benchmark-level exercise of `disc_params`: `eta ~ Normal` becomes a
+  Gauss-Hermite node axis, and `m` then varies along both it and the asset axis.
+
+- U-3 (buffer stock, two income shocks) VFI benchmarks. Both `psi` and `theta`
+  feed the pre-state `m`, so both become node axes and `m` varies along all
+  three grid axes while pinning down neither shock individually -- the case
+  where the gather-and-fit consistency check is load-bearing.
+  `test_u3_two_prestate_shocks_degenerate_limit` recovers the PIH closed form in
+  the limit where U-3 reduces to U-2 (`sigma_theta = 0`, `CRRA = 1`), the only
+  limit in which U-3 has one. `test_u3_two_prestate_shocks_properties` asserts,
+  at U-3's own calibration, the properties that do not depend on the supplied
+  continuation being the model's own.
 
 - `skagent.information`: classifies each shock, per control, by whether the
   control's information set accounts for it -- `observed` (every route to the
@@ -132,6 +153,31 @@ and this project adheres to
   dynamics agnostic about torch vs numpy input.
 
 ### Changed
+
+- `vfi.bellman_step` derives each shock's information role from the block
+  (`skagent.information`) instead of inferring it from the state grid the caller
+  supplied. A shock some control's information set accounts for now becomes a
+  grid axis over its discretization nodes, so its pre-state and control bounds
+  are computed **per realization** rather than at the shock's mean; the rest are
+  integrated inside the `max` as before. Previously the caller's grid _was_ the
+  classification, unchecked, so a shock reaching the objective only through a
+  derived pre-state was mean-fixed -- which poses a different information
+  structure than the block declares, tabulates the policy at a coordinate no
+  realization produces, and evaluates the bounds there too. U-2 now recovers the
+  closed-form `c = (1-beta)(m + 1/r)` at `sigma_psi > 0` to ~1e-5, where the
+  approximation could only be asserted at `sigma_psi = 0`. A shock pinned in
+  `scope` is still a fixed realization, and gridding one no information set
+  accounts for now raises rather than silently solving the wrong problem.
+
+- `vfi` projects a policy onto an information-set variable that varies along
+  **several** grid axes by gathering every `(coordinate, control)` pair,
+  sorting, and fitting one 1-D rule, replacing the previous single-axis relabel
+  plus monotonicity assert. Sorting supplies well-posedness, so monotonicity is
+  no longer required; the guard is instead that samples sharing a coordinate
+  must agree in the control, which checks the block's own claim that the control
+  depends on nothing outside its information set. Restricted to a
+  single-variable information set -- with other variables present, each of their
+  slices would gather a different coordinate -- and raising otherwise.
 
 - `ModelAnalyzer` classifies a dependency as `lag` by **declaration position**
   rather than by membership in the arrival-state set: a dependency reads its
