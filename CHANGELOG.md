@@ -87,6 +87,23 @@ and this project adheres to
   top of the axis is flat at zero rather than a reflection of the last consuming
   period.
 
+- `skagent.information`: classifies each shock, per control, by whether the
+  control's information set accounts for it -- `observed` (every route to the
+  objective is intercepted, so a solver may condition on it), `hidden`
+  (integrate inside the maximization), or `mixed` (partly informed _and_
+  separately relevant, which needs filtering, so refuse). A d-separation test,
+  not a syntactic one: a shock in no information set is still accounted for if
+  it only reaches the objective through a pre-decision variable that is.
+  `d_connected` is a Bayes-Ball sweep answering every candidate node in one
+  traversal.
+- `ModelAnalyzer.influence_graph(dynamic=True)` and `Block.shock_roles()`. The
+  `dynamic` option makes a single-period diagram faithful to one period of a
+  recurring problem: each reassigned variable's arrival value becomes its own
+  `<name>*` node, and each deciding agent gets a continuation-value utility
+  node. Without the first, conditioning on a variable's information-set entry
+  conditions on next period's value; without the second, a shock reaching the
+  objective only through the next period looks irrelevant.
+
 - `skagent.relevance`: strategic-relevance analysis via the Koller & Milch
   s-reachability criterion. `is_s_reachable` and a `RelevanceGraph` wrapper
   (`relies_on`, `is_acyclic`, `sccs`, `condensation`, `draw`) over an
@@ -107,9 +124,29 @@ and this project adheres to
   unconstrained closed-form benchmark's analytical policy is feasible under the
   block's own control bounds on states that reach the borrowing region
   (`a' < 0`).
+- Block guide: declaration order and symbol aliasing (a reward reads its inputs
+  as of its own declaration point, so reward and transition can see different
+  values for one symbol), plus three authoring rules for solvable blocks --
+  declare both control bounds when the reward is undefined outside the feasible
+  set, extend a terminal axis one slice past the last nonzero reward, and keep
+  dynamics agnostic about torch vs numpy input.
 
 ### Changed
 
+- `ModelAnalyzer` classifies a dependency as `lag` by **declaration position**
+  rather than by membership in the arrival-state set: a dependency reads its
+  symbol's pre-assignment value unless that symbol is assigned earlier in the
+  order. Whether that is a lag then depends on what supplies the pre-assignment
+  value -- the previous period (`lag`), the calibration (`param`, even if the
+  block reassigns the symbol later), or a within-period shock (`shock`). The
+  membership test could not distinguish a variable read before its own update
+  from one read after, so a dependency on a post-update value was reported as
+  lagged.
+
+- `ModelAnalyzer` assigns a control that declares no `agent` to the block's sole
+  reward-owning agent when there is exactly one. Such a control was previously
+  `"global"` while the reward belonged to a named agent, so the two never met
+  and the control appeared to own no reward.
 - Development and CI use [uv](https://docs.astral.sh/uv/) instead of pip: GitHub
   Actions installs via `astral-sh/setup-uv`, Read the Docs via asdf, both run
   `uv sync`; source/contributor docs use `uv sync` / `uv run`. The public PyPI
