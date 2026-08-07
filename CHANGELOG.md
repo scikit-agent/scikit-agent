@@ -10,6 +10,15 @@ and this project adheres to
 
 ### Fixed
 
+- `d3_block` (Blanchard mortality) was unusable by the `vfi` solver and did not
+  match its own analytical policy. Two fixes: the reward `liv * crra_utility(c)`
+  now coerces `liv` with `as_tensor` (a bare `numpy * tensor` raised `TypeError`
+  on the grid-backup path, same class as the `_clamp_min` fix); and utility is
+  now computed from the _arrival_ `liv` (declared before the survival update
+  `liv = liv * live`), the Blanchard "consume then face mortality" timing, so
+  the solver recovers `c = kappa_s * (m + H)` exactly instead of drifting off by
+  `O(1 - s)`. Perfect-foresight (`live = 1`) simulations are unchanged.
+
 - `u2_block`'s cash-on-hand dynamic guarded a division with `torch.clamp`, which
   rejects the numpy/scalar inputs the VFI solver passes, so the block could not
   be solved by `vfi`. A `_clamp_min` helper now clamps on both torch tensors and
@@ -26,6 +35,12 @@ and this project adheres to
   never reach the borrowing region.
 
 ### Added
+
+- D-3 (Blanchard mortality) VFI benchmark:
+  `test_d3_single_backup_analytic_continuation` recovers `c = kappa_s * (m + H)`
+  from a single `bellman_step`, integrating the hidden 2-node `Bernoulli`
+  survival shock. Full iterated D-3 convergence is scheduled as a Phase-2
+  follow-on (design.md §9.1, PR10).
 
 - `skagent.relevance`: strategic-relevance analysis via the Koller & Milch
   s-reachability criterion. `is_s_reachable` and a `RelevanceGraph` wrapper

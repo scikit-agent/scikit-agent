@@ -611,6 +611,52 @@ class test_vfi_bellman_step(unittest.TestCase):
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
             self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
 
+    def test_d3_single_backup_analytic_continuation(self):
+        # D-3 (Blanchard mortality): the hidden Bernoulli survival shock ``live``
+        # is a *hidden* shock (c.iset = [m]); its 2 discretization nodes (no
+        # ``disc_params`` needed for a discrete shock) are integrated inside the
+        # backup. Under the *exact* alive value function -- D-2's closed-form CRRA
+        # value with the discount scaled ``beta -> s*beta``, times the survival
+        # indicator ``liv'`` (dead => 0) -- a single backup recovers the analytic
+        # policy c = kappa_s*(m + H). The block reads the *arrival* ``liv``
+        # (utility while alive), so E_live supplies the mortality discount and the
+        # Euler FOC is exact: this is the discrete-shock Tier-2 benchmark
+        # (design.md §7). Full iterated convergence additionally needs the
+        # out-of-grid absorbing-state continuation (§8, roadmap PR10) -- a single
+        # backup under the exact continuation does not, so it is validated here.
+        cal = bm.d3_calibration
+        beta, R, sigma = cal["DiscFac"], cal["R"], cal["CRRA"]
+        s, y = cal["SurvivalProb"], cal["y"]
+        H = y / (R - 1)  # human wealth
+        beta_eff = s * beta  # mortality as an effective discount (E[liv'] = s*liv)
+        kappa_s = (R - (beta_eff * R) ** (1 / sigma)) / R
+        # 1 - rho_s == kappa_s (the D-2 identity with beta -> s*beta), so this is
+        # exactly D-2's value function at the mortality-adjusted discount.
+        rho_s = beta_eff * (beta_eff * R) ** ((1 - sigma) / sigma)
+
+        def d3_continuation(states, shocks, parameters):
+            wealth = R * (states["a"] + H)
+            v_alive = (kappa_s * wealth) ** (1 - sigma) / ((1 - sigma) * (1 - rho_s))
+            return states["liv"] * v_alive  # gated by survival: dead => 0
+
+        bp = BellmanPeriod(bm.d3_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.5, 5.0, 12)}
+        # ``liv`` is an (ungridded) arrival state -> fix the alive slice in scope;
+        # the continuation sees the transitioned liv' = live in {0, 1}. Warm-start
+        # near the modest optimum (the [0, m + H] midpoint seed stalls, same as
+        # D-2; design.md §8 / roadmap PR11).
+        scope = {**cal, "liv": 1.0}
+        x0_policy = {
+            "c": xr.DataArray(np.ones(grid["a"].size), dims=["a"], coords=grid)
+        }
+        dr, _, _ = vfi.bellman_step(
+            bp, d3_continuation, grid, scope=scope, x0_policy=x0_policy
+        )
+        for a in [1.0, 2.0, 3.0]:
+            m = a * R + y
+            want = float(np.asarray(bm.d3_analytical_policy({"a": a}, {}, cal)["c"]))
+            self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
+
     def test_mechanism_b_multi_axis_not_implemented(self):
         # Gridding case_3 over BOTH a and theta makes m = a + theta vary along
         # two grid axes -> general scattered reindexing, out of scope in v1
