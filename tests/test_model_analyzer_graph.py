@@ -1,13 +1,12 @@
 """
-Tests for the ModelAnalyzer graph refactor (PR 2):
+Tests for the ModelAnalyzer graph refactor:
 
   1. Regression: to_dict() is byte-for-byte equivalent to a golden snapshot
      captured from the pre-refactor code, on the existing consumer benchmark
      models. This guarantees ModelVisualizer's contract is unchanged.
   2. influence_graph(): the SCIM view consumed by skagent.relevance.
 
-Golden baseline summary is recorded in i251_design.md; the full golden dict
-lives in tests/data/model_analyzer_golden.json.
+The golden dict lives in tests/data/model_analyzer_golden.json.
 """
 
 import copy

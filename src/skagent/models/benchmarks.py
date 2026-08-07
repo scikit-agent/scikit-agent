@@ -128,7 +128,12 @@ d1_block = DBlock(
         "name": "d1_finite_log",
         "shocks": {},
         "dynamics": {
-            "c": Control(["W", "t"], upper_bound=lambda W, t: W, agent="consumer"),
+            "c": Control(
+                ["W", "t"],
+                lower_bound=lambda W: 1e-4,  # c > 0 for log utility
+                upper_bound=lambda W, t: W,
+                agent="consumer",
+            ),
             "u": lambda c, t, T: (
                 (as_tensor(t) < as_tensor(T)).float() * crra_utility(c, 1.0)
             ),  # Utility cutoff at T (life ends)
@@ -438,10 +443,19 @@ d3_block = DBlock(
                 agent="consumer",
             ),
             "a": lambda m, c: m - c,
-            "liv": lambda liv, live: liv * live,  # liv becomes 0 if agent dies (live=0)
-            "u": lambda c, liv, CRRA: (
-                liv * crra_utility(c, CRRA)
-            ),  # Utility with survival
+            # Blanchard timing: the agent consumes and enjoys utility *while
+            # alive this period*, then faces the mortality shock. So ``u`` must
+            # read the *arrival* ``liv`` — it is declared BEFORE ``liv`` is
+            # updated below. (Declaring it after would gate this period's utility
+            # on surviving the current shock, a different model whose optimal MPC
+            # differs from the Blanchard closed form ``kappa_s`` by O(1 - s).)
+            # ``crra_utility`` always returns a torch tensor, so
+            # ``liv`` is coerced with ``as_tensor`` — a bare ``numpy * tensor``
+            # (the VFI grid-backup path) would raise TypeError.
+            "u": lambda c, liv, CRRA: as_tensor(liv) * crra_utility(c, CRRA),
+            # Survival update for next period: liv' = 0 if the agent dies
+            # (live = 0). E[liv'] = s * liv is the mortality-as-discount channel.
+            "liv": lambda liv, live: liv * live,
         },
         "reward": {"u": "consumer"},
     }

@@ -102,6 +102,14 @@ class ModelAnalyzer:
         for blk in self._blocks:
             plate = self.block_agent or getattr(blk, "agent", None)
 
+            # A control that declares no agent, in a block whose rewards all
+            # belong to one agent, belongs to that agent: there is no other
+            # candidate. With several reward owners the control must say which.
+            reward_agents = {str(a) for a in blk.reward.values() if a}
+            sole_reward_agent = (
+                next(iter(reward_agents)) if len(reward_agents) == 1 else None
+            )
+
             # Shocks - no plate assignment
             for var in blk.get_shocks():
                 self.node_meta[var] = {
@@ -115,7 +123,7 @@ class ModelAnalyzer:
             for var, rule in blk.get_dynamics().items():
                 if isinstance(rule, Control):
                     kind = "control"
-                    agent = rule.agent or plate or "global"
+                    agent = rule.agent or plate or sole_reward_agent or "global"
                     if not isinstance(agent, str):
                         agent = str(agent) if agent else "global"
                     observed = True
@@ -171,16 +179,43 @@ class ModelAnalyzer:
                             "observed": False,
                         }
 
-    def _identify_time_dependencies(self):
+    def _dynamics_positions(self):
+        """Position of each symbol's assignment in declaration order.
+
+        Concatenated across blocks in execution order. A symbol assigned more
+        than once keeps its first position.
         """
-        Use get_arrival_states method to identify lag dependencies.
-        """
-        arrival_states = self.model.get_arrival_states(self.calibration)
+        position = {}
         for blk in self._blocks:
-            for var in blk.get_dynamics().keys():
+            for sym in blk.get_dynamics():
+                position.setdefault(sym, len(position))
+        return position
+
+    def _identify_time_dependencies(self):
+        """Identify dependencies that read a lagged (arrival) value.
+
+        Dynamics run in declaration order, so a dependency reads its symbol's
+        pre-assignment value unless that symbol is assigned earlier in the
+        order. A self-reference is such a case, as is a dependency on a symbol
+        the block never assigns.
+
+        A pre-assignment value arrives from the previous period, which makes the
+        dependency lagged -- unless the calibration supplies a value for the
+        symbol, or the symbol is a shock realized within the period. Neither of
+        those reaches back a period, so neither is lagged.
+        """
+        position = self._dynamics_positions()
+        shocks = {s for blk in self._blocks for s in blk.get_shocks()}
+        for blk in self._blocks:
+            for var in blk.get_dynamics():
+                if var not in position:
+                    continue
                 for dep in self._raw_deps.get(var, []):
-                    if dep in arrival_states:
-                        self._time_deps.add((var, dep))
+                    if dep in position and position[dep] < position[var]:
+                        continue  # reads the value assigned earlier this period
+                    if dep in self.calibration or dep in shocks:
+                        continue
+                    self._time_deps.add((var, dep))
 
     def _classify_edge(self, source, target):
         """Return the edge kind for a ``source -> target`` dependency."""
@@ -256,7 +291,7 @@ class ModelAnalyzer:
                 self.node_meta[lag_var] = self.node_meta[source].copy()
                 self.node_meta[lag_var]["observed"] = False
 
-    def influence_graph(self):
+    def influence_graph(self, dynamic=False):
         """Return the SCIM (influence-diagram) view for strategic-relevance analysis.
 
         The graph :mod:`skagent.relevance` consumes: chance / decision / utility
@@ -266,6 +301,20 @@ class ModelAnalyzer:
         (an un-conditioned fork ``A <- p -> B``) that corrupt s-reachability.
         Lag edges are excluded here (single-period scope); cross-period reliance
         is handled by the unrolling machinery separately.
+
+        Parameters
+        ----------
+        dynamic : bool, optional
+            Make the diagram faithful to one period of a recurring problem, by
+            splitting each reassigned variable's arrival value into its own
+            ``<name>*`` node and adding a continuation-value utility node per
+            deciding agent (:func:`skagent.information.with_lagged_arrivals`,
+            :func:`skagent.information.with_continuation`). Without this a
+            single-period projection is blind to payoffs arriving through the
+            next period's value, and conflates a variable's arrival value with
+            the value it is reassigned to. With it, a decision's parents are its
+            information set. Off by default, since it changes the node set
+            existing callers see.
 
         Returns
         -------
@@ -298,14 +347,31 @@ class ModelAnalyzer:
                 scim.add_edge(source, target)
 
         decisions = [n for n in scim.nodes if scim.nodes[n]["kind"] == "decision"]
-        parents = {n: list(scim.predecessors(n)) for n in scim.nodes}
         decision_agent = {d: scim.nodes[d]["agent"] for d in decisions}
         agent_utilities = defaultdict(list)
         for node in scim.nodes:
             if scim.nodes[node]["kind"] == "utility":
                 agent_utilities[scim.nodes[node]["agent"]].append(node)
+        agent_utilities = dict(agent_utilities)
 
-        return SCIM(scim, decisions, parents, dict(agent_utilities), decision_agent)
+        if dynamic:
+            from skagent.information import with_continuation, with_lagged_arrivals
+
+            # Lag edges were dropped above; reintroduce them as arrival-value
+            # nodes so a decision's parents are its information set.
+            scim = with_lagged_arrivals(
+                scim, ((var, dep) for var, dep in self._time_deps)
+            )
+            scim, agent_utilities = with_continuation(
+                scim,
+                self.model.get_arrival_states(self.calibration),
+                # Only agents that decide have a value function to continue.
+                dict.fromkeys(decision_agent.values()),
+                agent_utilities,
+            )
+
+        parents = {n: list(scim.predecessors(n)) for n in scim.nodes}
+        return SCIM(scim, decisions, parents, agent_utilities, decision_agent)
 
     def to_dict(self):
         """Return a JSON-serializable dict of the analysis."""

@@ -3,46 +3,14 @@ description of best practices for developing scientific packages.
 
 [spc-dev-intro]: https://learn.scientific-python.org/development/
 
-# Quick development
+# Setting up a development environment
 
-The fastest way to start with development is to use nox. If you don't have nox,
-you can use `pipx run nox` to run it without installing, or `pipx install nox`.
-If you don't have pipx (pip for applications), then you can install with
-`pip install pipx` (the only case were installing an application with regular
-pip is reasonable). If you use macOS, then pipx and nox are both in brew, use
-`brew install pipx nox`.
-
-To use, run `nox`. This will lint and test using every installed version of
-Python on your system, skipping ones that are not installed. You can also run
-specific jobs:
-
-```console
-$ nox -s lint  # Lint only
-$ nox -s tests  # Python tests
-$ nox -s docs  # Build and serve the docs
-$ nox -s build  # Make an SDist and wheel
-```
-
-Nox handles everything for you, including setting up an temporary virtual
-environment for each run.
-
-# Setting up a development environment manually
-
-You can set up a development environment by running:
+Install [uv](https://docs.astral.sh/uv/), then sync the project into a local
+`.venv`. `uv sync` is exact, so list every extra you need in one command (`test`
+covers the pytest stack used below; `docs` is for local Sphinx builds):
 
 ```bash
-python3 -m venv .venv
-source ./.venv/bin/activate
-pip install -v -e .[dev]
-```
-
-If you have the
-[Python Launcher for Unix](https://github.com/brettcannon/python-launcher), you
-can instead do:
-
-```bash
-py -m venv .venv
-py -m install -v -e .[dev]
+uv sync --extra test --extra docs
 ```
 
 # Pre-commit
@@ -51,7 +19,7 @@ You should prepare pre-commit, which will help you by checking that commits pass
 required checks:
 
 ```bash
-pip install pre-commit # or brew install pre-commit on macOS
+uv tool install pre-commit # or brew install pre-commit on macOS
 pre-commit install # Will install a pre-commit hook into the git repo
 ```
 
@@ -60,30 +28,33 @@ You can also/alternatively run `pre-commit run` (changes only) or
 
 # Testing
 
-Use pytest to run the unit checks:
-
 ```bash
-pytest
+uv run --no-sync pytest
 ```
 
 # Coverage
 
-Use pytest-cov to generate coverage reports:
-
 ```bash
-pytest --cov=scikit-agent
+uv run --no-sync pytest --cov=skagent
 ```
 
 # Building docs
 
-You can build and serve the docs using:
+Building the docs requires graphviz to be installed (`apt-get install graphviz`
+or `brew install graphviz`). To build them the same way CI does:
 
 ```bash
-nox -s docs
+uv run --no-sync python -m sphinx -b html -W --keep-going docs docs/_build
 ```
 
-You can build the docs only with:
+To build and serve them with live reload while you edit:
 
 ```bash
-nox -s docs --non-interactive
+uv run --no-sync sphinx-autobuild docs docs/_build/html
+```
+
+# Building an SDist and wheel
+
+```bash
+uv build
 ```

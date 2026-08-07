@@ -11,9 +11,8 @@ build:
     - graphviz
   commands:
     - asdf plugin add uv
-    - asdf install uv latest
-    - asdf global uv latest
-    - uv venv
-    - uv pip install .[docs]
+    - asdf install uv 0.11.32
+    - asdf global uv 0.11.32
+    - uv sync --extra docs
     - .venv/bin/python -m sphinx -T -W --keep-going -b html -d
       docs/_build/doctrees -D language=en docs $READTHEDOCS_OUTPUT/html

@@ -351,6 +351,12 @@ _UPPER_OPEN = 1e12
 # at the test ATOL scale; relative/absolute hardening is deferred to Phase 3.
 _PROJ_TOL = 1e-3
 
+# Two multi-start optima count as equally good -- so the argmax is *not
+# identified* if they disagree by more than _PROJ_TOL -- when their objectives
+# differ by less than this, relative to the objective's own scale. A constant
+# objective, the case this exists for, returns each seed at exactly equal value.
+_TIE_TOL = 1e-10
+
 
 def _project_to_iset(
     policy_da: xr.DataArray,
@@ -358,10 +364,11 @@ def _project_to_iset(
     iset: Sequence[str],
     iset_coords: Mapping[str, np.ndarray],
     control_sym: str,
+    identified: np.ndarray | None = None,
 ) -> xr.DataArray:
     """
     Re-express a grid-tabulated policy as a function of a control's information
-    set, ready for :func:`ar_from_data` (design §5).
+    set, ready for :func:`ar_from_data`.
 
     The backup grids over the value function's domain (arrival states + observed
     shocks); a control conditions on its own ``iset``. Each iset variable must
@@ -369,12 +376,20 @@ def _project_to_iset(
     pre-state (e.g. ``m = a·R + y``) that varies, strictly monotonically, only
     along it — in which case that axis is relabeled to the variable and
     recoordinated onto its computed values. Any leftover grid axis is outside the
-    iset, so the optimum must be invariant along it; it is dropped (``isel`` 0).
+    iset, so the optimum must be invariant along it; it is dropped.
+
+    Where the objective is constant in the controls the optimizer just returns its
+    seed, so that point says nothing about dependence on a dropped axis — generic
+    at an absorbing state with zero reward and continuation (D-3's dead
+    ``liv = 0`` slice). *identified* marks the points whose optimum is pinned down;
+    the invariance check and the surviving slice are taken over those only.
+    ``None`` treats every point as identified.
 
     Raises ``NotImplementedError`` if an iset variable varies along more than one
     grid axis, or two variables share an axis (general scattered reindexing, out
-    of scope); ``ValueError`` if a derived map is non-monotone or a dropped axis
-    is non-invariant (the reprojection would be ill-posed).
+    of scope); ``ValueError`` if a derived map is non-monotone, a dropped axis is
+    non-invariant, or the policy is nowhere identified along a dropped axis (the
+    reprojection would be ill-posed).
     """
     da = policy_da
     claimed: dict[str, str] = {}  # grid axis -> iset variable it represents
@@ -415,23 +430,43 @@ def _project_to_iset(
             )
         claimed[axis] = iv
 
+    mask = None
+    if identified is not None:
+        mask = xr.DataArray(
+            np.asarray(identified, dtype=bool), dims=grid_axes, coords=policy_da.coords
+        )
+
     for ax in grid_axes:
-        if ax not in claimed:
-            spread = float(np.abs(da.max(dim=ax) - da.min(dim=ax)).max())
-            if spread > _PROJ_TOL:
-                raise ValueError(
-                    f"Control '{control_sym}'s optimum varies along grid axis "
-                    f"'{ax}' (spread {spread:.3g}), which is outside its "
-                    f"information set {list(iset)}."
-                )
+        if ax in claimed:
+            continue
+        # Unidentified points testify to nothing about dependence on ``ax``, so
+        # they are masked out of both the check and the surviving slice.
+        witness = da if mask is None else da.where(mask)
+        if mask is not None and not bool(mask.any(dim=ax).all()):
+            raise ValueError(
+                f"Control '{control_sym}'s optimum is unidentified at every point "
+                f"of grid axis '{ax}', so no value along it can be carried forward."
+            )
+        spread = float(np.abs(witness.max(dim=ax) - witness.min(dim=ax)).max())
+        if spread > _PROJ_TOL:
+            raise ValueError(
+                f"Control '{control_sym}'s optimum varies along grid axis "
+                f"'{ax}' (spread {spread:.3g}), which is outside its "
+                f"information set {list(iset)}."
+            )
+        # Surviving values agree to within _PROJ_TOL, so any one represents the
+        # line; ``isel(0)`` when nothing is masked, i.e. exactly the plain drop.
+        if mask is None:
             da = da.isel({ax: 0})
+        else:
+            da, mask = witness.max(dim=ax), mask.any(dim=ax)
 
     da = da.rename({ax: iv for ax, iv in claimed.items() if ax != iv})
     return da.assign_coords(derived_coords).transpose(*iset)
 
 
 def _discretize_shocks(bp, shock_syms, params, disc_params):
-    """Build the joint discrete distribution over *shock_syms* (design §4).
+    """Build the joint discrete distribution over *shock_syms*.
 
     The shocks are pulled from the block (constructed from *params* if still in
     constructor-tuple form), discretized — with the per-shock ``disc_params``
@@ -443,7 +478,7 @@ def _discretize_shocks(bp, shock_syms, params, disc_params):
     Returns ``(joint_dist, means)`` where *means* maps each shock symbol to the
     mean of its discretized marginal — used to fix the shock when computing a
     control's pre-state / bounds, which must be a single value even though the
-    objective integrates over the whole distribution (§2).
+    objective integrates over the whole distribution.
     """
     from skagent.block import construct_shocks
     from skagent.distributions import (
@@ -475,7 +510,7 @@ _ABC_PROBES = (1.0, 2.0, 3.0)
 def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
     """Tighten ``(lb, ub)`` so the successor arrival state stays in *grid_box*.
 
-    Implements the optional artificial borrowing constraint (design §8):
+    Implements the optional artificial borrowing constraint:
     confining each next-period arrival state to the value grid guarantees the
     continuation is only ever *interpolated*, never linearly *extrapolated* past
     a grid edge into a region it cannot represent. The grid's lower edge thereby
@@ -486,7 +521,8 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
     inverts *exactly* to a control interval — so this stays a plain box-bound
     tweak (L-BFGS-B unchanged), no optimizer constraints needed. The affine map
     is recovered from two probe evaluations and verified by a third; a nonlinear
-    successor raises (use the general monotone root-solve path, design §8).
+    successor raises: treating ``a'(c)`` as a black box and root-solving
+    ``a'(c) = grid_edge`` is not implemented.
     """
     probe = {
         p: bp.transition_function(states, {control: p}, shocks=obs, parameters=params)
@@ -504,8 +540,8 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
             raise NotImplementedError(
                 f"artificial_borrowing_constraint: successor arrival state '{k}' "
                 f"is not affine in control '{control}', so the state-grid box does "
-                "not invert to a control interval. Use the general monotone "
-                "root-solve path (design §8)."
+                "not invert to a control interval; root-solving a general monotone "
+                "successor is not implemented."
             )
         if abs(slope) < 1e-12:
             continue  # this successor axis does not depend on the control
@@ -536,7 +572,7 @@ def bellman_step(
     maximizing the period reward plus the discounted *continuation* value of the
     resulting arrival states. Under a terminal (zero) continuation,
     ``continuation_vf = lambda s, sh, p: 0.0``, the result is the single-step
-    solution; the value-iteration wrapper ``solve_bellman`` (§3) iterates it to a
+    solution; the value-iteration wrapper ``solve_bellman`` iterates it to a
     fixed point.
 
     Unlike legacy :func:`solve` (which rides the ``DBlock`` continuation API and
@@ -544,7 +580,7 @@ def bellman_step(
     ``BellmanPeriod`` protocol the rest of the torch stack uses, with an explicit
     discount factor and multi-reward summation, and is empty-shock-safe.
 
-    Shocks are handled by their information role (§4). A shock in some control's
+    Shocks are handled by their information role. A shock in some control's
     information set is *observed* and enters as a grid axis; a shock in no
     control's information set is *hidden* and is integrated out inside the
     per-point ``max`` via internal discretization (:func:`_discretize_shocks` +
@@ -554,10 +590,11 @@ def bellman_step(
     discretization.
 
     .. note::
-       Current scope of the §2 design: one or more controls, jointly optimized
-       by a single :func:`scipy.optimize.minimize` over the stacked control
-       vector with per-control bounds, each policy then reprojected onto its own
-       information set (:func:`_project_to_iset`, §5). A control's pre-state and
+       Current scope: one or more controls, jointly optimized
+       by :func:`scipy.optimize.minimize` over the stacked control vector with
+       per-control bounds — restarted from each seed candidate, keeping the best
+       optimum — each policy then reprojected onto its own information set
+       (:func:`_project_to_iset`). A control's pre-state and
        bounds are evaluated with each hidden shock fixed at its (discretized)
        mean, since a single value is required there even though the objective
        integrates the shock. This is exact when the pre-state does not depend on
@@ -589,19 +626,22 @@ def bellman_step(
     disc_params : Mapping, optional
         Per-shock discretization arguments, keyed by shock symbol (e.g.
         ``{"theta": {"N": 7}}``), forwarded to each hidden shock's
-        ``Distribution.discretize`` (§4). A shock without an entry uses its
+        ``Distribution.discretize``. A shock without an entry uses its
         distribution's default discretization (exact for already-discrete
         shocks).
     x0 : float, optional
-        Fallback optimizer seed used when a control has an open bound.
+        A modest optimizer seed, clamped into each control's bounds. One of the
+        multi-start candidates at every point, not just a fallback: it is what
+        covers a box whose midpoint is far from the optimum, e.g. the natural
+        borrowing limit's ``[0, m + H]``.
     x0_policy : Mapping[str, DataArray], optional
         Warm-start seeds keyed by control symbol (e.g. a previous iterate's
-        ``policy_array``); when given, the seed at each grid point is read from
-        here. Supplied by :func:`solve_bellman`.
+        ``policy_array``); supplies the first multi-start candidate at each grid
+        point, and wins ties. Supplied by :func:`solve_bellman`.
     artificial_borrowing_constraint : bool, optional
         When ``True``, tighten each control's bounds so the next-period arrival
         state stays inside the state grid (:func:`_tighten_bounds_to_grid`), an
-        artificial state (borrowing) limit at the grid's lower edge (design §8).
+        artificial state (borrowing) limit at the grid's lower edge.
         This keeps the continuation interpolated rather than extrapolated past
         the grid edges, so value iteration cannot ride a control bound by
         over-crediting off-grid successors. Single control with an affine
@@ -635,14 +675,14 @@ def bellman_step(
     # bounds, so everything per-control is keyed by control symbol. The state
     # grid is the value function's domain (arrival states + observed shocks),
     # shared across controls; each control's policy is projected onto its own
-    # iset afterwards (§5).
+    # iset afterwards.
     iset_by_control = {c: bp.block.dynamics[c].iset for c in controls}
     lower_by_control = {c: bp.block.dynamics[c].lower_bound for c in controls}
     upper_by_control = {c: bp.block.dynamics[c].upper_bound for c in controls}
 
     params = {**bp.calibration, **scope}
 
-    # Classify each shock by its information role (§4). A shock that is a grid
+    # Classify each shock by its information role. A shock that is a grid
     # axis is observed (gridded over its nodes); one pinned in ``scope`` is a
     # fixed realization; the rest are hidden and integrated out inside the
     # per-point max via discretization. Hidden shocks are fixed at their mean
@@ -659,17 +699,18 @@ def bellman_step(
 
     reward_syms = bp.get_reward_syms(agent)
 
-    # Artificial borrowing constraint (§8): the box of arrival-state grid axes
+    # Artificial borrowing constraint: the box of arrival-state grid axes
     # that successors must stay within. Single-control only for now — with >1
     # control the successor couples them into a joint constraint that no longer
-    # reduces to per-control box bounds (that is the general SLSQP path, §8).
+    # reduces to per-control box bounds (that would need optimizer-level
+    # inequality constraints, e.g. SLSQP, rather than a bound tweak).
     grid_box = None
     if artificial_borrowing_constraint:
         if len(controls) != 1:
             raise NotImplementedError(
                 "artificial_borrowing_constraint supports a single control for "
                 "now; a multi-control successor is a coupled (joint) constraint, "
-                "not per-control box bounds — use the general path (design §8)."
+                "not per-control box bounds; that is not supported."
             )
         grid_box = {
             k: (float(np.min(state_grid[k])), float(np.max(state_grid[k])))
@@ -681,10 +722,15 @@ def bellman_step(
     value_buf = np.empty(shape)
     policy_buf = {c: np.empty(shape) for c in controls}
     # Tabulate each control's information-set coordinates over the grid, in case
-    # a variable is a derived pre-state that must be reprojected (§5).
+    # a variable is a derived pre-state that must be reprojected.
     iset_coord_buf = {
         c: {iv: np.empty(shape) for iv in iset_by_control[c]} for c in controls
     }
+    # Whether each point's optimum is identified -- only worth probing for
+    # when some control's iset is narrower than the grid, so an axis may be
+    # dropped; otherwise no optimum has to testify about one.
+    check_identified = any(len(iset_by_control[c]) < len(grid_axes) for c in controls)
+    identified_buf = np.ones(shape, dtype=bool)
 
     for idx in np.ndindex(*shape):
         point_vals = {k: state_grid[k][i] for k, i in zip(grid_axes, idx)}
@@ -701,7 +747,7 @@ def bellman_step(
         # fixed). The optimizer ranges over the stacked control vector, ordered
         # as ``controls``.
         bounds = []
-        seed_vec = []
+        seed_cands = []
         for c in controls:
             pre = bp.compute_pre_state(c, states, shocks=pre_shocks, parameters=params)
             for iv in iset_by_control[c]:
@@ -724,13 +770,14 @@ def bellman_step(
                     bp, c, states, pre_shocks, params, grid_box, lb, ub
                 )
             bounds.append((lb, ub))
-            # Seed: warm-start > midpoint of finite bounds > x0 fallback (§2).
-            if x0_policy is not None:
-                seed_vec.append(float(x0_policy[c].values[idx]))
-            elif lower_func is not None and upper_func is not None:
-                seed_vec.append((lb + ub) / 2)
-            else:
-                seed_vec.append(x0)
+            # Multi-start candidates, in tie-breaking order: the warm start,
+            # the midpoint of finite bounds, and the modest ``x0`` clamped into the
+            # box. Every one is tried; a bad seed can no longer decide the answer.
+            cands = [] if x0_policy is None else [float(x0_policy[c].values[idx])]
+            if lower_func is not None and upper_func is not None:
+                cands.append((lb + ub) / 2)
+            cands.append(min(max(x0, lb), ub))
+            seed_cands.append(cands)
 
         def value_at(a, extra_shocks):
             # One evaluation of the backup objective at control vector ``a`` and
@@ -760,7 +807,32 @@ def bellman_step(
 
             return -float(expected(obj, disc_hidden))
 
-        res = minimize(negated_value, seed_vec, bounds=bounds)
+        # Start vectors are *aligned*, not crossed: candidate j for every control
+        # at once, so the count is the longest candidate list rather than its power
+        # (a control with fewer candidates repeats its last). Duplicates are
+        # dropped, since restarting from the same point learns nothing.
+        starts = []
+        for j in range(max(len(s) for s in seed_cands)):
+            v = np.array([s[min(j, len(s) - 1)] for s in seed_cands])
+            if not any(np.allclose(v, w, atol=_PROJ_TOL) for w in starts):
+                starts.append(v)
+
+        # Optimize from the first candidate, then from any other whose *seed*
+        # already matches or beats that optimum: such a seed sits in a region the
+        # incumbent search missed, which is exactly the midpoint-of-``[0, m + H]``
+        # pathology. A seed strictly worse than the incumbent optimum cannot lead
+        # to a better one for the unimodal objectives in scope, so it is
+        # skipped -- which is what keeps this affordable, since a warm start that
+        # has converged strictly beats every other seed. Matching (not just
+        # beating) also triggers, so a constant objective runs every start and its
+        # argmax is exposed as unidentified below.
+        results = [minimize(negated_value, starts[0], bounds=bounds)]
+        for v in starts[1:]:
+            if negated_value(v) <= results[0].fun + _TIE_TOL * (
+                1.0 + abs(results[0].fun)
+            ):
+                results.append(minimize(negated_value, v, bounds=bounds))
+        res = min(results, key=lambda r: r.fun)  # ties keep the earliest candidate
         if not res.success:
             logging.warning(
                 "bellman_step optimization did not converge at %s: %s",
@@ -771,6 +843,18 @@ def bellman_step(
             policy_buf[c][idx] = res.x[j]
         value_buf[idx] = -res.fun
 
+        # Identifiability, free from the restarts: an equally good optimum at
+        # a materially different control vector means the argmax is not pinned
+        # down -- what happens where the objective is constant, since each start
+        # then returns its own seed. A single start cannot show this, so it leaves
+        # the point (optimistically) identified.
+        if check_identified:
+            identified_buf[idx] = not any(
+                abs(r.fun - res.fun) <= _TIE_TOL * (1.0 + abs(res.fun))
+                and float(np.max(np.abs(r.x - res.x))) > _PROJ_TOL
+                for r in results
+            )
+
     coords = {k: state_grid[k] for k in grid_axes}
     value_array = xr.DataArray(value_buf, dims=grid_axes, coords=coords)
     policy_array = {
@@ -778,12 +862,17 @@ def bellman_step(
     }
 
     # The decision rule for each control is its policy re-expressed over its own
-    # information set (§5); policy_array stays over the state grid so
+    # information set; policy_array stays over the state grid so
     # solve_bellman can warm-start the next iterate at the same points.
     dr_from_data = {
         c: ar_from_data(
             _project_to_iset(
-                policy_array[c], grid_axes, iset_by_control[c], iset_coord_buf[c], c
+                policy_array[c],
+                grid_axes,
+                iset_by_control[c],
+                iset_coord_buf[c],
+                c,
+                identified=identified_buf if check_identified else None,
             )
         )
         for c in controls
@@ -793,7 +882,7 @@ def bellman_step(
 
 
 def _integrate_observed_shocks(value_array, bp, shock_axes, disc_params):
-    """Integrate observed-shock axes out of a decision value grid (§4).
+    """Integrate observed-shock axes out of a decision value grid.
 
     Returns ``W(s) = E_obs[V(s, obs)]`` over the arrival-state axes, summing each
     shock axis against the weights of that shock's discretized distribution. The
@@ -834,7 +923,7 @@ def value_array_to_function(
     disc_params: Mapping = {},
 ) -> Callable:
     """
-    Rebuild a continuation value function from an iterate's value grid (§4).
+    Rebuild a continuation value function from an iterate's value grid.
 
     :func:`solve_bellman` feeds iteration *n*'s value grid back as iteration
     *(n+1)*'s continuation. This wraps the grid as a callable in the
@@ -843,7 +932,7 @@ def value_array_to_function(
 
     The decision value grid ranges over arrival states and any *observed*-shock
     axes. Those shock axes are first integrated out into the arrival value
-    ``W(s) = E_obs[V(s, obs)]`` (§4), using the weights of the same discretized
+    ``W(s) = E_obs[V(s, obs)]``, using the weights of the same discretized
     distribution that produced the axis nodes; a grid built from other node
     values raises :class:`ValueError`. ``wf`` then interpolates linearly over the
     remaining arrival-state axes and **extrapolates linearly** past the grid
@@ -858,6 +947,12 @@ def value_array_to_function(
     shocks), the expectation step is a no-op and the value grid over arrival
     states *is* ``W``.
 
+    ``wf`` reads only the axes it has, so it raises :class:`ValueError` rather than
+    silently discard an arrival state that the value grid has no axis for — with
+    D-3's survival state ``liv`` left off the grid, the mortality discount cancels
+    out of the backup and the loop converges to the no-mortality policy, a
+    plausible value for a different model.
+
     Parameters
     ----------
     value_array : xarray.DataArray
@@ -868,7 +963,7 @@ def value_array_to_function(
         The recurring period; used to identify and discretize the shock axes.
     disc_params : Mapping, optional
         Per-shock discretization arguments for the observed-shock axes, keyed by
-        shock symbol (§4). A shock axis without an entry uses its distribution's
+        shock symbol. A shock axis without an entry uses its distribution's
         default discretization.
 
     Returns
@@ -896,7 +991,17 @@ def value_array_to_function(
         fill_value=None,  # None -> linear extrapolation past the grid edges
     )
 
+    # Arrival states this grid cannot represent; being handed one is an error.
+    ungridded = sorted(set(bp.arrival_states) - set(axes))
+
     def wf(states, shocks, parameters):
+        dropped = [k for k in ungridded if k in states]
+        if dropped:
+            raise ValueError(
+                f"Continuation was rebuilt from a value grid over {axes}, which has "
+                f"no axis for arrival state(s) {dropped}, so it cannot represent "
+                "any dependence on them. Include them in the state grid."
+            )
         cols = [np.asarray(states[ax], dtype=float) for ax in axes]
         scalar = all(c.ndim == 0 for c in cols)
         # Pointwise (not outer-product) query: one row per evaluation point.
@@ -922,13 +1027,15 @@ def solve_bellman(
     artificial_borrowing_constraint: bool = False,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
-    Solve a recurring ``BellmanPeriod`` by value-function iteration (§3).
+    Solve a recurring ``BellmanPeriod`` by value-function iteration.
 
     Iterates :func:`bellman_step` to a fixed point: each backup uses the previous
     iterate's value grid as its continuation (rebuilt via
-    :func:`value_array_to_function`) and warm-starts the per-point optimizer from
-    the previous iterate's ``policy_array``. It stops when the sup-norm change in
-    the value grid falls below *tol*, or after *max_iter* iterations.
+    :func:`value_array_to_function`) and offers the previous iterate's
+    ``policy_array`` as a per-point warm start — one multi-start candidate among
+    the others, so a collapsed iterate cannot entrench itself by seeding the
+    next backup at its own bound. It stops when the sup-norm change in the value
+    grid falls below *tol*, or after *max_iter* iterations.
 
     Iteration 1 uses the terminal (zero) continuation, so
     ``solve_bellman(..., max_iter=1)`` reproduces :func:`bellman_step` under a
@@ -936,7 +1043,7 @@ def solve_bellman(
     geometrically (modulus the discount factor) to the stationary solution; for a
     finite horizon of length ``T`` set ``max_iter=T``.
 
-    Shocks are discretized internally (§4): *disc_params* is threaded into every
+    Shocks are discretized internally: *disc_params* is threaded into every
     backup (hidden shocks integrated inside the max) and into
     :func:`value_array_to_function` (observed-shock axes integrated into the
     arrival value between iterations).
@@ -957,7 +1064,7 @@ def solve_bellman(
         Fixed non-shock exogenous values (and, in this scope, any hidden-shock
         realization) merged into the model parameters.
     disc_params : Mapping, optional
-        Per-shock discretization arguments (§4), threaded into each backup (for
+        Per-shock discretization arguments, threaded into each backup (for
         hidden shocks) and into :func:`value_array_to_function` (for observed
         shocks); see :func:`bellman_step`.
     tol : float, optional
@@ -965,14 +1072,14 @@ def solve_bellman(
     max_iter : int, optional
         Maximum number of backups.
     x0 : float, optional
-        Fallback optimizer seed passed to :func:`bellman_step`.
+        Modest multi-start seed candidate passed to :func:`bellman_step`.
     raise_on_nonconvergence : bool, optional
         If ``True``, raise :class:`RuntimeError` when the loop hits *max_iter*
         without converging; otherwise emit a :class:`warnings.warn` and return the
         last iterate (the scipy ``OptimizeResult.success`` convention, O5).
     artificial_borrowing_constraint : bool, optional
         Forwarded to :func:`bellman_step`: confine next-period arrival states to
-        the state grid (grid edge = slack artificial borrowing limit, design §8),
+        the state grid (grid edge = slack artificial borrowing limit),
         so the rebuilt continuation is never extrapolated off-grid.
 
     Returns

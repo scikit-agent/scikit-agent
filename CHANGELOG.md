@@ -16,6 +16,48 @@ and this project adheres to
   value now rises when the tree dies, and the magnitudes give the game strategic
   tension. Its shocks are now declared in constructor-tuple form, so
   `construct_shocks` can seed them.
+- A continuation rebuilt by `vfi.value_array_to_function` read only the axes of
+  the value grid, so an arrival state that was not gridded was silently
+  discarded. It now raises `ValueError` when handed one. This was not academic:
+  with D-3's survival state `liv` off the grid, the continuation could not
+  depend on `liv'`, the survival probability cancelled out of the backup, and
+  value iteration converged to the no-mortality MPC.
+
+- `vfi.bellman_step` marks a grid point's optimum **unidentified** when two
+  multi-start optima tie in value but disagree in the control, and the
+  information-set projection now takes its invariance check and its surviving
+  slice over identified points only. Previously an absorbing state with zero
+  reward and continuation -- D-3's dead `liv = 0` slice, where every control is
+  optimal and the optimizer returns its seed -- made the projection raise on a
+  policy spread that carried no information.
+
+- `vfi.bellman_step` seeds each per-point optimization from a _set_ of
+  candidates (warm start, midpoint of finite bounds, and `x0` clamped into the
+  bounds) and keeps the best optimum, instead of picking one seed by a priority
+  rule. Under the old rule `x0` was reachable only when a bound was open, so a
+  box like the natural borrowing limit's `[0, m + H]` was seeded at its midpoint
+  -- far above the optimum and outside the optimizer's basin -- and in
+  `solve_bellman` a collapsed iterate then re-seeded the next backup at its own
+  bound. Candidates beyond the first are optimized only when their seed already
+  matches or beats the incumbent optimum, which for a unimodal objective costs
+  one extra function evaluation rather than an extra optimization.
+
+- `d3_block` (Blanchard mortality) was unusable by the `vfi` solver and did not
+  match its own analytical policy. Two fixes: the reward `liv * crra_utility(c)`
+  now coerces `liv` with `as_tensor` (a bare `numpy * tensor` raised `TypeError`
+  on the grid-backup path, same class as the `_clamp_min` fix); and utility is
+  now computed from the _arrival_ `liv` (declared before the survival update
+  `liv = liv * live`), the Blanchard "consume then face mortality" timing, so
+  the solver recovers `c = kappa_s * (m + H)` exactly instead of drifting off by
+  `O(1 - s)`. Perfect-foresight (`live = 1`) simulations are unchanged.
+
+- `d1_block`'s consumption control declared an upper bound but no lower bound,
+  so the `vfi` solver optimized over `[-1e12, W]` and its line search reached
+  the `log(c < 0)` region. The optimizer then aborted and returned its own seed,
+  which presented as a converged flat objective: `c = W` at every period,
+  reported `converged=True` with a zero residual, and insensitive to grid
+  refinement. `c` now has a `1e-4` floor, as `d4_block` and `u2_block` already
+  do.
 
 - `u2_block`'s cash-on-hand dynamic guarded a division with `torch.clamp`, which
   rejects the numpy/scalar inputs the VFI solver passes, so the block could not
@@ -33,6 +75,40 @@ and this project adheres to
   never reach the borrowing region.
 
 ### Added
+
+- D-3 (Blanchard mortality) VFI benchmark:
+  `test_d3_single_backup_analytic_continuation` recovers `c = kappa_s * (m + H)`
+  from a single `bellman_step`, integrating the hidden 2-node `Bernoulli`
+  survival shock. `test_d3_iterated_converges_to_analytic` reaches the same
+  policy by value iteration, with the survival state `liv` on the state grid.
+
+- D-1 (finite-horizon log utility) VFI benchmark:
+  `test_d1_finite_horizon_converges_to_analytic` recovers the non-stationary
+  rule `c_t = (1 - beta)/(1 - beta^(T-t)) * W` to ~1% by ordinary value
+  iteration, with the time counter `t` on the state grid. No finite-horizon code
+  path is needed: `t` is an arrival state and the horizon is the reward's
+  `(t < T)` cutoff, so backward induction is a fixed point in the extended state
+  space, reached in O(T) iterations. The `t` axis must extend one slice past the
+  last nonzero reward, so that the continuation's linear extrapolation off the
+  top of the axis is flat at zero rather than a reflection of the last consuming
+  period.
+
+- `skagent.information`: classifies each shock, per control, by whether the
+  control's information set accounts for it -- `observed` (every route to the
+  objective is intercepted, so a solver may condition on it), `hidden`
+  (integrate inside the maximization), or `mixed` (partly informed _and_
+  separately relevant, which needs filtering, so refuse). A d-separation test,
+  not a syntactic one: a shock in no information set is still accounted for if
+  it only reaches the objective through a pre-decision variable that is.
+  `d_connected` is a Bayes-Ball sweep answering every candidate node in one
+  traversal.
+- `ModelAnalyzer.influence_graph(dynamic=True)` and `Block.shock_roles()`. The
+  `dynamic` option makes a single-period diagram faithful to one period of a
+  recurring problem: each reassigned variable's arrival value becomes its own
+  `<name>*` node, and each deciding agent gets a continuation-value utility
+  node. Without the first, conditioning on a variable's information-set entry
+  conditions on next period's value; without the second, a shock reaching the
+  objective only through the next period looks irrelevant.
 
 - `skagent.relevance`: strategic-relevance analysis via the Koller & Milch
   s-reachability criterion. `is_s_reachable` and a `RelevanceGraph` wrapper
@@ -65,8 +141,33 @@ and this project adheres to
   unconstrained closed-form benchmark's analytical policy is feasible under the
   block's own control bounds on states that reach the borrowing region
   (`a' < 0`).
+- Block guide: declaration order and symbol aliasing (a reward reads its inputs
+  as of its own declaration point, so reward and transition can see different
+  values for one symbol), plus three authoring rules for solvable blocks --
+  declare both control bounds when the reward is undefined outside the feasible
+  set, extend a terminal axis one slice past the last nonzero reward, and keep
+  dynamics agnostic about torch vs numpy input.
 
 ### Changed
+
+- `ModelAnalyzer` classifies a dependency as `lag` by **declaration position**
+  rather than by membership in the arrival-state set: a dependency reads its
+  symbol's pre-assignment value unless that symbol is assigned earlier in the
+  order. Whether that is a lag then depends on what supplies the pre-assignment
+  value -- the previous period (`lag`), the calibration (`param`, even if the
+  block reassigns the symbol later), or a within-period shock (`shock`). The
+  membership test could not distinguish a variable read before its own update
+  from one read after, so a dependency on a post-update value was reported as
+  lagged.
+
+- `ModelAnalyzer` assigns a control that declares no `agent` to the block's sole
+  reward-owning agent when there is exactly one. Such a control was previously
+  `"global"` while the reward belonged to a named agent, so the two never met
+  and the control appeared to own no reward.
+- Development and CI use [uv](https://docs.astral.sh/uv/) instead of pip: GitHub
+  Actions installs via `astral-sh/setup-uv`, Read the Docs via asdf, both run
+  `uv sync`; source/contributor docs use `uv sync` / `uv run`. The public PyPI
+  install remains `pip install scikit-agent` (#166).
 
 - `GymEnv._bounds_at` treats a single-point feasible set (`lo == hi`, which the
   natural borrowing limit produces at `m = -H`) as valid, returning that point;
