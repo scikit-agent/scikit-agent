@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.1.dev799+g3bb57fdf7</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.1.dev805+g545e647bb</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev799+g3bb57fdf7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev805+g545e647bb</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -327,7 +327,7 @@ public <code class="docutils literal notranslate"><span class="pre">node_meta</s
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.model_analyzer.ModelAnalyzer.influence_graph">
-<span class="sig-name descname"><span class="pre">influence_graph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer.influence_graph" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">influence_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dynamic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer.influence_graph" title="Link to this definition">¶</a></dt>
 <dd><p>Return the SCIM (influence-diagram) view for strategic-relevance analysis.</p>
 <p>The graph <a class="reference internal" href="#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a> consumes: chance / decision / utility
 nodes with the causal (instant + shock) edges between them. Parameter
@@ -337,13 +337,25 @@ variables, and leaving them in would open spurious d-connection paths
 Lag edges are excluded here (single-period scope); cross-period reliance
 is handled by the unrolling machinery separately.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Named tuple <code class="docutils literal notranslate"><span class="pre">(graph,</span> <span class="pre">decisions,</span> <span class="pre">parents,</span> <span class="pre">agent_utilities,</span>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dynamic</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Make the diagram faithful to one period of a recurring problem, by
+splitting each reassigned variable’s arrival value into its own
+<code class="docutils literal notranslate"><span class="pre">&lt;name&gt;*</span></code> node and adding a continuation-value utility node per
+deciding agent (<code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.information.with_lagged_arrivals()</span></code>,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.information.with_continuation()</span></code>). Without this a
+single-period projection is blind to payoffs arriving through the
+next period’s value, and conflates a variable’s arrival value with
+the value it is reassigned to. With it, a decision’s parents are its
+information set. Off by default, since it changes the node set
+existing callers see.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Named tuple <code class="docutils literal notranslate"><span class="pre">(graph,</span> <span class="pre">decisions,</span> <span class="pre">parents,</span> <span class="pre">agent_utilities,</span>
 <span class="pre">decision_agent)</span></code> matching
 <a class="reference internal" href="#skagent.relevance.RelevanceGraph.from_scim" title="skagent.relevance.RelevanceGraph.from_scim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.relevance.RelevanceGraph.from_scim()</span></code></a>.</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#skagent.model_analyzer.SCIM" title="skagent.model_analyzer.SCIM">SCIM</a></p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.model_analyzer.SCIM" title="skagent.model_analyzer.SCIM">SCIM</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -636,7 +648,7 @@ nodes with directed causal edges.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=4203210c"></script>
+</div><script src="../_static/documentation_options.js?v=234c1f43"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

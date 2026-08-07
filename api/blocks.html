@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.dev799+g3bb57fdf7</title>
+        <title>Blocks - scikit-agent 0.1.dev805+g545e647bb</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev799+g3bb57fdf7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev805+g545e647bb</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -405,6 +405,29 @@ raises <code class="docutils literal notranslate"><span class="pre">ValueError</
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.shock_roles">
+<span class="sig-name descname"><span class="pre">shock_roles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.shock_roles" title="Link to this definition">¶</a></dt>
+<dd><p>How each shock relates to each control’s information set.</p>
+<p>For every control, classifies every shock as <code class="docutils literal notranslate"><span class="pre">observed</span></code> (the
+information set accounts for it, so a solver may condition on it),
+<code class="docutils literal notranslate"><span class="pre">hidden</span></code> (it must be integrated out inside the maximization), or
+<code class="docutils literal notranslate"><span class="pre">mixed</span></code> (partly informed and separately relevant, which needs
+filtering). See <code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.information</span></code> for the criterion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Calibration parameters, used only to identify parameter symbols.
+Defaults to empty, as for <a class="reference internal" href="#skagent.block.Block.relevance_graph" title="skagent.block.Block.relevance_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relevance_graph()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{control:</span> <span class="pre">{shock:</span> <span class="pre">role}}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -897,6 +920,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_controls"><code class="docutils literal notranslate"><span class="pre">Block.get_controls()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.relevance_graph"><code class="docutils literal notranslate"><span class="pre">Block.relevance_graph()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.relies_on"><code class="docutils literal notranslate"><span class="pre">Block.relies_on()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.shock_roles"><code class="docutils literal notranslate"><span class="pre">Block.shock_roles()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.visualize"><code class="docutils literal notranslate"><span class="pre">Block.visualize()</span></code></a></li>
 </ul>
 </li>
@@ -978,7 +1002,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=4203210c"></script>
+</div><script src="../_static/documentation_options.js?v=234c1f43"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
