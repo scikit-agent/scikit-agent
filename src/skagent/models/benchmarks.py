@@ -443,8 +443,8 @@ d3_block = DBlock(
             # read the *arrival* ``liv`` — it is declared BEFORE ``liv`` is
             # updated below. (Declaring it after would gate this period's utility
             # on surviving the current shock, a different model whose optimal MPC
-            # differs from the Blanchard closed form ``kappa_s`` by O(1 - s); see
-            # design.md §7/§8.) ``crra_utility`` always returns a torch tensor, so
+            # differs from the Blanchard closed form ``kappa_s`` by O(1 - s).)
+            # ``crra_utility`` always returns a torch tensor, so
             # ``liv`` is coerced with ``as_tensor`` — a bare ``numpy * tensor``
             # (the VFI grid-backup path) would raise TypeError.
             "u": lambda c, liv, CRRA: as_tensor(liv) * crra_utility(c, CRRA),

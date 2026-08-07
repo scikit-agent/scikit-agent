@@ -6,7 +6,7 @@ networkx.DiGraph so the graphical criterion is tested directly against ground
 truth.
 
 The five two-decision fixtures are Koller & Milch (2001) Fig. 3 (a)-(e). Their
-expected relevance graphs are stated in i251_design.md and were cross-checked
+expected relevance graphs are taken from that figure and were cross-checked
 against PyCID's RelevanceGraph on the corresponding story_macids examples.
 
 Convention: D is owned by agent "a", D' (spelled ``Dp``) by agent "b". Edge
