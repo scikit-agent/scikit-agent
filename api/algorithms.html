@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev805+g545e647bb</title>
+        <title>Algorithms - scikit-agent 0.1.dev809+g99a171ef6</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev805+g545e647bb</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev809+g99a171ef6</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -349,27 +349,27 @@ fixed point.</p>
 folds the discount factor into the continuation), this speaks the
 <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> protocol the rest of the torch stack uses, with an explicit
 discount factor and multi-reward summation, and is empty-shock-safe.</p>
-<p>Shocks are handled by their information role. A shock in some control’s
-information set is <em>observed</em> and enters as a grid axis; a shock in no
-control’s information set is <em>hidden</em> and is integrated out inside the
+<p>Shocks are handled by their information role, which is derived from the
+block’s own structure (<code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.information</span></code>) rather than inferred from
+the grid the caller supplies. A shock some control’s information set accounts
+for becomes a grid axis over its discretization nodes, so its pre-state and
+bounds are computed per realization; the rest are integrated out inside the
 per-point <code class="docutils literal notranslate"><span class="pre">max</span></code> via internal discretization (<code class="xref py py-func docutils literal notranslate"><span class="pre">_discretize_shocks()</span></code> +
-<code class="docutils literal notranslate"><span class="pre">expected</span></code>), so an optimum that is characterized by an expectation over an
-unobserved shock is in scope. A hidden shock may still be pinned to a fixed
-realization by supplying it in <em>scope</em>, which takes precedence over
-discretization.</p>
+<code class="docutils literal notranslate"><span class="pre">expected</span></code>), so an optimum characterized by an expectation over an
+unobserved shock is in scope. Any shock may instead be pinned to a fixed
+realization by supplying it in <em>scope</em>, which takes precedence over both.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Current scope: one or more controls, jointly optimized
-by <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> over the stacked control vector with
+<p>Current scope: one or more controls, jointly optimized by
+<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> over the stacked control vector with
 per-control bounds — restarted from each seed candidate, keeping the best
 optimum — each policy then reprojected onto its own information set
-(<code class="xref py py-func docutils literal notranslate"><span class="pre">_project_to_iset()</span></code>). A control’s pre-state and
-bounds are evaluated with each hidden shock fixed at its (discretized)
-mean, since a single value is required there even though the objective
-integrates the shock. This is exact when the pre-state does not depend on
-the hidden shock, or when the hidden shock is degenerate (a single
-discretization node); a pre-state that depends on a non-degenerate hidden
-shock is only approximate.</p>
+(<code class="xref py py-func docutils literal notranslate"><span class="pre">_project_to_iset()</span></code>). A control’s pre-state and bounds are evaluated
+with each integrated-out shock fixed at its (discretized) mean, since a
+single value is required there even though the objective integrates the
+shock. That is exact when the pre-state does not depend on such a shock,
+and a shock the pre-state <em>does</em> depend on is a grid axis rather than an
+integrated one, so it does not arise for a well-formed block.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -378,21 +378,23 @@ shock is only approximate.</p>
 <li><p><strong>continuation_vf</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – The continuation value function, called <code class="docutils literal notranslate"><span class="pre">continuation_vf(states,</span> <span class="pre">shocks,</span>
 <span class="pre">parameters)</span></code> on the next-period arrival states (the <code class="docutils literal notranslate"><span class="pre">bp.compute_value</span></code>
 convention). Terminal continuation is <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">s,</span> <span class="pre">sh,</span> <span class="pre">p:</span> <span class="pre">0.0</span></code>.</p></li>
-<li><p><strong>state_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>]</span>) – The shared backup grid of arrival states and any observed shocks: one
-axis per variable (arrival-state or observed-shock symbol). This grid
-covers the full set of variables the Bellman loop iterates over and is
-not necessarily equal to any individual control’s information set (a
-control’s iset may be a strict subset). For an empty grid, pass
-<code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+<li><p><strong>state_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>]</span>) – The shared backup grid over arrival states: one axis per variable. Axes
+for the shocks an information set accounts for are added automatically
+from their discretization nodes, so supplying one is optional and
+idempotent. This grid covers the variables the Bellman loop iterates over
+and is not necessarily equal to any individual control’s information set
+(a control’s iset may be a strict subset). For an empty grid, pass <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
 <li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – If given, the period reward sums only this agent’s reward symbols.</p></li>
 <li><p><strong>scope</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Fixed non-shock exogenous values merged into the model parameters. A
 shock supplied here is pinned to that fixed realization instead of being
-integrated (it takes precedence over discretization).</p></li>
+gridded or integrated. Note this fixes a value for the solve; it does not
+make the symbol a model parameter, so it does not affect any shock’s
+information role.</p></li>
 <li><p><strong>disc_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Per-shock discretization arguments, keyed by shock symbol (e.g.
-<code class="docutils literal notranslate"><span class="pre">{&quot;theta&quot;:</span> <span class="pre">{&quot;N&quot;:</span> <span class="pre">7}}</span></code>), forwarded to each hidden shock’s
-<code class="docutils literal notranslate"><span class="pre">Distribution.discretize</span></code>. A shock without an entry uses its
-distribution’s default discretization (exact for already-discrete
-shocks).</p></li>
+<code class="docutils literal notranslate"><span class="pre">{&quot;theta&quot;:</span> <span class="pre">{&quot;N&quot;:</span> <span class="pre">7}}</span></code>), forwarded to that shock’s
+<code class="docutils literal notranslate"><span class="pre">Distribution.discretize</span></code> whether it becomes a grid axis or is
+integrated out. A shock without an entry uses its distribution’s default
+discretization (exact for already-discrete shocks).</p></li>
 <li><p><strong>x0</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – A modest optimizer seed, clamped into each control’s bounds. One of the
 multi-start candidates at every point, not just a fallback: it is what
 covers a box whose midpoint is far from the optimum, e.g. the natural
@@ -1841,7 +1843,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=234c1f43"></script>
+</div><script src="../_static/documentation_options.js?v=f1c4fd58"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
