@@ -907,8 +907,10 @@ u3_block = DBlock(
         },
         "dynamics": {
             # Normalized cash-on-hand: m = R*a/ψ + θ
-            # Note: psi is strictly positive from MeanOneLogNormal, but we add epsilon for safety
-            "m": lambda a, R, psi, theta: R * a / torch.clamp(psi, min=1e-8) + theta,
+            # Note: psi is strictly positive from MeanOneLogNormal, but we clamp
+            # for safety. ``_clamp_min`` rather than ``torch.clamp`` so the block
+            # also runs on the numpy path the grid-based solvers drive.
+            "m": lambda a, R, psi, theta: R * a / _clamp_min(psi, 1e-8) + theta,
             # Normalized consumption - depends ONLY on m
             # Lower bound ensures c > 0 for CRRA utility
             # Upper bound is borrowing constraint: c ≤ m

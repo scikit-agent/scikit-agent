@@ -514,16 +514,12 @@ class test_vfi_bellman_step(unittest.TestCase):
             )
             self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
 
-    def test_u2_hidden_shock_multinode_expectation(self):
-        # sigma_psi > 0: psi is now spread over several discretization nodes, so
-        # the per-point backup integrates a genuine E_psi[...] inside the max,
-        # rather than collapsing to the single degenerate node of the default
-        # calibration. Unlike sigma_psi = 0, the PIH closed form is NOT exact
-        # here — the backup grids over arrival assets a and fixes m's hidden psi
-        # at its mean for the iset reindex, an approximation (the same one that
-        # puts U-1 and U-3 in the property-only lane) — so this is a property
-        # check that the multi-node expectation runs, changes the answer, and
-        # yields a sane rule.
+    def test_u2_multinode_recovers_closed_form(self):
+        # sigma_psi > 0 spreads psi over several discretization nodes. Because psi
+        # reaches the objective only through m, which c conditions on, each node
+        # gets its own pre-state and bounds and the backup solves the problem the
+        # block declares -- so the PIH closed form c = (1-beta)(m + 1/r) is
+        # recovered at sigma > 0, not only at the degenerate sigma = 0.
         beta, R = bm.u2_calibration["DiscFac"], bm.u2_calibration["R"]
         h = 1.0 / (R - 1.0)
         B = 1.0 / (1.0 - beta)
@@ -543,15 +539,132 @@ class test_vfi_bellman_step(unittest.TestCase):
             )
             return np.array([dr["c"](m) for m in ms])
 
-        c_spread = solve(0.2)  # 7 lognormal nodes genuinely integrated
-        c_degenerate = solve(0.0)  # single node at psi = 1
+        want = np.array([(1.0 - beta) * (m + h) for m in ms])
+        for sigma_psi in (0.0, 0.1, 0.2):
+            got = solve(sigma_psi)
+            self.assertTrue(np.all(got > 0))
+            self.assertTrue(np.all(np.diff(got) > 0))
+            np.testing.assert_allclose(got, want, atol=1e-4)
 
-        # A sane consumption rule: positive and increasing in cash-on-hand.
-        self.assertTrue(np.all(c_spread > 0))
-        self.assertTrue(np.all(np.diff(c_spread) > 0))
-        # The multi-node expectation actually does work: spreading psi shifts the
-        # policy away from the degenerate (single-node) solution.
-        self.assertGreater(float(np.abs(c_spread - c_degenerate).max()), 1e-3)
+    def test_u2_rule_over_m_does_not_depend_on_shock_spread(self):
+        # The decision problem at a given m -- max_c u(c) + beta*W(m - c) -- does
+        # not involve sigma_psi, so the rule as a function of m is invariant to it;
+        # only the distribution of m changes. Fixing psi at its mean instead puts
+        # the expectation inside the max and makes the rule spuriously
+        # sigma-dependent, so this pins the ordering of max and expectation.
+        beta, R = bm.u2_calibration["DiscFac"], bm.u2_calibration["R"]
+        h = 1.0 / (R - 1.0)
+        B = 1.0 / (1.0 - beta)
+
+        def u2_continuation(states, shocks, parameters):
+            return B * np.log(R * (states["a"] + h))
+
+        grid = {"a": np.linspace(0.5, 8.0, 16)}
+        ms = [R * a + 1.0 for a in [1.0, 2.0, 3.0, 5.0]]
+
+        def solve(sigma_psi):
+            cal = {**bm.u2_calibration, "sigma_psi": sigma_psi}
+            bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
+            dr, _, _ = vfi.bellman_step(
+                bp, u2_continuation, grid, scope=cal, disc_params={"psi": {"N": 7}}
+            )
+            return np.array([dr["c"](m) for m in ms])
+
+        np.testing.assert_allclose(solve(0.2), solve(0.0), atol=1e-4)
+
+    def test_u1_continuous_shock_recovers_pih_closed_form(self):
+        # U-1 (Hall random walk): eta ~ Normal reaches the objective only through
+        # the pre-state m = R*A + y_mean + eta that c conditions on, so it becomes
+        # a Gauss-Hermite node axis and m varies along both A and eta. Under the
+        # analytic PIH continuation a single backup recovers c = (r/R)(m + H)
+        # exactly. The only benchmark-level exercise of a continuous shock, and so
+        # of disc_params.
+        cal = bm.get_benchmark_calibration("U-1")
+        quad_a, quad_b = cal["quad_a"], cal["quad_b"]
+        R, y_mean = cal["R"], cal["y_mean"]
+        r = R - 1.0
+        H = y_mean / r  # present value of the expected income stream
+        kappa = r / R  # annuity factor
+
+        def u1_continuation(states, shocks, parameters):
+            # V(m) = a*m - (b*kappa/2)(m + H)^2 integrated over next period's
+            # income; the Var(eta) term is constant in the control and dropped.
+            m_next = R * states["A"] + y_mean
+            return quad_a * m_next - (quad_b * kappa / 2.0) * (m_next + H) ** 2
+
+        bp = BellmanPeriod(bm.u1_block, "DiscFac", cal)
+        dr, _, _ = vfi.bellman_step(
+            bp,
+            u1_continuation,
+            {"A": np.linspace(0.5, 6.0, 14)},
+            scope=cal,
+            disc_params={"eta": {"N": 7}},
+        )
+        for A in [1.0, 2.0, 3.0, 5.0]:
+            m = R * A + y_mean
+            self.assertAlmostEqual(dr["c"](m), kappa * (m + H), delta=1e-4)
+
+    def test_u3_two_prestate_shocks_degenerate_limit(self):
+        # U-3 has *two* shocks feeding the pre-state m = R*a/psi + theta, so both
+        # become node axes and m varies along all three grid axes -- and m pins
+        # down neither shock individually, which is where the gather-and-fit
+        # consistency check is load-bearing rather than vacuous.
+        #
+        # U-3 has no closed form in general. At sigma_theta = 0 (theta collapses to
+        # a point mass at 1) with CRRA = 1 it *is* U-2, so the PIH closed form
+        # applies while the two-shock joint node axis is still exercised.
+        cal = {
+            **bm.get_benchmark_calibration("U-3"),
+            "CRRA": 1.0,
+            "sigma_theta": 0.0,
+        }
+        beta, R = cal["DiscFac"], cal["R"]
+        h = 1.0 / (R - 1.0)
+        B = 1.0 / (1.0 - beta)
+
+        def u3_continuation(states, shocks, parameters):
+            return B * np.log(R * (states["a"] + h))
+
+        bp = BellmanPeriod(bm.u3_block, "DiscFac", cal)
+        dr, _, _ = vfi.bellman_step(
+            bp,
+            u3_continuation,
+            {"a": np.linspace(0.5, 8.0, 14)},
+            scope=cal,
+            disc_params={"psi": {"N": 5}, "theta": {"N": 5}},
+        )
+        for A in [1.0, 2.0, 3.0, 5.0]:
+            m = R * A + 1.0
+            self.assertAlmostEqual(dr["c"](m), (1.0 - beta) * (m + h), delta=1e-4)
+
+    def test_u3_two_prestate_shocks_properties(self):
+        # U-3 at its own calibration: CRRA = 2 and a genuinely spread theta, so
+        # both shocks are non-degenerate node axes. No closed form exists, so this
+        # asserts only what does not depend on the supplied continuation being the
+        # model's own: the rule is positive, non-decreasing in cash-on-hand, and
+        # respects the block's borrowing constraint c <= m.
+        cal = bm.get_benchmark_calibration("U-3")
+        R, sigma = cal["R"], cal["CRRA"]
+        h = 1.0 / (R - 1.0)
+        B = 1.0 / (1.0 - cal["DiscFac"])
+
+        def u3_continuation(states, shocks, parameters):
+            wealth = np.maximum(R * (states["a"] + h), 1e-8)
+            return B * wealth ** (1 - sigma) / (1 - sigma)
+
+        bp = BellmanPeriod(bm.u3_block, "DiscFac", cal)
+        dr, _, _ = vfi.bellman_step(
+            bp,
+            u3_continuation,
+            {"a": np.linspace(0.5, 8.0, 14)},
+            scope=cal,
+            disc_params={"psi": {"N": 5}, "theta": {"N": 5}},
+        )
+        ms = np.array([2.0, 3.0, 4.0, 6.0, 8.0])
+        c = np.array([dr["c"](m) for m in ms])
+        self.assertTrue(np.all(c > 0))
+        self.assertTrue(np.all(np.diff(c) > 0))
+        self.assertTrue(np.all(c <= ms + self.ATOL))
 
     # --- iset is a derived pre-state: reproject onto its coordinate ----
 
@@ -648,16 +761,43 @@ class test_vfi_bellman_step(unittest.TestCase):
             want = float(np.asarray(bm.d3_analytical_policy({"a": a}, {}, cal)["c"]))
             self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
 
-    def test_mechanism_b_multi_axis_not_implemented(self):
-        # Gridding case_3 over BOTH a and theta makes m = a + theta vary along
-        # two grid axes -> general scattered reindexing, out of scope in v1:
-        # fail loudly rather than interpolate wrongly.
+    def test_multi_axis_iset_coordinate_is_gathered(self):
+        # Gridding case_3 over BOTH a and theta makes m = a + theta vary along two
+        # grid axes, so no axis can be relabelled m. The 25 (m, c) pairs are
+        # samples of one 1-D rule and are gathered into it: c* = m.
+        dr, _, _ = vfi.bellman_step(
+            case_3["bp"],
+            bp_terminal,
+            {"a": np.linspace(0.1, 2.0, 5), "theta": np.linspace(-1, 1, 5)},
+            scope={**case_3["calibration"], "psi": 0.0},
+        )
+        for m in [0.0, 0.5, 1.0, 2.0]:
+            self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
+
+    def test_multi_axis_iset_coordinate_needs_a_lone_iset_variable(self):
+        # m = a + b varies along both gridded axes, so no axis can be relabelled
+        # to it -- and the iset carries a second variable g, so each g slice would
+        # gather a different m coordinate. Fail loudly rather than fit one.
+        block = DBlock(
+            name="two_axis_prestate_plus_iset_var",
+            dynamics={
+                "m": lambda a, b: a + b,
+                "c": Control(["m", "g"], agent="consumer"),
+                "a": lambda m, c: m - c,
+                "u": lambda c, g: -((c - g) ** 2),
+            },
+            reward={"u": "consumer"},
+        )
+        bp = BellmanPeriod(block, "beta", {"beta": 0.9})
         with self.assertRaises(NotImplementedError):
             vfi.bellman_step(
-                case_3["bp"],
+                bp,
                 bp_terminal,
-                {"a": np.linspace(0.1, 2.0, 5), "theta": np.linspace(-1, 1, 5)},
-                scope={**case_3["calibration"], "psi": 0.0},
+                {
+                    "a": np.linspace(0.1, 1.0, 4),
+                    "b": np.linspace(0.1, 1.0, 4),
+                    "g": np.linspace(0.1, 1.0, 3),
+                },
             )
 
     def test_project_to_iset_drops_extra_axis_and_reindexes(self):
