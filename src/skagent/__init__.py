@@ -25,6 +25,7 @@ from .ann import Net, BlockPolicyNet
 from .simulation.monte_carlo import MonteCarloSimulator
 
 # Algorithm imports
+from .algos import best_response
 from .algos import vfi
 from .algos import maliar
 
@@ -48,6 +49,7 @@ __all__ = [
     # Simulation
     "MonteCarloSimulator",
     # Modules
+    "best_response",
     "vfi",
     "maliar",
     "utils",

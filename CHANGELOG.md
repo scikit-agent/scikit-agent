@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Fixed
 
+- `tree_killer_block`'s chance mechanisms called torch's `.float()`, so the
+  model could not be simulated on the numpy path its shocks declare. Its payoffs
+  also left every decision optimal independently of the others: the patio's
+  value now rises when the tree dies, and the magnitudes give the game strategic
+  tension. Its shocks are now declared in constructor-tuple form, so
+  `construct_shocks` can seed them.
 - A continuation rebuilt by `vfi.value_array_to_function` read only the axes of
   the value grid, so an arrival state that was not gridded was silently
   discarded. It now raises `ValueError` when handed one. This was not academic:
@@ -132,8 +138,7 @@ and this project adheres to
   Fig. 3 (a)-(e).
 - `ModelAnalyzer.influence_graph()`: returns the influence-diagram (SCIM) view
   consumed by `skagent.relevance` -- chance/decision/utility nodes with causal
-  edges, parameter nodes dropped -- as a named tuple that unpacks into
-  `RelevanceGraph.from_scim`.
+  edges, parameter nodes dropped.
 - `Block.relevance_graph()` and `Block.relies_on()`: strategic-relevance API on
   any block (`calibration` defaults to empty, since relevance is structural).
 - `skagent.models.macid`: multi-agent influence diagram illustration models,
@@ -141,6 +146,17 @@ and this project adheres to
   Fig. 1 MAID. Chance nodes are encoded as structural CPDs (deterministic
   mechanism plus an exogenous shock) and binary decisions relaxed to `[0, 1]`
   controls; cross-checked against PyCID's `tree_doctor` example.
+- `skagent.algos.best_response`: solves a block's decisions one at a time in the
+  order its relevance graph implies, each maximizing its own agent's payoff
+  conditional on what it observes. `TabularBestResponseSolver` (`solve`,
+  `best_response`, `conditional_payoffs`, `mixed_rule`) and `TabulatedRule`, a
+  decision rule tabulated over information cells. A cyclic relevance graph
+  raises rather than returning rules that are not best responses.
+- `Block.calc_reward` takes an optional `agent`, computing only that agent's
+  reward variables; their sum is the agent's payoff.
+- `examples/models/plot_tree_killer_relevance.py`: computes the Tree Killer's
+  relevance graph, reads a solution order off it, solves the game in that order,
+  and checks each reliance claim numerically.
 - `tests/test_benchmark_bound_consistency.py`: regression test asserting each
   unconstrained closed-form benchmark's analytical policy is feasible under the
   block's own control bounds on states that reach the borrowing region
@@ -154,20 +170,12 @@ and this project adheres to
 
 ### Changed
 
-- `vfi.bellman_step` derives each shock's information role from the block
-  (`skagent.information`) instead of inferring it from the state grid the caller
-  supplied. A shock some control's information set accounts for now becomes a
-  grid axis over its discretization nodes, so its pre-state and control bounds
-  are computed **per realization** rather than at the shock's mean; the rest are
-  integrated inside the `max` as before. Previously the caller's grid _was_ the
-  classification, unchecked, so a shock reaching the objective only through a
-  derived pre-state was mean-fixed -- which poses a different information
-  structure than the block declares, tabulates the policy at a coordinate no
-  realization produces, and evaluates the bounds there too. U-2 now recovers the
-  closed-form `c = (1-beta)(m + 1/r)` at `sigma_psi > 0` to ~1e-5, where the
-  approximation could only be asserted at `sigma_psi = 0`. A shock pinned in
-  `scope` is still a fixed realization, and gridding one no information set
-  accounts for now raises rather than silently solving the wrong problem.
+- New `skagent.influence` module owns the influence-diagram substrate: `SCIM` is
+  now a class carrying the conditioning-context and objective vocabulary, a
+  memoized Bayes-Ball d-separation engine, and the graph transforms, instead of
+  a five-field namedtuple. `is_s_reachable(scim, d1, d2)`,
+  `RelevanceGraph.from_scim(scim)` and `shock_roles(scim, shocks)` replace their
+  positional-argument forms.
 
 - `vfi` projects a policy onto an information-set variable that varies along
   **several** grid axes by gathering every `(coordinate, control)` pair,

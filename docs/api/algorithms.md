@@ -36,6 +36,33 @@ from a continuation value function and the stage dynamics of model blocks.
    :no-index:
 ```
 
+## Best Response
+
+Solves a block's decisions one at a time, in the order given by its relevance
+graph (see {doc}`analysis`), each decision maximizing its own agent's payoff
+conditional on what that decision observes. For blocks whose relevance graph is
+acyclic; a cyclic component has to be solved as a simultaneous-move equilibrium
+and raises instead.
+
+```{eval-rst}
+.. automodule:: skagent.algos.best_response
+   :members:
+```
+
+### Core Best-Response Classes
+
+```{eval-rst}
+.. autoclass:: skagent.algos.best_response.TabularBestResponseSolver
+   :members:
+   :no-index:
+```
+
+```{eval-rst}
+.. autoclass:: skagent.algos.best_response.TabulatedRule
+   :members:
+   :no-index:
+```
+
 ## Maliar-Style Algorithms
 
 Neural network-based solution methods following Maliar et al.

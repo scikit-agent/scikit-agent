@@ -16,20 +16,20 @@ D -> D' in the relevance graph means "D relies on D'".
 import networkx as nx
 import pytest
 
+from skagent.influence import DUMMY_PREFIX, SCIM
 from skagent.relevance import RelevanceGraph, is_s_reachable
 
 
 # ----------------------------------------------------------------------------
-# Koller & Milch Fig. 3 fixtures: each returns (G, decisions, parents,
-# agent_utilities, decision_agent).
+# Koller & Milch Fig. 3 fixtures: each returns a SCIM. A decision's information
+# set is read off the graph, so the fixtures declare it as edges only.
 # ----------------------------------------------------------------------------
 def _fig3a():
     """Perfect information: chain D -> D' -> U, U owned by a; D' observes D."""
     G = nx.DiGraph([("D", "Dp"), ("Dp", "U")])
-    parents = {"D": [], "Dp": ["D"]}
     agent_utilities = {"a": ["U"], "b": []}
     decision_agent = {"D": "a", "Dp": "b"}
-    return G, ["D", "Dp"], parents, agent_utilities, decision_agent
+    return SCIM(G, ["D", "Dp"], agent_utilities, decision_agent)
 
 
 def _fig3b():
@@ -44,28 +44,25 @@ def _fig3b():
             ("Dp", "Ua"),
         ]
     )
-    parents = {"D": [], "Dp": ["C"]}  # b observes C, not D
     agent_utilities = {"a": ["Ua"], "b": ["Ub"]}
     decision_agent = {"D": "a", "Dp": "b"}
-    return G, ["D", "Dp"], parents, agent_utilities, decision_agent
+    return SCIM(G, ["D", "Dp"], agent_utilities, decision_agent)
 
 
 def _fig3c():
     """Simultaneous; each agent's utility depends on both decisions."""
     G = nx.DiGraph([("D", "Ua"), ("Dp", "Ua"), ("D", "Ub"), ("Dp", "Ub")])
-    parents = {"D": [], "Dp": []}
     agent_utilities = {"a": ["Ua"], "b": ["Ub"]}
     decision_agent = {"D": "a", "Dp": "b"}
-    return G, ["D", "Dp"], parents, agent_utilities, decision_agent
+    return SCIM(G, ["D", "Dp"], agent_utilities, decision_agent)
 
 
 def _fig3d():
     """Simultaneous; a's utility does NOT depend on D'."""
     G = nx.DiGraph([("D", "Ua"), ("D", "Ub"), ("Dp", "Ub")])
-    parents = {"D": [], "Dp": []}
     agent_utilities = {"a": ["Ua"], "b": ["Ub"]}
     decision_agent = {"D": "a", "Dp": "b"}
-    return G, ["D", "Dp"], parents, agent_utilities, decision_agent
+    return SCIM(G, ["D", "Dp"], agent_utilities, decision_agent)
 
 
 def _fig3e():
@@ -83,10 +80,9 @@ def _fig3e():
             ("Dp", "Ub"),
         ]
     )
-    parents = {"D": ["C"], "Dp": ["D"]}
     agent_utilities = {"a": ["Ua"], "b": ["Ub"]}
     decision_agent = {"D": "a", "Dp": "b"}
-    return G, ["D", "Dp"], parents, agent_utilities, decision_agent
+    return SCIM(G, ["D", "Dp"], agent_utilities, decision_agent)
 
 
 # (fixture builder, relies_on(D, Dp), relies_on(Dp, D), is_acyclic)
@@ -102,11 +98,7 @@ FIG3_CASES = {
 @pytest.mark.parametrize("case", list(FIG3_CASES))
 def test_km_fig3_relevance(case):
     builder, d_relies_dp, dp_relies_d, acyclic = FIG3_CASES[case]
-    G, decisions, parents, agent_utilities, decision_agent = builder()
-
-    rg = RelevanceGraph.from_scim(
-        G, decisions, parents, agent_utilities, decision_agent
-    )
+    rg = RelevanceGraph.from_scim(builder())
 
     assert rg.relies_on("D", "Dp") is d_relies_dp
     assert rg.relies_on("Dp", "D") is dp_relies_d
@@ -114,23 +106,17 @@ def test_km_fig3_relevance(case):
 
 
 def test_km_fig3c_single_scc():
-    G, decisions, parents, agent_utilities, decision_agent = _fig3c()
-    rg = RelevanceGraph.from_scim(
-        G, decisions, parents, agent_utilities, decision_agent
-    )
+    rg = RelevanceGraph.from_scim(_fig3c())
     assert rg.sccs() == [{"D", "Dp"}]
 
 
 def test_is_s_reachable_matches_relies_on():
     """The primitive and the wrapper must agree."""
-    G, decisions, parents, agent_utilities, decision_agent = _fig3e()
-    for d1 in decisions:
-        for d2 in decisions:
-            direct = is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent)
-            rg = RelevanceGraph.from_scim(
-                G, decisions, parents, agent_utilities, decision_agent
-            )
-            assert direct is rg.relies_on(d1, d2)
+    scim = _fig3e()
+    rg = RelevanceGraph.from_scim(scim)
+    for d1 in scim.decisions:
+        for d2 in scim.decisions:
+            assert is_s_reachable(scim, d1, d2) is rg.relies_on(d1, d2)
 
 
 # ----------------------------------------------------------------------------
@@ -168,19 +154,13 @@ def test_condensation_multi_node_scc():
 # Edge cases.
 # ----------------------------------------------------------------------------
 def test_no_self_reliance():
-    G, decisions, parents, agent_utilities, decision_agent = _fig3c()
-    assert (
-        is_s_reachable(G, "D", "D", parents, agent_utilities, decision_agent) is False
-    )
+    assert is_s_reachable(_fig3c(), "D", "D") is False
 
 
 def test_empty_owned_utilities_not_reachable():
     """A decision whose agent owns no descendant utility relies on nothing."""
-    G, decisions, parents, agent_utilities, decision_agent = _fig3a()
     # In Fig 3a, U is owned by a, so b (owner of Dp) owns no utility.
-    assert (
-        is_s_reachable(G, "Dp", "D", parents, agent_utilities, decision_agent) is False
-    )
+    assert is_s_reachable(_fig3a(), "Dp", "D") is False
 
 
 def test_relies_on_rejects_non_decision():
@@ -193,13 +173,11 @@ def test_relies_on_rejects_non_decision():
 
 def test_dummy_name_collision_is_avoided():
     """A real node literally named like the dummy must not corrupt the result."""
-    G, decisions, parents, agent_utilities, decision_agent = _fig3a()
+    scim = _fig3a()
     # Inject a decoy node colliding with the default dummy name for "Dp".
-    G.add_edge("__hat__Dp", "U")
+    scim.graph.add_edge(f"{DUMMY_PREFIX}Dp", "U")
     # D still relies on Dp (the collision must be sidestepped, result unchanged).
-    assert (
-        is_s_reachable(G, "D", "Dp", parents, agent_utilities, decision_agent) is True
-    )
+    assert is_s_reachable(scim, "D", "Dp") is True
 
 
 def test_draw_returns_pydot_graph():

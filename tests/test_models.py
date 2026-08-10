@@ -2,6 +2,7 @@ import numpy as np
 
 from skagent.distributions import Lognormal
 import skagent.models.consumer as cons
+import skagent.models.macid as macid
 import skagent.models.perfect_foresight as pfm
 import skagent.models.perfect_foresight_normalized as pfnm
 from skagent.simulation.monte_carlo import Simulator
@@ -162,3 +163,48 @@ class test_consumer_models(unittest.TestCase):
 
         survival_rate = sim.history["live"].mean()
         self.assertAlmostEqual(survival_rate, cons.calibration["LivPrb"], delta=0.01)
+
+
+class test_tree_killer(unittest.TestCase):
+    def setUp(self):
+        self.block = macid.tree_killer_block
+        self.block.construct_shocks({}, rng=np.random.default_rng(1))
+        self.shocks = {
+            sym: dist.draw(20_000) for sym, dist in self.block.get_shocks().items()
+        }
+
+    def alice_payoff(self, poison, doctor):
+        """Alice's mean payoff when she builds the patio, given a poison
+        intensity and Bob's (constant) tree-doctor intensity."""
+        vals = self.block.transition(
+            self.shocks,
+            {
+                "PT": lambda: poison,
+                "TDoc": lambda TS: doctor,
+                "BP": lambda PT, TDoc: 1.0,
+            },
+        )
+        rewards = self.block.calc_reward(vals)
+        owned = [v for sym, v in rewards.items() if self.block.reward[sym] == "alice"]
+        return float(np.mean(sum(owned)))
+
+    def test_simulate(self):
+        """The mechanisms evaluate on the numpy path, and the chance nodes are
+        binary as the source game requires."""
+        vals = self.block.transition(
+            self.shocks,
+            {
+                "PT": lambda: 0.5,
+                "TDoc": lambda TS: 0.5,
+                "BP": lambda PT, TDoc: 0.5,
+            },
+        )
+        for sym in ["TS", "TDead"]:
+            self.assertLessEqual(set(np.unique(vals[sym])), {0.0, 1.0})
+        self.assertEqual(set(self.block.calc_reward(vals)), {"E", "V", "Tree", "Cost"})
+
+    def test_poisoning_payoff_depends_on_the_doctor(self):
+        """The payoffs are strategically non-degenerate: whether poisoning is
+        worthwhile to Alice depends on how Bob plays."""
+        self.assertGreater(self.alice_payoff(1.0, 0.0), self.alice_payoff(0.0, 0.0))
+        self.assertLess(self.alice_payoff(1.0, 1.0), self.alice_payoff(0.0, 1.0))

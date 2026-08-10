@@ -1,9 +1,14 @@
 """
-Strategic relevance and relevance-graph analysis for influence-diagram models.
+What a decision must still account for, given what it already knows.
 
-Implements the *s-reachability* graphical criterion of Koller & Milch,
-"Multi-Agent Influence Diagrams for Representing and Solving Games"
-(IJCAI-01; Games and Economic Behavior 45(1), 2003), Defs. 7-8:
+Every criterion here answers one question about a decision ``D`` in the
+:class:`~skagent.influence.SCIM` view of a model: conditioning on what ``D``
+observes, does some other node still reach ``D``'s objective? What varies is the
+node asked about, and what a positive answer means for a solver.
+
+**A decision** -- *s-reachability*, the criterion of Koller & Milch, "Multi-Agent
+Influence Diagrams for Representing and Solving Games" (IJCAI-01; Games and
+Economic Behavior 45(1), 2003), Defs. 7-8:
 
   - Decision D strategically *relies on* decision D' iff D' is *s-reachable*
     from D.
@@ -13,27 +18,47 @@ Implements the *s-reachability* graphical criterion of Koller & Milch,
     and descended from D such that, adding a fresh dummy parent to D', there is
     an active path (d-connection) from the dummy to U given Pa(D) u {D}.
 
-The algorithm operates on a plain annotated ``networkx.DiGraph`` -- the "SCIM
-view" of a block: chance / decision / utility nodes with directed causal edges.
-Construction of that graph from a scikit-agent Block lives in a separate adapter;
-this module deliberately depends only on networkx so
-the criterion can be developed and tested in isolation.
+A decision node's own value is not what matters -- its decision rule is -- so the
+test is run from a synthetic parent standing in for that rule. The reliance
+ordering a relevance graph implies is what a best-response sweep solves a block
+in.
+
+**A shock** -- the same test, run from the shock itself, since an exogenous node
+is already its own synthetic source. Here what varies is the reading, because a
+solver needs to know not just whether the shock matters but how to integrate it:
+see :data:`OBSERVED`, :data:`HIDDEN` and :data:`MIXED`.
+
+Both are thin functions over a :class:`~skagent.influence.SCIM`, which owns the
+graph, the conditioning-context and objective vocabulary, and the d-separation
+engine. Construction of a ``SCIM`` from a scikit-agent Block lives in
+:mod:`skagent.model_analyzer`; this module, like the substrate, depends only on
+networkx so the criteria can be developed and tested in isolation.
 """
 
 import networkx as nx
 
-__all__ = ["is_s_reachable", "RelevanceGraph"]
+__all__ = [
+    "OBSERVED",
+    "HIDDEN",
+    "MIXED",
+    "is_s_reachable",
+    "RelevanceGraph",
+    "shock_roles",
+]
 
 
-def _fresh_name(graph, base):
-    """Return a node name derived from ``base`` that is absent from ``graph``."""
-    name = f"__hat__{base}"
-    while name in graph:
-        name = "_" + name
-    return name
+#: A shock the information set accounts for; may be gridded per node.
+OBSERVED = "observed"
+#: A shock the information set says nothing about; integrate inside the max.
+HIDDEN = "hidden"
+#: Partly informed *and* separately relevant; needs filtering, so refuse.
+MIXED = "mixed"
 
 
-def is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
+# -- decisions ---------------------------------------------------------------
+
+
+def is_s_reachable(scim, d1, d2):
     """Is decision ``d2`` s-reachable from decision ``d1``?
 
     Equivalently: does ``d1`` strategically rely on ``d2`` (edge d1 -> d2 in the
@@ -41,19 +66,10 @@ def is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
 
     Parameters
     ----------
-    G : networkx.DiGraph
-        The influence-diagram (SCIM) graph: a DAG of chance / decision / utility
-        nodes with directed causal edges.
+    scim : skagent.influence.SCIM
+        The influence-diagram view the decisions live in.
     d1, d2 : hashable
-        Decision nodes in ``G``.
-    parents : mapping
-        ``parents[d]`` is the information set of decision ``d`` (its parents in
-        ``G``). Used as the conditioning context Pa(d1) u {d1}.
-    agent_utilities : mapping
-        ``agent_utilities[agent]`` is the collection of utility nodes owned by
-        ``agent``.
-    decision_agent : mapping
-        ``decision_agent[d]`` is the agent that owns decision ``d``.
+        Decision nodes in ``scim``.
 
     Returns
     -------
@@ -63,22 +79,15 @@ def is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
     if d1 == d2:
         return False
 
-    # U_{d1} = (utilities owned by d1's agent) intersect (descendants of d1).
-    owned = set(agent_utilities.get(decision_agent[d1], ()))
-    u_d1 = owned & nx.descendants(G, d1)
-    if not u_d1:
+    # The utilities d1 is choosing over: nothing to rely on without them.
+    targets = scim.objectives(d1)
+    if not targets:
         return False
 
-    # Conditioning context: the family of d1 (its information set plus itself).
-    z = set(parents.get(d1, ())) | {d1}
-
-    # Add a fresh dummy parent to d2 and test for an active path to some U.
-    gd = G.copy()
-    dummy = _fresh_name(gd, d2)
-    gd.add_edge(dummy, d2)
-
-    dummy_set = {dummy}
-    return any(not nx.is_d_separator(gd, dummy_set, {u}, z) for u in u_d1)
+    # d2's decision rule, not its value, is the object of interest, so the test
+    # is run from a synthetic parent standing in for that rule.
+    probe, dummy = scim.with_dummy_parent(d2)
+    return dummy in probe.d_connected(targets, scim.context(d1))
 
 
 class RelevanceGraph:
@@ -92,17 +101,17 @@ class RelevanceGraph:
         self._g = graph
 
     @classmethod
-    def from_scim(cls, G, decisions, parents, agent_utilities, decision_agent):
+    def from_scim(cls, scim):
         """Build the relevance graph by testing s-reachability over all ordered
-        pairs of ``decisions`` in the influence-diagram graph ``G``.
+        pairs of ``scim``'s decisions.
         """
         rg = nx.DiGraph()
-        rg.add_nodes_from(decisions)
-        for d1 in decisions:
-            for d2 in decisions:
+        rg.add_nodes_from(scim.decisions)
+        for d1 in scim.decisions:
+            for d2 in scim.decisions:
                 if d1 == d2:
                     continue
-                if is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
+                if is_s_reachable(scim, d1, d2):
                     rg.add_edge(d1, d2)
         return cls(rg)
 
@@ -163,3 +172,108 @@ class RelevanceGraph:
         for src, tgt in self._g.edges:
             dot.add_edge(pydot.Edge(str(src), str(tgt)))
         return dot
+
+
+# -- shocks ------------------------------------------------------------------
+
+
+def shock_roles(scim, shocks, decisions=None):
+    """Classify every shock for every decision.
+
+    Each shock takes one of three roles, per decision:
+
+    :data:`OBSERVED`
+        Every route from the shock to the objective is intercepted by the
+        information set. Conditioning on the information set therefore leaves
+        nothing about the shock for the objective to depend on, and a solver may
+        grid the shock over its discretization nodes and solve per node.
+
+    :data:`HIDDEN`
+        The shock reaches the objective around the information set, which carries
+        no information about it. An expectation over it belongs inside the
+        maximization.
+
+    :data:`MIXED`
+        The shock reaches the objective around the information set, *and* the
+        information set is partly informative about it. Computing the declared
+        problem then requires the conditional law of the shock given the
+        information set, so neither per-node solving nor integrating inside the
+        maximization applies and a solver should refuse. This most often
+        indicates that a reward or transition touches a shock the control's
+        information set claims not to see, which is a modeling error rather than a
+        solver limitation.
+
+    The test is on the diagram, not on the syntax of the information set: a shock
+    that appears in no information set may still be accounted for, because it
+    feeds a derived pre-decision variable that an information set does contain.
+
+    Parameters
+    ----------
+    scim : skagent.influence.SCIM
+        The influence-diagram view, after
+        :meth:`~skagent.influence.SCIM.with_lagged_arrivals` and
+        :meth:`~skagent.influence.SCIM.with_continuation`, so that a decision's
+        parents are its information set.
+    shocks : iterable
+        Shock variable names.
+    decisions : iterable, optional
+        Decisions to classify for. Defaults to every decision in *scim*.
+
+    Returns
+    -------
+    dict
+        ``{decision: {shock: role}}``.
+
+    Raises
+    ------
+    ValueError
+        If a decision has no objective nodes. Nothing is then reachable, so every
+        shock would classify :data:`OBSERVED` -- the one direction that must not
+        be silent, since it invites a solver to condition on a shock the agent
+        cannot see. It means the deciding agent owns no reward downstream of its
+        own decision.
+
+    Notes
+    -----
+    The classification is per decision and may legitimately differ between two
+    controls in one period: a shock accounted for by a rich information set is
+    hidden to a control that conditions on less. A solver that represents a shock
+    one way for the whole period must check that the roles agree across controls.
+
+    Errors fall toward :data:`HIDDEN` or :data:`MIXED`, never toward wrongly
+    reporting a shock as accounted for.
+
+    One traversal per decision, then membership tests, so the cost is linear in
+    the graph per decision rather than per (shock, decision) pair.
+    """
+    shocks = list(shocks)
+    roles = {}
+
+    for decision in scim.decisions if decisions is None else decisions:
+        targets = scim.objectives(decision)
+        if not targets:
+            raise ValueError(
+                f"Decision '{decision}' has no objective nodes, so every shock "
+                "would be reported as accounted-for. The agent deciding "
+                f"'{decision}' owns no reward downstream of it; note that a "
+                "control with no declared agent does not own a reward assigned "
+                "to a named one."
+            )
+
+        conditioned = scim.parents(decision)
+        reachable = scim.d_connected(targets, scim.context(decision))
+        informative = scim.ancestors(conditioned)
+
+        decision_roles = {}
+        for shock in shocks:
+            if shock in conditioned or shock not in reachable:
+                # Conditioned on directly, absent from the diagram, or every
+                # route to the objective is intercepted.
+                decision_roles[shock] = OBSERVED
+            elif shock in informative:
+                decision_roles[shock] = MIXED
+            else:
+                decision_roles[shock] = HIDDEN
+        roles[decision] = decision_roles
+
+    return roles

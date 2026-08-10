@@ -13,7 +13,7 @@ from skagent.distributions import (
 from inspect import signature
 import numpy as np
 from skagent.model_analyzer import ModelAnalyzer
-from skagent.relevance import RelevanceGraph
+from skagent.relevance import RelevanceGraph, shock_roles
 from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
@@ -365,7 +365,7 @@ class Block:
         skagent.relevance.RelevanceGraph
         """
         scim = ModelAnalyzer(self, calibration or {}).analyze().influence_graph()
-        return RelevanceGraph.from_scim(*scim)
+        return RelevanceGraph.from_scim(scim)
 
     def relies_on(self, first, second, calibration=None):
         """Whether control ``first`` strategically relies on control ``second``.
@@ -394,7 +394,7 @@ class Block:
         information set accounts for it, so a solver may condition on it),
         ``hidden`` (it must be integrated out inside the maximization), or
         ``mixed`` (partly informed and separately relevant, which needs
-        filtering). See :mod:`skagent.information` for the criterion.
+        filtering). See :mod:`skagent.relevance` for the criterion.
 
         Parameters
         ----------
@@ -407,19 +407,12 @@ class Block:
         dict
             ``{control: {shock: role}}``.
         """
-        from skagent.information import objectives, shock_roles
-
         scim = (
             ModelAnalyzer(self, calibration or {})
             .analyze()
             .influence_graph(dynamic=True)
         )
-        controls = list(self.get_controls())
-        targets = {
-            d: objectives(scim.graph, d, scim.agent_utilities, scim.decision_agent)
-            for d in controls
-        }
-        return shock_roles(scim.graph, self.get_shocks(), controls, targets)
+        return shock_roles(scim, self.get_shocks())
 
     def visualize(self, calibration):
         """
@@ -674,13 +667,31 @@ class DBlock(Block):
 
         return simulate_dynamics(dyn, pre, dr)
 
-    def calc_reward(self, vals):
+    def calc_reward(self, vals, agent=None):
         """
         Computes the reward for a given set of variable values
+
+        Parameters
+        ----------
+        vals : Mapping[str, Any]
+            Values for every variable the reward formulas depend on.
+
+        agent : str, optional
+            If given, compute only the reward variables attributed to this
+            agent. Their sum is that agent's payoff. Defaults to all reward
+            variables in the block.
+
+        Returns
+        -------
+        dict
+            Mapping from reward variable to value.
         """
         rvals = {}
 
         for sym in self.reward:
+            if agent is not None and self.reward[sym] != agent:
+                continue
+
             update_fn = self.dynamics[sym]
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()

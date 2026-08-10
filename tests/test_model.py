@@ -123,6 +123,25 @@ class test_DBlock(unittest.TestCase):
     def test_calc_reward(self):
         self.assertEqual(self.cblock.calc_reward({"c": 1, "CRRA": 2})["u"], -1.0)
 
+    def test_calc_reward_for_one_agent(self):
+        """The agent filter selects only that agent's reward variables."""
+        block = model.DBlock(
+            **{
+                "name": "two agents",
+                "dynamics": {
+                    "x": lambda: 2.0,
+                    "u_a": lambda x: x,
+                    "u_b": lambda x: -x,
+                },
+                "reward": {"u_a": "a", "u_b": "b"},
+            }
+        )
+        vals = {"x": 2.0}
+
+        self.assertEqual(block.calc_reward(vals, agent="a"), {"u_a": 2.0})
+        self.assertEqual(block.calc_reward(vals, agent="b"), {"u_b": -2.0})
+        self.assertEqual(set(block.calc_reward(vals)), {"u_a", "u_b"})
+
     def test_state_rule_value_function(self):
         savf = self.cblock.get_state_rule_value_function_from_continuation(lambda a: 0)
 
