@@ -321,9 +321,9 @@ constraint slackens and consumption falls below :math:`m` as the agent saves.
 
     Policy error vs VFI reference (over m ∈ [0.5, 10.0]):
         checkpoint         MAE      MaxErr
-            70,000      1.0369      2.6878
-            90,000      0.5752      1.4038
-           130,000      0.2361      0.5927
+            70,000      0.9241      2.3684
+            90,000      0.7245      1.7932
+           130,000      0.1937      0.5005
 
 
 
@@ -383,7 +383,7 @@ episode reward over training, with a rolling mean to highlight the trend.
 
 
 .. image-sg:: /auto_examples/algorithms/images/sphx_glr_plot_sb3_ppo_001.png
-   :alt: D-4 policy: MAE=0.236, Training curve (130,000 timesteps)
+   :alt: D-4 policy: MAE=0.194, Training curve (130,000 timesteps)
    :srcset: /auto_examples/algorithms/images/sphx_glr_plot_sb3_ppo_001.png
    :class: sphx-glr-single-img
 
@@ -437,9 +437,9 @@ rollouts use the exact trained policies — no reconstruction needed.
  .. code-block:: none
 
     Discounted return over 200 steps (50 rollouts each):
-          PPO @ 70,000: mean = -11.0445  std = 0.7570
-          PPO @ 90,000: mean = -10.9091  std = 0.6270
-         PPO @ 130,000: mean = -10.9287  std = 0.8746
+          PPO @ 70,000: mean = -11.0474  std = 0.7669
+          PPO @ 90,000: mean = -10.9381  std = 0.6109
+         PPO @ 130,000: mean = -10.9324  std = 0.8777
          VFI reference: mean = -10.9244  std = 0.8227
 
 
@@ -495,7 +495,7 @@ cannot reach.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 53.431 seconds)
+   **Total running time of the script:** (2 minutes 34.899 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_sb3_ppo.py:
