@@ -406,6 +406,15 @@ def _project_to_iset(
                 if float(np.abs(coord.max(axis=k) - coord.min(axis=k)).max())
                 > _PROJ_TOL
             ]
+            if len(varying) == 0:
+                # The grid pins this variable to a constant, which is an invalid
+                # specification for building a decision rule — it is a user input
+                # error, not a missing solver feature.
+                raise ValueError(
+                    f"Information-set variable '{iv}' of control '{control_sym}' "
+                    f"does not vary along any grid axis; the grid pins it to a "
+                    "single value and cannot support a rule over it."
+                )
             if len(varying) != 1:
                 raise NotImplementedError(
                     f"Information-set variable '{iv}' of control '{control_sym}' "
