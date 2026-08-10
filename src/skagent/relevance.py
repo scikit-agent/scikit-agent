@@ -43,7 +43,6 @@ __all__ = [
     "MIXED",
     "is_s_reachable",
     "RelevanceGraph",
-    "classify_shock",
     "shock_roles",
 ]
 
@@ -176,14 +175,6 @@ class RelevanceGraph:
 
 
 # -- shocks ------------------------------------------------------------------
-
-
-def classify_shock(scim, shock, decision):
-    """Classify one *shock* for one *decision*: OBSERVED, HIDDEN, or MIXED.
-
-    Thin wrapper over :func:`shock_roles`.
-    """
-    return shock_roles(scim, [shock], decisions=[decision])[decision][shock]
 
 
 def shock_roles(scim, shocks, decisions=None):

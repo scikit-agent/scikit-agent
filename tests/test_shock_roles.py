@@ -19,7 +19,7 @@ from skagent.relevance import (
     HIDDEN,
     MIXED,
     OBSERVED,
-    classify_shock,
+    shock_roles,
 )
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.models import benchmarks
@@ -47,7 +47,7 @@ def test_continuation_is_what_makes_a_survival_shock_reachable():
     analyzer = ModelAnalyzer(block, {"R": 1.03, "SurvivalProb": 0.98}).analyze()
 
     def role(scim):
-        return classify_shock(scim, "live", "c")
+        return shock_roles(scim, ["live"])["c"]["live"]
 
     # Without the continuation node ``live`` influences nothing the diagram sees.
     assert role(analyzer.influence_graph(dynamic=False)) == OBSERVED
