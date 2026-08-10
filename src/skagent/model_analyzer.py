@@ -16,34 +16,12 @@ Key concepts:
 - shock edge: dependency from an exogenous shock
 """
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 
 import networkx as nx
 
+from skagent.influence import SCIM
 from skagent.rule import extract_dependencies
-
-
-SCIM = namedtuple(
-    "SCIM", ["graph", "decisions", "parents", "agent_utilities", "decision_agent"]
-)
-SCIM.__doc__ = """The influence-diagram (SCIM) view of a model.
-
-Fields
-------
-graph : networkx.DiGraph
-    Chance / decision / utility nodes with causal edges (parameters dropped).
-decisions : list
-    The decision (control) nodes.
-parents : dict
-    ``parents[node]`` is the node's parents in ``graph`` (a decision's is its
-    information set).
-agent_utilities : dict
-    ``agent_utilities[agent]`` is the list of utility nodes owned by ``agent``.
-decision_agent : dict
-    ``decision_agent[decision]`` is the agent that owns each decision.
-
-Unpacks directly into :meth:`skagent.relevance.RelevanceGraph.from_scim`.
-"""
 
 
 class ModelAnalyzer:
@@ -308,8 +286,9 @@ class ModelAnalyzer:
             Make the diagram faithful to one period of a recurring problem, by
             splitting each reassigned variable's arrival value into its own
             ``<name>*`` node and adding a continuation-value utility node per
-            deciding agent (:func:`skagent.information.with_lagged_arrivals`,
-            :func:`skagent.information.with_continuation`). Without this a
+            deciding agent
+            (:meth:`skagent.influence.SCIM.with_lagged_arrivals`,
+            :meth:`skagent.influence.SCIM.with_continuation`). Without this a
             single-period projection is blind to payoffs arriving through the
             next period's value, and conflates a variable's arrival value with
             the value it is reassigned to. With it, a decision's parents are its
@@ -318,10 +297,7 @@ class ModelAnalyzer:
 
         Returns
         -------
-        SCIM
-            Named tuple ``(graph, decisions, parents, agent_utilities,
-            decision_agent)`` matching
-            :meth:`skagent.relevance.RelevanceGraph.from_scim`.
+        skagent.influence.SCIM
         """
         kind_map = {
             "shock": "chance",
@@ -354,24 +330,16 @@ class ModelAnalyzer:
                 agent_utilities[scim.nodes[node]["agent"]].append(node)
         agent_utilities = dict(agent_utilities)
 
-        if dynamic:
-            from skagent.information import with_continuation, with_lagged_arrivals
+        view = SCIM(scim, decisions, agent_utilities, decision_agent)
 
+        if dynamic:
             # Lag edges were dropped above; reintroduce them as arrival-value
             # nodes so a decision's parents are its information set.
-            scim = with_lagged_arrivals(
-                scim, ((var, dep) for var, dep in self._time_deps)
-            )
-            scim, agent_utilities = with_continuation(
-                scim,
-                self.model.get_arrival_states(self.calibration),
-                # Only agents that decide have a value function to continue.
-                dict.fromkeys(decision_agent.values()),
-                agent_utilities,
+            view = view.with_lagged_arrivals(self._time_deps).with_continuation(
+                self.model.get_arrival_states(self.calibration)
             )
 
-        parents = {n: list(scim.predecessors(n)) for n in scim.nodes}
-        return SCIM(scim, decisions, parents, agent_utilities, decision_agent)
+        return view
 
     def to_dict(self):
         """Return a JSON-serializable dict of the analysis."""

@@ -107,12 +107,12 @@ def test_influence_graph_consumption_block_details():
     assert scim.decision_agent == {"c": "consumer"}
     assert scim.agent_utilities == {"consumer": ["u"]}
     # Decision parents are the information set (Control.iset) minus params.
-    assert scim.parents["c"] == ["m"]
+    assert scim.parents("c") == ["m"]
 
 
 def test_from_scim_integration():
-    """The namedtuple unpacks straight into RelevanceGraph.from_scim."""
+    """The SCIM the adapter returns feeds RelevanceGraph.from_scim directly."""
     scim = _analyze("cons_portfolio_problem").influence_graph()
-    rg = RelevanceGraph.from_scim(*scim)
+    rg = RelevanceGraph.from_scim(scim)
     assert set(rg.nodes()) == set(scim.decisions)
     assert rg.is_acyclic() is True

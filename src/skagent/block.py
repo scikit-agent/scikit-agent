@@ -365,7 +365,7 @@ class Block:
         skagent.relevance.RelevanceGraph
         """
         scim = ModelAnalyzer(self, calibration or {}).analyze().influence_graph()
-        return RelevanceGraph.from_scim(*scim)
+        return RelevanceGraph.from_scim(scim)
 
     def relies_on(self, first, second, calibration=None):
         """Whether control ``first`` strategically relies on control ``second``.
@@ -407,19 +407,14 @@ class Block:
         dict
             ``{control: {shock: role}}``.
         """
-        from skagent.information import objectives, shock_roles
+        from skagent.information import shock_roles
 
         scim = (
             ModelAnalyzer(self, calibration or {})
             .analyze()
             .influence_graph(dynamic=True)
         )
-        controls = list(self.get_controls())
-        targets = {
-            d: objectives(scim.graph, d, scim.agent_utilities, scim.decision_agent)
-            for d in controls
-        }
-        return shock_roles(scim.graph, self.get_shocks(), controls, targets)
+        return shock_roles(scim, self.get_shocks())
 
     def visualize(self, calibration):
         """

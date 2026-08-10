@@ -13,11 +13,11 @@ Implements the *s-reachability* graphical criterion of Koller & Milch,
     and descended from D such that, adding a fresh dummy parent to D', there is
     an active path (d-connection) from the dummy to U given Pa(D) u {D}.
 
-The algorithm operates on a plain annotated ``networkx.DiGraph`` -- the "SCIM
-view" of a block: chance / decision / utility nodes with directed causal edges.
-Construction of that graph from a scikit-agent Block lives in a separate adapter;
-this module deliberately depends only on networkx so
-the criterion can be developed and tested in isolation.
+The criterion is a thin function over a :class:`~skagent.influence.SCIM`, which
+owns the graph, the conditioning-context and objective vocabulary, and the
+d-separation engine. Construction of a ``SCIM`` from a scikit-agent Block lives
+in :mod:`skagent.model_analyzer`; this module, like the substrate, depends only
+on networkx so the criterion can be developed and tested in isolation.
 """
 
 import networkx as nx
@@ -25,15 +25,7 @@ import networkx as nx
 __all__ = ["is_s_reachable", "RelevanceGraph"]
 
 
-def _fresh_name(graph, base):
-    """Return a node name derived from ``base`` that is absent from ``graph``."""
-    name = f"__hat__{base}"
-    while name in graph:
-        name = "_" + name
-    return name
-
-
-def is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
+def is_s_reachable(scim, d1, d2):
     """Is decision ``d2`` s-reachable from decision ``d1``?
 
     Equivalently: does ``d1`` strategically rely on ``d2`` (edge d1 -> d2 in the
@@ -41,19 +33,10 @@ def is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
 
     Parameters
     ----------
-    G : networkx.DiGraph
-        The influence-diagram (SCIM) graph: a DAG of chance / decision / utility
-        nodes with directed causal edges.
+    scim : skagent.influence.SCIM
+        The influence-diagram view the decisions live in.
     d1, d2 : hashable
-        Decision nodes in ``G``.
-    parents : mapping
-        ``parents[d]`` is the information set of decision ``d`` (its parents in
-        ``G``). Used as the conditioning context Pa(d1) u {d1}.
-    agent_utilities : mapping
-        ``agent_utilities[agent]`` is the collection of utility nodes owned by
-        ``agent``.
-    decision_agent : mapping
-        ``decision_agent[d]`` is the agent that owns decision ``d``.
+        Decision nodes in ``scim``.
 
     Returns
     -------
@@ -63,22 +46,15 @@ def is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
     if d1 == d2:
         return False
 
-    # U_{d1} = (utilities owned by d1's agent) intersect (descendants of d1).
-    owned = set(agent_utilities.get(decision_agent[d1], ()))
-    u_d1 = owned & nx.descendants(G, d1)
-    if not u_d1:
+    # The utilities d1 is choosing over: nothing to rely on without them.
+    targets = scim.objectives(d1)
+    if not targets:
         return False
 
-    # Conditioning context: the family of d1 (its information set plus itself).
-    z = set(parents.get(d1, ())) | {d1}
-
-    # Add a fresh dummy parent to d2 and test for an active path to some U.
-    gd = G.copy()
-    dummy = _fresh_name(gd, d2)
-    gd.add_edge(dummy, d2)
-
-    dummy_set = {dummy}
-    return any(not nx.is_d_separator(gd, dummy_set, {u}, z) for u in u_d1)
+    # d2's decision rule, not its value, is the object of interest, so the test
+    # is run from a synthetic parent standing in for that rule.
+    probe, dummy = scim.with_dummy_parent(d2)
+    return dummy in probe.d_connected(targets, scim.context(d1))
 
 
 class RelevanceGraph:
@@ -92,17 +68,17 @@ class RelevanceGraph:
         self._g = graph
 
     @classmethod
-    def from_scim(cls, G, decisions, parents, agent_utilities, decision_agent):
+    def from_scim(cls, scim):
         """Build the relevance graph by testing s-reachability over all ordered
-        pairs of ``decisions`` in the influence-diagram graph ``G``.
+        pairs of ``scim``'s decisions.
         """
         rg = nx.DiGraph()
-        rg.add_nodes_from(decisions)
-        for d1 in decisions:
-            for d2 in decisions:
+        rg.add_nodes_from(scim.decisions)
+        for d1 in scim.decisions:
+            for d2 in scim.decisions:
                 if d1 == d2:
                     continue
-                if is_s_reachable(G, d1, d2, parents, agent_utilities, decision_agent):
+                if is_s_reachable(scim, d1, d2):
                     rg.add_edge(d1, d2)
         return cls(rg)
 

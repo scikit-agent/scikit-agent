@@ -171,6 +171,13 @@ and this project adheres to
 
 ### Changed
 
+- New `skagent.influence` module owns the influence-diagram substrate: `SCIM` is
+  now a class carrying the conditioning-context and objective vocabulary, a
+  memoized Bayes-Ball d-separation engine, and the graph transforms, instead of
+  a five-field namedtuple. `skagent.relevance` and `skagent.information` are
+  thin criteria over it and no longer duplicate the traversal;
+  `is_s_reachable(scim, d1, d2)`, `RelevanceGraph.from_scim(scim)` and
+  `shock_roles(scim, shocks)` replace their positional-argument forms.
 - `vfi.bellman_step` derives each shock's information role from the block
   (`skagent.information`) instead of inferring it from the state grid the caller
   supplied. A shock some control's information set accounts for now becomes a

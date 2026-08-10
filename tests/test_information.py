@@ -1,35 +1,25 @@
 """Tests for :mod:`skagent.information` -- the shock-role criterion.
 
-Three layers, in increasing distance from the graph:
+Two layers, in increasing distance from the graph:
 
-1. ``d_connected`` against ``networkx.is_d_separator`` as an oracle, on random
-   DAGs. This is what makes hand-rolling the traversal safe.
-2. The continuation transform, in isolation.
-3. The classification itself, pinned as a table over every benchmark and every
+1. What the two graph repairs buy the criterion, on real blocks: without them a
+   shock paid through the next period looks irrelevant. The repairs themselves are
+   tested in ``test_influence``, as is the d-separation engine underneath.
+2. The classification itself, pinned as a table over every benchmark and every
    conftest case. A regression then names the block and the shock rather than
    showing up as numeric drift in a solver test.
 """
 
-import itertools
-import random
-
-import networkx as nx
 import pytest
 
 from skagent.block import Control, DBlock
 from skagent.distributions import Bernoulli
+from skagent.influence import LAG_SUFFIX
 from skagent.information import (
-    CONTINUATION_PREFIX,
     HIDDEN,
     MIXED,
     OBSERVED,
-    LAG_SUFFIX,
-    ancestors,
-    d_connected,
-    objectives,
-    shock_roles,
-    with_continuation,
-    with_lagged_arrivals,
+    classify_shock,
 )
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.models import benchmarks
@@ -37,100 +27,7 @@ from skagent.models import benchmarks
 import conftest
 
 
-# ---------------------------------------------------------------- primitives
-
-
-def _random_dag(n_nodes, edge_prob, rng):
-    """A random DAG on ``0..n_nodes-1``, edges only from lower to higher."""
-    g = nx.DiGraph()
-    g.add_nodes_from(range(n_nodes))
-    for i, j in itertools.combinations(range(n_nodes), 2):
-        if rng.random() < edge_prob:
-            g.add_edge(i, j)
-    return g
-
-
-@pytest.mark.parametrize("seed", range(25))
-def test_d_connected_matches_networkx_oracle(seed):
-    """``d_connected`` must agree with ``networkx.is_d_separator`` node by node."""
-    rng = random.Random(seed)
-    graph = _random_dag(rng.randint(3, 8), 0.35, rng)
-    nodes = list(graph)
-
-    targets = set(rng.sample(nodes, rng.randint(1, 2)))
-    remaining = [n for n in nodes if n not in targets]
-    given = (
-        set(rng.sample(remaining, rng.randint(0, len(remaining))))
-        if remaining
-        else set()
-    )
-
-    reachable = d_connected(graph, targets, given)
-
-    for node in nodes:
-        if node in targets or node in given:
-            # Excluded from the result by construction; d-separation of a node
-            # from itself, or of a conditioned node, is not what is being asked.
-            assert node not in reachable
-            continue
-        expected = not nx.is_d_separator(graph, {node}, targets, given)
-        assert (node in reachable) == expected, (
-            f"seed={seed} node={node} targets={targets} given={given}"
-        )
-
-
-def test_d_connected_blocks_through_conditioned_chain():
-    #  s -> m -> u  is blocked by m, and open without it.
-    graph = nx.DiGraph([("s", "m"), ("m", "u")])
-    assert "s" in d_connected(graph, {"u"}, set())
-    assert "s" not in d_connected(graph, {"u"}, {"m"})
-
-
-def test_d_connected_opens_collider_when_conditioned():
-    #  a -> m <- b : conditioning on the collider makes a and b dependent.
-    graph = nx.DiGraph([("a", "m"), ("b", "m")])
-    assert "b" not in d_connected(graph, {"a"}, set())
-    assert "b" in d_connected(graph, {"a"}, {"m"})
-
-
-def test_d_connected_no_targets_is_empty():
-    graph = nx.DiGraph([("a", "b")])
-    assert d_connected(graph, set(), {"a"}) == set()
-    assert d_connected(graph, {"absent"}, set()) == set()
-
-
-def test_ancestors_is_transitive_and_strict():
-    graph = nx.DiGraph([("a", "b"), ("b", "c"), ("x", "c")])
-    assert ancestors(graph, ["c"]) == {"a", "b", "x"}
-    assert ancestors(graph, ["a"]) == set()
-    assert ancestors(graph, ["absent"]) == set()
-
-
-# ------------------------------------------------------------- continuation
-
-
-def test_with_continuation_adds_one_node_per_agent():
-    graph = nx.DiGraph([("m", "c"), ("c", "a")])
-    out, utilities = with_continuation(graph, ["a"], ["consumer"], {})
-
-    node = f"{CONTINUATION_PREFIX}consumer"
-    assert node in out
-    assert list(out.predecessors(node)) == ["a"]
-    assert utilities["consumer"] == [node]
-    # The input graph is untouched.
-    assert node not in graph
-
-
-def test_with_continuation_preserves_existing_utilities():
-    graph = nx.DiGraph([("c", "u"), ("c", "a")])
-    _, utilities = with_continuation(graph, ["a"], ["consumer"], {"consumer": ["u"]})
-    assert utilities["consumer"] == ["u", f"{CONTINUATION_PREFIX}consumer"]
-
-
-def test_with_continuation_skips_ungraphed_arrival_states():
-    graph = nx.DiGraph([("c", "a")])
-    out, _ = with_continuation(graph, ["a", "not_a_node"], ["consumer"], {})
-    assert set(out.predecessors(f"{CONTINUATION_PREFIX}consumer")) == {"a"}
+# --------------------------------------------------------- the graph repairs
 
 
 def test_continuation_is_what_makes_a_survival_shock_reachable():
@@ -150,10 +47,7 @@ def test_continuation_is_what_makes_a_survival_shock_reachable():
     analyzer = ModelAnalyzer(block, {"R": 1.03, "SurvivalProb": 0.98}).analyze()
 
     def role(scim):
-        targets = {
-            "c": objectives(scim.graph, "c", scim.agent_utilities, scim.decision_agent)
-        }
-        return shock_roles(scim.graph, ["live"], ["c"], targets)["c"]["live"]
+        return classify_shock(scim, "live", "c")
 
     # Without the continuation node ``live`` influences nothing the diagram sees.
     assert role(analyzer.influence_graph(dynamic=False)) == OBSERVED
@@ -175,17 +69,12 @@ def test_lagged_arrivals_make_a_decisions_parents_its_iset():
 
     plain = analyzer.influence_graph(dynamic=False)
     # The lag edge is dropped, so the decision has no parents at all.
-    assert plain.parents["c"] == []
+    assert plain.parents("c") == []
 
     dynamic = analyzer.influence_graph(dynamic=True)
-    assert set(dynamic.graph.predecessors("c")) == {f"a{LAG_SUFFIX}"}
+    assert set(dynamic.parents("c")) == {f"a{LAG_SUFFIX}"}
     # The plain node keeps the end-of-period value, so it is downstream of ``c``.
-    assert set(dynamic.graph.predecessors("a")) == {"c", f"a{LAG_SUFFIX}"}
-
-
-def test_with_lagged_arrivals_is_a_noop_without_lag_dependencies():
-    graph = nx.DiGraph([("m", "c")])
-    assert sorted(with_lagged_arrivals(graph, []).edges) == [("m", "c")]
+    assert set(dynamic.parents("a")) == {"c", f"a{LAG_SUFFIX}"}
 
 
 # --------------------------------------------------------------- the table
