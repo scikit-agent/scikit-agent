@@ -11,7 +11,7 @@ plus a continuation value.
 from skagent.bellman import BellmanPeriod
 from skagent.block import DBlock
 from skagent.distributions import expected
-from skagent.information import HIDDEN, MIXED, OBSERVED
+from skagent.relevance import HIDDEN, MIXED, OBSERVED
 from inspect import signature
 import itertools
 import logging
@@ -745,7 +745,7 @@ def bellman_step(
     discount factor and multi-reward summation, and is empty-shock-safe.
 
     Shocks are handled by their information role, which is derived from the
-    block's own structure (:mod:`skagent.information`) rather than inferred from
+    block's own structure (:mod:`skagent.relevance`) rather than inferred from
     the grid the caller supplies. A shock some control's information set accounts
     for becomes a grid axis over its discretization nodes, so its pre-state and
     bounds are computed per realization; the rest are integrated out inside the

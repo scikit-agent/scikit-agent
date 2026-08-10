@@ -13,7 +13,7 @@ from skagent.distributions import (
 from inspect import signature
 import numpy as np
 from skagent.model_analyzer import ModelAnalyzer
-from skagent.relevance import RelevanceGraph
+from skagent.relevance import RelevanceGraph, shock_roles
 from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
@@ -394,7 +394,7 @@ class Block:
         information set accounts for it, so a solver may condition on it),
         ``hidden`` (it must be integrated out inside the maximization), or
         ``mixed`` (partly informed and separately relevant, which needs
-        filtering). See :mod:`skagent.information` for the criterion.
+        filtering). See :mod:`skagent.relevance` for the criterion.
 
         Parameters
         ----------
@@ -407,8 +407,6 @@ class Block:
         dict
             ``{control: {shock: role}}``.
         """
-        from skagent.information import shock_roles
-
         scim = (
             ModelAnalyzer(self, calibration or {})
             .analyze()

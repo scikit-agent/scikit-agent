@@ -138,8 +138,7 @@ and this project adheres to
   Fig. 3 (a)-(e).
 - `ModelAnalyzer.influence_graph()`: returns the influence-diagram (SCIM) view
   consumed by `skagent.relevance` -- chance/decision/utility nodes with causal
-  edges, parameter nodes dropped -- as a named tuple that unpacks into
-  `RelevanceGraph.from_scim`.
+  edges, parameter nodes dropped.
 - `Block.relevance_graph()` and `Block.relies_on()`: strategic-relevance API on
   any block (`calibration` defaults to empty, since relevance is structural).
 - `skagent.models.macid`: multi-agent influence diagram illustration models,
@@ -174,24 +173,9 @@ and this project adheres to
 - New `skagent.influence` module owns the influence-diagram substrate: `SCIM` is
   now a class carrying the conditioning-context and objective vocabulary, a
   memoized Bayes-Ball d-separation engine, and the graph transforms, instead of
-  a five-field namedtuple. `skagent.relevance` and `skagent.information` are
-  thin criteria over it and no longer duplicate the traversal;
-  `is_s_reachable(scim, d1, d2)`, `RelevanceGraph.from_scim(scim)` and
-  `shock_roles(scim, shocks)` replace their positional-argument forms.
-- `vfi.bellman_step` derives each shock's information role from the block
-  (`skagent.information`) instead of inferring it from the state grid the caller
-  supplied. A shock some control's information set accounts for now becomes a
-  grid axis over its discretization nodes, so its pre-state and control bounds
-  are computed **per realization** rather than at the shock's mean; the rest are
-  integrated inside the `max` as before. Previously the caller's grid _was_ the
-  classification, unchecked, so a shock reaching the objective only through a
-  derived pre-state was mean-fixed -- which poses a different information
-  structure than the block declares, tabulates the policy at a coordinate no
-  realization produces, and evaluates the bounds there too. U-2 now recovers the
-  closed-form `c = (1-beta)(m + 1/r)` at `sigma_psi > 0` to ~1e-5, where the
-  approximation could only be asserted at `sigma_psi = 0`. A shock pinned in
-  `scope` is still a fixed realization, and gridding one no information set
-  accounts for now raises rather than silently solving the wrong problem.
+  a five-field namedtuple. `is_s_reachable(scim, d1, d2)`,
+  `RelevanceGraph.from_scim(scim)` and `shock_roles(scim, shocks)` replace their
+  positional-argument forms.
 
 - `vfi` projects a policy onto an information-set variable that varies along
   **several** grid axes by gathering every `(coordinate, control)` pair,

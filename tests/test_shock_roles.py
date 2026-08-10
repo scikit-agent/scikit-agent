@@ -1,4 +1,4 @@
-"""Tests for :mod:`skagent.information` -- the shock-role criterion.
+"""Tests for the shock-role criterion of :mod:`skagent.relevance`.
 
 Two layers, in increasing distance from the graph:
 
@@ -15,7 +15,7 @@ import pytest
 from skagent.block import Control, DBlock
 from skagent.distributions import Bernoulli
 from skagent.influence import LAG_SUFFIX
-from skagent.information import (
+from skagent.relevance import (
     HIDDEN,
     MIXED,
     OBSERVED,
