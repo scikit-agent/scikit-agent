@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.dev809+g99a171ef6</title>
+        <title>Algorithms - scikit-agent 0.1.dev828+g16bd49634</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev809+g99a171ef6</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev828+g16bd49634</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -220,6 +220,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
@@ -350,7 +351,7 @@ folds the discount factor into the continuation), this speaks the
 <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> protocol the rest of the torch stack uses, with an explicit
 discount factor and multi-reward summation, and is empty-shock-safe.</p>
 <p>Shocks are handled by their information role, which is derived from the
-block’s own structure (<code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.information</span></code>) rather than inferred from
+block’s own structure (<a class="reference internal" href="analysis.html#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a>) rather than inferred from
 the grid the caller supplies. A shock some control’s information set accounts
 for becomes a grid axis over its discretization nodes, so its pre-state and
 bounds are computed per realization; the rest are integrated out inside the
@@ -794,6 +795,390 @@ empty mapping yields a zero-dimensional array.</p>
 <dd class="field-odd"><p>xarray.DataArray</p>
 </dd>
 </dl>
+</dd></dl>
+
+</section>
+</section>
+<section id="best-response">
+<h2>Best Response<a class="headerlink" href="#best-response" title="Link to this heading">¶</a></h2>
+<p>Solves a block’s decisions one at a time, in the order given by its relevance
+graph (see <a class="reference internal" href="analysis.html"><span class="doc">Model Analysis and Visualization</span></a>), each decision maximizing its own agent’s payoff
+conditional on what that decision observes. For blocks whose relevance graph is
+acyclic; a cyclic component has to be solved as a simultaneous-move equilibrium
+and raises instead.</p>
+<p id="module-skagent.algos.best_response">Best-response solving for blocks with several decisions.</p>
+<p>Solves the decisions of a <a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> one at a time, in the
+order given by the block’s relevance graph, so that every decision rule a
+decision strategically relies on is already computed when its turn comes. This
+requires the relevance graph to be acyclic; a cyclic component is a set of
+decisions that have to be solved jointly, which is a simultaneous-move
+equilibrium problem and is not attempted here.</p>
+<p>Each decision is solved <em>per information cell</em>: for every value of what the
+decision-maker observes, the action maximizing their expected payoff conditional
+on that observation. Expectations are estimated by drawing <em>samples</em>
+realizations of the block’s shocks once, at construction, and reusing the same
+draws for every candidate action (common random numbers), so that comparisons
+between actions carry far less error than their levels do. Conditioning is done
+by grouping the simulated samples, which makes
+the beliefs at a decision the posterior induced by the other decision rules in
+the profile.</p>
+<p>The representation is tabular, which sets the limits of this module: a decision’s
+information set must take finitely many values under the profile being played,
+since a cell with no repeats has no conditional expectation to estimate, and the
+actions searched are a finite set. Shocks may be continuous – they are
+integrated over, never conditioned on. For continuous observations, or where a
+differentiable policy is wanted, <a class="reference internal" href="#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a>
+performs the same sweep with a policy network per control in place of a table.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">ConditionalPayoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">counts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payoff</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs" title="Link to this definition">¶</a></dt>
+<dd><p>Expected payoffs by information cell and action.</p>
+<dl class="simple">
+<dt>cells<span class="classifier">numpy.ndarray</span></dt><dd><p>Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,</span> <span class="pre">len(iset))</span></code>; the distinct observed values of the
+decision’s information set. Shape <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">0)</span></code> for an empty information set.</p>
+</dd>
+<dt>counts<span class="classifier">numpy.ndarray</span></dt><dd><p>Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,)</span></code>; how many samples support each cell.</p>
+</dd>
+<dt>actions<span class="classifier">numpy.ndarray</span></dt><dd><p>Shape <code class="docutils literal notranslate"><span class="pre">(n_actions,)</span></code>; the candidate actions searched.</p>
+</dd>
+<dt>payoff<span class="classifier">numpy.ndarray</span></dt><dd><p>Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,</span> <span class="pre">n_actions)</span></code>; the estimated expected payoff of the
+decision’s agent in each cell for each action.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.actions">
+<span class="sig-name descname"><span class="pre">actions</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.actions" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.cells">
+<span class="sig-name descname"><span class="pre">cells</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.cells" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.counts">
+<span class="sig-name descname"><span class="pre">counts</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.counts" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.payoff">
+<span class="sig-name descname"><span class="pre">payoff</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.payoff" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver" title="Link to this definition">¶</a></dt>
+<dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block</strong> (<a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><em>skagent.block.DBlock</em></a>) – The block to solve. Its dynamics must be declared in topological order,
+as the library requires of any block, and its controls must carry the
+<code class="docutils literal notranslate"><span class="pre">agent</span></code> attribution needed to tell whose payoff each maximizes when
+the block’s utilities are owned by more than one agent.</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Parameter values, used both to construct the block’s shocks and as
+values for any parameter the dynamics refer to. Defaults to empty.</p></li>
+<li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
+<code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
+<li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
+<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. Grouping splits these
+across a decision’s information cells, so each cell’s expectation rests
+on the samples that reached it rather than on all of them.</p></li>
+<li><p><strong>rng</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><em>numpy.random.Generator</em></a><em>, </em><em>optional</em>) – Generator for the shock draws.</p></li>
+<li><p><strong>max_cells</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Upper limit on the number of information cells a single decision may
+have. Exceeding it raises, since grouping samples by observed value only
+estimates a conditional expectation when observations repeat.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Constructing the solver draws the block’s shocks and mutates the block’s
+shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
+<p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
+sampling error, which falls as <em>samples</em> rises.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.best_response">
+<span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.best_response" title="Link to this definition">¶</a></dt>
+<dd><p>The payoff-maximizing rule for <code class="docutils literal notranslate"><span class="pre">decision</span></code> against <code class="docutils literal notranslate"><span class="pre">policies</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>decision</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The control to solve.</p></li>
+<li><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – A decision rule for every control of the block; the profile the best
+response is computed against.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One action per information cell.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule" title="skagent.algos.best_response.TabulatedRule">TabulatedRule</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.conditional_payoffs">
+<span class="sig-name descname"><span class="pre">conditional_payoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.conditional_payoffs" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate <code class="docutils literal notranslate"><span class="pre">decision</span></code>’s payoffs by information cell and action.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>decision</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The control to evaluate.</p></li>
+<li><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – A decision rule for every control of the block, including
+<em>decision</em> itself: the profile the expectation is taken under.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs" title="skagent.algos.best_response.ConditionalPayoffs">ConditionalPayoffs</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.initial_policies">
+<span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.initial_policies" title="Link to this definition">¶</a></dt>
+<dd><p>A mixed rule for every decision in the block.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.mixed_rule">
+<span class="sig-name descname"><span class="pre">mixed_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.mixed_rule" title="Link to this definition">¶</a></dt>
+<dd><p>A full-support mixed rule: every action played on some samples.</p>
+<p>Held by decisions that are not yet solved, so that every information
+cell is reached and every conditional expectation is defined.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>weights</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Relative shares of the samples per action, one per candidate action.
+Defaults to equal shares.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A decision rule returning one action per sample.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.payoff">
+<span class="sig-name descname"><span class="pre">payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.payoff" title="Link to this definition">¶</a></dt>
+<dd><p>The sum of <code class="docutils literal notranslate"><span class="pre">agent</span></code>’s utility nodes, per sample.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">policies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.solve" title="Link to this definition">¶</a></dt>
+<dd><p>Solve every decision, in relevance-graph order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em><em>, </em><em>optional</em>) – Starting rules for the decisions, replaced one by one as they are
+solved. Defaults to a mixed rule per decision, which is what makes
+the conditional expectation at every information cell defined.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A decision rule per control of the block.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><strong>NotImplementedError</strong></a> – If the relevance graph has a cyclic component: those decisions rely
+    on each other and admit no one-at-a-time order.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabulatedRule">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabulatedRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabulatedRule" title="Link to this definition">¶</a></dt>
+<dd><p>A decision rule tabulated over the cells of an information set.</p>
+<p>Follows the library’s decision-rule calling convention: the information-set
+values are passed as positional arguments in <code class="docutils literal notranslate"><span class="pre">iset</span></code> order. An observation
+is answered with the action of the nearest tabulated cell, so a rule remains
+total when queried away from the values it was tabulated on.</p>
+<p>For a rule tabulated on a full grid, and where interpolation between grid
+points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_from_data" title="skagent.algos.vfi.ar_from_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.algos.vfi.ar_from_data()</span></code></a> instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iset</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The information set, in the order the cell columns are given.</p></li>
+<li><p><strong>cells</strong> (<em>array_like</em>) – Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,</span> <span class="pre">len(iset))</span></code>; the tabulated observations.</p></li>
+<li><p><strong>actions</strong> (<em>array_like</em>) – Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,)</span></code>; the action for each cell.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.best_response.TabulatedRule.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabulatedRule.to_dict" title="Link to this definition">¶</a></dt>
+<dd><p>The rule as <code class="docutils literal notranslate"><span class="pre">{observed</span> <span class="pre">values:</span> <span class="pre">action}</span></code>, rounded for display.</p>
+</dd></dl>
+
+</dd></dl>
+
+<section id="core-best-response-classes">
+<h3>Core Best-Response Classes<a class="headerlink" href="#core-best-response-classes" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block</strong> (<a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><em>skagent.block.DBlock</em></a>) – The block to solve. Its dynamics must be declared in topological order,
+as the library requires of any block, and its controls must carry the
+<code class="docutils literal notranslate"><span class="pre">agent</span></code> attribution needed to tell whose payoff each maximizes when
+the block’s utilities are owned by more than one agent.</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Parameter values, used both to construct the block’s shocks and as
+values for any parameter the dynamics refer to. Defaults to empty.</p></li>
+<li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
+<code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
+<li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
+<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. Grouping splits these
+across a decision’s information cells, so each cell’s expectation rests
+on the samples that reached it rather than on all of them.</p></li>
+<li><p><strong>rng</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><em>numpy.random.Generator</em></a><em>, </em><em>optional</em>) – Generator for the shock draws.</p></li>
+<li><p><strong>max_cells</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Upper limit on the number of information cells a single decision may
+have. Exceeding it raises, since grouping samples by observed value only
+estimates a conditional expectation when observations repeat.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Constructing the solver draws the block’s shocks and mutates the block’s
+shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
+<p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
+sampling error, which falls as <em>samples</em> rises.</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>The payoff-maximizing rule for <code class="docutils literal notranslate"><span class="pre">decision</span></code> against <code class="docutils literal notranslate"><span class="pre">policies</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>decision</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The control to solve.</p></li>
+<li><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – A decision rule for every control of the block; the profile the best
+response is computed against.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One action per information cell.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule" title="skagent.algos.best_response.TabulatedRule">TabulatedRule</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">conditional_payoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Estimate <code class="docutils literal notranslate"><span class="pre">decision</span></code>’s payoffs by information cell and action.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>decision</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The control to evaluate.</p></li>
+<li><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – A decision rule for every control of the block, including
+<em>decision</em> itself: the profile the expectation is taken under.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs" title="skagent.algos.best_response.ConditionalPayoffs">ConditionalPayoffs</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>A mixed rule for every decision in the block.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">mixed_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>A full-support mixed rule: every action played on some samples.</p>
+<p>Held by decisions that are not yet solved, so that every information
+cell is reached and every conditional expectation is defined.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>weights</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Relative shares of the samples per action, one per candidate action.
+Defaults to equal shares.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A decision rule returning one action per sample.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>The sum of <code class="docutils literal notranslate"><span class="pre">agent</span></code>’s utility nodes, per sample.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">policies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Solve every decision, in relevance-graph order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em><em>, </em><em>optional</em>) – Starting rules for the decisions, replaced one by one as they are
+solved. Defaults to a mixed rule per decision, which is what makes
+the conditional expectation at every information cell defined.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A decision rule per control of the block.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><strong>NotImplementedError</strong></a> – If the relevance graph has a cyclic component: those decisions rely
+    on each other and admit no one-at-a-time order.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabulatedRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>A decision rule tabulated over the cells of an information set.</p>
+<p>Follows the library’s decision-rule calling convention: the information-set
+values are passed as positional arguments in <code class="docutils literal notranslate"><span class="pre">iset</span></code> order. An observation
+is answered with the action of the nearest tabulated cell, so a rule remains
+total when queried away from the values it was tabulated on.</p>
+<p>For a rule tabulated on a full grid, and where interpolation between grid
+points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_from_data" title="skagent.algos.vfi.ar_from_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.algos.vfi.ar_from_data()</span></code></a> instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iset</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The information set, in the order the cell columns are given.</p></li>
+<li><p><strong>cells</strong> (<em>array_like</em>) – Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,</span> <span class="pre">len(iset))</span></code>; the tabulated observations.</p></li>
+<li><p><strong>actions</strong> (<em>array_like</em>) – Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,)</span></code>; the action for each cell.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>The rule as <code class="docutils literal notranslate"><span class="pre">{observed</span> <span class="pre">values:</span> <span class="pre">action}</span></code>, rounded for display.</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1737,6 +2122,30 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 <li><a class="reference internal" href="#core-vfi-functions">Core VFI Functions</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#best-response">Best Response</a><ul>
+<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.actions"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.actions</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.cells"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.cells</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.counts"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.counts</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.payoff"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.payoff</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.best_response"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.best_response()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.conditional_payoffs"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.conditional_payoffs()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.initial_policies"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.initial_policies()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.mixed_rule"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.mixed_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.payoff"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.payoff()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.solve"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.solve()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule"><code class="docutils literal notranslate"><span class="pre">TabulatedRule</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule.to_dict"><code class="docutils literal notranslate"><span class="pre">TabulatedRule.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#core-best-response-classes">Core Best-Response Classes</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#maliar-style-algorithms">Maliar-Style Algorithms</a><ul>
 <li><a class="reference internal" href="#skagent.algos.maliar.generate_givens_from_states"><code class="docutils literal notranslate"><span class="pre">generate_givens_from_states()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.maliar.maliar_training_loop"><code class="docutils literal notranslate"><span class="pre">maliar_training_loop()</span></code></a></li>
@@ -1843,7 +2252,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=f1c4fd58"></script>
+</div><script src="../_static/documentation_options.js?v=6c48d88e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

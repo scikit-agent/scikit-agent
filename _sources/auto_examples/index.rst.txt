@@ -187,6 +187,23 @@ other computational methods.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Some games decompose: their decisions break into smaller problems that can be solved in sequence, each taking as settled the ones before it. Others do not, and their decisions have to be faced together, as a single equilibrium problem. What settles which -- and where a decomposition&#x27;s dividing lines fall -- is whether the decisions strategically rely on one another: whether optimising one of them requires knowing how another is played. That relation depends on a game&#x27;s payoffs, but it is bounded from above by a purely graphical criterion, Koller &amp; Milch&#x27;s s-reachability, read off the structure of the model alone: no payoff values, no solving. Where the criterion finds no reliance, there is none.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_tree_killer_relevance_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_tree_killer_relevance`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Strategic Relevance: Solving the Tree Killer</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:">
 
 .. only:: html

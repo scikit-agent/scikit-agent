@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.dev809+g99a171ef6</title>
+        <title>Models - scikit-agent 0.1.dev828+g16bd49634</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev809+g99a171ef6</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev828+g16bd49634</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -220,6 +220,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
@@ -1083,10 +1084,15 @@ These are not solved for a policy; only their graphical structure is used.</p>
 <p>These are game-theoretic influence diagrams from the literature, encoded as
 scikit-agent blocks to illustrate and exercise strategic-relevance analysis
 (<code class="docutils literal notranslate"><span class="pre">Block.relevance_graph</span></code> / <code class="docutils literal notranslate"><span class="pre">Block.relies_on</span></code>). Unlike the consumption-saving
-models in <code class="docutils literal notranslate"><span class="pre">benchmarks.py</span></code>, they are not solved for a policy – scikit-agent
-has no equilibrium solver yet – so only their graphical structure (information
-sets, agent ownership, dependencies) is meaningful; the functional forms and
-probabilities/payoffs are illustrative.</p>
+models in <code class="docutils literal notranslate"><span class="pre">benchmarks.py</span></code>, these are games rather than dynamic programs: what
+they pin down is graphical structure (information sets, agent ownership,
+dependencies), and their functional forms and payoff magnitudes are illustrative.
+The magnitudes are nonetheless chosen so that each game is strategically
+non-degenerate – no decision has an optimum that is independent of the others –
+so that a solver exercises the structure rather than sidestepping it. Games whose
+relevance graph is acyclic can be solved by
+<code class="docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code>; a cyclic one needs a joint
+equilibrium solution, which the library does not offer.</p>
 <p>Encoding conventions (a deliberate departure from the source presentations):</p>
 <ul class="simple">
 <li><p>Chance nodes are given in structural-causal form rather than as conditional
@@ -1226,7 +1232,7 @@ discrete-action support.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=f1c4fd58"></script>
+</div><script src="../_static/documentation_options.js?v=6c48d88e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

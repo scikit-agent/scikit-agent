@@ -16,6 +16,9 @@ rest of the toolkit:
   function iteration on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
   the model, using established RL libraries (see below)
+- **Best response**: Solve the decisions of a multi-decision block one at a
+  time, in the order its relevance graph implies, each maximizing its own
+  agent's payoff conditional on what it observes (see below)
 
 The rest of this guide covers these in turn.
 
@@ -263,6 +266,15 @@ decision_rules = solve_multiple_controls(
 
 The return value is a dictionary mapping each control symbol to its trained
 decision rule, suitable for passing to `reward_function` or to simulation.
+
+The order to sweep in, and whether a control needs a second pass at all, is a
+structural property of the block: its relevance graph (see
+{doc}`../api/analysis`). For the block above the graph is cyclic — `c` and `d`
+strategically rely on each other, forming a single component — which is why `c`
+is scheduled twice. When the graph is acyclic, one pass per decision suffices,
+since everything a decision relies on is already solved by the time its turn
+comes; {class}`skagent.algos.best_response.TabularBestResponseSolver` reads that
+order off the graph and solves in it, tabulating rather than training a network.
 
 ## Value Function Iteration
 

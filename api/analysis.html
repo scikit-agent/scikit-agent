@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.1.dev809+g99a171ef6</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.1.dev828+g16bd49634</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev809+g99a171ef6</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.dev828+g16bd49634</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -220,6 +220,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
@@ -341,21 +342,17 @@ is handled by the unrolling machinery separately.</p>
 <dd class="field-odd"><p><strong>dynamic</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Make the diagram faithful to one period of a recurring problem, by
 splitting each reassigned variable’s arrival value into its own
 <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;*</span></code> node and adding a continuation-value utility node per
-deciding agent (<code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.information.with_lagged_arrivals()</span></code>,
-<code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.information.with_continuation()</span></code>). Without this a
+deciding agent
+(<a class="reference internal" href="#skagent.influence.SCIM.with_lagged_arrivals" title="skagent.influence.SCIM.with_lagged_arrivals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.influence.SCIM.with_lagged_arrivals()</span></code></a>,
+<a class="reference internal" href="#skagent.influence.SCIM.with_continuation" title="skagent.influence.SCIM.with_continuation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.influence.SCIM.with_continuation()</span></code></a>). Without this a
 single-period projection is blind to payoffs arriving through the
 next period’s value, and conflates a variable’s arrival value with
 the value it is reassigned to. With it, a decision’s parents are its
 information set. Off by default, since it changes the node set
 existing callers see.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Named tuple <code class="docutils literal notranslate"><span class="pre">(graph,</span> <span class="pre">decisions,</span> <span class="pre">parents,</span> <span class="pre">agent_utilities,</span>
-<span class="pre">decision_agent)</span></code> matching
-<a class="reference internal" href="#skagent.relevance.RelevanceGraph.from_scim" title="skagent.relevance.RelevanceGraph.from_scim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.relevance.RelevanceGraph.from_scim()</span></code></a>.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#skagent.model_analyzer.SCIM" title="skagent.model_analyzer.SCIM">SCIM</a></p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM">skagent.influence.SCIM</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -368,71 +365,210 @@ existing callers see.</p>
 
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.model_analyzer.</span></span><span class="sig-name descname"><span class="pre">SCIM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decisions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_utilities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.SCIM" title="Link to this definition">¶</a></dt>
-<dd><p>The influence-diagram (SCIM) view of a model.</p>
-<section id="fields">
-<h3>Fields<a class="headerlink" href="#fields" title="Link to this heading">¶</a></h3>
-<dl class="simple">
-<dt>graph<span class="classifier">networkx.DiGraph</span></dt><dd><p>Chance / decision / utility nodes with causal edges (parameters dropped).</p>
-</dd>
-<dt>decisions<span class="classifier">list</span></dt><dd><p>The decision (control) nodes.</p>
-</dd>
-<dt>parents<span class="classifier">dict</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">parents[node]</span></code> is the node’s parents in <code class="docutils literal notranslate"><span class="pre">graph</span></code> (a decision’s is its
-information set).</p>
-</dd>
-<dt>agent_utilities<span class="classifier">dict</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">agent_utilities[agent]</span></code> is the list of utility nodes owned by <code class="docutils literal notranslate"><span class="pre">agent</span></code>.</p>
-</dd>
-<dt>decision_agent<span class="classifier">dict</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">decision_agent[decision]</span></code> is the agent that owns each decision.</p>
-</dd>
-</dl>
-<p>Unpacks directly into <a class="reference internal" href="#skagent.relevance.RelevanceGraph.from_scim" title="skagent.relevance.RelevanceGraph.from_scim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.relevance.RelevanceGraph.from_scim()</span></code></a>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.agent_utilities">
-<span class="sig-name descname"><span class="pre">agent_utilities</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.agent_utilities" title="Link to this definition">¶</a></dt>
-<dd><p>Alias for field number 3</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.decision_agent">
-<span class="sig-name descname"><span class="pre">decision_agent</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.decision_agent" title="Link to this definition">¶</a></dt>
-<dd><p>Alias for field number 4</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.decisions">
-<span class="sig-name descname"><span class="pre">decisions</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.decisions" title="Link to this definition">¶</a></dt>
-<dd><p>Alias for field number 1</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.graph">
-<span class="sig-name descname"><span class="pre">graph</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.graph" title="Link to this definition">¶</a></dt>
-<dd><p>Alias for field number 0</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.model_analyzer.SCIM.parents">
-<span class="sig-name descname"><span class="pre">parents</span></span><a class="headerlink" href="#skagent.model_analyzer.SCIM.parents" title="Link to this definition">¶</a></dt>
-<dd><p>Alias for field number 2</p>
-</dd></dl>
-
-</section>
-</dd></dl>
-
 </section>
 <section id="module-skagent.model_visualizer">
 <span id="model-visualizer"></span><h2>Model Visualizer<a class="headerlink" href="#module-skagent.model_visualizer" title="Link to this heading">¶</a></h2>
 </section>
-<section id="strategic-relevance">
-<h2>Strategic Relevance<a class="headerlink" href="#strategic-relevance" title="Link to this heading">¶</a></h2>
-<p>Analysis of strategic reliance between decisions, using the Koller &amp; Milch
-s-reachability criterion, and the resulting relevance graph.</p>
-<p id="module-skagent.relevance">Strategic relevance and relevance-graph analysis for influence-diagram models.</p>
-<p>Implements the <em>s-reachability</em> graphical criterion of Koller &amp; Milch,
-“Multi-Agent Influence Diagrams for Representing and Solving Games”
-(IJCAI-01; Games and Economic Behavior 45(1), 2003), Defs. 7-8:</p>
+<section id="influence-diagrams">
+<h2>Influence Diagrams<a class="headerlink" href="#influence-diagrams" title="Link to this heading">¶</a></h2>
+<p>The structural view of a block – chance, decision and utility nodes with causal
+edges – and the d-separation engine the graphical criteria below are posed
+over.</p>
+<p id="module-skagent.influence">The influence-diagram substrate the graphical criteria are posed over.</p>
+<p>A block can be read two ways: executably, by running its dynamics, and
+structurally, by asking which symbol <em>can</em> influence which without evaluating
+anything. The second reading is what d-separation answers, and d-separation is
+only definable on a graph. This module owns that graph – the SCIM view: chance,
+decision and utility nodes with directed causal edges – together with the
+vocabulary and the traversal engine every criterion over it needs.</p>
+<p>The criteria themselves live in <a class="reference internal" href="#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a>. Construction of a
+<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SCIM</span></code></a> from a block lives in <a class="reference internal" href="#module-skagent.model_analyzer" title="skagent.model_analyzer"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.model_analyzer</span></code></a>. This module
+depends only on <code class="docutils literal notranslate"><span class="pre">networkx</span></code>, so the substrate and the criteria can be developed
+and tested without constructing a model.</p>
+<p>The engine is the Bayes-Ball / <code class="docutils literal notranslate"><span class="pre">Reachable</span></code> sweep (Shachter 1998; Koller &amp;
+Friedman Alg. 3.1) rather than an ancestral moral graph, because the query is
+set-wide: <a class="reference internal" href="#skagent.influence.SCIM.d_connected" title="skagent.influence.SCIM.d_connected"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SCIM.d_connected()</span></code></a> answers “which nodes are d-connected to these
+targets” in one traversal, and moralization is valid only over the ancestral
+closure of <code class="docutils literal notranslate"><span class="pre">{candidate}</span> <span class="pre">|</span> <span class="pre">targets</span> <span class="pre">|</span> <span class="pre">given</span></code>, which differs per candidate.
+Because the sweep is hand-rolled it is property-tested against
+<code class="docutils literal notranslate"><span class="pre">networkx.is_d_separator</span></code> on random DAGs; treat that oracle test as
+non-optional for any change to it.</p>
+<p>Two limits every criterion over this substrate inherits:</p>
+<ol class="arabic simple">
+<li><p>d-separation is sound but not complete under determinism, and these models are
+largely deterministic functions of their parents. Criteria are therefore
+conservative: a route whose functional effect vanishes still counts. The
+standard repair is Geiger-Verma-Pearl D-separation, treating functionally
+determined nodes as observed.</p></li>
+<li><p>A single-period diagram cannot express a payoff arriving through the next
+period’s value, nor distinguish a variable’s arrival value from the value it is
+reassigned to. <a class="reference internal" href="#skagent.influence.SCIM.with_continuation" title="skagent.influence.SCIM.with_continuation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SCIM.with_continuation()</span></code></a> and
+<a class="reference internal" href="#skagent.influence.SCIM.with_lagged_arrivals" title="skagent.influence.SCIM.with_lagged_arrivals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SCIM.with_lagged_arrivals()</span></code></a> repair both.</p></li>
+</ol>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.influence.CONTINUATION_PREFIX">
+<span class="sig-prename descclassname"><span class="pre">skagent.influence.</span></span><span class="sig-name descname"><span class="pre">CONTINUATION_PREFIX</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'__continuation__'</span></span><a class="headerlink" href="#skagent.influence.CONTINUATION_PREFIX" title="Link to this definition">¶</a></dt>
+<dd><p>Node-name prefix for the synthetic continuation utility.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.influence.DUMMY_PREFIX">
+<span class="sig-prename descclassname"><span class="pre">skagent.influence.</span></span><span class="sig-name descname"><span class="pre">DUMMY_PREFIX</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'__hat__'</span></span><a class="headerlink" href="#skagent.influence.DUMMY_PREFIX" title="Link to this definition">¶</a></dt>
+<dd><p>Node-name prefix for the synthetic parent of <a class="reference internal" href="#skagent.influence.SCIM.with_dummy_parent" title="skagent.influence.SCIM.with_dummy_parent"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SCIM.with_dummy_parent()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.influence.LAG_SUFFIX">
+<span class="sig-prename descclassname"><span class="pre">skagent.influence.</span></span><span class="sig-name descname"><span class="pre">LAG_SUFFIX</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'*'</span></span><a class="headerlink" href="#skagent.influence.LAG_SUFFIX" title="Link to this definition">¶</a></dt>
+<dd><p>Suffix marking a variable’s arrival value, as distinct from the end-of-period
+value the plain name carries.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.influence.SCIM">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.influence.</span></span><span class="sig-name descname"><span class="pre">SCIM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decisions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_utilities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM" title="Link to this definition">¶</a></dt>
+<dd><p>The influence-diagram view of a model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>graph</strong> (<em>networkx.DiGraph</em>) – A DAG of chance / decision / utility nodes, each carrying a <code class="docutils literal notranslate"><span class="pre">kind</span></code>
+attribute, with directed causal edges. Parameters must already be
+dropped: they are deterministic constants rather than random variables,
+and an un-conditioned fork through one opens spurious d-connection.</p></li>
+<li><p><strong>decisions</strong> (<em>iterable</em>) – The decision nodes.</p></li>
+<li><p><strong>agent_utilities</strong> (<em>mapping</em>) – <code class="docutils literal notranslate"><span class="pre">agent_utilities[agent]</span></code> is the utility nodes owned by <em>agent</em>.</p></li>
+<li><p><strong>decision_agent</strong> (<em>mapping</em>) – <code class="docutils literal notranslate"><span class="pre">decision_agent[decision]</span></code> is the agent that owns each decision.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Traversals are memoized per instance, so a criterion may query freely, and
+every transform returns a new instance rather than mutating this one. Both
+rest on <em>graph</em> not changing after construction; mutate it and the caches go
+stale.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.ancestors">
+<span class="sig-name descname"><span class="pre">ancestors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.ancestors" title="Link to this definition">¶</a></dt>
+<dd><p>Every strict ancestor of any node in <em>nodes</em>.</p>
+<p>One reverse multi-source traversal, rather than a
+<code class="xref py py-func docutils literal notranslate"><span class="pre">networkx.ancestors()</span></code> call per node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.context">
+<span class="sig-name descname"><span class="pre">context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.context" title="Link to this definition">¶</a></dt>
+<dd><p>The conditioning set <code class="docutils literal notranslate"><span class="pre">Pa(D)</span> <span class="pre">|</span> <span class="pre">{D}</span></code> every criterion conditions on.</p>
+<p>What the decision-maker knows when choosing, plus the choice itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.d_connected">
+<span class="sig-name descname"><span class="pre">d_connected</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">targets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">given</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.d_connected" title="Link to this definition">¶</a></dt>
+<dd><p>Every node d-connected to some node of <em>targets</em>, conditioning on <em>given</em>.</p>
+<p>The complement is the d-separated set, so <code class="docutils literal notranslate"><span class="pre">node</span> <span class="pre">not</span> <span class="pre">in</span>
+<span class="pre">d_connected(...)</span></code> certifies that no active trail carries influence from
+<code class="docutils literal notranslate"><span class="pre">node</span></code> to any target. One traversal answers this for every node at
+once, so callers should ask once per decision and test membership rather
+than calling <code class="xref py py-func docutils literal notranslate"><span class="pre">networkx.is_d_separator()</span></code> per candidate.</p>
+<p><em>targets</em> and <em>given</em> are excluded from the result.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.objectives">
+<span class="sig-name descname"><span class="pre">objectives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.objectives" title="Link to this definition">¶</a></dt>
+<dd><p>The utility nodes whose value <em>decision</em> is choosing over.</p>
+<p>Utilities owned by the deciding agent and downstream of the decision.
+Includes the synthetic continuation node when
+<a class="reference internal" href="#skagent.influence.SCIM.with_continuation" title="skagent.influence.SCIM.with_continuation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_continuation()</span></code></a> has been applied and the decision reaches it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.parents">
+<span class="sig-name descname"><span class="pre">parents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.parents" title="Link to this definition">¶</a></dt>
+<dd><p>The parents of <em>node</em>, which for a decision are its information set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.with_continuation">
+<span class="sig-name descname"><span class="pre">with_continuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arrival_states</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.with_continuation" title="Link to this definition">¶</a></dt>
+<dd><p>Add a synthetic continuation-value utility node per deciding agent.</p>
+<p>A single-period diagram cannot express that a decision’s payoff continues
+into the next period, so a shock reaching the objective only through the
+next period’s value appears irrelevant. This adds, per agent that
+decides, a utility node whose parents are the nodes named after the
+model’s arrival-state variables – for a variable that is also reassigned
+in-period, that node holds the reassigned value, which is what the next
+period arrives with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>arrival_states</strong> (<em>iterable</em>) – The model’s arrival-state variable names.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM">SCIM</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.with_dummy_parent">
+<span class="sig-name descname"><span class="pre">with_dummy_parent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.with_dummy_parent" title="Link to this definition">¶</a></dt>
+<dd><p>Add a fresh exogenous parent to <em>node</em>.</p>
+<p>The device s-reachability is defined by: a decision node’s own value is
+not the object of interest, its decision rule is, and a synthetic parent
+stands in for that rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(scim,</span> <span class="pre">dummy)</span></code> – a new SCIM, and the name of the added node.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.with_lagged_arrivals">
+<span class="sig-name descname"><span class="pre">with_lagged_arrivals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lag_dependencies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.with_lagged_arrivals" title="Link to this definition">¶</a></dt>
+<dd><p>Split each variable’s arrival value out into its own node.</p>
+<p>A single-period diagram carries one node per symbol, but a symbol
+reassigned within the period holds two values: the one it arrives with
+and the one it is reassigned to. This adds a source node <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;*</span></code> for
+the arrival value, with an edge to each consumer that reads it. The plain
+node keeps its in-period parents and so denotes the end-of-period value,
+which is what the next period arrives with.</p>
+<p>A decision’s parents in the result are exactly its information set, so
+callers may read the conditioning set off the graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>lag_dependencies</strong> (<em>iterable</em><em> of </em><em>(</em><em>consumer</em><em>, </em><em>source</em><em>) </em><em>pairs</em>) – Dependencies that read a source’s pre-period value – the edges a
+single-period projection would otherwise drop.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM">SCIM</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="relevance">
+<h2>Relevance<a class="headerlink" href="#relevance" title="Link to this heading">¶</a></h2>
+<p>What a decision must still account for, given what it already knows. One
+d-separation test, read two ways: across decisions it is the Koller &amp; Milch
+s-reachability criterion, and the order the resulting relevance graph implies,
+<a class="reference internal" href="#skagent.relevance.RelevanceGraph.condensation" title="skagent.relevance.RelevanceGraph.condensation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">condensation()</span></code></a>, is what
+<a class="reference internal" href="algorithms.html#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> solves a block in
+(see <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a>). Run from a shock instead, it tells a solver whether to
+grid that shock or integrate it inside the maximization.</p>
+<p id="module-skagent.relevance">What a decision must still account for, given what it already knows.</p>
+<p>Every criterion here answers one question about a decision <code class="docutils literal notranslate"><span class="pre">D</span></code> in the
+<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SCIM</span></code></a> view of a model: conditioning on what <code class="docutils literal notranslate"><span class="pre">D</span></code>
+observes, does some other node still reach <code class="docutils literal notranslate"><span class="pre">D</span></code>’s objective? What varies is the
+node asked about, and what a positive answer means for a solver.</p>
+<p><strong>A decision</strong> – <em>s-reachability</em>, the criterion of Koller &amp; Milch, “Multi-Agent
+Influence Diagrams for Representing and Solving Games” (IJCAI-01; Games and
+Economic Behavior 45(1), 2003), Defs. 7-8:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>Decision D strategically <em>relies on</em> decision D’ iff D’ is <em>s-reachable</em>
@@ -444,11 +580,37 @@ and descended from D such that, adding a fresh dummy parent to D’, there is
 an active path (d-connection) from the dummy to U given Pa(D) u {D}.</p></li>
 </ul>
 </div></blockquote>
-<p>The algorithm operates on a plain annotated <code class="docutils literal notranslate"><span class="pre">networkx.DiGraph</span></code> – the “SCIM
-view” of a block: chance / decision / utility nodes with directed causal edges.
-Construction of that graph from a scikit-agent Block lives in a separate adapter;
-this module deliberately depends only on networkx so
-the criterion can be developed and tested in isolation.</p>
+<p>A decision node’s own value is not what matters – its decision rule is – so the
+test is run from a synthetic parent standing in for that rule. The reliance
+ordering a relevance graph implies is what a best-response sweep solves a block
+in.</p>
+<p><strong>A shock</strong> – the same test, run from the shock itself, since an exogenous node
+is already its own synthetic source. Here what varies is the reading, because a
+solver needs to know not just whether the shock matters but how to integrate it:
+see <a class="reference internal" href="#skagent.relevance.OBSERVED" title="skagent.relevance.OBSERVED"><code class="xref py py-data docutils literal notranslate"><span class="pre">OBSERVED</span></code></a>, <a class="reference internal" href="#skagent.relevance.HIDDEN" title="skagent.relevance.HIDDEN"><code class="xref py py-data docutils literal notranslate"><span class="pre">HIDDEN</span></code></a> and <a class="reference internal" href="#skagent.relevance.MIXED" title="skagent.relevance.MIXED"><code class="xref py py-data docutils literal notranslate"><span class="pre">MIXED</span></code></a>.</p>
+<p>Both are thin functions over a <a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SCIM</span></code></a>, which owns the
+graph, the conditioning-context and objective vocabulary, and the d-separation
+engine. Construction of a <code class="docutils literal notranslate"><span class="pre">SCIM</span></code> from a scikit-agent Block lives in
+<a class="reference internal" href="#module-skagent.model_analyzer" title="skagent.model_analyzer"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.model_analyzer</span></code></a>; this module, like the substrate, depends only on
+networkx so the criteria can be developed and tested in isolation.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.relevance.HIDDEN">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">HIDDEN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'hidden'</span></span><a class="headerlink" href="#skagent.relevance.HIDDEN" title="Link to this definition">¶</a></dt>
+<dd><p>A shock the information set says nothing about; integrate inside the max.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.relevance.MIXED">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">MIXED</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'mixed'</span></span><a class="headerlink" href="#skagent.relevance.MIXED" title="Link to this definition">¶</a></dt>
+<dd><p>Partly informed <em>and</em> separately relevant; needs filtering, so refuse.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.relevance.OBSERVED">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">OBSERVED</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'observed'</span></span><a class="headerlink" href="#skagent.relevance.OBSERVED" title="Link to this definition">¶</a></dt>
+<dd><p>A shock the information set accounts for; may be gridded per node.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.relevance.RelevanceGraph">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">RelevanceGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph" title="Link to this definition">¶</a></dt>
@@ -481,9 +643,9 @@ the rendering stack.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.relevance.RelevanceGraph.from_scim">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_scim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decisions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_utilities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph.from_scim" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_scim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph.from_scim" title="Link to this definition">¶</a></dt>
 <dd><p>Build the relevance graph by testing s-reachability over all ordered
-pairs of <code class="docutils literal notranslate"><span class="pre">decisions</span></code> in the influence-diagram graph <code class="docutils literal notranslate"><span class="pre">G</span></code>.</p>
+pairs of <code class="docutils literal notranslate"><span class="pre">scim</span></code>’s decisions.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -514,28 +676,86 @@ pairs of <code class="docutils literal notranslate"><span class="pre">decisions<
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.relevance.is_s_reachable">
-<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">is_s_reachable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_utilities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.is_s_reachable" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">is_s_reachable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.is_s_reachable" title="Link to this definition">¶</a></dt>
 <dd><p>Is decision <code class="docutils literal notranslate"><span class="pre">d2</span></code> s-reachable from decision <code class="docutils literal notranslate"><span class="pre">d1</span></code>?</p>
 <p>Equivalently: does <code class="docutils literal notranslate"><span class="pre">d1</span></code> strategically rely on <code class="docutils literal notranslate"><span class="pre">d2</span></code> (edge d1 -&gt; d2 in the
 relevance graph)?</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>G</strong> (<em>networkx.DiGraph</em>) – The influence-diagram (SCIM) graph: a DAG of chance / decision / utility
-nodes with directed causal edges.</p></li>
-<li><p><strong>d1</strong> (<em>hashable</em>) – Decision nodes in <code class="docutils literal notranslate"><span class="pre">G</span></code>.</p></li>
-<li><p><strong>d2</strong> (<em>hashable</em>) – Decision nodes in <code class="docutils literal notranslate"><span class="pre">G</span></code>.</p></li>
-<li><p><strong>parents</strong> (<em>mapping</em>) – <code class="docutils literal notranslate"><span class="pre">parents[d]</span></code> is the information set of decision <code class="docutils literal notranslate"><span class="pre">d</span></code> (its parents in
-<code class="docutils literal notranslate"><span class="pre">G</span></code>). Used as the conditioning context Pa(d1) u {d1}.</p></li>
-<li><p><strong>agent_utilities</strong> (<em>mapping</em>) – <code class="docutils literal notranslate"><span class="pre">agent_utilities[agent]</span></code> is the collection of utility nodes owned by
-<code class="docutils literal notranslate"><span class="pre">agent</span></code>.</p></li>
-<li><p><strong>decision_agent</strong> (<em>mapping</em>) – <code class="docutils literal notranslate"><span class="pre">decision_agent[d]</span></code> is the agent that owns decision <code class="docutils literal notranslate"><span class="pre">d</span></code>.</p></li>
+<li><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – The influence-diagram view the decisions live in.</p></li>
+<li><p><strong>d1</strong> (<em>hashable</em>) – Decision nodes in <code class="docutils literal notranslate"><span class="pre">scim</span></code>.</p></li>
+<li><p><strong>d2</strong> (<em>hashable</em>) – Decision nodes in <code class="docutils literal notranslate"><span class="pre">scim</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.relevance.shock_roles">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">shock_roles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decisions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.shock_roles" title="Link to this definition">¶</a></dt>
+<dd><p>Classify every shock for every decision.</p>
+<p>Each shock takes one of three roles, per decision:</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#skagent.relevance.OBSERVED" title="skagent.relevance.OBSERVED"><code class="xref py py-data docutils literal notranslate"><span class="pre">OBSERVED</span></code></a></dt><dd><p>Every route from the shock to the objective is intercepted by the
+information set. Conditioning on the information set therefore leaves
+nothing about the shock for the objective to depend on, and a solver may
+grid the shock over its discretization nodes and solve per node.</p>
+</dd>
+<dt><a class="reference internal" href="#skagent.relevance.HIDDEN" title="skagent.relevance.HIDDEN"><code class="xref py py-data docutils literal notranslate"><span class="pre">HIDDEN</span></code></a></dt><dd><p>The shock reaches the objective around the information set, which carries
+no information about it. An expectation over it belongs inside the
+maximization.</p>
+</dd>
+<dt><a class="reference internal" href="#skagent.relevance.MIXED" title="skagent.relevance.MIXED"><code class="xref py py-data docutils literal notranslate"><span class="pre">MIXED</span></code></a></dt><dd><p>The shock reaches the objective around the information set, <em>and</em> the
+information set is partly informative about it. Computing the declared
+problem then requires the conditional law of the shock given the
+information set, so neither per-node solving nor integrating inside the
+maximization applies and a solver should refuse. This most often
+indicates that a reward or transition touches a shock the control’s
+information set claims not to see, which is a modeling error rather than a
+solver limitation.</p>
+</dd>
+</dl>
+<p>The test is on the diagram, not on the syntax of the information set: a shock
+that appears in no information set may still be accounted for, because it
+feeds a derived pre-decision variable that an information set does contain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – The influence-diagram view, after
+<a class="reference internal" href="#skagent.influence.SCIM.with_lagged_arrivals" title="skagent.influence.SCIM.with_lagged_arrivals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_lagged_arrivals()</span></code></a> and
+<a class="reference internal" href="#skagent.influence.SCIM.with_continuation" title="skagent.influence.SCIM.with_continuation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_continuation()</span></code></a>, so that a decision’s
+parents are its information set.</p></li>
+<li><p><strong>shocks</strong> (<em>iterable</em>) – Shock variable names.</p></li>
+<li><p><strong>decisions</strong> (<em>iterable</em><em>, </em><em>optional</em>) – Decisions to classify for. Defaults to every decision in <em>scim</em>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{decision:</span> <span class="pre">{shock:</span> <span class="pre">role}}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a decision has no objective nodes. Nothing is then reachable, so every
+    shock would classify <a class="reference internal" href="#skagent.relevance.OBSERVED" title="skagent.relevance.OBSERVED"><code class="xref py py-data docutils literal notranslate"><span class="pre">OBSERVED</span></code></a> – the one direction that must not
+    be silent, since it invites a solver to condition on a shock the agent
+    cannot see. It means the deciding agent owns no reward downstream of its
+    own decision.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The classification is per decision and may legitimately differ between two
+controls in one period: a shock accounted for by a rich information set is
+hidden to a control that conditions on less. A solver that represents a shock
+one way for the whole period must check that the roles agree across controls.</p>
+<p>Errors fall toward <a class="reference internal" href="#skagent.relevance.HIDDEN" title="skagent.relevance.HIDDEN"><code class="xref py py-data docutils literal notranslate"><span class="pre">HIDDEN</span></code></a> or <a class="reference internal" href="#skagent.relevance.MIXED" title="skagent.relevance.MIXED"><code class="xref py py-data docutils literal notranslate"><span class="pre">MIXED</span></code></a>, never toward wrongly
+reporting a shock as accounted for.</p>
+<p>One traversal per decision, then membership tests, so the cost is linear in
+the graph per decision rather than per (shock, decision) pair.</p>
 </dd></dl>
 
 </section>
@@ -611,18 +831,30 @@ nodes with directed causal edges.</p></li>
 <li><a class="reference internal" href="#skagent.model_analyzer.ModelAnalyzer.to_dict"><code class="docutils literal notranslate"><span class="pre">ModelAnalyzer.to_dict()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#skagent.model_analyzer.SCIM"><code class="docutils literal notranslate"><span class="pre">SCIM</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.agent_utilities"><code class="docutils literal notranslate"><span class="pre">SCIM.agent_utilities</span></code></a></li>
-<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.decision_agent"><code class="docutils literal notranslate"><span class="pre">SCIM.decision_agent</span></code></a></li>
-<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.decisions"><code class="docutils literal notranslate"><span class="pre">SCIM.decisions</span></code></a></li>
-<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.graph"><code class="docutils literal notranslate"><span class="pre">SCIM.graph</span></code></a></li>
-<li><a class="reference internal" href="#skagent.model_analyzer.SCIM.parents"><code class="docutils literal notranslate"><span class="pre">SCIM.parents</span></code></a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-skagent.model_visualizer">Model Visualizer</a></li>
-<li><a class="reference internal" href="#strategic-relevance">Strategic Relevance</a><ul>
+<li><a class="reference internal" href="#influence-diagrams">Influence Diagrams</a><ul>
+<li><a class="reference internal" href="#skagent.influence.CONTINUATION_PREFIX"><code class="docutils literal notranslate"><span class="pre">CONTINUATION_PREFIX</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.DUMMY_PREFIX"><code class="docutils literal notranslate"><span class="pre">DUMMY_PREFIX</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.LAG_SUFFIX"><code class="docutils literal notranslate"><span class="pre">LAG_SUFFIX</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM"><code class="docutils literal notranslate"><span class="pre">SCIM</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.influence.SCIM.ancestors"><code class="docutils literal notranslate"><span class="pre">SCIM.ancestors()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.context"><code class="docutils literal notranslate"><span class="pre">SCIM.context()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.d_connected"><code class="docutils literal notranslate"><span class="pre">SCIM.d_connected()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.objectives"><code class="docutils literal notranslate"><span class="pre">SCIM.objectives()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.parents"><code class="docutils literal notranslate"><span class="pre">SCIM.parents()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.with_continuation"><code class="docutils literal notranslate"><span class="pre">SCIM.with_continuation()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.with_dummy_parent"><code class="docutils literal notranslate"><span class="pre">SCIM.with_dummy_parent()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.with_lagged_arrivals"><code class="docutils literal notranslate"><span class="pre">SCIM.with_lagged_arrivals()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#relevance">Relevance</a><ul>
+<li><a class="reference internal" href="#skagent.relevance.HIDDEN"><code class="docutils literal notranslate"><span class="pre">HIDDEN</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.MIXED"><code class="docutils literal notranslate"><span class="pre">MIXED</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.OBSERVED"><code class="docutils literal notranslate"><span class="pre">OBSERVED</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.condensation"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.condensation()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.draw"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.draw()</span></code></a></li>
@@ -635,6 +867,7 @@ nodes with directed causal edges.</p></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#skagent.relevance.is_s_reachable"><code class="docutils literal notranslate"><span class="pre">is_s_reachable()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.shock_roles"><code class="docutils literal notranslate"><span class="pre">shock_roles()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -648,7 +881,7 @@ nodes with directed causal edges.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=f1c4fd58"></script>
+</div><script src="../_static/documentation_options.js?v=6c48d88e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
