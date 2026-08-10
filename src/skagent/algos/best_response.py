@@ -10,10 +10,11 @@ equilibrium problem and is not attempted here.
 
 Each decision is solved *per information cell*: for every value of what the
 decision-maker observes, the action maximizing their expected payoff conditional
-on that observation. Expectations are estimated by simulating the block's shocks
-once and reusing the same draws for every candidate action (common random
-numbers), so that comparisons between actions carry far less error than their
-levels do. Conditioning is done by grouping the simulated samples, which makes
+on that observation. Expectations are estimated by drawing *samples*
+realizations of the block's shocks once, at construction, and reusing the same
+draws for every candidate action (common random numbers), so that comparisons
+between actions carry far less error than their levels do. Conditioning is done
+by grouping the simulated samples, which makes
 the beliefs at a decision the posterior induced by the other decision rules in
 the profile.
 
@@ -137,7 +138,9 @@ class TabularBestResponseSolver:
     action_count : int, optional
         Number of candidate actions when *actions* is not given.
     samples : int, optional
-        Number of shock draws backing every expectation.
+        Number of shock realizations drawn at construction. Grouping splits these
+        across a decision's information cells, so each cell's expectation rests
+        on the samples that reached it rather than on all of them.
     rng : numpy.random.Generator, optional
         Generator for the shock draws.
     max_cells : int, optional
