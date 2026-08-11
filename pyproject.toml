@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling>=1.27", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 
@@ -11,11 +11,12 @@ authors = [
 description = "Specify, solve, and simulate dynamic stochastic optimization problems."
 readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
@@ -34,7 +35,6 @@ dependencies = [
   "ipython",
   "matplotlib",
   "networkx >=3.3",
-  "numba",
   "numpy",
   "pydot",
   "pyyaml",
@@ -44,6 +44,14 @@ dependencies = [
   "torch >=2.0",
   "xarray",
 ]
+
+[project.urls]
+Homepage = "https://github.com/scikit-agent/scikit-agent"
+Documentation = "https://scikit-agent.github.io/scikit-agent/"
+Source = "https://github.com/scikit-agent/scikit-agent"
+Issues = "https://github.com/scikit-agent/scikit-agent/issues"
+Changelog = "https://github.com/scikit-agent/scikit-agent/blob/main/CHANGELOG.md"
+Discussions = "https://github.com/scikit-agent/scikit-agent/discussions"
 
 [project.optional-dependencies]
 test = [

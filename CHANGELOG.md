@@ -8,6 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-11
+
+First release.
+
 ### Fixed
 
 - `tree_killer_block`'s chance mechanisms called torch's `.float()`, so the
@@ -458,4 +462,5 @@ and this project adheres to
 
 ...
 
-[Unreleased]: https://github.com/scikit-agent/scikit-agent/commits/main
+[Unreleased]: https://github.com/scikit-agent/scikit-agent/compare/v0.1.0...main
+[0.1.0]: https://github.com/scikit-agent/scikit-agent/releases/tag/v0.1.0
