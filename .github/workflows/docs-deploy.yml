@@ -66,8 +66,6 @@ jobs:
       - name: Build documentation
         run: |
           uv run --no-sync python -m sphinx -b html -W --keep-going docs docs/_build
-          # Add .nojekyll to prevent GitHub Pages from processing files with underscores
-          touch docs/_build/.nojekyll
 
       - name: Upload artifact for main branch
         if: steps.path.outputs.is-pr == 'false'
@@ -116,6 +114,11 @@ jobs:
           find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'pr-*' ! -name 'docs-main' -exec rm -rf {} +
           cp -a docs-main/. .
           rm -rf docs-main
+          # Jekyll ignores paths starting with an underscore (_images, _static,
+          # _sources), so branch-served Pages needs .nojekyll at the site root.
+          # Created here rather than in the build step because upload-artifact
+          # drops dotfiles, and enabling them would also ship .doctrees.
+          touch .nojekyll
           git add -A
           if git diff --staged --quiet; then
             echo "No changes to commit"
@@ -158,7 +161,9 @@ jobs:
 
       - name: Commit PR documentation
         run: |
-          git add pr-${{ github.event.pull_request.number }}
+          # .nojekyll at the site root covers the whole branch, previews included.
+          touch .nojekyll
+          git add .nojekyll pr-${{ github.event.pull_request.number }}
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
