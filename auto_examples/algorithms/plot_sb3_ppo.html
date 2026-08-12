@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Economic Models" href="../models/index.html"><link rel="prev" title="The Maliar Training Loop on a Model With No Closed-Form Solution" href="plot_maliar_training_loop.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>PPO via Stable-Baselines3 on the D-4 Benchmark - scikit-agent 0.1.0</title>
+        <title>PPO via Stable-Baselines3 on the D-4 Benchmark - scikit-agent 0.1.1.dev1+gd31a61acb</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.0</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev1+gd31a61acb</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -498,9 +498,9 @@ constraint slackens and consumption falls below <span class="math notranslate no
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Policy error vs VFI reference (over m ∈ [0.5, 10.0]):
     checkpoint         MAE      MaxErr
-        70,000      1.0369      2.6878
-        90,000      0.5752      1.4038
-       130,000      0.2361      0.5927
+        70,000      0.9241      2.3684
+        90,000      0.7245      1.7932
+       130,000      0.1937      0.5005
 </pre></div>
 </div>
 </section>
@@ -546,7 +546,7 @@ episode reward over training, with a rolling mean to highlight the trend.</p>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../../_images/sphx_glr_plot_sb3_ppo_001.png" srcset="../../_images/sphx_glr_plot_sb3_ppo_001.png" alt="D-4 policy: MAE=0.236, Training curve (130,000 timesteps)" class = "sphx-glr-single-img"/></section>
+<img src="../../_images/sphx_glr_plot_sb3_ppo_001.png" srcset="../../_images/sphx_glr_plot_sb3_ppo_001.png" alt="D-4 policy: MAE=0.194, Training curve (130,000 timesteps)" class = "sphx-glr-single-img"/></section>
 <section id="discounted-reward-monte-carlo-comparison">
 <h2>Discounted-Reward Monte-Carlo Comparison<a class="headerlink" href="#discounted-reward-monte-carlo-comparison" title="Link to this heading">¶</a></h2>
 <p>We also score the policies by their realized discounted return over many
@@ -577,9 +577,9 @@ rollouts use the exact trained policies — no reconstruction needed.</p>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Discounted return over 200 steps (50 rollouts each):
-      PPO @ 70,000: mean = -11.0445  std = 0.7570
-      PPO @ 90,000: mean = -10.9091  std = 0.6270
-     PPO @ 130,000: mean = -10.9287  std = 0.8746
+      PPO @ 70,000: mean = -11.0474  std = 0.7669
+      PPO @ 90,000: mean = -10.9381  std = 0.6109
+     PPO @ 130,000: mean = -10.9324  std = 0.8777
      VFI reference: mean = -10.9244  std = 0.8227
 </pre></div>
 </div>
@@ -608,7 +608,7 @@ though no model-specific structure was supplied to the solver. D-4 has no
 closed-form solution, so this is exactly the regime where the SB3 integration
 is most useful: a general-purpose baseline for models an analytical method
 cannot reach.</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 48.072 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 32.202 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-algorithms-plot-sb3-ppo-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/86a3eed1f5e094c5f3ee0e72d3e09843/plot_sb3_ppo.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_sb3_ppo.ipynb</span></code></a></p>
@@ -708,7 +708,7 @@ cannot reach.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=38b66d78"></script>
+</div><script src="../../_static/documentation_options.js?v=7bc96b84"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
