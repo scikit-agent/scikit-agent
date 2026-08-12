@@ -11,11 +11,9 @@ modular blocks, solve them with deep learning or classical numerical methods,
 and simulate.
 
 📖 **[Documentation][docs-link]** &nbsp;·&nbsp;
-[Quickstart](https://scikit-agent.github.io/scikit-agent/user_guide/quickstart.html)
-&nbsp;·&nbsp;
-[Examples](https://scikit-agent.github.io/scikit-agent/auto_examples/index.html)
-&nbsp;·&nbsp;
-[API Reference](https://scikit-agent.github.io/scikit-agent/api/index.html)
+[Quickstart](https://scikit-agent.org/user_guide/quickstart.html) &nbsp;·&nbsp;
+[Examples](https://scikit-agent.org/auto_examples/index.html) &nbsp;·&nbsp;
+[API Reference](https://scikit-agent.org/api/index.html)
 
 ## Quick example
 
@@ -38,9 +36,8 @@ simulator.initialize_sim()
 history = simulator.simulate()
 ```
 
-The
-[Quickstart](https://scikit-agent.github.io/scikit-agent/user_guide/quickstart.html)
-goes further, _solving_ the model for an optimal policy instead of hand-coding a
+The [Quickstart](https://scikit-agent.org/user_guide/quickstart.html) goes
+further, _solving_ the model for an optimal policy instead of hand-coding a
 rule.
 
 <!-- SPHINX-START -->
@@ -91,7 +88,7 @@ examples, and the full API reference.
 [actions-badge]:            https://github.com/scikit-agent/scikit-agent/workflows/CI/badge.svg
 [actions-link]:             https://github.com/scikit-agent/scikit-agent/actions
 [docs-badge]:               https://img.shields.io/badge/docs-latest-blue
-[docs-link]:                https://scikit-agent.github.io/scikit-agent/
+[docs-link]:                https://scikit-agent.org/
 [github-discussions-badge]: https://img.shields.io/static/v1?label=Discussions&message=Ask&color=blue&logo=github
 [github-discussions-link]:  https://github.com/scikit-agent/scikit-agent/discussions
 [pypi-link]:                https://pypi.org/project/scikit-agent/

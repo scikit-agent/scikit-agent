@@ -119,6 +119,9 @@ jobs:
           # Created here rather than in the build step because upload-artifact
           # drops dotfiles, and enabling them would also ship .doctrees.
           touch .nojekyll
+          # CNAME holds the custom domain; the wipe above would drop it and
+          # Pages would revert to the github.io URL.
+          echo "scikit-agent.org" > CNAME
           git add -A
           if git diff --staged --quiet; then
             echo "No changes to commit"
@@ -181,7 +184,7 @@ jobs:
             const prNumber = context.payload.pull_request.number;
             const repoOwner = context.repo.owner;
             const repoName = context.repo.repo;
-            const previewUrl = `https://${repoOwner}.github.io/${repoName}/pr-${prNumber}/`;
+            const previewUrl = `https://scikit-agent.org/pr-${prNumber}/`;
 
             // Find existing comment
             const comments = await github.rest.issues.listComments({

@@ -7,13 +7,13 @@ for both main branch documentation and PR preview deployments.
 
 ### Main Branch Documentation
 
-- **URL**: `https://scikit-agent.github.io/scikit-agent/`
+- **URL**: `https://scikit-agent.org/`
 - **Trigger**: Pushes to `main` branch or `documentation-*` branches
 - **Target**: Root of GitHub Pages site
 
 ### PR Preview Documentation
 
-- **URL Pattern**: `https://scikit-agent.github.io/scikit-agent/pr-{number}/`
+- **URL Pattern**: `https://scikit-agent.org/pr-{number}/`
 - **Trigger**: Opening, updating, or reopening pull requests
 - **Target**: Subdirectory based on PR number
 - **Cleanup**: Automatically removed when PR is closed
@@ -82,12 +82,12 @@ setup required.
 
 ### Primary Documentation
 
-- **GitHub Pages**: https://scikit-agent.github.io/scikit-agent/
+- **GitHub Pages**: https://scikit-agent.org/
 - **Read the Docs**: https://scikit-agent.readthedocs.io/
 
 ### Development
 
-- **PR Previews**: https://scikit-agent.github.io/scikit-agent/pr-{number}/
+- **PR Previews**: https://scikit-agent.org/pr-{number}/
 - **Branch Docs**: Available for `documentation-*` branches
 
 ## 🛠️ Manual Deployment
