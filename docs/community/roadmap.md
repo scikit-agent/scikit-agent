@@ -31,6 +31,32 @@ environments and plan to do so in future releases.
 As we expand the classes of models that `scikit-agent` can handle, we will also
 provide a larger library of example models that showcase these features.
 
+## Language model agents
+
+We will extend the same testbed to string-valued state and action spaces, so
+that large language models can be components of a model rather than a wrapper
+around it. LLM calls will be permitted at four distinct, named points:
+
+- **A chance variable whose transition calls an LLM**, so that the environment
+  itself can be driven by a language model.
+- **A decision rule synthesized offline by an LLM** at solve time, and then run
+  as a fixed rule.
+- **A decision queried live from an LLM** at runtime. The two decision points
+  combine: a synthesized rule can specify which model to query, and with what
+  prompt.
+- **A utility computed by an LLM acting as judge**, rather than by a closed-form
+  function.
+
+The cost of runtime LLM queries will be built into the model as a cost the agent
+weighs, not an afterthought, so that limits on cognitive resources are
+endogenous. LLM sampling will be represented as an explicit stochastic shock, so
+that nondeterminism is a modeled quantity rather than an unaccounted side
+effect.
+
+These environments will support partial observability, persistent memory, and
+tool use as structural features, and will allow frontier-model agents to
+interact with simpler, non-LLM agents in the same environment.
+
 ## More algorithms
 
 We have launched `scikit-agent` with the Maliar algorithm as its flagship
