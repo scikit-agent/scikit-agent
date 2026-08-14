@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- `skagent.relevance` gains the four single-decision incentive criteria of
+  Everitt et al. (AAAI-21): `admits_voi`, `admits_ri`, `admits_voc` and
+  `admits_ici`, with the `is_requisite` test and `minimal_reduction` they rest
+  on. Out-of-domain and multi-decision queries raise rather than answer.
+- `SCIM.with_edge` and `SCIM.without_edges`, the transforms those criteria are
+  posed over.
+
 ## [0.1.0] - 2026-08-12
 
 First release.
