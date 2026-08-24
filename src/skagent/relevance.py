@@ -86,6 +86,25 @@ HIDDEN = "hidden"
 MIXED = "mixed"
 
 
+def _objectives(scim, decision, consequence):
+    """``U_D``, refusing the empty case.
+
+    An agent owning no reward downstream of its own decision leaves nothing
+    reachable, so every question asked of that decision comes out negative --
+    the one direction that must not be silent. *consequence* names what the
+    caller would otherwise have reported.
+    """
+    targets = scim.objectives(decision)
+    if not targets:
+        raise ValueError(
+            f"Decision '{decision}' has no objective nodes, so {consequence}. "
+            f"The agent deciding '{decision}' owns no reward downstream of it; "
+            "note that a control with no declared agent does not own a reward "
+            "assigned to a named one."
+        )
+    return targets
+
+
 # -- decisions ---------------------------------------------------------------
 
 
@@ -281,15 +300,9 @@ def shock_roles(scim, shocks, decisions=None):
     roles = {}
 
     for decision in scim.decisions if decisions is None else decisions:
-        targets = scim.objectives(decision)
-        if not targets:
-            raise ValueError(
-                f"Decision '{decision}' has no objective nodes, so every shock "
-                "would be reported as accounted-for. The agent deciding "
-                f"'{decision}' owns no reward downstream of it; note that a "
-                "control with no declared agent does not own a reward assigned "
-                "to a named one."
-            )
+        targets = _objectives(
+            scim, decision, "every shock would be reported as accounted-for"
+        )
 
         conditioned = scim.parents(decision)
         reachable = scim.d_connected(targets, scim.context(decision))
@@ -316,8 +329,9 @@ def shock_roles(scim, shocks, decisions=None):
 def _the_decision(scim, decision=None):
     """The one decision the incentive criteria are defined for.
 
-    Validates the single-decision contract, and that *decision* names that
-    decision when given.
+    The domain check every criterion opens with: the diagram holds one decision,
+    *decision* names it when given, and the agent has something downstream of it
+    to want.
     """
     if len(scim.decisions) != 1:
         raise ValueError(
@@ -334,31 +348,8 @@ def _the_decision(scim, decision=None):
         raise ValueError(
             f"{decision!r} is not the decision of this diagram; {only!r} is"
         )
+    _objectives(scim, only, "every node would be reported as admitting no incentive")
     return only
-
-
-def _objectives(scim, decision):
-    """``U_D``: the objectives the requisiteness test is run against."""
-    targets = scim.objectives(decision)
-    if not targets:
-        raise ValueError(
-            f"decision '{decision}' has no objective nodes, so every node would "
-            "be reported as admitting no incentive. The agent deciding "
-            f"'{decision}' owns no reward downstream of it; note that a control "
-            "with no declared agent does not own a reward assigned to a named "
-            "one."
-        )
-    return targets
-
-
-def _utilities(scim, decision):
-    """Every utility the deciding agent owns, downstream of the decision or not.
-
-    The target set of the two control criteria, and wider than
-    :func:`_objectives`: a variable can be worth controlling for the sake of a
-    payoff the decision itself never reaches.
-    """
-    return set(scim.agent_utilities.get(scim.decision_agent.get(decision), ()))
 
 
 def _check_node(scim, node):
@@ -407,12 +398,12 @@ def is_requisite(scim, decision, node):
         downstream of the decision.
     """
     decision = _the_decision(scim, decision)
-    targets = _objectives(scim, decision)
     if node not in scim.parents(decision):
         raise ValueError(
             f"{node!r} is not an observation of {decision!r}; requisiteness is a "
             "property of an information link"
         )
+    targets = scim.objectives(decision)
     return node in scim.d_connected(targets, scim.context(decision) - {node})
 
 
@@ -475,7 +466,7 @@ def admits_voi(scim, decision, node):
     """
     decision = _the_decision(scim, decision)
     _check_node(scim, node)
-    if node == decision or node in nx.descendants(scim.graph, decision):
+    if _reaches(scim.graph, decision, {node}):
         raise ValueError(
             f"value of information is not defined for {node!r}: it is the "
             f"decision or descends from it, so the diagram in which it is "
@@ -517,13 +508,12 @@ def admits_ri(scim, decision, node):
     """
     decision = _the_decision(scim, decision)
     _check_node(scim, node)
-    _objectives(scim, decision)
     if node == decision:
         raise ValueError(
             f"a response incentive is not defined for the decision {node!r} "
             "itself; it is a criterion on what the decision responds to"
         )
-    return decision in nx.descendants(minimal_reduction(scim).graph, node)
+    return _reaches(minimal_reduction(scim).graph, node, {decision})
 
 
 def admits_voc(scim, decision, node):
@@ -556,13 +546,12 @@ def admits_voc(scim, decision, node):
     """
     decision = _the_decision(scim, decision)
     _check_node(scim, node)
-    _objectives(scim, decision)
     if node == decision:
         raise ValueError(
             f"value of control is not defined for the decision {node!r} itself; "
             "it is already the agent's to set"
         )
-    return _reaches(minimal_reduction(scim).graph, node, _utilities(scim, decision))
+    return _reaches(minimal_reduction(scim).graph, node, scim.utilities(decision))
 
 
 def admits_ici(scim, decision, node):
@@ -597,7 +586,6 @@ def admits_ici(scim, decision, node):
     """
     decision = _the_decision(scim, decision)
     _check_node(scim, node)
-    _objectives(scim, decision)
-    if node != decision and node not in nx.descendants(scim.graph, decision):
-        return False
-    return _reaches(scim.graph, node, _utilities(scim, decision))
+    return _reaches(scim.graph, decision, {node}) and _reaches(
+        scim.graph, node, scim.utilities(decision)
+    )
