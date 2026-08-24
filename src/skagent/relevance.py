@@ -28,7 +28,32 @@ is already its own synthetic source. Here what varies is the reading, because a
 solver needs to know not just whether the shock matters but how to integrate it:
 see :data:`OBSERVED`, :data:`HIDDEN` and :data:`MIXED`.
 
-Both are thin functions over a :class:`~skagent.influence.SCIM`, which owns the
+**A node that is neither** -- the four *incentive criteria* of Everitt, Carey,
+Langlois, Ortega & Legg, "Agent Incentives: A Causal Perspective" (AAAI-21,
+35(13):11487-11495; arXiv:2102.01685), which ask what one decision stands to
+gain from a variable, or does to it:
+
+  - :func:`admits_voi` (Def. 8, Thm. 9) -- would observing X raise the
+    achievable payoff?
+  - :func:`admits_ri` (Def. 10, Thm. 12) -- does every optimal policy respond to
+    a change in X?
+  - :func:`admits_voc` (Def. 15, Thm. 16) -- would setting X raise the
+    achievable payoff?
+  - :func:`admits_ici` (Def. 17, Thm. 18) -- does the decision reach its payoff
+    *through* X?
+
+Each is sound and complete, and each is stated for a diagram holding exactly one
+decision; a diagram with more is refused rather than answered. Three of the four
+run over the :func:`minimal_reduction`, the diagram with every observation
+:func:`is_requisite` rejects unwired.
+
+Completeness is a property of the graph. Under determinism d-separation
+over-reports d-connection (see :mod:`skagent.influence`), and these mechanisms
+are largely deterministic, so an incentive may be reported where the functional
+effect vanishes -- never the reverse. For a safety criterion that is the safe
+direction of error, but it is a direction.
+
+Each is a thin function over a :class:`~skagent.influence.SCIM`, which owns the
 graph, the conditioning-context and objective vocabulary, and the d-separation
 engine. Construction of a ``SCIM`` from a scikit-agent Block lives in
 :mod:`skagent.model_analyzer`; this module, like the substrate, depends only on
@@ -44,6 +69,12 @@ __all__ = [
     "is_s_reachable",
     "RelevanceGraph",
     "shock_roles",
+    "is_requisite",
+    "minimal_reduction",
+    "admits_voi",
+    "admits_ri",
+    "admits_voc",
+    "admits_ici",
 ]
 
 
@@ -53,6 +84,25 @@ OBSERVED = "observed"
 HIDDEN = "hidden"
 #: Partly informed *and* separately relevant; needs filtering, so refuse.
 MIXED = "mixed"
+
+
+def _objectives(scim, decision, consequence):
+    """``U_D``, refusing the empty case.
+
+    An agent owning no reward downstream of its own decision leaves nothing
+    reachable, so every question asked of that decision comes out negative --
+    the one direction that must not be silent. *consequence* names what the
+    caller would otherwise have reported.
+    """
+    targets = scim.objectives(decision)
+    if not targets:
+        raise ValueError(
+            f"Decision '{decision}' has no objective nodes, so {consequence}. "
+            f"The agent deciding '{decision}' owns no reward downstream of it; "
+            "note that a control with no declared agent does not own a reward "
+            "assigned to a named one."
+        )
+    return targets
 
 
 # -- decisions ---------------------------------------------------------------
@@ -250,15 +300,9 @@ def shock_roles(scim, shocks, decisions=None):
     roles = {}
 
     for decision in scim.decisions if decisions is None else decisions:
-        targets = scim.objectives(decision)
-        if not targets:
-            raise ValueError(
-                f"Decision '{decision}' has no objective nodes, so every shock "
-                "would be reported as accounted-for. The agent deciding "
-                f"'{decision}' owns no reward downstream of it; note that a "
-                "control with no declared agent does not own a reward assigned "
-                "to a named one."
-            )
+        targets = _objectives(
+            scim, decision, "every shock would be reported as accounted-for"
+        )
 
         conditioned = scim.parents(decision)
         reachable = scim.d_connected(targets, scim.context(decision))
@@ -277,3 +321,271 @@ def shock_roles(scim, shocks, decisions=None):
         roles[decision] = decision_roles
 
     return roles
+
+
+# -- everything else ---------------------------------------------------------
+
+
+def _the_decision(scim, decision=None):
+    """The one decision the incentive criteria are defined for.
+
+    The domain check every criterion opens with: the diagram holds one decision,
+    *decision* names it when given, and the agent has something downstream of it
+    to want.
+    """
+    if len(scim.decisions) != 1:
+        raise ValueError(
+            "the incentive criteria are stated for a diagram with exactly one "
+            f"decision, but this one has {len(scim.decisions)}: "
+            f"{sorted(map(str, scim.decisions))}. What a decision must account "
+            "for in the presence of others is a different question, asked of "
+            "is_s_reachable."
+        )
+    only = scim.decisions[0]
+    if only not in scim.graph:
+        raise ValueError(f"decision {only!r} is not a node of this diagram")
+    if decision is not None and decision != only:
+        raise ValueError(
+            f"{decision!r} is not the decision of this diagram; {only!r} is"
+        )
+    _objectives(scim, only, "every node would be reported as admitting no incentive")
+    return only
+
+
+def _check_node(scim, node):
+    if node not in scim.graph:
+        raise ValueError(f"{node!r} is not a node of this diagram")
+
+
+def _reaches(graph, source, target_set):
+    """Is there a directed path from *source* to some node of *target_set*?
+
+    A path of length zero counts, so a node reaches itself. Reachability rather
+    than path enumeration: in a DAG a directed path ``A -> B`` composed with one
+    ``B -> C`` is itself a directed path, since a node shared by the two halves
+    would put ``B`` on a cycle.
+    """
+    return bool(target_set & (nx.descendants(graph, source) | {source}))
+
+
+def is_requisite(scim, decision, node):
+    """Is the observation ``node`` requisite for ``decision``?
+
+    Requisite means the decision rule may need to read it: ``node`` is still
+    d-connected to some objective given everything else the decision observes,
+    plus the decision itself. A nonrequisite observation (Def. 7; Lauritzen &
+    Nilsson 2001) is one for which ``X`` is independent of ``U_D`` given
+    ``Pa(D) u {D} \\ {X}``, so its information link carries nothing.
+
+    Parameters
+    ----------
+    scim : skagent.influence.SCIM
+        A diagram with exactly one decision.
+    decision : hashable
+        That decision.
+    node : hashable
+        An observation of ``decision`` -- one of its parents.
+
+    Returns
+    -------
+    bool
+
+    Raises
+    ------
+    ValueError
+        If the diagram holds more than one decision, if ``node`` is not an
+        observation of ``decision``, or if the deciding agent owns no objective
+        downstream of the decision.
+    """
+    decision = _the_decision(scim, decision)
+    if node not in scim.parents(decision):
+        raise ValueError(
+            f"{node!r} is not an observation of {decision!r}; requisiteness is a "
+            "property of an information link"
+        )
+    targets = scim.objectives(decision)
+    return node in scim.d_connected(targets, scim.context(decision) - {node})
+
+
+def minimal_reduction(scim):
+    """The diagram with every nonrequisite information link removed (Def. 11).
+
+    Also known as the requisite graph, the d-reduction, or the trimmed graph.
+    What is left of the decision's parents is what an optimal decision rule can
+    depend on, which is why the response-incentive and value-of-control criteria
+    are posed over this graph rather than the declared one.
+
+    The links are found once and dropped together: with a single decision there
+    is nothing for a second pass to find, since removing a link that carries no
+    information cannot make another link stop carrying any.
+
+    Parameters
+    ----------
+    scim : skagent.influence.SCIM
+        A diagram with exactly one decision.
+
+    Returns
+    -------
+    skagent.influence.SCIM
+        A new diagram; the input is untouched.
+    """
+    decision = _the_decision(scim)
+    return scim.without_edges(
+        (observation, decision)
+        for observation in scim.parents(decision)
+        if not is_requisite(scim, decision, observation)
+    )
+
+
+def admits_voi(scim, decision, node):
+    """Does ``node`` have value of information for ``decision`` (Def. 8)?
+
+    True when observing ``node`` could raise the achievable payoff. The
+    criterion (Thm. 9) is that ``node`` is a requisite observation in the
+    diagram with the information link ``node -> decision`` added.
+
+    Parameters
+    ----------
+    scim : skagent.influence.SCIM
+        A diagram with exactly one decision.
+    decision : hashable
+        That decision.
+    node : hashable
+        A node outside ``Desc(decision) u {decision}``.
+
+    Returns
+    -------
+    bool
+
+    Raises
+    ------
+    ValueError
+        If the diagram holds more than one decision, or if ``node`` is the
+        decision or descends from it -- there is no diagram in which such a node
+        is observed, since the added information link would close a cycle.
+    """
+    decision = _the_decision(scim, decision)
+    _check_node(scim, node)
+    if _reaches(scim.graph, decision, {node}):
+        raise ValueError(
+            f"value of information is not defined for {node!r}: it is the "
+            f"decision or descends from it, so the diagram in which it is "
+            f"observed -- the one the criterion is posed over -- does not exist."
+        )
+    return is_requisite(scim.with_edge(node, decision), decision, node)
+
+
+def admits_ri(scim, decision, node):
+    """Does ``node`` admit a response incentive for ``decision`` (Def. 10)?
+
+    True when every optimal policy responds to a change in ``node``. The
+    criterion (Thm. 12) is a directed path from ``node`` to the decision in the
+    :func:`minimal_reduction` -- a route by which the decision must hear about
+    it, once the links that carry nothing are gone.
+
+    A response incentive on a sensitive attribute means every optimal policy is
+    counterfactually unfair in the sense of Kusner et al. (2017), by Thm. 14 of
+    the same paper.
+
+    Parameters
+    ----------
+    scim : skagent.influence.SCIM
+        A diagram with exactly one decision.
+    decision : hashable
+        That decision.
+    node : hashable
+        Any node other than the decision.
+
+    Returns
+    -------
+    bool
+
+    Raises
+    ------
+    ValueError
+        If the diagram holds more than one decision, or if ``node`` is the
+        decision, which the definition excludes.
+    """
+    decision = _the_decision(scim, decision)
+    _check_node(scim, node)
+    if node == decision:
+        raise ValueError(
+            f"a response incentive is not defined for the decision {node!r} "
+            "itself; it is a criterion on what the decision responds to"
+        )
+    return _reaches(minimal_reduction(scim).graph, node, {decision})
+
+
+def admits_voc(scim, decision, node):
+    """Does ``node`` admit positive value of control (Def. 15)?
+
+    True when being able to set ``node`` -- rather than take it as it comes --
+    could raise the achievable payoff. The criterion (Thm. 16) is a directed
+    path from ``node`` to a utility the deciding agent owns, in the
+    :func:`minimal_reduction`. The path may run through the decision.
+
+    Parameters
+    ----------
+    scim : skagent.influence.SCIM
+        A diagram with exactly one decision.
+    decision : hashable
+        That decision.
+    node : hashable
+        Any node other than the decision.
+
+    Returns
+    -------
+    bool
+
+    Raises
+    ------
+    ValueError
+        If the diagram holds more than one decision, or if ``node`` is the
+        decision, which the definition excludes: a decision is already under the
+        agent's control.
+    """
+    decision = _the_decision(scim, decision)
+    _check_node(scim, node)
+    if node == decision:
+        raise ValueError(
+            f"value of control is not defined for the decision {node!r} itself; "
+            "it is already the agent's to set"
+        )
+    return _reaches(minimal_reduction(scim).graph, node, scim.utilities(decision))
+
+
+def admits_ici(scim, decision, node):
+    """Does ``node`` admit an instrumental control incentive (Def. 17)?
+
+    True when the decision reaches a payoff *through* ``node``, so an agent
+    optimizing the decision has reason to move it. The criterion (Thm. 18) is a
+    directed path ``decision -> ... -> node -> ... -> utility`` in the diagram as
+    declared -- not in the :func:`minimal_reduction`, since what the decision can
+    influence does not depend on what it observes.
+
+    The decision itself, and any utility it reaches, lie on such a path
+    trivially and so admit the incentive.
+
+    Parameters
+    ----------
+    scim : skagent.influence.SCIM
+        A diagram with exactly one decision.
+    decision : hashable
+        That decision.
+    node : hashable
+        Any node of the diagram.
+
+    Returns
+    -------
+    bool
+
+    Raises
+    ------
+    ValueError
+        If the diagram holds more than one decision.
+    """
+    decision = _the_decision(scim, decision)
+    _check_node(scim, node)
+    return _reaches(scim.graph, decision, {node}) and _reaches(
+        scim.graph, node, scim.utilities(decision)
+    )
