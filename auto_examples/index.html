@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms/index.html"><link rel="prev" title="Benchmark Models" href="../user_guide/benchmark_models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Examples - scikit-agent 0.1.1.dev5+g1dd8a69d8</title>
+        <title>Examples - scikit-agent 0.1.1.dev9+g4195f3586</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev5+g1dd8a69d8</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev9+g4195f3586</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -217,10 +217,11 @@
 <li class="toctree-l3"><a class="reference internal" href="algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="models/plot_incentive_criteria.html">Incentives: Reading Fairness and Manipulation Off a Diagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
@@ -315,14 +316,18 @@ algorithms, and numerical techniques.</p>
 <p><a class="reference internal" href="algorithms/plot_sb3_ppo.html"><span class="doc">PPO via Stable-Baselines3 on the D-4 Benchmark</span></a></p>
   <div class="sphx-glr-thumbnail-title">PPO via Stable-Baselines3 on the D-4 Benchmark</div>
 </div></div></section>
-<section id="economic-models">
-<h2>Economic Models<a class="headerlink" href="#economic-models" title="Link to this heading">¶</a></h2>
-<p>This section contains examples demonstrating how to use and create economic models
-with scikit-agent. These examples show how to implement various economic theories
-and models using the framework.</p>
-<p>Examples include consumption-savings models, portfolio choice problems, and other
-standard economic models that can be solved using reinforcement learning and
-other computational methods.</p>
+<section id="models">
+<h2>Models<a class="headerlink" href="#models" title="Link to this heading">¶</a></h2>
+<p>Models written as scikit-agent blocks: decision problems, games, and the
+diagrams that state their structure. A block says who decides what, knowing
+what, and paid for what, which is a general enough description that the models
+here are drawn from economics, from game theory and from the AI-safety
+literature alike – and the list is open.</p>
+<p>Some of these models are solved for a policy, with reinforcement learning or
+other computational methods. Others are read rather than solved: what a decision
+must account for, and what an agent has an incentive to observe or to move, are
+properties of a model’s structure, and are answerable before any policy is
+computed.</p>
 <div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use."><img alt="" src="../_images/sphx_glr_plot_resource_extraction_thumb.png" />
 <p><a class="reference internal" href="models/plot_resource_extraction.html"><span class="doc">Resource Extraction Model</span></a></p>
   <div class="sphx-glr-thumbnail-title">Resource Extraction Model</div>
@@ -332,6 +337,9 @@ other computational methods.</p>
 </div><div class="sphx-glr-thumbcontainer" tooltip="Some games decompose: their decisions break into smaller problems that can be solved in sequence, each taking as settled the ones before it. Others do not, and their decisions have to be faced together, as a single equilibrium problem. What settles which -- and where a decomposition&#x27;s dividing lines fall -- is whether the decisions strategically rely on one another: whether optimising one of them requires knowing how another is played. That relation depends on a game&#x27;s payoffs, but it is bounded from above by a purely graphical criterion, Koller &amp; Milch&#x27;s s-reachability, read off the structure of the model alone: no payoff values, no solving. Where the criterion finds no reliance, there is none."><img alt="" src="../_images/sphx_glr_plot_tree_killer_relevance_thumb.png" />
 <p><a class="reference internal" href="models/plot_tree_killer_relevance.html"><span class="doc">Strategic Relevance: Solving the Tree Killer</span></a></p>
   <div class="sphx-glr-thumbnail-title">Strategic Relevance: Solving the Tree Killer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="An agent optimising an objective acquires incentives it was never given deliberately: to observe some things, to respond to others, to move others still. Which incentives it acquires is decided by the shape of the problem -- what the agent observes, what it can influence, what it is paid for -- and can therefore be read off an influence diagram, before any payoff numbers are chosen and without solving anything."><img alt="" src="../_images/sphx_glr_plot_incentive_criteria_thumb.png" />
+<p><a class="reference internal" href="models/plot_incentive_criteria.html"><span class="doc">Incentives: Reading Fairness and Manipulation Off a Diagram</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Incentives: Reading Fairness and Manipulation Off a Diagram</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:"><img alt="" src="../_images/sphx_glr_plot_benchmark_models_thumb.png" />
 <p><a class="reference internal" href="models/plot_benchmark_models.html"><span class="doc">Benchmark Consumption Models</span></a></p>
   <div class="sphx-glr-thumbnail-title">Benchmark Consumption Models</div>
@@ -405,7 +413,7 @@ other computational methods.</p>
             <ul>
 <li><a class="reference internal" href="#">Examples</a><ul>
 <li><a class="reference internal" href="#algorithms">Algorithms</a></li>
-<li><a class="reference internal" href="#economic-models">Economic Models</a></li>
+<li><a class="reference internal" href="#models">Models</a></li>
 </ul>
 </li>
 </ul>
@@ -417,7 +425,7 @@ other computational methods.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=11b57bd5"></script>
+</div><script src="../_static/documentation_options.js?v=9297d7ae"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

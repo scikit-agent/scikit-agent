@@ -127,16 +127,20 @@ algorithms, and numerical techniques.
 
     </div>
 
-Economic Models
-----------------
+Models
+--------
 
-This section contains examples demonstrating how to use and create economic models
-with scikit-agent. These examples show how to implement various economic theories
-and models using the framework.
+Models written as scikit-agent blocks: decision problems, games, and the
+diagrams that state their structure. A block says who decides what, knowing
+what, and paid for what, which is a general enough description that the models
+here are drawn from economics, from game theory and from the AI-safety
+literature alike -- and the list is open.
 
-Examples include consumption-savings models, portfolio choice problems, and other
-standard economic models that can be solved using reinforcement learning and
-other computational methods.
+Some of these models are solved for a policy, with reinforcement learning or
+other computational methods. Others are read rather than solved: what a decision
+must account for, and what an agent has an incentive to observe or to move, are
+properties of a model's structure, and are answerable before any policy is
+computed.
 
 
 .. raw:: html
@@ -198,6 +202,23 @@ other computational methods.
 .. raw:: html
 
       <div class="sphx-glr-thumbnail-title">Strategic Relevance: Solving the Tree Killer</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="An agent optimising an objective acquires incentives it was never given deliberately: to observe some things, to respond to others, to move others still. Which incentives it acquires is decided by the shape of the problem -- what the agent observes, what it can influence, what it is paid for -- and can therefore be read off an influence diagram, before any payoff numbers are chosen and without solving anything.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_incentive_criteria_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_incentive_criteria`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Incentives: Reading Fairness and Manipulation Off a Diagram</div>
     </div>
 
 

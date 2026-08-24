@@ -1,0 +1,875 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Benchmark Consumption Models" href="plot_benchmark_models.html"><link rel="prev" title="Strategic Relevance: Solving the Tree Killer" href="plot_tree_killer_relevance.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Incentives: Reading Fairness and Manipulation Off a Diagram - scikit-agent 0.1.1.dev9+g4195f3586</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=83e65f8c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev9+g4195f3586</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/environments.html">Environments Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/benchmark_models.html">Benchmark Models</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_direct_block_solve.html">Solving a Block Directly (Non-Recurring)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Models</a><input aria-label="Toggle navigation of Models" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_resource_extraction.html">Resource Extraction Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Incentives: Reading Fairness and Manipulation Off a Diagram</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/bellman.html">Bellman Periods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/algorithms.html">Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/analysis.html">Model Analysis and Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../community/roadmap.html">Roadmap</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecosystem/index.html">Ecosystem</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/auto_examples/models/plot_incentive_criteria.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/auto_examples/models/plot_incentive_criteria.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-models-plot-incentive-criteria-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="incentives-reading-fairness-and-manipulation-off-a-diagram">
+<span id="sphx-glr-auto-examples-models-plot-incentive-criteria-py"></span><h1>Incentives: Reading Fairness and Manipulation Off a Diagram<a class="headerlink" href="#incentives-reading-fairness-and-manipulation-off-a-diagram" title="Link to this heading">¶</a></h1>
+<p>An agent optimising an objective acquires incentives it was never given
+deliberately: to observe some things, to respond to others, to <em>move</em> others
+still. Which incentives it acquires is decided by the shape of the problem –
+what the agent observes, what it can influence, what it is paid for – and can
+therefore be read off an influence diagram, before any payoff numbers are chosen
+and without solving anything.</p>
+<p>Everitt, Carey, Langlois, Ortega &amp; Legg <a class="footnote-reference brackets" href="#id2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> make that precise for a diagram with
+a single decision, with four criteria, each of which has a graphical test that is
+both <em>sound</em> and <em>complete</em>:</p>
+<ul class="simple">
+<li><p><strong>Value of information</strong> (VoI): would observing <span class="math notranslate nohighlight">\(X\)</span> raise the achievable
+payoff?</p></li>
+<li><p><strong>Response incentive</strong> (RI): does every optimal policy respond to a change in
+<span class="math notranslate nohighlight">\(X\)</span>?</p></li>
+<li><p><strong>Value of control</strong> (VoC): would being able to <em>set</em> <span class="math notranslate nohighlight">\(X\)</span> raise the
+achievable payoff?</p></li>
+<li><p><strong>Instrumental control incentive</strong> (ICI): does the agent reach its payoff
+<em>through</em> <span class="math notranslate nohighlight">\(X\)</span>?</p></li>
+</ul>
+<p>The four come apart, and where they come apart is where the safety content is. A
+system that responds to a sensitive attribute is unfair even if observing that
+attribute would buy it nothing; a system that is paid for moving something in the
+world has an incentive to move it, whether or not moving it was the point.</p>
+<p>This example takes the paper’s two running examples, encoded as scikit-agent
+blocks in <a class="reference internal" href="../../api/models.html#module-skagent.models.safety.incentives" title="skagent.models.safety.incentives"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.safety.incentives</span></code></a>, and</p>
+<ol class="arabic simple">
+<li><p>computes all four criteria for every node of each diagram, reproducing the
+paper’s readings, and</p></li>
+<li><p>confirms three of those readings numerically against the mechanisms, which
+the criteria themselves never look at.</p></li>
+</ol>
+<p>Each example comes as a <strong>pair</strong>: a diagram that admits an incentive, and a
+redesign that does not. One edge separates the members of a pair, and that edge
+flips one criterion while leaving another fixed.</p>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id2" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Everitt, T., Carey, R., Langlois, E., Ortega, P. A. and Legg, S. (2021).
+“Agent Incentives: A Causal Perspective.” <em>AAAI-21</em>, 35(13), 11487-11495.
+arXiv:2102.01685.</p>
+</aside>
+<aside class="footnote brackets" id="id3" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">2</a><span class="fn-bracket">]</span></span>
+<p>Kusner, M. J., Loftus, J., Russell, C. and Silva, R. (2017).
+“Counterfactual Fairness.” <em>NeurIPS 2017</em>, 4066-4076.</p>
+</aside>
+</aside>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.model_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelAnalyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.safety.incentives</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">content_recommender_block</span><span class="p">,</span>
+    <span class="n">content_recommender_redesign_block</span><span class="p">,</span>
+    <span class="n">grade_predictor_block</span><span class="p">,</span>
+    <span class="n">grade_predictor_redesign_block</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.relevance</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">admits_ici</span><span class="p">,</span>
+    <span class="n">admits_ri</span><span class="p">,</span>
+    <span class="n">admits_voc</span><span class="p">,</span>
+    <span class="n">admits_voi</span><span class="p">,</span>
+    <span class="n">minimal_reduction</span><span class="p">,</span>
+<span class="p">)</span>
+
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">CRITERIA</span></a> <span class="o">=</span> <span class="p">{</span><span class="s2">"VoI"</span><span class="p">:</span> <span class="n">admits_voi</span><span class="p">,</span> <span class="s2">"RI"</span><span class="p">:</span> <span class="n">admits_ri</span><span class="p">,</span> <span class="s2">"VoC"</span><span class="p">:</span> <span class="n">admits_voc</span><span class="p">,</span> <span class="s2">"ICI"</span><span class="p">:</span> <span class="n">admits_ici</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">incentive_table</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">decision</span><span class="o">=</span><span class="s2">"P"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Print every criterion for every node of a block's diagram.</span>
+
+<span class="sd">    ``n/a`` marks a query the criterion refuses as outside its domain rather</span>
+<span class="sd">    than answers: value of information asks about observing a variable, which is</span>
+<span class="sd">    not defined for the decision itself or anything downstream of it.</span>
+<span class="sd">    """</span>
+    <span class="n">scim</span> <span class="o">=</span> <span class="n">ModelAnalyzer</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">analyze</span><span class="p">()</span><span class="o">.</span><span class="n">influence_graph</span><span class="p">()</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a> <span class="k">for</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a> <span class="ow">in</span> <span class="n">scim</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span> <span class="k">if</span> <span class="ow">not</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span><span class="o">.</span><span class="n">startswith</span></a><span class="p">(</span><span class="s2">"u_"</span><span class="p">))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'node'</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2">  "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">&gt;4</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">CRITERIA</span></a><span class="p">))</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">criterion</span> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">CRITERIA</span></a><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"yes"</span> <span class="k">if</span> <span class="n">criterion</span><span class="p">(</span><span class="n">scim</span><span class="p">,</span> <span class="n">decision</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"-"</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"n/a"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">node</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2">  "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cell</span><span class="si">:</span><span class="s2">&gt;4</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">scim</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a><span class="o">=</span><span class="mi">200_000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A private copy of *block* with its shocks constructed, and one draw."""</span>
+    <span class="n">block</span> <span class="o">=</span> <a href="https://docs.python.org/3/library/copy.html#copy.deepcopy" title="copy.deepcopy" class="sphx-glr-backref-module-copy sphx-glr-backref-type-py-function"><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span></a><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">block</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">({},</span> <span class="n">rng</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.default_rng" title="numpy.random.default_rng" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span></a><span class="p">(</span><span class="n">seed</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">block</span><span class="p">,</span> <span class="p">{</span><span class="n">sym</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a><span class="p">)</span> <span class="k">for</span> <span class="n">sym</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">block</span><span class="o">.</span><span class="n">get_shocks</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">binned_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">edges</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``(E[x | bin], E[y | bin])`` for each bin.</span>
+
+<span class="sd">    Each point sits at the bin's mean ``x`` rather than at its midpoint, so that</span>
+<span class="sd">    two groups whose ``x`` is distributed differently *within* a bin are still</span>
+<span class="sd">    compared at the same ``x``. Plotting against midpoints instead makes a group</span>
+<span class="sd">    with more mass at the top of its bins look as though it had a higher ``y``</span>
+<span class="sd">    for the same ``x``.</span>
+<span class="sd">    """</span>
+    <span class="n">index</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.digitize.html#numpy.digitize" title="numpy.digitize" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">digitize</span></a><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">edges</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">occupied</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span><span class="n">index</span> <span class="o">==</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()]</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="n">index</span> <span class="o">==</span> <span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">occupied</span><span class="p">]),</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">([</span><span class="n">y</span><span class="p">[</span><span class="n">index</span> <span class="o">==</span> <span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">occupied</span><span class="p">]),</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<section id="grade-prediction">
+<h3>Grade Prediction<a class="headerlink" href="#grade-prediction" title="Link to this heading">¶</a></h3>
+<p>A university predicts an applicant’s grade (<code class="docutils literal notranslate"><span class="pre">P</span></code>) and is paid for accuracy
+(<code class="docutils literal notranslate"><span class="pre">Ac</span></code>): the closer the prediction to the grade the applicant goes on to earn
+(<code class="docutils literal notranslate"><span class="pre">Gr</span></code>), the better. Race (<code class="docutils literal notranslate"><span class="pre">R</span></code>) affects which high school the applicant
+attends (<code class="docutils literal notranslate"><span class="pre">HS</span></code>); the high school affects their education (<code class="docutils literal notranslate"><span class="pre">E</span></code>); education
+affects the grade. Gender (<code class="docutils literal notranslate"><span class="pre">Ge</span></code>) is observed by the predictor and affects
+nothing else.</p>
+<p>In Fig. 3a of the paper the prediction observes the high school and gender.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">scim_3a</span> <span class="o">=</span> <span class="n">incentive_table</span><span class="p">(</span><span class="n">grade_predictor_block</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>node   VoI    RI   VoC   ICI
+  Ac   n/a     -   yes   yes
+   E   yes     -   yes     -
+  Ge     -     -     -     -
+  Gr   yes     -   yes     -
+  HS   yes   yes   yes     -
+   P   n/a   n/a   n/a   yes
+   R     -   yes   yes     -
+</pre></div>
+</div>
+<p>Read the <code class="docutils literal notranslate"><span class="pre">R</span></code> row: race admits a <strong>response incentive</strong> but <strong>no value of
+information</strong>. Both halves matter, and they say different things.</p>
+<p>No VoI (Thm. 9): the university would pay nothing for the applicant’s race.
+Race matters to the grade only through the high school, and the high school is
+already observed – it <em>screens off</em> race. A university that collects race data
+gains no accuracy by it.</p>
+<p>A response incentive (Thm. 12): nonetheless, every optimal prediction rule
+responds to race. Change an applicant’s race, and their high school changes,
+and so the prediction changes. The university does not use race and cannot help
+but respond to it.</p>
+<p>That gap is the paper’s fairness result. By its Thm. 14, a response incentive
+on a sensitive attribute means every optimal policy is <em>counterfactually
+unfair</em> in the sense of Kusner et al. <a class="footnote-reference brackets" href="#id3" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>. Not “may be”: every one of them. So
+“we don’t collect race” – a true statement about value of information – is no
+answer to the fairness question, which is about the response incentive.</p>
+<p>Gender is the other instructive row: it is observed and admits nothing at all.
+Its information link is <em>nonrequisite</em>, and the minimal reduction drops it.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">reduction</span> <span class="o">=</span> <span class="n">minimal_reduction</span><span class="p">(</span><span class="n">scim_3a</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#set" title="builtins.set" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dropped</span></a> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">scim_3a</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">reduction</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"information links dropped by the minimal reduction:"</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#set" title="builtins.set" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dropped</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>information links dropped by the minimal reduction: {('Ge', 'P')}
+</pre></div>
+</div>
+<p>The three criteria that run over the reduction see a diagram in which the
+prediction never looked at gender, which is why gender admits no response
+incentive despite being observed. Observing a variable and responding to it are
+different things.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#bytes" title="builtins.bytes" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">grade_predictor_block</span><span class="o">.</span><span class="n">display</span><span class="p">({})</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.axis.html#matplotlib.pyplot.axis" title="matplotlib.pyplot.axis" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span></a><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="s2">"Grade prediction (Fig. 3a): the prediction observes HS and Ge"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_incentive_criteria_001.png" srcset="../../_images/sphx_glr_plot_incentive_criteria_001.png" alt="Grade prediction (Fig. 3a): the prediction observes HS and Ge" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;IPython.core.display.SVG object&gt;
+</pre></div>
+</div>
+</section>
+</section>
+<section id="the-redesign">
+<h2>The Redesign<a class="headerlink" href="#the-redesign" title="Link to this heading">¶</a></h2>
+<p>Fig. 3b deletes one edge: the prediction no longer observes the high school.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">scim_3b</span> <span class="o">=</span> <span class="n">incentive_table</span><span class="p">(</span><span class="n">grade_predictor_redesign_block</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>node   VoI    RI   VoC   ICI
+  Ac   n/a     -   yes   yes
+   E   yes     -   yes     -
+  Ge     -     -     -     -
+  Gr   yes     -   yes     -
+  HS   yes     -   yes     -
+   P   n/a   n/a   n/a   yes
+   R   yes     -   yes     -
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">R</span></code> row has inverted. Race now admits <strong>value of information</strong> and <strong>no
+response incentive</strong> – the exact opposite of Fig. 3a, across a one-edge
+change.</p>
+<p>No RI: with nothing informative observed, the optimal prediction is the same
+number for every applicant. Nothing about an applicant can change it, race
+included, so by Thm. 14 the redesign is counterfactually fair.</p>
+<p>VoI: and now race <em>would</em> be worth observing. With the high school no longer
+in the picture, race is the only thing left that carries information about the
+grade.</p>
+<p>The redesign buys fairness with accuracy, and the criteria say exactly where
+the payment is made. This is the point of a pair: neither diagram alone
+distinguishes the two criteria, and a criterion that had accidentally computed
+plain reachability from race would report the same thing on both.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#bytes" title="builtins.bytes" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">grade_predictor_redesign_block</span><span class="o">.</span><span class="n">display</span><span class="p">({})</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.axis.html#matplotlib.pyplot.axis" title="matplotlib.pyplot.axis" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span></a><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="s2">"Grade prediction redesigned (Fig. 3b): the high school is not observed"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_incentive_criteria_002.png" srcset="../../_images/sphx_glr_plot_incentive_criteria_002.png" alt="Grade prediction redesigned (Fig. 3b): the high school is not observed" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;IPython.core.display.SVG object&gt;
+</pre></div>
+</div>
+</section>
+<section id="checking-the-response-incentive-numerically">
+<h2>Checking the Response Incentive Numerically<a class="headerlink" href="#checking-the-response-incentive-numerically" title="Link to this heading">¶</a></h2>
+<p>The criteria never looked at a mechanism. Do they say something true about
+these ones?</p>
+<p>An optimal prediction minimises expected squared error, so it is the
+conditional mean of the grade given what is observed. The block’s mechanisms
+are linear, so both are one line of algebra:
+<span class="math notranslate nohighlight">\(E[Gr \mid HS] = 0.42\,HS + 0.29\)</span> for Fig. 3a, and, since gender carries
+nothing, the constant <span class="math notranslate nohighlight">\(E[Gr] = 0.563\)</span> for Fig. 3b.</p>
+<p>A response incentive says a <em>counterfactual</em> change in race moves the decision.
+So: hold every noise term fixed, vary race alone, and watch the prediction.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">block_3a</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">grade_predictor_block</span><span class="p">)</span>
+<span class="n">block_3b</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#bytes" title="builtins.bytes" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">grade_predictor_redesign_block</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">[</span><span class="s2">"R"</span><span class="p">])</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race_grid</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">predictions_3a</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">predictions_3b</span></a> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="k">for</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race</span></a> <span class="ow">in</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race_grid</span></a><span class="p">:</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">counterfactual</span></a> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">,</span> <span class="s2">"R"</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.full.html#numpy.full" title="numpy.full" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">full</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race</span></a><span class="p">)}</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">predictions_3a</span></a><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html#numpy.mean" title="numpy.mean" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">mean</span></a><span class="p">(</span>
+            <span class="n">block_3a</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">counterfactual</span></a><span class="p">,</span> <span class="p">{</span><span class="s2">"P"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">HS</span><span class="p">,</span> <span class="n">Ge</span><span class="p">:</span> <span class="mf">0.42</span> <span class="o">*</span> <span class="n">HS</span> <span class="o">+</span> <span class="mf">0.29</span><span class="p">})[</span>
+                <span class="s2">"P"</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">predictions_3b</span></a><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html#numpy.mean" title="numpy.mean" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">mean</span></a><span class="p">(</span><span class="n">block_3b</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">counterfactual</span></a><span class="p">,</span> <span class="p">{</span><span class="s2">"P"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">Ge</span><span class="p">:</span> <span class="mf">0.563</span><span class="p">})[</span><span class="s2">"P"</span><span class="p">])</span>
+    <span class="p">)</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot" title="matplotlib.pyplot.plot" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race_grid</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">predictions_3a</span></a><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">"Fig. 3a (observes HS)"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot" title="matplotlib.pyplot.plot" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race_grid</span></a><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">predictions_3b</span></a><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">"Fig. 3b (does not observe HS)"</span><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.xlabel.html#matplotlib.pyplot.xlabel" title="matplotlib.pyplot.xlabel" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span></a><span class="p">(</span><span class="s2">"R — race, held counterfactually at each value"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ylabel.html#matplotlib.pyplot.ylabel" title="matplotlib.pyplot.ylabel" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span></a><span class="p">(</span><span class="s2">"mean predicted grade"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="s2">"A response incentive is a decision that moves when the variable does"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html#matplotlib.pyplot.legend" title="matplotlib.pyplot.legend" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">legend</span></a><span class="p">()</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.grid.html#matplotlib.pyplot.grid" title="matplotlib.pyplot.grid" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_incentive_criteria_003.png" srcset="../../_images/sphx_glr_plot_incentive_criteria_003.png" alt="A response incentive is a decision that moves when the variable does" class = "sphx-glr-single-img"/><p>The Fig. 3a prediction tracks race; the Fig. 3b prediction is a flat line. That
+is the response incentive and its absence, in the mechanisms rather than in the
+graph.</p>
+</section>
+<section id="checking-the-value-of-information-numerically">
+<h2>Checking the Value of Information Numerically<a class="headerlink" href="#checking-the-value-of-information-numerically" title="Link to this heading">¶</a></h2>
+<p>The other half of the <code class="docutils literal notranslate"><span class="pre">R</span></code> row was the claim that in Fig. 3a race is worth
+nothing <em>once the high school is known</em>. The best a predictor can do given what
+it observes is the conditional mean of the grade, so the claim is that
+<span class="math notranslate nohighlight">\(E[Gr \mid HS, R]\)</span> does not depend on <span class="math notranslate nohighlight">\(R\)</span> – estimable directly.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">vals</span></a> <span class="o">=</span> <span class="n">block_3a</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">,</span> <span class="p">{</span><span class="s2">"P"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">HS</span><span class="p">,</span> <span class="n">Ge</span><span class="p">:</span> <span class="mf">0.42</span> <span class="o">*</span> <span class="n">HS</span> <span class="o">+</span> <span class="mf">0.29</span><span class="p">})</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">high_school</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">grade</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">vals</span></a><span class="p">[</span><span class="s2">"HS"</span><span class="p">],</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">vals</span></a><span class="p">[</span><span class="s2">"Gr"</span><span class="p">],</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">[</span><span class="s2">"R"</span><span class="p">]</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lower</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">upper</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race</span></a> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race</span></a> <span class="o">&gt;=</span> <span class="mf">0.5</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">hs_edges</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">high_school</span></a><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">high_school</span></a><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="mi">12</span><span class="p">)</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">r_edges</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure" class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fig</span></a><span class="p">,</span> <span class="p">(</span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">left</span></a><span class="p">,</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">right</span></a><span class="p">)</span> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="c1"># The two groups overlap only over part of the high-school range, and where they</span>
+<span class="c1"># do the curves land on each other, so the second is drawn dashed on top of the</span>
+<span class="c1"># first rather than hiding it.</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">styles</span></a> <span class="o">=</span> <span class="p">[</span>
+    <span class="nb">dict</span><span class="p">(</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">),</span>
+    <span class="nb">dict</span><span class="p">(</span><span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">fillstyle</span><span class="o">=</span><span class="s2">"none"</span><span class="p">),</span>
+<span class="p">]</span>
+<span class="k">for</span> <span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mask</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="p">),</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">style</span></a> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lower</span></a><span class="p">,</span> <span class="s2">"race &lt; 0.5"</span><span class="p">),</span> <span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">upper</span></a><span class="p">,</span> <span class="s2">"race ≥ 0.5"</span><span class="p">)],</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">styles</span></a><span class="p">):</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">centres</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">means</span></a> <span class="o">=</span> <span class="n">binned_mean</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">high_school</span></a><span class="p">[</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mask</span></a><span class="p">],</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">grade</span></a><span class="p">[</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mask</span></a><span class="p">],</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">hs_edges</span></a><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">left</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">centres</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">means</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="p">,</span> <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">style</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_xlabel.html#matplotlib.axes.Axes.set_xlabel" title="matplotlib.axes.Axes.set_xlabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">left</span><span class="o">.</span><span class="n">set_xlabel</span></a><span class="p">(</span><span class="s2">"HS — high school, binned"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_ylabel.html#matplotlib.axes.Axes.set_ylabel" title="matplotlib.axes.Axes.set_ylabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">left</span><span class="o">.</span><span class="n">set_ylabel</span></a><span class="p">(</span><span class="s2">"E[Gr | HS, race]"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">left</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><span class="s2">"Given the high school, race says nothing more</span><span class="se">\n</span><span class="s2">(Fig. 3a: no VoI)"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.legend.html#matplotlib.axes.Axes.legend" title="matplotlib.axes.Axes.legend" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">left</span><span class="o">.</span><span class="n">legend</span></a><span class="p">()</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">left</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">centres</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">means</span></a> <span class="o">=</span> <span class="n">binned_mean</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">grade</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">r_edges</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">right</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">centres</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">means</span></a><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"C2"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_xlabel.html#matplotlib.axes.Axes.set_xlabel" title="matplotlib.axes.Axes.set_xlabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">right</span><span class="o">.</span><span class="n">set_xlabel</span></a><span class="p">(</span><span class="s2">"R — race, binned"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_ylabel.html#matplotlib.axes.Axes.set_ylabel" title="matplotlib.axes.Axes.set_ylabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">right</span><span class="o">.</span><span class="n">set_ylabel</span></a><span class="p">(</span><span class="s2">"E[Gr | race]"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">right</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><span class="s2">"Without the high school, race is informative</span><span class="se">\n</span><span class="s2">(Fig. 3b: VoI)"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">right</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_incentive_criteria_004.png" srcset="../../_images/sphx_glr_plot_incentive_criteria_004.png" alt="Given the high school, race says nothing more (Fig. 3a: no VoI), Without the high school, race is informative (Fig. 3b: VoI)" class = "sphx-glr-single-img"/><p>Two curves lying on top of each other on the left: conditional on the high
+school, the grade does not depend on race, so observing race would add nothing
+to a predictor that already sees the high school. The upward slope on the right
+is the same information, made valuable by taking the high school away.</p>
+<section id="content-recommendation">
+<h3>Content Recommendation<a class="headerlink" href="#content-recommendation" title="Link to this heading">¶</a></h3>
+<p>A recommender chooses posts (<code class="docutils literal notranslate"><span class="pre">P</span></code>) from a model (<code class="docutils literal notranslate"><span class="pre">M</span></code>) of a user’s original
+opinions (<code class="docutils literal notranslate"><span class="pre">O</span></code>). The posts influence the user’s opinions (<code class="docutils literal notranslate"><span class="pre">I</span></code>). Clicks
+(<code class="docutils literal notranslate"><span class="pre">C</span></code>) are the payoff, and depend on the posts and on the user’s opinions <em>as
+the posts have left them</em>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">scim_4a</span> <span class="o">=</span> <span class="n">incentive_table</span><span class="p">(</span><span class="n">content_recommender_block</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>node   VoI    RI   VoC   ICI
+   C   n/a     -   yes   yes
+   I   n/a     -   yes   yes
+   M   yes   yes   yes     -
+   O   yes   yes   yes     -
+   P   n/a   n/a   n/a   yes
+</pre></div>
+</div>
+<p>Two rows carry the argument.</p>
+<p><code class="docutils literal notranslate"><span class="pre">I</span></code>, the influenced opinions, admits an <strong>instrumental control incentive</strong>
+(Thm. 18): there is a directed path from the decision through <code class="docutils literal notranslate"><span class="pre">I</span></code> to the
+payoff. The recommender is paid for what the posts do to the user’s opinions.
+Nobody wrote that objective; it is implied by paying for clicks in a world
+where posts change minds. This is the manipulation incentive.</p>
+<p><code class="docutils literal notranslate"><span class="pre">O</span></code>, the user’s <em>original</em> opinions, admits positive <strong>value of control</strong>
+(Thm. 16) but <strong>no ICI</strong> (Thm. 18). The recommender would gain from setting
+what the user thought before it arrived – and has no way to reach it. The two
+control criteria separate exactly here: value of control asks whether a
+variable is worth moving, an instrumental control incentive asks whether the
+agent’s own decision moves it.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#bytes" title="builtins.bytes" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">content_recommender_block</span><span class="o">.</span><span class="n">display</span><span class="p">({})</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.axis.html#matplotlib.pyplot.axis" title="matplotlib.pyplot.axis" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span></a><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="s2">"Content recommendation (Fig. 4a): clicks depend on influenced opinions"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_incentive_criteria_005.png" srcset="../../_images/sphx_glr_plot_incentive_criteria_005.png" alt="Content recommendation (Fig. 4a): clicks depend on influenced opinions" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;IPython.core.display.SVG object&gt;
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id5">
+<h2>The Redesign<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
+<p>Fig. 4b retargets the payoff: the recommender is paid for clicks <em>predicted</em>
+from its model of the user’s original opinions, rather than for the clicks the
+influenced user actually produces.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">scim_4b</span> <span class="o">=</span> <span class="n">incentive_table</span><span class="p">(</span><span class="n">content_recommender_redesign_block</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>node   VoI    RI   VoC   ICI
+   C   n/a     -   yes   yes
+   I   n/a     -     -     -
+   M   yes   yes   yes     -
+   O     -   yes   yes     -
+   P   n/a   n/a   n/a   yes
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">I</span></code> now admits nothing. Nothing directed leaves it, so no path from the
+decision reaches the payoff through it: the incentive to move the user’s
+opinions is gone, and with it the value of controlling them.</p>
+<p>The recommender still chooses posts, still influences opinions, and is still
+paid for a click-shaped quantity. What changed is which quantity, and that
+alone removed the incentive.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#bytes" title="builtins.bytes" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">content_recommender_redesign_block</span><span class="o">.</span><span class="n">display</span><span class="p">({})</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">img</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.axis.html#matplotlib.pyplot.axis" title="matplotlib.pyplot.axis" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span></a><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="s2">"Content recommendation redesigned (Fig. 4b): predicted clicks"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_incentive_criteria_006.png" srcset="../../_images/sphx_glr_plot_incentive_criteria_006.png" alt="Content recommendation redesigned (Fig. 4b): predicted clicks" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;IPython.core.display.SVG object&gt;
+</pre></div>
+</div>
+</section>
+<section id="checking-the-control-incentive-numerically">
+<h2>Checking the Control Incentive Numerically<a class="headerlink" href="#checking-the-control-incentive-numerically" title="Link to this heading">¶</a></h2>
+<p>An instrumental control incentive says payoff flows <em>through</em> the variable. So
+cut the flow and see what is lost: hold the influenced opinions at the value
+they would have taken under a baseline recommendation, let the recommender vary
+its posts anyway, and compare with the payoff it gets when opinions are free to
+respond.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">posts</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">baseline_post</span></a> <span class="o">=</span> <span class="mf">0.5</span>
+
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure" class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fig</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axes</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">panels</span></a> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="n">content_recommender_block</span><span class="p">,</span> <span class="s2">"Fig. 4a: paid for actual clicks"</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+    <span class="p">(</span><span class="n">content_recommender_redesign_block</span><span class="p">,</span> <span class="s2">"Fig. 4b: paid for predicted clicks"</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">block</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">title</span></a><span class="p">,</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axis</span></a> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">panels</span></a><span class="p">:</span>
+    <span class="n">block</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a><span class="o">=</span><span class="mi">50_000</span><span class="p">)</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">frozen_opinions</span></a> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">,</span> <span class="p">{</span><span class="s2">"P"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">M</span><span class="p">:</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">baseline_post</span></a><span class="p">})[</span><span class="s2">"I"</span><span class="p">]</span>
+
+    <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">responsive</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">frozen</span></a> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">post</span></a> <span class="ow">in</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">posts</span></a><span class="p">:</span>
+        <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">responsive</span></a><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">,</span> <span class="p">{</span><span class="s2">"P"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">M</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">post</span></a><span class="p">})[</span><span class="s2">"C"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+        <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">frozen</span></a><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">block</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span>
+                <span class="p">{</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">,</span> <span class="s2">"I"</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">frozen_opinions</span></a><span class="p">},</span> <span class="p">{</span><span class="s2">"P"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">M</span><span class="p">:</span> <a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">post</span></a><span class="p">},</span> <span class="n">fix</span><span class="o">=</span><span class="p">[</span><span class="s2">"I"</span><span class="p">]</span>
+            <span class="p">)[</span><span class="s2">"C"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">axis</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">posts</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">responsive</span></a><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">"opinions respond to the posts"</span><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">axis</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span>
+        <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">posts</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">frozen</span></a><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="o">=</span><span class="s2">"opinions held at baseline"</span>
+    <span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_xlabel.html#matplotlib.axes.Axes.set_xlabel" title="matplotlib.axes.Axes.set_xlabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span></a><span class="p">(</span><span class="s2">"P — post intensity"</span><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">axis</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">title</span></a><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">axis</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.legend.html#matplotlib.axes.Axes.legend" title="matplotlib.axes.Axes.legend" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">axis</span><span class="o">.</span><span class="n">legend</span></a><span class="p">()</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"expected payoff"</span><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_plot_incentive_criteria_007.png" srcset="../../_images/sphx_glr_plot_incentive_criteria_007.png" alt="Fig. 4a: paid for actual clicks, Fig. 4b: paid for predicted clicks" class = "sphx-glr-single-img"/><p>On the left the two curves come apart everywhere except at the baseline post
+itself, where freezing the opinions changes nothing by construction. Away from
+it, a recommender paid for actual clicks earns more, because the opinions moved
+toward whatever it posted. That gap is the payoff flowing through the user’s
+mind, and it is what the ICI on <code class="docutils literal notranslate"><span class="pre">I</span></code> names. On the right the curves coincide
+at every post – the redesigned payoff never reads the influenced opinions, so
+freezing them costs nothing, which is the ICI’s absence made numerical.</p>
+<section id="what-the-criteria-cost">
+<h3>What the Criteria Cost<a class="headerlink" href="#what-the-criteria-cost" title="Link to this heading">¶</a></h3>
+<p>Every table above was computed from the graph: no payoff values, no
+distributions, no solving. The numeric checks came afterwards, and confirmed
+what the graph had already said. That order is the point – the criteria screen
+a design before it is built, and a criterion that answers “no” rules the
+behaviour out for <em>every</em> way of filling in the numbers.</p>
+<p>The direction of error is worth knowing. Soundness and completeness are
+properties of the diagram, and d-separation is conservative on the
+deterministic mechanisms these blocks are written with, so an incentive may be
+reported where the functional effect happens to vanish – never the reverse. A
+criterion here may cry wolf; it will not miss one.</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.275 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-incentive-criteria-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/20411ae8a995bbbad68c43f099fbab79/plot_incentive_criteria.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_incentive_criteria.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/b246cac246c7e07fab1e0a16a189aedf/plot_incentive_criteria.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_incentive_criteria.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/2b0406370317dcd59eb2d50b848d8a7e/plot_incentive_criteria.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_incentive_criteria.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="plot_benchmark_models.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Benchmark Consumption Models</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="plot_tree_killer_relevance.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Strategic Relevance: Solving the Tree Killer</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, scikit-agent Team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link " href="https://github.com/scikit-agent/scikit-agent" aria-label="GitHub">
+                <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+                </svg>
+            </a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Incentives: Reading Fairness and Manipulation Off a Diagram</a><ul>
+<li><a class="reference internal" href="#references">References</a><ul>
+<li><a class="reference internal" href="#grade-prediction">Grade Prediction</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-redesign">The Redesign</a></li>
+<li><a class="reference internal" href="#checking-the-response-incentive-numerically">Checking the Response Incentive Numerically</a></li>
+<li><a class="reference internal" href="#checking-the-value-of-information-numerically">Checking the Value of Information Numerically</a><ul>
+<li><a class="reference internal" href="#content-recommendation">Content Recommendation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">The Redesign</a></li>
+<li><a class="reference internal" href="#checking-the-control-incentive-numerically">Checking the Control Incentive Numerically</a><ul>
+<li><a class="reference internal" href="#what-the-criteria-cost">What the Criteria Cost</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=9297d7ae"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"tex": {"packages": {"[+]": ["amsmath", "amssymb"]}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    </body>
+</html>
