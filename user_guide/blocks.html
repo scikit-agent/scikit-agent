@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation Guide" href="simulation.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.1.1.dev1+gd31a61acb</title>
+        <title>Block Guide - scikit-agent 0.1.1.dev5+g1dd8a69d8</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev1+gd31a61acb</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev5+g1dd8a69d8</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -337,19 +337,19 @@ consumption-saving problem:</p>
 
 <span class="c1"># Example: Simple consumption block</span>
 <span class="n">consumption_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;consumption_stage&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"consumption_stage"</span><span class="p">,</span>
     <span class="c1"># 1. Shocks: Random variables</span>
-    <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">})},</span>  <span class="c1"># Income shock</span>
+    <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">"theta"</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">"sigma"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">})},</span>  <span class="c1"># Income shock</span>
     <span class="c1"># 2. Dynamics: State transition equations</span>
     <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">theta</span><span class="p">,</span>  <span class="c1"># Income = permanent * transitory</span>
-        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">b</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span>  <span class="c1"># Market resources = beginning + income</span>
-        <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>  <span class="c1"># Consumption (control variable)</span>
-        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">m</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># Assets = resources - consumption</span>
-        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+        <span class="s2">"y"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">theta</span><span class="p">,</span>  <span class="c1"># Income = permanent * transitory</span>
+        <span class="s2">"m"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">b</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span>  <span class="c1"># Market resources = beginning + income</span>
+        <span class="s2">"c"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"m"</span><span class="p">]),</span>  <span class="c1"># Consumption (control variable)</span>
+        <span class="s2">"a"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">m</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># Assets = resources - consumption</span>
+        <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
     <span class="p">},</span>
     <span class="c1"># 3. Rewards: What agents maximize</span>
-    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;consumer&quot;</span><span class="p">},</span>  <span class="c1"># Utility goes to consumer agent</span>
+    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">"u"</span><span class="p">:</span> <span class="s2">"consumer"</span><span class="p">},</span>  <span class="c1"># Utility goes to consumer agent</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -393,13 +393,13 @@ point</em>.</p>
 <p>Consider a block whose reward penalizes the distance between an asset <code class="docutils literal notranslate"><span class="pre">a</span></code> and a
 target <code class="docutils literal notranslate"><span class="pre">b</span></code> that the control sets for next period:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tracking_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;tracking&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"tracking"</span><span class="p">,</span>
     <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">]),</span>
-        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="o">-</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># reads the ARRIVAL b</span>
-        <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># assigns next period&#39;s b</span>
+        <span class="s2">"c"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"a"</span><span class="p">]),</span>
+        <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="o">-</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># reads the ARRIVAL b</span>
+        <span class="s2">"b"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># assigns next period's b</span>
     <span class="p">},</span>
-    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;tracker&quot;</span><span class="p">},</span>
+    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">"u"</span><span class="p">:</span> <span class="s2">"tracker"</span><span class="p">},</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -412,9 +412,9 @@ read from</strong>. A survival model makes the stakes concrete, with an alive in
 <code class="docutils literal notranslate"><span class="pre">liv</span></code> and a survival shock <code class="docutils literal notranslate"><span class="pre">live</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Utility accrues to those alive on ARRIVAL, so u is declared BEFORE liv updates.</span>
 <span class="n">dynamics</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>
-    <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">liv</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">liv</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
-    <span class="s2">&quot;liv&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">liv</span><span class="p">,</span> <span class="n">live</span><span class="p">:</span> <span class="n">liv</span> <span class="o">*</span> <span class="n">live</span><span class="p">,</span>
+    <span class="s2">"c"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"m"</span><span class="p">]),</span>
+    <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">liv</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">liv</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+    <span class="s2">"liv"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">liv</span><span class="p">,</span> <span class="n">live</span><span class="p">:</span> <span class="n">liv</span> <span class="o">*</span> <span class="n">live</span><span class="p">,</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -435,10 +435,10 @@ a dynamic equation, the modeler specifies an information set – what informatio
 functions of state variables. Each bound is a number (a constant bound) or a
 callable of variables in the control’s information set.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">consumption_control</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
-    <span class="n">iset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">],</span>  <span class="c1"># Information set</span>
+    <span class="n">iset</span><span class="o">=</span><span class="p">[</span><span class="s2">"m"</span><span class="p">,</span> <span class="s2">"p"</span><span class="p">],</span>  <span class="c1"># Information set</span>
     <span class="n">lower_bound</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>  <span class="c1"># Minimum consumption (constant)</span>
     <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>  <span class="c1"># Maximum consumption (state-dependent)</span>
-    <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;consumer&quot;</span><span class="p">,</span>  <span class="c1"># Agent assignment</span>
+    <span class="n">agent</span><span class="o">=</span><span class="s2">"consumer"</span><span class="p">,</span>  <span class="c1"># Agent assignment</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -452,17 +452,17 @@ conditions that hold where a constraint binds, is the subject of the
 than as literal values. Calling <code class="docutils literal notranslate"><span class="pre">construct_shocks</span></code> with a calibration dictionary
 then builds the actual distributions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">income_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;income&quot;</span><span class="p">,</span>
-    <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sigma&quot;</span><span class="p">:</span> <span class="s2">&quot;TranShkStd&quot;</span><span class="p">})},</span>
-    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">theta</span><span class="p">},</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"income"</span><span class="p">,</span>
+    <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">"theta"</span><span class="p">:</span> <span class="p">(</span><span class="n">MeanOneLogNormal</span><span class="p">,</span> <span class="p">{</span><span class="s2">"sigma"</span><span class="p">:</span> <span class="s2">"TranShkStd"</span><span class="p">})},</span>
+    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span><span class="s2">"y"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="n">theta</span><span class="p">},</span>
 <span class="p">)</span>
 
 <span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;CRRA&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># Risk aversion</span>
-    <span class="s2">&quot;DiscFac&quot;</span><span class="p">:</span> <span class="mf">0.96</span><span class="p">,</span>  <span class="c1"># Discount factor</span>
-    <span class="s2">&quot;Rfree&quot;</span><span class="p">:</span> <span class="mf">1.03</span><span class="p">,</span>  <span class="c1"># Risk-free rate</span>
-    <span class="s2">&quot;PermGroFac&quot;</span><span class="p">:</span> <span class="mf">1.01</span><span class="p">,</span>  <span class="c1"># Permanent income growth</span>
-    <span class="s2">&quot;TranShkStd&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># Transitory shock std</span>
+    <span class="s2">"CRRA"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># Risk aversion</span>
+    <span class="s2">"DiscFac"</span><span class="p">:</span> <span class="mf">0.96</span><span class="p">,</span>  <span class="c1"># Discount factor</span>
+    <span class="s2">"Rfree"</span><span class="p">:</span> <span class="mf">1.03</span><span class="p">,</span>  <span class="c1"># Risk-free rate</span>
+    <span class="s2">"PermGroFac"</span><span class="p">:</span> <span class="mf">1.01</span><span class="p">,</span>  <span class="c1"># Permanent income growth</span>
+    <span class="s2">"TranShkStd"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># Transitory shock std</span>
 <span class="p">}</span>
 
 <span class="c1"># Apply calibration to construct actual distributions</span>
@@ -474,10 +474,10 @@ then builds the actual distributions:</p>
 <h4>String-Based Dynamics<a class="headerlink" href="#string-based-dynamics" title="Link to this heading">¶</a></h4>
 <p>You can define dynamics using string expressions that get parsed automatically:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dynamics</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>
-    <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;c**(1-CRRA)/(1-CRRA)&quot;</span><span class="p">,</span>  <span class="c1"># String expression</span>
-    <span class="s2">&quot;mpc&quot;</span><span class="p">:</span> <span class="s2">&quot;CRRA * c**(-CRRA)&quot;</span><span class="p">,</span>  <span class="c1"># Marginal propensity to consume</span>
-    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;m - c&quot;</span><span class="p">,</span>  <span class="c1"># Simple arithmetic</span>
+    <span class="s2">"c"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"m"</span><span class="p">]),</span>
+    <span class="s2">"u"</span><span class="p">:</span> <span class="s2">"c**(1-CRRA)/(1-CRRA)"</span><span class="p">,</span>  <span class="c1"># String expression</span>
+    <span class="s2">"mpc"</span><span class="p">:</span> <span class="s2">"CRRA * c**(-CRRA)"</span><span class="p">,</span>  <span class="c1"># Marginal propensity to consume</span>
+    <span class="s2">"a"</span><span class="p">:</span> <span class="s2">"m - c"</span><span class="p">,</span>  <span class="c1"># Simple arithmetic</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -488,16 +488,16 @@ then builds the actual distributions:</p>
 <p>The RBlock is for composing other blocks together.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Retirement transition block</span>
 <span class="n">retirement_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;retirement&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"retirement"</span><span class="p">,</span>
     <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># Retirement income drop</span>
-        <span class="s2">&quot;retired&quot;</span><span class="p">:</span> <span class="k">lambda</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Retirement indicator</span>
+        <span class="s2">"p"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># Retirement income drop</span>
+        <span class="s2">"retired"</span><span class="p">:</span> <span class="k">lambda</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Retirement indicator</span>
     <span class="p">},</span>
 <span class="p">)</span>
 
 <span class="c1"># Life-cycle model</span>
 <span class="n">lifecycle_model</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">RBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;lifecycle_model&quot;</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">consumption_block</span><span class="p">,</span> <span class="n">retirement_block</span><span class="p">]</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"lifecycle_model"</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">consumption_block</span><span class="p">,</span> <span class="n">retirement_block</span><span class="p">]</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -511,7 +511,7 @@ transition, and gradient functions that the neural network solution methods and
 loss functions consume:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
 
-<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">consumption_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">consumption_block</span><span class="p">,</span> <span class="s2">"DiscFac"</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See the <a class="reference internal" href="../api/bellman.html"><span class="doc">Bellman Periods</span></a> reference for the period timing notation (arrival
@@ -536,7 +536,7 @@ with a residual of exactly zero — and the answer is insensitive to grid
 refinement, which normally rules out numerical explanations. Declare the bound
 even when it feels implied by the economics:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">],</span> <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="p">),</span>
+    <span class="s2">"c"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"m"</span><span class="p">],</span> <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="p">),</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -548,10 +548,10 @@ constraints that bind at the optimum.</p>
 <p>A finite-horizon model can carry its own time index as an ordinary arrival
 state, with the horizon living in the reward:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dynamics</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;W&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">],</span> <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">W</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">W</span><span class="p">:</span> <span class="n">W</span><span class="p">),</span>
-    <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="p">(</span><span class="n">t</span> <span class="o">&lt;</span> <span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>  <span class="c1"># no reward from period T on</span>
-    <span class="s2">&quot;W&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">W</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">R</span><span class="p">:</span> <span class="p">(</span><span class="n">W</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="n">R</span><span class="p">,</span>
-    <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"c"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"W"</span><span class="p">,</span> <span class="s2">"t"</span><span class="p">],</span> <span class="n">lower_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">W</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">W</span><span class="p">:</span> <span class="n">W</span><span class="p">),</span>
+    <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="p">(</span><span class="n">t</span> <span class="o">&lt;</span> <span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>  <span class="c1"># no reward from period T on</span>
+    <span class="s2">"W"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">W</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">R</span><span class="p">:</span> <span class="p">(</span><span class="n">W</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="n">R</span><span class="p">,</span>
+    <span class="s2">"t"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -582,7 +582,7 @@ through a helper that accepts either:</p>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clamp_min</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">lo</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lower-clamp that works on torch tensors and numpy/Python scalars.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Lower-clamp that works on torch tensors and numpy/Python scalars."""</span>
     <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="n">lo</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">lo</span><span class="p">)</span>
@@ -599,15 +599,15 @@ exercise it on both.</p>
 <h3>Examining Model Structure<a class="headerlink" href="#examining-model-structure" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get all variables in the model</span>
 <span class="n">variables</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">get_vars</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model variables:&quot;</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Model variables:"</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
 
 <span class="c1"># Get control variables</span>
 <span class="n">controls</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">get_controls</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Control variables:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">controls</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Control variables:"</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">controls</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 
 <span class="c1"># Get shock variables</span>
 <span class="n">shocks</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">get_shocks</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Shock variables:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">shocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Shock variables:"</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">shocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
 </div>
 </section>
@@ -617,18 +617,18 @@ exercise it on both.</p>
 arrival states and realized shock values:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Arrival states and a realized shock value</span>
 <span class="n">pre_state</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">"b"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">"p"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">"theta"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
 <span class="p">}</span>
 
 <span class="n">decision_rules</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.8</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>
+    <span class="s2">"c"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.8</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span>
 <span class="p">}</span>
 
 <span class="c1"># Simulate one period</span>
 <span class="n">post_state</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><span class="n">pre_state</span><span class="p">,</span> <span class="n">decision_rules</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Post-transition state:&quot;</span><span class="p">,</span> <span class="n">post_state</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Post-transition state:"</span><span class="p">,</span> <span class="n">post_state</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -653,10 +653,10 @@ aliasing</em> above.</p>
 <h3>Habit Formation Models<a class="headerlink" href="#habit-formation-models" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">habit_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
     <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]),</span>
-        <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="n">c</span> <span class="o">/</span> <span class="n">h</span><span class="p">,</span>  <span class="c1"># Consumption relative to habit</span>
-        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">),</span>
-        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">h</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">rho</span><span class="p">:</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">h</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rho</span><span class="p">)</span> <span class="o">*</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># Habit stock update</span>
+        <span class="s2">"c"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"m"</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">]),</span>
+        <span class="s2">"x"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="n">c</span> <span class="o">/</span> <span class="n">h</span><span class="p">,</span>  <span class="c1"># Consumption relative to habit</span>
+        <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">),</span>
+        <span class="s2">"h"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">h</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">rho</span><span class="p">:</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">h</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rho</span><span class="p">)</span> <span class="o">*</span> <span class="n">c</span><span class="p">,</span>  <span class="c1"># Habit stock update</span>
     <span class="p">}</span>
 <span class="p">)</span>
 </pre></div>
@@ -666,11 +666,11 @@ aliasing</em> above.</p>
 <h3>Durable Goods Models<a class="headerlink" href="#durable-goods-models" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">durables_block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
     <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;c_nd&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">]),</span>  <span class="c1"># Non-durable consumption</span>
-        <span class="s2">&quot;i_d&quot;</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">]),</span>  <span class="c1"># Durable investment</span>
-        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">,</span> <span class="n">i_d</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">delta</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span> <span class="o">+</span> <span class="n">i_d</span><span class="p">,</span>  <span class="c1"># Durable stock</span>
-        <span class="s2">&quot;c_d&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="p">,</span>  <span class="c1"># Durable services</span>
-        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c_nd</span><span class="p">,</span> <span class="n">c_d</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="p">(</span><span class="n">c_nd</span><span class="o">**</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">c_d</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">))</span>
+        <span class="s2">"c_nd"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"m"</span><span class="p">]),</span>  <span class="c1"># Non-durable consumption</span>
+        <span class="s2">"i_d"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"m"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">]),</span>  <span class="c1"># Durable investment</span>
+        <span class="s2">"d"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">,</span> <span class="n">i_d</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">delta</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span> <span class="o">+</span> <span class="n">i_d</span><span class="p">,</span>  <span class="c1"># Durable stock</span>
+        <span class="s2">"c_d"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="p">,</span>  <span class="c1"># Durable services</span>
+        <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">c_nd</span><span class="p">,</span> <span class="n">c_d</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">CRRA</span><span class="p">:</span> <span class="p">(</span><span class="n">c_nd</span><span class="o">**</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">c_d</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">))</span>
         <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">)</span>
         <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">CRRA</span><span class="p">),</span>
     <span class="p">}</span>
@@ -797,7 +797,7 @@ maintaining clear economic interpretation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=7bc96b84"></script>
+</div><script src="../_static/documentation_options.js?v=11b57bd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

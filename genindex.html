@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#"><link rel="search" title="Search" href="search.html">
 
-    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - scikit-agent 0.1.1.dev1+gd31a61acb</title>
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - scikit-agent 0.1.1.dev5+g1dd8a69d8</title>
 <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -166,7 +166,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">scikit-agent 0.1.1.dev1+gd31a61acb</div></a>
+      <a href="index.html"><div class="brand">scikit-agent 0.1.1.dev5+g1dd8a69d8</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -286,14 +286,22 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/algorithms.html#skagent.algos.best_response.ConditionalPayoffs.actions">actions (skagent.algos.best_response.ConditionalPayoffs attribute)</a>
 </li>
+        <li><a href="api/analysis.html#skagent.relevance.admits_ici">admits_ici() (in module skagent.relevance)</a>
+</li>
+        <li><a href="api/analysis.html#skagent.relevance.admits_ri">admits_ri() (in module skagent.relevance)</a>
+</li>
+        <li><a href="api/analysis.html#skagent.relevance.admits_voc">admits_voc() (in module skagent.relevance)</a>
+</li>
+        <li><a href="api/analysis.html#skagent.relevance.admits_voi">admits_voi() (in module skagent.relevance)</a>
+</li>
         <li><a href="api/blocks.html#skagent.block.Aggregate">Aggregate (class in skagent.block)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/algorithms.html#skagent.ann.aggregate_net_loss">aggregate_net_loss() (in module skagent.ann)</a>
 </li>
         <li><a href="api/analysis.html#skagent.model_analyzer.ModelAnalyzer.analyze">analyze() (skagent.model_analyzer.ModelAnalyzer method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/analysis.html#skagent.influence.SCIM.ancestors">ancestors() (skagent.influence.SCIM method)</a>
 </li>
         <li><a href="api/utils.html#skagent.utils.apply_fun_to_vals">apply_fun_to_vals() (in module skagent.utils)</a>
@@ -710,6 +718,8 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/analysis.html#skagent.relevance.RelevanceGraph.is_acyclic">is_acyclic() (skagent.relevance.RelevanceGraph method)</a>
 </li>
+        <li><a href="api/analysis.html#skagent.relevance.is_requisite">is_requisite() (in module skagent.relevance)</a>
+</li>
         <li><a href="api/analysis.html#skagent.relevance.is_s_reachable">is_s_reachable() (in module skagent.relevance)</a>
 </li>
         <li><a href="api/blocks.html#skagent.block.DBlock.iter_dblocks">iter_dblocks() (skagent.block.DBlock method)</a>
@@ -769,6 +779,8 @@
 </li>
         </ul></li>
         <li><a href="api/distributions.html#skagent.distributions.MeanOneLogNormal">MeanOneLogNormal (class in skagent.distributions)</a>
+</li>
+        <li><a href="api/analysis.html#skagent.relevance.minimal_reduction">minimal_reduction() (in module skagent.relevance)</a>
 </li>
         <li><a href="api/analysis.html#skagent.relevance.MIXED">MIXED (in module skagent.relevance)</a>
 </li>
@@ -1205,13 +1217,15 @@
 </li>
         <li><a href="api/models.html#skagent.models.benchmarks.u2_analytical_policy">u2_analytical_policy() (in module skagent.models.benchmarks)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/distributions.html#skagent.distributions.Uniform">Uniform (class in skagent.distributions)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/environments.html#skagent.env.GymEnv.unscale_action">unscale_action() (skagent.env.GymEnv method)</a>
 </li>
         <li><a href="api/algorithms.html#skagent.grid.Grid.update_from_dict">update_from_dict() (skagent.grid.Grid method)</a>
+</li>
+        <li><a href="api/analysis.html#skagent.influence.SCIM.utilities">utilities() (skagent.influence.SCIM method)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -1245,11 +1259,15 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/analysis.html#skagent.influence.SCIM.with_continuation">with_continuation() (skagent.influence.SCIM method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/analysis.html#skagent.influence.SCIM.with_dummy_parent">with_dummy_parent() (skagent.influence.SCIM method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/analysis.html#skagent.influence.SCIM.with_edge">with_edge() (skagent.influence.SCIM method)</a>
+</li>
         <li><a href="api/analysis.html#skagent.influence.SCIM.with_lagged_arrivals">with_lagged_arrivals() (skagent.influence.SCIM method)</a>
+</li>
+        <li><a href="api/analysis.html#skagent.influence.SCIM.without_edges">without_edges() (skagent.influence.SCIM method)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -1294,7 +1312,7 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=7bc96b84"></script>
+</div><script src="_static/documentation_options.js?v=11b57bd5"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

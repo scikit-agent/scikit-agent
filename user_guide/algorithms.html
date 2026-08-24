@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.1.dev1+gd31a61acb</title>
+        <title>Algorithms Guide - scikit-agent 0.1.1.dev5+g1dd8a69d8</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev1+gd31a61acb</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev5+g1dd8a69d8</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -331,10 +331,10 @@ timesteps, and ask for a decision rule:</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">d2_block</span><span class="p">,</span> <span class="n">d2_calibration</span>
 
 <span class="c1"># Wrap a model block together with its discount variable and calibration.</span>
-<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">d2_block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">d2_calibration</span><span class="p">)</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">d2_block</span><span class="p">,</span> <span class="s2">"DiscFac"</span><span class="p">,</span> <span class="n">d2_calibration</span><span class="p">)</span>
 
 <span class="c1"># Train PPO, sampling fresh initial states from this distribution each episode.</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">PPOAgent</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)},</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">PPOAgent</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)},</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">agent</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_timesteps</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
 
 <span class="c1"># Get a standard skagent decision rule and use it like any other.</span>
@@ -380,14 +380,14 @@ rewards).</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skagent.grid</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">grid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_benchmark_model</span><span class="p">,</span> <span class="n">get_benchmark_calibration</span>
 
-<span class="n">block_d2</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
-<span class="n">calibration</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;D-2&quot;</span><span class="p">)</span>
+<span class="n">block_d2</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">"D-2"</span><span class="p">)</span>
+<span class="n">calibration</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">"D-2"</span><span class="p">)</span>
 
 <span class="c1"># Build the shock distributions (a no-op for the deterministic D-2, but good</span>
 <span class="c1"># practice — required once a model has live shocks, as U-2 does below).</span>
 <span class="n">block_d2</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
 
-<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block_d2</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block_d2</span><span class="p">,</span> <span class="s2">"DiscFac"</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>In D-2 the agent arrives with assets <code class="docutils literal notranslate"><span class="pre">a</span></code>, cash-on-hand <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">R*a</span> <span class="pre">+</span> <span class="pre">y</span></code> is formed,
@@ -400,7 +400,7 @@ borrow against future income).</p>
 <p>The network is trained over a <a class="reference internal" href="../api/algorithms.html#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Grid</span></code></a> of arrival states
 (and shock realizations, if the block has shocks). Each grid point is one
 scenario the policy must do well on. D-2’s only arrival state is <code class="docutils literal notranslate"><span class="pre">a</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">4.0</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">}})</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">"a"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"min"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">:</span> <span class="mf">4.0</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">15</span><span class="p">}})</span>
 </pre></div>
 </div>
 </section>
@@ -440,7 +440,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">R</span>
 <span class="n">policy</span> <span class="o">=</span> <span class="n">ann</span><span class="o">.</span><span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
 <span class="n">ann</span><span class="o">.</span><span class="n">train_block_nn</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">250</span><span class="p">)</span>
 
-<span class="n">c</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">decision_function</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]},</span> <span class="p">{},</span> <span class="n">calibration</span><span class="p">)[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">decision_function</span><span class="p">({</span><span class="s2">"a"</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">"a"</span><span class="p">]},</span> <span class="p">{},</span> <span class="n">calibration</span><span class="p">)[</span><span class="s2">"c"</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Over a 10-period horizon the agent saves: the learned <code class="docutils literal notranslate"><span class="pre">c</span></code> sits well below
@@ -472,19 +472,19 @@ permanent-income-hypothesis solution is exact); here we switch it on to
 illustrate shock handling.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="n">block_u2</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">&quot;U-2&quot;</span><span class="p">)</span>
-<span class="n">calibration</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">&quot;U-2&quot;</span><span class="p">)</span>
-<span class="n">calibration</span><span class="p">[</span><span class="s2">&quot;sigma_psi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># switch the permanent-income shock on</span>
+<span class="n">block_u2</span> <span class="o">=</span> <span class="n">get_benchmark_model</span><span class="p">(</span><span class="s2">"U-2"</span><span class="p">)</span>
+<span class="n">calibration</span> <span class="o">=</span> <span class="n">get_benchmark_calibration</span><span class="p">(</span><span class="s2">"U-2"</span><span class="p">)</span>
+<span class="n">calibration</span><span class="p">[</span><span class="s2">"sigma_psi"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># switch the permanent-income shock on</span>
 
 <span class="c1"># Construct shocks with an explicit RNG for reproducible draws.</span>
 <span class="n">block_u2</span><span class="o">.</span><span class="n">construct_shocks</span><span class="p">(</span><span class="n">calibration</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 
-<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block_u2</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block_u2</span><span class="p">,</span> <span class="s2">"DiscFac"</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
 
 <span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span>
     <span class="p">{</span>
-        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
-        <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
+        <span class="s2">"a"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"min"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+        <span class="s2">"psi"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"min"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
     <span class="p">}</span>
 <span class="p">)</span>
 
@@ -492,8 +492,8 @@ illustrate shock handling.</p>
 <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">StaticRewardLoss</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
 <span class="n">ann</span><span class="o">.</span><span class="n">train_block_nn</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 
-<span class="n">c</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">decision_function</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]},</span> <span class="p">{</span><span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">]},</span> <span class="n">calibration</span><span class="p">)[</span>
-    <span class="s2">&quot;c&quot;</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">decision_function</span><span class="p">({</span><span class="s2">"a"</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">"a"</span><span class="p">]},</span> <span class="p">{</span><span class="s2">"psi"</span><span class="p">:</span> <span class="n">states</span><span class="p">[</span><span class="s2">"psi"</span><span class="p">]},</span> <span class="n">calibration</span><span class="p">)[</span>
+    <span class="s2">"c"</span>
 <span class="p">]</span>
 </pre></div>
 </div>
@@ -512,25 +512,25 @@ block whose reward is maximized at <code class="docutils literal notranslate"><s
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent.block</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">block</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_multiple_controls</span>
 
-<span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}</span>
+<span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"beta"</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}</span>
 
 <span class="n">b</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;two controls&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"two controls"</span><span class="p">,</span>
     <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;agent&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;agent&quot;</span><span class="p">),</span>  <span class="c1"># empty information set</span>
-        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="o">-</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">"c"</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"a"</span><span class="p">],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">"agent"</span><span class="p">),</span>
+        <span class="s2">"d"</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">"agent"</span><span class="p">),</span>  <span class="c1"># empty information set</span>
+        <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="o">-</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span>
     <span class="p">},</span>
-    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="s2">&quot;agent&quot;</span><span class="p">},</span>
+    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">"u"</span><span class="p">:</span> <span class="s2">"agent"</span><span class="p">},</span>
 <span class="p">)</span>
-<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">"beta"</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
 
-<span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">11</span><span class="p">}})</span>
+<span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">"a"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"min"</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">11</span><span class="p">}})</span>
 
 <span class="c1"># Repeat a symbol to schedule an extra refinement pass after its neighbour</span>
 <span class="c1"># has been updated.</span>
 <span class="n">decision_rules</span> <span class="o">=</span> <span class="n">solve_multiple_controls</span><span class="p">(</span>
-    <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">],</span> <span class="n">bp</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">calibration</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span>
+    <span class="p">[</span><span class="s2">"c"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">],</span> <span class="n">bp</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">calibration</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span>
 <span class="p">)</span>
 <span class="c1"># optimal: c = a and d = 3, so the reward u is approximately 0</span>
 </pre></div>
@@ -647,7 +647,7 @@ losses and the training loop that fits them.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=7bc96b84"></script>
+</div><script src="../_static/documentation_options.js?v=11b57bd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

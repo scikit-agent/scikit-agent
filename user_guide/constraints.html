@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Benchmark Models" href="benchmark_models.html"><link rel="prev" title="Environments Guide" href="environments.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Constraining an Optimization Problem - scikit-agent 0.1.1.dev1+gd31a61acb</title>
+        <title>Constraining an Optimization Problem - scikit-agent 0.1.1.dev5+g1dd8a69d8</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev1+gd31a61acb</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev5+g1dd8a69d8</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -312,7 +312,7 @@ whose argument names are variables in the control’s information set. A number 
 a constant bound; a callable is a state-dependent one. Either side may be
 omitted, leaving the control unbounded on that side.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">c</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">(</span>
-    <span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">"m"</span><span class="p">],</span>
     <span class="n">lower_bound</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>  <span class="c1"># constant floor</span>
     <span class="n">upper_bound</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="p">,</span>  <span class="c1"># state-dependent ceiling</span>
 <span class="p">)</span>
@@ -429,7 +429,7 @@ block looks like this:</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">EulerEquationLoss</span>
 
 <span class="c1"># c is bounded below by a floor and above by the no-borrowing ceiling c &lt;= m.</span>
-<span class="n">bellman_period</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="s2">&quot;DiscFac&quot;</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
+<span class="n">bellman_period</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="s2">"DiscFac"</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
 
 <span class="n">policy_net</span> <span class="o">=</span> <span class="n">BlockPolicyNet</span><span class="p">(</span><span class="n">bellman_period</span><span class="p">)</span>  <span class="c1"># feasible by construction</span>
 <span class="n">euler_loss</span> <span class="o">=</span> <span class="n">EulerEquationLoss</span><span class="p">(</span>
@@ -562,7 +562,7 @@ through the policy.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=7bc96b84"></script>
+</div><script src="../_static/documentation_options.js?v=11b57bd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
