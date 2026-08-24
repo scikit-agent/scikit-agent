@@ -15,7 +15,8 @@ and this project adheres to
   `admits_ici`, with the `is_requisite` test and `minimal_reduction` they rest
   on. Out-of-domain and multi-decision queries raise rather than answer.
 - `SCIM.with_edge` and `SCIM.without_edges`, the transforms those criteria are
-  posed over.
+  posed over, and `SCIM.utilities`, the utilities an agent owns whether or not
+  its decision reaches them.
 - `skagent.models.safety`, a package for influence diagrams from the AI-safety
   literature, opening with `incentives.py`: the grade-prediction and
   content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
