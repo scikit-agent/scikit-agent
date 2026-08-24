@@ -121,6 +121,15 @@ class SCIM:
         """
         return set(self.graph.predecessors(decision)) | {decision}
 
+    def utilities(self, decision):
+        """Every utility node the agent deciding *decision* owns.
+
+        Wider than :meth:`objectives`, which keeps only the ones the decision
+        reaches: a variable can be worth controlling for the sake of a payoff
+        the decision itself has no route to.
+        """
+        return set(self.agent_utilities.get(self.decision_agent.get(decision), ()))
+
     def objectives(self, decision):
         """The utility nodes whose value *decision* is choosing over.
 
@@ -128,8 +137,7 @@ class SCIM:
         Includes the synthetic continuation node when
         :meth:`with_continuation` has been applied and the decision reaches it.
         """
-        owned = set(self.agent_utilities.get(self.decision_agent.get(decision), ()))
-        return owned & nx.descendants(self.graph, decision)
+        return self.utilities(decision) & nx.descendants(self.graph, decision)
 
     # -- engine --------------------------------------------------------------
 
