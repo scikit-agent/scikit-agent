@@ -17,6 +17,14 @@ and this project adheres to
 - `SCIM.with_edge` and `SCIM.without_edges`, the transforms those criteria are
   posed over, and `SCIM.utilities`, the utilities an agent owns whether or not
   its decision reaches them.
+- `skagent.models.safety`, a package for influence diagrams from the AI-safety
+  literature, opening with `incentives.py`: the grade-prediction and
+  content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
+  paired with the redesign that drops an incentive.
+- `examples/models/plot_incentive_criteria.py`: computes all four criteria for
+  every node of those four diagrams, then confirms the response incentive, the
+  value of information and the control incentive numerically against the
+  mechanisms.
 
 ## [0.1.0] - 2026-08-12
 
