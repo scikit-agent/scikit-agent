@@ -1,9 +1,33 @@
+from contextlib import contextmanager
+
 import pytest
 
 from skagent.bellman import BellmanPeriod
 from skagent.distributions import Normal, Uniform
 import skagent.grid as grid
 from skagent.block import Control, DBlock
+
+
+@contextmanager
+def count_calls(obj, name):
+    """Count calls to ``obj.name`` made inside the ``with`` body.
+
+    Yields a dict whose ``"n"`` entry grows by one per call. The attribute is
+    shadowed on *obj* for the duration and removed afterwards, so shared
+    fixtures are left as they were found.
+    """
+    counter = {"n": 0}
+    real = getattr(obj, name)
+
+    def counting(*args, **kwargs):
+        counter["n"] += 1
+        return real(*args, **kwargs)
+
+    setattr(obj, name, counting)
+    try:
+        yield counter
+    finally:
+        delattr(obj, name)
 
 
 def pytest_addoption(parser):

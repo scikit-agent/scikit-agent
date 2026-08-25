@@ -25,6 +25,19 @@ and this project adheres to
   every node of those four diagrams, then confirms the response incentive, the
   value of information and the control incentive numerically against the
   mechanisms.
+- `BellmanPeriod.select_arrival_states`, which names the projection from an ex
+  post result to the next-period arrival states.
+
+### Changed
+
+- A Bellman objective runs the block dynamics once per evaluation instead of two
+  or three times: `vfi.bellman_step`, `estimate_discounted_lifetime_reward`,
+  `estimate_bellman_residual` and `estimate_euler_residual` now read the reward
+  symbols, the discount factor and the next-period arrival states off a single
+  ex post result, and `reward_function` and `transition_function` are defined as
+  those projections of `post_function`. Answers are unchanged; the lifetime
+  reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
+  about 1.3x.
 
 ## [0.1.0] - 2026-08-12
 
