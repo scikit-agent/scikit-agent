@@ -26,6 +26,14 @@ and this project adheres to
   value of information and the control incentive numerically against the
   mechanisms.
 
+### Changed
+
+- Block dynamics no longer call `inspect.signature` once per variable per pass.
+  `skagent.utils.param_names` memoizes a function's parameter names, and
+  `takes_arguments` reads a decision rule's arity off its code object. Answers
+  are unchanged; a block transition is about 3x faster, and value function
+  iteration on the D-4 benchmark about 1.5x.
+
 ## [0.1.0] - 2026-08-12
 
 First release.

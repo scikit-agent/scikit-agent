@@ -10,7 +10,6 @@ from skagent.distributions import (
     combine_indep_dstns,
     expected,
 )
-from inspect import signature
 import numpy as np
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.relevance import RelevanceGraph, shock_roles
@@ -19,6 +18,7 @@ from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
 from skagent.rule import Rule, format_rule
+from skagent.utils import param_names, takes_arguments
 
 
 class Aggregate:
@@ -186,7 +186,7 @@ def construct_shocks(shock_data, scope, rng=None):
                 if isinstance(dist_args[a], str):
                     arg_lambda = math_text_to_lambda(dist_args[a])
                     arg_value = arg_lambda(
-                        *[scope[var] for var in signature(arg_lambda).parameters]
+                        *[scope[var] for var in param_names(arg_lambda)]
                     )
 
                     dist_args[a] = arg_value
@@ -250,16 +250,13 @@ def simulate_dynamics(
                         for var in vals
                     }
                     vals[sym][i] = dr[sym][i](
-                        *[vals_i[var] for var in signature(dr[sym][i]).parameters]
+                        *[vals_i[var] for var in param_names(dr[sym][i])]
                     )
             else:
-                if len(signature(dr[sym]).parameters) > 0:
+                if takes_arguments(dr[sym]):
+                    # TODO: test for signature match with Control
                     try:
-                        vals[sym] = dr[sym](
-                            *[
-                                vals[var] for var in update_fn.iset
-                            ]  # signature(dr[sym]).parameters]
-                        )  # TODO: test for signature match with Control
+                        vals[sym] = dr[sym](*[vals[var] for var in update_fn.iset])
                     except (TypeError, ValueError, KeyError) as e:
                         raise (Exception(f"Can't compute decision rule. {e}"))
                 else:
@@ -270,9 +267,7 @@ def simulate_dynamics(
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()
 
-            vals[sym] = update_fn(
-                *[vals[var] for var in signature(update_fn).parameters]
-            )
+            vals[sym] = update_fn(*[vals[var] for var in param_names(update_fn)])
 
     return vals
 
@@ -695,9 +690,7 @@ class DBlock(Block):
             update_fn = self.dynamics[sym]
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()
-            rvals[sym] = update_fn(
-                *[vals[var] for var in signature(update_fn).parameters]
-            )
+            rvals[sym] = update_fn(*[vals[var] for var in param_names(update_fn)])
 
         return rvals
 
@@ -720,9 +713,7 @@ class DBlock(Block):
             # supporting that here -- summing an agent's reward symbols, and
             # selecting the relevant agent -- is future roadmap work.
             r = list(self.calc_reward(vals).values())[0]
-            cv = continuation(
-                *[vals[var] for var in signature(continuation).parameters]
-            )
+            cv = continuation(*[vals[var] for var in param_names(continuation)])
 
             return r + cv
 

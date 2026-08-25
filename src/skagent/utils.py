@@ -2,8 +2,70 @@ from __future__ import annotations
 
 import inspect
 import logging
+from functools import lru_cache
 import numpy as np
 import torch
+
+# CO_VARARGS | CO_VARKEYWORDS: a function taking only ``*args`` or ``**kwargs``
+# accepts arguments while its argument counts are zero.
+_CO_VAR_ARGUMENTS = inspect.CO_VARARGS | inspect.CO_VARKEYWORDS
+
+
+@lru_cache(maxsize=1024)
+def _param_names_cached(fun):
+    return tuple(inspect.signature(fun).parameters)
+
+
+def param_names(fun):
+    """
+    The names of ``fun``'s parameters, in order.
+
+    Equivalent to ``tuple(inspect.signature(fun).parameters)``, memoized on the
+    function object. ``inspect.signature`` costs on the order of ten
+    microseconds, and the block machinery asks the same functions for their
+    argument names once per variable per pass.
+
+    Parameters
+    ----------
+    fun : callable
+
+    Returns
+    -------
+    tuple of str
+    """
+    try:
+        return _param_names_cached(fun)
+    except TypeError:
+        # An unhashable callable cannot be memoized; answer it directly.
+        return tuple(inspect.signature(fun).parameters)
+
+
+def takes_arguments(fun):
+    """
+    Whether ``fun`` accepts at least one argument.
+
+    For a plain Python function the answer is read off the code object, which
+    is constant-time and needs no memo. Callers asking this question are often
+    handed a function built fresh for the call -- a decision rule wrapping a
+    candidate action, say -- for which a memo keyed on the function object
+    would miss every time.
+
+    Parameters
+    ----------
+    fun : callable
+
+    Returns
+    -------
+    bool
+    """
+    if inspect.isfunction(fun) and not hasattr(fun, "__signature__"):
+        code = fun.__code__
+        return bool(
+            code.co_argcount
+            or code.co_kwonlyargcount
+            or code.co_flags & _CO_VAR_ARGUMENTS
+        )
+    return bool(param_names(fun))
 
 
 def apply_fun_to_vals(fun, vals):
@@ -20,7 +82,7 @@ def apply_fun_to_vals(fun, vals):
     vals: dict
     """
     # TODO: Can this just be `fun(**vals)` ?
-    return fun(*[vals[var] for var in inspect.signature(fun).parameters])
+    return fun(*[vals[var] for var in param_names(fun)])
 
 
 def reconcile(vec_a, vec_b):
