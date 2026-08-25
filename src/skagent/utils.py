@@ -231,3 +231,37 @@ def compute_gradients_for_tensors(
             gradients[tensor_sym][var_name] = grad_result
 
     return gradients
+
+
+def plot_block_diagram(block, title=None, calibration=None, figsize=(9, 7)):
+    """Render *block*'s model diagram into a new matplotlib figure.
+
+    :meth:`~skagent.block.Block.display` shows the diagram in a notebook and
+    returns the image; this puts the image on a figure instead, which is what a
+    script or a documentation gallery needs. It also avoids ``display``'s side
+    effect of emitting the SVG through IPython, which in a plain script prints a
+    line of noise.
+
+    Parameters
+    ----------
+    block : Block
+        The block to draw.
+    title : str, optional
+        Figure title. Omitted if not given.
+    calibration : dict, optional
+        Passed to :meth:`~skagent.block.Block.visualize`, where it says which
+        symbols are static rather than dynamic. Defaults to empty.
+    figsize : tuple of float
+        Figure size in inches, for diagrams that are wider than they are tall or
+        the reverse.
+    """
+    import matplotlib.pyplot as plt
+
+    img, _ = block.visualize({} if calibration is None else calibration).get_image()
+
+    plt.figure(figsize=figsize)
+    plt.imshow(img)
+    plt.axis("off")
+    if title is not None:
+        plt.title(title)
+    plt.tight_layout()
