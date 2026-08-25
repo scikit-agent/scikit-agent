@@ -3,12 +3,14 @@ r"""
 Solving a Block Directly (Non-Recurring)
 #########################################
 
+A decision period that stands on its own — no continuation value to solve for as
+a fixed point — can be solved *directly*, by training a policy network to
+maximize reward. That is the "non-recurring" workflow.
+
 A block describes a single decision period: arrival states and shocks come in,
-the agent chooses its controls, and a reward is produced. When the period stands
-on its own — no continuation value to solve for as a fixed point — we can solve
-it *directly* by training a policy network to maximize reward. This is the
-"non-recurring" workflow, in contrast to the dynamic, recurring case that
-requires value-function iteration or the Bellman/Euler equation losses.
+the agent chooses its controls, and a reward is produced. Solving one directly
+stands in contrast to the dynamic, recurring case, which requires value-function
+iteration or the Bellman/Euler equation losses.
 
 This example walks through two cases:
 
