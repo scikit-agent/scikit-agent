@@ -3,12 +3,15 @@ r"""
 The Maliar Training Loop on a Model With No Closed-Form Solution
 ######################################################################
 
-The companion example trains a network on a *fixed* grid and checks it against
-a closed-form policy. This one runs the full Maliar, Maliar, and Winant (2021)
-algorithm, :func:`~skagent.algos.maliar.maliar_training_loop`, on a model that
-has **no** closed-form solution: Carroll's buffer-stock consumption problem
-(benchmark U-3). Solving such models is the reason the neural-network method
-exists, so it is the honest setting in which to show the algorithm at work.
+The full Maliar, Maliar, and Winant (2021) algorithm, run on a model that has no
+closed-form solution: Carroll's buffer-stock consumption problem, benchmark U-3.
+Solving such models is why the neural-network method exists, so this is the
+honest setting to show it in.
+
+The companion example trains a network on a *fixed* grid and checks it against a
+closed-form policy. This one runs the loop itself,
+:func:`~skagent.algos.maliar.maliar_training_loop`, with no such target to check
+against.
 
 What the Maliar algorithm adds over plain gradient descent
 ==========================================================

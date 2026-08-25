@@ -22,12 +22,15 @@
 The Maliar Training Loop on a Model With No Closed-Form Solution
 ######################################################################
 
-The companion example trains a network on a *fixed* grid and checks it against
-a closed-form policy. This one runs the full Maliar, Maliar, and Winant (2021)
-algorithm, :func:`~skagent.algos.maliar.maliar_training_loop`, on a model that
-has **no** closed-form solution: Carroll's buffer-stock consumption problem
-(benchmark U-3). Solving such models is the reason the neural-network method
-exists, so it is the honest setting in which to show the algorithm at work.
+The full Maliar, Maliar, and Winant (2021) algorithm, run on a model that has no
+closed-form solution: Carroll's buffer-stock consumption problem, benchmark U-3.
+Solving such models is why the neural-network method exists, so this is the
+honest setting to show it in.
+
+The companion example trains a network on a *fixed* grid and checks it against a
+closed-form policy. This one runs the loop itself,
+:func:`~skagent.algos.maliar.maliar_training_loop`, with no such target to check
+against.
 
 What the Maliar algorithm adds over plain gradient descent
 ==========================================================
@@ -71,7 +74,7 @@ theory guarantees: consumption never exceeds cash-on-hand
 resources as wealth rises, so the average propensity to consume :math:`c / m`
 falls (precautionary saving weakens as a buffer accumulates).
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-72
+.. GENERATED FROM PYTHON SOURCE LINES 58-75
 
 .. code-block:: Python
 
@@ -99,7 +102,7 @@ falls (precautionary saving weakens as a buffer accumulates).
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 73-78
+.. GENERATED FROM PYTHON SOURCE LINES 76-81
 
 Step 1: Load the U-3 buffer-stock model and build a BellmanPeriod
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -107,7 +110,7 @@ Step 1: Load the U-3 buffer-stock model and build a BellmanPeriod
 ``construct_shocks`` draws the income-shock support that the all-in-one
 expectation operator samples from during training.
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-87
+.. GENERATED FROM PYTHON SOURCE LINES 81-90
 
 .. code-block:: Python
 
@@ -127,7 +130,7 @@ expectation operator samples from during training.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 88-96
+.. GENERATED FROM PYTHON SOURCE LINES 91-99
 
 Step 2: Define the Euler-equation loss with the borrowing constraint
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -138,7 +141,7 @@ al. 2021, eq. 25), which the control's ``upper_bound`` (:math:`c \le m`)
 supplies. The loss is policy-only here, so a plain
 :class:`~skagent.ann.BlockPolicyNet` is trained internally by the loop.
 
-.. GENERATED FROM PYTHON SOURCE LINES 96-99
+.. GENERATED FROM PYTHON SOURCE LINES 99-102
 
 .. code-block:: Python
 
@@ -152,7 +155,7 @@ supplies. The loss is policy-only here, so a plain
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 100-110
+.. GENERATED FROM PYTHON SOURCE LINES 103-113
 
 Step 3: Run the Maliar training loop
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -165,7 +168,7 @@ next-period draw is generated inside the loss. Their product is an unbiased
 estimate of the squared expected residual, avoiding the upward bias of
 squaring a single draw.
 
-.. GENERATED FROM PYTHON SOURCE LINES 110-126
+.. GENERATED FROM PYTHON SOURCE LINES 113-129
 
 .. code-block:: Python
 
@@ -192,7 +195,7 @@ squaring a single draw.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 127-133
+.. GENERATED FROM PYTHON SOURCE LINES 130-136
 
 Step 4: Evaluate the trained consumption function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -201,7 +204,7 @@ We read the policy over the ergodic set of assets the loop actually trained
 on, holding the income shocks at their mean (:math:`\psi = \theta = 1`) so the
 slice is deterministic. Then we check the two buffer-stock properties.
 
-.. GENERATED FROM PYTHON SOURCE LINES 133-175
+.. GENERATED FROM PYTHON SOURCE LINES 136-178
 
 .. code-block:: Python
 
@@ -264,7 +267,7 @@ slice is deterministic. Then we check the two buffer-stock properties.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 176-185
+.. GENERATED FROM PYTHON SOURCE LINES 179-188
 
 Step 5: Plot the trained policy and its APC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -276,7 +279,7 @@ constraint (the gap to :math:`c = m` is that buffer) and rises concavely. The
 lower panel shows the average propensity to consume :math:`c / m` falling as
 wealth grows.
 
-.. GENERATED FROM PYTHON SOURCE LINES 185-209
+.. GENERATED FROM PYTHON SOURCE LINES 188-212
 
 .. code-block:: Python
 
@@ -319,7 +322,7 @@ wealth grows.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 53.616 seconds)
+   **Total running time of the script:** (0 minutes 31.178 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_maliar_training_loop.py:

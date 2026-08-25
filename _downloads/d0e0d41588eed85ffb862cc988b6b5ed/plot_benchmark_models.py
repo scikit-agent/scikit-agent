@@ -3,12 +3,13 @@ r"""
 Benchmark Consumption Models
 ##############################
 
-A guided tour of scikit-agent's benchmark consumption models. Consumption
-economics asks how a household should split each period's resources between
-spending now and saving for later. The closed-form policies in this registry
-are the classic answers, and they retrace the theory in roughly the order the
-field discovered it. Each model teaches a fact the previous ones could not.
-Reading from top to bottom:
+A guided tour of scikit-agent's benchmark consumption models: closed-form
+policies that retrace the theory in roughly the order the field discovered it,
+each teaching a fact the previous ones could not.
+
+Consumption economics asks how a household should split each period's resources
+between spending now and saving for later, and the policies in this registry are
+the classic answers. Reading from top to bottom:
 
 #. **Finite horizons fade.** Once the distance to the terminal date
    :math:`T - t` is large, the finite-horizon rule is indistinguishable from

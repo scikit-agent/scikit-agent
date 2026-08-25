@@ -25,6 +25,7 @@ Strategic Relevance: Solving the Tree Killer
 Some games decompose: their decisions break into smaller problems that can be
 solved in sequence, each taking as settled the ones before it. Others do not,
 and their decisions have to be faced together, as a single equilibrium problem.
+
 What settles which -- and where a decomposition's dividing lines fall -- is
 whether the decisions *strategically rely* on one another: whether optimising one
 of them requires knowing how another is played. That relation depends on a game's
@@ -75,7 +76,7 @@ References
        Representing and Solving Games." *IJCAI-01*, 1027-1034. (Extended in
        *Games and Economic Behavior* 45(1), 2003, 181-221.)
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-70
+.. GENERATED FROM PYTHON SOURCE LINES 61-72
 
 .. code-block:: Python
 
@@ -96,7 +97,8 @@ References
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-88
+
+.. GENERATED FROM PYTHON SOURCE LINES 74-91
 
 Representing This as a MACID
 ------------------------------
@@ -116,7 +118,7 @@ variable (the shocks ``u_TS`` and ``u_TDead``). This is equivalent in
 distribution and makes the noise a node like any other. Here are the block's
 dynamics, in topological order:
 
-.. GENERATED FROM PYTHON SOURCE LINES 88-91
+.. GENERATED FROM PYTHON SOURCE LINES 91-94
 
 .. code-block:: Python
 
@@ -144,12 +146,12 @@ dynamics, in topological order:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 92-94
+.. GENERATED FROM PYTHON SOURCE LINES 95-97
 
 Agent attribution is declared on the ``Control`` itself, for decisions, and in
 the block's ``reward`` mapping, for utilities:
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-101
+.. GENERATED FROM PYTHON SOURCE LINES 97-104
 
 .. code-block:: Python
 
@@ -179,7 +181,7 @@ the block's ``reward`` mapping, for utilities:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 102-110
+.. GENERATED FROM PYTHON SOURCE LINES 105-113
 
 What makes the graph a game rather than a causal model is that a decision
 node's parents are its **information set** -- what the decision-maker observes
@@ -190,7 +192,7 @@ ignorance of the poison. Alice's ``BP``, by contrast, has both ``PT`` and
 ``TDoc`` as parents. Had ``TDoc`` been given ``PT`` as a parent too, it would
 be a different game over the same causal structure.
 
-.. GENERATED FROM PYTHON SOURCE LINES 110-119
+.. GENERATED FROM PYTHON SOURCE LINES 113-122
 
 .. code-block:: Python
 
@@ -221,7 +223,7 @@ be a different game over the same causal structure.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 120-142
+.. GENERATED FROM PYTHON SOURCE LINES 123-145
 
 Strategic Relevance
 ---------------------
@@ -246,7 +248,7 @@ this graph, though not necessarily for the numbers in this particular block.
 ``relies_on`` computes that criterion, and answers the pairwise question
 directly:
 
-.. GENERATED FROM PYTHON SOURCE LINES 142-149
+.. GENERATED FROM PYTHON SOURCE LINES 145-152
 
 .. code-block:: Python
 
@@ -275,7 +277,7 @@ directly:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 150-166
+.. GENERATED FROM PYTHON SOURCE LINES 153-169
 
 Reading the table: Bob's ``TDoc`` relies on nothing -- his optimal response to
 a sick tree does not depend on how Alice plays. Alice's ``BP`` relies on
@@ -294,7 +296,7 @@ induction. If it has a cycle, the decisions in that cycle must be solved
 ``condensation()`` reports both at once: the strongly connected components, in
 solution order.
 
-.. GENERATED FROM PYTHON SOURCE LINES 166-172
+.. GENERATED FROM PYTHON SOURCE LINES 169-175
 
 .. code-block:: Python
 
@@ -319,12 +321,12 @@ solution order.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 173-175
+.. GENERATED FROM PYTHON SOURCE LINES 176-178
 
 The relevance graph is acyclic, so the game decomposes: each component in the
 ``condensation()`` order relies only on components already solved.
 
-.. GENERATED FROM PYTHON SOURCE LINES 175-183
+.. GENERATED FROM PYTHON SOURCE LINES 178-186
 
 .. code-block:: Python
 
@@ -348,7 +350,7 @@ The relevance graph is acyclic, so the game decomposes: each component in the
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 184-211
+.. GENERATED FROM PYTHON SOURCE LINES 187-214
 
 Solving in Relevance Order
 ----------------------------
@@ -378,7 +380,7 @@ What it does for each decision:
   every information cell is reached and every conditional expectation is
   defined.
 
-.. GENERATED FROM PYTHON SOURCE LINES 211-220
+.. GENERATED FROM PYTHON SOURCE LINES 214-223
 
 .. code-block:: Python
 
@@ -406,7 +408,7 @@ What it does for each decision:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 221-232
+.. GENERATED FROM PYTHON SOURCE LINES 224-235
 
 The solution, decision by decision:
 
@@ -420,7 +422,7 @@ The solution, decision by decision:
 
 Aggregate outcomes under the solved profile:
 
-.. GENERATED FROM PYTHON SOURCE LINES 232-239
+.. GENERATED FROM PYTHON SOURCE LINES 235-242
 
 .. code-block:: Python
 
@@ -450,7 +452,7 @@ Aggregate outcomes under the solved profile:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 240-248
+.. GENERATED FROM PYTHON SOURCE LINES 243-251
 
 Checking the Relevance Graph Empirically
 ------------------------------------------
@@ -461,7 +463,7 @@ decision under a deliberately different profile.
 **Claim 1: TDoc relies on nothing.** Bob's best response should be identical
 whether Alice never poisons and never builds, or always does both.
 
-.. GENERATED FROM PYTHON SOURCE LINES 248-256
+.. GENERATED FROM PYTHON SOURCE LINES 251-259
 
 .. code-block:: Python
 
@@ -487,13 +489,13 @@ whether Alice never poisons and never builds, or always does both.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 257-260
+.. GENERATED FROM PYTHON SOURCE LINES 260-263
 
 **Claim 2: BP does not rely on PT** (though it observes it). Alice's patio
 rule should be unchanged when the policy generating ``PT`` is reweighted --
 and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
-.. GENERATED FROM PYTHON SOURCE LINES 260-282
+.. GENERATED FROM PYTHON SOURCE LINES 263-285
 
 .. code-block:: Python
 
@@ -536,13 +538,13 @@ and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 283-286
+.. GENERATED FROM PYTHON SOURCE LINES 286-289
 
 **Claim 3: PT relies on TDoc.** Replace Bob's rule with a passive one that
 never calls the doctor, re-solve Alice's patio rule against it, and her
 poisoning decision should move.
 
-.. GENERATED FROM PYTHON SOURCE LINES 286-292
+.. GENERATED FROM PYTHON SOURCE LINES 289-295
 
 .. code-block:: Python
 
@@ -566,13 +568,13 @@ poisoning decision should move.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 293-296
+.. GENERATED FROM PYTHON SOURCE LINES 296-299
 
 Poisoning is only worthwhile against a Bob who lets the tree die. This is the
 content of the relevance edge ``PT -> TDoc``, and the reason ``TDoc`` had to be
 solved first.
 
-.. GENERATED FROM PYTHON SOURCE LINES 296-324
+.. GENERATED FROM PYTHON SOURCE LINES 299-327
 
 .. code-block:: Python
 
@@ -616,13 +618,13 @@ solved first.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 325-328
+.. GENERATED FROM PYTHON SOURCE LINES 328-331
 
 Bob's side of the game, for comparison: his payoff as a function of the fee he
 is willing to pay, conditional on what he observes. The two curves are the two
 information cells of ``TDoc``, and neither depends on anything Alice does.
 
-.. GENERATED FROM PYTHON SOURCE LINES 328-349
+.. GENERATED FROM PYTHON SOURCE LINES 331-352
 
 .. code-block:: Python
 
@@ -662,7 +664,7 @@ information cells of ``TDoc``, and neither depends on anything Alice does.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.146 seconds)
+   **Total running time of the script:** (0 minutes 4.399 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_tree_killer_relevance.py:

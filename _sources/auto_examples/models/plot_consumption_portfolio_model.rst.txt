@@ -22,6 +22,11 @@
 Consumption-Saving-Portfolio Model
 #####################################
 
+Blocks compose. This page builds two recursive problems from the same parts:
+consumption-saving with a tick block that carries assets forward, and that pair
+plus a portfolio block which endogenizes the return. Each is inspected,
+visualized and simulated.
+
 The consumption-saving problem is one of the central models of modern
 macroeconomics and household finance. An agent with uncertain income must
 decide each period how much to consume and how much to save, trading off
@@ -120,7 +125,7 @@ References
        and Without Liquidity Constraints." *Journal of Economic
        Perspectives*, 15(3), 23-45.
 
-.. GENERATED FROM PYTHON SOURCE LINES 105-112
+.. GENERATED FROM PYTHON SOURCE LINES 110-118
 
 .. code-block:: Python
 
@@ -138,19 +143,20 @@ References
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 113-117
+
+.. GENERATED FROM PYTHON SOURCE LINES 120-124
 
 Model Inspection
 -----------------
 
 Load the predefined model elements and inspect them.
 
-.. GENERATED FROM PYTHON SOURCE LINES 119-121
+.. GENERATED FROM PYTHON SOURCE LINES 126-128
 
 Step 1: Show Model Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 121-126
+.. GENERATED FROM PYTHON SOURCE LINES 128-133
 
 .. code-block:: Python
 
@@ -183,12 +189,12 @@ Step 1: Show Model Parameters
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 127-129
+.. GENERATED FROM PYTHON SOURCE LINES 134-136
 
 Step 2a: Inspect the Consumption Block Formulas
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 129-132
+.. GENERATED FROM PYTHON SOURCE LINES 136-139
 
 .. code-block:: Python
 
@@ -213,12 +219,12 @@ Step 2a: Inspect the Consumption Block Formulas
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 133-135
+.. GENERATED FROM PYTHON SOURCE LINES 140-142
 
 Step 2b: Visualize the Consumption Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 135-143
+.. GENERATED FROM PYTHON SOURCE LINES 142-150
 
 .. code-block:: Python
 
@@ -248,12 +254,12 @@ Step 2b: Visualize the Consumption Block
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 144-146
+.. GENERATED FROM PYTHON SOURCE LINES 151-153
 
 Step 3a: Inspect and visualize the Portfolio Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 146-149
+.. GENERATED FROM PYTHON SOURCE LINES 153-156
 
 .. code-block:: Python
 
@@ -280,12 +286,12 @@ Step 3a: Inspect and visualize the Portfolio Block
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 150-152
+.. GENERATED FROM PYTHON SOURCE LINES 157-159
 
 Step 3b: Inspect and visualize the Portfolio Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 152-160
+.. GENERATED FROM PYTHON SOURCE LINES 159-167
 
 .. code-block:: Python
 
@@ -315,7 +321,7 @@ Step 3b: Inspect and visualize the Portfolio Block
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 161-175
+.. GENERATED FROM PYTHON SOURCE LINES 168-182
 
 Step 4: Define a Simple Consumption Rule
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -332,7 +338,7 @@ where :math:`\kappa \in (0, 1)` is a fixed MPC. A low MPC creates buffer-stock
 saving behaviour: agents accumulate assets and consume out of wealth gradually.
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 175-198
+.. GENERATED FROM PYTHON SOURCE LINES 182-205
 
 .. code-block:: Python
 
@@ -371,7 +377,7 @@ saving behaviour: agents accumulate assets and consume out of wealth gradually.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 199-205
+.. GENERATED FROM PYTHON SOURCE LINES 206-212
 
 Step 5: Run Monte Carlo Simulation (Pure Saving Problem)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -380,7 +386,7 @@ Simulate the pure saving problem (:data:`~skagent.models.consumer.cons_problem`)
 which combines the normalized consumption block with the tick block.
 Agents start with normalized capital :math:`k \approx 1`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 205-225
+.. GENERATED FROM PYTHON SOURCE LINES 212-232
 
 .. code-block:: Python
 
@@ -419,7 +425,7 @@ Agents start with normalized capital :math:`k \approx 1`.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 226-233
+.. GENERATED FROM PYTHON SOURCE LINES 233-240
 
 Step 6: Plot Simulation Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -429,7 +435,7 @@ resources :math:`m_t` over time. Under the constant-MPC rule, agents
 accumulate a buffer stock of savings that stabilizes around a long-run
 mean determined by :math:`\kappa`, :math:`R`, and :math:`G`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 233-264
+.. GENERATED FROM PYTHON SOURCE LINES 240-271
 
 .. code-block:: Python
 
@@ -476,7 +482,7 @@ mean determined by :math:`\kappa`, :math:`R`, and :math:`G`.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 265-272
+.. GENERATED FROM PYTHON SOURCE LINES 272-279
 
 Step 7: Run Portfolio Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -486,7 +492,7 @@ Now extend to the portfolio problem
 where agents also choose their risky asset share :math:`\varsigma_t`.
 We pair the MPC consumption rule with a fixed risky share of 0.5.
 
-.. GENERATED FROM PYTHON SOURCE LINES 272-296
+.. GENERATED FROM PYTHON SOURCE LINES 279-303
 
 .. code-block:: Python
 
@@ -529,7 +535,7 @@ We pair the MPC consumption rule with a fixed risky share of 0.5.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 297-303
+.. GENERATED FROM PYTHON SOURCE LINES 304-310
 
 Step 8: Compare Saving vs Portfolio Paths
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -538,7 +544,7 @@ The risky asset earns a higher expected return, so the portfolio model
 predicts higher mean wealth accumulation - but also greater dispersion
 due to stock-return risk.
 
-.. GENERATED FROM PYTHON SOURCE LINES 303-337
+.. GENERATED FROM PYTHON SOURCE LINES 310-344
 
 .. code-block:: Python
 
@@ -591,7 +597,7 @@ due to stock-return risk.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.105 seconds)
+   **Total running time of the script:** (0 minutes 0.826 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_consumption_portfolio_model.py:

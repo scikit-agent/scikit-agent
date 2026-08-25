@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Resource Extraction Model" href="plot_resource_extraction.html"><link rel="prev" title="PPO via Stable-Baselines3 on the D-4 Benchmark" href="../algorithms/plot_sb3_ppo.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Incentives in Content Recommendation: Wanting Control Versus Having It" href="plot_incentives_2_content_recommendation.html"><link rel="prev" title="PPO via Stable-Baselines3 on the D-4 Benchmark" href="../algorithms/plot_sb3_ppo.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev9+g4195f3586</title>
+        <title>Models - scikit-agent 0.1.1.dev14+g5458090c9</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev9+g4195f3586</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev14+g5458090c9</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -218,10 +218,11 @@
 </ul>
 </li>
 <li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">Models</a><input aria-label="Toggle navigation of Models" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="plot_incentive_criteria.html">Incentives: Reading Fairness and Manipulation Off a Diagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
 </li>
@@ -300,19 +301,22 @@ other computational methods. Others are read rather than solved: what a decision
 must account for, and what an agent has an incentive to observe or to move, are
 properties of a model’s structure, and are answerable before any policy is
 computed.</p>
-<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use."><img alt="" src="../../_images/sphx_glr_plot_resource_extraction_thumb.png" />
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="Content recommendation separates value of control from the instrumental control incentive. A recommender paid for clicks gains an incentive to change the user&#x27;s mind, and none at all to reach what they thought before arriving."><img alt="" src="../../_images/sphx_glr_plot_incentives_2_content_recommendation_thumb.png" />
+<p><a class="reference internal" href="plot_incentives_2_content_recommendation.html"><span class="doc">Incentives in Content Recommendation: Wanting Control Versus Having It</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Incentives in Content Recommendation: Wanting Control Versus Having It</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use."><img alt="" src="../../_images/sphx_glr_plot_resource_extraction_thumb.png" />
 <p><a class="reference internal" href="plot_resource_extraction.html"><span class="doc">Resource Extraction Model</span></a></p>
   <div class="sphx-glr-thumbnail-title">Resource Extraction Model</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="The consumption-saving problem is one of the central models of modern macroeconomics and household finance. An agent with uncertain income must decide each period how much to consume and how much to save, trading off current utility against future resources."><img alt="" src="../../_images/sphx_glr_plot_consumption_portfolio_model_thumb.png" />
+</div><div class="sphx-glr-thumbcontainer" tooltip="Blocks compose. This page builds two recursive problems from the same parts: consumption-saving with a tick block that carries assets forward, and that pair plus a portfolio block which endogenizes the return. Each is inspected, visualized and simulated."><img alt="" src="../../_images/sphx_glr_plot_consumption_portfolio_model_thumb.png" />
 <p><a class="reference internal" href="plot_consumption_portfolio_model.html"><span class="doc">Consumption-Saving-Portfolio Model</span></a></p>
   <div class="sphx-glr-thumbnail-title">Consumption-Saving-Portfolio Model</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="Some games decompose: their decisions break into smaller problems that can be solved in sequence, each taking as settled the ones before it. Others do not, and their decisions have to be faced together, as a single equilibrium problem. What settles which -- and where a decomposition&#x27;s dividing lines fall -- is whether the decisions strategically rely on one another: whether optimising one of them requires knowing how another is played. That relation depends on a game&#x27;s payoffs, but it is bounded from above by a purely graphical criterion, Koller &amp; Milch&#x27;s s-reachability, read off the structure of the model alone: no payoff values, no solving. Where the criterion finds no reliance, there is none."><img alt="" src="../../_images/sphx_glr_plot_tree_killer_relevance_thumb.png" />
+</div><div class="sphx-glr-thumbcontainer" tooltip="Grade prediction separates value of information from the response incentive. A university that never collects an applicant&#x27;s race can still respond to race, and be unfair for doing so."><img alt="" src="../../_images/sphx_glr_plot_incentives_1_grade_prediction_thumb.png" />
+<p><a class="reference internal" href="plot_incentives_1_grade_prediction.html"><span class="doc">Incentives in Grade Prediction: Observing Versus Responding</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Incentives in Grade Prediction: Observing Versus Responding</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="Some games decompose: their decisions break into smaller problems that can be solved in sequence, each taking as settled the ones before it. Others do not, and their decisions have to be faced together, as a single equilibrium problem."><img alt="" src="../../_images/sphx_glr_plot_tree_killer_relevance_thumb.png" />
 <p><a class="reference internal" href="plot_tree_killer_relevance.html"><span class="doc">Strategic Relevance: Solving the Tree Killer</span></a></p>
   <div class="sphx-glr-thumbnail-title">Strategic Relevance: Solving the Tree Killer</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="An agent optimising an objective acquires incentives it was never given deliberately: to observe some things, to respond to others, to move others still. Which incentives it acquires is decided by the shape of the problem -- what the agent observes, what it can influence, what it is paid for -- and can therefore be read off an influence diagram, before any payoff numbers are chosen and without solving anything."><img alt="" src="../../_images/sphx_glr_plot_incentive_criteria_thumb.png" />
-<p><a class="reference internal" href="plot_incentive_criteria.html"><span class="doc">Incentives: Reading Fairness and Manipulation Off a Diagram</span></a></p>
-  <div class="sphx-glr-thumbnail-title">Incentives: Reading Fairness and Manipulation Off a Diagram</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:"><img alt="" src="../../_images/sphx_glr_plot_benchmark_models_thumb.png" />
+</div><div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models: closed-form policies that retrace the theory in roughly the order the field discovered it, each teaching a fact the previous ones could not."><img alt="" src="../../_images/sphx_glr_plot_benchmark_models_thumb.png" />
 <p><a class="reference internal" href="plot_benchmark_models.html"><span class="doc">Benchmark Consumption Models</span></a></p>
   <div class="sphx-glr-thumbnail-title">Benchmark Consumption Models</div>
 </div></div><div class="toctree-wrapper compound">
@@ -324,12 +328,12 @@ computed.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="plot_resource_extraction.html">
+          <a class="next-page" href="plot_incentives_2_content_recommendation.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Resource Extraction Model</div>
+                <div class="title">Incentives in Content Recommendation: Wanting Control Versus Having It</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -375,7 +379,7 @@ computed.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=9297d7ae"></script>
+</div><script src="../../_static/documentation_options.js?v=dbfacfc4"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
