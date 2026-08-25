@@ -16,8 +16,6 @@ this file tests, in three claims:
    the diagram and never the rules.
 """
 
-import copy
-
 import numpy as np
 import pytest
 
@@ -25,6 +23,7 @@ from skagent.model_analyzer import ModelAnalyzer
 from skagent.models.safety.incentives import (
     content_recommender_block,
     content_recommender_redesign_block,
+    draw_shocks,
     grade_predictor_block,
     grade_predictor_redesign_block,
 )
@@ -118,12 +117,24 @@ def test_criteria_survive_the_encoding(figure):
 
 @pytest.mark.parametrize("figure", list(MODELS))
 def test_mechanisms_evaluate_on_the_numpy_path(figure):
-    block = copy.deepcopy(MODELS[figure][0])
-    block.construct_shocks({}, rng=np.random.default_rng(0))
-    shocks = {sym: dist.draw(1_000) for sym, dist in block.get_shocks().items()}
+    block, shocks = draw_shocks(MODELS[figure][0], n=1_000)
 
     vals = block.transition(shocks, {"P": lambda *observed: 0.5})
     (payoff,) = block.calc_reward(vals).values()
 
     assert np.shape(payoff) == (1_000,)
     assert np.all(np.isfinite(payoff))
+
+
+def test_draw_shocks_leaves_the_block_it_was_given_alone():
+    """The blocks here are module-level, so a draw must not construct in place.
+
+    ``construct_shocks`` replaces each declared ``(class, kwargs)`` pair with a
+    live distribution on the block it is handed, which would leave the shared
+    block constructed for every later caller.
+    """
+    declared = grade_predictor_block.shocks["R"]
+    _, shocks = draw_shocks(grade_predictor_block, n=8)
+
+    assert grade_predictor_block.shocks["R"] is declared
+    assert np.shape(shocks["R"]) == (8,)

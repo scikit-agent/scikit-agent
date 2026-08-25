@@ -30,10 +30,32 @@ the mechanisms, so no assertion about these diagrams depends on the functional
 forms. The forms are nonetheless chosen so that every declared dependency has
 some effect, which the graphical criteria do not need but a quantitative reading
 of the same diagrams would.
+
+Beside the blocks are two helpers for reading them, following the convention of
+:mod:`skagent.models.benchmarks`, where a model ships the analysis its own shape
+calls for. Both are shared by more than one caller and neither is a permanent
+fixture:
+
+- ``print_incentive_table`` renders all four criteria for every node of one of
+  these diagrams. The rendering conventions are local to this module -- the
+  ``"P"`` decision, the ``u_``-prefixed noise filter, the glyphs -- which is why
+  it lives here rather than in :mod:`skagent.relevance`. When that module gains a
+  general table returning ``{node: {criterion: bool | None}}``, this function
+  keeps its signature and its body becomes a loop over that result.
+- ``draw_shocks`` returns a private copy of a block with its shocks constructed,
+  because ``construct_shocks`` mutates the block it is given and the blocks here
+  are module-level shared state. It is a workaround, not an abstraction: when a
+  non-mutating draw exists, this is deleted rather than refactored.
 """
+
+import copy
+
+import numpy as np
 
 from skagent.block import Control, DBlock
 from skagent.distributions import Uniform
+from skagent.model_analyzer import ModelAnalyzer
+from skagent.relevance import admits_ici, admits_ri, admits_voc, admits_voi
 
 _UNIT = (Uniform, {"low": 0.0, "high": 1.0})
 
@@ -155,3 +177,75 @@ content_recommender_block = _content_recommender(
 content_recommender_redesign_block = _content_recommender(
     "content_recommender_redesign", lambda P, M: 1.0 - (P - M) ** 2
 )
+
+
+# The four criteria, in the order the paper's tables present them. The keys are
+# display labels, so this is a rendering detail rather than part of the API;
+# tests/test_incentives.py owns the canonical criterion names.
+_CRITERIA = {"VoI": admits_voi, "RI": admits_ri, "VoC": admits_voc, "ICI": admits_ici}
+
+
+def print_incentive_table(block, decision="P", criteria=None):
+    """Print criteria for every node of *block*'s influence diagram.
+
+    Rows are the diagram's nodes, excluding the exogenous noise shocks this
+    module names with a ``u_`` prefix, which answer the criteria themselves but
+    say nothing about the diagram. ``n/a`` marks a query a criterion refuses as
+    outside its domain rather than answers: value of information asks about
+    observing a variable, which is undefined for the decision itself or for
+    anything downstream of it.
+
+    Parameters
+    ----------
+    block : DBlock
+        One of this module's diagrams.
+    decision : str
+        The control the criteria are read against.
+    criteria : sequence of str, optional
+        Which criteria to print, as labels drawn from ``"VoI"``, ``"RI"``,
+        ``"VoC"`` and ``"ICI"``. Defaults to all four. Narrowing it keeps a
+        table to the criteria under discussion, since the four are independent
+        and a reader met with all of them has three to ignore.
+
+    Returns
+    -------
+    SCIM
+        The influence graph the table was computed from, so that a caller can go
+        on to query it.
+
+    Raises
+    ------
+    KeyError
+        If *criteria* names something that is not one of the four.
+    """
+    selected = _CRITERIA if criteria is None else {k: _CRITERIA[k] for k in criteria}
+    scim = ModelAnalyzer(block, {}).analyze().influence_graph()
+    nodes = sorted(n for n in scim.graph.nodes if not n.startswith("u_"))
+
+    print(f"{'node':>5}  " + "  ".join(f"{name:>4}" for name in selected))
+    for node in nodes:
+        cells = []
+        for criterion in selected.values():
+            try:
+                cells.append("yes" if criterion(scim, decision, node) else "-")
+            except ValueError:
+                cells.append("n/a")
+        print(f"{node:>5}  " + "  ".join(f"{cell:>4}" for cell in cells))
+    return scim
+
+
+def draw_shocks(block, n=200_000, seed=0):
+    """A private copy of *block* with its shocks constructed, and one draw.
+
+    The copy is the point: ``construct_shocks`` mutates the block it is handed,
+    and the diagrams in this module are module-level values, so constructing
+    shocks on one in place would leave it altered for every later caller.
+
+    Returns
+    -------
+    tuple
+        The copied block, and a dict of ``n`` draws per shock symbol.
+    """
+    block = copy.deepcopy(block)
+    block.construct_shocks({}, rng=np.random.default_rng(seed))
+    return block, {sym: dist.draw(n) for sym, dist in block.get_shocks().items()}

@@ -20,11 +20,22 @@ and this project adheres to
 - `skagent.models.safety`, a package for influence diagrams from the AI-safety
   literature, opening with `incentives.py`: the grade-prediction and
   content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
-  paired with the redesign that drops an incentive.
-- `examples/models/plot_incentive_criteria.py`: computes all four criteria for
-  every node of those four diagrams, then confirms the response incentive, the
-  value of information and the control incentive numerically against the
-  mechanisms.
+  paired with the redesign that drops an incentive, plus `print_incentive_table`
+  and `draw_shocks` for reading them.
+- `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
+  matplotlib figure rather than into a notebook.
+- Two gallery examples reading incentives off those diagrams:
+  `examples/models/plot_incentives_1_grade_prediction.py`, where value of
+  information and the response incentive separate, and
+  `plot_incentives_2_content_recommendation.py`, where the two control criteria
+  do. Each shows only the pair of criteria it develops, then checks those
+  readings numerically against the mechanisms.
+
+### Changed
+
+- Every gallery page now opens with a short, page-specific summary, so the
+  gallery's hover text distinguishes the examples instead of repeating shared
+  framing, and each page that draws a model diagram uses it as its thumbnail.
 
 ## [0.1.0] - 2026-08-12
 

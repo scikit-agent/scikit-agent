@@ -111,6 +111,8 @@ import skagent as ska
 from skagent.distributions import Normal
 import skagent.models.resource_extraction as rex
 
+# sphinx_gallery_thumbnail_number = 1
+
 # %%
 # Model Inspection
 # -------------------
