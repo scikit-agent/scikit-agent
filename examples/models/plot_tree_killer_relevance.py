@@ -6,6 +6,7 @@ Strategic Relevance: Solving the Tree Killer
 Some games decompose: their decisions break into smaller problems that can be
 solved in sequence, each taking as settled the ones before it. Others do not,
 and their decisions have to be faced together, as a single equilibrium problem.
+
 What settles which -- and where a decomposition's dividing lines fall -- is
 whether the decisions *strategically rely* on one another: whether optimising one
 of them requires knowing how another is played. That relation depends on a game's
@@ -66,6 +67,8 @@ import numpy as np
 from skagent.algos.best_response import TabularBestResponseSolver
 from skagent.algos.vfi import get_action_rule
 from skagent.models.macid import tree_killer_block as block
+
+# sphinx_gallery_thumbnail_number = 1
 
 # %%
 # Representing This as a MACID
