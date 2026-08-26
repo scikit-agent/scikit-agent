@@ -1,7 +1,11 @@
+import functools
+import inspect
 import unittest
 
 import skagent.utils as utils
 import torch
+from skagent.algos.vfi import get_action_rule
+from skagent.models.benchmarks import crra_utility
 from skagent.utils import compute_gradients_for_tensors
 
 
@@ -198,3 +202,102 @@ class TestFischerBurmeisterEpsValidation(unittest.TestCase):
         h = torch.tensor(1.0)
         with self.assertRaises(ValueError, msg="eps must be > 0"):
             utils.fischer_burmeister(a, h, eps=-1e-12)
+
+
+class TestParamNames(unittest.TestCase):
+    """``param_names`` and ``takes_arguments`` against ``inspect.signature``.
+
+    Both are memoized or code-object shortcuts for the parameter names the
+    block machinery reads off its update functions, so the contract is that
+    they answer exactly what ``inspect.signature`` answers, for every shape of
+    callable a block or a decision rule can be.
+    """
+
+    def callables(self):
+        """One of every callable shape the library binds as a rule."""
+
+        def positional(a, b):
+            return a + b
+
+        def keyword_only(a, *, b):
+            return a + b
+
+        def var_args(*args, **kwargs):
+            return args
+
+        def nullary():
+            return 0.0
+
+        class Rule:
+            def __call__(self, m):
+                return m
+
+            def method(self, m):
+                return m
+
+        rule = Rule()
+        return [
+            positional,
+            keyword_only,
+            var_args,
+            nullary,
+            lambda a, R, y: a * R + y,
+            lambda: 1.0,
+            rule,
+            rule.method,
+            functools.partial(positional, 1),
+            crra_utility,
+        ]
+
+    def test_param_names_matches_signature(self):
+        for fun in self.callables():
+            with self.subTest(fun=fun):
+                self.assertEqual(
+                    utils.param_names(fun),
+                    tuple(inspect.signature(fun).parameters),
+                )
+
+    def test_param_names_is_memoized(self):
+        # The point of the helper: repeated asks do not re-introspect.
+        def f(a, b):
+            return a + b
+
+        utils.param_names(f)
+        before = utils._param_names_cached.cache_info()
+        utils.param_names(f)
+        after = utils._param_names_cached.cache_info()
+        self.assertEqual(after.hits, before.hits + 1)
+        self.assertEqual(after.misses, before.misses)
+
+    def test_param_names_handles_unhashable_callable(self):
+        # An unhashable callable cannot be memoized, but must still be answered.
+        class Unhashable:
+            __hash__ = None
+
+            def __call__(self, m):
+                return m
+
+        self.assertEqual(utils.param_names(Unhashable()), ("m",))
+
+    def test_takes_arguments_matches_signature(self):
+        for fun in self.callables():
+            with self.subTest(fun=fun):
+                self.assertEqual(
+                    utils.takes_arguments(fun),
+                    len(inspect.signature(fun).parameters) > 0,
+                )
+
+    def test_takes_arguments_on_a_fresh_closure(self):
+        # The solvers wrap a candidate action in a nullary closure built fresh
+        # for every objective evaluation; that is the shape this must get right
+        # without introspection.
+        self.assertFalse(utils.takes_arguments(get_action_rule(0.5)))
+
+    def test_takes_arguments_respects_an_overridden_signature(self):
+        # __signature__ overrides the code object, so the fast path must not
+        # be taken for a function that declares one.
+        def f(*args):
+            return args
+
+        f.__signature__ = inspect.Signature([])
+        self.assertFalse(utils.takes_arguments(f))
