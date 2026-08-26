@@ -12,7 +12,7 @@ from skagent.bellman import BellmanPeriod
 from skagent.block import DBlock
 from skagent.distributions import expected
 from skagent.relevance import HIDDEN, MIXED, OBSERVED
-from inspect import signature
+from skagent.utils import param_names
 import itertools
 import logging
 import warnings
@@ -281,9 +281,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
             lower_bound = -1e12  # a very low number
             feq = block.dynamics[controls[0]].lower_bound
             if feq is not None:
-                lower_bound = feq(
-                    *[pre_states[var] for var in signature(feq).parameters]
-                )
+                lower_bound = feq(*[pre_states[var] for var in param_names(feq)])
 
             ## get upper bound
             ## assumes only one control currently
@@ -291,9 +289,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
             feq = block.dynamics[controls[0]].upper_bound
 
             if feq is not None:
-                upper_bound = feq(
-                    *[pre_states[var] for var in signature(feq).parameters]
-                )
+                upper_bound = feq(*[pre_states[var] for var in param_names(feq)])
 
             bounds = ((lower_bound, upper_bound),)
 
@@ -937,12 +933,12 @@ def bellman_step(
             lower_func = lower_by_control[c]
             upper_func = upper_by_control[c]
             lb = (
-                lower_func(*[bag[v] for v in signature(lower_func).parameters])
+                lower_func(*[bag[v] for v in param_names(lower_func)])
                 if lower_func is not None
                 else _LOWER_OPEN
             )
             ub = (
-                upper_func(*[bag[v] for v in signature(upper_func).parameters])
+                upper_func(*[bag[v] for v in param_names(upper_func)])
                 if upper_func is not None
                 else _UPPER_OPEN
             )

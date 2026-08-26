@@ -4,8 +4,9 @@ PPO via Stable-Baselines3 on the D-4 Benchmark
 ##############################################
 
 This example shows how to solve a scikit-agent model with **Proximal Policy
-Optimization (PPO)**, a deep reinforcement-learning algorithm. Rather than
-re-implementing PPO, scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod`
+Optimization (PPO)**, a deep reinforcement-learning algorithm.
+
+Rather than re-implementing PPO, scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod`
 in a `gymnasium <https://gymnasium.farama.org/>`_ environment and hands it to
 the robust PPO implementation in
 `Stable-Baselines3 <https://stable-baselines3.readthedocs.io/>`_ (SB3). The

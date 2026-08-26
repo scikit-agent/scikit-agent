@@ -5,9 +5,10 @@ Training a Policy Network Against a Known Solution
 
 This example demonstrates scikit-agent's neural-network training pipeline by
 solving a model whose optimal policy is known in closed form, then comparing
-the trained policy against that analytical solution. Validating a solver
-against a known answer is the cleanest way to build trust in it before
-applying it to models that have no closed form.
+the trained policy against that analytical solution.
+
+Validating a solver against a known answer is the cleanest way to build trust in
+it before applying it to models that have no closed form.
 
 The model: normalized permanent-income consumption (U-2)
 ========================================================

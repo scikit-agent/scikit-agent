@@ -44,9 +44,8 @@ rule.
 
 **scikit-agent** is a scientific Python toolkit for agent-based economic
 modeling and multi-agent systems design. It provides a unified interface for
-creating, solving, and simulating economic models using modern computational
-methods — including deep learning — alongside more traditional numerical
-techniques.
+creating, analyzing, solving, and simulating models using neural, symbolic, and
+numerical techniques.
 
 Our goal is for `scikit-agent` to be for computational social science what
 `scikit-learn` is for machine learning.

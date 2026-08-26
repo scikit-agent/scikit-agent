@@ -27,9 +27,20 @@ and this project adheres to
   mechanisms.
 - `BellmanPeriod.select_arrival_states`, which names the projection from an ex
   post result to the next-period arrival states.
+- `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
+  matplotlib figure rather than into a notebook.
+- Two gallery examples reading incentives off those diagrams:
+  `examples/models/plot_incentives_1_grade_prediction.py`, where value of
+  information and the response incentive separate, and
+  `plot_incentives_2_content_recommendation.py`, where the two control criteria
+  do. Each shows only the pair of criteria it develops, then checks those
+  readings numerically against the mechanisms.
 
 ### Changed
 
+- Every gallery page now opens with a short, page-specific summary, so the
+  gallery's hover text distinguishes the examples instead of repeating shared
+  framing, and each page that draws a model diagram uses it as its thumbnail.
 - A Bellman objective runs the block dynamics once per evaluation instead of two
   or three times: `vfi.bellman_step`, `estimate_discounted_lifetime_reward`,
   `estimate_bellman_residual` and `estimate_euler_residual` now read the reward
@@ -38,6 +49,11 @@ and this project adheres to
   those projections of `post_function`. Answers are unchanged; the lifetime
   reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
   about 1.3x.
+- Block dynamics no longer call `inspect.signature` once per variable per pass.
+  `skagent.utils.param_names` memoizes a function's parameter names, and
+  `takes_arguments` reads a decision rule's arity off its code object. Answers
+  are unchanged; a block transition is about 3x faster, and value function
+  iteration on the D-4 benchmark about 1.5x.
 
 ## [0.1.0] - 2026-08-12
 
