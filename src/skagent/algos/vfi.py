@@ -962,13 +962,12 @@ def bellman_step(
             # there are no hidden shocks to integrate).
             ctrl = {c: a[j] for j, c in enumerate(controls)}
             sh = {**obs, **extra_shocks}
-            rewards = bp.reward_function(
-                states, ctrl, shocks=sh, parameters=params, agent=agent
-            )
-            r = sum(rewards[s] for s in reward_syms)
+            # One block pass: the ex post values carry the reward symbols, the
+            # discount factor and the next-period arrival states alike.
             post = bp.post_function(states, ctrl, shocks=sh, parameters=params)
+            r = sum(post[s] for s in reward_syms)
             beta = bp.resolve_discount_factor(post)
-            s_next = bp.transition_function(states, ctrl, shocks=sh, parameters=params)
+            s_next = bp.select_arrival_states(post)
             return float(r + beta * continuation_vf(s_next, sh, params))
 
         def negated_value(a):

@@ -20,8 +20,13 @@ and this project adheres to
 - `skagent.models.safety`, a package for influence diagrams from the AI-safety
   literature, opening with `incentives.py`: the grade-prediction and
   content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
-  paired with the redesign that drops an incentive, plus `print_incentive_table`
-  and `draw_shocks` for reading them.
+  paired with the redesign that drops an incentive.
+- `examples/models/plot_incentive_criteria.py`: computes all four criteria for
+  every node of those four diagrams, then confirms the response incentive, the
+  value of information and the control incentive numerically against the
+  mechanisms.
+- `BellmanPeriod.select_arrival_states`, which names the projection from an ex
+  post result to the next-period arrival states.
 - `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
   matplotlib figure rather than into a notebook.
 - Two gallery examples reading incentives off those diagrams:
@@ -36,9 +41,14 @@ and this project adheres to
 - Every gallery page now opens with a short, page-specific summary, so the
   gallery's hover text distinguishes the examples instead of repeating shared
   framing, and each page that draws a model diagram uses it as its thumbnail.
-
-### Changed
-
+- A Bellman objective runs the block dynamics once per evaluation instead of two
+  or three times: `vfi.bellman_step`, `estimate_discounted_lifetime_reward`,
+  `estimate_bellman_residual` and `estimate_euler_residual` now read the reward
+  symbols, the discount factor and the next-period arrival states off a single
+  ex post result, and `reward_function` and `transition_function` are defined as
+  those projections of `post_function`. Answers are unchanged; the lifetime
+  reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
+  about 1.3x.
 - Block dynamics no longer call `inspect.signature` once per variable per pass.
   `skagent.utils.param_names` memoizes a function's parameter names, and
   `takes_arguments` reads a decision rule's arity off its code object. Answers

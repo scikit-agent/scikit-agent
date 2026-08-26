@@ -10,6 +10,7 @@ from conftest import (
     case_9,
     case_10,
     case_11,
+    count_calls,
 )
 import skagent.algos.vfi as vfi
 from skagent.bellman import BellmanPeriod
@@ -384,6 +385,18 @@ class test_vfi_bellman_step(unittest.TestCase):
         self.assertTrue(np.allclose(value_array.values, 0.0, atol=self.ATOL))
         # the gridded policy matches the fitted rule at the nodes
         self.assertTrue(np.allclose(policy_array["c"].values, 0.0, atol=self.ATOL))
+
+    def test_one_block_pass_per_objective_evaluation(self):
+        # The per-point objective reads the reward, the discount factor and the
+        # next arrival states off one ex post result, so a backup runs the
+        # dynamics once per objective evaluation rather than three times.
+        # case_0's control conditions on the arrival state itself, so no
+        # pre-state pass is needed and every pass is an objective evaluation.
+        with count_calls(case_0["bp"].block, "transition") as passes:
+            with count_calls(case_0["bp"], "post_function") as objectives:
+                self._step(case_0, {"a": np.linspace(0, 2, 3)}, case_0["calibration"])
+        self.assertGreater(objectives["n"], 0)
+        self.assertEqual(passes["n"], objectives["n"])
 
     def test_warm_start_x0_policy(self):
         # Passing a previous iterate's policy_array as x0_policy seeds the

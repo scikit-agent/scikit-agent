@@ -1,4 +1,4 @@
-from conftest import case_1, case_2
+from conftest import case_1, case_2, count_calls
 import numpy as np
 import skagent.bellman as bellman
 from skagent.distributions import Normal
@@ -810,3 +810,44 @@ class TestSingleControlEulerReturnsDict(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertIn("consumption", result)
         self.assertIsInstance(result["consumption"], torch.Tensor)
+
+
+class TestOnePassPerObjective(unittest.TestCase):
+    """An objective evaluation runs the block dynamics once.
+
+    The reward symbols, the discount variable and the next-period arrival
+    states are all entries of a single ex post result, so reading them costs
+    one pass over the dynamics rather than one pass each. The answers come out
+    the same either way, so the pass count is what has to be asserted.
+    """
+
+    def test_lifetime_reward_runs_one_pass_per_period(self):
+        bp = bellman.BellmanPeriod(model.DBlock(**block_data), "beta", parameters)
+
+        def df(states_t, shocks_t, params):
+            return {"c": states_t["a"] / 2}
+
+        big_t = 4
+        with count_calls(bp.block, "transition") as passes:
+            bellman.estimate_discounted_lifetime_reward(
+                bp, df, states_0, big_t, parameters=parameters
+            )
+        self.assertEqual(passes["n"], big_t)
+
+    def test_bellman_residual_runs_one_pass(self):
+        _, bp = _make_consumption_savings_bp()
+
+        def vf(states_t, shocks_t, params):
+            return 10.0 * states_t["wealth"]
+
+        def df(states_t, shocks_t, params):
+            return {"consumption": 0.5 * states_t["wealth"]}
+
+        states_t = {"wealth": torch.tensor([2.0, 4.0])}
+        shocks = {
+            "income_0": torch.tensor([1.0, 1.0]),
+            "income_1": torch.tensor([1.2, 0.8]),
+        }
+        with count_calls(bp.block, "transition") as passes:
+            bellman.estimate_bellman_residual(bp, vf, df, states_t, shocks)
+        self.assertEqual(passes["n"], 1)
