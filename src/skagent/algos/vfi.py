@@ -779,7 +779,11 @@ def bellman_step(
         from their discretization nodes, so supplying one is optional and
         idempotent. This grid covers the variables the Bellman loop iterates over
         and is not necessarily equal to any individual control's information set
-        (a control's iset may be a strict subset). For an empty grid, pass ``{}``.
+        (a control's iset may be a strict subset). For an empty grid, pass ``{}``
+        — a period with no arrival states is solved by a single backup here,
+        rather than by :func:`solve_bellman`, which has no fixed point to seek.
+        Note that ``{}`` is the empty mapping, not ``skagent.grid.Grid``, whose
+        ``from_config({})`` raises.
     agent : str, optional
         If given, the period reward sums only this agent's reward symbols.
     scope : Mapping, optional
@@ -1211,6 +1215,19 @@ def solve_bellman(
     geometrically (modulus the discount factor) to the stationary solution; for a
     finite horizon of length ``T`` set ``max_iter=T``.
 
+    The stopping rule assumes an infinite horizon. A finite-horizon problem is
+    structurally indistinguishable from an infinite-horizon one, so a run that
+    reaches *max_iter* is reported as non-convergence in both cases: at a
+    caller-specified horizon that report is expected rather than a failure, and
+    the residual is a sup-norm change between iterates, not an error against the
+    ``T``-period answer.
+
+    A period with no arrival states has no fixed point to iterate towards, and is
+    refused; :func:`bellman_step` solves such a period in a single backup. Every
+    arrival state must be an axis of *state_grid*, since the continuation is
+    rebuilt from the value grid and cannot represent dependence on a variable the
+    grid has no axis for.
+
     Shocks are discretized internally: *disc_params* is threaded into every
     backup (hidden shocks integrated inside the max) and into
     :func:`value_array_to_function` (observed-shock axes integrated into the
@@ -1243,8 +1260,10 @@ def solve_bellman(
         Modest multi-start seed candidate passed to :func:`bellman_step`.
     raise_on_nonconvergence : bool, optional
         If ``True``, raise :class:`RuntimeError` when the loop hits *max_iter*
-        without converging; otherwise emit a :class:`warnings.warn` and return the
-        last iterate (the scipy ``OptimizeResult.success`` convention, O5).
+        with the sup-norm change still above *tol*; otherwise emit a
+        :class:`warnings.warn` and return the last iterate (the scipy
+        ``OptimizeResult.success`` convention, O5). At a finite horizon set
+        through *max_iter* this condition is expected, so leave it ``False``.
     artificial_borrowing_constraint : bool, optional
         Forwarded to :func:`bellman_step`: confine next-period arrival states to
         the state grid (grid edge = slack artificial borrowing limit),
@@ -1262,11 +1281,21 @@ def solve_bellman(
 
     Raises
     ------
+    ValueError
+        If *max_iter* is less than 1, or if the period has no arrival states.
     RuntimeError
         If *raise_on_nonconvergence* is ``True`` and the loop does not converge.
     """
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
+
+    if not bp.arrival_states:
+        raise ValueError(
+            "solve_bellman iterates to a fixed point, and a period with no "
+            "arrival states has none: each backup adds the discounted "
+            "continuation to a value that carries no state, so the iteration "
+            "diverges. Call bellman_step for a single backup of such a period."
+        )
 
     cont = continuation_vf if continuation_vf is not None else (lambda s, sh, p: 0.0)
     value_prev = None
@@ -1297,8 +1326,11 @@ def solve_bellman(
     value_array.attrs.update(n_iter=it + 1, converged=converged, residual=residual)
     if not converged:
         msg = (
-            f"solve_bellman did not converge in {it + 1} iters "
-            f"(residual={residual}); returning last iterate."
+            f"solve_bellman reached max_iter={it + 1} with a sup-norm change of "
+            f"{residual} between the last two iterates, above tol={tol}. On an "
+            f"infinite-horizon problem the iteration has not converged; if "
+            f"max_iter was set as a finite horizon, this is expected and the "
+            f"result is that horizon's solution. Returning the last iterate."
         )
         if raise_on_nonconvergence:
             raise RuntimeError(msg)

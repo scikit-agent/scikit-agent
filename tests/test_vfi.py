@@ -20,6 +20,7 @@ from skagent.loss import BellmanEquationLoss
 from skagent.grid import device
 import skagent.models.benchmarks as bm
 import skagent.models.consumer as cons
+import skagent.models.fisher as fisher
 import numpy as np
 import xarray as xr
 import torch
@@ -1235,3 +1236,90 @@ class test_vfi_protocol(unittest.TestCase):
 
         self.assertTrue(torch.isfinite(loss).all())
         self.assertLess(float(loss.mean()), 1e-3)
+
+
+class test_vfi_horizon(unittest.TestCase):
+    """
+    The stopping rule assumes an infinite horizon. Fisher's two-period problem
+    is the smallest model with a closed form for which no fixed point is the
+    right answer, so it pins what the loop says about a horizon it cannot see.
+    """
+
+    def _fisher(self, n=13, a_max=4.0):
+        bp = BellmanPeriod(fisher.block, "DiscFac", fisher.calibration)
+        avals = np.linspace(0.0, a_max, n)
+        m = fisher.calibration["Rfree"] * avals + fisher.calibration["y"]
+        exact = fisher.analytical_policy({"m": m}, {}, fisher.calibration)["c"]
+        return bp, {"a": avals}, np.asarray(exact)
+
+    def test_finite_horizon_recovers_the_closed_form(self):
+        # T backups of the one-period block IS the T-period problem, so
+        # max_iter=T is exact up to grid error.
+        bp, grid, exact = self._fisher()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            _, _, policy = vfi.solve_bellman(bp, grid, max_iter=fisher.T)
+
+        c = np.asarray(policy["c"]).ravel()
+        self.assertLess(np.abs(c - exact).max(), 5e-2)
+
+    def test_iterating_past_the_horizon_answers_another_question(self):
+        # The fixed point exists; it is the infinite-horizon policy, and the
+        # loop cannot tell that the caller wanted two periods. Iterating far
+        # past T is much further from the closed form than stopping at it.
+        bp, grid, exact = self._fisher()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            _, _, at_horizon = vfi.solve_bellman(bp, grid, max_iter=fisher.T)
+            _, _, past_horizon = vfi.solve_bellman(bp, grid, max_iter=60)
+
+        error_at = np.abs(np.asarray(at_horizon["c"]).ravel() - exact).max()
+        error_past = np.abs(np.asarray(past_horizon["c"]).ravel() - exact).max()
+        self.assertGreater(error_past, 10 * error_at)
+
+    def test_nonconvergence_message_names_both_readings(self):
+        # Reaching max_iter is a failure on an infinite-horizon problem and the
+        # expected outcome at a finite horizon, and the solver cannot tell
+        # which; the message must not assert the first.
+        bp, grid, _ = self._fisher()
+        with self.assertWarns(UserWarning) as caught:
+            vfi.solve_bellman(bp, grid, max_iter=fisher.T)
+
+        message = str(caught.warning)
+        self.assertIn("max_iter", message)
+        self.assertIn("finite horizon", message)
+
+
+class test_vfi_stateless(unittest.TestCase):
+    """A period with no arrival states is one backup, not an iteration."""
+
+    def _one_shot(self):
+        # A single decision with no state: x* maximizes -(x - 0.3)^2.
+        block = DBlock(
+            name="one shot",
+            shocks={},
+            dynamics={
+                "x": Control([], lower_bound=0.0, upper_bound=1.0, agent="a"),
+                "u": lambda x: -((x - 0.3) ** 2),
+            },
+            reward={"u": "a"},
+        )
+        return BellmanPeriod(block, "beta", {"beta": 0.9})
+
+    def test_bellman_step_solves_a_stateless_period(self):
+        bp = self._one_shot()
+        self.assertEqual(bp.arrival_states, set())
+
+        _, value, policy = vfi.bellman_step(bp, bp_terminal, {})
+
+        self.assertAlmostEqual(float(policy["x"]), 0.3, places=6)
+        self.assertAlmostEqual(float(value), 0.0, places=6)
+
+    def test_solve_bellman_refuses_a_stateless_period(self):
+        # Previously this diverged for all max_iter iterations, or raised from
+        # inside the rebuilt continuation with "need at least one array to
+        # stack", depending on whether the grid had an axis at all.
+        with self.assertRaises(ValueError) as caught:
+            vfi.solve_bellman(self._one_shot(), {})
+
+        self.assertIn("bellman_step", str(caught.exception))
