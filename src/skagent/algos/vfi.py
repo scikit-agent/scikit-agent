@@ -780,9 +780,7 @@ def bellman_step(
         idempotent. This grid covers the variables the Bellman loop iterates over
         and is not necessarily equal to any individual control's information set
         (a control's iset may be a strict subset). For an empty grid, pass ``{}``
-        — a period with no arrival states is solved by a single backup here,
-        rather than by :func:`solve_bellman`, which has no fixed point to seek.
-        Note that ``{}`` is the empty mapping, not ``skagent.grid.Grid``, whose
+        — the empty mapping, not :class:`skagent.grid.Grid`, whose
         ``from_config({})`` raises.
     agent : str, optional
         If given, the period reward sums only this agent's reward symbols.
@@ -1222,11 +1220,12 @@ def solve_bellman(
     the residual is a sup-norm change between iterates, not an error against the
     ``T``-period answer.
 
-    A period with no arrival states has no fixed point to iterate towards, and is
-    refused; :func:`bellman_step` solves such a period in a single backup. Every
-    arrival state must be an axis of *state_grid*, since the continuation is
-    rebuilt from the value grid and cannot represent dependence on a variable the
-    grid has no axis for.
+    A period with no arrival states is not a dynamic problem — nothing carries
+    between periods — and is refused. Such a block is solved statically, by
+    :class:`skagent.algos.best_response.TabularBestResponseSolver` or
+    :func:`skagent.solver.solve_multiple_controls`. Every arrival state must be
+    an axis of *state_grid*, since the continuation is rebuilt from the value
+    grid and cannot represent dependence on a variable the grid has no axis for.
 
     Shocks are discretized internally: *disc_params* is threaded into every
     backup (hidden shocks integrated inside the max) and into
@@ -1291,10 +1290,13 @@ def solve_bellman(
 
     if not bp.arrival_states:
         raise ValueError(
-            "solve_bellman iterates to a fixed point, and a period with no "
-            "arrival states has none: each backup adds the discounted "
-            "continuation to a value that carries no state, so the iteration "
-            "diverges. Call bellman_step for a single backup of such a period."
+            "solve_bellman iterates a dynamic program to a fixed point, and a "
+            "period with no arrival states is not dynamic: nothing carries "
+            "between periods, so there is no fixed point to seek. Solve the "
+            "block statically instead — TabularBestResponseSolver "
+            "(skagent.algos.best_response) for a tabular policy over finitely "
+            "many observations, or solve_multiple_controls (skagent.solver) for "
+            "a differentiable one."
         )
 
     cont = continuation_vf if continuation_vf is not None else (lambda s, sh, p: 0.0)

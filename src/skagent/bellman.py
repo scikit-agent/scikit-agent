@@ -59,9 +59,10 @@ class BellmanPeriod:
         The underlying block model containing dynamics, shocks, and reward definitions.
     discount_variable : str
         A variable name which represents the discount factor for future value streams.
-        Required, and resolved out of the post-transition values, so a one-shot or
-        otherwise stateless model must still carry a discount factor in its
-        calibration even though nothing is discounted.
+        Required, and resolved out of the post-transition values. A static block
+        wrapped in a period — as :func:`skagent.solver.solve_multiple_controls`
+        requires — must still carry a discount factor in its calibration, even
+        though nothing is discounted.
     calibration : dict[str, Any]
         Dictionary of calibration parameters for the model.
     decision_rules : dict[str, Callable] | None, optional

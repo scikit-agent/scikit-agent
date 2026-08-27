@@ -1291,7 +1291,7 @@ class test_vfi_horizon(unittest.TestCase):
 
 
 class test_vfi_stateless(unittest.TestCase):
-    """A period with no arrival states is one backup, not an iteration."""
+    """A period with no arrival states is not a dynamic problem."""
 
     def _one_shot(self):
         # A single decision with no state: x* maximizes -(x - 0.3)^2.
@@ -1306,7 +1306,9 @@ class test_vfi_stateless(unittest.TestCase):
         )
         return BellmanPeriod(block, "beta", {"beta": 0.9})
 
-    def test_bellman_step_solves_a_stateless_period(self):
+    def test_bellman_step_accepts_an_empty_grid(self):
+        # A contract fact about the grid argument, not a recommendation: the
+        # backup degenerates to a single constrained maximization of the reward.
         bp = self._one_shot()
         self.assertEqual(bp.arrival_states, set())
 
@@ -1318,8 +1320,11 @@ class test_vfi_stateless(unittest.TestCase):
     def test_solve_bellman_refuses_a_stateless_period(self):
         # Previously this diverged for all max_iter iterations, or raised from
         # inside the rebuilt continuation with "need at least one array to
-        # stack", depending on whether the grid had an axis at all.
+        # stack", depending on whether the grid had an axis at all. The message
+        # must send the caller to a static solver, not deeper into vfi.
         with self.assertRaises(ValueError) as caught:
             vfi.solve_bellman(self._one_shot(), {})
 
-        self.assertIn("bellman_step", str(caught.exception))
+        message = str(caught.exception)
+        self.assertIn("TabularBestResponseSolver", message)
+        self.assertIn("solve_multiple_controls", message)

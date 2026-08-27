@@ -42,10 +42,10 @@ and this project adheres to
 
 ### Changed
 
-- `solve_bellman` refuses a period with no arrival states, which has no fixed
-  point to iterate towards; `bellman_step` solves such a period in one backup.
-  Its non-convergence warning no longer asserts a failure, since reaching
-  `max_iter` is the expected outcome at a finite horizon set that way.
+- `solve_bellman` refuses a period with no arrival states, which is not a
+  dynamic problem and has no fixed point to seek; the error names the static
+  solvers. Its non-convergence warning no longer asserts a failure, since
+  reaching `max_iter` is the expected outcome at a finite horizon set that way.
 - `skagent.algos.vfi`'s local `Grid` alias is now `AxisSpec`, so it no longer
   shares a name with the unrelated `skagent.grid.Grid`. It is the `state_grid`
   parameter type of `solve`, `bellman_step` and `solve_bellman`.
