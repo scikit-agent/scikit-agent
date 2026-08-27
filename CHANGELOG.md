@@ -29,6 +29,10 @@ and this project adheres to
   post result to the next-period arrival states.
 - `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
   matplotlib figure rather than into a notebook.
+- `skagent.models.fisher` is usable: its calibration was malformed (`CRRA` a
+  tuple, `y` a list), so evaluating its reward raised `TypeError`. The control
+  gained bounds, and the module gained `analytical_policy` for the two-period
+  closed form.
 - Two gallery examples reading incentives off those diagrams:
   `examples/models/plot_incentives_1_grade_prediction.py`, where value of
   information and the response incentive separate, and
