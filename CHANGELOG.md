@@ -53,6 +53,8 @@ and this project adheres to
   those projections of `post_function`. Answers are unchanged; the lifetime
   reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
   about 1.3x.
+- Preparing loss inputs no longer rebuilds a `Grid`'s dict once per shock; it
+  indexes the dict it has already built. Answers are unchanged.
 - Block dynamics no longer call `inspect.signature` once per variable per pass.
   `skagent.utils.param_names` memoizes a function's parameter names, and
   `takes_arguments` reads a decision rule's arity off its code object. Answers

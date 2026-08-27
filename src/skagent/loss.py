@@ -93,7 +93,7 @@ def _prepare_loss_inputs(
     *new_dr* takes precedence over *other_dr* for any overlapping keys.
     """
     given_vals = input_grid.to_dict()
-    shock_vals = {sym: input_grid[sym] for sym in model_obj.get_shocks()}
+    shock_vals = {sym: given_vals[sym] for sym in model_obj.get_shocks()}
     states = {sym: given_vals[sym] for sym in state_variables}
     fresh_dr = {**other_dr, **new_dr}
     return states, shock_vals, fresh_dr
