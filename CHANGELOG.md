@@ -61,6 +61,14 @@ and this project adheres to
   are unchanged; a block transition is about 3x faster, and value function
   iteration on the D-4 benchmark about 1.5x.
 
+### Fixed
+
+- `extract_dependencies` had no branch for `Rule`, the type `DBlock` compiles
+  string-valued dynamics into, so it returned no dependencies for them. Every
+  structure derived from those edges -- the dependency graph,
+  `get_arrival_states` and the relevance criteria over them -- was computed on a
+  model that had lost them. `Rule` also gains a public `free_symbols`.
+
 ## [0.1.0] - 2026-08-12
 
 First release.
