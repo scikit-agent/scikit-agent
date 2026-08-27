@@ -42,6 +42,8 @@ and this project adheres to
 
 ### Changed
 
+- A control in a document declares its information set as `iset`, the name the
+  Python constructor uses, rather than `info`.
 - Every gallery page now opens with a short, page-specific summary, so the
   gallery's hover text distinguishes the examples instead of repeating shared
   framing, and each page that draws a model diagram uses it as its thumbnail.
@@ -63,6 +65,10 @@ and this project adheres to
 
 ### Fixed
 
+- `!Control` produced a token that discarded its arguments, so a YAML-loaded
+  block had no controls and the agent's name was parsed as an expression and
+  reported as an arrival state. The tag now builds a `Control`, whose bounds may
+  be declared as expressions, and refuses a malformed declaration.
 - `extract_dependencies` had no branch for `Rule`, the type `DBlock` compiles
   string-valued dynamics into, so it returned no dependencies for them. Every
   structure derived from those edges -- the dependency graph,
