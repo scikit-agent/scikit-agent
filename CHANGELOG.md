@@ -42,6 +42,9 @@ and this project adheres to
 
 ### Changed
 
+- `skagent.algos.vfi`'s local `Grid` alias is now `AxisSpec`, so it no longer
+  shares a name with the unrelated `skagent.grid.Grid`. It is the `state_grid`
+  parameter type of `solve`, `bellman_step` and `solve_bellman`.
 - Every gallery page now opens with a short, page-specific summary, so the
   gallery's hover text distinguishes the examples instead of repeating shared
   framing, and each page that draws a model diagram uses it as its thumbnail.

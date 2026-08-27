@@ -154,18 +154,21 @@ def tensor_decision_rule(np_rule, dtype=None, device=None):
     return tdr
 
 
-Grid = Mapping[str, Sequence]
+#: One coordinate vector per variable, whose cartesian product is the lattice a
+#: value array is tabulated over. Unrelated to :class:`skagent.grid.Grid`, which
+#: is a batch of scattered points rather than a per-axis specification.
+AxisSpec = Mapping[str, Sequence]
 
 
 def grid_to_data_array(
-    grid: Grid = {},  ## TODO: Better data structure here.
+    grid: AxisSpec = {},  ## TODO: Better data structure here.
 ):
     """
     Construct a zero-valued ``DataArray`` over the coordinates of a grid.
 
     Parameters
     ----------
-    grid : Grid, optional
+    grid : AxisSpec, optional
         A mapping from variable labels to a sequence of numerical values. An
         empty mapping yields a zero-dimensional array.
 
@@ -184,7 +187,7 @@ def grid_to_data_array(
     return da
 
 
-def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={}):
+def solve(block: DBlock, continuation, state_grid: AxisSpec, disc_params={}, scope={}):
     """
     Solve a ``DBlock`` stage by value function iteration.
 
@@ -208,7 +211,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
         The continuation value function, called with the post-transition values
         of the variables named in its signature. Fold any discount factor into
         this function (the backup is ``reward + continuation``).
-    state_grid : Grid
+    state_grid : AxisSpec
         A grid over the control's information set: one axis per variable the
         decision may condition on. The returned decision rule takes these as
         positional arguments in ``control.iset`` order. Variables the dynamics
@@ -715,7 +718,7 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
 def bellman_step(
     bp: BellmanPeriod,
     continuation_vf: Callable,
-    state_grid: Grid,
+    state_grid: AxisSpec,
     *,
     agent: str | None = None,
     scope: Mapping = {},
@@ -770,7 +773,7 @@ def bellman_step(
         The continuation value function, called ``continuation_vf(states, shocks,
         parameters)`` on the next-period arrival states (the ``bp.compute_value``
         convention). Terminal continuation is ``lambda s, sh, p: 0.0``.
-    state_grid : Grid
+    state_grid : AxisSpec
         The shared backup grid over arrival states: one axis per variable. Axes
         for the shocks an information set accounts for are added automatically
         from their discretization nodes, so supplying one is optional and
@@ -1179,7 +1182,7 @@ def value_array_to_function(
 
 def solve_bellman(
     bp: BellmanPeriod,
-    state_grid: Grid,
+    state_grid: AxisSpec,
     *,
     continuation_vf: Callable | None = None,
     agent: str | None = None,
@@ -1217,7 +1220,7 @@ def solve_bellman(
     ----------
     bp : BellmanPeriod
         The recurring period providing the model mechanics.
-    state_grid : Grid
+    state_grid : AxisSpec
         A grid over the value function's domain (arrival states and/or observed
         shocks); see :func:`bellman_step`.
     continuation_vf : callable, optional
