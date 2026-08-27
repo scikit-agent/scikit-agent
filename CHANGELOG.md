@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
+  density each backend already provides.
 - `skagent.relevance` gains the four single-decision incentive criteria of
   Everitt et al. (AAAI-21): `admits_voi`, `admits_ri`, `admits_voc` and
   `admits_ici`, with the `is_requisite` test and `minimal_reduction` they rest
@@ -63,6 +65,11 @@ and this project adheres to
 
 ### Fixed
 
+- Draws did not couple: `Bernoulli` at p 0.5 against 0.5001 under one seed
+  changed 100% of its draws, so a finite difference through a discrete shock
+  measured the reshuffled sample path rather than the parameter. Distributions
+  are now drawn by inverting them at uniforms from their own generator, which
+  also makes the torch backend honour that generator at all.
 - `extract_dependencies` had no branch for `Rule`, the type `DBlock` compiles
   string-valued dynamics into, so it returned no dependencies for them. Every
   structure derived from those edges -- the dependency graph,

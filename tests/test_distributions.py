@@ -651,5 +651,79 @@ class TestDistributions(unittest.TestCase):
             expected(function_that_needs_fallback, dd)
 
 
+class TestDrawCoupling(unittest.TestCase):
+    """Draws move with a parameter, rather than being reshuffled by it."""
+
+    N = 2000
+
+    def _pair(self, cls, kwargs, field, bumped, backend="scipy"):
+        """The same draws under two nearby parameter settings and one seed."""
+        base = cls(**kwargs, backend=backend, rng=np.random.default_rng(TEST_SEED))
+        nudged_kwargs = dict(kwargs, **{field: bumped})
+        nudged = cls(
+            **nudged_kwargs, backend=backend, rng=np.random.default_rng(TEST_SEED)
+        )
+        return np.asarray(base.draw(self.N)), np.asarray(nudged.draw(self.N))
+
+    def test_discrete_draws_couple(self):
+        """A tiny change in p moves a tiny share of the draws."""
+        base, nudged = self._pair(Bernoulli, {"p": 0.5}, "p", 0.5001)
+        assert np.mean(base != nudged) < 0.01
+
+    def test_continuous_draws_couple(self):
+        """A tiny change in a scale parameter moves every draw a tiny distance."""
+        for cls, kwargs, field, bumped in (
+            (Normal, {"mu": 0.0, "sigma": 1.0}, "sigma", 1.0001),
+            (Lognormal, {"mean": 1.0, "std": 1.0}, "std", 1.0001),
+            (Uniform, {"low": 0.0, "high": 1.0}, "high", 1.0001),
+        ):
+            base, nudged = self._pair(cls, kwargs, field, bumped)
+            assert np.abs(base - nudged).max() < 0.01, cls.__name__
+
+    def test_draws_reproduce_on_both_backends(self):
+        """Equal generator states give equal draws, on scipy and on torch."""
+        for backend in ("scipy", "torch"):
+            for cls, kwargs in (
+                (Normal, {"mu": 0.0, "sigma": 1.0}),
+                (Bernoulli, {"p": 0.3}),
+            ):
+                first, second = (
+                    cls(
+                        **kwargs, backend=backend, rng=np.random.default_rng(TEST_SEED)
+                    ).draw(10)
+                    for _ in range(2)
+                )
+                np.testing.assert_array_equal(first, second)
+
+
+class TestQuantileAndDensity(unittest.TestCase):
+    def test_icdf_inverts_the_distribution(self):
+        """icdf is the inverse of the cdf, and is monotone in u."""
+        d = Normal(mu=1.0, sigma=2.0)
+        points = np.array([-3.0, 0.0, 1.0, 2.5, 6.0])
+
+        np.testing.assert_allclose(d.icdf(d._dist.cdf(points)), points, atol=1e-12)
+        assert np.all(np.diff(d.icdf(np.linspace(0.01, 0.99, 20))) > 0)
+
+    def test_bernoulli_icdf_spans_the_unit_interval(self):
+        """u = 0, which rng.random can return, is in the support."""
+        np.testing.assert_array_equal(
+            Bernoulli(p=0.3).icdf([0.0, 0.5, 0.7, 0.9, 1.0]), [0.0, 0.0, 0.0, 1.0, 1.0]
+        )
+
+    def test_log_prob(self):
+        """Densities and masses, on both backends."""
+        assert np.isclose(
+            Normal(mu=0.0, sigma=1.0).log_prob(0.0), -0.5 * np.log(2 * np.pi)
+        )
+        assert np.isclose(
+            Normal(mu=0.0, sigma=1.0, backend="torch").log_prob(0.0),
+            -0.5 * np.log(2 * np.pi),
+        )
+        np.testing.assert_allclose(
+            Bernoulli(p=0.3).log_prob([0, 1]), np.log([0.7, 0.3])
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
