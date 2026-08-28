@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev25+ge5287074c</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev29+g8e6e7f262</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev25+ge5287074c</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev29+g8e6e7f262</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -304,6 +304,15 @@ a single <a class="reference internal" href="blocks.html#skagent.block.DBlock" t
 point of a grid over the decision’s information set, solve an exact
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> for the control that maximizes the period reward
 plus a continuation value.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.algos.vfi.AxisSpec">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">AxisSpec</span></span><a class="headerlink" href="#skagent.algos.vfi.AxisSpec" title="Link to this definition">¶</a></dt>
+<dd><p>One coordinate vector per variable, whose cartesian product is the lattice a
+value array is tabulated over. Unrelated to <a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.grid.Grid</span></code></a>, which
+is a batch of scattered points rather than a per-axis specification.</p>
+<p>alias of <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>]</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.vfi.ar_from_data">
 <span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.ar_from_data" title="Link to this definition">¶</a></dt>
@@ -386,7 +395,9 @@ for the shocks an information set accounts for are added automatically
 from their discretization nodes, so supplying one is optional and
 idempotent. This grid covers the variables the Bellman loop iterates over
 and is not necessarily equal to any individual control’s information set
-(a control’s iset may be a strict subset). For an empty grid, pass <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+(a control’s iset may be a strict subset). For an empty grid, pass <code class="docutils literal notranslate"><span class="pre">{}</span></code>
+— the empty mapping, not <a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.grid.Grid</span></code></a>, whose
+<code class="docutils literal notranslate"><span class="pre">from_config({})</span></code> raises.</p></li>
 <li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – If given, the period reward sums only this agent’s reward symbols.</p></li>
 <li><p><strong>scope</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Fixed non-shock exogenous values merged into the model parameters. A
 shock supplied here is pinned to that fixed realization instead of being
@@ -540,6 +551,18 @@ grid falls below <em>tol</em>, or after <em>max_iter</em> iterations.</p>
 terminal continuation. For an infinite-horizon problem the loop converges
 geometrically (modulus the discount factor) to the stationary solution; for a
 finite horizon of length <code class="docutils literal notranslate"><span class="pre">T</span></code> set <code class="docutils literal notranslate"><span class="pre">max_iter=T</span></code>.</p>
+<p>The stopping rule assumes an infinite horizon. A finite-horizon problem is
+structurally indistinguishable from an infinite-horizon one, so a run that
+reaches <em>max_iter</em> is reported as non-convergence in both cases: at a
+caller-specified horizon that report is expected rather than a failure, and
+the residual is a sup-norm change between iterates, not an error against the
+<code class="docutils literal notranslate"><span class="pre">T</span></code>-period answer.</p>
+<p>A period with no arrival states is not a dynamic problem — nothing carries
+between periods — and is refused. Such a block is solved statically, by
+<a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> or
+<a class="reference internal" href="#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a>. Every arrival state must be
+an axis of <em>state_grid</em>, since the continuation is rebuilt from the value
+grid and cannot represent dependence on a variable the grid has no axis for.</p>
 <p>Shocks are discretized internally: <em>disc_params</em> is threaded into every
 backup (hidden shocks integrated inside the max) and into
 <a class="reference internal" href="#skagent.algos.vfi.value_array_to_function" title="skagent.algos.vfi.value_array_to_function"><code class="xref py py-func docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a> (observed-shock axes integrated into the
@@ -562,8 +585,10 @@ shocks); see <a class="reference internal" href="#skagent.algos.vfi.bellman_step
 <li><p><strong>max_iter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Maximum number of backups.</p></li>
 <li><p><strong>x0</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Modest multi-start seed candidate passed to <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
 <li><p><strong>raise_on_nonconvergence</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, raise <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></a> when the loop hits <em>max_iter</em>
-without converging; otherwise emit a <code class="xref py py-class docutils literal notranslate"><span class="pre">warnings.warn</span></code> and return the
-last iterate (the scipy <code class="docutils literal notranslate"><span class="pre">OptimizeResult.success</span></code> convention, O5).</p></li>
+with the sup-norm change still above <em>tol</em>; otherwise emit a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">warnings.warn</span></code> and return the last iterate (the scipy
+<code class="docutils literal notranslate"><span class="pre">OptimizeResult.success</span></code> convention, O5). At a finite horizon set
+through <em>max_iter</em> this condition is expected, so leave it <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>: confine next-period arrival states to
 the state grid (grid edge = slack artificial borrowing limit),
 so the rebuilt continuation is never extrapolated off-grid.</p></li>
@@ -582,7 +607,10 @@ so the rebuilt continuation is never extrapolated off-grid.</p></li>
 </p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If <em>raise_on_nonconvergence</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and the loop does not converge.</p>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>max_iter</em> is less than 1, or if the period has no arrival states.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If <em>raise_on_nonconvergence</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and the loop does not converge.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -2113,6 +2141,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
             <ul>
 <li><a class="reference internal" href="#">Algorithms</a><ul>
 <li><a class="reference internal" href="#value-function-iteration-vfi">Value Function Iteration (VFI)</a><ul>
+<li><a class="reference internal" href="#skagent.algos.vfi.AxisSpec"><code class="docutils literal notranslate"><span class="pre">AxisSpec</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vfi.ar_from_data"><code class="docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vfi.bellman_step"><code class="docutils literal notranslate"><span class="pre">bellman_step()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vfi.get_action_rule"><code class="docutils literal notranslate"><span class="pre">get_action_rule()</span></code></a></li>
@@ -2254,7 +2283,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d7b2cfcf"></script>
+</div><script src="../_static/documentation_options.js?v=bb7a2521"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
