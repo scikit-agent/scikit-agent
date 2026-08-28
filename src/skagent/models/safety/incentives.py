@@ -42,13 +42,10 @@ fixture:
   it lives here rather than in :mod:`skagent.relevance`. When that module gains a
   general table returning ``{node: {criterion: bool | None}}``, this function
   keeps its signature and its body becomes a loop over that result.
-- ``draw_shocks`` returns a private copy of a block with its shocks constructed,
-  because ``construct_shocks`` mutates the block it is given and the blocks here
-  are module-level shared state. It is a workaround, not an abstraction: when a
-  non-mutating draw exists, this is deleted rather than refactored.
+- ``draw_shocks`` draws each shock of a diagram, seeded, for the numerical
+  checks below. The diagrams are module-level values and
+  ``Block.construct_shocks`` leaves them alone, so nothing here needs a copy.
 """
-
-import copy
 
 import numpy as np
 
@@ -235,17 +232,12 @@ def print_incentive_table(block, decision="P", criteria=None):
 
 
 def draw_shocks(block, n=200_000, seed=0):
-    """A private copy of *block* with its shocks constructed, and one draw.
-
-    The copy is the point: ``construct_shocks`` mutates the block it is handed,
-    and the diagrams in this module are module-level values, so constructing
-    shocks on one in place would leave it altered for every later caller.
+    """*n* draws of each of *block*'s shocks.
 
     Returns
     -------
-    tuple
-        The copied block, and a dict of ``n`` draws per shock symbol.
+    dict
+        A mapping from shock symbol to its draws.
     """
-    block = copy.deepcopy(block)
-    block.construct_shocks({}, rng=np.random.default_rng(seed))
-    return block, {sym: dist.draw(n) for sym, dist in block.get_shocks().items()}
+    shocks = block.construct_shocks({}, rng=np.random.default_rng(seed))
+    return {sym: dist.draw(n) for sym, dist in shocks.items()}

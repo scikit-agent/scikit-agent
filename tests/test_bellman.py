@@ -27,7 +27,6 @@ def _make_consumption_savings_bp():
         },
         reward={"utility": "consumer"},
     )
-    block.construct_shocks({})
     return block, bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
 
 
@@ -251,8 +250,6 @@ class TestGradRewardFunction(unittest.TestCase):
             },
             reward={"u": "consumer"},
         )
-        self.shock_block.construct_shocks({})
-
         self.shock_bp = bellman.BellmanPeriod(self.shock_block, "beta", {"beta": 0.9})
 
     def _simple_inputs(self):
@@ -605,7 +602,6 @@ class TestExtractPeriodShocksErrors(unittest.TestCase):
             },
             reward={"u": "consumer"},
         )
-        self.block.construct_shocks({})
         self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.9})
 
     def test_missing_period_0_shock_raises(self):

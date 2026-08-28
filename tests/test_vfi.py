@@ -193,7 +193,6 @@ class test_vfi_conftest(unittest.TestCase):
         # maximize c subject to 0 <= c <= a -> c* = a (upper bound binds);
         # V(a) = a. theta only enters next period's a, so arr_vf collapses to a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_5["block"].construct_shocks(case_5["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_5["block"],
             terminal_continuation,
@@ -209,7 +208,6 @@ class test_vfi_conftest(unittest.TestCase):
         # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds);
         # u = -c, so V(a) = -a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_6["block"].construct_shocks(case_6["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_6["block"],
             terminal_continuation,
@@ -225,7 +223,6 @@ class test_vfi_conftest(unittest.TestCase):
         # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
         # Exercises the open upper-bound default. u = -c, so V(a) = -1.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_7["block"].construct_shocks(case_7["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_7["block"],
             terminal_continuation,
@@ -241,7 +238,6 @@ class test_vfi_conftest(unittest.TestCase):
         # maximize c subject to c <= a (no lower bound) -> c* = a.
         # Exercises the open lower-bound default. u = c, so V(a) = a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_8["block"].construct_shocks(case_8["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_8["block"],
             terminal_continuation,

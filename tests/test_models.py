@@ -168,9 +168,11 @@ class test_consumer_models(unittest.TestCase):
 class test_tree_killer(unittest.TestCase):
     def setUp(self):
         self.block = macid.tree_killer_block
-        self.block.construct_shocks({}, rng=np.random.default_rng(1))
         self.shocks = {
-            sym: dist.draw(20_000) for sym, dist in self.block.get_shocks().items()
+            sym: dist.draw(20_000)
+            for sym, dist in self.block.construct_shocks(
+                {}, rng=np.random.default_rng(1)
+            ).items()
         }
 
     def alice_payoff(self, poison, doctor):

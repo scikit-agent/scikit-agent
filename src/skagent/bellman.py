@@ -67,6 +67,10 @@ class BellmanPeriod:
         Dictionary of calibration parameters for the model.
     decision_rules : dict[str, Callable] | None, optional
         Dictionary mapping control variable names to decision rule functions.
+    rng : np.random.Generator, optional
+        Generator for this period's shock draws. Since the period resolves the
+        block's shocks against its own calibration, it is the period rather
+        than the block that owns their sample path.
 
     Attributes
     ----------
@@ -80,6 +84,8 @@ class BellmanPeriod:
         The decision rules for control variables.
     arrival_states : set[str]
         The set of arrival state variable names.
+    rng : np.random.Generator | None
+        The generator this period's shock draws come from.
 
     Notes
     -----
@@ -99,12 +105,44 @@ class BellmanPeriod:
         discount_variable: str,
         calibration: dict[str, Any],
         decision_rules: dict[str, Callable] | None = None,
+        rng: Any = None,
     ) -> None:
         self.block = block
         self.calibration = calibration
         self.discount_variable = discount_variable
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
+        self.rng = rng
+        self._shocks: dict[str, Any] | None = None
+
+    def shock_distributions(self) -> dict[str, Any]:
+        """This period's shocks, resolved against its calibration.
+
+        The block declares shocks; resolving a declaration needs a calibration,
+        which is what this period supplies. Resolved once and held, so that the
+        generator advances across draws instead of restarting, and so that the
+        block itself is left as its author wrote it.
+        """
+        if self._shocks is None:
+            self._shocks = self.block.construct_shocks(self.calibration, rng=self.rng)
+        return self._shocks
+
+    def draw_shocks(self, n: int) -> dict[str, Any]:
+        """Draw *n* realizations of each of this period's shocks.
+
+        Parameters
+        ----------
+        n : int
+            Number of realizations per shock.
+
+        Returns
+        -------
+        dict[str, Any]
+            A mapping from shock symbol to its draws.
+        """
+        from skagent.simulation.monte_carlo import draw_shocks
+
+        return draw_shocks(self.shock_distributions(), n=n)
 
     def _resolve_inputs(
         self,

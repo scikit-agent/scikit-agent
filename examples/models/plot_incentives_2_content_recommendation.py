@@ -167,7 +167,7 @@ panels = [
 ]
 
 for block, title, axis in panels:
-    block, shocks = draw_shocks(block, n=50_000)
+    shocks = draw_shocks(block, n=50_000)
     frozen_opinions = block.transition(shocks, {"P": lambda M: baseline_post})["I"]
 
     responsive, frozen = [], []

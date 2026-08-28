@@ -189,54 +189,43 @@ def test_discounted_rollout_reward_is_seed_reproducible():
 
 
 class TestEnvironmentsDoNotConstructShocksOnTheBlock:
-    """The envs are the only place a block is constructed implicitly.
+    """The envs are the only place a block's shocks are resolved implicitly.
 
-    Both constructors call ``construct_shocks`` on ``bp.block`` -- a block they
+    Both constructors resolve the declarations on ``bp.block`` -- a block they
     were handed rather than one they built, and typically a module-level value
-    shared with every other caller in the process. Building an environment
-    therefore resolves that block against this caller's calibration and
-    generator, for everyone.
+    shared with every other caller in the process. The resolved distributions
+    are the environment's own, so building one cannot decide the shocks another
+    caller of that block sees.
     """
 
     @staticmethod
     def _bp():
         return BellmanPeriod(recipe_block(), "beta", dict(RECIPE_CALIBRATION))
 
-    @pytest.mark.xfail(
-        strict=True, reason="Environment.__init__ constructs bp.block (PURESHOCKS)"
-    )
     def test_environment_leaves_the_block_as_authored(self):
         bp = self._bp()
         Environment(bp, {"a": Uniform(low=0.0, high=1.0)})
 
         assert isinstance(bp.block.get_shocks()["theta"], tuple)
 
-    @pytest.mark.xfail(
-        strict=True, reason="GymEnv.__init__ constructs bp.block (PURESHOCKS)"
-    )
     def test_gymenv_leaves_the_block_as_authored(self):
         bp = self._bp()
         GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=0)
 
         assert isinstance(bp.block.get_shocks()["theta"], tuple)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="the second env's seed is dropped: bp.block is already constructed",
-    )
     def test_a_later_env_gets_the_seed_it_asked_for(self):
-        """Two envs over one block, second seed honoured.
+        """Two envs over one period, each drawing the path its seed asks for.
 
-        The first construction fixes the shock's generator, and the second is a
-        no-op, so the second environment silently draws the first one's shock
-        path however it is seeded.
+        Each environment resolves the block's declarations itself, so the first
+        one's generator cannot decide the second one's draws.
         """
         bp = self._bp()
         GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=0)
+        later = GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=7)
 
-        fresh = self._bp()
-        GymEnv(fresh, {"a": Uniform(low=0.1, high=1.0)}, seed=7)
-        want = fresh.block.get_shocks()["theta"].draw(20)
+        alone = GymEnv(self._bp(), {"a": Uniform(low=0.1, high=1.0)}, seed=7)
 
-        GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=7)
-        assert np.array_equal(bp.block.get_shocks()["theta"].draw(20), want)
+        assert np.array_equal(
+            later.shocks["theta"].draw(20), alone.shocks["theta"].draw(20)
+        )

@@ -336,7 +336,9 @@ def solve(block: DBlock, continuation, state_grid: AxisSpec, disc_params={}, sco
     }
 
     dec_vf = block.get_decision_value_function(dr_from_data, continuation)
-    arr_vf = block.get_arrival_value_function(disc_params, dr_from_data, continuation)
+    arr_vf = block.get_arrival_value_function(
+        disc_params, dr_from_data, continuation, calibration=scope
+    )
 
     return dr_from_data, dec_vf, arr_vf
 

@@ -154,8 +154,9 @@ class TabularBestResponseSolver:
 
     Notes
     -----
-    Constructing the solver draws the block's shocks and mutates the block's
-    shock distributions, as :meth:`skagent.block.DBlock.construct_shocks` does.
+    Constructing the solver draws the block's shocks against *calibration*. The
+    block itself is left as its author wrote it, so one block may be solved at
+    several calibrations.
 
     Expectations are Monte Carlo estimates; a solved rule is exact only up to
     sampling error, which falls as *shock_samples* rises.
@@ -195,11 +196,12 @@ class TabularBestResponseSolver:
 
         self.decisions = list(block.get_controls())
 
-        block.construct_shocks(self.calibration, rng=self.rng)
-        shocks = block.get_shocks()
+        shocks = block.construct_shocks(self.calibration, rng=self.rng)
         for distribution in shocks.values():
-            # Shocks declared as distribution instances rather than constructor
-            # tuples are not reached by construct_shocks' rng argument.
+            # Shocks the block declares as distribution instances rather than
+            # as (class, arguments) pairs are not reached by construct_shocks'
+            # rng argument. These are this solver's own copies, so seeding them
+            # leaves the block's own distributions alone.
             distribution.rng = self.rng
         self.shocks = {
             sym: dist.draw(self.shock_samples) for sym, dist in shocks.items()
