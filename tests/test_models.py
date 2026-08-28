@@ -93,7 +93,7 @@ class test_consumer_models(unittest.TestCase):
             {"k": Lognormal(-6, 0), "p": 1.0, "age": 0},
             agent_count=2,
             T_sim=5,
-            seed=0,  # fixed: with these settings both agents die at t=3
+            seed=3,  # fixed: with these settings one agent dies at t=2
         )
 
     def test_simulate(self):
