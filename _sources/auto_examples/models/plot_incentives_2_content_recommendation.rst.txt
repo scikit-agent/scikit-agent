@@ -284,7 +284,7 @@ it earns against what it earns when opinions are free to respond.
     ]
 
     for block, title, axis in panels:
-        block, shocks = draw_shocks(block, n=50_000)
+        shocks = draw_shocks(block, n=50_000)
         frozen_opinions = block.transition(shocks, {"P": lambda M: baseline_post})["I"]
 
         responsive, frozen = [], []
@@ -352,7 +352,7 @@ one.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.089 seconds)
+   **Total running time of the script:** (0 minutes 0.915 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_incentives_2_content_recommendation.py:

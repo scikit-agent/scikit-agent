@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev30+g10394b225</title>
+        <title>Models - scikit-agent 0.1.1.dev32+g816ee9fd7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev30+g10394b225</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev32+g816ee9fd7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1198,10 +1198,9 @@ these diagrams. The rendering conventions are local to this module – the
 it lives here rather than in <a class="reference internal" href="analysis.html#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a>. When that module gains a
 general table returning <code class="docutils literal notranslate"><span class="pre">{node:</span> <span class="pre">{criterion:</span> <span class="pre">bool</span> <span class="pre">|</span> <span class="pre">None}}</span></code>, this function
 keeps its signature and its body becomes a loop over that result.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">draw_shocks</span></code> returns a private copy of a block with its shocks constructed,
-because <code class="docutils literal notranslate"><span class="pre">construct_shocks</span></code> mutates the block it is given and the blocks here
-are module-level shared state. It is a workaround, not an abstraction: when a
-non-mutating draw exists, this is deleted rather than refactored.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">draw_shocks</span></code> draws each shock of a diagram, seeded, for the numerical
+checks below. The diagrams are module-level values and
+<code class="docutils literal notranslate"><span class="pre">Block.construct_shocks</span></code> leaves them alone, so nothing here needs a copy.</p></li>
 </ul>
 <dl class="py data">
 <dt class="sig sig-object py" id="skagent.models.safety.incentives.content_recommender_block">
@@ -1230,16 +1229,13 @@ user’s original opinions rather than from the opinions the posts produced.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.models.safety.incentives.draw_shocks">
 <span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">draw_shocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.safety.incentives.draw_shocks" title="Link to this definition">¶</a></dt>
-<dd><p>A private copy of <em>block</em> with its shocks constructed, and one draw.</p>
-<p>The copy is the point: <code class="docutils literal notranslate"><span class="pre">construct_shocks</span></code> mutates the block it is handed,
-and the diagrams in this module are module-level values, so constructing
-shocks on one in place would leave it altered for every later caller.</p>
+<dd><p><em>n</em> draws of each of <em>block</em>’s shocks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The copied block, and a dict of <code class="docutils literal notranslate"><span class="pre">n</span></code> draws per shock symbol.</p>
+<dd class="field-odd"><p>A mapping from shock symbol to its draws.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1434,7 +1430,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=52cee8b7"></script>
+</div><script src="../_static/documentation_options.js?v=85cb228b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

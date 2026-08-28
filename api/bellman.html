@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Models" href="models.html"><link rel="prev" title="Blocks" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Bellman Periods - scikit-agent 0.1.1.dev30+g10394b225</title>
+        <title>Bellman Periods - scikit-agent 0.1.1.dev32+g816ee9fd7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev30+g10394b225</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev32+g816ee9fd7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -330,7 +330,7 @@ single <code class="docutils literal notranslate"><span class="pre">Callable</sp
 control symbol; <code class="docutils literal notranslate"><span class="pre">vf</span></code> by agent name).</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.bellman.BellmanPeriod">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.bellman.</span></span><span class="sig-name descname"><span class="pre">BellmanPeriod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount_variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.bellman.BellmanPeriod" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.bellman.</span></span><span class="sig-name descname"><span class="pre">BellmanPeriod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount_variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.bellman.BellmanPeriod" title="Link to this definition">¶</a></dt>
 <dd><p>A class representing a period of a Bellman or Dynamic Stochastic Optimization Problem.</p>
 <p>This class wraps a Block model with calibration parameters and decision rules,
 providing methods for computing transitions, decisions, rewards, and their gradients.</p>
@@ -345,6 +345,9 @@ requires — must still carry a discount factor in its calibration, even
 though nothing is discounted.</p></li>
 <li><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Dictionary of calibration parameters for the model.</p></li>
 <li><p><strong>decision_rules</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>] | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Dictionary mapping control variable names to decision rule functions.</p></li>
+<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></span>) – Generator for this period’s shock draws. Since the period resolves the
+block’s shocks against its own calibration, it is the period rather
+than the block that owns their sample path.</p></li>
 </ul>
 </dd>
 </dl>
@@ -399,6 +402,17 @@ though nothing is discounted.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)">set</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.bellman.BellmanPeriod.rng">
+<span class="sig-name descname"><span class="pre">rng</span></span><a class="headerlink" href="#skagent.bellman.BellmanPeriod.rng" title="Link to this definition">¶</a></dt>
+<dd><p>The generator this period’s shock draws come from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.random.Generator | None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -499,6 +513,23 @@ the callable’s responsibility.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Control variable values computed from decision rules.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.bellman.BellmanPeriod.draw_shocks">
+<span class="sig-name descname"><span class="pre">draw_shocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.bellman.BellmanPeriod.draw_shocks" title="Link to this definition">¶</a></dt>
+<dd><p>Draw <em>n</em> realizations of each of this period’s shocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of realizations per shock.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A mapping from shock symbol to its draws.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
@@ -763,6 +794,21 @@ Expects the post-transition output returned by
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The entries of <em>post</em> named by <a class="reference internal" href="#skagent.bellman.BellmanPeriod.arrival_states" title="skagent.bellman.BellmanPeriod.arrival_states"><code class="xref py py-attr docutils literal notranslate"><span class="pre">arrival_states</span></code></a>.</p>
 </dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.bellman.BellmanPeriod.shock_distributions">
+<span class="sig-name descname"><span class="pre">shock_distributions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.bellman.BellmanPeriod.shock_distributions" title="Link to this definition">¶</a></dt>
+<dd><p>This period’s shocks, resolved against its calibration.</p>
+<p>The block declares shocks; resolving a declaration needs a calibration,
+which is what this period supplies. Resolved once and held, so that the
+generator advances across draws instead of restarting, and so that the
+block itself is left as its author wrote it.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
 </dd>
@@ -1045,10 +1091,12 @@ residual computation and the constraint slack computation.</p></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.calibration"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.calibration</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.decision_rules"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.decision_rules</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.arrival_states"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.arrival_states</span></code></a></li>
+<li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.rng"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.rng</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.compute_controls"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.compute_controls()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.compute_pre_state"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.compute_pre_state()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.compute_value"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.compute_value()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.decision_function"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.decision_function()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.draw_shocks"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.draw_shocks()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_arrival_states"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_arrival_states()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_controls"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_controls()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_reward_sym"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_reward_sym()</span></code></a></li>
@@ -1061,6 +1109,7 @@ residual computation and the constraint slack computation.</p></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.resolve_discount_factor"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.resolve_discount_factor()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.reward_function"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.reward_function()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.select_arrival_states"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.select_arrival_states()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.shock_distributions"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.shock_distributions()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.transition_function"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.transition_function()</span></code></a></li>
 </ul>
 </li>
@@ -1079,7 +1128,7 @@ residual computation and the constraint slack computation.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=52cee8b7"></script>
+</div><script src="../_static/documentation_options.js?v=85cb228b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

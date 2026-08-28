@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Strategic Relevance: Solving the Tree Killer" href="plot_tree_killer_relevance.html"><link rel="prev" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Incentives in Grade Prediction: Observing Versus Responding - scikit-agent 0.1.1.dev30+g10394b225</title>
+        <title>Incentives in Grade Prediction: Observing Versus Responding - scikit-agent 0.1.1.dev32+g816ee9fd7</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev30+g10394b225</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev32+g816ee9fd7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -520,8 +520,9 @@ since gender carries nothing, the constant <span class="math notranslate nohighl
 not.</p>
 <p>Start with the response incentive, which is the second display above. Hold
 every noise term fixed, vary race alone, and watch the prediction.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">block_observant</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a> <span class="o">=</span> <span class="n">draw_shocks</span><span class="p">(</span><span class="n">grade_predictor_block</span><span class="p">)</span>
-<span class="n">block_blind</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">draw_shocks</span><span class="p">(</span><span class="n">grade_predictor_redesign_block</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">block_observant</span> <span class="o">=</span> <span class="n">grade_predictor_block</span>
+<span class="n">block_blind</span> <span class="o">=</span> <span class="n">grade_predictor_redesign_block</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a> <span class="o">=</span> <span class="n">draw_shocks</span><span class="p">(</span><span class="n">block_observant</span><span class="p">)</span>
 <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n</span></a> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shocks</span></a><span class="p">[</span><span class="s2">"R"</span><span class="p">])</span>
 
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">race_grid</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
@@ -623,7 +624,7 @@ the deterministic mechanisms these blocks are written with, so an incentive may
 be reported in a case where the functional effect happens to vanish. The
 converse cannot happen. A criterion here may cry wolf, but it will not miss
 one.</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.703 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.705 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-incentives-1-grade-prediction-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/53f4e9f0ab41fe6551ba8f76818e9a42/plot_incentives_1_grade_prediction.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_incentives_1_grade_prediction.ipynb</span></code></a></p>
@@ -719,7 +720,7 @@ one.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=52cee8b7"></script>
+</div><script src="../../_static/documentation_options.js?v=85cb228b"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

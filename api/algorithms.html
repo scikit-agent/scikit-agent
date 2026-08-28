@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev30+g10394b225</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev32+g816ee9fd7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev30+g10394b225</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev32+g816ee9fd7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -931,8 +931,9 @@ estimates a conditional expectation when observations repeat.</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Constructing the solver draws the block’s shocks and mutates the block’s
-shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
+<p>Constructing the solver draws the block’s shocks against <em>calibration</em>. The
+block itself is left as its author wrote it, so one block may be solved at
+several calibrations.</p>
 <p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
 sampling error, which falls as <em>shock_samples</em> rises.</p>
 <dl class="py method">
@@ -1090,8 +1091,9 @@ estimates a conditional expectation when observations repeat.</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Constructing the solver draws the block’s shocks and mutates the block’s
-shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
+<p>Constructing the solver draws the block’s shocks against <em>calibration</em>. The
+block itself is left as its author wrote it, so one block may be solved at
+several calibrations.</p>
 <p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
 sampling error, which falls as <em>shock_samples</em> rises.</p>
 <dl class="py method">
@@ -1227,21 +1229,19 @@ points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_
 by the skagent Block system.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><code class="docutils literal notranslate"><span class="pre">generate_givens_from_states</span></code> currently accesses <code class="docutils literal notranslate"><span class="pre">bellman_period.block</span></code>
-directly rather than working through the BellmanPeriod interface. A future
-refactoring could route shock generation through BellmanPeriod itself.
-Similarly, shock draws are currently Monte Carlo only; structured draws
-(e.g. exact discretizations) could be supported via BellmanPeriod.</p>
+<p>Shock draws here are Monte Carlo only; structured draws (e.g. exact
+discretizations) could be supported via BellmanPeriod.</p>
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.maliar.generate_givens_from_states">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.maliar.</span></span><span class="sig-name descname"><span class="pre">generate_givens_from_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_copies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.maliar.generate_givens_from_states" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.maliar.</span></span><span class="sig-name descname"><span class="pre">generate_givens_from_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_copies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.maliar.generate_givens_from_states" title="Link to this definition">¶</a></dt>
 <dd><p>Generate omega_i values of the MMW JME ‘21 method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>states</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Grid</span></code></a></span>) – A grid of starting state values (exogenous and endogenous).</p></li>
-<li><p><strong>model_block</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="blocks.html#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a></span>) – Block information (used to get the shock names).</p></li>
+<li><p><strong>bellman_period</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – The period whose shocks are drawn. It resolves them against its own
+calibration, so the draws follow its generator.</p></li>
 <li><p><strong>shock_copies</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of copies of the shocks to be included. Must be &gt;= 1.</p></li>
 </ul>
 </dd>
@@ -2289,7 +2289,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=52cee8b7"></script>
+</div><script src="../_static/documentation_options.js?v=85cb228b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

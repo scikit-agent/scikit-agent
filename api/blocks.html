@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev30+g10394b225</title>
+        <title>Blocks - scikit-agent 0.1.1.dev32+g816ee9fd7</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev30+g10394b225</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev32+g816ee9fd7</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -518,14 +518,23 @@ variables in the block.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.construct_shocks">
 <span class="sig-name descname"><span class="pre">construct_shocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.construct_shocks" title="Link to this definition">¶</a></dt>
-<dd><p>Constructs all shocks given calibration.
-This method mutates the DBlock.</p>
+<dd><p>This block’s shocks, resolved against <em>calibration</em>.</p>
+<p>A shock declared as a <code class="docutils literal notranslate"><span class="pre">(class,</span> <span class="pre">arguments)</span></code> pair is resolved only
+against a calibration, which is what lets one block stand for the same
+model at many of them. The resolved distributions are therefore
+returned rather than stored: the block keeps the declaration, and a
+caller wanting a second calibration or a second generator gets it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Calibration parameters for shock construction</p></li>
-<li><p><strong>rng</strong> (<em>np.random.Generator</em><em>, </em><em>optional</em>) – Random number generator to use for distribution construction</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Values for any symbol a shock’s arguments refer to.</p></li>
+<li><p><strong>rng</strong> (<em>np.random.Generator</em><em>, </em><em>optional</em>) – Generator for the constructed distributions to draw from. Since a
+distribution is drawn by inverting it at uniforms from its own
+generator, this fixes the sample path of everything returned here.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference internal" href="distributions.html#skagent.distributions.Distribution" title="skagent.distributions.Distribution">Distribution</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -561,8 +570,11 @@ These dictionaries will have updated values based on the inputs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.discretize">
-<span class="sig-name descname"><span class="pre">discretize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.discretize" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">discretize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.discretize" title="Link to this definition">¶</a></dt>
 <dd><p>Returns a new DBlock which is a copy of this one, but with shock discretized.</p>
+<p>Discretizing needs the distributions themselves, so a block whose
+shocks are still declared as <code class="docutils literal notranslate"><span class="pre">(class,</span> <span class="pre">arguments)</span></code> pairs must be given
+the <em>calibration</em> to resolve them against.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -572,12 +584,15 @@ These dictionaries will have updated values based on the inputs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.get_arrival_value_function">
-<span class="sig-name descname"><span class="pre">get_arrival_value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_arrival_value_function" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_arrival_value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_arrival_value_function" title="Link to this definition">¶</a></dt>
 <dd><p>Returns an arrival value function, which is the value of the states
 upon arrival into the block.</p>
 <p>This involves taking an expectation over shocks (which must
 first be discretized), a decision rule, and a continuation
 value function.)</p>
+<p>The expectation is over the distributions themselves, so a block whose
+shocks are still declared as <code class="docutils literal notranslate"><span class="pre">(class,</span> <span class="pre">arguments)</span></code> pairs must be given
+the <em>calibration</em> to resolve them against.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -669,13 +684,19 @@ the dynamics.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.RBlock.construct_shocks">
 <span class="sig-name descname"><span class="pre">construct_shocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.RBlock.construct_shocks" title="Link to this definition">¶</a></dt>
-<dd><p>Construct all shocks given a calibration dictionary.</p>
+<dd><p>This recursive block’s shocks, resolved against <em>calibration</em>.</p>
+<p>Merged over the sub-blocks, in their order, as <a class="reference internal" href="#skagent.block.RBlock.get_shocks" title="skagent.block.RBlock.get_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_shocks()</span></code></a> does.
+Returned rather than stored, for the reason
+<a class="reference internal" href="#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">DBlock.construct_shocks()</span></code></a> gives.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Calibration parameters for shock construction</p></li>
-<li><p><strong>rng</strong> (<em>np.random.Generator</em><em>, </em><em>optional</em>) – Random number generator to use for distribution construction</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Values for any symbol a shock’s arguments refer to.</p></li>
+<li><p><strong>rng</strong> (<em>np.random.Generator</em><em>, </em><em>optional</em>) – Generator for the constructed distributions to draw from.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference internal" href="distributions.html#skagent.distributions.Distribution" title="skagent.distributions.Distribution">Distribution</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -687,7 +708,7 @@ the dynamics.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.RBlock.discretize">
-<span class="sig-name descname"><span class="pre">discretize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.RBlock.discretize" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">discretize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.RBlock.discretize" title="Link to this definition">¶</a></dt>
 <dd><p>Recursively discretizes all the blocks.
 It replaces any DBlocks with new blocks with discretized shocks.</p>
 </dd></dl>
@@ -1021,7 +1042,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=52cee8b7"></script>
+</div><script src="../_static/documentation_options.js?v=85cb228b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

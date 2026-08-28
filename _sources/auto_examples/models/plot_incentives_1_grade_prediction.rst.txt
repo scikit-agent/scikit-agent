@@ -353,13 +353,14 @@ not.
 Start with the response incentive, which is the second display above. Hold
 every noise term fixed, vary race alone, and watch the prediction.
 
-.. GENERATED FROM PYTHON SOURCE LINES 221-259
+.. GENERATED FROM PYTHON SOURCE LINES 221-260
 
 .. code-block:: Python
 
 
-    block_observant, shocks = draw_shocks(grade_predictor_block)
-    block_blind, _ = draw_shocks(grade_predictor_redesign_block)
+    block_observant = grade_predictor_block
+    block_blind = grade_predictor_redesign_block
+    shocks = draw_shocks(block_observant)
     n = len(shocks["R"])
 
     race_grid = np.linspace(0.0, 1.0, 11)
@@ -407,7 +408,7 @@ every noise term fixed, vary race alone, and watch the prediction.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 260-269
+.. GENERATED FROM PYTHON SOURCE LINES 261-270
 
 The first prediction tracks race; the second is a flat line. That is the
 response incentive and its absence, shown in the mechanisms rather than in the
@@ -419,7 +420,7 @@ that race is worth nothing *once the high school is known*, which is
 :math:`E[Gr \mid HS, R]` does not depend on :math:`R` -- something we can
 estimate directly.
 
-.. GENERATED FROM PYTHON SOURCE LINES 269-307
+.. GENERATED FROM PYTHON SOURCE LINES 270-308
 
 .. code-block:: Python
 
@@ -473,7 +474,7 @@ estimate directly.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 308-329
+.. GENERATED FROM PYTHON SOURCE LINES 309-330
 
 On the left the two curves lie on top of each other: conditional on the high
 school, the grade does not depend on race, so observing race would add nothing
@@ -500,7 +501,7 @@ one.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.703 seconds)
+   **Total running time of the script:** (0 minutes 0.705 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_incentives_1_grade_prediction.py:
