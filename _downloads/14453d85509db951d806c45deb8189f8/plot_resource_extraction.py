@@ -213,7 +213,7 @@ simulator = ska.MonteCarloSimulator(
     block=rex.resource_extraction_block,
     dr=decision_rule,
     initial=initial_conditions,
-    agent_count=1000,  # Simulate 1000 agents
+    sample_count=1000,  # 1000 independent trajectories
     T_sim=100,  # For 100 periods
     seed=42,  # For reproducibility
 )

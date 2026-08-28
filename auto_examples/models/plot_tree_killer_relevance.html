@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Benchmark Consumption Models" href="plot_benchmark_models.html"><link rel="prev" title="Incentives in Grade Prediction: Observing Versus Responding" href="plot_incentives_1_grade_prediction.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Strategic Relevance: Solving the Tree Killer - scikit-agent 0.1.1.dev29+g8e6e7f262</title>
+        <title>Strategic Relevance: Solving the Tree Killer - scikit-agent 0.1.1.dev30+g10394b225</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev29+g8e6e7f262</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev30+g10394b225</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -521,7 +521,9 @@ agent’s utility nodes;</p></li>
 every information cell is reached and every conditional expectation is
 defined.</p></li>
 </ul>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">TabularBestResponseSolver</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.default_rng" title="numpy.random.default_rng" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span></a><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">TabularBestResponseSolver</span><span class="p">(</span>
+    <span class="n">block</span><span class="p">,</span> <span class="n">shock_samples</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.default_rng" title="numpy.random.default_rng" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span></a><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="p">)</span>
 <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
 
 <span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision</span></a><span class="p">,</span> <span class="n">rule</span> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -682,7 +684,7 @@ information cells of <code class="docutils literal notranslate"><span class="pre
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" srcset="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" alt="Bob's best response, per information cell" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.116 seconds)</p>
+<img src="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" srcset="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" alt="Bob's best response, per information cell" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.045 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-tree-killer-relevance-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/5fe208a5eb30622739ce37ebcdec9e9c/plot_tree_killer_relevance.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_tree_killer_relevance.ipynb</span></code></a></p>
@@ -781,7 +783,7 @@ information cells of <code class="docutils literal notranslate"><span class="pre
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=bb7a2521"></script>
+</div><script src="../../_static/documentation_options.js?v=52cee8b7"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

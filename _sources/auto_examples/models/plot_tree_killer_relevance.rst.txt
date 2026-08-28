@@ -380,12 +380,14 @@ What it does for each decision:
   every information cell is reached and every conditional expectation is
   defined.
 
-.. GENERATED FROM PYTHON SOURCE LINES 214-223
+.. GENERATED FROM PYTHON SOURCE LINES 214-225
 
 .. code-block:: Python
 
 
-    solver = TabularBestResponseSolver(block, samples=50_000, rng=np.random.default_rng(0))
+    solver = TabularBestResponseSolver(
+        block, shock_samples=50_000, rng=np.random.default_rng(0)
+    )
     policies = solver.solve()
 
     for decision, rule in policies.items():
@@ -408,7 +410,7 @@ What it does for each decision:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 224-235
+.. GENERATED FROM PYTHON SOURCE LINES 226-237
 
 The solution, decision by decision:
 
@@ -422,7 +424,7 @@ The solution, decision by decision:
 
 Aggregate outcomes under the solved profile:
 
-.. GENERATED FROM PYTHON SOURCE LINES 235-242
+.. GENERATED FROM PYTHON SOURCE LINES 237-244
 
 .. code-block:: Python
 
@@ -452,7 +454,7 @@ Aggregate outcomes under the solved profile:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 243-251
+.. GENERATED FROM PYTHON SOURCE LINES 245-253
 
 Checking the Relevance Graph Empirically
 ------------------------------------------
@@ -463,7 +465,7 @@ decision under a deliberately different profile.
 **Claim 1: TDoc relies on nothing.** Bob's best response should be identical
 whether Alice never poisons and never builds, or always does both.
 
-.. GENERATED FROM PYTHON SOURCE LINES 251-259
+.. GENERATED FROM PYTHON SOURCE LINES 253-261
 
 .. code-block:: Python
 
@@ -489,13 +491,13 @@ whether Alice never poisons and never builds, or always does both.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 260-263
+.. GENERATED FROM PYTHON SOURCE LINES 262-265
 
 **Claim 2: BP does not rely on PT** (though it observes it). Alice's patio
 rule should be unchanged when the policy generating ``PT`` is reweighted --
 and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
-.. GENERATED FROM PYTHON SOURCE LINES 263-285
+.. GENERATED FROM PYTHON SOURCE LINES 265-287
 
 .. code-block:: Python
 
@@ -538,13 +540,13 @@ and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 286-289
+.. GENERATED FROM PYTHON SOURCE LINES 288-291
 
 **Claim 3: PT relies on TDoc.** Replace Bob's rule with a passive one that
 never calls the doctor, re-solve Alice's patio rule against it, and her
 poisoning decision should move.
 
-.. GENERATED FROM PYTHON SOURCE LINES 289-295
+.. GENERATED FROM PYTHON SOURCE LINES 291-297
 
 .. code-block:: Python
 
@@ -568,13 +570,13 @@ poisoning decision should move.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 296-299
+.. GENERATED FROM PYTHON SOURCE LINES 298-301
 
 Poisoning is only worthwhile against a Bob who lets the tree die. This is the
 content of the relevance edge ``PT -> TDoc``, and the reason ``TDoc`` had to be
 solved first.
 
-.. GENERATED FROM PYTHON SOURCE LINES 299-327
+.. GENERATED FROM PYTHON SOURCE LINES 301-329
 
 .. code-block:: Python
 
@@ -618,13 +620,13 @@ solved first.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 328-331
+.. GENERATED FROM PYTHON SOURCE LINES 330-333
 
 Bob's side of the game, for comparison: his payoff as a function of the fee he
 is willing to pay, conditional on what he observes. The two curves are the two
 information cells of ``TDoc``, and neither depends on anything Alice does.
 
-.. GENERATED FROM PYTHON SOURCE LINES 331-352
+.. GENERATED FROM PYTHON SOURCE LINES 333-354
 
 .. code-block:: Python
 
@@ -664,7 +666,7 @@ information cells of ``TDoc``, and neither depends on anything Alice does.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.116 seconds)
+   **Total running time of the script:** (0 minutes 6.045 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_tree_killer_relevance.py:

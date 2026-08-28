@@ -36,7 +36,7 @@ simulator = ska.MonteCarloSimulator(
     block=model,
     dr=decision_rules,
     initial={"k": 1.0},
-    agent_count=1000,
+    sample_count=1000,
     T_sim=50,
 )
 

@@ -400,7 +400,7 @@ Agents start with normalized capital :math:`k \approx 1`.
         block=cons.cons_problem,
         dr=decision_rule,
         initial=initial_conditions,
-        agent_count=1000,
+        sample_count=1000,
         T_sim=100,
         seed=42,
     )
@@ -509,7 +509,7 @@ We pair the MPC consumption rule with a fixed risky share of 0.5.
         block=cons.cons_portfolio_problem,
         dr=portfolio_decision_rule,
         initial={"k": Normal(mu=1.0, sigma=0.1), "R": cons.calibration["Rfree"]},
-        agent_count=1000,
+        sample_count=1000,
         T_sim=100,
         seed=42,
     )
@@ -597,7 +597,7 @@ due to stock-return risk.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.122 seconds)
+   **Total running time of the script:** (0 minutes 1.055 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_consumption_portfolio_model.py:

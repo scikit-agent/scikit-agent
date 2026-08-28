@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev29+g8e6e7f262</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev30+g10394b225</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev29+g8e6e7f262</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev30+g10394b225</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -845,7 +845,7 @@ decisions that have to be solved jointly, which is a simultaneous-move
 equilibrium problem and is not attempted here.</p>
 <p>Each decision is solved <em>per information cell</em>: for every value of what the
 decision-maker observes, the action maximizing their expected payoff conditional
-on that observation. Expectations are estimated by drawing <em>samples</em>
+on that observation. Expectations are estimated by drawing <em>shock_samples</em>
 realizations of the block’s shocks once, at construction, and reusing the same
 draws for every candidate action (common random numbers), so that comparisons
 between actions carry far less error than their levels do. Conditioning is done
@@ -903,7 +903,7 @@ decision’s agent in each cell for each action.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver" title="Link to this definition">¶</a></dt>
 <dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -917,9 +917,12 @@ values for any parameter the dynamics refer to. Defaults to empty.</p></li>
 <li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
 <code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
 <li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
-<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. Grouping splits these
-across a decision’s information cells, so each cell’s expectation rests
-on the samples that reached it rather than on all of them.</p></li>
+<li><p><strong>shock_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. This is the axis the
+expectations are estimated over – the integral over the block’s
+declared shocks that a decision’s objective is defined by, taken by
+Monte Carlo rather than by quadrature. Grouping splits these across a
+decision’s information cells, so each cell’s expectation rests on the
+samples that reached it rather than on all of them.</p></li>
 <li><p><strong>rng</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><em>numpy.random.Generator</em></a><em>, </em><em>optional</em>) – Generator for the shock draws.</p></li>
 <li><p><strong>max_cells</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Upper limit on the number of information cells a single decision may
 have. Exceeding it raises, since grouping samples by observed value only
@@ -931,7 +934,7 @@ estimates a conditional expectation when observations repeat.</p></li>
 <p>Constructing the solver draws the block’s shocks and mutates the block’s
 shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
 <p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
-sampling error, which falls as <em>samples</em> rises.</p>
+sampling error, which falls as <em>shock_samples</em> rises.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.best_response">
 <span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.best_response" title="Link to this definition">¶</a></dt>
@@ -1059,7 +1062,7 @@ points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_
 <h3>Core Best-Response Classes<a class="headerlink" href="#core-best-response-classes" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em><span class="sig-paren">)</span></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1073,9 +1076,12 @@ values for any parameter the dynamics refer to. Defaults to empty.</p></li>
 <li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
 <code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
 <li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
-<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. Grouping splits these
-across a decision’s information cells, so each cell’s expectation rests
-on the samples that reached it rather than on all of them.</p></li>
+<li><p><strong>shock_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. This is the axis the
+expectations are estimated over – the integral over the block’s
+declared shocks that a decision’s objective is defined by, taken by
+Monte Carlo rather than by quadrature. Grouping splits these across a
+decision’s information cells, so each cell’s expectation rests on the
+samples that reached it rather than on all of them.</p></li>
 <li><p><strong>rng</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><em>numpy.random.Generator</em></a><em>, </em><em>optional</em>) – Generator for the shock draws.</p></li>
 <li><p><strong>max_cells</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Upper limit on the number of information cells a single decision may
 have. Exceeding it raises, since grouping samples by observed value only
@@ -1087,7 +1093,7 @@ estimates a conditional expectation when observations repeat.</p></li>
 <p>Constructing the solver draws the block’s shocks and mutates the block’s
 shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
 <p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
-sampling error, which falls as <em>samples</em> rises.</p>
+sampling error, which falls as <em>shock_samples</em> rises.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span></dt>
@@ -2283,7 +2289,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=bb7a2521"></script>
+</div><script src="../_static/documentation_options.js?v=52cee8b7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
