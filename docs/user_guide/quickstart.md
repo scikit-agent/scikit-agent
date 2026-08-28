@@ -101,8 +101,8 @@ simulator = ska.MonteCarloSimulator(
     calibration=my_calibration,
     block=cons_problem,
     dr={"c": lambda m: 0.9 * m},  # decision rule for the control `c`
-    initial={"k": 1.0},  # starting capital for every agent
-    agent_count=1000,
+    initial={"k": 1.0},  # starting capital on every trajectory
+    sample_count=1000,
     T_sim=50,
     seed=42,
 )
@@ -116,8 +116,8 @@ print("History keys:", list(history.keys()))
 ### Step 5: Analyze Results
 
 Each entry of `simulator.history` is a NumPy array of shape
-`(T_sim, agent_count)`, so averaging over `axis=1` gives the cross-agent mean at
-each period:
+`(T_sim, sample_count)`, so averaging over `axis=1` gives the Monte Carlo mean
+over trajectories at each period:
 
 ```python
 import matplotlib.pyplot as plt

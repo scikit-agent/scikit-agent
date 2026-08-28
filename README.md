@@ -28,7 +28,7 @@ simulator = ska.MonteCarloSimulator(
     block=cons_problem,
     dr={"c": lambda m: 0.9 * m},
     initial={"k": 1.0},
-    agent_count=1000,
+    sample_count=1000,
     T_sim=50,
     seed=42,
 )

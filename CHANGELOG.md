@@ -44,6 +44,11 @@ and this project adheres to
 
 ### Changed
 
+- `Simulator.agent_count` is now `sample_count`, and
+  `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
+  was a population: `sample_count` counts independent trajectories, and
+  `shock_samples` counts realizations of the block's shocks. The old names are
+  accepted for this release under a `DeprecationWarning`.
 - `solve_bellman` refuses a period with no arrival states, which is not a
   dynamic problem and has no fixed point to seek; the error names the static
   solvers. Its non-convergence warning no longer asserts a failure, since

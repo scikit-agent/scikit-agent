@@ -23,7 +23,7 @@ class test_pfm(unittest.TestCase):
                 #'live' : 1,
                 "p": 1.0,
             },
-            agent_count=3,
+            sample_count=3,
             T_sim=120,
         )
 
@@ -46,7 +46,7 @@ class test_pfnm(unittest.TestCase):
                 #'live' : 1,
                 "p": 1.0,
             },
-            agent_count=3,
+            sample_count=3,
             T_sim=120,
         )
 
@@ -67,7 +67,7 @@ class test_consumer_models(unittest.TestCase):
             {  # initial states (normalized problem: p not needed)
                 "k": Lognormal(-6, 0),
             },
-            agent_count=2,
+            sample_count=2,
             T_sim=5,
         )
 
@@ -82,7 +82,7 @@ class test_consumer_models(unittest.TestCase):
                 "k": Lognormal(-6, 0),
                 "R": 1.03,
             },
-            agent_count=2,
+            sample_count=2,
             T_sim=5,
         )
 
@@ -91,7 +91,7 @@ class test_consumer_models(unittest.TestCase):
             cons.mortal_cons_problem,
             {"c": lambda m: m / 3},
             {"k": Lognormal(-6, 0), "p": 1.0, "age": 0},
-            agent_count=2,
+            sample_count=2,
             T_sim=5,
             seed=3,  # fixed: with these settings one agent dies at t=2
         )
@@ -128,7 +128,7 @@ class test_consumer_models(unittest.TestCase):
         )
 
         for t in range(1, self.mcs.T_sim):
-            for i in range(self.mcs.agent_count):
+            for i in range(self.mcs.sample_count):
                 if hist["live"][t][i] == 0:
                     # Death: age resets to 0 and k is a freshly drawn newborn
                     # endowment (k_init), not the surviving end-of-period assets.
@@ -154,7 +154,7 @@ class test_consumer_models(unittest.TestCase):
             cons.mortal_cons_problem,
             {"c": lambda m: m / 3},
             {"k": Lognormal(-6, 0), "p": 1.0, "age": 0},
-            agent_count=500,
+            sample_count=500,
             T_sim=20,
             seed=1,
         )

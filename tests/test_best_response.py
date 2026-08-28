@@ -16,12 +16,12 @@ from skagent.block import Control, DBlock
 from skagent.distributions import Uniform
 import skagent.models.macid as macid
 
-SAMPLES = 10_000
+SHOCK_SAMPLES = 10_000
 
 
 def solver(block, seed=0, **kwargs):
     return TabularBestResponseSolver(
-        block, samples=SAMPLES, rng=np.random.default_rng(seed), **kwargs
+        block, shock_samples=SHOCK_SAMPLES, rng=np.random.default_rng(seed), **kwargs
     )
 
 
@@ -148,7 +148,7 @@ class TestPayoffs:
 
         assert payoffs.cells.tolist() == [[0.0], [1.0]]
         assert payoffs.payoff.shape == (2, len(payoffs.actions))
-        assert payoffs.counts.sum() == SAMPLES
+        assert payoffs.counts.sum() == SHOCK_SAMPLES
         assert (payoffs.counts > 0).all()
 
     def test_empty_information_set_is_one_cell(self, tree_killer):
@@ -264,3 +264,16 @@ class TestTabulatedRule:
 
         # The patio is built exactly when the doctor was called in earnest.
         assert np.allclose(np.asarray(vals["BP"]), np.asarray(vals["TDoc"]) == 1.0)
+
+
+class TestSamplesDeprecation:
+    """`samples` is accepted for one release, under a warning."""
+
+    def test_sets_shock_samples(self):
+        with pytest.warns(DeprecationWarning):
+            solved = TabularBestResponseSolver(
+                macid.tree_killer_block, samples=1_000, rng=np.random.default_rng(0)
+            )
+
+        assert solved.shock_samples == 1_000
+        assert not hasattr(solved, "samples")
