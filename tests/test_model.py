@@ -1,9 +1,13 @@
 import unittest
 
+import numpy as np
+import pytest
+
 from skagent.distributions import Bernoulli, DiscreteDistribution
 import skagent.block as model
 from skagent.block import Control
 import skagent.models.consumer as cons
+from tests.conftest import recipe_block
 
 # TODO: let the shock constructor reference this parameter.
 LivPrb = 0.98
@@ -338,3 +342,67 @@ class test_display_formula(unittest.TestCase):
         self.assertIn("ctrl", formulas)
         self.assertIn("Control", formulas["ctrl"])
         self.assertIn("x", formulas["ctrl"])
+
+
+# ---------------------------------------------------------------------------
+# Shock construction: the authored spec is a recipe, not a value
+# ---------------------------------------------------------------------------
+
+
+def drawn_sigma(block, n=40_000):
+    """The standard deviation of the log of ``theta``'s draws."""
+    return float(np.std(np.log(block.get_shocks()["theta"].draw(n))))
+
+
+class TestShockConstructionIsNotDestructive:
+    """A block is calibration-independent; constructing must not change that.
+
+    Constructing writes the resolved distributions back over the recipe, so the
+    recipe is gone afterwards and every later construction of that block has
+    nothing left to resolve. The three tests below are one mechanism and two of
+    its observable consequences.
+    """
+
+    @pytest.mark.xfail(
+        strict=True, reason="construct_shocks overwrites block.shocks (PURESHOCKS)"
+    )
+    def test_construction_leaves_the_authored_spec_intact(self):
+        block = recipe_block()
+        block.construct_shocks({"sigma_theta": 0.1}, rng=np.random.default_rng(0))
+
+        assert isinstance(block.get_shocks()["theta"], tuple)
+
+    @pytest.mark.xfail(
+        strict=True, reason="the recipe is gone, so the new calibration is dropped"
+    )
+    def test_a_second_calibration_reaches_the_shock(self):
+        block = recipe_block()
+        block.construct_shocks({"sigma_theta": 0.1}, rng=np.random.default_rng(0))
+        block.construct_shocks({"sigma_theta": 0.4}, rng=np.random.default_rng(0))
+
+        assert drawn_sigma(block) == pytest.approx(0.4, abs=0.01)
+
+    @pytest.mark.xfail(
+        strict=True, reason="the recipe is gone, so the new generator is dropped"
+    )
+    def test_a_second_rng_reaches_the_shock(self):
+        """A seed a caller passes must decide that caller's draws.
+
+        Distributions are drawn by inverting them at uniforms from the
+        generator they were built with, so the generator handed to construction
+        fixes the whole sample path. A construction that silently keeps the
+        previous one makes a ``seed`` argument a claim the library does not
+        honour.
+        """
+        cal = {"sigma_theta": 0.1}
+        shared = recipe_block()
+        shared.construct_shocks(cal, rng=np.random.default_rng(0))
+        shared.construct_shocks(cal, rng=np.random.default_rng(1))
+
+        fresh = recipe_block()
+        fresh.construct_shocks(cal, rng=np.random.default_rng(1))
+
+        assert np.array_equal(
+            shared.get_shocks()["theta"].draw(20),
+            fresh.get_shocks()["theta"].draw(20),
+        )

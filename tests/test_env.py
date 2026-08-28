@@ -12,7 +12,15 @@ from skagent.distributions import Uniform
 from skagent.env import Environment, GymEnv, discounted_rollout_reward
 from skagent.models.benchmarks import d2_block, d2_calibration
 
-from tests.conftest import case_0, case_1, case_5, case_7, case_10
+from tests.conftest import (
+    RECIPE_CALIBRATION,
+    case_0,
+    case_1,
+    case_5,
+    case_7,
+    case_10,
+    recipe_block,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -173,3 +181,62 @@ def test_discounted_rollout_reward_is_seed_reproducible():
 
     assert r1 == pytest.approx(r2)  # same seed → identical rollout
     assert r1 != pytest.approx(r3)  # different seed → different rollout
+
+
+# ---------------------------------------------------------------------------
+# Neither environment may rewrite the block it was handed
+# ---------------------------------------------------------------------------
+
+
+class TestEnvironmentsDoNotConstructShocksOnTheBlock:
+    """The envs are the only place a block is constructed implicitly.
+
+    Both constructors call ``construct_shocks`` on ``bp.block`` -- a block they
+    were handed rather than one they built, and typically a module-level value
+    shared with every other caller in the process. Building an environment
+    therefore resolves that block against this caller's calibration and
+    generator, for everyone.
+    """
+
+    @staticmethod
+    def _bp():
+        return BellmanPeriod(recipe_block(), "beta", dict(RECIPE_CALIBRATION))
+
+    @pytest.mark.xfail(
+        strict=True, reason="Environment.__init__ constructs bp.block (PURESHOCKS)"
+    )
+    def test_environment_leaves_the_block_as_authored(self):
+        bp = self._bp()
+        Environment(bp, {"a": Uniform(low=0.0, high=1.0)})
+
+        assert isinstance(bp.block.get_shocks()["theta"], tuple)
+
+    @pytest.mark.xfail(
+        strict=True, reason="GymEnv.__init__ constructs bp.block (PURESHOCKS)"
+    )
+    def test_gymenv_leaves_the_block_as_authored(self):
+        bp = self._bp()
+        GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=0)
+
+        assert isinstance(bp.block.get_shocks()["theta"], tuple)
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason="the second env's seed is dropped: bp.block is already constructed",
+    )
+    def test_a_later_env_gets_the_seed_it_asked_for(self):
+        """Two envs over one block, second seed honoured.
+
+        The first construction fixes the shock's generator, and the second is a
+        no-op, so the second environment silently draws the first one's shock
+        path however it is seeded.
+        """
+        bp = self._bp()
+        GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=0)
+
+        fresh = self._bp()
+        GymEnv(fresh, {"a": Uniform(low=0.1, high=1.0)}, seed=7)
+        want = fresh.block.get_shocks()["theta"].draw(20)
+
+        GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=7)
+        assert np.array_equal(bp.block.get_shocks()["theta"].draw(20), want)
