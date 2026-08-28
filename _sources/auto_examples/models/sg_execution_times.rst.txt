@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:10.572** total execution time for 6 files **from auto_examples/models**:
+**00:10.384** total execution time for 6 files **from auto_examples/models**:
 
 .. container::
 
@@ -33,20 +33,20 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_models_plot_tree_killer_relevance.py` (``plot_tree_killer_relevance.py``)
-     - 00:06.086
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_incentives_2_content_recommendation.py` (``plot_incentives_2_content_recommendation.py``)
-     - 00:01.131
+     - 00:06.085
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``plot_consumption_portfolio_model.py``)
-     - 00:01.089
+     - 00:01.069
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_incentives_2_content_recommendation.py` (``plot_incentives_2_content_recommendation.py``)
+     - 00:01.043
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``plot_benchmark_models.py``)
-     - 00:01.034
+     - 00:00.978
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_1_grade_prediction.py` (``plot_incentives_1_grade_prediction.py``)
-     - 00:00.708
+     - 00:00.689
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``plot_resource_extraction.py``)
-     - 00:00.523
+     - 00:00.520
      - 0.0

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation" href="simulation.html"><link rel="prev" title="Loss Functions" href="loss.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Distributions - scikit-agent 0.1.1.dev23+g70825b7b6</title>
+        <title>Distributions - scikit-agent 0.1.1.dev25+ge5287074c</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev23+g70825b7b6</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev25+ge5287074c</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -327,6 +327,20 @@ for better integration with neural network methods while maintaining API compati
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.distributions.Bernoulli.icdf">
+<span class="sig-name descname"><span class="pre">icdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Bernoulli.icdf" title="Link to this definition">¶</a></dt>
+<dd><p>Bernoulli’s quantile function.</p>
+<p>Neither backend supplies a usable one: <code class="docutils literal notranslate"><span class="pre">torch.distributions.Bernoulli</span></code>
+raises <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code>, and scipy’s <code class="docutils literal notranslate"><span class="pre">ppf</span></code> maps u = 0, which
+<code class="docutils literal notranslate"><span class="pre">rng.random</span></code> can return, to -1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="skagent.distributions.Bernoulli.mean">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#skagent.distributions.Bernoulli.mean" title="Link to this definition">¶</a></dt>
@@ -425,10 +439,42 @@ that works with both scipy and torch backends.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.distributions.Distribution.draw">
 <span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Distribution.draw" title="Link to this definition">¶</a></dt>
-<dd><p>Draw n samples from the distribution</p>
+<dd><p>Draw n samples from the distribution.</p>
+<p>Samples are taken by inverting the distribution at uniform draws from
+<code class="docutils literal notranslate"><span class="pre">self.rng</span></code>, so that two distributions sharing a generator state and
+differing slightly in their parameters produce samples that differ
+slightly, rather than a different sample path.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.distributions.Distribution.icdf">
+<span class="sig-name descname"><span class="pre">icdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Distribution.icdf" title="Link to this definition">¶</a></dt>
+<dd><p>Quantile function: the value below which a proportion u of the mass lies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array_like</em>) – Probabilities in [0, 1].</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.distributions.Distribution.log_prob">
+<span class="sig-name descname"><span class="pre">log_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Distribution.log_prob" title="Link to this definition">¶</a></dt>
+<dd><p>Log density (or log mass, for a discrete distribution) at x.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>array_like</em>) – Points in the support of the distribution.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
@@ -510,12 +556,12 @@ that works with both scipy and torch backends.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.distributions.Lognormal.draw">
-<span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Lognormal.draw" title="Link to this definition">¶</a></dt>
-<dd><p>Draw n samples from the distribution</p>
+<dt class="sig sig-object py" id="skagent.distributions.Lognormal.icdf">
+<span class="sig-name descname"><span class="pre">icdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Lognormal.icdf" title="Link to this definition">¶</a></dt>
+<dd><p>Quantile function: the value below which a proportion u of the mass lies.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p>
+<dd class="field-odd"><p><strong>u</strong> (<em>array_like</em>) – Probabilities in [0, 1].</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
@@ -762,6 +808,7 @@ Compatible with skagent.distributions.expected</p>
 <li><a class="reference internal" href="#">Distributions</a><ul>
 <li><a class="reference internal" href="#skagent.distributions.Bernoulli"><code class="docutils literal notranslate"><span class="pre">Bernoulli</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.distributions.Bernoulli.discretize"><code class="docutils literal notranslate"><span class="pre">Bernoulli.discretize()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.distributions.Bernoulli.icdf"><code class="docutils literal notranslate"><span class="pre">Bernoulli.icdf()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Bernoulli.mean"><code class="docutils literal notranslate"><span class="pre">Bernoulli.mean</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Bernoulli.std"><code class="docutils literal notranslate"><span class="pre">Bernoulli.std</span></code></a></li>
 </ul>
@@ -777,6 +824,8 @@ Compatible with skagent.distributions.expected</p>
 <li><a class="reference internal" href="#skagent.distributions.Distribution"><code class="docutils literal notranslate"><span class="pre">Distribution</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.distributions.Distribution.discretize"><code class="docutils literal notranslate"><span class="pre">Distribution.discretize()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Distribution.draw"><code class="docutils literal notranslate"><span class="pre">Distribution.draw()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.distributions.Distribution.icdf"><code class="docutils literal notranslate"><span class="pre">Distribution.icdf()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.distributions.Distribution.log_prob"><code class="docutils literal notranslate"><span class="pre">Distribution.log_prob()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Distribution.mean"><code class="docutils literal notranslate"><span class="pre">Distribution.mean</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Distribution.std"><code class="docutils literal notranslate"><span class="pre">Distribution.std</span></code></a></li>
 </ul>
@@ -787,7 +836,7 @@ Compatible with skagent.distributions.expected</p>
 </li>
 <li><a class="reference internal" href="#skagent.distributions.Lognormal"><code class="docutils literal notranslate"><span class="pre">Lognormal</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.distributions.Lognormal.discretize"><code class="docutils literal notranslate"><span class="pre">Lognormal.discretize()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.distributions.Lognormal.draw"><code class="docutils literal notranslate"><span class="pre">Lognormal.draw()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.distributions.Lognormal.icdf"><code class="docutils literal notranslate"><span class="pre">Lognormal.icdf()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Lognormal.mean"><code class="docutils literal notranslate"><span class="pre">Lognormal.mean</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Lognormal.std"><code class="docutils literal notranslate"><span class="pre">Lognormal.std</span></code></a></li>
 </ul>
@@ -822,7 +871,7 @@ Compatible with skagent.distributions.expected</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=37d127d4"></script>
+</div><script src="../_static/documentation_options.js?v=d7b2cfcf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
