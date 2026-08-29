@@ -51,6 +51,7 @@ import numpy as np
 
 from skagent.block import Control, DBlock
 from skagent.distributions import Uniform
+from skagent.ground import GroundedBlock
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.relevance import admits_ici, admits_ri, admits_voc, admits_voi
 
@@ -239,5 +240,5 @@ def draw_shocks(block, n=200_000, seed=0):
     dict
         A mapping from shock symbol to its draws.
     """
-    shocks = block.construct_shocks({}, rng=np.random.default_rng(seed))
-    return {sym: dist.draw(n) for sym, dist in shocks.items()}
+    ground = GroundedBlock(block, {}, rng=np.random.default_rng(seed))
+    return ground.draw_shocks(n)
