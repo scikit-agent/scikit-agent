@@ -34,8 +34,9 @@ class GroundedBlock:
     calibration : dict[str, Any]
         Values for the symbols the block's declarations and dynamics refer to.
     rng : numpy.random.Generator, optional
-        Generator this instance's shocks are drawn from. Two instances over one
-        block hold separate distributions, so each draws its own path.
+        Generator this instance's shocks are drawn from, however they were
+        declared. Two instances over one block hold separate distributions, so
+        each draws its own path.
 
     Attributes
     ----------
@@ -68,14 +69,27 @@ class GroundedBlock:
         The block declares shocks; resolving a declaration needs a calibration,
         which is what this class supplies. Resolved once and held, so that the
         generator advances across draws instead of restarting, and so that the
-        block itself is left as its author wrote it.
+        block itself is left as its author wrote it. Every resolved shock draws
+        from ``rng``, whether it was declared as a ``(class, arguments)`` pair
+        or as a distribution instance.
 
         Returns
         -------
         dict[str, Distribution]
         """
         if self._shocks is None:
+            from skagent.simulation.monte_carlo import _set_rng_recursive
+
             self._shocks = self.block.construct_shocks(self.calibration, rng=self.rng)
+            if self.rng is not None:
+                # ``construct_shocks`` injects the generator into the
+                # constructor, which reaches a shock declared as a
+                # ``(class, arguments)`` pair and not one declared as a
+                # distribution INSTANCE. It deep-copies either way, so these
+                # are this instance's own distributions and seeding them here
+                # leaves the block's alone.
+                for distribution in self._shocks.values():
+                    _set_rng_recursive(distribution, self.rng)
         return self._shocks
 
     def draw_shocks(self, n: int) -> dict[str, Any]:

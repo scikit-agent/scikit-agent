@@ -4,9 +4,34 @@ import numpy as np
 import pytest
 
 from skagent.bellman import BellmanPeriod
+from skagent.block import Control, DBlock
+from skagent.distributions import MeanOneLogNormal
 from skagent.ground import GroundedBlock
 
 from tests.conftest import RECIPE_CALIBRATION, recipe_block
+
+
+def instance_block():
+    """``recipe_block``'s twin, with the shock declared as a distribution.
+
+    The two blocks describe the same model. They differ only in how ``theta``
+    is written down, which is the thing these tests hold against the draws.
+    """
+    return DBlock(
+        **{
+            "name": "instance",
+            "shocks": {
+                "theta": MeanOneLogNormal(sigma=RECIPE_CALIBRATION["sigma_theta"])
+            },
+            "dynamics": {
+                "m": lambda a, theta: a + theta,
+                "c": Control(["m"], agent="consumer"),
+                "a": lambda m, c: m - c,
+                "u": lambda c: c,
+            },
+            "reward": {"u": "consumer"},
+        }
+    )
 
 
 def drawn_sigma(shocks, n=40_000):
@@ -65,6 +90,50 @@ class TestShockResolution:
         assert np.array_equal(
             seeded.draw_shocks(20)["theta"], alone.draw_shocks(20)["theta"]
         )
+
+
+class TestTheGeneratorReachesEveryDeclarationStyle:
+    """A shock is seeded whether it is declared as a recipe or as an instance.
+
+    ``construct_shocks`` passes the generator to a distribution CONSTRUCTOR, so
+    a shock already written as a distribution never sees it. The pair supplies
+    it after the fact, which is the only way its ``rng`` argument means the same
+    thing for both spellings.
+    """
+
+    def test_the_generator_reaches_a_shock_declared_as_an_instance(self):
+        block = instance_block()
+
+        one = GroundedBlock(block, {}, rng=np.random.default_rng(1)).draw_shocks(8)
+        other = GroundedBlock(block, {}, rng=np.random.default_rng(999)).draw_shocks(8)
+
+        assert not np.array_equal(one["theta"], other["theta"])
+
+    def test_the_declaration_style_does_not_change_the_draws(self):
+        """Same model, same seed, same draws -- however the shock is written."""
+        as_recipe = GroundedBlock(
+            recipe_block(), dict(RECIPE_CALIBRATION), rng=np.random.default_rng(4)
+        )
+        as_instance = GroundedBlock(instance_block(), {}, rng=np.random.default_rng(4))
+
+        assert np.array_equal(
+            as_recipe.draw_shocks(8)["theta"], as_instance.draw_shocks(8)["theta"]
+        )
+
+    def test_seeding_leaves_the_blocks_own_distribution_alone(self):
+        """The pair seeds its own copies, so a shared block is not re-seeded.
+
+        Blocks are commonly module-level values, and an instance-declared shock
+        is an object the block holds rather than a recipe it rebuilds.
+        """
+        block = instance_block()
+        declared = block.shocks["theta"]
+        before = declared.rng
+
+        GroundedBlock(block, {}, rng=np.random.default_rng(3)).draw_shocks(8)
+
+        assert block.shocks["theta"] is declared
+        assert declared.rng is before
 
 
 class TestBellmanPeriodIsGrounded:
