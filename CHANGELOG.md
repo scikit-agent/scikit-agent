@@ -27,6 +27,10 @@ and this project adheres to
   every node of those four diagrams, then confirms the response incentive, the
   value of information and the control incentive numerically against the
   mechanisms.
+- `skagent.ground.GroundedBlock`: a block together with the calibration and
+  generator it is read against, owning the resolution of the block's shock
+  declarations. `BellmanPeriod` is one, plus a discount factor, arrival states
+  and decision rules.
 - `BellmanPeriod.select_arrival_states`, which names the projection from an ex
   post result to the next-period arrival states.
 - `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
@@ -44,6 +48,11 @@ and this project adheres to
 
 ### Changed
 
+- `solve_multiple_controls` takes its calibration from the period it is given.
+  The separate `calibration` argument is deprecated: nothing checked that it
+  agreed with the period's, so a caller could evaluate a period's losses at
+  parameters the period was not built with. Passing one that disagrees now
+  raises.
 - `Simulator.agent_count` is now `sample_count`, and
   `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
   was a population: `sample_count` counts independent trajectories, and
