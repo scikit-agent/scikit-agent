@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Continuous one-shot and iterated Prisoner's Dilemma blocks, including
+  per-player utilities, memory-one repeated-game state, strategic-relevance
+  coverage, solver-boundary tests, and multi-period simulation tests.
+
 ## [0.1.0] - 2026-08-12
 
 First release.

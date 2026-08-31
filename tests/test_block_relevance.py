@@ -13,7 +13,11 @@ import copy
 
 import pytest
 
-from skagent.models.macid import tree_killer_block
+from skagent.models.macid import (
+    iterated_prisoners_dilemma_block,
+    prisoners_dilemma_block,
+    tree_killer_block,
+)
 from skagent.models.consumer import consumption_block
 
 # Pristine copy: other suites mutate the shared consumption_block in place.
@@ -70,6 +74,26 @@ def test_single_decision_block_has_no_edges():
     assert rg.nodes() == ["c"]
     assert rg.edges() == []
     assert rg.is_acyclic() is True
+
+
+# ---------------------------------------------------------------------------
+# Prisoner's Dilemma: simultaneous decisions form one cyclic component.
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "block",
+    [prisoners_dilemma_block, iterated_prisoners_dilemma_block],
+    ids=["one-shot", "iterated"],
+)
+def test_prisoners_dilemma_has_cyclic_relevance_graph(block):
+    rg = block.relevance_graph()
+
+    assert set(rg.nodes()) == {"D1", "D2"}
+    assert set(rg.edges()) == {("D1", "D2"), ("D2", "D1")}
+    assert block.relies_on("D1", "D2") is True
+    assert block.relies_on("D2", "D1") is True
+    assert rg.is_acyclic() is False
+    assert rg.sccs() == [{"D1", "D2"}]
+    assert rg.condensation() == [{"D1", "D2"}]
 
 
 # ---------------------------------------------------------------------------
