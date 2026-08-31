@@ -352,7 +352,7 @@ one.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.807 seconds)
+   **Total running time of the script:** (0 minutes 0.860 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_incentives_2_content_recommendation.py:
