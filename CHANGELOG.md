@@ -19,6 +19,11 @@ and this project adheres to
   `Block.agent_populations`, all derived from one walk of the block tree.
   `crossings` reports the equations that read out of an entity class, with the
   axes to reduce and the axes to broadcast.
+- `skagent.models.cournot`: quantity competition among firms, the smallest model
+  with an entity class, an agent role and an aggregation. Ships two calibrations
+  -- many firms with heterogeneous costs, whose expected profit carries the
+  variance of costs, and three identical firms with the Nash, joint-monopoly and
+  single-defector profiles. The profiles are supplied, not found.
 - `Simulator` allocates and records per-instance variables on their entity axes.
   A variable's history is `(T_sim, sample_count)` when axis-free and
   `(T_sim, sample_count, size)` when it is an attribute of a class with `size`
