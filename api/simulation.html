@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Parsing" href="parser.html"><link rel="prev" title="Distributions" href="distributions.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation - scikit-agent 0.1.1.dev42+gbb96740a5</title>
+        <title>Simulation - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev42+gbb96740a5</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -345,6 +345,10 @@ makes initial states for all agents, clears histories of tracked variables.</p>
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator.reset_rng">
 <span class="sig-name descname"><span class="pre">reset_rng</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator.reset_rng" title="Link to this definition">¶</a></dt>
 <dd><p>Reset the random number generator for this type.</p>
+<p>Restarts the sample path: the shocks are re-grounded on a generator
+freshly seeded from <code class="docutils literal notranslate"><span class="pre">self.seed</span></code>, and the initial distributions are
+pointed at the same one. Called on every <a class="reference internal" href="#skagent.simulation.monte_carlo.Simulator.initialize_sim" title="skagent.simulation.monte_carlo.Simulator.initialize_sim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize_sim()</span></code></a>, so a
+re-run of one simulator repeats its draws.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -588,7 +592,7 @@ state to a newborn draw whenever the <code class="docutils literal notranslate">
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=b679109c"></script>
+</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

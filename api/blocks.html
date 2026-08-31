@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev42+gbb96740a5</title>
+        <title>Blocks - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev42+gbb96740a5</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -475,8 +475,8 @@ representing exogenous shocks.</p>
 constructors and dictionary of input arguments.
 In this case, the dictionary can map argument names to
 numbers, or to strings. The strings are parsed as
-mathematical expressions and evaluated in the scope
-of a calibration dictionary.</p>
+mathematical expressions and evaluated in a scope
+supplied when the shocks are resolved.</p>
 </p></li>
 <li><p><strong>dynamics</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – An ordered dictionary mapping variable names to mathematical expressions.
 These expressions can be simple functions, in which case the
@@ -524,10 +524,14 @@ against a calibration, which is what lets one block stand for the same
 model at many of them. The resolved distributions are therefore
 returned rather than stored: the block keeps the declaration, and a
 caller wanting a second calibration or a second generator gets it.</p>
+<p>A shock whose arguments refer to a symbol the calibration does not
+assign cannot be resolved here, and raises. Resolving it needs the
+wider scope of <a class="reference internal" href="#skagent.block.construct_shocks" title="skagent.block.construct_shocks"><code class="xref py py-func docutils literal notranslate"><span class="pre">construct_shocks()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Values for any symbol a shock’s arguments refer to.</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Values for any symbol a shock’s arguments refer to, supplied as the
+scope those arguments are evaluated in.</p></li>
 <li><p><strong>rng</strong> (<em>np.random.Generator</em><em>, </em><em>optional</em>) – Generator for the constructed distributions to draw from. Since a
 distribution is drawn by inverting it at uniforms from its own
 generator, this fixes the sample path of everything returned here.</p></li>
@@ -754,6 +758,134 @@ It replaces any DBlocks with new blocks with discretized shocks.</p>
 </dd></dl>
 
 </section>
+<section id="groundedblock">
+<h3>GroundedBlock<a class="headerlink" href="#groundedblock" title="Link to this heading">¶</a></h3>
+<p>A block together with the calibration and generator it is read against. A block
+is calibration-independent, so a block alone does not fix its shocks; this pair
+does, and is what solvers, simulators and environments are handed.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ground.</span></span><span class="sig-name descname"><span class="pre">GroundedBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.GroundedBlock" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A block together with the calibration and generator it is read against.</p>
+<p>Owns the resolution of the block’s shock declarations into distributions:
+a shock declared as a <code class="docutils literal notranslate"><span class="pre">(class,</span> <span class="pre">arguments)</span></code> pair needs a calibration to
+resolve, so the resolved distributions belong to this pair rather than to
+the block.</p>
+<p>A calibration is fixed before the model is solved or simulated, so the pair
+resolves every shock whose arguments refer to calibrated symbols and no
+others. A shock argument referring to a value known only during a solve or
+a run is outside what this pair holds and raises; such a shock is resolved
+by the caller that has the value, against a scope overlaying it on the
+calibration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a></span>) – The model’s dynamics, shocks and rewards.</p></li>
+<li><p><strong>calibration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Values for the symbols the block’s declarations and dynamics refer to.</p></li>
+<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Generator this instance’s shocks are drawn from, however they were
+declared. Two instances over one block hold separate distributions, so
+each draws its own path.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock.block">
+<span class="sig-name descname"><span class="pre">block</span></span><a class="headerlink" href="#skagent.ground.GroundedBlock.block" title="Link to this definition">¶</a></dt>
+<dd><p>The underlying block model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block">Block</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock.calibration">
+<span class="sig-name descname"><span class="pre">calibration</span></span><a class="headerlink" href="#skagent.ground.GroundedBlock.calibration" title="Link to this definition">¶</a></dt>
+<dd><p>The calibration parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock.rng">
+<span class="sig-name descname"><span class="pre">rng</span></span><a class="headerlink" href="#skagent.ground.GroundedBlock.rng" title="Link to this definition">¶</a></dt>
+<dd><p>The generator this instance’s shock draws come from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)">numpy.random.Generator</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock.draw_shocks">
+<span class="sig-name descname"><span class="pre">draw_shocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.GroundedBlock.draw_shocks" title="Link to this definition">¶</a></dt>
+<dd><p>Draw <em>n</em> realizations of each of this instance’s shocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of realizations per shock.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A mapping from shock symbol to its draws.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock.shock_distributions">
+<span class="sig-name descname"><span class="pre">shock_distributions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.GroundedBlock.shock_distributions" title="Link to this definition">¶</a></dt>
+<dd><p>This instance’s shocks, resolved against its calibration.</p>
+<p>The block declares shocks; resolving a declaration needs a calibration,
+which is what this class supplies. Resolved once and held, so that the
+generator advances across draws instead of restarting, and so that the
+block itself is left as its author wrote it. Every resolved shock draws
+from <code class="docutils literal notranslate"><span class="pre">rng</span></code>, whether it was declared as a <code class="docutils literal notranslate"><span class="pre">(class,</span> <span class="pre">arguments)</span></code> pair
+or as a distribution instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If a shock’s arguments refer to a symbol the calibration does not
+    assign.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock.with_rng">
+<span class="sig-name descname"><span class="pre">with_rng</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rng</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.GroundedBlock.with_rng" title="Link to this definition">¶</a></dt>
+<dd><p>A copy of this pair drawing from <em>rng</em> instead.</p>
+<p>A new instance rather than a repointed one, so that a holder currently
+drawing from this pair keeps its own path: the copy resolves its shocks
+afresh on first access and therefore shares no distribution with the
+original. The block, the calibration and anything a subclass adds are
+carried over unchanged – a generator is a different sample of one
+model, not a different model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Generator the copy’s shocks draw from.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Of the same type as <em>self</em>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">GroundedBlock</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="control">
 <h3>Control<a class="headerlink" href="#control" title="Link to this heading">¶</a></h3>
 <dl class="py class">
@@ -846,14 +978,22 @@ representing exogenous shocks.</p>
 constructors and dictionary of input arguments.
 In this case, the dictionary can map argument names to
 numbers, or to strings. The strings are parsed as
-mathematical expressions and evaluated in the scope
-of a calibration dictionary.</p>
+mathematical expressions and evaluated in <em>scope</em>.</p>
 </p>
 </dd>
 </dl>
-<dl class="simple">
-<dt>scope: dict(str, values)</dt><dd><p>Variables assigned to numerical values.
-The scope in which expressions will be evaluated</p>
+<dl>
+<dt>scope: dict(str, values)</dt><dd><p>The scope in which those expressions are evaluated: a symbol assigned
+a value here is available to every shock’s arguments.</p>
+<p>A scope is wider than a calibration. A calibration is fixed before a
+model is solved or simulated, so a shock whose arguments refer only to
+calibrated symbols can be resolved from the calibration alone – which
+is what <a class="reference internal" href="#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">DBlock.construct_shocks()</span></code></a> passes. A shock argument may
+instead refer to a value that is only known during a solve or a run,
+such as a dynamic variable pinned to a realization; a caller holding
+such a value overlays it on the calibration and passes the result here.
+A symbol a shock’s arguments refer to and the scope does not assign
+raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyError</span></code></a>.</p>
 </dd>
 <dt>rng: np.random.Generator, optional</dt><dd><p>Random number generator to pass to distribution constructors.
 If provided, distributions created from tuples will use this RNG.</p>
@@ -1006,6 +1146,18 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#groundedblock">GroundedBlock</a><ul>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock"><code class="docutils literal notranslate"><span class="pre">GroundedBlock</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock.block"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock.calibration"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.calibration</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock.rng"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.rng</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock.draw_shocks"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.draw_shocks()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock.shock_distributions"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.shock_distributions()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock.with_rng"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.with_rng()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#control">Control</a><ul>
 <li><a class="reference internal" href="#skagent.block.Control"><code class="docutils literal notranslate"><span class="pre">Control</span></code></a></li>
 </ul>
@@ -1042,7 +1194,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=b679109c"></script>
+</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

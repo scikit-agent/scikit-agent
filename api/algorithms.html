@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev42+gbb96740a5</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev42+gbb96740a5</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1932,7 +1932,7 @@ Return the mean.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.solver.solve_multiple_controls">
-<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_multiple_controls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_multiple_controls" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_multiple_controls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_multiple_controls" title="Link to this definition">¶</a></dt>
 <dd><p>Solve a block with more than one control by training a policy network
 for each control in turn.</p>
 <p>Each control is given its own <a class="reference internal" href="#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.ann.BlockPolicyNet</span></code></a>. The
@@ -1952,7 +1952,11 @@ by default the negative immediate reward
 to schedule additional refinement passes.</p></li>
 <li><p><strong>bellman_period</strong> (<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><em>BellmanPeriod</em></a>) – The model period whose controls are being solved.</p></li>
 <li><p><strong>givens</strong> (<a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><em>skagent.grid.Grid</em></a>) – Grid of arrival states and shock realizations to train over.</p></li>
-<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Calibration parameters passed to the loss function.</p></li>
+<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Deprecated. The period supplied as <em>bellman_period</em> already carries the
+calibration the losses are evaluated at, and that is the one used. If
+given, it must agree with the period’s; a disagreement raises rather
+than silently evaluating a period’s losses at parameters the period was
+not built with.</p></li>
 <li><p><strong>epochs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Training epochs per pass. Default is 200.</p></li>
 <li><p><strong>loss</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – A loss-function class with signature
 <code class="docutils literal notranslate"><span class="pre">loss(bellman_period,</span> <span class="pre">parameters,</span> <span class="pre">other_dr)</span></code>. Defaults to
@@ -1964,6 +1968,9 @@ to schedule additional refinement passes.</p></li>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>calibration</em> is given and disagrees with the period’s.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2289,7 +2296,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=b679109c"></script>
+</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -226,14 +226,12 @@ information set, so its optimal value is a constant.
 in turn, each treating the others' current policies as fixed. Repeating a
 symbol in the order list schedules an extra refinement pass for it.
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-151
+.. GENERATED FROM PYTHON SOURCE LINES 139-149
 
 .. code-block:: Python
 
 
-    decision_rules = solve_multiple_controls(
-        ["c", "d", "c"], bp2, multi_states, multi_calibration, epochs=200
-    )
+    decision_rules = solve_multiple_controls(["c", "d", "c"], bp2, multi_states, epochs=200)
 
     a_vals = multi_states["a"].flatten()
     c_vals = decision_rules["c"](a_vals).detach().cpu().numpy()
@@ -256,12 +254,12 @@ symbol in the order list schedules an extra refinement pass for it.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 152-154
+.. GENERATED FROM PYTHON SOURCE LINES 150-152
 
 Both controls recover their optima: ``c`` follows ``a`` and ``d`` sits at the
 constant ``k = 3``.
 
-.. GENERATED FROM PYTHON SOURCE LINES 154-166
+.. GENERATED FROM PYTHON SOURCE LINES 152-164
 
 .. code-block:: Python
 
@@ -289,12 +287,12 @@ constant ``k = 3``.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 167-169
+.. GENERATED FROM PYTHON SOURCE LINES 165-167
 
 The residual reward confirms convergence: with the optimal policy the reward
 ``u`` should be approximately zero everywhere.
 
-.. GENERATED FROM PYTHON SOURCE LINES 169-179
+.. GENERATED FROM PYTHON SOURCE LINES 167-177
 
 .. code-block:: Python
 
@@ -316,7 +314,7 @@ The residual reward confirms convergence: with the optimal policy the reward
 
  .. code-block:: none
 
-    /home/runner/work/scikit-agent/scikit-agent/examples/algorithms/plot_direct_block_solve.py:176: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+    /home/runner/work/scikit-agent/scikit-agent/examples/algorithms/plot_direct_block_solve.py:174: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
     Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:822.)
       print(f"max |u| over the grid: {float(rewards['u'].abs().max()):.2e}")
     max |u| over the grid: 2.50e-05
@@ -327,7 +325,7 @@ The residual reward confirms convergence: with the optimal policy the reward
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 12.001 seconds)
+   **Total running time of the script:** (0 minutes 12.046 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_direct_block_solve.py:

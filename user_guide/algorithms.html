@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.1.dev42+gbb96740a5</title>
+        <title>Algorithms Guide - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev42+gbb96740a5</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -531,9 +531,7 @@ block whose reward is maximized at <code class="docutils literal notranslate"><s
 
 <span class="c1"># Repeat a symbol to schedule an extra refinement pass after its neighbour</span>
 <span class="c1"># has been updated.</span>
-<span class="n">decision_rules</span> <span class="o">=</span> <span class="n">solve_multiple_controls</span><span class="p">(</span>
-    <span class="p">[</span><span class="s2">"c"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">],</span> <span class="n">bp</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">calibration</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span>
-<span class="p">)</span>
+<span class="n">decision_rules</span> <span class="o">=</span> <span class="n">solve_multiple_controls</span><span class="p">([</span><span class="s2">"c"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">],</span> <span class="n">bp</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 <span class="c1"># optimal: c = a and d = 3, so the reward u is approximately 0</span>
 </pre></div>
 </div>
@@ -649,7 +647,7 @@ losses and the training loop that fits them.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=b679109c"></script>
+</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
