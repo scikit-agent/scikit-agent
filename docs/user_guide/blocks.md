@@ -231,6 +231,96 @@ lifecycle_model = ska.RBlock(
 )
 ```
 
+### Entities: several of the same kind of agent
+
+A block may declare that its variables describe a _class_ of things there are
+several of, rather than a single agent. That is an `Entity`, and it is set on
+the block with the `entity` field:
+
+```python
+firms = ska.RBlock(
+    name="firms",
+    entity=ska.Entity("firm"),
+    blocks=[
+        ska.DBlock(
+            name="offer",
+            shocks={"c": (Uniform, {"low": "cl", "high": "ch"})},
+            dynamics={"q": ska.Control(["c"], agent="firm")},
+        )
+    ],
+)
+```
+
+A variable defined in a block carrying an entity is an **attribute** of that
+entity class, so each instance has its own value. A variable defined in a block
+carrying no entity is **axis-free**: there is one of it for the whole model.
+
+An `Entity` has a name and no size. How many instances exist is a fact about the
+population being simulated rather than about the model, so it is read from the
+calibration under a key equal to the entity's name -- a model declaring
+`Entity("firm")` is simulated against a calibration containing `{"firm": 3}`.
+One consequence to keep in mind when naming: an entity therefore shares a
+namespace with the model's parameters, so a model with an entity `"firm"` cannot
+also have an unrelated parameter `"firm"`.
+
+An agent name declares a **role**, and never creates an entity class. The role
+attaches to the entity class of the block its control is declared in, and to
+nothing at all when that block has none -- so a single analyst observing many
+subjects is one agent, not a population of one.
+
+#### Aggregation, and what a crossing is
+
+An axis-free equation may read a per-instance variable, in which case it is
+handed the whole array and must reduce it to one value:
+
+```python
+market = ska.DBlock(
+    name="market",
+    dynamics={
+        "Q": lambda q: q.mean(),  # reads out of the firm class: a crossing
+        "P": lambda A, b, Q: A - b * Q,
+    },
+)
+```
+
+Reading _out of_ an entity class like this is a **crossing**, and the library
+reports it. Reading _into_ one -- a per-instance equation using the single
+market price -- is an ordinary broadcast and needs nothing:
+
+```python
+payoff = ska.DBlock(
+    name="payoff",
+    dynamics={"u": lambda P, c, q: (P - c) * q},  # broadcast, not a crossing
+    reward={"u": "firm"},
+)
+```
+
+A crossing is what distinguishes a _population_ from a set of independent
+samples. Where a model has no crossing, running it over many parallel copies is
+Monte Carlo replication: the copies do not interact. Where it has one, the
+copies interact through the aggregate and are a population inside one run.
+
+Because a solver treats each state variable as an axis to optimise over point by
+point, and a crossing is not that, blocks with crossings are refused by the
+value-function solvers. Simulating them forward under supplied decision rules is
+fully supported.
+
+The same entity class may be declared more than once in a model, and that is how
+timing is expressed. In a Cournot market the firms act, then the market clears,
+then the firms are paid, so the firm class appears both before and after the
+market block:
+
+```python
+cournot = ska.RBlock(
+    name="cournot",
+    blocks=[
+        firms,
+        market,
+        ska.RBlock(name="payoffs", entity=ska.Entity("firm"), blocks=[payoff]),
+    ],
+)
+```
+
 ### Bellman Periods
 
 A `BellmanPeriod` (from `skagent.bellman`) wraps a block together with its
@@ -348,6 +438,29 @@ print("Control variables:", list(controls.keys()))
 # Get shock variables
 shocks = consumption_block.get_shocks()
 print("Shock variables:", list(shocks.keys()))
+```
+
+For a model declaring entities, four further queries report its population
+structure. All are derived from the model's own declarations; nothing extra is
+annotated.
+
+```python
+# Which entity classes the model declares
+cournot.entities()
+# {'firm': Entity(name='firm')}
+
+# Which classes each symbol is an attribute of; empty means axis-free
+cournot.signatures()
+# {'c': frozenset({'firm'}), 'q': frozenset({'firm'}),
+#  'Q': frozenset(), 'P': frozenset(), 'u': frozenset({'firm'})}
+
+# The equations that read out of a class, with the axes to reduce and broadcast
+cournot.crossings()
+# {'Q': [('q', frozenset({'firm'}), frozenset())]}
+
+# Each agent role, and the class whose instances hold it; None means one agent
+cournot.agent_populations()
+# {'firm': 'firm'}
 ```
 
 ### Testing Model Dynamics

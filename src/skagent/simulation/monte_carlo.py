@@ -117,7 +117,10 @@ class Simulator:
     Parameters
     ----------
     calibration : Mapping[str, Any]
-        Model calibration parameters
+        Model calibration parameters. If *block* declares any entity classes,
+        this must also give how many instances each has, under a key equal to
+        the entity's name -- so a block declaring ``Entity("firm")`` needs a
+        ``"firm"`` key here.
     block : DBlock or RBlock
         Has shocks, dynamics, and rewards
     dr : Mapping[str, Callable]

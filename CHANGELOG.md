@@ -13,7 +13,8 @@ and this project adheres to
 - `skagent.block.Entity`, and an `entity` field on `DBlock` and `RBlock`. A
   variable defined in a block carrying an entity is an attribute of that entity
   class; one defined in a block carrying none is axis-free. An entity has a name
-  and no size: how many instances exist is read from the calibration.
+  and no size: how many instances exist is read from the calibration, under a
+  key equal to the entity's name.
 - `Block.signatures`, `Block.entities`, `Block.crossings` and
   `Block.agent_populations`, all derived from one walk of the block tree.
   `crossings` reports the equations that read out of an entity class, with the

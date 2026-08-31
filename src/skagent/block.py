@@ -27,12 +27,20 @@ class Entity:
 
     An entity carries a name and nothing else. How many instances exist is not a
     property of the model but of the population it is run over, and is read from
-    the calibration under a key equal to this name.
+    the calibration under a key equal to this name: a model declaring
+    ``Entity("firm")`` is simulated against a calibration containing
+    ``{"firm": 3}``.
+
+    A consequence worth knowing before choosing a name: because the cardinality
+    is looked up by the entity's name, an entity shares a namespace with the
+    model's parameters. A model with an entity called ``"firm"`` cannot also have
+    an unrelated parameter called ``"firm"``.
 
     Parameters
     ----------
     name : str
-        The entity class's name, e.g. ``"firm"`` or ``"household"``.
+        The entity class's name, e.g. ``"firm"`` or ``"household"``. Also the
+        calibration key giving how many instances there are.
     """
 
     name: str
