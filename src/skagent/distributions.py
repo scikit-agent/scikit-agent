@@ -120,6 +120,15 @@ class Normal(Distribution):
                 torch.tensor(sigma, dtype=torch.float32),
             )
 
+    def icdf(self, u) -> np.ndarray:
+        if self.sigma == 0:
+            # A point mass at the mean. SciPy's quantile function returns NaN
+            # for a zero-scale distribution, though its sampler does not, so
+            # this case has to be answered here.
+            return np.full(np.shape(u), float(self.mu))
+
+        return super().icdf(u)
+
     def discretize(
         self,
         n_points: int = 7,
@@ -269,6 +278,15 @@ class Uniform(Distribution):
                 torch.tensor(low, dtype=torch.float32),
                 torch.tensor(high, dtype=torch.float32),
             )
+
+    def icdf(self, u) -> np.ndarray:
+        if self.high == self.low:
+            # A point mass at the shared bound. SciPy's quantile function
+            # returns NaN for a zero-width distribution, though its sampler
+            # does not, so this case has to be answered here.
+            return np.full(np.shape(u), float(self.low))
+
+        return super().icdf(u)
 
     def discretize(
         self,
