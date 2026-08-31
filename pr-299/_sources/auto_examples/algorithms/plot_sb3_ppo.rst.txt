@@ -23,8 +23,9 @@ PPO via Stable-Baselines3 on the D-4 Benchmark
 ##############################################
 
 This example shows how to solve a scikit-agent model with **Proximal Policy
-Optimization (PPO)**, a deep reinforcement-learning algorithm. Rather than
-re-implementing PPO, scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod`
+Optimization (PPO)**, a deep reinforcement-learning algorithm.
+
+Rather than re-implementing PPO, scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod`
 in a `gymnasium <https://gymnasium.farama.org/>`_ environment and hands it to
 the robust PPO implementation in
 `Stable-Baselines3 <https://stable-baselines3.readthedocs.io/>`_ (SB3). The
@@ -81,7 +82,7 @@ front and interpolate the resulting policy wherever we need it below.
     discounting out of the box, so models with a non-constant discount variable
     are not yet supported by this path.
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-80
+.. GENERATED FROM PYTHON SOURCE LINES 66-81
 
 .. code-block:: Python
 
@@ -107,7 +108,7 @@ front and interpolate the resulting policy wherever we need it below.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 81-86
+.. GENERATED FROM PYTHON SOURCE LINES 82-87
 
 Configuration
 =============
@@ -115,7 +116,7 @@ Configuration
 We snapshot the learned consumption function at a few cumulative
 training-timestep counts so we can watch PPO close in on the optimum.
 
-.. GENERATED FROM PYTHON SOURCE LINES 86-100
+.. GENERATED FROM PYTHON SOURCE LINES 87-101
 
 .. code-block:: Python
 
@@ -151,7 +152,7 @@ training-timestep counts so we can watch PPO close in on the optimum.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 101-111
+.. GENERATED FROM PYTHON SOURCE LINES 102-112
 
 The VFI Reference Policy
 ========================
@@ -164,7 +165,7 @@ reference policy serves both the grid comparison and the rollouts below. The
 VFI oracle is keyed on the arrival state :math:`a`, so we invert
 :math:`m = aR + y` to query it on a grid of cash-on-hand values.
 
-.. GENERATED FROM PYTHON SOURCE LINES 111-134
+.. GENERATED FROM PYTHON SOURCE LINES 112-135
 
 .. code-block:: Python
 
@@ -198,7 +199,7 @@ VFI oracle is keyed on the arrival state :math:`a`, so we invert
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 135-143
+.. GENERATED FROM PYTHON SOURCE LINES 136-144
 
 Build the Environment and Agent
 ===============================
@@ -209,7 +210,7 @@ environment and sets up SB3's PPO; the discount factor ``gamma`` defaults to
 the model's ``DiscFac``. We sample initial assets uniformly so the agent sees
 a range of starting states during training.
 
-.. GENERATED FROM PYTHON SOURCE LINES 143-160
+.. GENERATED FROM PYTHON SOURCE LINES 144-161
 
 .. code-block:: Python
 
@@ -237,7 +238,7 @@ a range of starting states during training.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 161-169
+.. GENERATED FROM PYTHON SOURCE LINES 162-170
 
 Train PPO Incrementally
 =======================
@@ -248,7 +249,7 @@ internal step counter (and learning-rate schedule) continuous across
 successive ``learn`` calls. The snapshots are unaffected by later training, so
 we can compare each one's policy and rollout performance afterwards.
 
-.. GENERATED FROM PYTHON SOURCE LINES 169-187
+.. GENERATED FROM PYTHON SOURCE LINES 170-188
 
 .. code-block:: Python
 
@@ -285,7 +286,7 @@ we can compare each one's policy and rollout performance afterwards.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 188-195
+.. GENERATED FROM PYTHON SOURCE LINES 189-196
 
 Compare Against the VFI Reference
 =================================
@@ -295,7 +296,7 @@ cash-on-hand the borrowing constraint binds and the reference tracks the
 :math:`c = m` line (the agent consumes everything); at higher wealth the
 constraint slackens and consumption falls below :math:`m` as the agent saves.
 
-.. GENERATED FROM PYTHON SOURCE LINES 195-207
+.. GENERATED FROM PYTHON SOURCE LINES 196-208
 
 .. code-block:: Python
 
@@ -328,7 +329,7 @@ constraint slackens and consumption falls below :math:`m` as the agent saves.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 208-214
+.. GENERATED FROM PYTHON SOURCE LINES 209-215
 
 Visualize the Results
 =====================
@@ -337,7 +338,7 @@ The left panel shows the learned consumption function at each checkpoint
 converging toward the VFI reference. The right panel shows the undiscounted
 episode reward over training, with a rolling mean to highlight the trend.
 
-.. GENERATED FROM PYTHON SOURCE LINES 214-252
+.. GENERATED FROM PYTHON SOURCE LINES 215-253
 
 .. code-block:: Python
 
@@ -391,7 +392,7 @@ episode reward over training, with a rolling mean to highlight the trend.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 253-260
+.. GENERATED FROM PYTHON SOURCE LINES 254-261
 
 Discounted-Reward Monte-Carlo Comparison
 ========================================
@@ -401,7 +402,7 @@ rollouts, comparing all three checkpoints against the VFI reference. Each
 checkpoint's frozen snapshot exposes a ``decision_rule`` directly, so the
 rollouts use the exact trained policies — no reconstruction needed.
 
-.. GENERATED FROM PYTHON SOURCE LINES 260-283
+.. GENERATED FROM PYTHON SOURCE LINES 261-284
 
 .. code-block:: Python
 
@@ -445,13 +446,13 @@ rollouts use the exact trained policies — no reconstruction needed.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 284-287
+.. GENERATED FROM PYTHON SOURCE LINES 285-288
 
 The boxplots summarize the distribution of discounted returns for each policy.
 As training progresses, the PPO return distribution shifts toward the
 VFI-reference benchmark on the right.
 
-.. GENERATED FROM PYTHON SOURCE LINES 287-299
+.. GENERATED FROM PYTHON SOURCE LINES 288-300
 
 .. code-block:: Python
 
@@ -479,7 +480,7 @@ VFI-reference benchmark on the right.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 300-310
+.. GENERATED FROM PYTHON SOURCE LINES 301-311
 
 Takeaways
 =========
@@ -495,7 +496,7 @@ cannot reach.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 31.835 seconds)
+   **Total running time of the script:** (1 minutes 55.695 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_sb3_ppo.py:

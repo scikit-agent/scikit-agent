@@ -55,7 +55,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A block describes a single decision period: arrival states and shocks come in, the agent chooses its controls, and a reward is produced. When the period stands on its own — no continuation value to solve for as a fixed point — we can solve it directly by training a policy network to maximize reward. This is the &quot;non-recurring&quot; workflow, in contrast to the dynamic, recurring case that requires value-function iteration or the Bellman/Euler equation losses.">
+    <div class="sphx-glr-thumbcontainer" tooltip="A decision period that stands on its own — no continuation value to solve for as a fixed point — can be solved directly, by training a policy network to maximize reward. That is the &quot;non-recurring&quot; workflow.">
 
 .. only:: html
 
@@ -72,7 +72,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution.">
 
 .. only:: html
 
@@ -89,7 +89,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="The companion example trains a network on a fixed grid and checks it against a closed-form policy. This one runs the full Maliar, Maliar, and Winant (2021) algorithm, maliar_training_loop, on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem (benchmark U-3). Solving such models is the reason the neural-network method exists, so it is the honest setting in which to show the algorithm at work.">
+    <div class="sphx-glr-thumbcontainer" tooltip="The full Maliar, Maliar, and Winant (2021) algorithm, run on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem, benchmark U-3. Solving such models is why the neural-network method exists, so this is the honest setting to show it in.">
 
 .. only:: html
 
@@ -106,7 +106,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm. Rather than re-implementing PPO, scikit-agent wraps a BellmanPeriod in a gymnasium environment and hands it to the robust PPO implementation in Stable-Baselines3 (SB3). The PPOAgent class manages this wrapping, trains the agent, and emits a standard scikit-agent decision rule.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm.">
 
 .. only:: html
 
@@ -127,16 +127,20 @@ algorithms, and numerical techniques.
 
     </div>
 
-Economic Models
-----------------
+Models
+--------
 
-This section contains examples demonstrating how to use and create economic models
-with scikit-agent. These examples show how to implement various economic theories
-and models using the framework.
+Models written as scikit-agent blocks: decision problems, games, and the
+diagrams that state their structure. A block says who decides what, knowing
+what, and paid for what, which is a general enough description that the models
+here are drawn from economics, from game theory and from the AI-safety
+literature alike -- and the list is open.
 
-Examples include consumption-savings models, portfolio choice problems, and other
-standard economic models that can be solved using reinforcement learning and
-other computational methods.
+Some of these models are solved for a policy, with reinforcement learning or
+other computational methods. Others are read rather than solved: what a decision
+must account for, and what an agent has an incentive to observe or to move, are
+properties of a model's structure, and are answerable before any policy is
+computed.
 
 
 .. raw:: html
@@ -149,6 +153,23 @@ other computational methods.
     <div class="sphx-glr-thumbnails">
 
 .. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Content recommendation separates value of control from the instrumental control incentive. A recommender paid for clicks gains an incentive to change the user&#x27;s mind, and none at all to reach what they thought before arriving.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_incentives_2_content_recommendation_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_incentives_2_content_recommendation`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Incentives in Content Recommendation: Wanting Control Versus Having It</div>
+    </div>
+
 
 .. raw:: html
 
@@ -169,7 +190,7 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="The consumption-saving problem is one of the central models of modern macroeconomics and household finance. An agent with uncertain income must decide each period how much to consume and how much to save, trading off current utility against future resources.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Blocks compose. This page builds two recursive problems from the same parts: consumption-saving with a tick block that carries assets forward, and that pair plus a portfolio block which endogenizes the return. Each is inspected, visualized and simulated.">
 
 .. only:: html
 
@@ -186,7 +207,24 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Some games decompose: their decisions break into smaller problems that can be solved in sequence, each taking as settled the ones before it. Others do not, and their decisions have to be faced together, as a single equilibrium problem. What settles which -- and where a decomposition&#x27;s dividing lines fall -- is whether the decisions strategically rely on one another: whether optimising one of them requires knowing how another is played. That relation depends on a game&#x27;s payoffs, but it is bounded from above by a purely graphical criterion, Koller &amp; Milch&#x27;s s-reachability, read off the structure of the model alone: no payoff values, no solving. Where the criterion finds no reliance, there is none.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Grade prediction separates value of information from the response incentive. A university that never collects an applicant&#x27;s race can still respond to race, and be unfair for doing so.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_incentives_1_grade_prediction_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_incentives_1_grade_prediction`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Incentives in Grade Prediction: Observing Versus Responding</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Some games decompose: their decisions break into smaller problems that can be solved in sequence, each taking as settled the ones before it. Others do not, and their decisions have to be faced together, as a single equilibrium problem.">
 
 .. only:: html
 
@@ -203,7 +241,7 @@ other computational methods.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models. Consumption economics asks how a household should split each period&#x27;s resources between spending now and saving for later. The closed-form policies in this registry are the classic answers, and they retrace the theory in roughly the order the field discovered it. Each model teaches a fact the previous ones could not. Reading from top to bottom:">
+    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models: closed-form policies that retrace the theory in roughly the order the field discovered it, each teaching a fact the previous ones could not.">
 
 .. only:: html
 

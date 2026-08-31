@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Block Guide" href="blocks.html"><link rel="prev" title="Installation" href="installation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Quickstart Guide - scikit-agent 0.1.1.dev3+g77b802634</title>
+        <title>Quickstart Guide - scikit-agent 0.1.1.dev34+gff415fa13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev3+g77b802634</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev34+gff415fa13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -217,9 +217,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
@@ -381,8 +383,8 @@ model run. (The next section replaces it with a rule a solver <em>finds</em>.)</
     <span class="n">calibration</span><span class="o">=</span><span class="n">my_calibration</span><span class="p">,</span>
     <span class="n">block</span><span class="o">=</span><span class="n">cons_problem</span><span class="p">,</span>
     <span class="n">dr</span><span class="o">=</span><span class="p">{</span><span class="s2">"c"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">m</span><span class="p">},</span>  <span class="c1"># decision rule for the control `c`</span>
-    <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>  <span class="c1"># starting capital for every agent</span>
-    <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>  <span class="c1"># starting capital on every trajectory</span>
+    <span class="n">sample_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <span class="p">)</span>
@@ -397,8 +399,8 @@ model run. (The next section replaces it with a rule a solver <em>finds</em>.)</
 <section id="step-5-analyze-results">
 <h3>Step 5: Analyze Results<a class="headerlink" href="#step-5-analyze-results" title="Link to this heading">¶</a></h3>
 <p>Each entry of <code class="docutils literal notranslate"><span class="pre">simulator.history</span></code> is a NumPy array of shape
-<code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">agent_count)</span></code>, so averaging over <code class="docutils literal notranslate"><span class="pre">axis=1</span></code> gives the cross-agent mean at
-each period:</p>
+<code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">sample_count)</span></code>, so averaging over <code class="docutils literal notranslate"><span class="pre">axis=1</span></code> gives the Monte Carlo mean
+over trajectories at each period:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="n">mean_consumption</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">"c"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -619,7 +621,7 @@ finds the rule that is optimal.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d63479aa"></script>
+</div><script src="../_static/documentation_options.js?v=ee2c46f7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

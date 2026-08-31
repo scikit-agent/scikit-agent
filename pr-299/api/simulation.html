@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Parsing" href="parser.html"><link rel="prev" title="Distributions" href="distributions.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation - scikit-agent 0.1.1.dev3+g77b802634</title>
+        <title>Simulation - scikit-agent 0.1.1.dev34+gff415fa13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev3+g77b802634</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev34+gff415fa13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -217,9 +217,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
@@ -302,7 +304,7 @@ mortality; demographic features are expressed declaratively as blocks (see the
 mortality example below).</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.simulation.monte_carlo.Simulator">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">Simulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.simulation.monte_carlo.</span></span><span class="sig-name descname"><span class="pre">Simulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.simulation.monte_carlo.Simulator" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Base class for Monte Carlo simulation engines.</p>
 <p>Provides common functionality for simulation including:
@@ -318,7 +320,10 @@ mortality example below).</p>
 <li><p><strong>dr</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – Decision rules for control variables</p></li>
 <li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Initial state distributions</p></li>
 <li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – A seed for this instance’s random number generator</p></li>
-<li><p><strong>agent_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of agents to simulate</p></li>
+<li><p><strong>sample_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of independent trajectories to simulate. This is the
+replication axis of the histories, not a population: the trajectories
+do not interact, so a cross-sectional statistic taken over it is a
+Monte Carlo estimate whose error falls as <em>sample_count</em> rises.</p></li>
 <li><p><strong>T_sim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of periods to simulate</p></li>
 </ul>
 </dd>
@@ -348,7 +353,7 @@ makes initial states for all agents, clears histories of tracked variables.</p>
 <dd><p>Makes new agents for the simulation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>which_agents</strong> (<em>np.array</em><em>(</em><em>Bool</em><em>)</em>) – Boolean array of size self.agent_count indicating which agents should be “born”.</p>
+<dd class="field-odd"><p><strong>which_agents</strong> (<em>np.array</em><em>(</em><em>Bool</em><em>)</em>) – Boolean array of size self.sample_count indicating which agents should be “born”.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -441,7 +446,7 @@ distributions that support it.</p></li>
     <span class="n">block</span><span class="o">=</span><span class="n">consumption_block</span><span class="p">,</span>
     <span class="n">dr</span><span class="o">=</span><span class="n">dr</span><span class="p">,</span>
     <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"p"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
-    <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">sample_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -469,7 +474,7 @@ state to a newborn draw whenever the <code class="docutils literal notranslate">
     <span class="c1"># distribution's mean and standard deviation in levels; newborns draw</span>
     <span class="c1"># their starting capital from it.</span>
     <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="n">Lognormal</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="s2">"p"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-    <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">sample_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -583,7 +588,7 @@ state to a newborn draw whenever the <code class="docutils literal notranslate">
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d63479aa"></script>
+</div><script src="../_static/documentation_options.js?v=ee2c46f7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

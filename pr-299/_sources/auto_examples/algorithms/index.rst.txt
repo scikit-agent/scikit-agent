@@ -26,7 +26,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A block describes a single decision period: arrival states and shocks come in, the agent chooses its controls, and a reward is produced. When the period stands on its own — no continuation value to solve for as a fixed point — we can solve it directly by training a policy network to maximize reward. This is the &quot;non-recurring&quot; workflow, in contrast to the dynamic, recurring case that requires value-function iteration or the Bellman/Euler equation losses.">
+    <div class="sphx-glr-thumbcontainer" tooltip="A decision period that stands on its own — no continuation value to solve for as a fixed point — can be solved directly, by training a policy network to maximize reward. That is the &quot;non-recurring&quot; workflow.">
 
 .. only:: html
 
@@ -43,7 +43,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution. Validating a solver against a known answer is the cleanest way to build trust in it before applying it to models that have no closed form.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates scikit-agent&#x27;s neural-network training pipeline by solving a model whose optimal policy is known in closed form, then comparing the trained policy against that analytical solution.">
 
 .. only:: html
 
@@ -60,7 +60,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="The companion example trains a network on a fixed grid and checks it against a closed-form policy. This one runs the full Maliar, Maliar, and Winant (2021) algorithm, maliar_training_loop, on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem (benchmark U-3). Solving such models is the reason the neural-network method exists, so it is the honest setting in which to show the algorithm at work.">
+    <div class="sphx-glr-thumbcontainer" tooltip="The full Maliar, Maliar, and Winant (2021) algorithm, run on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem, benchmark U-3. Solving such models is why the neural-network method exists, so this is the honest setting to show it in.">
 
 .. only:: html
 
@@ -77,7 +77,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm. Rather than re-implementing PPO, scikit-agent wraps a BellmanPeriod in a gymnasium environment and hands it to the robust PPO implementation in Stable-Baselines3 (SB3). The PPOAgent class manages this wrapping, trains the agent, and emits a standard scikit-agent decision rule.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm.">
 
 .. only:: html
 

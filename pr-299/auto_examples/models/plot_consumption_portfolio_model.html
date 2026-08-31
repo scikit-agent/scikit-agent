@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Strategic Relevance: Solving the Tree Killer" href="plot_tree_killer_relevance.html"><link rel="prev" title="Resource Extraction Model" href="plot_resource_extraction.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Incentives in Grade Prediction: Observing Versus Responding" href="plot_incentives_1_grade_prediction.html"><link rel="prev" title="Resource Extraction Model" href="plot_resource_extraction.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Consumption-Saving-Portfolio Model - scikit-agent 0.1.1.dev3+g77b802634</title>
+        <title>Consumption-Saving-Portfolio Model - scikit-agent 0.1.1.dev34+gff415fa13</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev3+g77b802634</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev34+gff415fa13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -217,9 +217,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Models</a><input aria-label="Toggle navigation of Models" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
@@ -294,6 +296,10 @@ to download the full example code.</p>
 </div>
 <section class="sphx-glr-example-title" id="consumption-saving-portfolio-model">
 <span id="sphx-glr-auto-examples-models-plot-consumption-portfolio-model-py"></span><h1>Consumption-Saving-Portfolio Model<a class="headerlink" href="#consumption-saving-portfolio-model" title="Link to this heading">¶</a></h1>
+<p>Blocks compose. This page builds two recursive problems from the same parts:
+consumption-saving with a tick block that carries assets forward, and that pair
+plus a portfolio block which endogenizes the return. Each is inspected,
+visualized and simulated.</p>
 <p>The consumption-saving problem is one of the central models of modern
 macroeconomics and household finance. An agent with uncertain income must
 decide each period how much to consume and how much to save, trading off
@@ -527,7 +533,7 @@ Agents start with normalized capital <span class="math notranslate nohighlight">
     <span class="n">block</span><span class="o">=</span><span class="n">cons</span><span class="o">.</span><span class="n">cons_problem</span><span class="p">,</span>
     <span class="n">dr</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rule</span></a><span class="p">,</span>
     <span class="n">initial</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">initial_conditions</span></a><span class="p">,</span>
-    <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">sample_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
     <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <span class="p">)</span>
@@ -599,7 +605,7 @@ We pair the MPC consumption rule with a fixed risky share of 0.5.</p>
     <span class="n">block</span><span class="o">=</span><span class="n">cons</span><span class="o">.</span><span class="n">cons_portfolio_problem</span><span class="p">,</span>
     <span class="n">dr</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">portfolio_decision_rule</span></a><span class="p">,</span>
     <span class="n">initial</span><span class="o">=</span><span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">Normal</span></a><span class="p">(</span><span class="n">mu</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span> <span class="s2">"R"</span><span class="p">:</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">cons</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">[</span><span class="s2">"Rfree"</span><span class="p">]},</span>
-    <span class="n">agent_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">sample_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
     <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <span class="p">)</span>
@@ -655,7 +661,7 @@ due to stock-return risk.</p>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../../_images/sphx_glr_plot_consumption_portfolio_model_005.png" srcset="../../_images/sphx_glr_plot_consumption_portfolio_model_005.png" alt="Saving Model vs Portfolio Model, Pure Saving, Portfolio ($\varsigma=0.5$)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.123 seconds)</p>
+<img src="../../_images/sphx_glr_plot_consumption_portfolio_model_005.png" srcset="../../_images/sphx_glr_plot_consumption_portfolio_model_005.png" alt="Saving Model vs Portfolio Model, Pure Saving, Portfolio ($\varsigma=0.5$)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.028 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-consumption-portfolio-model-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/863d4886346bbabb42461a05206761f9/plot_consumption_portfolio_model.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_consumption_portfolio_model.ipynb</span></code></a></p>
@@ -678,12 +684,12 @@ due to stock-return risk.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="plot_tree_killer_relevance.html">
+          <a class="next-page" href="plot_incentives_1_grade_prediction.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Strategic Relevance: Solving the Tree Killer</div>
+                <div class="title">Incentives in Grade Prediction: Observing Versus Responding</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -767,7 +773,7 @@ due to stock-return risk.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=d63479aa"></script>
+</div><script src="../../_static/documentation_options.js?v=ee2c46f7"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms Guide" href="algorithms.html"><link rel="prev" title="Block Guide" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation Guide - scikit-agent 0.1.1.dev3+g77b802634</title>
+        <title>Simulation Guide - scikit-agent 0.1.1.dev34+gff415fa13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev3+g77b802634</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev34+gff415fa13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -217,9 +217,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
@@ -325,7 +327,7 @@ distributions, for arrival state variables.</p></li>
     <span class="n">initial</span><span class="o">=</span><span class="p">{</span>  <span class="c1"># distributions of starting values, in levels</span>
         <span class="s2">"k"</span><span class="p">:</span> <span class="n">Lognormal</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
     <span class="p">},</span>
-    <span class="n">agent_count</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">sample_count</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">T_sim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -343,9 +345,9 @@ distributions, for arrival state variables.</p></li>
 <h2>Analyzing and Visualizing Data<a class="headerlink" href="#analyzing-and-visualizing-data" title="Link to this heading">¶</a></h2>
 <p>The data for all variables of the simulation is made available as a dictionary
 of arrays.</p>
-<p>The following will show the mean across all agents, at each time step, for the
-<code class="docutils literal notranslate"><span class="pre">k</span></code> variable (the history array is shaped <code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">agent_count)</span></code>, so <code class="docutils literal notranslate"><span class="pre">axis=1</span></code>
-averages over agents).</p>
+<p>The following will show the mean across all trajectories, at each time step, for
+the <code class="docutils literal notranslate"><span class="pre">k</span></code> variable (the history array is shaped <code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">sample_count)</span></code>, so
+<code class="docutils literal notranslate"><span class="pre">axis=1</span></code> averages over the replication axis).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">"k"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
@@ -432,7 +434,7 @@ averages over agents).</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d63479aa"></script>
+</div><script src="../_static/documentation_options.js?v=ee2c46f7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

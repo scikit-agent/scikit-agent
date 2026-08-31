@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev3+g77b802634</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev34+gff415fa13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev3+g77b802634</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev34+gff415fa13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -217,9 +217,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
@@ -302,6 +304,15 @@ a single <a class="reference internal" href="blocks.html#skagent.block.DBlock" t
 point of a grid over the decision’s information set, solve an exact
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> for the control that maximizes the period reward
 plus a continuation value.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.algos.vfi.AxisSpec">
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">AxisSpec</span></span><a class="headerlink" href="#skagent.algos.vfi.AxisSpec" title="Link to this definition">¶</a></dt>
+<dd><p>One coordinate vector per variable, whose cartesian product is the lattice a
+value array is tabulated over. Unrelated to <a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.grid.Grid</span></code></a>, which
+is a batch of scattered points rather than a per-axis specification.</p>
+<p>alias of <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>]</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.vfi.ar_from_data">
 <span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.ar_from_data" title="Link to this definition">¶</a></dt>
@@ -384,7 +395,9 @@ for the shocks an information set accounts for are added automatically
 from their discretization nodes, so supplying one is optional and
 idempotent. This grid covers the variables the Bellman loop iterates over
 and is not necessarily equal to any individual control’s information set
-(a control’s iset may be a strict subset). For an empty grid, pass <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+(a control’s iset may be a strict subset). For an empty grid, pass <code class="docutils literal notranslate"><span class="pre">{}</span></code>
+— the empty mapping, not <a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.grid.Grid</span></code></a>, whose
+<code class="docutils literal notranslate"><span class="pre">from_config({})</span></code> raises.</p></li>
 <li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – If given, the period reward sums only this agent’s reward symbols.</p></li>
 <li><p><strong>scope</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a></span>) – Fixed non-shock exogenous values merged into the model parameters. A
 shock supplied here is pinned to that fixed realization instead of being
@@ -538,6 +551,18 @@ grid falls below <em>tol</em>, or after <em>max_iter</em> iterations.</p>
 terminal continuation. For an infinite-horizon problem the loop converges
 geometrically (modulus the discount factor) to the stationary solution; for a
 finite horizon of length <code class="docutils literal notranslate"><span class="pre">T</span></code> set <code class="docutils literal notranslate"><span class="pre">max_iter=T</span></code>.</p>
+<p>The stopping rule assumes an infinite horizon. A finite-horizon problem is
+structurally indistinguishable from an infinite-horizon one, so a run that
+reaches <em>max_iter</em> is reported as non-convergence in both cases: at a
+caller-specified horizon that report is expected rather than a failure, and
+the residual is a sup-norm change between iterates, not an error against the
+<code class="docutils literal notranslate"><span class="pre">T</span></code>-period answer.</p>
+<p>A period with no arrival states is not a dynamic problem — nothing carries
+between periods — and is refused. Such a block is solved statically, by
+<a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> or
+<a class="reference internal" href="#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a>. Every arrival state must be
+an axis of <em>state_grid</em>, since the continuation is rebuilt from the value
+grid and cannot represent dependence on a variable the grid has no axis for.</p>
 <p>Shocks are discretized internally: <em>disc_params</em> is threaded into every
 backup (hidden shocks integrated inside the max) and into
 <a class="reference internal" href="#skagent.algos.vfi.value_array_to_function" title="skagent.algos.vfi.value_array_to_function"><code class="xref py py-func docutils literal notranslate"><span class="pre">value_array_to_function()</span></code></a> (observed-shock axes integrated into the
@@ -560,8 +585,10 @@ shocks); see <a class="reference internal" href="#skagent.algos.vfi.bellman_step
 <li><p><strong>max_iter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Maximum number of backups.</p></li>
 <li><p><strong>x0</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Modest multi-start seed candidate passed to <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>.</p></li>
 <li><p><strong>raise_on_nonconvergence</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, raise <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></a> when the loop hits <em>max_iter</em>
-without converging; otherwise emit a <code class="xref py py-class docutils literal notranslate"><span class="pre">warnings.warn</span></code> and return the
-last iterate (the scipy <code class="docutils literal notranslate"><span class="pre">OptimizeResult.success</span></code> convention, O5).</p></li>
+with the sup-norm change still above <em>tol</em>; otherwise emit a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">warnings.warn</span></code> and return the last iterate (the scipy
+<code class="docutils literal notranslate"><span class="pre">OptimizeResult.success</span></code> convention, O5). At a finite horizon set
+through <em>max_iter</em> this condition is expected, so leave it <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.bellman_step" title="skagent.algos.vfi.bellman_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">bellman_step()</span></code></a>: confine next-period arrival states to
 the state grid (grid edge = slack artificial borrowing limit),
 so the rebuilt continuation is never extrapolated off-grid.</p></li>
@@ -580,7 +607,10 @@ so the rebuilt continuation is never extrapolated off-grid.</p></li>
 </p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If <em>raise_on_nonconvergence</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and the loop does not converge.</p>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>max_iter</em> is less than 1, or if the period has no arrival states.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If <em>raise_on_nonconvergence</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and the loop does not converge.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -815,7 +845,7 @@ decisions that have to be solved jointly, which is a simultaneous-move
 equilibrium problem and is not attempted here.</p>
 <p>Each decision is solved <em>per information cell</em>: for every value of what the
 decision-maker observes, the action maximizing their expected payoff conditional
-on that observation. Expectations are estimated by drawing <em>samples</em>
+on that observation. Expectations are estimated by drawing <em>shock_samples</em>
 realizations of the block’s shocks once, at construction, and reusing the same
 draws for every candidate action (common random numbers), so that comparisons
 between actions carry far less error than their levels do. Conditioning is done
@@ -873,7 +903,7 @@ decision’s agent in each cell for each action.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver" title="Link to this definition">¶</a></dt>
 <dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -887,9 +917,12 @@ values for any parameter the dynamics refer to. Defaults to empty.</p></li>
 <li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
 <code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
 <li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
-<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. Grouping splits these
-across a decision’s information cells, so each cell’s expectation rests
-on the samples that reached it rather than on all of them.</p></li>
+<li><p><strong>shock_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. This is the axis the
+expectations are estimated over – the integral over the block’s
+declared shocks that a decision’s objective is defined by, taken by
+Monte Carlo rather than by quadrature. Grouping splits these across a
+decision’s information cells, so each cell’s expectation rests on the
+samples that reached it rather than on all of them.</p></li>
 <li><p><strong>rng</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><em>numpy.random.Generator</em></a><em>, </em><em>optional</em>) – Generator for the shock draws.</p></li>
 <li><p><strong>max_cells</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Upper limit on the number of information cells a single decision may
 have. Exceeding it raises, since grouping samples by observed value only
@@ -898,10 +931,11 @@ estimates a conditional expectation when observations repeat.</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Constructing the solver draws the block’s shocks and mutates the block’s
-shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
+<p>Constructing the solver draws the block’s shocks against <em>calibration</em>. The
+block itself is left as its author wrote it, so one block may be solved at
+several calibrations.</p>
 <p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
-sampling error, which falls as <em>samples</em> rises.</p>
+sampling error, which falls as <em>shock_samples</em> rises.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.best_response">
 <span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.best_response" title="Link to this definition">¶</a></dt>
@@ -1029,7 +1063,7 @@ points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_
 <h3>Core Best-Response Classes<a class="headerlink" href="#core-best-response-classes" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em><span class="sig-paren">)</span></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1043,9 +1077,12 @@ values for any parameter the dynamics refer to. Defaults to empty.</p></li>
 <li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
 <code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
 <li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
-<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. Grouping splits these
-across a decision’s information cells, so each cell’s expectation rests
-on the samples that reached it rather than on all of them.</p></li>
+<li><p><strong>shock_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. This is the axis the
+expectations are estimated over – the integral over the block’s
+declared shocks that a decision’s objective is defined by, taken by
+Monte Carlo rather than by quadrature. Grouping splits these across a
+decision’s information cells, so each cell’s expectation rests on the
+samples that reached it rather than on all of them.</p></li>
 <li><p><strong>rng</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><em>numpy.random.Generator</em></a><em>, </em><em>optional</em>) – Generator for the shock draws.</p></li>
 <li><p><strong>max_cells</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Upper limit on the number of information cells a single decision may
 have. Exceeding it raises, since grouping samples by observed value only
@@ -1054,10 +1091,11 @@ estimates a conditional expectation when observations repeat.</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Constructing the solver draws the block’s shocks and mutates the block’s
-shock distributions, as <a class="reference internal" href="blocks.html#skagent.block.DBlock.construct_shocks" title="skagent.block.DBlock.construct_shocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.DBlock.construct_shocks()</span></code></a> does.</p>
+<p>Constructing the solver draws the block’s shocks against <em>calibration</em>. The
+block itself is left as its author wrote it, so one block may be solved at
+several calibrations.</p>
 <p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
-sampling error, which falls as <em>samples</em> rises.</p>
+sampling error, which falls as <em>shock_samples</em> rises.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span></dt>
@@ -1191,21 +1229,19 @@ points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_
 by the skagent Block system.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><code class="docutils literal notranslate"><span class="pre">generate_givens_from_states</span></code> currently accesses <code class="docutils literal notranslate"><span class="pre">bellman_period.block</span></code>
-directly rather than working through the BellmanPeriod interface. A future
-refactoring could route shock generation through BellmanPeriod itself.
-Similarly, shock draws are currently Monte Carlo only; structured draws
-(e.g. exact discretizations) could be supported via BellmanPeriod.</p>
+<p>Shock draws here are Monte Carlo only; structured draws (e.g. exact
+discretizations) could be supported via BellmanPeriod.</p>
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.maliar.generate_givens_from_states">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.maliar.</span></span><span class="sig-name descname"><span class="pre">generate_givens_from_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_copies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.maliar.generate_givens_from_states" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.maliar.</span></span><span class="sig-name descname"><span class="pre">generate_givens_from_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_copies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.maliar.generate_givens_from_states" title="Link to this definition">¶</a></dt>
 <dd><p>Generate omega_i values of the MMW JME ‘21 method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>states</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Grid</span></code></a></span>) – A grid of starting state values (exogenous and endogenous).</p></li>
-<li><p><strong>model_block</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="blocks.html#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a></span>) – Block information (used to get the shock names).</p></li>
+<li><p><strong>bellman_period</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span>) – The period whose shocks are drawn. It resolves them against its own
+calibration, so the draws follow its generator.</p></li>
 <li><p><strong>shock_copies</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of copies of the shocks to be included. Must be &gt;= 1.</p></li>
 </ul>
 </dd>
@@ -2111,6 +2147,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
             <ul>
 <li><a class="reference internal" href="#">Algorithms</a><ul>
 <li><a class="reference internal" href="#value-function-iteration-vfi">Value Function Iteration (VFI)</a><ul>
+<li><a class="reference internal" href="#skagent.algos.vfi.AxisSpec"><code class="docutils literal notranslate"><span class="pre">AxisSpec</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vfi.ar_from_data"><code class="docutils literal notranslate"><span class="pre">ar_from_data()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vfi.bellman_step"><code class="docutils literal notranslate"><span class="pre">bellman_step()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.algos.vfi.get_action_rule"><code class="docutils literal notranslate"><span class="pre">get_action_rule()</span></code></a></li>
@@ -2252,7 +2289,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d63479aa"></script>
+</div><script src="../_static/documentation_options.js?v=ee2c46f7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

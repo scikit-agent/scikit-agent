@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev3+g77b802634</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev34+gff415fa13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev3+g77b802634</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev34+gff415fa13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -217,9 +217,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Economic Models</a><input aria-label="Toggle navigation of Economic Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 </ul>
@@ -373,7 +375,10 @@ existing callers see.</p>
 <h2>Influence Diagrams<a class="headerlink" href="#influence-diagrams" title="Link to this heading">¶</a></h2>
 <p>The structural view of a block – chance, decision and utility nodes with causal
 edges – and the d-separation engine the graphical criteria below are posed
-over.</p>
+over, together with the transforms that pose them:
+<a class="reference internal" href="#skagent.influence.SCIM.with_edge" title="skagent.influence.SCIM.with_edge"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_edge()</span></code></a>, which adds an information link, and
+<a class="reference internal" href="#skagent.influence.SCIM.without_edges" title="skagent.influence.SCIM.without_edges"><code class="xref py py-meth docutils literal notranslate"><span class="pre">without_edges()</span></code></a>, which drops the links a reduction
+finds inert.</p>
 <p id="module-skagent.influence">The influence-diagram substrate the graphical criteria are posed over.</p>
 <p>A block can be read two ways: executably, by running its dynamics, and
 structurally, by asking which symbol <em>can</em> influence which without evaluating
@@ -381,6 +386,11 @@ anything. The second reading is what d-separation answers, and d-separation is
 only definable on a graph. This module owns that graph – the SCIM view: chance,
 decision and utility nodes with directed causal edges – together with the
 vocabulary and the traversal engine every criterion over it needs.</p>
+<p>The name is Def. 4 of Everitt, Carey, Langlois, Ortega &amp; Legg, “Agent
+Incentives: A Causal Perspective” (AAAI-21, 35(13):11487-11495;
+arXiv:2102.01685), where a <em>structural causal influence model</em> is an influence
+diagram whose mechanisms are structural functions of their parents rather than
+conditional probability tables. That is the form a block already takes.</p>
 <p>The criteria themselves live in <a class="reference internal" href="#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a>. Construction of a
 <a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SCIM</span></code></a> from a block lives in <a class="reference internal" href="#module-skagent.model_analyzer" title="skagent.model_analyzer"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.model_analyzer</span></code></a>. This module
 depends only on <code class="docutils literal notranslate"><span class="pre">networkx</span></code>, so the substrate and the criteria can be developed
@@ -489,6 +499,15 @@ Includes the synthetic continuation node when
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.utilities">
+<span class="sig-name descname"><span class="pre">utilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.utilities" title="Link to this definition">¶</a></dt>
+<dd><p>Every utility node the agent deciding <em>decision</em> owns.</p>
+<p>Wider than <a class="reference internal" href="#skagent.influence.SCIM.objectives" title="skagent.influence.SCIM.objectives"><code class="xref py py-meth docutils literal notranslate"><span class="pre">objectives()</span></code></a>, which keeps only the ones the decision
+reaches: a variable can be worth controlling for the sake of a payoff
+the decision itself has no route to.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.influence.SCIM.with_continuation">
 <span class="sig-name descname"><span class="pre">with_continuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arrival_states</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.with_continuation" title="Link to this definition">¶</a></dt>
 <dd><p>Add a synthetic continuation-value utility node per deciding agent.</p>
@@ -527,6 +546,23 @@ stands in for that rule.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.with_edge">
+<span class="sig-name descname"><span class="pre">with_edge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.with_edge" title="Link to this definition">¶</a></dt>
+<dd><p>Add the directed edge <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">-&gt;</span> <span class="pre">target</span></code>.</p>
+<p>Both endpoints must already be nodes, and the edge must not close a
+cycle: a criterion posed over a graph is not answerable on a graph that
+is no longer a DAG.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM">SCIM</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If either endpoint is absent, or the edge would create a cycle.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.influence.SCIM.with_lagged_arrivals">
 <span class="sig-name descname"><span class="pre">with_lagged_arrivals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lag_dependencies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.with_lagged_arrivals" title="Link to this definition">¶</a></dt>
 <dd><p>Split each variable’s arrival value out into its own node.</p>
@@ -549,6 +585,19 @@ single-period projection would otherwise drop.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.influence.SCIM.without_edges">
+<span class="sig-name descname"><span class="pre">without_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edges</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.influence.SCIM.without_edges" title="Link to this definition">¶</a></dt>
+<dd><p>Drop <em>edges</em>, an iterable of <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">target)</span></code> pairs.</p>
+<p>Edges that are not present are ignored, so the result is the diagram
+without any of them however many were there to begin with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM">SCIM</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -561,6 +610,29 @@ s-reachability criterion, and the order the resulting relevance graph implies,
 <a class="reference internal" href="algorithms.html#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> solves a block in
 (see <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a>). Run from a shock instead, it tells a solver whether to
 grid that shock or integrate it inside the maximization.</p>
+<section id="incentive-criteria">
+<h3>Incentive criteria<a class="headerlink" href="#incentive-criteria" title="Link to this heading">¶</a></h3>
+<p>The same substrate answers a third question, about a node that is neither a
+decision nor a shock: what one decision stands to gain from it, or does to it.
+These are the four criteria of Everitt, Carey, Langlois, Ortega &amp; Legg, “Agent
+Incentives: A Causal Perspective” (AAAI-21; arXiv:2102.01685) –</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#skagent.relevance.admits_voi" title="skagent.relevance.admits_voi"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_voi()</span></code></a>: would observing the node raise the
+achievable payoff?</p></li>
+<li><p><a class="reference internal" href="#skagent.relevance.admits_ri" title="skagent.relevance.admits_ri"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_ri()</span></code></a>: does every optimal policy respond to a
+change in it?</p></li>
+<li><p><a class="reference internal" href="#skagent.relevance.admits_voc" title="skagent.relevance.admits_voc"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_voc()</span></code></a>: would setting it raise the achievable
+payoff?</p></li>
+<li><p><a class="reference internal" href="#skagent.relevance.admits_ici" title="skagent.relevance.admits_ici"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_ici()</span></code></a>: does the decision reach its payoff
+<em>through</em> it?</p></li>
+</ul>
+<p>Each is sound and complete for a diagram holding exactly one decision, and a
+diagram with more is refused rather than answered. Three of the four run over
+the <a class="reference internal" href="#skagent.relevance.minimal_reduction" title="skagent.relevance.minimal_reduction"><code class="xref py py-func docutils literal notranslate"><span class="pre">minimal_reduction()</span></code></a>, the diagram with every
+observation <a class="reference internal" href="#skagent.relevance.is_requisite" title="skagent.relevance.is_requisite"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_requisite()</span></code></a> rejects unwired.</p>
+<p>The answers are properties of the graph, not of a calibration: <code class="docutils literal notranslate"><span class="pre">False</span></code> means the
+incentive is absent under every parameterization the diagram admits, and <code class="docutils literal notranslate"><span class="pre">True</span></code>
+means some parameterization has it, not that yours does.</p>
 <p id="module-skagent.relevance">What a decision must still account for, given what it already knows.</p>
 <p>Every criterion here answers one question about a decision <code class="docutils literal notranslate"><span class="pre">D</span></code> in the
 <a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SCIM</span></code></a> view of a model: conditioning on what <code class="docutils literal notranslate"><span class="pre">D</span></code>
@@ -588,7 +660,32 @@ in.</p>
 is already its own synthetic source. Here what varies is the reading, because a
 solver needs to know not just whether the shock matters but how to integrate it:
 see <a class="reference internal" href="#skagent.relevance.OBSERVED" title="skagent.relevance.OBSERVED"><code class="xref py py-data docutils literal notranslate"><span class="pre">OBSERVED</span></code></a>, <a class="reference internal" href="#skagent.relevance.HIDDEN" title="skagent.relevance.HIDDEN"><code class="xref py py-data docutils literal notranslate"><span class="pre">HIDDEN</span></code></a> and <a class="reference internal" href="#skagent.relevance.MIXED" title="skagent.relevance.MIXED"><code class="xref py py-data docutils literal notranslate"><span class="pre">MIXED</span></code></a>.</p>
-<p>Both are thin functions over a <a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SCIM</span></code></a>, which owns the
+<p><strong>A node that is neither</strong> – the four <em>incentive criteria</em> of Everitt, Carey,
+Langlois, Ortega &amp; Legg, “Agent Incentives: A Causal Perspective” (AAAI-21,
+35(13):11487-11495; arXiv:2102.01685), which ask what one decision stands to
+gain from a variable, or does to it:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="#skagent.relevance.admits_voi" title="skagent.relevance.admits_voi"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_voi()</span></code></a> (Def. 8, Thm. 9) – would observing X raise the
+achievable payoff?</p></li>
+<li><p><a class="reference internal" href="#skagent.relevance.admits_ri" title="skagent.relevance.admits_ri"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_ri()</span></code></a> (Def. 10, Thm. 12) – does every optimal policy respond to
+a change in X?</p></li>
+<li><p><a class="reference internal" href="#skagent.relevance.admits_voc" title="skagent.relevance.admits_voc"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_voc()</span></code></a> (Def. 15, Thm. 16) – would setting X raise the
+achievable payoff?</p></li>
+<li><p><a class="reference internal" href="#skagent.relevance.admits_ici" title="skagent.relevance.admits_ici"><code class="xref py py-func docutils literal notranslate"><span class="pre">admits_ici()</span></code></a> (Def. 17, Thm. 18) – does the decision reach its payoff
+<em>through</em> X?</p></li>
+</ul>
+</div></blockquote>
+<p>Each is sound and complete, and each is stated for a diagram holding exactly one
+decision; a diagram with more is refused rather than answered. Three of the four
+run over the <a class="reference internal" href="#skagent.relevance.minimal_reduction" title="skagent.relevance.minimal_reduction"><code class="xref py py-func docutils literal notranslate"><span class="pre">minimal_reduction()</span></code></a>, the diagram with every observation
+<a class="reference internal" href="#skagent.relevance.is_requisite" title="skagent.relevance.is_requisite"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_requisite()</span></code></a> rejects unwired.</p>
+<p>Completeness is a property of the graph. Under determinism d-separation
+over-reports d-connection (see <a class="reference internal" href="#module-skagent.influence" title="skagent.influence"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.influence</span></code></a>), and these mechanisms
+are largely deterministic, so an incentive may be reported where the functional
+effect vanishes – never the reverse. For a safety criterion that is the safe
+direction of error, but it is a direction.</p>
+<p>Each is a thin function over a <a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SCIM</span></code></a>, which owns the
 graph, the conditioning-context and objective vocabulary, and the d-separation
 engine. Construction of a <code class="docutils literal notranslate"><span class="pre">SCIM</span></code> from a scikit-agent Block lives in
 <a class="reference internal" href="#module-skagent.model_analyzer" title="skagent.model_analyzer"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.model_analyzer</span></code></a>; this module, like the substrate, depends only on
@@ -675,6 +772,144 @@ pairs of <code class="docutils literal notranslate"><span class="pre">scim</span
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="skagent.relevance.admits_ici">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">admits_ici</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.admits_ici" title="Link to this definition">¶</a></dt>
+<dd><p>Does <code class="docutils literal notranslate"><span class="pre">node</span></code> admit an instrumental control incentive (Def. 17)?</p>
+<p>True when the decision reaches a payoff <em>through</em> <code class="docutils literal notranslate"><span class="pre">node</span></code>, so an agent
+optimizing the decision has reason to move it. The criterion (Thm. 18) is a
+directed path <code class="docutils literal notranslate"><span class="pre">decision</span> <span class="pre">-&gt;</span> <span class="pre">...</span> <span class="pre">-&gt;</span> <span class="pre">node</span> <span class="pre">-&gt;</span> <span class="pre">...</span> <span class="pre">-&gt;</span> <span class="pre">utility</span></code> in the diagram as
+declared – not in the <a class="reference internal" href="#skagent.relevance.minimal_reduction" title="skagent.relevance.minimal_reduction"><code class="xref py py-func docutils literal notranslate"><span class="pre">minimal_reduction()</span></code></a>, since what the decision can
+influence does not depend on what it observes.</p>
+<p>The decision itself, and any utility it reaches, lie on such a path
+trivially and so admit the incentive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – A diagram with exactly one decision.</p></li>
+<li><p><strong>decision</strong> (<em>hashable</em>) – That decision.</p></li>
+<li><p><strong>node</strong> (<em>hashable</em>) – Any node of the diagram.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.relevance.admits_ri">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">admits_ri</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.admits_ri" title="Link to this definition">¶</a></dt>
+<dd><p>Does <code class="docutils literal notranslate"><span class="pre">node</span></code> admit a response incentive for <code class="docutils literal notranslate"><span class="pre">decision</span></code> (Def. 10)?</p>
+<p>True when every optimal policy responds to a change in <code class="docutils literal notranslate"><span class="pre">node</span></code>. The
+criterion (Thm. 12) is a directed path from <code class="docutils literal notranslate"><span class="pre">node</span></code> to the decision in the
+<a class="reference internal" href="#skagent.relevance.minimal_reduction" title="skagent.relevance.minimal_reduction"><code class="xref py py-func docutils literal notranslate"><span class="pre">minimal_reduction()</span></code></a> – a route by which the decision must hear about
+it, once the links that carry nothing are gone.</p>
+<p>A response incentive on a sensitive attribute means every optimal policy is
+counterfactually unfair in the sense of Kusner et al. (2017), by Thm. 14 of
+the same paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – A diagram with exactly one decision.</p></li>
+<li><p><strong>decision</strong> (<em>hashable</em>) – That decision.</p></li>
+<li><p><strong>node</strong> (<em>hashable</em>) – Any node other than the decision.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
+    decision, which the definition excludes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.relevance.admits_voc">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">admits_voc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.admits_voc" title="Link to this definition">¶</a></dt>
+<dd><p>Does <code class="docutils literal notranslate"><span class="pre">node</span></code> admit positive value of control (Def. 15)?</p>
+<p>True when being able to set <code class="docutils literal notranslate"><span class="pre">node</span></code> – rather than take it as it comes –
+could raise the achievable payoff. The criterion (Thm. 16) is a directed
+path from <code class="docutils literal notranslate"><span class="pre">node</span></code> to a utility the deciding agent owns, in the
+<a class="reference internal" href="#skagent.relevance.minimal_reduction" title="skagent.relevance.minimal_reduction"><code class="xref py py-func docutils literal notranslate"><span class="pre">minimal_reduction()</span></code></a>. The path may run through the decision.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – A diagram with exactly one decision.</p></li>
+<li><p><strong>decision</strong> (<em>hashable</em>) – That decision.</p></li>
+<li><p><strong>node</strong> (<em>hashable</em>) – Any node other than the decision.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
+    decision, which the definition excludes: a decision is already under the
+    agent’s control.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.relevance.admits_voi">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">admits_voi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.admits_voi" title="Link to this definition">¶</a></dt>
+<dd><p>Does <code class="docutils literal notranslate"><span class="pre">node</span></code> have value of information for <code class="docutils literal notranslate"><span class="pre">decision</span></code> (Def. 8)?</p>
+<p>True when observing <code class="docutils literal notranslate"><span class="pre">node</span></code> could raise the achievable payoff. The
+criterion (Thm. 9) is that <code class="docutils literal notranslate"><span class="pre">node</span></code> is a requisite observation in the
+diagram with the information link <code class="docutils literal notranslate"><span class="pre">node</span> <span class="pre">-&gt;</span> <span class="pre">decision</span></code> added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – A diagram with exactly one decision.</p></li>
+<li><p><strong>decision</strong> (<em>hashable</em>) – That decision.</p></li>
+<li><p><strong>node</strong> (<em>hashable</em>) – A node outside <code class="docutils literal notranslate"><span class="pre">Desc(decision)</span> <span class="pre">u</span> <span class="pre">{decision}</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
+    decision or descends from it – there is no diagram in which such a node
+    is observed, since the added information link would close a cycle.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.relevance.is_requisite">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">is_requisite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.is_requisite" title="Link to this definition">¶</a></dt>
+<dd><p>Is the observation <code class="docutils literal notranslate"><span class="pre">node</span></code> requisite for <code class="docutils literal notranslate"><span class="pre">decision</span></code>?</p>
+<p>Requisite means the decision rule may need to read it: <code class="docutils literal notranslate"><span class="pre">node</span></code> is still
+d-connected to some objective given everything else the decision observes,
+plus the decision itself. A nonrequisite observation (Def. 7; Lauritzen &amp;
+Nilsson 2001) is one for which <code class="docutils literal notranslate"><span class="pre">X</span></code> is independent of <code class="docutils literal notranslate"><span class="pre">U_D</span></code> given
+<code class="docutils literal notranslate"><span class="pre">Pa(D)</span> <span class="pre">u</span> <span class="pre">{D}</span> <span class="pre">\</span> <span class="pre">{X}</span></code>, so its information link carries nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – A diagram with exactly one decision.</p></li>
+<li><p><strong>decision</strong> (<em>hashable</em>) – That decision.</p></li>
+<li><p><strong>node</strong> (<em>hashable</em>) – An observation of <code class="docutils literal notranslate"><span class="pre">decision</span></code> – one of its parents.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, if <code class="docutils literal notranslate"><span class="pre">node</span></code> is not an
+    observation of <code class="docutils literal notranslate"><span class="pre">decision</span></code>, or if the deciding agent owns no objective
+    downstream of the decision.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="skagent.relevance.is_s_reachable">
 <span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">is_s_reachable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.is_s_reachable" title="Link to this definition">¶</a></dt>
 <dd><p>Is decision <code class="docutils literal notranslate"><span class="pre">d2</span></code> s-reachable from decision <code class="docutils literal notranslate"><span class="pre">d1</span></code>?</p>
@@ -690,6 +925,30 @@ relevance graph)?</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.relevance.minimal_reduction">
+<span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">minimal_reduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.minimal_reduction" title="Link to this definition">¶</a></dt>
+<dd><p>The diagram with every nonrequisite information link removed (Def. 11).</p>
+<p>Also known as the requisite graph, the d-reduction, or the trimmed graph.
+What is left of the decision’s parents is what an optimal decision rule can
+depend on, which is why the response-incentive and value-of-control criteria
+are posed over this graph rather than the declared one.</p>
+<p>The links are found once and dropped together: with a single decision there
+is nothing for a second pass to find, since removing a link that carries no
+information cannot make another link stop carrying any.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scim</strong> (<a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM"><em>skagent.influence.SCIM</em></a>) – A diagram with exactly one decision.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new diagram; the input is untouched.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM">skagent.influence.SCIM</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -758,6 +1017,7 @@ reporting a shock as accounted for.</p>
 the graph per decision rather than per (shock, decision) pair.</p>
 </dd></dl>
 
+</section>
 </section>
 </section>
 
@@ -844,14 +1104,18 @@ the graph per decision rather than per (shock, decision) pair.</p>
 <li><a class="reference internal" href="#skagent.influence.SCIM.d_connected"><code class="docutils literal notranslate"><span class="pre">SCIM.d_connected()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.influence.SCIM.objectives"><code class="docutils literal notranslate"><span class="pre">SCIM.objectives()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.influence.SCIM.parents"><code class="docutils literal notranslate"><span class="pre">SCIM.parents()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.utilities"><code class="docutils literal notranslate"><span class="pre">SCIM.utilities()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.influence.SCIM.with_continuation"><code class="docutils literal notranslate"><span class="pre">SCIM.with_continuation()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.influence.SCIM.with_dummy_parent"><code class="docutils literal notranslate"><span class="pre">SCIM.with_dummy_parent()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.with_edge"><code class="docutils literal notranslate"><span class="pre">SCIM.with_edge()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.influence.SCIM.with_lagged_arrivals"><code class="docutils literal notranslate"><span class="pre">SCIM.with_lagged_arrivals()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.influence.SCIM.without_edges"><code class="docutils literal notranslate"><span class="pre">SCIM.without_edges()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li><a class="reference internal" href="#relevance">Relevance</a><ul>
+<li><a class="reference internal" href="#incentive-criteria">Incentive criteria</a><ul>
 <li><a class="reference internal" href="#skagent.relevance.HIDDEN"><code class="docutils literal notranslate"><span class="pre">HIDDEN</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.MIXED"><code class="docutils literal notranslate"><span class="pre">MIXED</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.OBSERVED"><code class="docutils literal notranslate"><span class="pre">OBSERVED</span></code></a></li>
@@ -866,8 +1130,16 @@ the graph per decision rather than per (shock, decision) pair.</p>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.sccs"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.sccs()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#skagent.relevance.admits_ici"><code class="docutils literal notranslate"><span class="pre">admits_ici()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.admits_ri"><code class="docutils literal notranslate"><span class="pre">admits_ri()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.admits_voc"><code class="docutils literal notranslate"><span class="pre">admits_voc()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.admits_voi"><code class="docutils literal notranslate"><span class="pre">admits_voi()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.is_requisite"><code class="docutils literal notranslate"><span class="pre">is_requisite()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.is_s_reachable"><code class="docutils literal notranslate"><span class="pre">is_s_reachable()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.minimal_reduction"><code class="docutils literal notranslate"><span class="pre">minimal_reduction()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.shock_roles"><code class="docutils literal notranslate"><span class="pre">shock_roles()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -881,7 +1153,7 @@ the graph per decision rather than per (shock, decision) pair.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d63479aa"></script>
+</div><script src="../_static/documentation_options.js?v=ee2c46f7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

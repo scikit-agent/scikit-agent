@@ -122,7 +122,7 @@ References
        deterministic harvesting models." *Journal of Environmental Economics
        and Management*, 6(4), 350-363.
 
-.. GENERATED FROM PYTHON SOURCE LINES 107-114
+.. GENERATED FROM PYTHON SOURCE LINES 107-115
 
 .. code-block:: Python
 
@@ -140,19 +140,20 @@ References
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 115-119
+
+.. GENERATED FROM PYTHON SOURCE LINES 117-121
 
 Model Inspection
 -------------------
 
 First, let's load the predefined model elements and inspect them.
 
-.. GENERATED FROM PYTHON SOURCE LINES 121-123
+.. GENERATED FROM PYTHON SOURCE LINES 123-125
 
 Step 1: Show Model Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 123-128
+.. GENERATED FROM PYTHON SOURCE LINES 125-130
 
 .. code-block:: Python
 
@@ -179,12 +180,12 @@ Step 1: Show Model Parameters
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 129-131
+.. GENERATED FROM PYTHON SOURCE LINES 131-133
 
 Step 2: Inspect the Resource Extraction Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 131-134
+.. GENERATED FROM PYTHON SOURCE LINES 133-136
 
 .. code-block:: Python
 
@@ -208,12 +209,12 @@ Step 2: Inspect the Resource Extraction Model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 135-137
+.. GENERATED FROM PYTHON SOURCE LINES 137-139
 
 Step 3: Visualize the Resource Extraction Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 137-145
+.. GENERATED FROM PYTHON SOURCE LINES 139-147
 
 .. code-block:: Python
 
@@ -243,7 +244,7 @@ Step 3: Visualize the Resource Extraction Model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 146-166
+.. GENERATED FROM PYTHON SOURCE LINES 148-168
 
 Step 4: Compute Optimal Escapement Policy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -266,7 +267,7 @@ This analytical solution makes the model ideal for validating reinforcement
 learning algorithms—we can compare learned policies against the known optimum.
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 166-199
+.. GENERATED FROM PYTHON SOURCE LINES 168-201
 
 .. code-block:: Python
 
@@ -323,12 +324,12 @@ learning algorithms—we can compare learned policies against the known optimum.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 200-202
+.. GENERATED FROM PYTHON SOURCE LINES 202-204
 
 Step 5: Run Monte Carlo Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 202-226
+.. GENERATED FROM PYTHON SOURCE LINES 204-228
 
 .. code-block:: Python
 
@@ -344,7 +345,7 @@ Step 5: Run Monte Carlo Simulation
         block=rex.resource_extraction_block,
         dr=decision_rule,
         initial=initial_conditions,
-        agent_count=1000,  # Simulate 1000 agents
+        sample_count=1000,  # 1000 independent trajectories
         T_sim=100,  # For 100 periods
         seed=42,  # For reproducibility
     )
@@ -371,7 +372,7 @@ Step 5: Run Monte Carlo Simulation
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 227-235
+.. GENERATED FROM PYTHON SOURCE LINES 229-237
 
 Step 6: Plot Simulation Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -382,7 +383,7 @@ environmental shocks. When stock exceeds :math:`S^*`, the surplus is harvested;
 when shocks drive stock below :math:`S^*`, no harvest occurs and the stock
 recovers through natural growth.
 
-.. GENERATED FROM PYTHON SOURCE LINES 235-275
+.. GENERATED FROM PYTHON SOURCE LINES 237-277
 
 .. code-block:: Python
 
@@ -441,7 +442,7 @@ recovers through natural growth.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.956 seconds)
+   **Total running time of the script:** (0 minutes 0.501 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_resource_extraction.py:
