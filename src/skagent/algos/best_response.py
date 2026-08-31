@@ -34,6 +34,7 @@ import warnings
 import numpy as np
 
 from skagent.algos.vfi import get_action_rule
+from skagent.ground import GroundedBlock
 
 logger = logging.getLogger(__name__)
 
@@ -196,16 +197,9 @@ class TabularBestResponseSolver:
 
         self.decisions = list(block.get_controls())
 
-        shocks = block.construct_shocks(self.calibration, rng=self.rng)
-        for distribution in shocks.values():
-            # Shocks the block declares as distribution instances rather than
-            # as (class, arguments) pairs are not reached by construct_shocks'
-            # rng argument. These are this solver's own copies, so seeding them
-            # leaves the block's own distributions alone.
-            distribution.rng = self.rng
-        self.shocks = {
-            sym: dist.draw(self.shock_samples) for sym, dist in shocks.items()
-        }
+        self.shocks = GroundedBlock(block, self.calibration, rng=self.rng).draw_shocks(
+            self.shock_samples
+        )
 
     # -- inputs read off the block ------------------------------------------
 

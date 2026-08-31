@@ -17,7 +17,8 @@ from skagent.distributions import (
 )
 from skagent.block import Aggregate
 from skagent.block import DBlock, RBlock
-from skagent.block import construct_shocks, simulate_dynamics
+from skagent.block import simulate_dynamics
+from skagent.ground import GroundedBlock
 
 
 def draw_shocks(
@@ -161,12 +162,10 @@ class Simulator:
         self.calibration = calibration
         self.block = block
 
-        # shocks are exogenous but can depend on calibration
-        raw_shocks = block.get_shocks()
-        # Pass RNG to construct_shocks for deterministic distribution creation
-        self.shocks = construct_shocks(
-            raw_shocks, calibration, rng=np.random.default_rng(seed)
-        )
+        # The block declares shocks; resolving them needs the calibration, so
+        # the pair owns them. ``reset_rng`` grounds it again on a fresh
+        # generator, which is what fixes the sample path.
+        self.ground = GroundedBlock(block, calibration)
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
@@ -191,17 +190,25 @@ class Simulator:
     def reset_rng(self):
         """
         Reset the random number generator for this type.
+
+        Restarts the sample path: the shocks are re-grounded on a generator
+        freshly seeded from ``self.seed``, and the initial distributions are
+        pointed at the same one. Called on every :meth:`initialize_sim`, so a
+        re-run of one simulator repeats its draws.
         """
         self.RNG = np.random.default_rng(self.seed)
-        self._set_rng_on_shocks()
+        self.ground = self.ground.with_rng(self.RNG)
+        self.shocks = self.ground.shock_distributions()
+        self._set_rng_on_initial()
 
-    def _set_rng_on_shocks(self):
+    def _set_rng_on_initial(self):
         """
-        Set the simulator's RNG on all shock distributions that support it.
-        This ensures deterministic behavior when the simulator's seed is set.
+        Set the simulator's RNG on the initial distributions.
+
+        An initial distribution is not a shock: the block does not declare it,
+        so nothing resolves it against the calibration and the grounded pair
+        does not reach it. It arrives already built and needs only seeding.
         """
-        for shock in self.shocks.values():
-            _set_rng_recursive(shock, self.RNG)
         for init_dist in self.initial.values():
             _set_rng_recursive(init_dist, self.RNG)
 

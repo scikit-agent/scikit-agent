@@ -137,9 +137,7 @@ multi_states = grid.Grid.from_config({"a": {"min": -2, "max": 2, "count": 11}})
 # in turn, each treating the others' current policies as fixed. Repeating a
 # symbol in the order list schedules an extra refinement pass for it.
 
-decision_rules = solve_multiple_controls(
-    ["c", "d", "c"], bp2, multi_states, multi_calibration, epochs=200
-)
+decision_rules = solve_multiple_controls(["c", "d", "c"], bp2, multi_states, epochs=200)
 
 a_vals = multi_states["a"].flatten()
 c_vals = decision_rules["c"](a_vals).detach().cpu().numpy()
