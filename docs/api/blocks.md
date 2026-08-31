@@ -52,6 +52,15 @@ strategic-relevance analysis (`relevance_graph`, `relies_on`).
    :show-inheritance:
 ```
 
+### Entity
+
+```{eval-rst}
+.. autoclass:: skagent.block.Entity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
 ## Model Utilities
 
 ### Simulation Dynamics

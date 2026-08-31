@@ -5,7 +5,6 @@ Functions to support Monte Carlo simulation of models.
 from __future__ import annotations
 
 import warnings
-from copy import copy
 from typing import Mapping, Sequence, Union
 
 import numpy as np
@@ -168,6 +167,14 @@ class Simulator:
             raw_shocks, calibration, rng=np.random.default_rng(seed)
         )
 
+        # Entity metadata: which symbols are per-instance attributes, and how
+        # many instances each class has. A block declaring no entity resolves to
+        # empty here, and every array keeps the single sample axis it has today.
+        self.signatures = block.signatures()
+        self.entities = block.entities()
+        self.entity_sizes = self._resolve_entity_sizes(calibration)
+        self.crossings = block.crossings()
+
         self.dynamics = block.get_dynamics()
         self.dr = dr
         self.initial = initial
@@ -205,19 +212,68 @@ class Simulator:
         for init_dist in self.initial.values():
             _set_rng_recursive(init_dist, self.RNG)
 
+    def _resolve_entity_sizes(self, calibration):
+        """How many instances each declared entity class has.
+
+        An entity carries a name and no cardinality, so the count is a fact
+        about the population rather than about the model, and is read from the
+        calibration under a key equal to the entity's name.
+
+        Raises
+        ------
+        ValueError
+            If a declared entity has no cardinality in the calibration, or one
+            that is not a positive integer.
+        """
+        sizes = {}
+        for name in self.entities:
+            if name not in calibration:
+                raise ValueError(
+                    f"the block declares an entity {name!r} but the calibration "
+                    f"has no key {name!r} giving how many of them there are"
+                )
+            size = calibration[name]
+            if isinstance(size, bool) or not isinstance(size, (int, np.integer)):
+                raise ValueError(
+                    f"entity {name!r} has cardinality {size!r}; a count of "
+                    "instances must be an integer"
+                )
+            if size < 1:
+                raise ValueError(
+                    f"entity {name!r} has cardinality {size}; a population needs "
+                    "at least one instance"
+                )
+            sizes[name] = int(size)
+        return sizes
+
+    @property
+    def _has_entities(self):
+        return bool(self.entity_sizes)
+
+    def _entity_shape(self, var):
+        """The entity axes of *var*: one length per class it is an attribute of.
+
+        Empty for an axis-free variable, and empty for every variable of a block
+        that declares no entity.
+        """
+        signature = self.signatures.get(var, frozenset())
+        return tuple(self.entity_sizes[name] for name in sorted(signature))
+
+    def _var_shape(self, var):
+        """*var*'s shape for one period: the sample axis, then its entity axes."""
+        return (self.sample_count,) + self._entity_shape(var)
+
     def _init_vars_array(self):
         """Initialize variable arrays with NaN values."""
-        blank_array = np.empty(self.sample_count)
-        blank_array[:] = np.nan
         for var in self.vars:
             if self.vars_now[var] is None:
-                self.vars_now[var] = copy(blank_array)
+                self.vars_now[var] = np.full(self._var_shape(var), np.nan)
 
     def _init_newborn_history(self):
         """Initialize newborn history arrays."""
         for var_name in self.initial:
-            self.newborn_init_history[var_name] = (
-                np.zeros((self.T_sim, self.sample_count)) + np.nan
+            self.newborn_init_history[var_name] = np.full(
+                (self.T_sim,) + self._var_shape(var_name), np.nan
             )
 
     def initialize_sim(self):
@@ -247,13 +303,104 @@ class Simulator:
         for var in self.vars:
             self.vars_prev[var] = self.vars_now[var]
             if isinstance(self.vars_now[var], np.ndarray):
-                self.vars_now[var] = np.empty(self.sample_count)
-                self.vars_now[var][:] = np.nan
+                self.vars_now[var] = np.full(self._var_shape(var), np.nan)
             # Else: Probably an aggregate variable set by Market
 
     def _get_shocks(self, conditions):
-        """Draw shocks for the current period."""
-        return draw_shocks(self.shocks, conditions, rng=self.RNG)
+        """Draw shocks for the current period.
+
+        A shock that is an attribute of an entity class is drawn once per
+        instance per sample, so that instances are heterogeneous. An axis-free
+        shock is drawn once per sample.
+        """
+        if not self._has_entities:
+            return draw_shocks(self.shocks, conditions, rng=self.RNG)
+
+        drawn = {}
+        for sym, distribution in self.shocks.items():
+            shape = self._var_shape(sym)
+            count = int(np.prod(shape))
+            values = np.asarray(
+                draw_shocks({sym: distribution}, np.zeros(count), rng=self.RNG)[sym]
+            )
+            # An Aggregate draws one value for everyone, by construction.
+            drawn[sym] = (
+                values.reshape(shape)
+                if values.size == count
+                else np.broadcast_to(values, shape).copy()
+            )
+        return drawn
+
+    def _simulate_entity_dynamics(self, pre):
+        """Run the period's dynamics once per sample, then restack.
+
+        An equation is written against the entity axes alone: a per-instance
+        variable arrives as an array over instances, and an aggregation over one
+        reads as ``q.mean()`` rather than having to name an axis. The sample axis
+        is therefore iterated here rather than being handed to the equations,
+        which is what keeps a reduction from silently averaging over samples as
+        well as over instances.
+        """
+        shapes = {var: self._entity_shape(var) for var in self.vars}
+        per_sample = []
+        for s in range(self.sample_count):
+            sliced = {
+                sym: (value[s] if sym in self.vars else value)
+                for sym, value in pre.items()
+            }
+            per_sample.append(
+                simulate_dynamics(self.dynamics, sliced, self.dr, shapes=shapes)
+            )
+
+        post = {}
+        for sym in per_sample[0]:
+            post[sym] = (
+                np.stack([one[sym] for one in per_sample])
+                if sym in self.vars
+                else per_sample[0][sym]
+            )
+        return post
+
+    def _validate_period(self, post):
+        """Check each symbol's value against its declared signature.
+
+        An equation declared outside every entity class that returns an array
+        over one is the error this whole feature exists to catch, and it is
+        caught here rather than several steps downstream where the shape happens
+        to stop broadcasting.
+        """
+        for var in self.vars:
+            if var not in post:
+                continue
+            value = np.asarray(post[var])
+            expected = self._entity_shape(var)
+            actual = value.shape[1:] if value.ndim else ()
+            # A per-instance equation may return one value, which broadcasts.
+            if actual == expected or actual == ():
+                continue
+            entities = sorted(self.signatures.get(var, frozenset()))
+            described = (
+                f"an attribute of {entities}" if entities else "outside every entity"
+            )
+            raise ValueError(
+                f"the equation for {var!r} is declared {described} but returned "
+                f"shape {value.shape} per period; expected "
+                f"{(self.sample_count,) + expected} or one value to broadcast"
+            )
+
+        for var, crossed in self.crossings.items():
+            for argument, _reduced, _broadcast in crossed:
+                if argument not in post:
+                    continue
+                value = np.asarray(post[argument], dtype=float)
+                offending = int(np.count_nonzero(~np.isfinite(value)))
+                if offending:
+                    raise ValueError(
+                        f"{argument!r} holds {offending} non-finite "
+                        f"{'entry' if offending == 1 else 'entries'} and is "
+                        f"reduced into {var!r}; one instance's bad value would "
+                        "become every instance's"
+                    )
 
     def _get_pre_state(self, shocks_now):
         """Build the pre-state dictionary for dynamics simulation."""
@@ -282,7 +429,11 @@ class Simulator:
         shocks_now = self._get_shocks(self._get_shock_conditions())
 
         pre = self._get_pre_state(shocks_now)
-        post = simulate_dynamics(self.dynamics, pre, self.dr)
+        if self._has_entities:
+            post = self._simulate_entity_dynamics(pre)
+        else:
+            post = simulate_dynamics(self.dynamics, pre, self.dr)
+        self._validate_period(post)
         self.vars_now = post
 
     def sim_birth(self, which_agents):
@@ -294,11 +445,26 @@ class Simulator:
         which_agents : np.array(Bool)
             Boolean array of size self.sample_count indicating which agents should be "born".
         """
-        initial_vals = draw_shocks(
-            self.initial, np.zeros(which_agents.sum()), rng=self.RNG
-        )
+        born = int(which_agents.sum())
+        if not self._has_entities:
+            initial_vals = draw_shocks(self.initial, np.zeros(born), rng=self.RNG)
+        else:
+            # An arrival state that is a per-instance attribute needs one draw
+            # per instance per newborn sample, not one per sample.
+            initial_vals = {}
+            for sym, distribution in self.initial.items():
+                shape = (born,) + self._entity_shape(sym)
+                count = int(np.prod(shape))
+                values = np.asarray(
+                    draw_shocks({sym: distribution}, np.zeros(count), rng=self.RNG)[sym]
+                )
+                initial_vals[sym] = (
+                    values.reshape(shape)
+                    if values.size == count
+                    else np.broadcast_to(values, shape).copy()
+                )
 
-        if np.sum(which_agents) > 0:
+        if born > 0:
             for sym in initial_vals:
                 self.vars_now[sym][which_agents] = initial_vals[sym]
                 self.newborn_init_history[sym][self.t_sim, which_agents] = initial_vals[
@@ -343,17 +509,25 @@ class Simulator:
 
                 # Track all the vars -- shocks and dynamics
                 for var_name in self.vars:
-                    self.history[var_name][self.t_sim, :] = self.vars_now[var_name]
+                    self.history[var_name][self.t_sim] = self.vars_now[var_name]
 
                 self.t_sim += 1
 
             return self.history
 
     def clear_history(self):
-        """Clears the histories."""
+        """Clears the histories.
+
+        A variable's history carries the period axis, then the sample axis, then
+        its entity axes: ``(T_sim, sample_count)`` for an axis-free variable and
+        ``(T_sim, sample_count, size)`` for an attribute of a class with *size*
+        instances. A block declaring no entity therefore keeps the
+        ``(T_sim, sample_count)`` histories it has always had.
+        """
         for var_name in self.vars:
-            self.history[var_name] = np.empty((self.T_sim, self.sample_count))
-            self.history[var_name].fill(np.nan)
+            self.history[var_name] = np.full(
+                (self.T_sim,) + self._var_shape(var_name), np.nan
+            )
 
 
 # Alias for backward compatibility

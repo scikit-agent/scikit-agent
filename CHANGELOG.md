@@ -10,6 +10,21 @@ and this project adheres to
 
 ### Added
 
+- `skagent.block.Entity`, and an `entity` field on `DBlock` and `RBlock`. A
+  variable defined in a block carrying an entity is an attribute of that entity
+  class; one defined in a block carrying none is axis-free. An entity has a name
+  and no size: how many instances exist is read from the calibration.
+- `Block.signatures`, `Block.entities`, `Block.crossings` and
+  `Block.agent_populations`, all derived from one walk of the block tree.
+  `crossings` reports the equations that read out of an entity class, with the
+  axes to reduce and the axes to broadcast.
+- `Simulator` allocates and records per-instance variables on their entity axes.
+  A variable's history is `(T_sim, sample_count)` when axis-free and
+  `(T_sim, sample_count, size)` when it is an attribute of a class with `size`
+  instances; a block declaring no entity keeps the `(T_sim, sample_count)`
+  histories it already had. Shapes are validated each period, and a non-finite
+  value entering a reduction raises rather than becoming every instance's.
+
 - `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
   density each backend already provides.
 - `skagent.relevance` gains the four single-decision incentive criteria of
@@ -76,6 +91,10 @@ and this project adheres to
   iteration on the D-4 benchmark about 1.5x.
 
 ### Fixed
+
+- A `Uniform` whose bounds coincide, and a `Normal` with zero spread, draw their
+  point mass instead of `NaN`. Drawing by inverting the quantile function
+  returns `NaN` for a zero-spread distribution where sampling directly does not.
 
 - Draws did not couple: `Bernoulli` at p 0.5 against 0.5001 under one seed
   changed 100% of its draws, so a finite difference through a discrete shock
