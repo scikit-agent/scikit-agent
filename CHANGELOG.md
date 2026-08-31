@@ -13,6 +13,83 @@ and this project adheres to
 - Continuous one-shot and iterated Prisoner's Dilemma blocks, including
   per-player utilities, memory-one repeated-game state, strategic-relevance
   coverage, solver-boundary tests, and multi-period simulation tests.
+- `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
+  density each backend already provides.
+- `skagent.relevance` gains the four single-decision incentive criteria of
+  Everitt et al. (AAAI-21): `admits_voi`, `admits_ri`, `admits_voc` and
+  `admits_ici`, with the `is_requisite` test and `minimal_reduction` they rest
+  on. Out-of-domain and multi-decision queries raise rather than answer.
+- `SCIM.with_edge` and `SCIM.without_edges`, the transforms those criteria are
+  posed over, and `SCIM.utilities`, the utilities an agent owns whether or not
+  its decision reaches them.
+- `skagent.models.safety`, a package for influence diagrams from the AI-safety
+  literature, opening with `incentives.py`: the grade-prediction and
+  content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
+  paired with the redesign that drops an incentive.
+- `examples/models/plot_incentive_criteria.py`: computes all four criteria for
+  every node of those four diagrams, then confirms the response incentive, the
+  value of information and the control incentive numerically against the
+  mechanisms.
+- `BellmanPeriod.select_arrival_states`, which names the projection from an ex
+  post result to the next-period arrival states.
+- `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
+  matplotlib figure rather than into a notebook.
+- `skagent.models.fisher` is usable: its calibration was malformed (`CRRA` a
+  tuple, `y` a list), so evaluating its reward raised `TypeError`. The control
+  gained bounds, and the module gained `analytical_policy` for the two-period
+  closed form.
+- Two gallery examples reading incentives off those diagrams:
+  `examples/models/plot_incentives_1_grade_prediction.py`, where value of
+  information and the response incentive separate, and
+  `plot_incentives_2_content_recommendation.py`, where the two control criteria
+  do. Each shows only the pair of criteria it develops, then checks those
+  readings numerically against the mechanisms.
+
+### Changed
+
+- `Simulator.agent_count` is now `sample_count`, and
+  `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
+  was a population: `sample_count` counts independent trajectories, and
+  `shock_samples` counts realizations of the block's shocks. The old names are
+  accepted for this release under a `DeprecationWarning`.
+- `solve_bellman` refuses a period with no arrival states, which is not a
+  dynamic problem and has no fixed point to seek; the error names the static
+  solvers. Its non-convergence warning no longer asserts a failure, since
+  reaching `max_iter` is the expected outcome at a finite horizon set that way.
+- `skagent.algos.vfi`'s local `Grid` alias is now `AxisSpec`, so it no longer
+  shares a name with the unrelated `skagent.grid.Grid`. It is the `state_grid`
+  parameter type of `solve`, `bellman_step` and `solve_bellman`.
+- Every gallery page now opens with a short, page-specific summary, so the
+  gallery's hover text distinguishes the examples instead of repeating shared
+  framing, and each page that draws a model diagram uses it as its thumbnail.
+- A Bellman objective runs the block dynamics once per evaluation instead of two
+  or three times: `vfi.bellman_step`, `estimate_discounted_lifetime_reward`,
+  `estimate_bellman_residual` and `estimate_euler_residual` now read the reward
+  symbols, the discount factor and the next-period arrival states off a single
+  ex post result, and `reward_function` and `transition_function` are defined as
+  those projections of `post_function`. Answers are unchanged; the lifetime
+  reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
+  about 1.3x.
+- Preparing loss inputs no longer rebuilds a `Grid`'s dict once per shock; it
+  indexes the dict it has already built. Answers are unchanged.
+- Block dynamics no longer call `inspect.signature` once per variable per pass.
+  `skagent.utils.param_names` memoizes a function's parameter names, and
+  `takes_arguments` reads a decision rule's arity off its code object. Answers
+  are unchanged; a block transition is about 3x faster, and value function
+  iteration on the D-4 benchmark about 1.5x.
+
+### Fixed
+
+- Draws did not couple: `Bernoulli` at p 0.5 against 0.5001 under one seed
+  changed 100% of its draws, so a finite difference through a discrete shock
+  measured the reshuffled sample path rather than the parameter. Distributions
+  are now drawn by inverting them at uniforms from their own generator, which
+  also makes the torch backend honour that generator at all.
+- `extract_dependencies` had no branch for `Rule`, the type `DBlock` compiles
+  string-valued dynamics into, so it returned no dependencies for them. Every
+  structure derived from those edges -- the dependency graph,
+  `get_arrival_states` and the relevance criteria over them -- was computed on a
+  model that had lost them. `Rule` also gains a public `free_symbols`.
 
 ## [0.1.0] - 2026-08-12
 

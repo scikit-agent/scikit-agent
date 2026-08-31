@@ -4,6 +4,7 @@ Functions to support Monte Carlo simulation of models.
 
 from __future__ import annotations
 
+import warnings
 from copy import copy
 from typing import Mapping, Sequence, Union
 
@@ -126,8 +127,11 @@ class Simulator:
         Initial state distributions
     seed : int
         A seed for this instance's random number generator
-    agent_count : int
-        The number of agents to simulate
+    sample_count : int
+        The number of independent trajectories to simulate. This is the
+        replication axis of the histories, not a population: the trajectories
+        do not interact, so a cross-sectional statistic taken over it is a
+        Monte Carlo estimate whose error falls as *sample_count* rises.
     T_sim : int
         The number of periods to simulate
     """
@@ -141,9 +145,19 @@ class Simulator:
         dr,
         initial,
         seed=0,
-        agent_count=1,
+        sample_count=1,
         T_sim=10,
+        agent_count=None,
     ):
+        if agent_count is not None:
+            warnings.warn(
+                "agent_count is deprecated; pass sample_count, which names the "
+                "axis this argument has always set: independent trajectories, "
+                "not interacting agents.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            sample_count = agent_count
         self.calibration = calibration
         self.block = block
 
@@ -159,7 +173,7 @@ class Simulator:
         self.initial = initial
 
         self.seed = seed
-        self.agent_count = agent_count
+        self.sample_count = sample_count
         self.T_sim = T_sim
 
         # State tracking
@@ -193,7 +207,7 @@ class Simulator:
 
     def _init_vars_array(self):
         """Initialize variable arrays with NaN values."""
-        blank_array = np.empty(self.agent_count)
+        blank_array = np.empty(self.sample_count)
         blank_array[:] = np.nan
         for var in self.vars:
             if self.vars_now[var] is None:
@@ -203,7 +217,7 @@ class Simulator:
         """Initialize newborn history arrays."""
         for var_name in self.initial:
             self.newborn_init_history[var_name] = (
-                np.zeros((self.T_sim, self.agent_count)) + np.nan
+                np.zeros((self.T_sim, self.sample_count)) + np.nan
             )
 
     def initialize_sim(self):
@@ -220,10 +234,10 @@ class Simulator:
         self.reset_rng()
         self.t_sim = 0
         self._init_vars_array()
-        self.t_cycle = np.zeros(self.agent_count, dtype=int)
+        self.t_cycle = np.zeros(self.sample_count, dtype=int)
         self._init_newborn_history()
 
-        all_agents = np.ones(self.agent_count, dtype=bool)
+        all_agents = np.ones(self.sample_count, dtype=bool)
         self.sim_birth(all_agents)
         self.clear_history()
         return None
@@ -233,7 +247,7 @@ class Simulator:
         for var in self.vars:
             self.vars_prev[var] = self.vars_now[var]
             if isinstance(self.vars_now[var], np.ndarray):
-                self.vars_now[var] = np.empty(self.agent_count)
+                self.vars_now[var] = np.empty(self.sample_count)
                 self.vars_now[var][:] = np.nan
             # Else: Probably an aggregate variable set by Market
 
@@ -255,7 +269,7 @@ class Simulator:
         The base class draws shocks unconditionally (a zero vector). The hook
         exists so a subclass can make shock draws depend on per-agent state.
         """
-        return np.zeros(self.agent_count)
+        return np.zeros(self.sample_count)
 
     def sim_one_period(self):
         """
@@ -278,7 +292,7 @@ class Simulator:
         Parameters
         ----------
         which_agents : np.array(Bool)
-            Boolean array of size self.agent_count indicating which agents should be "born".
+            Boolean array of size self.sample_count indicating which agents should be "born".
         """
         initial_vals = draw_shocks(
             self.initial, np.zeros(which_agents.sum()), rng=self.RNG
@@ -338,7 +352,7 @@ class Simulator:
     def clear_history(self):
         """Clears the histories."""
         for var_name in self.vars:
-            self.history[var_name] = np.empty((self.T_sim, self.agent_count))
+            self.history[var_name] = np.empty((self.T_sim, self.sample_count))
             self.history[var_name].fill(np.nan)
 
 

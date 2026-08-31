@@ -1,9 +1,13 @@
 import unittest
 
+import numpy as np
+import pytest
+
 from skagent.distributions import Bernoulli, DiscreteDistribution
 import skagent.block as model
 from skagent.block import Control
 import skagent.models.consumer as cons
+from tests.conftest import recipe_block
 
 # TODO: let the shock constructor reference this parameter.
 LivPrb = 0.98
@@ -94,7 +98,6 @@ class test_DBlock(unittest.TestCase):
     def setUp(self):
         self.test_block_A = model.DBlock(**test_block_A_data)
         self.cblock = cons.consumption_block_normalized
-        self.cblock.construct_shocks(cons.calibration)
 
         # prior states relative to the decision, so with realized shocks.
         self.dpre = {"k": 2, "R": 1.05, "PermGroFac": 1.1, "theta": 1, "CRRA": 2}
@@ -106,7 +109,7 @@ class test_DBlock(unittest.TestCase):
         self.assertEqual(self.test_block_A.name, "test block A")
 
     def test_discretize(self):
-        dbl = self.cblock.discretize({"theta": {"N": 5}})
+        dbl = self.cblock.discretize({"theta": {"N": 5}}, calibration=cons.calibration)
 
         self.assertEqual(len(dbl.shocks["theta"].pmv), 5)
 
@@ -157,7 +160,10 @@ class test_DBlock(unittest.TestCase):
 
     def test_arrival_value_function(self):
         av = self.cblock.get_arrival_value_function(
-            {"theta": {"N": 5}}, {"c": lambda m: m}, lambda a: 0
+            {"theta": {"N": 5}},
+            {"c": lambda m: m},
+            lambda a: 0,
+            calibration=cons.calibration,
         )
 
         av({"k": 1, "R": 1.05, "PermGroFac": 1.1, "theta": 1, "CRRA": 2})
@@ -224,8 +230,10 @@ class test_RBlock(unittest.TestCase):
         self.assertEqual(len(r_block_tree.get_shocks()), 3)
 
     def test_discretize(self):
-        self.cpp.construct_shocks(cons.calibration)
-        cppd = self.cpp.discretize({"theta": {"N": 5}, "risky_return": {"N": 6}})
+        cppd = self.cpp.discretize(
+            {"theta": {"N": 5}, "risky_return": {"N": 6}},
+            calibration=cons.calibration,
+        )
 
         self.assertEqual(len(cppd.get_shocks()["theta"].pmv), 5)
         self.assertEqual(len(cppd.get_shocks()["risky_return"].pmv), 6)
@@ -338,3 +346,56 @@ class test_display_formula(unittest.TestCase):
         self.assertIn("ctrl", formulas)
         self.assertIn("Control", formulas["ctrl"])
         self.assertIn("x", formulas["ctrl"])
+
+
+# ---------------------------------------------------------------------------
+# Shock construction: the authored spec is a recipe, not a value
+# ---------------------------------------------------------------------------
+
+
+def drawn_sigma(shocks, n=40_000):
+    """The standard deviation of the log of ``theta``'s draws."""
+    return float(np.std(np.log(shocks["theta"].draw(n))))
+
+
+class TestShockConstructionIsNotDestructive:
+    """A block is calibration-independent; constructing must not change that.
+
+    Were the resolved distributions written back over the declaration, the
+    declaration would be gone afterwards and every later construction of that
+    block would have nothing left to resolve. The three tests below are one
+    mechanism and two of its observable consequences.
+    """
+
+    def test_construction_leaves_the_authored_spec_intact(self):
+        block = recipe_block()
+        block.construct_shocks({"sigma_theta": 0.1}, rng=np.random.default_rng(0))
+
+        assert isinstance(block.get_shocks()["theta"], tuple)
+
+    def test_a_second_calibration_reaches_the_shock(self):
+        block = recipe_block()
+        block.construct_shocks({"sigma_theta": 0.1}, rng=np.random.default_rng(0))
+        second = block.construct_shocks(
+            {"sigma_theta": 0.4}, rng=np.random.default_rng(0)
+        )
+
+        assert drawn_sigma(second) == pytest.approx(0.4, abs=0.01)
+
+    def test_a_second_rng_reaches_the_shock(self):
+        """A seed a caller passes must decide that caller's draws.
+
+        Distributions are drawn by inverting them at uniforms from the
+        generator they were built with, so the generator handed to construction
+        fixes the whole sample path. A construction that silently keeps the
+        previous one makes a ``seed`` argument a claim the library does not
+        honour.
+        """
+        cal = {"sigma_theta": 0.1}
+        shared = recipe_block()
+        shared.construct_shocks(cal, rng=np.random.default_rng(0))
+        second = shared.construct_shocks(cal, rng=np.random.default_rng(1))
+
+        fresh = recipe_block().construct_shocks(cal, rng=np.random.default_rng(1))
+
+        assert np.array_equal(second["theta"].draw(20), fresh["theta"].draw(20))

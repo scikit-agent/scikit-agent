@@ -10,7 +10,6 @@ from skagent.distributions import (
     combine_indep_dstns,
     expected,
 )
-from inspect import signature
 import numpy as np
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.relevance import RelevanceGraph, shock_roles
@@ -19,6 +18,7 @@ from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
 from typing import Any, Callable, Mapping, List, Union
 from skagent.rule import Rule, format_rule
+from skagent.utils import param_names, takes_arguments
 
 
 class Aggregate:
@@ -186,7 +186,7 @@ def construct_shocks(shock_data, scope, rng=None):
                 if isinstance(dist_args[a], str):
                     arg_lambda = math_text_to_lambda(dist_args[a])
                     arg_value = arg_lambda(
-                        *[scope[var] for var in signature(arg_lambda).parameters]
+                        *[scope[var] for var in param_names(arg_lambda)]
                     )
 
                     dist_args[a] = arg_value
@@ -250,16 +250,13 @@ def simulate_dynamics(
                         for var in vals
                     }
                     vals[sym][i] = dr[sym][i](
-                        *[vals_i[var] for var in signature(dr[sym][i]).parameters]
+                        *[vals_i[var] for var in param_names(dr[sym][i])]
                     )
             else:
-                if len(signature(dr[sym]).parameters) > 0:
+                if takes_arguments(dr[sym]):
+                    # TODO: test for signature match with Control
                     try:
-                        vals[sym] = dr[sym](
-                            *[
-                                vals[var] for var in update_fn.iset
-                            ]  # signature(dr[sym]).parameters]
-                        )  # TODO: test for signature match with Control
+                        vals[sym] = dr[sym](*[vals[var] for var in update_fn.iset])
                     except (TypeError, ValueError, KeyError) as e:
                         raise (Exception(f"Can't compute decision rule. {e}"))
                 else:
@@ -270,9 +267,7 @@ def simulate_dynamics(
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()
 
-            vals[sym] = update_fn(
-                *[vals[var] for var in signature(update_fn).parameters]
-            )
+            vals[sym] = update_fn(*[vals[var] for var in param_names(update_fn)])
 
     return vals
 
@@ -540,32 +535,64 @@ class DBlock(Block):
 
     def construct_shocks(self, calibration, rng=None):
         """
-        Constructs all shocks given calibration.
-        This method mutates the DBlock.
+        This block's shocks, resolved against *calibration*.
+
+        A shock declared as a ``(class, arguments)`` pair is resolved only
+        against a calibration, which is what lets one block stand for the same
+        model at many of them. The resolved distributions are therefore
+        returned rather than stored: the block keeps the declaration, and a
+        caller wanting a second calibration or a second generator gets it.
 
         Parameters
         ----------
         calibration : dict
-            Calibration parameters for shock construction
+            Values for any symbol a shock's arguments refer to.
         rng : np.random.Generator, optional
-            Random number generator to use for distribution construction
-        """
-        self.shocks = construct_shocks(self.shocks, calibration, rng=rng)
+            Generator for the constructed distributions to draw from. Since a
+            distribution is drawn by inverting it at uniforms from its own
+            generator, this fixes the sample path of everything returned here.
 
-    def discretize(self, disc_params):
+        Returns
+        -------
+        dict[str, Distribution]
+        """
+        return construct_shocks(self.shocks, calibration, rng=rng)
+
+    def _resolved_shocks(self, calibration=None):
+        """This block's shocks as distributions, refusing any left declared.
+
+        With *calibration*, resolves the declarations. Without it, the shocks
+        must already be distributions -- which they are when the block declares
+        them as instances rather than as ``(class, arguments)`` pairs.
+        """
+        shocks = (
+            self.shocks if calibration is None else self.construct_shocks(calibration)
+        )
+        declared = sorted(s for s, d in shocks.items() if isinstance(d, tuple))
+        if declared:
+            raise ValueError(
+                f"shocks {declared} are declared as (class, arguments) and need "
+                "a calibration to resolve; pass calibration="
+            )
+        return shocks
+
+    def discretize(self, disc_params, calibration=None):
         """
         Returns a new DBlock which is a copy of this one, but with shock discretized.
+
+        Discretizing needs the distributions themselves, so a block whose
+        shocks are still declared as ``(class, arguments)`` pairs must be given
+        the *calibration* to resolve them against.
         """
 
+        shocks = self._resolved_shocks(calibration)
         disc_shocks = {}
 
-        for shockn in self.shocks:
+        for shockn in shocks:
             if shockn in disc_params:
-                disc_shocks[shockn] = self.shocks[shockn].discretize(
-                    **disc_params[shockn]
-                )
+                disc_shocks[shockn] = shocks[shockn].discretize(**disc_params[shockn])
             else:
-                disc_shocks[shockn] = deepcopy(self.shocks[shockn])
+                disc_shocks[shockn] = deepcopy(shocks[shockn])
 
         # replace returns a modified copy
         new_dblock = replace(self, shocks=disc_shocks)
@@ -695,9 +722,7 @@ class DBlock(Block):
             update_fn = self.dynamics[sym]
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()
-            rvals[sym] = update_fn(
-                *[vals[var] for var in signature(update_fn).parameters]
-            )
+            rvals[sym] = update_fn(*[vals[var] for var in param_names(update_fn)])
 
         return rvals
 
@@ -720,9 +745,7 @@ class DBlock(Block):
             # supporting that here -- summing an agent's reward symbols, and
             # selecting the relevant agent -- is future roadmap work.
             r = list(self.calc_reward(vals).values())[0]
-            cv = continuation(
-                *[vals[var] for var in signature(continuation).parameters]
-            )
+            cv = continuation(*[vals[var] for var in param_names(continuation)])
 
             return r + cv
 
@@ -743,7 +766,9 @@ class DBlock(Block):
 
         return decision_value_function
 
-    def get_arrival_value_function(self, disc_params, dr, continuation):
+    def get_arrival_value_function(
+        self, disc_params, dr, continuation, calibration=None
+    ):
         """
         Returns an arrival value function, which is the value of the states
         upon arrival into the block.
@@ -751,12 +776,17 @@ class DBlock(Block):
         This involves taking an expectation over shocks (which must
         first be discretized), a decision rule, and a continuation
         value function.)
+
+        The expectation is over the distributions themselves, so a block whose
+        shocks are still declared as ``(class, arguments)`` pairs must be given
+        the *calibration* to resolve them against.
         """
+        shocks = self._resolved_shocks(calibration)
 
         def arrival_value_function(arvs):
             dvf = self.get_decision_value_function(dr, continuation)
 
-            ds = discretized_shock_dstn(self.shocks, disc_params)
+            ds = discretized_shock_dstn(shocks, disc_params)
 
             def mod_dvf(shock_value_array):
                 shockvs = {
@@ -839,19 +869,29 @@ class RBlock(Block):
 
     def construct_shocks(self, calibration, rng=None):
         """
-        Construct all shocks given a calibration dictionary.
+        This recursive block's shocks, resolved against *calibration*.
+
+        Merged over the sub-blocks, in their order, as :meth:`get_shocks` does.
+        Returned rather than stored, for the reason
+        :meth:`DBlock.construct_shocks` gives.
 
         Parameters
         ----------
         calibration : dict
-            Calibration parameters for shock construction
+            Values for any symbol a shock's arguments refer to.
         rng : np.random.Generator, optional
-            Random number generator to use for distribution construction
-        """
-        for b in self.blocks:
-            b.construct_shocks(calibration, rng=rng)
+            Generator for the constructed distributions to draw from.
 
-    def discretize(self, disc_params):
+        Returns
+        -------
+        dict[str, Distribution]
+        """
+        merged = {}
+        for b in self.blocks:
+            merged.update(b.construct_shocks(calibration, rng=rng))
+        return merged
+
+    def discretize(self, disc_params, calibration=None):
         """
         Recursively discretizes all the blocks.
         It replaces any DBlocks with new blocks with discretized shocks.
@@ -860,10 +900,10 @@ class RBlock(Block):
 
         for i, b in list(enumerate(cbs)):
             if isinstance(b, DBlock):
-                nb = b.discretize(disc_params)
+                nb = b.discretize(disc_params, calibration=calibration)
                 cbs[i] = nb
             elif isinstance(b, RBlock):
-                b.discretize(disc_params)
+                b.discretize(disc_params, calibration=calibration)
 
         # returns a copy of the RBlock with the blocks replaced
         return replace(self, blocks=cbs)

@@ -42,7 +42,7 @@ simulator = MonteCarloSimulator(
     initial={  # distributions of starting values, in levels
         "k": Lognormal(1.0, 0.5),
     },
-    agent_count=5,
+    sample_count=5,
     T_sim=10,
 )
 ```
@@ -61,9 +61,9 @@ simulator.simulate()
 The data for all variables of the simulation is made available as a dictionary
 of arrays.
 
-The following will show the mean across all agents, at each time step, for the
-`k` variable (the history array is shaped `(T_sim, agent_count)`, so `axis=1`
-averages over agents).
+The following will show the mean across all trajectories, at each time step, for
+the `k` variable (the history array is shaped `(T_sim, sample_count)`, so
+`axis=1` averages over the replication axis).
 
 ```python
 import matplotlib.pyplot as plt

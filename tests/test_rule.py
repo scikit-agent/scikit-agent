@@ -7,7 +7,7 @@ on the actual consumption model.
 import inspect
 from skagent.rule import extract_dependencies, Rule
 from skagent.models.consumer import consumption_block
-from skagent.block import Control
+from skagent.block import Control, DBlock
 from skagent.distributions import Bernoulli
 import unittest
 
@@ -158,6 +158,10 @@ class TestRuleDependencyExtraction:
         shock_deps = extract_dependencies(shock_rule)
         assert "param_name" in shock_deps
 
+        # Rule, which is what a DBlock compiles a string mechanism into
+        rule_deps = extract_dependencies(Rule("m - c"))
+        assert rule_deps == ["c", "m"]
+
     def test_edge_cases(self):
         """Test edge cases."""
         # Empty Control
@@ -171,6 +175,46 @@ class TestRuleDependencyExtraction:
         # Invalid inputs should return empty
         assert len(extract_dependencies(None)) == 0
         assert len(extract_dependencies(42)) == 0
+
+
+class TestAuthoringEquivalence:
+    """The same model authored in strings and in lambdas has the same structure."""
+
+    @staticmethod
+    def _block(as_strings):
+        def dynamics(strings):
+            return {
+                "y": "theta * p" if strings else (lambda theta, p: theta * p),
+                "m": "a + y" if strings else (lambda a, y: a + y),
+                "c": Control(["m"], agent="consumer"),
+                "a": "m - c" if strings else (lambda m, c: m - c),
+                "p": "p * PermGroFac"
+                if strings
+                else (lambda p, PermGroFac: p * PermGroFac),
+            }
+
+        return DBlock(
+            name="equivalence",
+            shocks={"theta": (Bernoulli, {"p": "shock_p"})},
+            dynamics=dynamics(as_strings),
+        )
+
+    def test_dependencies_agree(self):
+        """String mechanisms yield the dependencies their lambdas would."""
+        strung = self._block(True)
+        lambdas = self._block(False)
+
+        for sym in lambdas.get_dynamics():
+            assert sorted(extract_dependencies(strung.get_dynamics()[sym])) == sorted(
+                extract_dependencies(lambdas.get_dynamics()[sym])
+            ), f"'{sym}' has different dependencies depending on how it was authored"
+
+    def test_arrival_states_agree(self):
+        """Structure derived from those dependencies agrees too."""
+        calibration = {"PermGroFac": 1.01, "shock_p": 0.5}
+        assert self._block(True).get_arrival_states(
+            calibration=calibration
+        ) == self._block(False).get_arrival_states(calibration=calibration)
 
 
 class TestRuleRobustness:

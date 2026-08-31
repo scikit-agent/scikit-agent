@@ -8,6 +8,12 @@ only definable on a graph. This module owns that graph -- the SCIM view: chance,
 decision and utility nodes with directed causal edges -- together with the
 vocabulary and the traversal engine every criterion over it needs.
 
+The name is Def. 4 of Everitt, Carey, Langlois, Ortega & Legg, "Agent
+Incentives: A Causal Perspective" (AAAI-21, 35(13):11487-11495;
+arXiv:2102.01685), where a *structural causal influence model* is an influence
+diagram whose mechanisms are structural functions of their parents rather than
+conditional probability tables. That is the form a block already takes.
+
 The criteria themselves live in :mod:`skagent.relevance`. Construction of a
 :class:`SCIM` from a block lives in :mod:`skagent.model_analyzer`. This module
 depends only on ``networkx``, so the substrate and the criteria can be developed
@@ -115,6 +121,15 @@ class SCIM:
         """
         return set(self.graph.predecessors(decision)) | {decision}
 
+    def utilities(self, decision):
+        """Every utility node the agent deciding *decision* owns.
+
+        Wider than :meth:`objectives`, which keeps only the ones the decision
+        reaches: a variable can be worth controlling for the sake of a payoff
+        the decision itself has no route to.
+        """
+        return set(self.agent_utilities.get(self.decision_agent.get(decision), ()))
+
     def objectives(self, decision):
         """The utility nodes whose value *decision* is choosing over.
 
@@ -122,8 +137,7 @@ class SCIM:
         Includes the synthetic continuation node when
         :meth:`with_continuation` has been applied and the decision reaches it.
         """
-        owned = set(self.agent_utilities.get(self.decision_agent.get(decision), ()))
-        return owned & nx.descendants(self.graph, decision)
+        return self.utilities(decision) & nx.descendants(self.graph, decision)
 
     # -- engine --------------------------------------------------------------
 
@@ -276,6 +290,48 @@ class SCIM:
             agent_utilities.setdefault(agent, []).append(node)
 
         return self._replace(graph, agent_utilities)
+
+    def with_edge(self, source, target):
+        """Add the directed edge ``source -> target``.
+
+        Both endpoints must already be nodes, and the edge must not close a
+        cycle: a criterion posed over a graph is not answerable on a graph that
+        is no longer a DAG.
+
+        Returns
+        -------
+        SCIM
+
+        Raises
+        ------
+        ValueError
+            If either endpoint is absent, or the edge would create a cycle.
+        """
+        for endpoint in (source, target):
+            if endpoint not in self.graph:
+                raise ValueError(f"{endpoint!r} is not a node of this diagram")
+        if source == target or source in nx.descendants(self.graph, target):
+            raise ValueError(
+                f"the edge {source!r} -> {target!r} would create a cycle; "
+                f"{target!r} already reaches {source!r}"
+            )
+        graph = self.graph.copy()
+        graph.add_edge(source, target)
+        return self._replace(graph)
+
+    def without_edges(self, edges):
+        """Drop *edges*, an iterable of ``(source, target)`` pairs.
+
+        Edges that are not present are ignored, so the result is the diagram
+        without any of them however many were there to begin with.
+
+        Returns
+        -------
+        SCIM
+        """
+        graph = self.graph.copy()
+        graph.remove_edges_from(edges)
+        return self._replace(graph)
 
     def with_dummy_parent(self, node):
         """Add a fresh exogenous parent to *node*.

@@ -59,10 +59,18 @@ class BellmanPeriod:
         The underlying block model containing dynamics, shocks, and reward definitions.
     discount_variable : str
         A variable name which represents the discount factor for future value streams.
+        Required, and resolved out of the post-transition values. A static block
+        wrapped in a period — as :func:`skagent.solver.solve_multiple_controls`
+        requires — must still carry a discount factor in its calibration, even
+        though nothing is discounted.
     calibration : dict[str, Any]
         Dictionary of calibration parameters for the model.
     decision_rules : dict[str, Callable] | None, optional
         Dictionary mapping control variable names to decision rule functions.
+    rng : np.random.Generator, optional
+        Generator for this period's shock draws. Since the period resolves the
+        block's shocks against its own calibration, it is the period rather
+        than the block that owns their sample path.
 
     Attributes
     ----------
@@ -76,6 +84,8 @@ class BellmanPeriod:
         The decision rules for control variables.
     arrival_states : set[str]
         The set of arrival state variable names.
+    rng : np.random.Generator | None
+        The generator this period's shock draws come from.
 
     Notes
     -----
@@ -95,12 +105,44 @@ class BellmanPeriod:
         discount_variable: str,
         calibration: dict[str, Any],
         decision_rules: dict[str, Callable] | None = None,
+        rng: Any = None,
     ) -> None:
         self.block = block
         self.calibration = calibration
         self.discount_variable = discount_variable
         self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
+        self.rng = rng
+        self._shocks: dict[str, Any] | None = None
+
+    def shock_distributions(self) -> dict[str, Any]:
+        """This period's shocks, resolved against its calibration.
+
+        The block declares shocks; resolving a declaration needs a calibration,
+        which is what this period supplies. Resolved once and held, so that the
+        generator advances across draws instead of restarting, and so that the
+        block itself is left as its author wrote it.
+        """
+        if self._shocks is None:
+            self._shocks = self.block.construct_shocks(self.calibration, rng=self.rng)
+        return self._shocks
+
+    def draw_shocks(self, n: int) -> dict[str, Any]:
+        """Draw *n* realizations of each of this period's shocks.
+
+        Parameters
+        ----------
+        n : int
+            Number of realizations per shock.
+
+        Returns
+        -------
+        dict[str, Any]
+            A mapping from shock symbol to its draws.
+        """
+        from skagent.simulation.monte_carlo import draw_shocks
+
+        return draw_shocks(self.shock_distributions(), n=n)
 
     def _resolve_inputs(
         self,
@@ -323,14 +365,14 @@ class BellmanPeriod:
         dict[str, Any]
             Next-period arrival state values.
         """
-        shocks, decision_rules, parameters = self._resolve_inputs(
-            shocks, decision_rules, parameters
+        post = self.post_function(
+            states,
+            controls,
+            shocks=shocks,
+            parameters=parameters,
+            decision_rules=decision_rules,
         )
-
-        vals = parameters | states | shocks | controls
-        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
-
-        return {sym: post[sym] for sym in self.arrival_states}
+        return self.select_arrival_states(post)
 
     def decision_function(
         self,
@@ -400,12 +442,14 @@ class BellmanPeriod:
         dict[str, Any]
             Reward values for the period.
         """
-        shocks, decision_rules, parameters = self._resolve_inputs(
-            shocks, decision_rules, parameters
+        post = self.post_function(
+            states,
+            controls,
+            shocks=shocks,
+            parameters=parameters,
+            agent=agent,
+            decision_rules=decision_rules,
         )
-
-        vals = parameters | states | shocks | controls
-        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
         return {sym: post[sym] for sym in self.get_reward_syms(agent)}
 
     def post_function(
@@ -652,6 +696,21 @@ class BellmanPeriod:
             pre_state_values, wrt, create_graph=create_graph
         )
 
+    def select_arrival_states(self, post: dict[str, Any]) -> dict[str, Any]:
+        """Return the next-period arrival states from a ``post_function`` result.
+
+        Parameters
+        ----------
+        post : dict[str, Any]
+            The post-transition output returned by :meth:`post_function`.
+
+        Returns
+        -------
+        dict[str, Any]
+            The entries of *post* named by :attr:`arrival_states`.
+        """
+        return {sym: post[sym] for sym in self.arrival_states}
+
     def resolve_discount_factor(self, post: dict[str, Any]) -> Any:
         """Return ``post[self.discount_variable]``, raising ``KeyError``
         with a diagnostic message if the discount variable is missing.
@@ -795,16 +854,13 @@ def estimate_discounted_lifetime_reward(
             dr, states_t, shocks=shocks_t, parameters=parameters
         )
 
-        # TODO: can improve performance by consolidating multiple calls
-        #       that simulate forward.
+        # One block pass per period: the ex post values carry the period's
+        # rewards, its discount factor and the next arrival states alike.
         post = bellman_period.post_function(
             states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
         )
         discount_factor = bellman_period.resolve_discount_factor(post)
-
-        reward_t = bellman_period.reward_function(
-            states_t, controls_t, shocks=shocks_t, parameters=parameters, agent=agent
-        )
+        reward_t = {rsym: post[rsym] for rsym in reward_syms}
 
         period_reward = 0
         for rsym in reward_syms:
@@ -821,9 +877,7 @@ def estimate_discounted_lifetime_reward(
         total_discounted_reward += period_reward * cumulative_discount
         cumulative_discount = cumulative_discount * discount_factor
 
-        states_t = bellman_period.transition_function(
-            states_t, controls_t, shocks=shocks_t, parameters=parameters
-        )
+        states_t = bellman_period.select_arrival_states(post)
 
     return total_discounted_reward
 
@@ -916,15 +970,14 @@ def estimate_bellman_residual(
         df, states_t, shocks=shocks_t, parameters=parameters
     )
 
-    # Immediate reward at period t
-    immediate_reward = bellman_period.reward_function(
-        states_t, controls_t, shocks=shocks_t, parameters=parameters
-    )[reward_sym]
-
-    # Next-period arrival state from the transition
-    next_states = bellman_period.transition_function(
+    # One block pass: the ex post values carry the immediate reward, the
+    # discount factor and the next-period arrival state alike.
+    post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
+    immediate_reward = post[reward_sym]
+    discount_factor = bellman_period.resolve_discount_factor(post)
+    next_states = bellman_period.select_arrival_states(post)
 
     # V(s_{t+1}) — continuation value at the next-period arrival state
     # using the second independent shock draw
@@ -935,13 +988,6 @@ def estimate_bellman_residual(
         parameters=parameters,
         agent=agent,
     )
-
-    # TODO: this is all calling the forward simulation multiple times;
-    #       can be made more efficient
-    post = bellman_period.post_function(
-        states_t, controls_t, shocks=shocks_t, parameters=parameters
-    )
-    discount_factor = bellman_period.resolve_discount_factor(post)
 
     # Bellman equation: V(s) = u(s,c,ε) + β E_ε'[V(s')]
     bellman_rhs = immediate_reward + discount_factor * continuation_values
@@ -1199,9 +1245,12 @@ def estimate_euler_residual(
         controls_t = bellman_period.compute_controls(
             df, states_t, shocks=shocks_t, parameters=parameters
         )
-    states_t_plus_1 = bellman_period.transition_function(
+    # One block pass: the ex post values carry the next-period arrival states
+    # and the discount factor alike.
+    post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
+    states_t_plus_1 = bellman_period.select_arrival_states(post)
 
     # Period-(t+1) controls (second independent shock draw — AiO)
     controls_t_plus_1 = bellman_period.compute_controls(
@@ -1212,10 +1261,6 @@ def estimate_euler_residual(
     if len(control_syms) == 0:
         raise ValueError("No control variables found in decision function")
 
-    # Resolve discount factor from model
-    post = bellman_period.post_function(
-        states_t, controls_t, shocks=shocks_t, parameters=parameters
-    )
     discount_factor = bellman_period.resolve_discount_factor(post)
 
     # Compute Euler residual for each control

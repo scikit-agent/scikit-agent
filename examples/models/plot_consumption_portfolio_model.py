@@ -3,6 +3,11 @@ r"""
 Consumption-Saving-Portfolio Model
 #####################################
 
+Blocks compose. This page builds two recursive problems from the same parts:
+consumption-saving with a tick block that carries assets forward, and that pair
+plus a portfolio block which endogenizes the return. Each is inspected,
+visualized and simulated.
+
 The consumption-saving problem is one of the central models of modern
 macroeconomics and household finance. An agent with uncertain income must
 decide each period how much to consume and how much to save, trading off
@@ -109,6 +114,8 @@ import skagent as ska
 from skagent.distributions import Normal
 import skagent.models.consumer as cons
 
+# sphinx_gallery_thumbnail_number = 2
+
 # %%
 # Model Inspection
 # -----------------
@@ -212,7 +219,7 @@ simulator = ska.MonteCarloSimulator(
     block=cons.cons_problem,
     dr=decision_rule,
     initial=initial_conditions,
-    agent_count=1000,
+    sample_count=1000,
     T_sim=100,
     seed=42,
 )
@@ -282,7 +289,7 @@ portfolio_sim = ska.MonteCarloSimulator(
     block=cons.cons_portfolio_problem,
     dr=portfolio_decision_rule,
     initial={"k": Normal(mu=1.0, sigma=0.1), "R": cons.calibration["Rfree"]},
-    agent_count=1000,
+    sample_count=1000,
     T_sim=100,
     seed=42,
 )

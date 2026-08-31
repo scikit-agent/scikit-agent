@@ -317,11 +317,11 @@ class TestBenchmarksModels:
         for model_id in BENCHMARK_MODELS.keys():
             block = get_benchmark_model(model_id)
             calibration = get_benchmark_calibration(model_id)
-            block.construct_shocks(calibration, rng=np.random.default_rng(0))
-            assert all(not isinstance(v, tuple) for v in block.shocks.values()), (
+            shocks = block.construct_shocks(calibration, rng=np.random.default_rng(0))
+            assert all(not isinstance(v, tuple) for v in shocks.values()), (
                 f"{model_id} shock specs were left unconstructed (still tuples)"
             )
-            drawn = draw_shocks(block.shocks, n=16)
+            drawn = draw_shocks(shocks, n=16)
             for sym, values in drawn.items():
                 arr = np.asarray(values, dtype=float)
                 assert np.all(np.isfinite(arr)), (
@@ -329,14 +329,12 @@ class TestBenchmarksModels:
                 )
 
     def test_get_benchmark_model_returns_independent_copies(self):
-        """``get_benchmark_model`` must return independent copies so that
-        constructing one caller's block cannot mutate another's.
+        """``get_benchmark_model`` must return independent copies.
 
-        Regression test: the registered blocks are shared singletons whose shock
-        specs ``construct_shocks`` rewrites in place, so before the copy was
-        returned, constructing one retrieval silently changed every other
-        retrieval (and a later ``construct_shocks`` with a different calibration
-        became a no-op).
+        The registered blocks are shared singletons and a ``Block`` is mutable,
+        so handing out the singleton would let one caller's edit reach every
+        other retrieval. Resolving a block's shocks is no longer such an edit,
+        which is what the second assertion pins.
         """
         first = get_benchmark_model("U-3")
         second = get_benchmark_model("U-3")
@@ -347,8 +345,7 @@ class TestBenchmarksModels:
             get_benchmark_calibration("U-3"), rng=np.random.default_rng(0)
         )
         assert all(isinstance(v, tuple) for v in second.shocks.values()), (
-            "Constructing one returned block leaked into another retrieval; "
-            "get_benchmark_model must return independent copies."
+            "resolving one block's shocks must leave every other block declared"
         )
 
         with pytest.raises(ValueError):

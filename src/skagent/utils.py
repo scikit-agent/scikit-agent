@@ -2,8 +2,70 @@ from __future__ import annotations
 
 import inspect
 import logging
+from functools import lru_cache
 import numpy as np
 import torch
+
+# CO_VARARGS | CO_VARKEYWORDS: a function taking only ``*args`` or ``**kwargs``
+# accepts arguments while its argument counts are zero.
+_CO_VAR_ARGUMENTS = inspect.CO_VARARGS | inspect.CO_VARKEYWORDS
+
+
+@lru_cache(maxsize=1024)
+def _param_names_cached(fun):
+    return tuple(inspect.signature(fun).parameters)
+
+
+def param_names(fun):
+    """
+    The names of ``fun``'s parameters, in order.
+
+    Equivalent to ``tuple(inspect.signature(fun).parameters)``, memoized on the
+    function object. ``inspect.signature`` costs on the order of ten
+    microseconds, and the block machinery asks the same functions for their
+    argument names once per variable per pass.
+
+    Parameters
+    ----------
+    fun : callable
+
+    Returns
+    -------
+    tuple of str
+    """
+    try:
+        return _param_names_cached(fun)
+    except TypeError:
+        # An unhashable callable cannot be memoized; answer it directly.
+        return tuple(inspect.signature(fun).parameters)
+
+
+def takes_arguments(fun):
+    """
+    Whether ``fun`` accepts at least one argument.
+
+    For a plain Python function the answer is read off the code object, which
+    is constant-time and needs no memo. Callers asking this question are often
+    handed a function built fresh for the call -- a decision rule wrapping a
+    candidate action, say -- for which a memo keyed on the function object
+    would miss every time.
+
+    Parameters
+    ----------
+    fun : callable
+
+    Returns
+    -------
+    bool
+    """
+    if inspect.isfunction(fun) and not hasattr(fun, "__signature__"):
+        code = fun.__code__
+        return bool(
+            code.co_argcount
+            or code.co_kwonlyargcount
+            or code.co_flags & _CO_VAR_ARGUMENTS
+        )
+    return bool(param_names(fun))
 
 
 def apply_fun_to_vals(fun, vals):
@@ -20,7 +82,7 @@ def apply_fun_to_vals(fun, vals):
     vals: dict
     """
     # TODO: Can this just be `fun(**vals)` ?
-    return fun(*[vals[var] for var in inspect.signature(fun).parameters])
+    return fun(*[vals[var] for var in param_names(fun)])
 
 
 def reconcile(vec_a, vec_b):
@@ -231,3 +293,37 @@ def compute_gradients_for_tensors(
             gradients[tensor_sym][var_name] = grad_result
 
     return gradients
+
+
+def plot_block_diagram(block, title=None, calibration=None, figsize=(9, 7)):
+    """Render *block*'s model diagram into a new matplotlib figure.
+
+    :meth:`~skagent.block.Block.display` shows the diagram in a notebook and
+    returns the image; this puts the image on a figure instead, which is what a
+    script or a documentation gallery needs. It also avoids ``display``'s side
+    effect of emitting the SVG through IPython, which in a plain script prints a
+    line of noise.
+
+    Parameters
+    ----------
+    block : Block
+        The block to draw.
+    title : str, optional
+        Figure title. Omitted if not given.
+    calibration : dict, optional
+        Passed to :meth:`~skagent.block.Block.visualize`, where it says which
+        symbols are static rather than dynamic. Defaults to empty.
+    figsize : tuple of float
+        Figure size in inches, for diagrams that are wider than they are tall or
+        the reverse.
+    """
+    import matplotlib.pyplot as plt
+
+    img, _ = block.visualize({} if calibration is None else calibration).get_image()
+
+    plt.figure(figsize=figsize)
+    plt.imshow(img)
+    plt.axis("off")
+    if title is not None:
+        plt.title(title)
+    plt.tight_layout()

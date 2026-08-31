@@ -12,7 +12,15 @@ from skagent.distributions import Uniform
 from skagent.env import Environment, GymEnv, discounted_rollout_reward
 from skagent.models.benchmarks import d2_block, d2_calibration
 
-from tests.conftest import case_0, case_1, case_5, case_7, case_10
+from tests.conftest import (
+    RECIPE_CALIBRATION,
+    case_0,
+    case_1,
+    case_5,
+    case_7,
+    case_10,
+    recipe_block,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -173,3 +181,51 @@ def test_discounted_rollout_reward_is_seed_reproducible():
 
     assert r1 == pytest.approx(r2)  # same seed → identical rollout
     assert r1 != pytest.approx(r3)  # different seed → different rollout
+
+
+# ---------------------------------------------------------------------------
+# Neither environment may rewrite the block it was handed
+# ---------------------------------------------------------------------------
+
+
+class TestEnvironmentsDoNotConstructShocksOnTheBlock:
+    """The envs are the only place a block's shocks are resolved implicitly.
+
+    Both constructors resolve the declarations on ``bp.block`` -- a block they
+    were handed rather than one they built, and typically a module-level value
+    shared with every other caller in the process. The resolved distributions
+    are the environment's own, so building one cannot decide the shocks another
+    caller of that block sees.
+    """
+
+    @staticmethod
+    def _bp():
+        return BellmanPeriod(recipe_block(), "beta", dict(RECIPE_CALIBRATION))
+
+    def test_environment_leaves_the_block_as_authored(self):
+        bp = self._bp()
+        Environment(bp, {"a": Uniform(low=0.0, high=1.0)})
+
+        assert isinstance(bp.block.get_shocks()["theta"], tuple)
+
+    def test_gymenv_leaves_the_block_as_authored(self):
+        bp = self._bp()
+        GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=0)
+
+        assert isinstance(bp.block.get_shocks()["theta"], tuple)
+
+    def test_a_later_env_gets_the_seed_it_asked_for(self):
+        """Two envs over one period, each drawing the path its seed asks for.
+
+        Each environment resolves the block's declarations itself, so the first
+        one's generator cannot decide the second one's draws.
+        """
+        bp = self._bp()
+        GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=0)
+        later = GymEnv(bp, {"a": Uniform(low=0.1, high=1.0)}, seed=7)
+
+        alone = GymEnv(self._bp(), {"a": Uniform(low=0.1, high=1.0)}, seed=7)
+
+        assert np.array_equal(
+            later.shocks["theta"].draw(20), alone.shocks["theta"].draw(20)
+        )

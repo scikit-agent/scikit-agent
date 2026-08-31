@@ -39,8 +39,7 @@ def _to_scalar(x: Any) -> float:
     return float(np.asarray(x).reshape(-1)[0])
 
 
-def _draw_period_shocks(bp: BellmanPeriod, rng) -> dict[str, torch.Tensor]:
-    shocks = bp.get_shocks()
+def _draw_period_shocks(shocks: dict, rng) -> dict[str, torch.Tensor]:
     if not shocks:
         return {}
     return _to_tensor_dict(draw_shocks(shocks, [], n=1, rng=rng))
@@ -72,10 +71,10 @@ class Environment:
         self.bp = bp
         self.initial = initial
         self.rng = rng
-        # Construct shock distributions from their (cls, kwargs) tuples if they
-        # haven't been yet. Idempotent: already-constructed distributions are
-        # left alone.
-        bp.block.construct_shocks(bp.calibration, rng=rng)
+        # Resolve the block's shock declarations against this period's
+        # calibration. The result belongs to this environment, so two
+        # environments over one period each draw their own path.
+        self.shocks = bp.block.construct_shocks(bp.calibration, rng=rng)
         self.state: dict[str, torch.Tensor] | None = None
         self.reset()
 
@@ -98,7 +97,7 @@ class Environment:
             ``(state_t, action, reward, state_t_plus_1, discount, obs)``.
             ``obs`` is the information set seen by the policy.
         """
-        shocks = _draw_period_shocks(self.bp, self.rng)
+        shocks = _draw_period_shocks(self.shocks, self.rng)
         post = self.bp.post_function(
             self.state, controls={}, shocks=shocks, decision_rules=decision_rule
         )
@@ -265,9 +264,10 @@ class GymEnv(gym.Env):
 
         self._rng = np.random.default_rng(seed)
 
-        # Construct shock distributions from their (cls, kwargs) tuples if
-        # they haven't been yet. Idempotent.
-        bp.block.construct_shocks(bp.calibration, rng=self._rng)
+        # Resolve the block's shock declarations against this period's
+        # calibration. The result belongs to this environment, so two
+        # environments over one period each draw their own path.
+        self.shocks = bp.block.construct_shocks(bp.calibration, rng=self._rng)
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         self.observation_space = spaces.Box(
@@ -296,7 +296,7 @@ class GymEnv(gym.Env):
         self._steps = 0
         initial_vals = draw_shocks(self.initial, [0], rng=self._rng)
         self._state = _to_tensor_dict(initial_vals)
-        self._pending_shocks = _draw_period_shocks(self.bp, self._rng)
+        self._pending_shocks = _draw_period_shocks(self.shocks, self._rng)
         obs = self._compute_obs(self._state, self._pending_shocks)
         return obs, {}
 
@@ -351,7 +351,7 @@ class GymEnv(gym.Env):
         # Draw next-period shocks now so the observation the agent sees
         # next is consistent with the (state, shock) that will drive the
         # next transition.
-        self._pending_shocks = _draw_period_shocks(self.bp, self._rng)
+        self._pending_shocks = _draw_period_shocks(self.shocks, self._rng)
         next_obs = self._compute_obs(next_state, self._pending_shocks)
 
         info = {

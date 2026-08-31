@@ -94,3 +94,19 @@ These are not solved for a policy; only their graphical structure is used.
 .. automodule:: skagent.models.macid
    :members:
 ```
+
+## AI-safety influence diagrams
+
+Influence diagrams from the AI-safety literature, encoded to exercise the
+graphical criteria in `skagent.relevance`. Like the MAIDs above, these are used
+for their structure rather than solved for a policy.
+
+```{eval-rst}
+.. automodule:: skagent.models.safety
+   :members:
+```
+
+```{eval-rst}
+.. automodule:: skagent.models.safety.incentives
+   :members:
+```

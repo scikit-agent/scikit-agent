@@ -86,7 +86,8 @@ class Grid:
         return Grid.from_dict(my_dict)
 
     def __getitem__(self, sym):
-        # TODO: fix the dict creation step to improve performance
+        # Rebuilds the whole dict per access. A caller needing several symbols
+        # should call to_dict() once and index the result instead.
         return self.to_dict()[sym]
 
     # TODO: To imitate dict-like properties, may need to implement __contains__ and __iter__

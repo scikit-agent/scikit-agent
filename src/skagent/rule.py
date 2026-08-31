@@ -8,7 +8,7 @@ A rule can be:
 - A callable (function, lambda)
 - A Control object
 - A Distribution or tuple with distribution parameters
-- A string expression
+- A string expression, or the Rule that a block compiles one into
 - A constant value
 
 Key functions:
@@ -55,7 +55,7 @@ def extract_dependencies(rule):
     Parameters
     ----------
     rule : various
-        Can be Control, Distribution, callable, tuple, or string
+        Can be Control, Distribution, Rule, callable, tuple, or string
 
     Returns
     -------
@@ -76,6 +76,8 @@ def extract_dependencies(rule):
             for param_expr in params.values():
                 if isinstance(param_expr, str):
                     deps.extend(math_text_to_free_variable_names(param_expr))
+    elif isinstance(rule, Rule):
+        deps = list(rule.free_symbols)
     elif isinstance(rule, str):
         deps = math_text_to_free_variable_names(rule)
     elif callable(rule):
@@ -183,6 +185,11 @@ class Rule:
     def sympy(self):
         """Access the underlying SymPy expression."""
         return self._sympy_expr
+
+    @property
+    def free_symbols(self):
+        """Names of the free symbols in the expression, sorted."""
+        return [s.name for s in self._symbols]
 
     def update_func(self):
         """
