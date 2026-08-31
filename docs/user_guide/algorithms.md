@@ -258,9 +258,7 @@ states = grid.Grid.from_config({"a": {"min": -2, "max": 2, "count": 11}})
 
 # Repeat a symbol to schedule an extra refinement pass after its neighbour
 # has been updated.
-decision_rules = solve_multiple_controls(
-    ["c", "d", "c"], bp, states, calibration, epochs=200
-)
+decision_rules = solve_multiple_controls(["c", "d", "c"], bp, states, epochs=200)
 # optimal: c = a and d = 3, so the reward u is approximately 0
 ```
 

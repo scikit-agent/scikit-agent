@@ -30,7 +30,9 @@ and this project adheres to
   instances; a block declaring no entity keeps the `(T_sim, sample_count)`
   histories it already had. Shapes are validated each period, and a non-finite
   value entering a reduction raises rather than becoming every instance's.
-
+- Continuous one-shot and iterated Prisoner's Dilemma blocks, including
+  per-player utilities, memory-one repeated-game state, strategic-relevance
+  coverage, solver-boundary tests, and multi-period simulation tests.
 - `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
   density each backend already provides.
 - `skagent.relevance` gains the four single-decision incentive criteria of
@@ -48,6 +50,14 @@ and this project adheres to
   every node of those four diagrams, then confirms the response incentive, the
   value of information and the control incentive numerically against the
   mechanisms.
+- `skagent.ground.GroundedBlock`: a block together with the calibration and
+  generator it is read against, owning the resolution of the block's shock
+  declarations -- seeded whether a shock is declared as a `(class, arguments)`
+  pair or as a distribution instance. `BellmanPeriod` is one, plus a discount
+  factor, arrival states and decision rules.
+- `GroundedBlock.with_rng`, which returns a copy of the pair drawing from a new
+  generator. `Simulator` uses it to restart its sample path; the original keeps
+  its own, since the two share no distribution.
 - `BellmanPeriod.select_arrival_states`, which names the projection from an ex
   post result to the next-period arrival states.
 - `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
@@ -65,6 +75,15 @@ and this project adheres to
 
 ### Changed
 
+- A shock argument referring to a symbol the scope does not assign now raises a
+  `KeyError` naming the shock and the argument, not just the symbol.
+- `solve_multiple_controls` takes its calibration from the period it is given.
+  The separate `calibration` argument is deprecated: nothing checked that it
+  agreed with the period's, so a caller could evaluate a period's losses at
+  parameters the period was not built with. Passing one that disagrees now
+  raises.
+- A control in a document declares its information set as `iset`, the name the
+  Python constructor uses, rather than `info`.
 - `Simulator.agent_count` is now `sample_count`, and
   `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
   was a population: `sample_count` counts independent trajectories, and
@@ -101,7 +120,10 @@ and this project adheres to
 - A `Uniform` whose bounds coincide, and a `Normal` with zero spread, draw their
   point mass instead of `NaN`. Drawing by inverting the quantile function
   returns `NaN` for a zero-spread distribution where sampling directly does not.
-
+- `!Control` produced a token that discarded its arguments, so a YAML-loaded
+  block had no controls and the agent's name was parsed as an expression and
+  reported as an arrival state. The tag now builds a `Control`, whose bounds may
+  be declared as expressions, and refuses a malformed declaration.
 - Draws did not couple: `Bernoulli` at p 0.5 against 0.5001 under one seed
   changed 100% of its draws, so a finite difference through a discrete shock
   measured the reshuffled sample path rather than the parameter. Distributions

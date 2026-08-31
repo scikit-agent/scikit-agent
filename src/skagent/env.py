@@ -26,6 +26,7 @@ import torch
 from gymnasium import spaces
 
 from skagent.bellman import BellmanPeriod
+from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import draw_shocks
 
 
@@ -71,10 +72,12 @@ class Environment:
         self.bp = bp
         self.initial = initial
         self.rng = rng
-        # Resolve the block's shock declarations against this period's
-        # calibration. The result belongs to this environment, so two
-        # environments over one period each draw their own path.
-        self.shocks = bp.block.construct_shocks(bp.calibration, rng=rng)
+        # A second grounding of the period's own pair: the period caches its
+        # distributions on its own generator, so reading them here would give
+        # two environments one shared draw path instead of one each.
+        self.shocks = GroundedBlock(
+            bp.block, bp.calibration, rng=rng
+        ).shock_distributions()
         self.state: dict[str, torch.Tensor] | None = None
         self.reset()
 
@@ -264,10 +267,12 @@ class GymEnv(gym.Env):
 
         self._rng = np.random.default_rng(seed)
 
-        # Resolve the block's shock declarations against this period's
-        # calibration. The result belongs to this environment, so two
-        # environments over one period each draw their own path.
-        self.shocks = bp.block.construct_shocks(bp.calibration, rng=self._rng)
+        # A second grounding of the period's own pair, as in `Environment`.
+        # `reset(seed=...)` repoints `_rng`, which reaches these distributions
+        # through the generator `_draw_period_shocks` passes at draw time.
+        self.shocks = GroundedBlock(
+            bp.block, bp.calibration, rng=self._rng
+        ).shock_distributions()
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         self.observation_space = spaces.Box(

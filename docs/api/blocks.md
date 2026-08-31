@@ -34,6 +34,19 @@ strategic-relevance analysis (`relevance_graph`, `relies_on`).
    :show-inheritance:
 ```
 
+### GroundedBlock
+
+A block together with the calibration and generator it is read against. A block
+is calibration-independent, so a block alone does not fix its shocks; this pair
+does, and is what solvers, simulators and environments are handed.
+
+```{eval-rst}
+.. autoclass:: skagent.ground.GroundedBlock
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
 ### Control
 
 ```{eval-rst}

@@ -76,16 +76,15 @@ SEED = 10077693
 # Step 1: Load the U-3 buffer-stock model and build a BellmanPeriod
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# ``construct_shocks`` draws the income-shock support that the all-in-one
-# expectation operator samples from during training.
+# The period resolves the block's income-shock declarations against its own
+# calibration, which is what the all-in-one expectation operator samples from
+# during training. It also owns their generator, so the seed goes here.
 
 u3_block = get_benchmark_model("U-3")
 u3_calibration = get_benchmark_calibration("U-3")
 
 rng = np.random.default_rng(SEED)
-u3_block.construct_shocks(u3_calibration, rng=rng)
-
-bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
+bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration, rng=rng)
 
 # %%
 # Step 2: Define the Euler-equation loss with the borrowing constraint
