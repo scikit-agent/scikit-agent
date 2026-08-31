@@ -38,7 +38,11 @@ class test_consumption_parsing(unittest.TestCase):
 
         ## construct and test the portfolio block
         portfolio_block = model.DBlock(**config["blocks"][1])
-        portfolio_block.discretize({"risky_return": {"N": 5}})
+        # ``construct_shocks`` returns the resolved shocks rather than storing
+        # them, so the calibration goes to ``discretize`` directly.
+        portfolio_block.discretize(
+            {"risky_return": {"N": 5}}, calibration=config["calibration"]
+        )
 
     def test_control_tag(self):
         """`!Control` produces a Control, not a token."""
