@@ -25,7 +25,11 @@ Encoding conventions (a deliberate departure from the source presentations):
   vocabulary. Because the noise nodes are single-child exogenous roots, they
   cannot lie on any d-connecting path and so do not change the relevance graph.
 - Binary decisions are relaxed to continuous ``[0, 1]`` controls, pending
-  discrete-action support.
+  discrete-action support. For Prisoner's Dilemma, ``0`` means cooperate and
+  ``1`` means defect; intermediate values use the multilinear extension of the
+  standard payoff matrix and can be interpreted as defection probabilities.
+  The iterated model's utilities are per-round payoffs; accumulation or
+  discounting across rounds belongs to the simulator or solver using the block.
 """
 
 from skagent.block import Control, DBlock
@@ -117,6 +121,75 @@ tree_killer_block = DBlock(
             "V": "alice",
             "Tree": "bob",
             "Cost": "bob",
+        },
+    }
+)
+
+
+# Prisoner's Dilemma
+# ------------------
+def _player_1_utility(D1, D2):
+    return 3.0 + 2.0 * D1 - 3.0 * D2 - D1 * D2
+
+
+def _player_2_utility(D1, D2):
+    return 3.0 - 3.0 * D1 + 2.0 * D2 - D1 * D2
+
+
+prisoners_dilemma_block = DBlock(
+    **{
+        "name": "prisoners_dilemma",
+        "dynamics": {
+            "D1": Control(
+                [],
+                lower_bound=lambda: 0.0,
+                upper_bound=lambda: 1.0,
+                agent="player_1",
+            ),
+            "D2": Control(
+                [],
+                lower_bound=lambda: 0.0,
+                upper_bound=lambda: 1.0,
+                agent="player_2",
+            ),
+            "U1": _player_1_utility,
+            "U2": _player_2_utility,
+        },
+        "reward": {
+            "U1": "player_1",
+            "U2": "player_2",
+        },
+    }
+)
+
+
+iterated_prisoners_dilemma_block = DBlock(
+    **{
+        "name": "iterated_prisoners_dilemma",
+        "dynamics": {
+            # The players see the preceding round, but neither sees the other
+            # player's current action before choosing their own.
+            "D1": Control(
+                ["previous_D1", "previous_D2"],
+                lower_bound=lambda previous_D1, previous_D2: 0.0,
+                upper_bound=lambda previous_D1, previous_D2: 1.0,
+                agent="player_1",
+            ),
+            "D2": Control(
+                ["previous_D1", "previous_D2"],
+                lower_bound=lambda previous_D1, previous_D2: 0.0,
+                upper_bound=lambda previous_D1, previous_D2: 1.0,
+                agent="player_2",
+            ),
+            "U1": _player_1_utility,
+            "U2": _player_2_utility,
+            # Today's actions become the state observed in the next round.
+            "previous_D1": lambda D1: D1,
+            "previous_D2": lambda D2: D2,
+        },
+        "reward": {
+            "U1": "player_1",
+            "U2": "player_2",
         },
     }
 )

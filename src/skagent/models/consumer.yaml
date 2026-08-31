@@ -25,7 +25,8 @@ blocks:
       b: k * R / PermGroFac
       m: b + theta
       c: !Control
-        info: m
+        iset: m
+        upper_bound: m
         agent: consumer
       a: m - c
       u: c ** (1 - CRRA) / (1 - CRRA)
@@ -40,5 +41,5 @@ blocks:
         std: RiskyStd
       dynamics:
         stigma: !Control
-          info: a
+          iset: a
         R: Rfree + (risky_return - Rfree) * stigma

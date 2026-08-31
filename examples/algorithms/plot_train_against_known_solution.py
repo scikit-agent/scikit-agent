@@ -106,9 +106,7 @@ u2_calibration = get_benchmark_calibration("U-2")
 analytical_policy = get_analytical_policy("U-2")
 
 rng = np.random.default_rng(SEED)
-u2_block.construct_shocks(u2_calibration, rng=rng)
-
-bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration)
+bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration, rng=rng)
 
 # %%
 # Step 2: Build the shared-backbone policy/value network
