@@ -87,6 +87,34 @@ class TestSolve:
         message = str(excinfo.value)
         assert "a1" in message and "a2" in message
 
+    def test_prisoners_dilemma_defection_is_dominant(self):
+        """Each player defects whether the other cooperates or defects."""
+        game = solver(
+            macid.prisoners_dilemma_block,
+            actions=np.array([0.0, 0.5, 1.0]),
+        )
+        for opponent_action in [0.0, 1.0]:
+            profile = {
+                "D1": get_action_rule(opponent_action),
+                "D2": get_action_rule(opponent_action),
+            }
+            for decision in ["D1", "D2"]:
+                response = game.best_response(decision, profile)
+                assert np.all(response.actions == 1.0)
+
+    @pytest.mark.parametrize(
+        "block",
+        [
+            macid.prisoners_dilemma_block,
+            macid.iterated_prisoners_dilemma_block,
+        ],
+        ids=["one-shot", "iterated"],
+    )
+    def test_prisoners_dilemma_cyclic_component_is_refused(self, block):
+        """Neither game admits the one-at-a-time order this solver requires."""
+        with pytest.raises(NotImplementedError, match="solved jointly"):
+            solver(block).solve()
+
 
 class TestRelevanceOrder:
     """The solved rules honour what the relevance graph claims."""

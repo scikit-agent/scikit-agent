@@ -10,6 +10,9 @@ and this project adheres to
 
 ### Added
 
+- Continuous one-shot and iterated Prisoner's Dilemma blocks, including
+  per-player utilities, memory-one repeated-game state, strategic-relevance
+  coverage, solver-boundary tests, and multi-period simulation tests.
 - `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
   density each backend already provides.
 - `skagent.relevance` gains the four single-decision incentive criteria of

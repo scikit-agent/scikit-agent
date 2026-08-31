@@ -210,3 +210,168 @@ class test_tree_killer(unittest.TestCase):
         worthwhile to Alice depends on how Bob plays."""
         self.assertGreater(self.alice_payoff(1.0, 0.0), self.alice_payoff(0.0, 0.0))
         self.assertLess(self.alice_payoff(1.0, 1.0), self.alice_payoff(0.0, 1.0))
+
+
+class test_prisoners_dilemma(unittest.TestCase):
+    def payoff(self, d1, d2):
+        vals = macid.prisoners_dilemma_block.transition(
+            {},
+            {"D1": lambda: d1, "D2": lambda: d2},
+        )
+        return vals["U1"], vals["U2"]
+
+    def test_agent_attributions(self):
+        """Each control and utility belongs to the corresponding player."""
+        self.assertEqual(
+            macid.prisoners_dilemma_block.get_attributions(),
+            {
+                "player_1": ["D1", "U1"],
+                "player_2": ["D2", "U2"],
+            },
+        )
+
+    def test_standard_payoff_matrix(self):
+        """The continuous formulation agrees with PD at its four corners."""
+        expected = {
+            (0.0, 0.0): (3.0, 3.0),
+            (0.0, 1.0): (0.0, 5.0),
+            (1.0, 0.0): (5.0, 0.0),
+            (1.0, 1.0): (1.0, 1.0),
+        }
+        for actions, payoffs in expected.items():
+            with self.subTest(actions=actions):
+                self.assertEqual(self.payoff(*actions), payoffs)
+
+    def test_player_swap_parity(self):
+        """Swapping the players swaps their utilities, including in the interior."""
+        u1, u2 = self.payoff(0.25, 0.75)
+        swapped_u1, swapped_u2 = self.payoff(0.75, 0.25)
+        self.assertAlmostEqual(u1, swapped_u2)
+        self.assertAlmostEqual(u2, swapped_u1)
+
+
+class test_iterated_prisoners_dilemma(unittest.TestCase):
+    def test_multi_agent_structure(self):
+        """Both players observe the last round and own one control and utility."""
+        block = macid.iterated_prisoners_dilemma_block
+        self.assertEqual(
+            block.get_attributions(),
+            {
+                "player_1": ["D1", "U1"],
+                "player_2": ["D2", "U2"],
+            },
+        )
+        self.assertEqual(
+            block.get_dynamics()["D1"].iset,
+            ["previous_D1", "previous_D2"],
+        )
+        self.assertEqual(
+            block.get_dynamics()["D2"].iset,
+            ["previous_D1", "previous_D2"],
+        )
+
+    def test_previous_actions_are_arrival_state(self):
+        """A new round arrives with both actions from the preceding round."""
+        self.assertEqual(
+            macid.iterated_prisoners_dilemma_block.get_arrival_states(),
+            {"previous_D1", "previous_D2"},
+        )
+
+    def test_tit_for_tat_carries_actions_between_rounds(self):
+        """Each player can copy the other player's action from the last round."""
+        tit_for_tat = {
+            "D1": lambda previous_D1, previous_D2: previous_D2,
+            "D2": lambda previous_D1, previous_D2: previous_D1,
+        }
+        first = macid.iterated_prisoners_dilemma_block.transition(
+            {"previous_D1": 0.0, "previous_D2": 1.0},
+            tit_for_tat,
+        )
+        self.assertEqual(
+            (first["D1"], first["D2"], first["U1"], first["U2"]),
+            (1.0, 0.0, 5.0, 0.0),
+        )
+        self.assertEqual(
+            (first["previous_D1"], first["previous_D2"]),
+            (1.0, 0.0),
+        )
+
+        second = macid.iterated_prisoners_dilemma_block.transition(first, tit_for_tat)
+        self.assertEqual(
+            (second["D1"], second["D2"], second["U1"], second["U2"]),
+            (0.0, 1.0, 0.0, 5.0),
+        )
+        self.assertEqual(
+            (second["previous_D1"], second["previous_D2"]),
+            (0.0, 1.0),
+        )
+
+    def test_payoffs_match_one_shot_model(self):
+        """Repeating the game changes its state, not its per-round payoffs."""
+        for d1, d2 in [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]:
+            one_shot = macid.prisoners_dilemma_block.transition(
+                {},
+                {"D1": lambda d1=d1: d1, "D2": lambda d2=d2: d2},
+            )
+            repeated = macid.iterated_prisoners_dilemma_block.transition(
+                {"previous_D1": 0.0, "previous_D2": 0.0},
+                {
+                    "D1": lambda previous_D1, previous_D2, d1=d1: d1,
+                    "D2": lambda previous_D1, previous_D2, d2=d2: d2,
+                },
+            )
+            with self.subTest(actions=(d1, d2)):
+                self.assertEqual(
+                    (repeated["U1"], repeated["U2"]),
+                    (one_shot["U1"], one_shot["U2"]),
+                )
+
+    def test_tit_for_tat_runs_in_simulator(self):
+        """The simulator carries the updated actions through multiple rounds."""
+        sim = Simulator(
+            {},
+            macid.iterated_prisoners_dilemma_block,
+            {
+                "D1": lambda previous_D1, previous_D2: previous_D2,
+                "D2": lambda previous_D1, previous_D2: previous_D1,
+            },
+            {"previous_D1": 0.0, "previous_D2": 1.0},
+            agent_count=2,
+            T_sim=4,
+        )
+        sim.initialize_sim()
+        history = sim.simulate()
+
+        np.testing.assert_array_equal(
+            history["D1"], [[1.0, 1.0], [0.0, 0.0], [1.0, 1.0], [0.0, 0.0]]
+        )
+        np.testing.assert_array_equal(
+            history["D2"], [[0.0, 0.0], [1.0, 1.0], [0.0, 0.0], [1.0, 1.0]]
+        )
+        np.testing.assert_array_equal(
+            history["U1"], [[5.0, 5.0], [0.0, 0.0], [5.0, 5.0], [0.0, 0.0]]
+        )
+        np.testing.assert_array_equal(
+            history["U2"], [[0.0, 0.0], [5.0, 5.0], [0.0, 0.0], [5.0, 5.0]]
+        )
+
+    def test_tit_for_tat_sustains_mutual_cooperation(self):
+        """Two cooperative Tit-for-Tat players keep cooperating each round."""
+        sim = Simulator(
+            {},
+            macid.iterated_prisoners_dilemma_block,
+            {
+                "D1": lambda previous_D1, previous_D2: previous_D2,
+                "D2": lambda previous_D1, previous_D2: previous_D1,
+            },
+            {"previous_D1": 0.0, "previous_D2": 0.0},
+            agent_count=2,
+            T_sim=4,
+        )
+        sim.initialize_sim()
+        history = sim.simulate()
+
+        np.testing.assert_array_equal(history["D1"], np.zeros((4, 2)))
+        np.testing.assert_array_equal(history["D2"], np.zeros((4, 2)))
+        np.testing.assert_array_equal(history["U1"], np.full((4, 2), 3.0))
+        np.testing.assert_array_equal(history["U2"], np.full((4, 2), 3.0))
