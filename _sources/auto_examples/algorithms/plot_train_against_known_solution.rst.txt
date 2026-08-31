@@ -132,7 +132,7 @@ Step 1: Load the U-2 benchmark and build a BellmanPeriod
 ``get_benchmark_model`` returns the model block; ``get_analytical_policy``
 returns the closed-form solution we will validate against.
 
-.. GENERATED FROM PYTHON SOURCE LINES 103-113
+.. GENERATED FROM PYTHON SOURCE LINES 103-111
 
 .. code-block:: Python
 
@@ -142,9 +142,7 @@ returns the closed-form solution we will validate against.
     analytical_policy = get_analytical_policy("U-2")
 
     rng = np.random.default_rng(SEED)
-    u2_block.construct_shocks(u2_calibration, rng=rng)
-
-    bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration)
+    bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration, rng=rng)
 
 
 
@@ -153,7 +151,7 @@ returns the closed-form solution we will validate against.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 114-120
+.. GENERATED FROM PYTHON SOURCE LINES 112-118
 
 Step 2: Build the shared-backbone policy/value network
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -162,7 +160,7 @@ A single :class:`~skagent.ann.BlockPolicyValueNet` carries both a (bounded)
 policy head and an unconstrained value head on top of one shared hidden
 stack. One optimizer updates all of its weights together.
 
-.. GENERATED FROM PYTHON SOURCE LINES 120-124
+.. GENERATED FROM PYTHON SOURCE LINES 118-122
 
 .. code-block:: Python
 
@@ -177,7 +175,7 @@ stack. One optimizer updates all of its weights together.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 125-132
+.. GENERATED FROM PYTHON SOURCE LINES 123-130
 
 Step 3: Define the Bellman-equation loss
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -187,7 +185,7 @@ Step 3: Define the Bellman-equation loss
 head. ``foc_weight=1.0`` adds the first-order-condition term (Maliar et al.
 2021, eq. 14), which speeds convergence.
 
-.. GENERATED FROM PYTHON SOURCE LINES 132-140
+.. GENERATED FROM PYTHON SOURCE LINES 130-138
 
 .. code-block:: Python
 
@@ -206,7 +204,7 @@ head. ``foc_weight=1.0`` adds the first-order-condition term (Maliar et al.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 141-158
+.. GENERATED FROM PYTHON SOURCE LINES 139-156
 
 Step 4: Train on re-sampled states, snapshotting at increasing depths
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -226,7 +224,7 @@ as training proceeds rather than only its final fit. The depths are
 checkpoints of one continuous run (the optimizer is threaded through), so
 snapshotting only observes training, it does not perturb it.
 
-.. GENERATED FROM PYTHON SOURCE LINES 158-203
+.. GENERATED FROM PYTHON SOURCE LINES 156-201
 
 .. code-block:: Python
 
@@ -288,7 +286,7 @@ snapshotting only observes training, it does not perturb it.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 204-212
+.. GENERATED FROM PYTHON SOURCE LINES 202-210
 
 Step 5: Compare the deepest-trained policy to the analytical solution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -299,7 +297,7 @@ level, the mean relative error falls to about one percent (here 0.98%), an
 order of magnitude tighter than the several-percent floor of Euler-only
 training on this unconstrained model.
 
-.. GENERATED FROM PYTHON SOURCE LINES 212-225
+.. GENERATED FROM PYTHON SOURCE LINES 210-223
 
 .. code-block:: Python
 
@@ -330,7 +328,7 @@ training on this unconstrained model.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 226-235
+.. GENERATED FROM PYTHON SOURCE LINES 224-233
 
 Step 6: Plot the policy converging onto the analytical solution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -342,7 +340,7 @@ training deepens the curves march onto the closed-form linear PIH rule, making
 it visible that the error keeps shrinking with training rather than stalling.
 The lower panel shows the pointwise relative error at the deepest snapshot.
 
-.. GENERATED FROM PYTHON SOURCE LINES 235-264
+.. GENERATED FROM PYTHON SOURCE LINES 233-262
 
 .. code-block:: Python
 
@@ -390,7 +388,7 @@ The lower panel shows the pointwise relative error at the deepest snapshot.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 19.561 seconds)
+   **Total running time of the script:** (0 minutes 16.750 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_train_against_known_solution.py:

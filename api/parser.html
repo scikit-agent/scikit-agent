@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Model Analysis and Visualization" href="analysis.html"><link rel="prev" title="Simulation" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Parsing - scikit-agent 0.1.1.dev35+gb8e5736c2</title>
+        <title>Parsing - scikit-agent 0.1.1.dev40+g8bc2dbd95</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev35+gb8e5736c2</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev40+g8bc2dbd95</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -293,10 +293,20 @@
 <h1>Parsing<a class="headerlink" href="#parsing" title="Link to this heading">¶</a></h1>
 <p>The parser module provides tools for converting mathematical expressions to
 callable functions.</p>
-<dl class="py class" id="module-skagent.parser">
-<dt class="sig sig-object py" id="skagent.parser.ControlToken">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">ControlToken</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.parser.ControlToken" title="Link to this definition">¶</a></dt>
-<dd><p>Represents a parsed Control variable.</p>
+<dl class="py function" id="module-skagent.parser">
+<dt class="sig sig-object py" id="skagent.parser.bound_from_text">
+<span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">bound_from_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bound</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.parser.bound_from_text" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a control bound declared in a document as something
+<code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.block.normalize_bound()</span></code> accepts.</p>
+<p>A document cannot hold a callable, so a bound given as an expression is
+compiled into one whose parameter names are the expression’s free
+variables. Other declarations are passed through unchanged.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.parser.control_constructor">
+<span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">control_constructor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.parser.control_constructor" title="Link to this definition">¶</a></dt>
+<dd><p>A PyYAML constructor building a <a class="reference internal" href="blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.block.Control</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -320,16 +330,25 @@ such as random variables and model tags.</p>
 <dd><p>Returns a function represented by the given mathematical text.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">skagent_loader</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>A PyYAML loader that supports tags for scikit-agent,
+such as random variables and model tags.</p>
+</dd></dl>
+
+<p><code class="docutils literal notranslate"><span class="pre">!Control</span></code> is built by a constructor rather than represented by a token class,
+so a parsed control is a <code class="docutils literal notranslate"><span class="pre">skagent.block.Control</span></code> and every consumer of a
+Python-authored block reads it unchanged.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">control_constructor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>A PyYAML constructor building a <a class="reference internal" href="blocks.html#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.block.Control</span></code></a>.</p>
+</dd></dl>
+
 </section>
 <section id="parser-classes">
 <h2>Parser Classes<a class="headerlink" href="#parser-classes" title="Link to this heading">¶</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">ControlToken</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Represents a parsed Control variable.</p>
-</dd></dl>
-
 <dl class="py class">
 <dt class="sig sig-object py">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">Expression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span></dt>
@@ -527,7 +546,8 @@ gamma <em>function</em>, so <code class="docutils literal notranslate"><span cla
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Parsing</a><ul>
-<li><a class="reference internal" href="#skagent.parser.ControlToken"><code class="docutils literal notranslate"><span class="pre">ControlToken</span></code></a></li>
+<li><a class="reference internal" href="#skagent.parser.bound_from_text"><code class="docutils literal notranslate"><span class="pre">bound_from_text()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.parser.control_constructor"><code class="docutils literal notranslate"><span class="pre">control_constructor()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.parser.math_text_to_lambda"><code class="docutils literal notranslate"><span class="pre">math_text_to_lambda()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.parser.skagent_loader"><code class="docutils literal notranslate"><span class="pre">skagent_loader()</span></code></a></li>
 <li><a class="reference internal" href="#core-parser-functions">Core Parser Functions</a></li>
@@ -554,7 +574,7 @@ gamma <em>function</em>, so <code class="docutils literal notranslate"><span cla
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=8b64846c"></script>
+</div><script src="../_static/documentation_options.js?v=6a477838"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

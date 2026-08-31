@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**03:46.220** total execution time for 10 files **from all galleries**:
+**03:12.334** total execution time for 10 files **from all galleries**:
 
 .. container::
 
@@ -33,32 +33,32 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_sb3_ppo.py` (``../examples/algorithms/plot_sb3_ppo.py``)
-     - 02:18.794
+     - 01:56.494
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_maliar_training_loop.py` (``../examples/algorithms/plot_maliar_training_loop.py``)
-     - 00:44.655
+     - 00:37.136
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_train_against_known_solution.py` (``../examples/algorithms/plot_train_against_known_solution.py``)
-     - 00:19.561
+     - 00:16.750
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_direct_block_solve.py` (``../examples/algorithms/plot_direct_block_solve.py``)
-     - 00:12.440
+     - 00:12.039
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_tree_killer_relevance.py` (``../examples/models/plot_tree_killer_relevance.py``)
-     - 00:06.291
+     - 00:05.998
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``../examples/models/plot_consumption_portfolio_model.py``)
-     - 00:01.170
+     - 00:01.031
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``../examples/models/plot_benchmark_models.py``)
-     - 00:01.099
+     - 00:00.926
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_2_content_recommendation.py` (``../examples/models/plot_incentives_2_content_recommendation.py``)
-     - 00:00.906
+     - 00:00.807
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_1_grade_prediction.py` (``../examples/models/plot_incentives_1_grade_prediction.py``)
-     - 00:00.742
+     - 00:00.651
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``../examples/models/plot_resource_extraction.py``)
-     - 00:00.562
+     - 00:00.501
      - 0.0
