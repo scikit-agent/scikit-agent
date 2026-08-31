@@ -1,0 +1,150 @@
+
+
+.. _sphx_glr_auto_examples_models:
+
+Models
+--------
+
+Models written as scikit-agent blocks: decision problems, games, and the
+diagrams that state their structure. A block says who decides what, knowing
+what, and paid for what, which is a general enough description that the models
+here are drawn from economics, from game theory and from the AI-safety
+literature alike -- and the list is open.
+
+Some of these models are solved for a policy, with reinforcement learning or
+other computational methods. Others are read rather than solved: what a decision
+must account for, and what an agent has an incentive to observe or to move, are
+properties of a model's structure, and are answerable before any policy is
+computed.
+
+
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Content recommendation separates value of control from the instrumental control incentive. A recommender paid for clicks gains an incentive to change the user&#x27;s mind, and none at all to reach what they thought before arriving.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_incentives_2_content_recommendation_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_incentives_2_content_recommendation`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Incentives in Content Recommendation: Wanting Control Versus Having It</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_resource_extraction_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_resource_extraction`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Resource Extraction Model</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Blocks compose. This page builds two recursive problems from the same parts: consumption-saving with a tick block that carries assets forward, and that pair plus a portfolio block which endogenizes the return. Each is inspected, visualized and simulated.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_consumption_portfolio_model_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_consumption_portfolio_model`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Consumption-Saving-Portfolio Model</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Grade prediction separates value of information from the response incentive. A university that never collects an applicant&#x27;s race can still respond to race, and be unfair for doing so.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_incentives_1_grade_prediction_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_incentives_1_grade_prediction`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Incentives in Grade Prediction: Observing Versus Responding</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Some games decompose: their decisions break into smaller problems that can be solved in sequence, each taking as settled the ones before it. Others do not, and their decisions have to be faced together, as a single equilibrium problem.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_tree_killer_relevance_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_tree_killer_relevance`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Strategic Relevance: Solving the Tree Killer</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models: closed-form policies that retrace the theory in roughly the order the field discovered it, each teaching a fact the previous ones could not.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_benchmark_models_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_benchmark_models`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Benchmark Consumption Models</div>
+    </div>
+
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/models/plot_incentives_2_content_recommendation
+   /auto_examples/models/plot_resource_extraction
+   /auto_examples/models/plot_consumption_portfolio_model
+   /auto_examples/models/plot_incentives_1_grade_prediction
+   /auto_examples/models/plot_tree_killer_relevance
+   /auto_examples/models/plot_benchmark_models
+
