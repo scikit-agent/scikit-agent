@@ -11,6 +11,7 @@ every solver, simulator and environment in the library.
 
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -104,6 +105,31 @@ class GroundedBlock:
                 for distribution in self._shocks.values():
                     _set_rng_recursive(distribution, self.rng)
         return self._shocks
+
+    def with_rng(self, rng: np.random.Generator | None) -> GroundedBlock:
+        """A copy of this pair drawing from *rng* instead.
+
+        A new instance rather than a repointed one, so that a holder currently
+        drawing from this pair keeps its own path: the copy resolves its shocks
+        afresh on first access and therefore shares no distribution with the
+        original. The block, the calibration and anything a subclass adds are
+        carried over unchanged -- a generator is a different sample of one
+        model, not a different model.
+
+        Parameters
+        ----------
+        rng : numpy.random.Generator or None
+            Generator the copy's shocks draw from.
+
+        Returns
+        -------
+        GroundedBlock
+            Of the same type as *self*.
+        """
+        other = copy.copy(self)
+        other.rng = rng
+        other._shocks = None
+        return other
 
     def draw_shocks(self, n: int) -> dict[str, Any]:
         """Draw *n* realizations of each of this instance's shocks.

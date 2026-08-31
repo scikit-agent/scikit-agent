@@ -34,6 +34,11 @@ def instance_block():
     )
 
 
+def rng(seed):
+    """A generator, since the pair takes one rather than a seed."""
+    return np.random.default_rng(seed)
+
+
 def drawn_sigma(shocks, n=40_000):
     """The standard deviation of the log of ``theta``'s draws."""
     return float(np.std(np.log(shocks["theta"].draw(n))))
@@ -196,3 +201,58 @@ class TestTheCalibrationIsNarrowerThanAScope:
         resolved = construct_shocks(block.shocks, {"sigma_theta": 0.4, "vol": 0.1})
 
         assert drawn_sigma(resolved) == pytest.approx(0.1, abs=0.01)
+
+
+class TestRepointingTheGenerator:
+    """``with_rng`` gives a new pair rather than repointing this one.
+
+    A holder drawing from a pair must not have its path changed underneath it
+    by someone else asking for a different generator, so the operation returns
+    a copy. What changes is the sample; the block and the calibration -- the
+    model -- do not.
+    """
+
+    def test_the_original_keeps_its_own_path(self):
+        ground = GroundedBlock(recipe_block(), dict(RECIPE_CALIBRATION), rng=rng(0))
+        before = ground.draw_shocks(3)["theta"]
+
+        ground.with_rng(rng(999))
+
+        again = GroundedBlock(
+            recipe_block(), dict(RECIPE_CALIBRATION), rng=rng(0)
+        ).draw_shocks(3)["theta"]
+        assert np.array_equal(before, again)
+
+    def test_the_copy_draws_the_path_its_generator_asks_for(self):
+        ground = GroundedBlock(recipe_block(), dict(RECIPE_CALIBRATION), rng=rng(0))
+
+        copied = ground.with_rng(rng(4))
+        direct = GroundedBlock(recipe_block(), dict(RECIPE_CALIBRATION), rng=rng(4))
+
+        assert np.array_equal(
+            copied.draw_shocks(3)["theta"], direct.draw_shocks(3)["theta"]
+        )
+
+    def test_the_two_share_no_distribution(self):
+        ground = GroundedBlock(recipe_block(), dict(RECIPE_CALIBRATION), rng=rng(0))
+        ground.shock_distributions()
+
+        copied = ground.with_rng(rng(1))
+
+        assert (
+            copied.shock_distributions()["theta"]
+            is not (ground.shock_distributions()["theta"])
+        )
+
+    def test_a_period_is_copied_as_a_period(self):
+        period = BellmanPeriod(
+            recipe_block(), "beta", dict(RECIPE_CALIBRATION), rng=rng(0)
+        )
+
+        copied = period.with_rng(rng(1))
+
+        # Whatever a subclass adds is carried over, so the copy is usable as
+        # the thing it was copied from.
+        assert isinstance(copied, BellmanPeriod)
+        assert copied.discount_variable == period.discount_variable
+        assert copied.arrival_states == period.arrival_states

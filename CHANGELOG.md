@@ -32,6 +32,9 @@ and this project adheres to
   declarations -- seeded whether a shock is declared as a `(class, arguments)`
   pair or as a distribution instance. `BellmanPeriod` is one, plus a discount
   factor, arrival states and decision rules.
+- `GroundedBlock.with_rng`, which returns a copy of the pair drawing from a new
+  generator. `Simulator` uses it to restart its sample path; the original keeps
+  its own, since the two share no distribution.
 - `BellmanPeriod.select_arrival_states`, which names the projection from an ex
   post result to the next-period arrival states.
 - `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
