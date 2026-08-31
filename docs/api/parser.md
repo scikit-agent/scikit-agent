@@ -15,15 +15,21 @@ callable functions.
    :no-index:
 ```
 
-## Parser Classes
-
 ```{eval-rst}
-.. autoclass:: skagent.parser.ControlToken
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autofunction:: skagent.parser.skagent_loader
    :no-index:
 ```
+
+`!Control` is built by a constructor rather than represented by a token class,
+so a parsed control is a `skagent.block.Control` and every consumer of a
+Python-authored block reads it unchanged.
+
+```{eval-rst}
+.. autofunction:: skagent.parser.control_constructor
+   :no-index:
+```
+
+## Parser Classes
 
 ```{eval-rst}
 .. autoclass:: skagent.parser.Expression

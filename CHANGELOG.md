@@ -47,6 +47,8 @@ and this project adheres to
 
 ### Changed
 
+- A control in a document declares its information set as `iset`, the name the
+  Python constructor uses, rather than `info`.
 - `Simulator.agent_count` is now `sample_count`, and
   `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
   was a population: `sample_count` counts independent trajectories, and
@@ -80,6 +82,10 @@ and this project adheres to
 
 ### Fixed
 
+- `!Control` produced a token that discarded its arguments, so a YAML-loaded
+  block had no controls and the agent's name was parsed as an expression and
+  reported as an arrival state. The tag now builds a `Control`, whose bounds may
+  be declared as expressions, and refuses a malformed declaration.
 - Draws did not couple: `Bernoulli` at p 0.5 against 0.5001 under one seed
   changed 100% of its draws, so a finite difference through a discrete shock
   measured the reshuffled sample path rather than the parameter. Distributions
