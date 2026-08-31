@@ -52,7 +52,7 @@ simulator = ska.MonteCarloSimulator(
     block=consumption_block,
     dr=dr,
     initial={"k": 1.0, "p": 1.0},
-    agent_count=1000,
+    sample_count=1000,
     T_sim=50,
 )
 
@@ -81,7 +81,7 @@ simulator = ska.MonteCarloSimulator(
     # distribution's mean and standard deviation in levels; newborns draw
     # their starting capital from it.
     initial={"k": Lognormal(1.0, 0.5), "p": 1.0, "age": 0},
-    agent_count=1000,
+    sample_count=1000,
     T_sim=50,
 )
 

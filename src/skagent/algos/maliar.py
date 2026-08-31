@@ -5,11 +5,8 @@ This method relies on a simpler problem representation than that elaborated
 by the skagent Block system.
 
 .. note::
-   ``generate_givens_from_states`` currently accesses ``bellman_period.block``
-   directly rather than working through the BellmanPeriod interface. A future
-   refactoring could route shock generation through BellmanPeriod itself.
-   Similarly, shock draws are currently Monte Carlo only; structured draws
-   (e.g. exact discretizations) could be supported via BellmanPeriod.
+   Shock draws here are Monte Carlo only; structured draws (e.g. exact
+   discretizations) could be supported via BellmanPeriod.
 
 """
 
@@ -22,17 +19,15 @@ from typing import TYPE_CHECKING, Callable, Optional
 import torch
 
 import skagent.ann as ann
-import skagent.block as block
 import skagent.utils as utils
 from skagent.grid import Grid
-from skagent.simulation.monte_carlo import draw_shocks
 
 if TYPE_CHECKING:
     from skagent.bellman import BellmanPeriod
 
 
 def generate_givens_from_states(
-    states: Grid, model_block: block.Block, shock_copies: int
+    states: Grid, bellman_period: BellmanPeriod, shock_copies: int
 ) -> Grid:
     """
     Generate omega_i values of the MMW JME '21 method.
@@ -41,8 +36,9 @@ def generate_givens_from_states(
     ----------
     states : Grid
         A grid of starting state values (exogenous and endogenous).
-    model_block : block.Block
-        Block information (used to get the shock names).
+    bellman_period : BellmanPeriod
+        The period whose shocks are drawn. It resolves them against its own
+        calibration, so the draws follow its generator.
     shock_copies : int
         Number of copies of the shocks to be included. Must be >= 1.
 
@@ -55,7 +51,7 @@ def generate_givens_from_states(
     new_shock_values = {}
 
     for i in range(shock_copies):
-        shock_values = draw_shocks(model_block.shocks, n=n)
+        shock_values = bellman_period.draw_shocks(n)
         new_shock_values.update(
             {f"{sym}_{i}": shock_values[sym] for sym in shock_values}
         )
@@ -114,7 +110,7 @@ def simulate_forward(
         return states_t
 
     for t in range(big_t):
-        shocks_t = draw_shocks(bellman_period.block.shocks, n=n)
+        shocks_t = bellman_period.draw_shocks(n)
 
         # Reconcile shock dimensions with state dimensions (see Grid.from_dict())
         states_template = states_t[next(iter(states_t.keys()))]
@@ -375,7 +371,7 @@ def maliar_training_loop(
     for iteration in range(max_iterations):
         prev_params = utils.extract_parameters(bpn)
 
-        givens = generate_givens_from_states(states, bellman_period.block, shock_copies)
+        givens = generate_givens_from_states(states, bellman_period, shock_copies)
 
         bpn, current_loss, optimizer = ann.train_block_nn(
             bpn,

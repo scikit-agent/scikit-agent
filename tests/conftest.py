@@ -3,9 +3,34 @@ from contextlib import contextmanager
 import pytest
 
 from skagent.bellman import BellmanPeriod
-from skagent.distributions import Normal, Uniform
+from skagent.distributions import MeanOneLogNormal, Normal, Uniform
 import skagent.grid as grid
 from skagent.block import Control, DBlock
+
+
+def recipe_block():
+    """A fresh block whose shock is declared as a ``(class, arguments)`` recipe.
+
+    The recipe's ``sigma`` is a string, so it resolves only against a
+    calibration -- which is what makes one block usable at many of them. Fresh
+    per call, since the thing under test is whether a caller alters it.
+    """
+    return DBlock(
+        **{
+            "name": "recipe",
+            "shocks": {"theta": (MeanOneLogNormal, {"sigma": "sigma_theta"})},
+            "dynamics": {
+                "m": lambda a, theta: a + theta,
+                "c": Control(["m"], agent="consumer"),
+                "a": lambda m, c: m - c,
+                "u": lambda c: c,
+            },
+            "reward": {"u": "consumer"},
+        }
+    )
+
+
+RECIPE_CALIBRATION = {"sigma_theta": 0.1, "beta": 0.9}
 
 
 @contextmanager

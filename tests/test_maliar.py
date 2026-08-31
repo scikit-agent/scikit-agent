@@ -18,7 +18,6 @@ from skagent.models.benchmarks import (
     get_reference_policy,
     crra_utility,
 )
-from skagent.simulation.monte_carlo import draw_shocks
 from skagent.utils import reconcile, fischer_burmeister
 from test_benchmarks import assert_consumption_policy_diagnostics
 
@@ -87,11 +86,11 @@ class TestGridManipulations(unittest.TestCase):
         pass
 
     def test_givens_case_1(self):
-        # TODO: we're going to need to build the blocks in the test, because of this mutation,
-        #       or else make this return a copy.
-        block = case_1["block"]
-        block.construct_shocks(
-            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
+        bp = bellman.BellmanPeriod(
+            case_1["block"],
+            "beta",
+            case_1["calibration"],
+            rng=np.random.default_rng(TEST_SEED),
         )
 
         state_grid = grid.Grid.from_config(
@@ -100,14 +99,16 @@ class TestGridManipulations(unittest.TestCase):
             }
         )
 
-        full_grid = maliar.generate_givens_from_states(state_grid, block, 1)
+        full_grid = maliar.generate_givens_from_states(state_grid, bp, 1)
 
         self.assertEqual(full_grid["theta_0"].shape.numel(), 7)
 
     def test_givens_case_3(self):
-        block = case_3["block"]
-        block.construct_shocks(
-            case_1["calibration"], rng=np.random.default_rng(TEST_SEED)
+        bp = bellman.BellmanPeriod(
+            case_3["block"],
+            "beta",
+            case_1["calibration"],
+            rng=np.random.default_rng(TEST_SEED),
         )
 
         state_grid = grid.Grid.from_config(
@@ -116,7 +117,7 @@ class TestGridManipulations(unittest.TestCase):
             }
         )
 
-        full_grid = maliar.generate_givens_from_states(state_grid, block, 2)
+        full_grid = maliar.generate_givens_from_states(state_grid, bp, 2)
 
         self.assertEqual(len(full_grid["psi_0"]), 7)
 
@@ -133,10 +134,6 @@ class TestMaliarTrainingLoop(unittest.TestCase):
 
     def test_maliar_state_convergence(self):
         big_t = 2
-
-        # Use deterministic RNG for shock construction
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
 
         states_0_n = grid.Grid.from_config(
             {
@@ -197,7 +194,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
         )
 
         # Construct shocks
-        self.block.construct_shocks({})
 
         # Parameters
         self.parameters = {"beta": 0.95}
@@ -257,14 +253,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
 
     def test_bellman_loss_function_error_handling(self):
         """Test error handling in Bellman loss functions."""
-        # Test with block that has no controls
-        no_control_block = model.DBlock(
-            name="no_control",
-            shocks={"income": Normal(mu=1.0, sigma=0.1)},
-            dynamics={"wealth": lambda wealth, income: wealth + income},
-            reward={},
-        )
-        no_control_block.construct_shocks({})
 
         # Create a dummy value network for error testing
         def dummy_value_function(wealth):
@@ -280,7 +268,6 @@ class TestBellmanLossFunctions(unittest.TestCase):
             },
             reward={},
         )
-        no_reward_block.construct_shocks({})
 
         nrbp = bellman.BellmanPeriod(no_reward_block, "beta", {"beta": 0.95})
 
@@ -414,7 +401,6 @@ def test_get_euler_residual_loss():
     d2_policy = get_analytical_policy("D-2")
 
     # Construct shocks for the block (D-2 is deterministic, so this is a no-op)
-    d2_block.construct_shocks(d2_calibration)
 
     # Create BellmanPeriod
     test_bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
@@ -476,7 +462,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         d2_policy = get_analytical_policy("D-2")
 
         # Construct shocks for the block (needed even though D-2 is deterministic)
-        d2_block.construct_shocks(d2_calibration)
 
         # Create BellmanPeriod
         bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
@@ -528,7 +513,6 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         d2_calibration = get_benchmark_calibration("D-2")
 
         # Construct shocks for the block
-        d2_block.construct_shocks(d2_calibration)
 
         # Create BellmanPeriod
         bp = bellman.BellmanPeriod(d2_block, "DiscFac", d2_calibration)
@@ -623,10 +607,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         # Construct shocks for the block
         rng = np.random.default_rng(TEST_SEED)
-        u2_block.construct_shocks(u2_calibration, rng=rng)
 
         # Create BellmanPeriod
-        bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration)
+        bp = bellman.BellmanPeriod(u2_block, "DiscFac", u2_calibration, rng=rng)
 
         # Create shared-backbone policy+value network
         torch.manual_seed(TEST_SEED)
@@ -717,10 +700,9 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
 
         # Construct shocks for the block
         rng = np.random.default_rng(TEST_SEED)
-        u3_block.construct_shocks(u3_calibration, rng=rng)
 
         # Create BellmanPeriod
-        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
+        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration, rng=rng)
 
         # Create initial states grid (normalized assets)
         # Use wider range to test both constrained and unconstrained regions
@@ -945,9 +927,9 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         torch.manual_seed(TEST_SEED)
         u3_block = get_benchmark_model("U-3")
         u3_calibration = get_benchmark_calibration("U-3")
-        u3_block.construct_shocks(u3_calibration, rng=np.random.default_rng(TEST_SEED))
-
-        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
+        bp = bellman.BellmanPeriod(
+            u3_block, "DiscFac", u3_calibration, rng=np.random.default_rng(TEST_SEED)
+        )
 
         # Create loss functions with both settings
         loss_unconstrained = loss.EulerEquationLoss(
@@ -1049,9 +1031,8 @@ class TestU3OneSidedConstraintTraining(unittest.TestCase):
 
         # Construct shocks for the block
         rng = np.random.default_rng(TEST_SEED)
-        u3_block.construct_shocks(u3_calibration, rng=rng)
 
-        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration)
+        bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration, rng=rng)
 
         # Create initial states grid focused on LOW wealth (constrained region)
         states_0_n = grid.Grid.from_config(
@@ -1156,9 +1137,7 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
         d4_calibration = get_benchmark_calibration("D-4")
         d4_reference = get_reference_policy("D-4")
 
-        # D-4 is deterministic; construct_shocks is a no-op but keeps the
-        # block-construction contract uniform with the stochastic models.
-        d4_block.construct_shocks(d4_calibration)
+        # D-4 is deterministic, so the period has no shocks to resolve.
         bp = bellman.BellmanPeriod(d4_block, "DiscFac", d4_calibration)
 
         # Policy-only network (Euler method, no value head).
@@ -1261,7 +1240,6 @@ class TestBilateralFischerBurmeister(unittest.TestCase):
         # Lower bound only: c >= 0.5 m. The policy is pinned to the bound, so the
         # lower bound binds (slack c - 0.5 m = 0) at every state.
         block = self._det_crra_block(lower_bound=lambda m: 0.5 * m)
-        block.construct_shocks(cal)
         bp = bellman.BellmanPeriod(block, "DiscFac", cal)
 
         def df_at_lower_bound(states_t, shocks_t, parameters):
@@ -1373,8 +1351,9 @@ class TestEulerLossAllInOneOperator(unittest.TestCase):
         cal = dict(get_benchmark_calibration("U-3"))
         cal["sigma_theta"] = 0.3
         block = get_benchmark_model("U-3")
-        block.construct_shocks(cal, rng=np.random.default_rng(TEST_SEED))
-        bp = bellman.BellmanPeriod(block, "DiscFac", cal)
+        bp = bellman.BellmanPeriod(
+            block, "DiscFac", cal, rng=np.random.default_rng(TEST_SEED)
+        )
         return bp, block, cal
 
     @staticmethod
@@ -1435,7 +1414,7 @@ class TestEulerLossAllInOneOperator(unittest.TestCase):
         aio_total = 0.0
         biased_total = 0.0
         for _ in range(n_draws):
-            drawn = draw_shocks(block.shocks, n=n)
+            drawn = bp.draw_shocks(n)
             shocks = {
                 "psi_0": ones,
                 "theta_0": ones,
@@ -1523,9 +1502,12 @@ class TestSimulateForwardValidation(unittest.TestCase):
     """Test input validation in simulate_forward."""
 
     def setUp(self):
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-        self.bp = case_4["bp"]
+        self.bp = bellman.BellmanPeriod(
+            case_4["block"],
+            "beta",
+            case_4["calibration"],
+            rng=np.random.default_rng(TEST_SEED),
+        )
         self.policy = lambda s, sh, p: {
             "c": s.get("m", s.get("a", next(iter(s.values())))) * 0.5
         }
@@ -1555,9 +1537,12 @@ class TestSimulateForwardHappyPath(unittest.TestCase):
     """Test simulate_forward simulation loop for big_t >= 1."""
 
     def setUp(self):
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-        self.bp = case_4["bp"]
+        self.bp = bellman.BellmanPeriod(
+            case_4["block"],
+            "beta",
+            case_4["calibration"],
+            rng=np.random.default_rng(TEST_SEED),
+        )
         # case_4 Control(["g", "m"]): policy returns c given g, m
         self.policy = lambda s, sh, p: {"c": s["m"] * 0.5 + s["g"] * 0.0}
         self.states = {
@@ -1586,10 +1571,12 @@ class TestMaliarTrainingLoopValidation(unittest.TestCase):
         torch.manual_seed(TEST_SEED)
         np.random.seed(TEST_SEED)
 
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        self.bp = case_4["bp"]
+        self.bp = bellman.BellmanPeriod(
+            case_4["block"],
+            "beta",
+            case_4["calibration"],
+            rng=np.random.default_rng(TEST_SEED),
+        )
         self.states = grid.Grid.from_config(
             {
                 "m": {"min": 0, "max": 5, "count": 3},
@@ -1763,10 +1750,12 @@ class TestMaliarHyperparameters(unittest.TestCase):
         torch.use_deterministic_algorithms(True, warn_only=True)
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
-        rng = np.random.default_rng(TEST_SEED)
-        case_4["block"].construct_shocks(case_4["calibration"], rng=rng)
-
-        self.bp = case_4["bp"]
+        self.bp = bellman.BellmanPeriod(
+            case_4["block"],
+            "beta",
+            case_4["calibration"],
+            rng=np.random.default_rng(TEST_SEED),
+        )
         self.states = grid.Grid.from_config(
             {
                 "m": {"min": 0, "max": 5, "count": 3},
@@ -2042,7 +2031,6 @@ class TestValidationTypeChecks(unittest.TestCase):
             dynamics={"c": model.Control(["a"]), "a": lambda a, c: a - c},
             reward={"a": "consumer"},
         )
-        block.construct_shocks({})
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
         states = grid.Grid.from_config({"a": {"min": 1.0, "max": 2.0, "count": 5}})
 

@@ -219,7 +219,7 @@ simulator = ska.MonteCarloSimulator(
     block=cons.cons_problem,
     dr=decision_rule,
     initial=initial_conditions,
-    agent_count=1000,
+    sample_count=1000,
     T_sim=100,
     seed=42,
 )
@@ -289,7 +289,7 @@ portfolio_sim = ska.MonteCarloSimulator(
     block=cons.cons_portfolio_problem,
     dr=portfolio_decision_rule,
     initial={"k": Normal(mu=1.0, sigma=0.1), "R": cons.calibration["Rfree"]},
-    agent_count=1000,
+    sample_count=1000,
     T_sim=100,
     seed=42,
 )

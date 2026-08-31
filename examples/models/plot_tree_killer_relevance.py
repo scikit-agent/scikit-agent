@@ -212,7 +212,9 @@ plt.tight_layout()
 #   every information cell is reached and every conditional expectation is
 #   defined.
 
-solver = TabularBestResponseSolver(block, samples=50_000, rng=np.random.default_rng(0))
+solver = TabularBestResponseSolver(
+    block, shock_samples=50_000, rng=np.random.default_rng(0)
+)
 policies = solver.solve()
 
 for decision, rule in policies.items():

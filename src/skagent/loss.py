@@ -16,7 +16,6 @@ from skagent.bellman import (
     estimate_euler_residual,
 )
 from skagent.grid import Grid
-from skagent.simulation.monte_carlo import draw_shocks
 from skagent.utils import fischer_burmeister, reconcile
 
 if TYPE_CHECKING:
@@ -613,7 +612,7 @@ class EulerEquationLoss(_EquationLossBase):
         n = template.shape[0]
         shocks_next_b = {
             sym: reconcile(template, val)
-            for sym, val in draw_shocks(self.bellman_period.block.shocks, n=n).items()
+            for sym, val in self.bellman_period.draw_shocks(n).items()
         }
         shocks_a = {f"{s}_0": shocks_t[s] for s in shocks_t}
         shocks_a.update({f"{s}_1": shocks_next_a[s] for s in shocks_next_a})

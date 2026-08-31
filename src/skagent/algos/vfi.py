@@ -154,18 +154,21 @@ def tensor_decision_rule(np_rule, dtype=None, device=None):
     return tdr
 
 
-Grid = Mapping[str, Sequence]
+#: One coordinate vector per variable, whose cartesian product is the lattice a
+#: value array is tabulated over. Unrelated to :class:`skagent.grid.Grid`, which
+#: is a batch of scattered points rather than a per-axis specification.
+AxisSpec = Mapping[str, Sequence]
 
 
 def grid_to_data_array(
-    grid: Grid = {},  ## TODO: Better data structure here.
+    grid: AxisSpec = {},  ## TODO: Better data structure here.
 ):
     """
     Construct a zero-valued ``DataArray`` over the coordinates of a grid.
 
     Parameters
     ----------
-    grid : Grid, optional
+    grid : AxisSpec, optional
         A mapping from variable labels to a sequence of numerical values. An
         empty mapping yields a zero-dimensional array.
 
@@ -184,7 +187,7 @@ def grid_to_data_array(
     return da
 
 
-def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={}):
+def solve(block: DBlock, continuation, state_grid: AxisSpec, disc_params={}, scope={}):
     """
     Solve a ``DBlock`` stage by value function iteration.
 
@@ -208,7 +211,7 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
         The continuation value function, called with the post-transition values
         of the variables named in its signature. Fold any discount factor into
         this function (the backup is ``reward + continuation``).
-    state_grid : Grid
+    state_grid : AxisSpec
         A grid over the control's information set: one axis per variable the
         decision may condition on. The returned decision rule takes these as
         positional arguments in ``control.iset`` order. Variables the dynamics
@@ -333,7 +336,9 @@ def solve(block: DBlock, continuation, state_grid: Grid, disc_params={}, scope={
     }
 
     dec_vf = block.get_decision_value_function(dr_from_data, continuation)
-    arr_vf = block.get_arrival_value_function(disc_params, dr_from_data, continuation)
+    arr_vf = block.get_arrival_value_function(
+        disc_params, dr_from_data, continuation, calibration=scope
+    )
 
     return dr_from_data, dec_vf, arr_vf
 
@@ -715,7 +720,7 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
 def bellman_step(
     bp: BellmanPeriod,
     continuation_vf: Callable,
-    state_grid: Grid,
+    state_grid: AxisSpec,
     *,
     agent: str | None = None,
     scope: Mapping = {},
@@ -770,13 +775,15 @@ def bellman_step(
         The continuation value function, called ``continuation_vf(states, shocks,
         parameters)`` on the next-period arrival states (the ``bp.compute_value``
         convention). Terminal continuation is ``lambda s, sh, p: 0.0``.
-    state_grid : Grid
+    state_grid : AxisSpec
         The shared backup grid over arrival states: one axis per variable. Axes
         for the shocks an information set accounts for are added automatically
         from their discretization nodes, so supplying one is optional and
         idempotent. This grid covers the variables the Bellman loop iterates over
         and is not necessarily equal to any individual control's information set
-        (a control's iset may be a strict subset). For an empty grid, pass ``{}``.
+        (a control's iset may be a strict subset). For an empty grid, pass ``{}``
+        — the empty mapping, not :class:`skagent.grid.Grid`, whose
+        ``from_config({})`` raises.
     agent : str, optional
         If given, the period reward sums only this agent's reward symbols.
     scope : Mapping, optional
@@ -1179,7 +1186,7 @@ def value_array_to_function(
 
 def solve_bellman(
     bp: BellmanPeriod,
-    state_grid: Grid,
+    state_grid: AxisSpec,
     *,
     continuation_vf: Callable | None = None,
     agent: str | None = None,
@@ -1208,6 +1215,20 @@ def solve_bellman(
     geometrically (modulus the discount factor) to the stationary solution; for a
     finite horizon of length ``T`` set ``max_iter=T``.
 
+    The stopping rule assumes an infinite horizon. A finite-horizon problem is
+    structurally indistinguishable from an infinite-horizon one, so a run that
+    reaches *max_iter* is reported as non-convergence in both cases: at a
+    caller-specified horizon that report is expected rather than a failure, and
+    the residual is a sup-norm change between iterates, not an error against the
+    ``T``-period answer.
+
+    A period with no arrival states is not a dynamic problem — nothing carries
+    between periods — and is refused. Such a block is solved statically, by
+    :class:`skagent.algos.best_response.TabularBestResponseSolver` or
+    :func:`skagent.solver.solve_multiple_controls`. Every arrival state must be
+    an axis of *state_grid*, since the continuation is rebuilt from the value
+    grid and cannot represent dependence on a variable the grid has no axis for.
+
     Shocks are discretized internally: *disc_params* is threaded into every
     backup (hidden shocks integrated inside the max) and into
     :func:`value_array_to_function` (observed-shock axes integrated into the
@@ -1217,7 +1238,7 @@ def solve_bellman(
     ----------
     bp : BellmanPeriod
         The recurring period providing the model mechanics.
-    state_grid : Grid
+    state_grid : AxisSpec
         A grid over the value function's domain (arrival states and/or observed
         shocks); see :func:`bellman_step`.
     continuation_vf : callable, optional
@@ -1240,8 +1261,10 @@ def solve_bellman(
         Modest multi-start seed candidate passed to :func:`bellman_step`.
     raise_on_nonconvergence : bool, optional
         If ``True``, raise :class:`RuntimeError` when the loop hits *max_iter*
-        without converging; otherwise emit a :class:`warnings.warn` and return the
-        last iterate (the scipy ``OptimizeResult.success`` convention, O5).
+        with the sup-norm change still above *tol*; otherwise emit a
+        :class:`warnings.warn` and return the last iterate (the scipy
+        ``OptimizeResult.success`` convention, O5). At a finite horizon set
+        through *max_iter* this condition is expected, so leave it ``False``.
     artificial_borrowing_constraint : bool, optional
         Forwarded to :func:`bellman_step`: confine next-period arrival states to
         the state grid (grid edge = slack artificial borrowing limit),
@@ -1259,11 +1282,24 @@ def solve_bellman(
 
     Raises
     ------
+    ValueError
+        If *max_iter* is less than 1, or if the period has no arrival states.
     RuntimeError
         If *raise_on_nonconvergence* is ``True`` and the loop does not converge.
     """
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
+
+    if not bp.arrival_states:
+        raise ValueError(
+            "solve_bellman iterates a dynamic program to a fixed point, and a "
+            "period with no arrival states is not dynamic: nothing carries "
+            "between periods, so there is no fixed point to seek. Solve the "
+            "block statically instead — TabularBestResponseSolver "
+            "(skagent.algos.best_response) for a tabular policy over finitely "
+            "many observations, or solve_multiple_controls (skagent.solver) for "
+            "a differentiable one."
+        )
 
     cont = continuation_vf if continuation_vf is not None else (lambda s, sh, p: 0.0)
     value_prev = None
@@ -1294,8 +1330,11 @@ def solve_bellman(
     value_array.attrs.update(n_iter=it + 1, converged=converged, residual=residual)
     if not converged:
         msg = (
-            f"solve_bellman did not converge in {it + 1} iters "
-            f"(residual={residual}); returning last iterate."
+            f"solve_bellman reached max_iter={it + 1} with a sup-norm change of "
+            f"{residual} between the last two iterates, above tol={tol}. On an "
+            f"infinite-horizon problem the iteration has not converged; if "
+            f"max_iter was set as a finite horizon, this is expected and the "
+            f"result is that horizon's solution. Returning the last iterate."
         )
         if raise_on_nonconvergence:
             raise RuntimeError(msg)

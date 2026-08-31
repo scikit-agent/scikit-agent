@@ -10,7 +10,7 @@ equilibrium problem and is not attempted here.
 
 Each decision is solved *per information cell*: for every value of what the
 decision-maker observes, the action maximizing their expected payoff conditional
-on that observation. Expectations are estimated by drawing *samples*
+on that observation. Expectations are estimated by drawing *shock_samples*
 realizations of the block's shocks once, at construction, and reusing the same
 draws for every candidate action (common random numbers), so that comparisons
 between actions carry far less error than their levels do. Conditioning is done
@@ -29,6 +29,7 @@ performs the same sweep with a policy network per control in place of a table.
 
 from collections import namedtuple
 import logging
+import warnings
 
 import numpy as np
 
@@ -137,10 +138,13 @@ class TabularBestResponseSolver:
         ``action_count`` points spanning ``[0, 1]``.
     action_count : int, optional
         Number of candidate actions when *actions* is not given.
-    samples : int, optional
-        Number of shock realizations drawn at construction. Grouping splits these
-        across a decision's information cells, so each cell's expectation rests
-        on the samples that reached it rather than on all of them.
+    shock_samples : int, optional
+        Number of shock realizations drawn at construction. This is the axis the
+        expectations are estimated over -- the integral over the block's
+        declared shocks that a decision's objective is defined by, taken by
+        Monte Carlo rather than by quadrature. Grouping splits these across a
+        decision's information cells, so each cell's expectation rests on the
+        samples that reached it rather than on all of them.
     rng : numpy.random.Generator, optional
         Generator for the shock draws.
     max_cells : int, optional
@@ -150,11 +154,12 @@ class TabularBestResponseSolver:
 
     Notes
     -----
-    Constructing the solver draws the block's shocks and mutates the block's
-    shock distributions, as :meth:`skagent.block.DBlock.construct_shocks` does.
+    Constructing the solver draws the block's shocks against *calibration*. The
+    block itself is left as its author wrote it, so one block may be solved at
+    several calibrations.
 
     Expectations are Monte Carlo estimates; a solved rule is exact only up to
-    sampling error, which falls as *samples* rises.
+    sampling error, which falls as *shock_samples* rises.
     """
 
     def __init__(
@@ -164,10 +169,20 @@ class TabularBestResponseSolver:
         *,
         actions=None,
         action_count=21,
-        samples=100_000,
+        shock_samples=100_000,
         rng=None,
         max_cells=1024,
+        samples=None,
     ):
+        if samples is not None:
+            warnings.warn(
+                "samples is deprecated; pass shock_samples, which says which "
+                "axis it counts: realizations of the block's shocks, not "
+                "independent trajectories.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            shock_samples = samples
         self.block = block
         self.calibration = {} if calibration is None else dict(calibration)
         self.actions = (
@@ -175,19 +190,22 @@ class TabularBestResponseSolver:
             if actions is None
             else np.asarray(actions, dtype=float)
         )
-        self.samples = samples
+        self.shock_samples = shock_samples
         self.max_cells = max_cells
         self.rng = np.random.default_rng() if rng is None else rng
 
         self.decisions = list(block.get_controls())
 
-        block.construct_shocks(self.calibration, rng=self.rng)
-        shocks = block.get_shocks()
+        shocks = block.construct_shocks(self.calibration, rng=self.rng)
         for distribution in shocks.values():
-            # Shocks declared as distribution instances rather than constructor
-            # tuples are not reached by construct_shocks' rng argument.
+            # Shocks the block declares as distribution instances rather than
+            # as (class, arguments) pairs are not reached by construct_shocks'
+            # rng argument. These are this solver's own copies, so seeding them
+            # leaves the block's own distributions alone.
             distribution.rng = self.rng
-        self.shocks = {sym: dist.draw(self.samples) for sym, dist in shocks.items()}
+        self.shocks = {
+            sym: dist.draw(self.shock_samples) for sym, dist in shocks.items()
+        }
 
     # -- inputs read off the block ------------------------------------------
 
@@ -245,9 +263,9 @@ class TabularBestResponseSolver:
             raise ValueError(
                 f"got {weights.size} weights for {self.actions.size} candidate actions"
             )
-        counts = np.maximum(1, np.round(self.samples * weights / weights.sum()))
+        counts = np.maximum(1, np.round(self.shock_samples * weights / weights.sum()))
         drawn = np.repeat(self.actions, counts.astype(int))
-        return get_action_rule(np.resize(drawn, self.samples))
+        return get_action_rule(np.resize(drawn, self.shock_samples))
 
     def initial_policies(self):
         """A mixed rule for every decision in the block."""
@@ -256,7 +274,7 @@ class TabularBestResponseSolver:
     # -- payoffs and best responses -----------------------------------------
 
     def _vector(self, value):
-        return np.broadcast_to(np.asarray(value, dtype=float), (self.samples,))
+        return np.broadcast_to(np.asarray(value, dtype=float), (self.shock_samples,))
 
     def payoff(self, vals, agent):
         """The sum of ``agent``'s utility nodes, per sample."""
@@ -298,7 +316,7 @@ class TabularBestResponseSolver:
                 axis=-1,
             )
         else:
-            observed = np.zeros((self.samples, 1))
+            observed = np.zeros((self.shock_samples, 1))
         cells, inverse = np.unique(observed, axis=0, return_inverse=True)
         inverse = inverse.reshape(-1)
         if len(cells) > self.max_cells:

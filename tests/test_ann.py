@@ -132,13 +132,16 @@ class test_ann_lr(unittest.TestCase):
         # actually gives no information, training isn't effective...
 
     def test_case_3(self):
-        # Construct shocks with deterministic RNG for reproducible test
-        case_3["block"].construct_shocks(
-            case_3["calibration"], rng=np.random.default_rng(TEST_SEED)
-        )  # this should mutate the block object referenced by the BP
+        # A period of its own, seeded, so the draws are reproducible.
+        bp = bellman.BellmanPeriod(
+            case_3["block"],
+            "beta",
+            case_3["calibration"],
+            rng=np.random.default_rng(TEST_SEED),
+        )
 
         edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_3["bp"],
+            bp,
             1,
             parameters=case_3["calibration"],
         )

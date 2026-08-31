@@ -219,8 +219,9 @@ print_incentive_table(grade_predictor_redesign_block, criteria=("VoI", "RI"))
 # Start with the response incentive, which is the second display above. Hold
 # every noise term fixed, vary race alone, and watch the prediction.
 
-block_observant, shocks = draw_shocks(grade_predictor_block)
-block_blind, _ = draw_shocks(grade_predictor_redesign_block)
+block_observant = grade_predictor_block
+block_blind = grade_predictor_redesign_block
+shocks = draw_shocks(block_observant)
 n = len(shocks["R"])
 
 race_grid = np.linspace(0.0, 1.0, 11)

@@ -10,6 +10,11 @@ and this project adheres to
 
 ### Added
 
+- Continuous one-shot and iterated Prisoner's Dilemma blocks, including
+  per-player utilities, memory-one repeated-game state, strategic-relevance
+  coverage, solver-boundary tests, and multi-period simulation tests.
+- `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
+  density each backend already provides.
 - `skagent.relevance` gains the four single-decision incentive criteria of
   Everitt et al. (AAAI-21): `admits_voi`, `admits_ri`, `admits_voc` and
   `admits_ici`, with the `is_requisite` test and `minimal_reduction` they rest
@@ -44,6 +49,18 @@ and this project adheres to
 
 - A control in a document declares its information set as `iset`, the name the
   Python constructor uses, rather than `info`.
+- `Simulator.agent_count` is now `sample_count`, and
+  `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
+  was a population: `sample_count` counts independent trajectories, and
+  `shock_samples` counts realizations of the block's shocks. The old names are
+  accepted for this release under a `DeprecationWarning`.
+- `solve_bellman` refuses a period with no arrival states, which is not a
+  dynamic problem and has no fixed point to seek; the error names the static
+  solvers. Its non-convergence warning no longer asserts a failure, since
+  reaching `max_iter` is the expected outcome at a finite horizon set that way.
+- `skagent.algos.vfi`'s local `Grid` alias is now `AxisSpec`, so it no longer
+  shares a name with the unrelated `skagent.grid.Grid`. It is the `state_grid`
+  parameter type of `solve`, `bellman_step` and `solve_bellman`.
 - Every gallery page now opens with a short, page-specific summary, so the
   gallery's hover text distinguishes the examples instead of repeating shared
   framing, and each page that draws a model diagram uses it as its thumbnail.
@@ -69,6 +86,11 @@ and this project adheres to
   block had no controls and the agent's name was parsed as an expression and
   reported as an arrival state. The tag now builds a `Control`, whose bounds may
   be declared as expressions, and refuses a malformed declaration.
+- Draws did not couple: `Bernoulli` at p 0.5 against 0.5001 under one seed
+  changed 100% of its draws, so a finite difference through a discrete shock
+  measured the reshuffled sample path rather than the parameter. Distributions
+  are now drawn by inverting them at uniforms from their own generator, which
+  also makes the torch backend honour that generator at all.
 - `extract_dependencies` had no branch for `Rule`, the type `DBlock` compiles
   string-valued dynamics into, so it returned no dependencies for them. Every
   structure derived from those edges -- the dependency graph,

@@ -35,15 +35,53 @@ class Distribution(ABC):
         self.backend = backend
         self.rng = rng if rng is not None else np.random.default_rng()
 
-    def draw(self, n: int = 1) -> np.ndarray:
-        """Draw n samples from the distribution"""
+    def icdf(self, u) -> np.ndarray:
+        """
+        Quantile function: the value below which a proportion u of the mass lies.
+
+        Parameters
+        ----------
+        u : array_like
+            Probabilities in [0, 1].
+        """
+        u = np.asarray(u, dtype=float)
         if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
+            return np.asarray(self._dist.ppf(u))
         if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
+            quantiles = self._dist.icdf(torch.as_tensor(u, dtype=torch.float32))
+            return quantiles.detach().cpu().numpy()
         msg = f"Unsupported backend: {self.backend}"
         raise ValueError(msg)
+
+    def log_prob(self, x) -> np.ndarray:
+        """
+        Log density (or log mass, for a discrete distribution) at x.
+
+        Parameters
+        ----------
+        x : array_like
+            Points in the support of the distribution.
+        """
+        x = np.asarray(x, dtype=float)
+        if self.backend == "scipy":
+            density = getattr(self._dist, "logpdf", None) or self._dist.logpmf
+            return np.asarray(density(x))
+        if self.backend == "torch":
+            values = self._dist.log_prob(torch.as_tensor(x, dtype=torch.float32))
+            return values.detach().cpu().numpy()
+        msg = f"Unsupported backend: {self.backend}"
+        raise ValueError(msg)
+
+    def draw(self, n: int = 1) -> np.ndarray:
+        """
+        Draw n samples from the distribution.
+
+        Samples are taken by inverting the distribution at uniform draws from
+        ``self.rng``, so that two distributions sharing a generator state and
+        differing slightly in their parameters produce samples that differ
+        slightly, rather than a different sample path.
+        """
+        return self.icdf(self.rng.random(n))
 
     @abstractmethod
     def discretize(self, **kwargs) -> DiscreteDistribution:
@@ -156,18 +194,12 @@ class Lognormal(Distribution):
                     torch.tensor(self.sigma, dtype=torch.float32),
                 )
 
-    def draw(self, n: int = 1) -> np.ndarray:
+    def icdf(self, u) -> np.ndarray:
         if self.is_degenerate:
-            # Return point mass at mean
-            return np.full(n, self.mean_param)
+            # Point mass at mean
+            return np.full(np.shape(u), self.mean_param)
 
-        if self.backend == "scipy":
-            return np.asarray(self._dist.rvs(size=n, random_state=self.rng))
-        if self.backend == "torch":
-            samples = self._dist.sample((n,))
-            return samples.detach().cpu().numpy()
-        msg = f"Unsupported backend: {self.backend}"
-        raise ValueError(msg)
+        return super().icdf(u)
 
     def discretize(
         self, n_points: int = 7, N: int | None = None, **kwargs
@@ -284,6 +316,20 @@ class Bernoulli(Distribution):
             self._dist = stats.bernoulli(p=p)
         elif self.backend == "torch":
             self._dist = torch_dist.Bernoulli(torch.tensor(p, dtype=torch.float32))
+
+    def icdf(self, u) -> np.ndarray:
+        """
+        Bernoulli's quantile function.
+
+        Neither backend supplies a usable one: ``torch.distributions.Bernoulli``
+        raises ``NotImplementedError``, and scipy's ``ppf`` maps u = 0, which
+        ``rng.random`` can return, to -1.
+        """
+        if self.backend not in ("scipy", "torch"):
+            msg = f"Unsupported backend: {self.backend}"
+            raise ValueError(msg)
+
+        return np.where(np.asarray(u, dtype=float) > 1 - self.p, 1.0, 0.0)
 
     def discretize(self, **kwargs) -> DiscreteDistribution:
         """Bernoulli is already discrete"""

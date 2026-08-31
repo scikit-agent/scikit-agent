@@ -20,6 +20,7 @@ from skagent.loss import BellmanEquationLoss
 from skagent.grid import device
 import skagent.models.benchmarks as bm
 import skagent.models.consumer as cons
+import skagent.models.fisher as fisher
 import numpy as np
 import xarray as xr
 import torch
@@ -192,7 +193,6 @@ class test_vfi_conftest(unittest.TestCase):
         # maximize c subject to 0 <= c <= a -> c* = a (upper bound binds);
         # V(a) = a. theta only enters next period's a, so arr_vf collapses to a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_5["block"].construct_shocks(case_5["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_5["block"],
             terminal_continuation,
@@ -208,7 +208,6 @@ class test_vfi_conftest(unittest.TestCase):
         # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds);
         # u = -c, so V(a) = -a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_6["block"].construct_shocks(case_6["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_6["block"],
             terminal_continuation,
@@ -224,7 +223,6 @@ class test_vfi_conftest(unittest.TestCase):
         # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
         # Exercises the open upper-bound default. u = -c, so V(a) = -1.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_7["block"].construct_shocks(case_7["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_7["block"],
             terminal_continuation,
@@ -240,7 +238,6 @@ class test_vfi_conftest(unittest.TestCase):
         # maximize c subject to c <= a (no lower bound) -> c* = a.
         # Exercises the open lower-bound default. u = c, so V(a) = a.
         state_grid = {"a": np.linspace(0.2, 1, 5)}
-        case_8["block"].construct_shocks(case_8["calibration"])
         dr, _, arr_vf = vfi.solve(
             case_8["block"],
             terminal_continuation,
@@ -1235,3 +1232,95 @@ class test_vfi_protocol(unittest.TestCase):
 
         self.assertTrue(torch.isfinite(loss).all())
         self.assertLess(float(loss.mean()), 1e-3)
+
+
+class test_vfi_horizon(unittest.TestCase):
+    """
+    The stopping rule assumes an infinite horizon. Fisher's two-period problem
+    is the smallest model with a closed form for which no fixed point is the
+    right answer, so it pins what the loop says about a horizon it cannot see.
+    """
+
+    def _fisher(self, n=13, a_max=4.0):
+        bp = BellmanPeriod(fisher.block, "DiscFac", fisher.calibration)
+        avals = np.linspace(0.0, a_max, n)
+        m = fisher.calibration["Rfree"] * avals + fisher.calibration["y"]
+        exact = fisher.analytical_policy({"m": m}, {}, fisher.calibration)["c"]
+        return bp, {"a": avals}, np.asarray(exact)
+
+    def test_finite_horizon_recovers_the_closed_form(self):
+        # T backups of the one-period block IS the T-period problem, so
+        # max_iter=T is exact up to grid error.
+        bp, grid, exact = self._fisher()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            _, _, policy = vfi.solve_bellman(bp, grid, max_iter=fisher.T)
+
+        c = np.asarray(policy["c"]).ravel()
+        self.assertLess(np.abs(c - exact).max(), 5e-2)
+
+    def test_iterating_past_the_horizon_answers_another_question(self):
+        # The fixed point exists; it is the infinite-horizon policy, and the
+        # loop cannot tell that the caller wanted two periods. Iterating far
+        # past T is much further from the closed form than stopping at it.
+        bp, grid, exact = self._fisher()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            _, _, at_horizon = vfi.solve_bellman(bp, grid, max_iter=fisher.T)
+            _, _, past_horizon = vfi.solve_bellman(bp, grid, max_iter=60)
+
+        error_at = np.abs(np.asarray(at_horizon["c"]).ravel() - exact).max()
+        error_past = np.abs(np.asarray(past_horizon["c"]).ravel() - exact).max()
+        self.assertGreater(error_past, 10 * error_at)
+
+    def test_nonconvergence_message_names_both_readings(self):
+        # Reaching max_iter is a failure on an infinite-horizon problem and the
+        # expected outcome at a finite horizon, and the solver cannot tell
+        # which; the message must not assert the first.
+        bp, grid, _ = self._fisher()
+        with self.assertWarns(UserWarning) as caught:
+            vfi.solve_bellman(bp, grid, max_iter=fisher.T)
+
+        message = str(caught.warning)
+        self.assertIn("max_iter", message)
+        self.assertIn("finite horizon", message)
+
+
+class test_vfi_stateless(unittest.TestCase):
+    """A period with no arrival states is not a dynamic problem."""
+
+    def _one_shot(self):
+        # A single decision with no state: x* maximizes -(x - 0.3)^2.
+        block = DBlock(
+            name="one shot",
+            shocks={},
+            dynamics={
+                "x": Control([], lower_bound=0.0, upper_bound=1.0, agent="a"),
+                "u": lambda x: -((x - 0.3) ** 2),
+            },
+            reward={"u": "a"},
+        )
+        return BellmanPeriod(block, "beta", {"beta": 0.9})
+
+    def test_bellman_step_accepts_an_empty_grid(self):
+        # A contract fact about the grid argument, not a recommendation: the
+        # backup degenerates to a single constrained maximization of the reward.
+        bp = self._one_shot()
+        self.assertEqual(bp.arrival_states, set())
+
+        _, value, policy = vfi.bellman_step(bp, bp_terminal, {})
+
+        self.assertAlmostEqual(float(policy["x"]), 0.3, places=6)
+        self.assertAlmostEqual(float(value), 0.0, places=6)
+
+    def test_solve_bellman_refuses_a_stateless_period(self):
+        # Previously this diverged for all max_iter iterations, or raised from
+        # inside the rebuilt continuation with "need at least one array to
+        # stack", depending on whether the grid had an axis at all. The message
+        # must send the caller to a static solver, not deeper into vfi.
+        with self.assertRaises(ValueError) as caught:
+            vfi.solve_bellman(self._one_shot(), {})
+
+        message = str(caught.exception)
+        self.assertIn("TabularBestResponseSolver", message)
+        self.assertIn("solve_multiple_controls", message)
