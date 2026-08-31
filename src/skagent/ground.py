@@ -27,6 +27,13 @@ class GroundedBlock:
     resolve, so the resolved distributions belong to this pair rather than to
     the block.
 
+    A calibration is fixed before the model is solved or simulated, so the pair
+    resolves every shock whose arguments refer to calibrated symbols and no
+    others. A shock argument referring to a value known only during a solve or
+    a run is outside what this pair holds and raises; such a shock is resolved
+    by the caller that has the value, against a scope overlaying it on the
+    calibration.
+
     Parameters
     ----------
     block : Block
@@ -76,6 +83,12 @@ class GroundedBlock:
         Returns
         -------
         dict[str, Distribution]
+
+        Raises
+        ------
+        KeyError
+            If a shock's arguments refer to a symbol the calibration does not
+            assign.
         """
         if self._shocks is None:
             from skagent.simulation.monte_carlo import _set_rng_recursive

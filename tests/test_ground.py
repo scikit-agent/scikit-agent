@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from skagent.bellman import BellmanPeriod
-from skagent.block import Control, DBlock
+from skagent.block import Control, DBlock, construct_shocks
 from skagent.distributions import MeanOneLogNormal
 from skagent.ground import GroundedBlock
 
@@ -150,3 +150,49 @@ class TestBellmanPeriodIsGrounded:
         )
 
         assert drawn_sigma(period.shock_distributions()) == pytest.approx(0.4, abs=0.01)
+
+
+class TestTheCalibrationIsNarrowerThanAScope:
+    """What the pair can resolve, and where the wider scope is needed.
+
+    A calibration is settled before a model is solved or simulated. A shock
+    argument may instead refer to a value that only exists during a solve or a
+    run, and the pair does not hold one, so it is the caller with the value
+    that resolves such a shock -- against a scope overlaying it on the
+    calibration.
+    """
+
+    def volatile_block(self):
+        """A block whose shock's spread is a dynamic variable, not a parameter."""
+        return DBlock(
+            **{
+                "name": "volatile",
+                "shocks": {"theta": (MeanOneLogNormal, {"sigma": "vol"})},
+                "dynamics": {
+                    "vol": lambda sigma_theta: sigma_theta,
+                    "m": lambda a, theta: a + theta,
+                    "c": Control(["m"], agent="consumer"),
+                    "a": lambda m, c: m - c,
+                    "u": lambda c: c,
+                },
+                "reward": {"u": "consumer"},
+            }
+        )
+
+    def test_the_pair_cannot_resolve_a_shock_its_calibration_does_not_cover(self):
+        ground = GroundedBlock(self.volatile_block(), {"sigma_theta": 0.4})
+
+        with pytest.raises(KeyError) as raised:
+            ground.shock_distributions()
+
+        # The symbol alone would not say which declaration wanted it.
+        assert "theta" in str(raised.value)
+        assert "sigma=" in str(raised.value)
+        assert "vol" in str(raised.value)
+
+    def test_a_scope_overlaying_the_calibration_resolves_it(self):
+        block = self.volatile_block()
+
+        resolved = construct_shocks(block.shocks, {"sigma_theta": 0.4, "vol": 0.1})
+
+        assert drawn_sigma(resolved) == pytest.approx(0.1, abs=0.01)

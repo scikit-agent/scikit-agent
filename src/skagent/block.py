@@ -163,12 +163,21 @@ def construct_shocks(shock_data, scope, rng=None):
         constructors and dictionary of input arguments.
         In this case, the dictionary can map argument names to
         numbers, or to strings. The strings are parsed as
-        mathematical expressions and evaluated in the scope
-        of a calibration dictionary.
+        mathematical expressions and evaluated in *scope*.
 
     scope: dict(str, values)
-        Variables assigned to numerical values.
-        The scope in which expressions will be evaluated
+        The scope in which those expressions are evaluated: a symbol assigned
+        a value here is available to every shock's arguments.
+
+        A scope is wider than a calibration. A calibration is fixed before a
+        model is solved or simulated, so a shock whose arguments refer only to
+        calibrated symbols can be resolved from the calibration alone -- which
+        is what :meth:`DBlock.construct_shocks` passes. A shock argument may
+        instead refer to a value that is only known during a solve or a run,
+        such as a dynamic variable pinned to a realization; a caller holding
+        such a value overlays it on the calibration and passes the result here.
+        A symbol a shock's arguments refer to and the scope does not assign
+        raises :class:`KeyError`.
 
     rng: np.random.Generator, optional
         Random number generator to pass to distribution constructors.
@@ -185,9 +194,16 @@ def construct_shocks(shock_data, scope, rng=None):
             for a in dist_args:
                 if isinstance(dist_args[a], str):
                     arg_lambda = math_text_to_lambda(dist_args[a])
-                    arg_value = arg_lambda(
-                        *[scope[var] for var in param_names(arg_lambda)]
-                    )
+                    needed = param_names(arg_lambda)
+                    absent = [var for var in needed if var not in scope]
+                    if absent:
+                        raise KeyError(
+                            f"shock {v!r} argument {a}={dist_args[a]!r} refers to "
+                            f"{absent}, which the scope does not assign; a symbol "
+                            "known only during a solve or a run has to be overlaid "
+                            "on the calibration by the caller"
+                        )
+                    arg_value = arg_lambda(*[scope[var] for var in needed])
 
                     dist_args[a] = arg_value
 
@@ -507,8 +523,8 @@ class DBlock(Block):
         constructors and dictionary of input arguments.
         In this case, the dictionary can map argument names to
         numbers, or to strings. The strings are parsed as
-        mathematical expressions and evaluated in the scope
-        of a calibration dictionary.
+        mathematical expressions and evaluated in a scope
+        supplied when the shocks are resolved.
 
     dynamics: Mapping(str, str or callable)
         An ordered dictionary mapping variable names to mathematical expressions.
@@ -543,10 +559,15 @@ class DBlock(Block):
         returned rather than stored: the block keeps the declaration, and a
         caller wanting a second calibration or a second generator gets it.
 
+        A shock whose arguments refer to a symbol the calibration does not
+        assign cannot be resolved here, and raises. Resolving it needs the
+        wider scope of :func:`construct_shocks`.
+
         Parameters
         ----------
         calibration : dict
-            Values for any symbol a shock's arguments refer to.
+            Values for any symbol a shock's arguments refer to, supplied as the
+            scope those arguments are evaluated in.
         rng : np.random.Generator, optional
             Generator for the constructed distributions to draw from. Since a
             distribution is drawn by inverting it at uniforms from its own

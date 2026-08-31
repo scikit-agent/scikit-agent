@@ -49,6 +49,8 @@ and this project adheres to
 
 ### Changed
 
+- A shock argument referring to a symbol the scope does not assign now raises a
+  `KeyError` naming the shock and the argument, not just the symbol.
 - `solve_multiple_controls` takes its calibration from the period it is given.
   The separate `calibration` argument is deprecated: nothing checked that it
   agreed with the period's, so a caller could evaluate a period's losses at
