@@ -56,10 +56,6 @@ class GroundedBlock:
         The generator this instance's shock draws come from.
     """
 
-    block: Block
-    calibration: dict[str, Any]
-    rng: np.random.Generator | None
-
     def __init__(
         self,
         block: Block,
