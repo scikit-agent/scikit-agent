@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation" href="simulation.html"><link rel="prev" title="Loss Functions" href="loss.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Distributions - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
+        <title>Distributions - scikit-agent 0.1.1.dev59+gc7124531e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev59+gc7124531e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -630,6 +630,20 @@ slightly, rather than a different sample path.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.distributions.Normal.icdf">
+<span class="sig-name descname"><span class="pre">icdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Normal.icdf" title="Link to this definition">¶</a></dt>
+<dd><p>Quantile function: the value below which a proportion u of the mass lies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array_like</em>) – Probabilities in [0, 1].</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="skagent.distributions.Normal.mean">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#skagent.distributions.Normal.mean" title="Link to this definition">¶</a></dt>
@@ -696,6 +710,20 @@ slightly, rather than a different sample path.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.distributions.DiscreteDistribution" title="skagent.distributions.DiscreteDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscreteDistribution</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.distributions.Uniform.icdf">
+<span class="sig-name descname"><span class="pre">icdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.distributions.Uniform.icdf" title="Link to this definition">¶</a></dt>
+<dd><p>Quantile function: the value below which a proportion u of the mass lies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array_like</em>) – Probabilities in [0, 1].</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -844,6 +872,7 @@ Compatible with skagent.distributions.expected</p>
 <li><a class="reference internal" href="#skagent.distributions.MeanOneLogNormal"><code class="docutils literal notranslate"><span class="pre">MeanOneLogNormal</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Normal"><code class="docutils literal notranslate"><span class="pre">Normal</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.distributions.Normal.discretize"><code class="docutils literal notranslate"><span class="pre">Normal.discretize()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.distributions.Normal.icdf"><code class="docutils literal notranslate"><span class="pre">Normal.icdf()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Normal.mean"><code class="docutils literal notranslate"><span class="pre">Normal.mean</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Normal.std"><code class="docutils literal notranslate"><span class="pre">Normal.std</span></code></a></li>
 </ul>
@@ -854,6 +883,7 @@ Compatible with skagent.distributions.expected</p>
 </li>
 <li><a class="reference internal" href="#skagent.distributions.Uniform"><code class="docutils literal notranslate"><span class="pre">Uniform</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.distributions.Uniform.discretize"><code class="docutils literal notranslate"><span class="pre">Uniform.discretize()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.distributions.Uniform.icdf"><code class="docutils literal notranslate"><span class="pre">Uniform.icdf()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Uniform.mean"><code class="docutils literal notranslate"><span class="pre">Uniform.mean</span></code></a></li>
 <li><a class="reference internal" href="#skagent.distributions.Uniform.std"><code class="docutils literal notranslate"><span class="pre">Uniform.std</span></code></a></li>
 </ul>
@@ -871,7 +901,7 @@ Compatible with skagent.distributions.expected</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
+</div><script src="../_static/documentation_options.js?v=be1081cb"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

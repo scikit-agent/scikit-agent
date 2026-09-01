@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
+        <title>Blocks - scikit-agent 0.1.1.dev59+gc7124531e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev59+gc7124531e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -303,6 +303,42 @@ strategic-relevance analysis (<code class="docutils literal notranslate"><span c
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">Block</span></span><a class="headerlink" href="#skagent.block.Block" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.agent_populations">
+<span class="sig-name descname"><span class="pre">agent_populations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.agent_populations" title="Link to this definition">¶</a></dt>
+<dd><p>Each agent role, and the entity class whose instances hold it.</p>
+<p>An agent name declares a ROLE; it never creates an entity class. The role
+attaches to the class of the block its control is declared in, and to
+nothing when that block carries none. A role reported as <code class="docutils literal notranslate"><span class="pre">None</span></code> is a
+single agent rather than a population.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a> | None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.crossings">
+<span class="sig-name descname"><span class="pre">crossings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.crossings" title="Link to this definition">¶</a></dt>
+<dd><p>The equations that read out of an entity class, and what they cross.</p>
+<p>An equation crosses when it reads an argument whose signature is not
+contained in its own, which means the argument carries an axis the
+equation must summarise away. Reading <em>into</em> an entity – an axis-free
+value used inside a per-instance equation – is an ordinary broadcast and
+is not reported, since nothing has to be decided about it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Maps a symbol to one entry per crossing argument: the argument’s
+name, the axes that must be reduced away, and the axes to broadcast
+along.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#frozenset" title="(in Python v3.14)">frozenset</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>], <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#frozenset" title="(in Python v3.14)">frozenset</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.Block.display">
 <span class="sig-name descname"><span class="pre">display</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.display" title="Link to this definition">¶</a></dt>
 <dd><p>Displays (as in a notebook) an SVG of the visualized graph of this block.</p>
@@ -326,6 +362,17 @@ strategic-relevance analysis (<code class="docutils literal notranslate"><span c
 <dt class="sig sig-object py" id="skagent.block.Block.display_formulas">
 <span class="sig-name descname"><span class="pre">display_formulas</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.display_formulas" title="Link to this definition">¶</a></dt>
 <dd><p>Prints the model’s formulas.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.entities">
+<span class="sig-name descname"><span class="pre">entities</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.entities" title="Link to this definition">¶</a></dt>
+<dd><p>The entity classes this block tree declares, by name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference internal" href="#skagent.block.Entity" title="skagent.block.Entity">Entity</a>]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -436,6 +483,22 @@ Defaults to empty, as for <a class="reference internal" href="#skagent.block.Blo
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.signatures">
+<span class="sig-name descname"><span class="pre">signatures</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.signatures" title="Link to this definition">¶</a></dt>
+<dd><p>Each symbol’s entity signature: the classes it is an attribute of.</p>
+<p>A symbol defined in a block carrying an entity is an attribute of that
+entity class. A symbol defined in a block carrying none is axis-free, and
+its signature is empty. An <a class="reference internal" href="#skagent.block.Aggregate" title="skagent.block.Aggregate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregate</span></code></a> shock is axis-free wherever
+it is declared, so that an economy-wide shock may sit beside the
+per-instance equations that read it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#frozenset" title="(in Python v3.14)">frozenset</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.Block.visualize">
 <span class="sig-name descname"><span class="pre">visualize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.visualize" title="Link to this definition">¶</a></dt>
 <dd><p>Return a PyDot graph visualization of this block.</p>
@@ -461,7 +524,7 @@ Defaults to empty, as for <a class="reference internal" href="#skagent.block.Blo
 <h3>DBlock<a class="headerlink" href="#dblock" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.block.DBlock">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">DBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">DBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a></p>
 <p>Represents a ‘block’ of model behavior.
 It prioritizes a representation of the dynamics of the block.
@@ -490,6 +553,7 @@ The agent role indicates which agent views the variable as a reward
 to optimize.</p></li>
 <li><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
 <li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>entity</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.block.Entity" title="skagent.block.Entity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entity</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -586,6 +650,11 @@ the <em>calibration</em> to resolve them against.</p>
 <span class="sig-name descname"><span class="pre">dynamics</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span><a class="headerlink" href="#skagent.block.DBlock.dynamics" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.block.DBlock.entity">
+<span class="sig-name descname"><span class="pre">entity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#skagent.block.Entity" title="skagent.block.Entity"><span class="pre">Entity</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#skagent.block.DBlock.entity" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.get_arrival_value_function">
 <span class="sig-name descname"><span class="pre">get_arrival_value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_arrival_value_function" title="Link to this definition">¶</a></dt>
@@ -667,7 +736,7 @@ the dynamics.</p>
 <h3>RBlock<a class="headerlink" href="#rblock" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.block.RBlock">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">RBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.RBlock" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">RBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.RBlock" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a></p>
 <p>A recursive block.</p>
 <dl class="field-list simple">
@@ -677,6 +746,7 @@ the dynamics.</p>
 <li><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
 <li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
 <li><p><strong>blocks</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="#skagent.block.Block" title="skagent.block.Block"><code class="xref py py-class docutils literal notranslate"><span class="pre">Block</span></code></a>]</span>)</p></li>
+<li><p><strong>entity</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.block.Entity" title="skagent.block.Entity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entity</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -716,6 +786,11 @@ Returned rather than stored, for the reason
 <dd><p>Recursively discretizes all the blocks.
 It replaces any DBlocks with new blocks with discretized shocks.</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.block.RBlock.entity">
+<span class="sig-name descname"><span class="pre">entity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#skagent.block.Entity" title="skagent.block.Entity"><span class="pre">Entity</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#skagent.block.RBlock.entity" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.RBlock.get_controls">
@@ -927,6 +1002,36 @@ than array valued.</p>
 </dd></dl>
 
 </section>
+<section id="entity">
+<h3>Entity<a class="headerlink" href="#entity" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.block.Entity">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">Entity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Entity" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A class of things a model describes several of.</p>
+<p>An entity carries a name and nothing else. How many instances exist is not a
+property of the model but of the population it is run over, and is read from
+the calibration under a key equal to this name: a model declaring
+<code class="docutils literal notranslate"><span class="pre">Entity(&quot;firm&quot;)</span></code> is simulated against a calibration containing
+<code class="docutils literal notranslate"><span class="pre">{&quot;firm&quot;:</span> <span class="pre">3}</span></code>.</p>
+<p>A consequence worth knowing before choosing a name: because the cardinality
+is looked up by the entity’s name, an entity shares a namespace with the
+model’s parameters. A model with an entity called <code class="docutils literal notranslate"><span class="pre">&quot;firm&quot;</span></code> cannot also have
+an unrelated parameter called <code class="docutils literal notranslate"><span class="pre">&quot;firm&quot;</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The entity class’s name, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;firm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;household&quot;</span></code>. Also the
+calibration key giving how many instances there are.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.block.Entity.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#skagent.block.Entity.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
 </section>
 <section id="model-utilities">
 <h2>Model Utilities<a class="headerlink" href="#model-utilities" title="Link to this heading">¶</a></h2>
@@ -934,7 +1039,7 @@ than array valued.</p>
 <h3>Simulation Dynamics<a class="headerlink" href="#simulation-dynamics" title="Link to this heading">¶</a></h3>
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.block.simulate_dynamics">
-<span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">simulate_dynamics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dynamics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.simulate_dynamics" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">simulate_dynamics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dynamics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shapes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.simulate_dynamics" title="Link to this definition">¶</a></dt>
 <dd><p>From the beginning-of-period state (pre), follow the dynamics,
 including any decision rules, to compute the end-of-period state.</p>
 <dl class="field-list simple">
@@ -946,6 +1051,12 @@ Can include Controls</p>
 <dl class="simple">
 <dt>pre<span class="classifier">Mapping[str, Any]</span></dt><dd><p>Bound values for all variables that must be known before beginning the period’s dynamics.</p>
 </dd>
+<dt>shapes<span class="classifier">Mapping[str, tuple], optional</span></dt><dd><p>The shape each symbol’s value must take. An equation may return one
+value where its shape calls for an array, meaning the same value for
+every position; where <em>shapes</em> says so, such a value is broadcast as it
+is produced, so that a later equation reducing over it is handed the
+array it expects.</p>
+</dd>
 <dt>dr<span class="classifier">Mapping[str, Callable]</span></dt><dd><p>Decision rules for all the Control variables in the dynamics.</p>
 </dd>
 </dl>
@@ -954,6 +1065,7 @@ Can include Controls</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>pre</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
 <li><p><strong>dr</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span>)</p></li>
+<li><p><strong>shapes</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>]]</span>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1092,8 +1204,11 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#block-classes">Block Classes</a><ul>
 <li><a class="reference internal" href="#block">Block</a><ul>
 <li><a class="reference internal" href="#skagent.block.Block"><code class="docutils literal notranslate"><span class="pre">Block</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.block.Block.agent_populations"><code class="docutils literal notranslate"><span class="pre">Block.agent_populations()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.crossings"><code class="docutils literal notranslate"><span class="pre">Block.crossings()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.display"><code class="docutils literal notranslate"><span class="pre">Block.display()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.display_formulas"><code class="docutils literal notranslate"><span class="pre">Block.display_formulas()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.entities"><code class="docutils literal notranslate"><span class="pre">Block.entities()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.formulas"><code class="docutils literal notranslate"><span class="pre">Block.formulas()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_arrival_states"><code class="docutils literal notranslate"><span class="pre">Block.get_arrival_states()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_attributions"><code class="docutils literal notranslate"><span class="pre">Block.get_attributions()</span></code></a></li>
@@ -1101,6 +1216,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.Block.relevance_graph"><code class="docutils literal notranslate"><span class="pre">Block.relevance_graph()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.relies_on"><code class="docutils literal notranslate"><span class="pre">Block.relies_on()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.shock_roles"><code class="docutils literal notranslate"><span class="pre">Block.shock_roles()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.signatures"><code class="docutils literal notranslate"><span class="pre">Block.signatures()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.visualize"><code class="docutils literal notranslate"><span class="pre">Block.visualize()</span></code></a></li>
 </ul>
 </li>
@@ -1114,6 +1230,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.description"><code class="docutils literal notranslate"><span class="pre">DBlock.description</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.discretize"><code class="docutils literal notranslate"><span class="pre">DBlock.discretize()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.dynamics"><code class="docutils literal notranslate"><span class="pre">DBlock.dynamics</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.DBlock.entity"><code class="docutils literal notranslate"><span class="pre">DBlock.entity</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.get_arrival_value_function"><code class="docutils literal notranslate"><span class="pre">DBlock.get_arrival_value_function()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.get_decision_value_function"><code class="docutils literal notranslate"><span class="pre">DBlock.get_decision_value_function()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.get_dynamics"><code class="docutils literal notranslate"><span class="pre">DBlock.get_dynamics()</span></code></a></li>
@@ -1135,6 +1252,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.construct_shocks"><code class="docutils literal notranslate"><span class="pre">RBlock.construct_shocks()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.description"><code class="docutils literal notranslate"><span class="pre">RBlock.description</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.discretize"><code class="docutils literal notranslate"><span class="pre">RBlock.discretize()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.RBlock.entity"><code class="docutils literal notranslate"><span class="pre">RBlock.entity</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.get_controls"><code class="docutils literal notranslate"><span class="pre">RBlock.get_controls()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.get_dynamics"><code class="docutils literal notranslate"><span class="pre">RBlock.get_dynamics()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.get_shocks"><code class="docutils literal notranslate"><span class="pre">RBlock.get_shocks()</span></code></a></li>
@@ -1166,6 +1284,13 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.Aggregate"><code class="docutils literal notranslate"><span class="pre">Aggregate</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#entity">Entity</a><ul>
+<li><a class="reference internal" href="#skagent.block.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.block.Entity.name"><code class="docutils literal notranslate"><span class="pre">Entity.name</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#model-utilities">Model Utilities</a><ul>
@@ -1194,7 +1319,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
+</div><script src="../_static/documentation_options.js?v=be1081cb"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

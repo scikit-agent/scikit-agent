@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
+        <title>Models - scikit-agent 0.1.1.dev59+gc7124531e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev59+gc7124531e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1113,6 +1113,137 @@ the agent prefers extraction over indefinite accumulation.</p>
 </dd></dl>
 
 </section>
+<section id="cournot">
+<h2>Cournot<a class="headerlink" href="#cournot" title="Link to this heading">¶</a></h2>
+<p>Quantity competition among several firms: the smallest model with an entity
+class, an agent role and an aggregation. Its decision profiles are supplied
+rather than solved for, since the model has a crossing.</p>
+<p id="module-skagent.models.cournot">Cournot (1838) quantity competition among firms.</p>
+<p>The smallest model that exercises an entity class, an agent role and an
+aggregation. Several firms each draw a production cost, each choose a quantity,
+and the market price falls with the <em>average</em> quantity supplied:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[Q = \frac{1}{N}\sum_i q_i, \qquad P = A - b\,Q, \qquad
+u_i = (P - c_i)\, q_i\]</div>
+</div>
+<p>The model is static: there are no arrival states, so simulating it for
+<span class="math notranslate nohighlight">\(T\)</span> periods is <span class="math notranslate nohighlight">\(T\)</span> independent plays of the same one-shot game.</p>
+<p>Because the price is a function of the mean rather than the sum, the slope on
+<em>total</em> quantity is <span class="math notranslate nohighlight">\(b/N\)</span>. That keeps the two readings of <span class="math notranslate nohighlight">\(N\)</span> below
+in one model without changing an equation.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.cournot.A">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">A</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10.0</span></span><a class="headerlink" href="#skagent.models.cournot.A" title="Link to this definition">¶</a></dt>
+<dd><p>Demand intercept, shared by both calibrations.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.cournot.B">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">B</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#skagent.models.cournot.B" title="Link to this definition">¶</a></dt>
+<dd><p>Demand slope on the average quantity, shared by both calibrations.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.cournot.PROFILES">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">PROFILES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'cournot-nash':</span> <span class="pre">[4.5,</span> <span class="pre">4.5,</span> <span class="pre">4.5],</span> <span class="pre">'joint-monopoly':</span> <span class="pre">[3.0,</span> <span class="pre">3.0,</span> <span class="pre">3.0],</span> <span class="pre">'one-defects':</span> <span class="pre">[6.0,</span> <span class="pre">3.0,</span> <span class="pre">3.0]}</span></span><a class="headerlink" href="#skagent.models.cournot.PROFILES" title="Link to this definition">¶</a></dt>
+<dd><p>Three hand-derivable profiles at <code class="docutils literal notranslate"><span class="pre">collusion_calibration()</span></code>.</p>
+<p>Supplied, not found. Colluding pays jointly (27.0 against 20.25 in total
+profit), the cartel is unstable because deviating pays the deviator (12 against
+9) at its partners’ expense (6 against 9), and Nash is stable.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.cournot.analytic_moments">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">analytic_moments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.cournot.analytic_moments" title="Link to this definition">¶</a></dt>
+<dd><p>The heterogeneous-cost market’s analytic aggregate and expected profit.</p>
+<p>Holds under the rule <a class="reference internal" href="#skagent.models.cournot.competitive_rule" title="skagent.models.cournot.competitive_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">competitive_rule()</span></code></a>, in the limit of many firms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">Q</span></code>, <code class="docutils literal notranslate"><span class="pre">P</span></code> and <code class="docutils literal notranslate"><span class="pre">E[u]</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.cournot.collusion_calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">collusion_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cost</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.cournot.collusion_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>A market of <em>size</em> firms that all have cost <em>cost</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many firms. Part of the model in this calibration: it enters the
+effective slope on total quantity.</p></li>
+<li><p><strong>cost</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The common marginal cost.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.cournot.competitive_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">competitive_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.cournot.competitive_rule" title="Link to this definition">¶</a></dt>
+<dd><p>The supplied rule the heterogeneous-cost claims are stated under.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.cournot.heterogeneous_calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">heterogeneous_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.cournot.heterogeneous_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>A market of <em>size</em> firms whose costs are uniform on <code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high]</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many firms. A numerical knob in this calibration.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Support of the cost distribution.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Support of the cost distribution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.cournot.monopoly_quantity">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">monopoly_quantity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cost</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.cournot.monopoly_quantity" title="Link to this definition">¶</a></dt>
+<dd><p>The quantity per firm that maximizes the industry’s total profit.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.cournot.nash_quantity">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">nash_quantity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cost</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.cournot.nash_quantity" title="Link to this definition">¶</a></dt>
+<dd><p>The symmetric Cournot-Nash quantity per firm.</p>
+<p>From the first-order condition <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">-</span> <span class="pre">bq</span> <span class="pre">-</span> <span class="pre">c</span> <span class="pre">-</span> <span class="pre">qb/N</span> <span class="pre">=</span> <span class="pre">0</span></code>, which gives
+<code class="docutils literal notranslate"><span class="pre">q</span> <span class="pre">=</span> <span class="pre">N(A</span> <span class="pre">-</span> <span class="pre">c)</span> <span class="pre">/</span> <span class="pre">(b(N</span> <span class="pre">+</span> <span class="pre">1))</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.cournot.profile_rules">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.cournot.</span></span><span class="sig-name descname"><span class="pre">profile_rules</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantities</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.cournot.profile_rules" title="Link to this definition">¶</a></dt>
+<dd><p>One fixed decision rule per firm, so a profile may be asymmetric.</p>
+<p>The asymmetry is in the ASSIGNMENT of rules to instances, not in the model:
+each rule is a constant function, and none reads a firm’s position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>quantities</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – One quantity per firm, in instance order.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Callables, one per firm, suitable as a <code class="docutils literal notranslate"><span class="pre">Simulator</span></code> decision rule.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 <section id="multi-agent-influence-diagrams-maids">
 <h2>Multi-Agent Influence Diagrams (MAIDs)<a class="headerlink" href="#multi-agent-influence-diagrams-maids" title="Link to this heading">¶</a></h2>
 <p>Game-theoretic influence diagrams from the literature, encoded to illustrate
@@ -1208,7 +1339,7 @@ checks below. The diagrams are module-level values and
 </ul>
 <dl class="py data">
 <dt class="sig sig-object py" id="skagent.models.safety.incentives.content_recommender_block">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">content_recommender_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='content_recommender',</span> <span class="pre">description='',</span> <span class="pre">shocks={'O':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_M':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_I':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'M':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'I':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'C':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'C':</span> <span class="pre">'recommender'})</span></span><a class="headerlink" href="#skagent.models.safety.incentives.content_recommender_block" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">content_recommender_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='content_recommender',</span> <span class="pre">description='',</span> <span class="pre">shocks={'O':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_M':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_I':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'M':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'I':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'C':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'C':</span> <span class="pre">'recommender'},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.safety.incentives.content_recommender_block" title="Link to this definition">¶</a></dt>
 <dd><p>the
 user clicks on posts that match what they now think.</p>
 <dl class="field-list simple">
@@ -1220,7 +1351,7 @@ user clicks on posts that match what they now think.</p>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="skagent.models.safety.incentives.content_recommender_redesign_block">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">content_recommender_redesign_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='content_recommender_redesign',</span> <span class="pre">description='',</span> <span class="pre">shocks={'O':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_M':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_I':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'M':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'I':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'C':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'C':</span> <span class="pre">'recommender'})</span></span><a class="headerlink" href="#skagent.models.safety.incentives.content_recommender_redesign_block" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">content_recommender_redesign_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='content_recommender_redesign',</span> <span class="pre">description='',</span> <span class="pre">shocks={'O':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_M':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_I':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'M':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'I':</span> <span class="pre">&lt;function</span> <span class="pre">_content_recommender.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'C':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'C':</span> <span class="pre">'recommender'},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.safety.incentives.content_recommender_redesign_block" title="Link to this definition">¶</a></dt>
 <dd><p>predicted clicks, computed from the model of the
 user’s original opinions rather than from the opinions the posts produced.</p>
 <dl class="field-list simple">
@@ -1246,13 +1377,13 @@ user’s original opinions rather than from the opinions the posts produced.</p>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="skagent.models.safety.incentives.grade_predictor_block">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">grade_predictor_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='grade_predictor',</span> <span class="pre">description='',</span> <span class="pre">shocks={'R':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'Ge':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_HS':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_E':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_Gr':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'HS':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'E':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'Gr':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'Ac':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'Ac':</span> <span class="pre">'university'})</span></span><a class="headerlink" href="#skagent.models.safety.incentives.grade_predictor_block" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">grade_predictor_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='grade_predictor',</span> <span class="pre">description='',</span> <span class="pre">shocks={'R':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'Ge':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_HS':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_E':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_Gr':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'HS':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'E':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'Gr':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'Ac':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'Ac':</span> <span class="pre">'university'},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.safety.incentives.grade_predictor_block" title="Link to this definition">¶</a></dt>
 <dd><p>Fig. 3a. The prediction observes the high school and gender.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="skagent.models.safety.incentives.grade_predictor_redesign_block">
-<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">grade_predictor_redesign_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='grade_predictor_redesign',</span> <span class="pre">description='',</span> <span class="pre">shocks={'R':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'Ge':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_HS':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_E':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_Gr':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'HS':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'E':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'Gr':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'Ac':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'Ac':</span> <span class="pre">'university'})</span></span><a class="headerlink" href="#skagent.models.safety.incentives.grade_predictor_redesign_block" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.models.safety.incentives.</span></span><span class="sig-name descname"><span class="pre">grade_predictor_redesign_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='grade_predictor_redesign',</span> <span class="pre">description='',</span> <span class="pre">shocks={'R':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'Ge':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_HS':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_E':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0}),</span> <span class="pre">'u_Gr':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'high':</span> <span class="pre">1.0})},</span> <span class="pre">dynamics={'HS':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'E':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'Gr':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;,</span> <span class="pre">'P':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'Ac':</span> <span class="pre">&lt;function</span> <span class="pre">_grade_predictor.&lt;locals&gt;.&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'Ac':</span> <span class="pre">'university'},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.safety.incentives.grade_predictor_redesign_block" title="Link to this definition">¶</a></dt>
 <dd><p>the prediction no longer observes the high school.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -1413,6 +1544,19 @@ on to query it.</p>
 <li><a class="reference internal" href="#skagent.models.resource_extraction.make_optimal_decision_rule"><code class="docutils literal notranslate"><span class="pre">make_optimal_decision_rule()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#cournot">Cournot</a><ul>
+<li><a class="reference internal" href="#skagent.models.cournot.A"><code class="docutils literal notranslate"><span class="pre">A</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.B"><code class="docutils literal notranslate"><span class="pre">B</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.PROFILES"><code class="docutils literal notranslate"><span class="pre">PROFILES</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.analytic_moments"><code class="docutils literal notranslate"><span class="pre">analytic_moments()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.collusion_calibration"><code class="docutils literal notranslate"><span class="pre">collusion_calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.competitive_rule"><code class="docutils literal notranslate"><span class="pre">competitive_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.heterogeneous_calibration"><code class="docutils literal notranslate"><span class="pre">heterogeneous_calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.monopoly_quantity"><code class="docutils literal notranslate"><span class="pre">monopoly_quantity()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.nash_quantity"><code class="docutils literal notranslate"><span class="pre">nash_quantity()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.cournot.profile_rules"><code class="docutils literal notranslate"><span class="pre">profile_rules()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#multi-agent-influence-diagrams-maids">Multi-Agent Influence Diagrams (MAIDs)</a></li>
 <li><a class="reference internal" href="#ai-safety-influence-diagrams">AI-safety influence diagrams</a><ul>
 <li><a class="reference internal" href="#skagent.models.safety.incentives.content_recommender_block"><code class="docutils literal notranslate"><span class="pre">content_recommender_block</span></code></a></li>
@@ -1434,7 +1578,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
+</div><script src="../_static/documentation_options.js?v=be1081cb"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

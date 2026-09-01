@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation Guide" href="simulation.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
+        <title>Block Guide - scikit-agent 0.1.1.dev59+gc7124531e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev59+gc7124531e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -504,6 +504,85 @@ then builds the actual distributions:</p>
 </pre></div>
 </div>
 </section>
+<section id="entities-several-of-the-same-kind-of-agent">
+<h3>Entities: several of the same kind of agent<a class="headerlink" href="#entities-several-of-the-same-kind-of-agent" title="Link to this heading">¶</a></h3>
+<p>A block may declare that its variables describe a <em>class</em> of things there are
+several of, rather than a single agent. That is an <code class="docutils literal notranslate"><span class="pre">Entity</span></code>, and it is set on
+the block with the <code class="docutils literal notranslate"><span class="pre">entity</span></code> field:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">firms</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">RBlock</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"firms"</span><span class="p">,</span>
+    <span class="n">entity</span><span class="o">=</span><span class="n">ska</span><span class="o">.</span><span class="n">Entity</span><span class="p">(</span><span class="s2">"firm"</span><span class="p">),</span>
+    <span class="n">blocks</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"offer"</span><span class="p">,</span>
+            <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">"c"</span><span class="p">:</span> <span class="p">(</span><span class="n">Uniform</span><span class="p">,</span> <span class="p">{</span><span class="s2">"low"</span><span class="p">:</span> <span class="s2">"cl"</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">:</span> <span class="s2">"ch"</span><span class="p">})},</span>
+            <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span><span class="s2">"q"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"c"</span><span class="p">],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">"firm"</span><span class="p">)},</span>
+        <span class="p">)</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>A variable defined in a block carrying an entity is an <strong>attribute</strong> of that
+entity class, so each instance has its own value. A variable defined in a block
+carrying no entity is <strong>axis-free</strong>: there is one of it for the whole model.</p>
+<p>An <code class="docutils literal notranslate"><span class="pre">Entity</span></code> has a name and no size. How many instances exist is a fact about the
+population being simulated rather than about the model, so it is read from the
+calibration under a key equal to the entity’s name – a model declaring
+<code class="docutils literal notranslate"><span class="pre">Entity(&quot;firm&quot;)</span></code> is simulated against a calibration containing <code class="docutils literal notranslate"><span class="pre">{&quot;firm&quot;:</span> <span class="pre">3}</span></code>.
+One consequence to keep in mind when naming: an entity therefore shares a
+namespace with the model’s parameters, so a model with an entity <code class="docutils literal notranslate"><span class="pre">&quot;firm&quot;</span></code> cannot
+also have an unrelated parameter <code class="docutils literal notranslate"><span class="pre">&quot;firm&quot;</span></code>.</p>
+<p>An agent name declares a <strong>role</strong>, and never creates an entity class. The role
+attaches to the entity class of the block its control is declared in, and to
+nothing at all when that block has none – so a single analyst observing many
+subjects is one agent, not a population of one.</p>
+<section id="aggregation-and-what-a-crossing-is">
+<h4>Aggregation, and what a crossing is<a class="headerlink" href="#aggregation-and-what-a-crossing-is" title="Link to this heading">¶</a></h4>
+<p>An axis-free equation may read a per-instance variable, in which case it is
+handed the whole array and must reduce it to one value:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">market</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"market"</span><span class="p">,</span>
+    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"Q"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">q</span><span class="p">:</span> <span class="n">q</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>  <span class="c1"># reads out of the firm class: a crossing</span>
+        <span class="s2">"P"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">Q</span><span class="p">:</span> <span class="n">A</span> <span class="o">-</span> <span class="n">b</span> <span class="o">*</span> <span class="n">Q</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Reading <em>out of</em> an entity class like this is a <strong>crossing</strong>, and the library
+reports it. Reading <em>into</em> one – a per-instance equation using the single
+market price – is an ordinary broadcast and needs nothing:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">payoff</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"payoff"</span><span class="p">,</span>
+    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span><span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">P</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="p">(</span><span class="n">P</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="n">q</span><span class="p">},</span>  <span class="c1"># broadcast, not a crossing</span>
+    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">"u"</span><span class="p">:</span> <span class="s2">"firm"</span><span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>A crossing is what distinguishes a <em>population</em> from a set of independent
+samples. Where a model has no crossing, running it over many parallel copies is
+Monte Carlo replication: the copies do not interact. Where it has one, the
+copies interact through the aggregate and are a population inside one run.</p>
+<p>Because a solver treats each state variable as an axis to optimise over point by
+point, and a crossing is not that, blocks with crossings are refused by the
+value-function solvers. Simulating them forward under supplied decision rules is
+fully supported.</p>
+<p>The same entity class may be declared more than once in a model, and that is how
+timing is expressed. In a Cournot market the firms act, then the market clears,
+then the firms are paid, so the firm class appears both before and after the
+market block:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cournot</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">RBlock</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"cournot"</span><span class="p">,</span>
+    <span class="n">blocks</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">firms</span><span class="p">,</span>
+        <span class="n">market</span><span class="p">,</span>
+        <span class="n">ska</span><span class="o">.</span><span class="n">RBlock</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"payoffs"</span><span class="p">,</span> <span class="n">entity</span><span class="o">=</span><span class="n">ska</span><span class="o">.</span><span class="n">Entity</span><span class="p">(</span><span class="s2">"firm"</span><span class="p">),</span> <span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">payoff</span><span class="p">]),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
 <section id="bellman-periods">
 <h3>Bellman Periods<a class="headerlink" href="#bellman-periods" title="Link to this heading">¶</a></h3>
 <p>A <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> (from <code class="docutils literal notranslate"><span class="pre">skagent.bellman</span></code>) wraps a block together with its
@@ -610,6 +689,27 @@ exercise it on both.</p>
 <span class="c1"># Get shock variables</span>
 <span class="n">shocks</span> <span class="o">=</span> <span class="n">consumption_block</span><span class="o">.</span><span class="n">get_shocks</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Shock variables:"</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">shocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+</pre></div>
+</div>
+<p>For a model declaring entities, four further queries report its population
+structure. All are derived from the model’s own declarations; nothing extra is
+annotated.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Which entity classes the model declares</span>
+<span class="n">cournot</span><span class="o">.</span><span class="n">entities</span><span class="p">()</span>
+<span class="c1"># {'firm': Entity(name='firm')}</span>
+
+<span class="c1"># Which classes each symbol is an attribute of; empty means axis-free</span>
+<span class="n">cournot</span><span class="o">.</span><span class="n">signatures</span><span class="p">()</span>
+<span class="c1"># {'c': frozenset({'firm'}), 'q': frozenset({'firm'}),</span>
+<span class="c1">#  'Q': frozenset(), 'P': frozenset(), 'u': frozenset({'firm'})}</span>
+
+<span class="c1"># The equations that read out of a class, with the axes to reduce and broadcast</span>
+<span class="n">cournot</span><span class="o">.</span><span class="n">crossings</span><span class="p">()</span>
+<span class="c1"># {'Q': [('q', frozenset({'firm'}), frozenset())]}</span>
+
+<span class="c1"># Each agent role, and the class whose instances hold it; None means one agent</span>
+<span class="n">cournot</span><span class="o">.</span><span class="n">agent_populations</span><span class="p">()</span>
+<span class="c1"># {'firm': 'firm'}</span>
 </pre></div>
 </div>
 </section>
@@ -768,6 +868,10 @@ maintaining clear economic interpretation.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#rblocks-composing-blocks">RBlocks: Composing Blocks</a></li>
+<li><a class="reference internal" href="#entities-several-of-the-same-kind-of-agent">Entities: several of the same kind of agent</a><ul>
+<li><a class="reference internal" href="#aggregation-and-what-a-crossing-is">Aggregation, and what a crossing is</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#bellman-periods">Bellman Periods</a></li>
 </ul>
 </li>
@@ -799,7 +903,7 @@ maintaining clear economic interpretation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
+</div><script src="../_static/documentation_options.js?v=be1081cb"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms Guide" href="algorithms.html"><link rel="prev" title="Block Guide" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation Guide - scikit-agent 0.1.1.dev51+g23d2df2ae</title>
+        <title>Simulation Guide - scikit-agent 0.1.1.dev59+gc7124531e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev51+g23d2df2ae</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev59+gc7124531e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -296,7 +296,8 @@
 currently supports generic Monte Carlo simulation of its models.</p>
 <p>The simulator accepts as arguments a calibration dictionary, a model, and
 decision rules for all agent decisions. It also takes initial state values, a
-number of agents to simulate, and a number of time steps to simulate through.</p>
+number of independent trajectories to simulate, and a number of time steps to
+simulate through.</p>
 <p>The simulator then runs through the model equations, sampling random variables
 and applying transition and decision rules. It generates a complete history of
 all variables in the simulation, that can then be inspected.</p>
@@ -305,9 +306,12 @@ all variables in the simulation, that can then be inspected.</p>
 <p>The simulator takes the following elements in configuration:</p>
 <ul class="simple">
 <li><p><strong>Calibration dictionary</strong>. A dictionary specifying values for any free
-parameters of the model.</p></li>
+parameters of the model. If the model declares entity classes, this also gives
+how many instances each class has, under a key equal to the entity’s name.</p></li>
 <li><p><strong>Model</strong>. A block model (<code class="docutils literal notranslate"><span class="pre">DBlock</span></code> or <code class="docutils literal notranslate"><span class="pre">RBlock</span></code>), defining states, shocks,
-control, and reward variables of an agent (or population of agents).</p></li>
+control, and reward variables of an agent (or population of agents). See
+<a class="reference internal" href="blocks.html"><span class="doc">Block Guide</span></a> on entities for how a model declares a population rather than a
+single agent.</p></li>
 <li><p><strong>Decision rules</strong>. A dictionary of decision rules governing the informed
 choices of agents at their decision variables.</p></li>
 <li><p><strong>Initial values</strong>. A dictionary of starting values, or starting
@@ -345,15 +349,50 @@ distributions, for arrival state variables.</p></li>
 <h2>Analyzing and Visualizing Data<a class="headerlink" href="#analyzing-and-visualizing-data" title="Link to this heading">¶</a></h2>
 <p>The data for all variables of the simulation is made available as a dictionary
 of arrays.</p>
+<p>A variable’s history carries the period axis first, then the replication axis,
+then one axis per entity class it is an attribute of:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>the variable is</p></th>
+<th class="head"><p>its history is shaped</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>axis-free, or in a model with no entities</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">sample_count)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>an attribute of a class with <code class="docutils literal notranslate"><span class="pre">size</span></code> instances</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">sample_count,</span> <span class="pre">size)</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>So a model that declares no entity keeps the two-dimensional histories it has
+always had, and <code class="docutils literal notranslate"><span class="pre">axis=1</span></code> is the replication axis in every case.</p>
 <p>The following will show the mean across all trajectories, at each time step, for
-the <code class="docutils literal notranslate"><span class="pre">k</span></code> variable (the history array is shaped <code class="docutils literal notranslate"><span class="pre">(T_sim,</span> <span class="pre">sample_count)</span></code>, so
-<code class="docutils literal notranslate"><span class="pre">axis=1</span></code> averages over the replication axis).</p>
+the <code class="docutils literal notranslate"><span class="pre">k</span></code> variable.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">"k"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>For a per-instance variable, averaging over <code class="docutils literal notranslate"><span class="pre">axis=1</span></code> leaves one series per
+instance, while averaging over both the replication and instance axes gives the
+population mean at each time step:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># one series per firm, averaged over trajectories</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">"q"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># the average across firms and trajectories, at each time step</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">"q"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Two checks run every period, and both raise rather than letting a bad value
+travel. An equation declared outside every entity class that returns an array
+over one has failed to aggregate, and is reported where it happens. And a
+non-finite value entering a reduction is refused, because one instance’s bad
+draw would otherwise become every instance’s aggregate for the rest of the run.</p>
 </section>
 </section>
 
@@ -434,7 +473,7 @@ the <code class="docutils literal notranslate"><span class="pre">k</span></code>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=efbecb94"></script>
+</div><script src="../_static/documentation_options.js?v=be1081cb"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
