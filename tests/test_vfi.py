@@ -14,7 +14,6 @@ from conftest import (
 )
 import skagent.algos.vfi as vfi
 from skagent.bellman import BellmanPeriod
-from skagent.distributions import Bernoulli
 from skagent.block import Control, DBlock
 from skagent.loss import BellmanEquationLoss
 from skagent.grid import device
@@ -28,251 +27,8 @@ import unittest
 import warnings
 
 
-block_1 = DBlock(
-    **{
-        "name": "vfi_test_1",
-        "shocks": {
-            "coin": Bernoulli(p=0.5),
-        },
-        "dynamics": {
-            "m": lambda y, coin: y + coin,
-            "c": Control(["m"], lower_bound=lambda m: 0, upper_bound=lambda m: m),
-            "a": lambda m, c: m - c,
-            "u": lambda c: 1 - (c - 1) ** 2,
-        },
-        "reward": {"u": "agent"},
-    }
-)
-
-block_2 = DBlock(  # has no control variable
-    **{
-        "name": "vfi_test_1",
-        "shocks": {
-            "coin": Bernoulli(p=0.5),
-        },
-        "dynamics": {
-            "m": lambda y, coin: y + coin,
-            "a": lambda m: m - 1,
-            "u": lambda m: 0,
-        },
-        "reward": {"u": "agent"},
-    }
-)
-
-
-class test_vfi(unittest.TestCase):
-    # def setUp(self):
-    #    pass
-
-    def test_solve_block_1(self):
-        state_grid = {"m": np.linspace(0, 2, 10)}
-
-        dr, dec_vf, arr_vf = vfi.solve(block_1, lambda a: a, state_grid)
-
-        self.assertAlmostEqual(dr["c"](1), 0.5)
-
-    def test_solve_block_2(self):
-        # no control variable case.
-        state_grid = {"m": np.linspace(0, 2, 10)}
-
-        dr, dec_vf, arr_vf = vfi.solve(block_2, lambda a: a, state_grid)
-
-        # arrival value function gives the correct expect value of continuation
-        self.assertAlmostEqual(arr_vf({"y": 10}), 9.5)
-
-    def test_solve_consumption_problem(self):
-        state_grid = {"m": np.linspace(0, 5, 10)}
-
-        print(cons.consumption_block_normalized.dynamics["c"])
-
-        dr, dec_vf, arr_vf = vfi.solve(
-            cons.consumption_block_normalized,
-            lambda a: 0,
-            state_grid,
-            disc_params={"theta": {"N": 7}},
-            scope=cons.calibration,
-        )
-
-        self.assertAlmostEqual(dr["c"](1.5), 1.5)
-
-
-# Terminal continuation: the value of arriving at the next block is zero.
-# With this, each conftest case reduces to a single backward-induction step
-# whose optimum is the case's documented ``optimal_dr``.
-def terminal_continuation(a):
-    return 0.0
-
-
-class test_vfi_conftest(unittest.TestCase):
-    """
-    Comprehensive backward-induction tests against the shared conftest suite.
-
-    Each case ships an analytic ``optimal_dr``; here we solve the block with
-    VFI and check the recovered decision rule gets close to that optimum at
-    interior points of the state grid. Together these exercise the full range
-    of the single-control solver: an interior optimum, a shock-dependent
-    policy, both-sided bounds (with either side binding), single-sided bounds
-    (which lean on the open-bound defaults), and an empty information set.
-
-    Each case solves *once* and checks both value functions ``solve`` returns
-    alongside the policy, so the value functions are covered without re-running
-    the solver. Under ``terminal_continuation`` (a zero continuation) the value
-    at the optimum is just the period reward ``u(c*)``, giving a closed form:
-
-    - ``dec_vf(pre)`` is the decision-node value (after shocks); it runs the
-      full transition, so it is checked on the shock-free / shock-in-iset cases
-      (0, 1, 9) where every variable the transition needs is available.
-    - ``arr_vf(arrival)`` is the arrival value; it discretizes the block's
-      shocks and integrates ``dec_vf`` over them. It is checked on the bounded
-      cases (5-8) whose reward does not depend on the shock, so the expectation
-      collapses to the analytic value. ``disc_params`` only feeds ``arr_vf``
-      construction and does not affect the policy solve (VFI is full-observation
-      and never integrates over shocks in its per-point optimization).
-    """
-
-    # tolerance on the recovered policy; the optima here are all linear, so
-    # grid interpolation is exact and scipy's optimizer is the only error source
-    ATOL = 1e-3
-
-    def test_case_0_interior_optimum(self):
-        # u = -c^2, unconstrained -> c* = 0 for all a; V(a) = 0.
-        state_grid = {"a": np.linspace(0, 2, 11)}
-        dr, dec_vf, _ = vfi.solve(
-            case_0["block"],
-            terminal_continuation,
-            state_grid,
-            scope=case_0["calibration"],
-        )
-        for a in [0.2, 0.7, 1.3, 1.8]:
-            self.assertAlmostEqual(dr["c"](a), 0.0, delta=self.ATOL)
-            self.assertAlmostEqual(
-                float(dec_vf({**case_0["calibration"], "a": a})), 0.0, delta=self.ATOL
-            )
-
-    def test_case_1_shock_dependent_policy(self):
-        # u = -(theta - c)^2 with theta in the information set -> c* = theta;
-        # V(a, theta) = 0. theta is in the iset, so dec_vf conditions on it.
-        state_grid = {
-            "a": np.linspace(0, 1, 7),
-            "theta": np.linspace(-1, 1, 7),
-        }
-        dr, dec_vf, _ = vfi.solve(
-            case_1["block"],
-            terminal_continuation,
-            state_grid,
-            scope=case_1["calibration"],
-        )
-        for theta in [-0.6, 0.0, 0.4, 0.9]:
-            self.assertAlmostEqual(dr["c"](0.5, theta), theta, delta=self.ATOL)
-            self.assertAlmostEqual(
-                float(dec_vf({**case_1["calibration"], "a": 0.5, "theta": theta})),
-                0.0,
-                delta=self.ATOL,
-            )
-
-    def test_case_3_consume_cash_on_hand(self):
-        # u = -(m - c)^2 -> c* = m. The grid is just the iset, [m]. The arrival
-        # state ``a`` depends on the psi shock, so psi is supplied via the
-        # calibration (it only enters the transition, not the decision).
-        #
-        # Policy-only: the value functions are awkward here because ``m`` is a
-        # computed intermediate (m = a + theta), so evaluating dec_vf/arr_vf
-        # would require the pre-``m`` arrival state, not the [m] iset the rule
-        # conditions on. The other cases cover the value functions.
-        state_grid = {"m": np.linspace(0.1, 2, 7)}
-        dr, _, _ = vfi.solve(
-            case_3["block"],
-            terminal_continuation,
-            state_grid,
-            scope={**case_3["calibration"], "psi": 0.0},
-        )
-        for m in [0.5, 1.0, 1.5]:
-            self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
-
-    def test_case_5_double_bounded_upper_binds(self):
-        # maximize c subject to 0 <= c <= a -> c* = a (upper bound binds);
-        # V(a) = a. theta only enters next period's a, so arr_vf collapses to a.
-        state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, arr_vf = vfi.solve(
-            case_5["block"],
-            terminal_continuation,
-            state_grid,
-            disc_params={"theta": {"N": 7}},
-            scope=case_5["calibration"],
-        )
-        for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
-            self.assertAlmostEqual(float(arr_vf({"a": a})), a, delta=self.ATOL)
-
-    def test_case_6_double_bounded_lower_binds(self):
-        # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds);
-        # u = -c, so V(a) = -a.
-        state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, arr_vf = vfi.solve(
-            case_6["block"],
-            terminal_continuation,
-            state_grid,
-            disc_params={"theta": {"N": 7}},
-            scope=case_6["calibration"],
-        )
-        for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
-            self.assertAlmostEqual(float(arr_vf({"a": a})), -a, delta=self.ATOL)
-
-    def test_case_7_only_lower_bound(self):
-        # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
-        # Exercises the open upper-bound default. u = -c, so V(a) = -1.
-        state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, arr_vf = vfi.solve(
-            case_7["block"],
-            terminal_continuation,
-            state_grid,
-            disc_params={"theta": {"N": 7}},
-            scope=case_7["calibration"],
-        )
-        for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a), 1.0, delta=self.ATOL)
-            self.assertAlmostEqual(float(arr_vf({"a": a})), -1.0, delta=self.ATOL)
-
-    def test_case_8_only_upper_bound(self):
-        # maximize c subject to c <= a (no lower bound) -> c* = a.
-        # Exercises the open lower-bound default. u = c, so V(a) = a.
-        state_grid = {"a": np.linspace(0.2, 1, 5)}
-        dr, _, arr_vf = vfi.solve(
-            case_8["block"],
-            terminal_continuation,
-            state_grid,
-            disc_params={"theta": {"N": 7}},
-            scope=case_8["calibration"],
-        )
-        for a in [0.4, 0.6, 0.9]:
-            self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
-            self.assertAlmostEqual(float(arr_vf({"a": a})), a, delta=self.ATOL)
-
-    def test_case_9_empty_information_set(self):
-        # u = -(c - 3)^2 with an empty information set -> constant c* = 3.
-        # The iset is empty, so the grid is empty too (contract: grid == iset).
-        # The arrival state ``a`` (which the continuation ranges over) is value-
-        # irrelevant under terminal continuation, so it is supplied via the
-        # calibration rather than as a grid axis.
-        state_grid = {}
-        dr, dec_vf, _ = vfi.solve(
-            case_9["block"],
-            terminal_continuation,
-            state_grid,
-            scope={**case_9["calibration"], "a": 0.0},
-        )
-        # empty iset -> the rule is constant across the grid
-        self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
-        # V = -(c* - 3)^2 = 0 at the (constant) optimum
-        self.assertAlmostEqual(
-            float(dec_vf({**case_9["calibration"], "a": 0.0})), 0.0, delta=self.ATOL
-        )
-
-
 # Terminal continuation on the BellmanPeriod convention: V'(s') = 0 for all
-# next-period arrival states, shocks, and parameters. Distinct from the legacy
-# one-argument ``terminal_continuation`` above (which rides the DBlock API).
+# next-period arrival states, shocks, and parameters.
 def bp_terminal(states, shocks, parameters):
     return 0.0
 
@@ -285,11 +41,11 @@ class test_vfi_solve_step(unittest.TestCase):
     projection).
 
     Under a terminal (zero) continuation each conftest case reduces to a single
-    backward-induction step whose optimum is the case's analytic ``optimal_dr``.
-    These mirror ``test_vfi_conftest`` (which exercises legacy ``solve``) but
-    drive ``solve_step`` and assert its 3-tuple return contract. The
-    Mechanism-B reindex is also exercised: a control whose information set
-    is a derived pre-state (``case_3``'s ``m = a + theta``, D-2's ``m = a·R + y``).
+    backward-induction step whose optimum is the case's analytic ``optimal_dr``
+    and whose value is the period reward at that optimum, so both the policy and
+    the value grid have a closed form. The Mechanism-B reindex is also
+    exercised: a control whose information set is a derived pre-state
+    (``case_3``'s ``m = a + theta``, D-2's ``m = a·R + y``).
     """
 
     # The optima here are all linear, so grid interpolation is exact and scipy's
@@ -309,64 +65,110 @@ class test_vfi_solve_step(unittest.TestCase):
 
     def test_case_1_shock_dependent_policy(self):
         # u = -(theta - c)^2 with theta an OBSERVED shock in the iset -> c* = theta
-        dr, _, _ = self._step(
+        dr, value_array, _ = self._step(
             case_1,
             {"a": np.linspace(0, 1, 7), "theta": np.linspace(-1, 1, 7)},
             case_1["calibration"],
         )
         for theta in [-0.6, 0.0, 0.4, 0.9]:
             self.assertAlmostEqual(dr["c"](0.5, theta), theta, delta=self.ATOL)
+        # The observed shock stays an axis of the value grid, and the policy is
+        # exactly optimal there, so V = -(theta - c*)^2 = 0 at every node.
+        self.assertEqual(list(value_array.dims), ["a", "theta"])
+        self.assertTrue(np.allclose(value_array.values, 0.0, atol=self.ATOL))
 
     def test_case_5_double_bounded_upper_binds(self):
-        # maximize c subject to 0 <= c <= a -> c* = a. theta is a HIDDEN shock
-        # (only in the transition); supply a fixed realization via scope.
-        dr, _, _ = self._step(
-            case_5,
-            {"a": np.linspace(0.2, 1, 5)},
-            {**case_5["calibration"], "theta": 0.0},
+        # maximize c subject to 0 <= c <= a -> c* = a; u = c, so V(a) = a.
+        # ``theta`` is a HIDDEN shock the reward does not depend on, and it is
+        # left out of scope so the backup integrates it out rather than being
+        # handed a pinned realization; the expectation therefore collapses onto
+        # the analytic value.
+        grid_a = np.linspace(0.2, 1, 5)
+        dr, value_array, _ = vfi.solve_step(
+            case_5["bp"],
+            bp_terminal,
+            {"a": grid_a},
+            scope=case_5["calibration"],
+            disc_params={"theta": {"N": 7}},
         )
-        for a in [0.4, 0.6, 0.9]:
+        for a in [0.4, 0.6, 0.8]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+        self.assertEqual(list(value_array.dims), ["a"])
+        self.assertTrue(np.allclose(value_array.values, grid_a, atol=self.ATOL))
 
     def test_case_6_double_bounded_lower_binds(self):
-        # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds)
-        dr, _, _ = self._step(
-            case_6,
-            {"a": np.linspace(0.2, 1, 5)},
-            {**case_6["calibration"], "theta": 0.0},
+        # minimize c subject to a <= c <= 2a -> c* = a (lower bound binds);
+        # u = -c, so V(a) = -a.
+        # ``theta`` is a HIDDEN shock the reward does not depend on, and it is
+        # left out of scope so the backup integrates it out rather than being
+        # handed a pinned realization; the expectation therefore collapses onto
+        # the analytic value.
+        grid_a = np.linspace(0.2, 1, 5)
+        dr, value_array, _ = vfi.solve_step(
+            case_6["bp"],
+            bp_terminal,
+            {"a": grid_a},
+            scope=case_6["calibration"],
+            disc_params={"theta": {"N": 7}},
         )
-        for a in [0.4, 0.6, 0.9]:
+        for a in [0.4, 0.6, 0.8]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+        self.assertEqual(list(value_array.dims), ["a"])
+        self.assertTrue(np.allclose(value_array.values, -grid_a, atol=self.ATOL))
 
     def test_case_7_only_lower_bound(self):
-        # minimize c subject to c >= 1 (no upper bound) -> c* = 1.
-        # Exercises the open upper-bound default and the x0 fallback seed.
-        dr, _, _ = self._step(
-            case_7,
-            {"a": np.linspace(0.2, 1, 5)},
-            {**case_7["calibration"], "theta": 0.0},
+        # minimize c subject to c >= 1 (no upper bound) -> c* = 1; u = -c, so
+        # V(a) = -1. Exercises the open upper-bound default and the x0 fallback seed.
+        # ``theta`` is a HIDDEN shock the reward does not depend on, and it is
+        # left out of scope so the backup integrates it out rather than being
+        # handed a pinned realization; the expectation therefore collapses onto
+        # the analytic value.
+        grid_a = np.linspace(0.2, 1, 5)
+        dr, value_array, _ = vfi.solve_step(
+            case_7["bp"],
+            bp_terminal,
+            {"a": grid_a},
+            scope=case_7["calibration"],
+            disc_params={"theta": {"N": 7}},
         )
-        for a in [0.4, 0.6, 0.9]:
+        for a in [0.4, 0.6, 0.8]:
             self.assertAlmostEqual(dr["c"](a), 1.0, delta=self.ATOL)
+        self.assertEqual(list(value_array.dims), ["a"])
+        self.assertTrue(
+            np.allclose(value_array.values, np.full_like(grid_a, -1.0), atol=self.ATOL)
+        )
 
     def test_case_8_only_upper_bound(self):
-        # maximize c subject to c <= a (no lower bound) -> c* = a.
-        # Exercises the open lower-bound default.
-        dr, _, _ = self._step(
-            case_8,
-            {"a": np.linspace(0.2, 1, 5)},
-            {**case_8["calibration"], "theta": 0.0},
+        # maximize c subject to c <= a (no lower bound) -> c* = a; u = c, so
+        # V(a) = a. Exercises the open lower-bound default.
+        # ``theta`` is a HIDDEN shock the reward does not depend on, and it is
+        # left out of scope so the backup integrates it out rather than being
+        # handed a pinned realization; the expectation therefore collapses onto
+        # the analytic value.
+        grid_a = np.linspace(0.2, 1, 5)
+        dr, value_array, _ = vfi.solve_step(
+            case_8["bp"],
+            bp_terminal,
+            {"a": grid_a},
+            scope=case_8["calibration"],
+            disc_params={"theta": {"N": 7}},
         )
-        for a in [0.4, 0.6, 0.9]:
+        for a in [0.4, 0.6, 0.8]:
             self.assertAlmostEqual(dr["c"](a), a, delta=self.ATOL)
+        self.assertEqual(list(value_array.dims), ["a"])
+        self.assertTrue(np.allclose(value_array.values, grid_a, atol=self.ATOL))
 
     def test_case_9_empty_information_set(self):
         # u = -(c - 3)^2 with an empty iset -> constant c* = 3. Grid is empty
         # (grid == iset); the value-irrelevant arrival state a goes in scope.
-        dr, _, policy = self._step(case_9, {}, {**case_9["calibration"], "a": 0.0})
+        dr, value_array, policy = self._step(
+            case_9, {}, {**case_9["calibration"], "a": 0.0}
+        )
         self.assertTrue(np.allclose(dr["c"](), 3.0, atol=self.ATOL))
-        # empty iset -> 0-dimensional policy array
+        # empty iset -> 0-dimensional policy and value arrays
         self.assertEqual(policy["c"].ndim, 0)
+        # V = -(c* - 3)^2 = 0 at the (constant) optimum
+        self.assertAlmostEqual(float(value_array), 0.0, delta=self.ATOL)
 
     def test_return_contract(self):
         # value_array is a DataArray over the grid; policy_array is a dict of
@@ -696,6 +498,31 @@ class test_vfi_solve_step(unittest.TestCase):
         # policy_array stays over the *state grid* (axis a), for warm-starting;
         # only the decision rule moves to the m coordinate.
         self.assertEqual(list(policy["c"].dims), ["a"])
+
+    def test_normalized_consumption_block_consumes_everything(self):
+        # The normalized consumption block declares its shock as a (class,
+        # arguments) pair whose sigma names a calibration entry
+        # (MeanOneLogNormal with sigma="TranShkStd"), so the shock resolves
+        # against the calibration rather than arriving pre-built. theta is
+        # observed through the derived iset (m = b + theta, b = k*R/PermGroFac),
+        # so it becomes a grid axis and the policy reindexes onto m.
+        # Under a zero continuation saving is worthless, so the upper bound
+        # c <= m binds: c* = m.
+        cal = cons.calibration
+        grid_k = np.linspace(0.5, 5.0, 8)
+        dr, value_array, _ = vfi.solve_step(
+            BellmanPeriod(cons.consumption_block_normalized, "DiscFac", cal),
+            bp_terminal,
+            {"k": grid_k},
+            scope=cal,
+            disc_params={"theta": {"N": 7}},
+        )
+        self.assertEqual(list(value_array.dims), ["k", "theta"])
+        thetas = np.asarray(value_array["theta"].values, dtype=float)
+        for k in [1.0, 2.0, 4.0]:
+            for theta in thetas[[0, len(thetas) // 2, -1]]:
+                m = k * cal["R"] / cal["PermGroFac"] + theta
+                self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
 
     def test_d2_single_backup_analytic_continuation(self):
         # D-2 (infinite-horizon CRRA, no shocks): a single backup under the
@@ -1179,18 +1006,15 @@ class test_vfi_protocol(unittest.TestCase):
     Phase 1 deliverable: a VFI-fitted decision rule is a drop-in for the
     torch-based ``BellmanPeriod`` stack.
 
-    ``vfi.solve`` returns numpy/xarray-space decision rules (positional, in
+    ``vfi.solve_step`` returns numpy/xarray-space decision rules (positional, in
     information-set order). ``vfi.tensor_decision_rule`` wraps each so it
     accepts and returns torch tensors. The wrapped dict then flows, unmodified,
     through ``BellmanPeriod.compute_controls`` and ``BellmanEquationLoss``.
     """
 
     def _solve_tensor_dr(self, case, state_grid):
-        dr, _, _ = vfi.solve(
-            case["block"],
-            terminal_continuation,
-            state_grid,
-            scope=case["calibration"],
+        dr, _, _ = vfi.solve_step(
+            case["bp"], bp_terminal, state_grid, scope=case["calibration"]
         )
         return {c: vfi.tensor_decision_rule(rule) for c, rule in dr.items()}
 

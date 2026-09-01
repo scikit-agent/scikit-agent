@@ -126,6 +126,14 @@ and this project adheres to
   are unchanged; a block transition is about 3x faster, and value function
   iteration on the D-4 benchmark about 1.5x.
 
+### Removed
+
+- `vfi.solve`, the legacy value-backup entry point. `vfi.solve_step` replaces
+  it: it carries an explicit discount factor rather than folding one into the
+  continuation, and returns the value and policy as grids over the state grid
+  rather than as dict-taking callables. A block with no control at all is out of
+  its scope; `DBlock.get_arrival_value_function` still evaluates one.
+
 ### Fixed
 
 - A `Uniform` whose bounds coincide, and a `Normal` with zero spread, draw their

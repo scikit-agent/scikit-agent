@@ -159,14 +159,51 @@ class test_DBlock(unittest.TestCase):
         self.assertEqual(dv1, dv0 + cv)
 
     def test_arrival_value_function(self):
+        # c = m consumes everything, so a = 0 and the value is u(m) integrated
+        # over the discretized theta: E[m^(1-CRRA)/(1-CRRA)] with m = b + theta.
         av = self.cblock.get_arrival_value_function(
             {"theta": {"N": 5}},
             {"c": lambda m: m},
             lambda a: 0,
             calibration=cons.calibration,
         )
+        arrival = {"k": 1, "R": 1.05, "PermGroFac": 1.1, "CRRA": 2}
 
-        av({"k": 1, "R": 1.05, "PermGroFac": 1.1, "theta": 1, "CRRA": 2})
+        b = arrival["k"] * arrival["R"] / arrival["PermGroFac"]
+        dstn = self.cblock.discretize(
+            {"theta": {"N": 5}}, calibration=cons.calibration
+        ).shocks["theta"]
+        want = float(
+            np.dot(dstn.pmv, [-1.0 / (b + theta) for theta in np.ravel(dstn.points)])
+        )
+
+        self.assertAlmostEqual(float(av(arrival)), want)
+
+    def test_arrival_value_function_without_a_control(self):
+        """A block with no control has a value: expected reward plus continuation.
+
+        Nothing in the value functions requires a decision, so the rule dict is
+        empty and no optimization is involved -- this is policy evaluation, of
+        which a block whose controls are all pinned by rules is the same case.
+        """
+        block = model.DBlock(
+            **{
+                "name": "no control",
+                "shocks": {"coin": Bernoulli(p=0.5)},
+                "dynamics": {
+                    "m": lambda y, coin: y + coin,
+                    "a": lambda m: m - 1,
+                    "u": lambda m: 0,
+                },
+                "reward": {"u": "agent"},
+            }
+        )
+        self.assertEqual(block.get_controls(), {})
+
+        av = block.get_arrival_value_function({}, {}, lambda a: a)
+
+        # u = 0 and continuation(a) = a, so V(y) = E[y + coin - 1] = y - 0.5.
+        self.assertAlmostEqual(float(av({"y": 10})), 9.5)
 
     def test_arrival_states(self):
         a_arrival_states = self.test_block_A.get_arrival_states(

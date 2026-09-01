@@ -17,7 +17,12 @@ from a continuation value function and the stage dynamics of model blocks.
 ### Core VFI Functions
 
 ```{eval-rst}
-.. autofunction:: skagent.algos.vfi.solve
+.. autofunction:: skagent.algos.vfi.solve_step
+   :no-index:
+```
+
+```{eval-rst}
+.. autofunction:: skagent.algos.vfi.solve_bellman
    :no-index:
 ```
 

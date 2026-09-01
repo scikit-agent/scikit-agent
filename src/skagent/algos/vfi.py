@@ -1,19 +1,17 @@
 """
 Value function iteration (VFI).
 
-Derive a decision rule, decision value function, and arrival value function for
-a single :class:`~skagent.block.DBlock` stage by value function iteration: at each
-point of a grid over the decision's information set, solve an exact
+Derive a decision rule and a gridded value function for a single
+:class:`~skagent.bellman.BellmanPeriod` by value function iteration: at each point
+of a grid over the period's arrival states, solve an exact
 :func:`scipy.optimize.minimize` for the control that maximizes the period reward
-plus a continuation value.
+plus the discounted continuation value.
 """
 
 from skagent.bellman import BellmanPeriod
-from skagent.block import DBlock
 from skagent.distributions import expected
 from skagent.relevance import HIDDEN, MIXED, OBSERVED
 from skagent.utils import param_names
-import itertools
 import logging
 import warnings
 import numpy as np
@@ -187,164 +185,8 @@ def grid_to_data_array(
     return da
 
 
-def solve(block: DBlock, continuation, state_grid: AxisSpec, disc_params={}, scope={}):
-    """
-    Solve a ``DBlock`` stage by value function iteration.
-
-    At each point of *state_grid*, the optimal control(s) are found with
-    :func:`scipy.optimize.minimize`, maximizing the period reward plus the
-    *continuation* value of the resulting states. The tabulated optima are then
-    interpolated into a decision rule.
-
-    VFI assumes *full observation*: the decision conditions on its complete
-    information set and the per-point optimization never integrates over
-    unobserved variables. (The only expectation machinery in this module is in
-    ``block.get_arrival_value_function``; the optimization here does not use it.)
-    Hidden-shock problems whose optimum requires an expectation are out of scope.
-
-    Parameters
-    ----------
-    block : DBlock
-        The stage to solve. Must contain at most one control variable;
-        multi-control stages raise ``Exception``.
-    continuation : callable
-        The continuation value function, called with the post-transition values
-        of the variables named in its signature. Fold any discount factor into
-        this function (the backup is ``reward + continuation``).
-    state_grid : AxisSpec
-        A grid over the control's information set: one axis per variable the
-        decision may condition on. The returned decision rule takes these as
-        positional arguments in ``control.iset`` order. Variables the dynamics
-        need but the decision does not (e.g. a shock that only enters the
-        transition) go in *scope*, not here. For an empty information set, pass
-        ``{}``.
-    disc_params : Mapping, optional
-        Discretization parameters for the shock distribution, forwarded to
-        ``block.get_arrival_value_function``.
-    scope : Mapping, optional
-        The fixed scope for the per-point optimization: merged with each grid
-        point to form the ``pre_states`` under which the dynamics, reward, and
-        continuation are evaluated.
-
-        .. note::
-           This is broader than ``calibration`` elsewhere in the library, which
-           denotes fixed, single-valued *parameters* only. Here (legacy VFI
-           usage) it is a general scope bag that also holds fixed exogenous
-           values outside the information set, such as a shock realization
-           ``psi``. Read it as "scope," not "parameters."
-
-    Returns
-    -------
-    dr_from_data : dict of callable
-        One decision rule per control, keyed by control symbol; each takes its
-        information-set values as positional arguments in ``control.iset`` order.
-    dec_vf : callable
-        The decision value function for the fitted rule.
-    arr_vf : callable
-        The arrival value function for the fitted rule (takes the shock
-        expectation via *disc_params*).
-    """
-
-    # state-rule value function
-    srv_function = block.get_state_rule_value_function_from_continuation(
-        continuation, screen=True
-    )
-
-    # get_controls() returns a dict[sym, Control]; VFI works with the
-    # ordered list of control symbols.
-    controls = list(block.get_controls())
-
-    # pseudo
-    policy_array = grid_to_data_array(state_grid)
-    value_array = grid_to_data_array(state_grid)
-
-    # loop through every point in the state grid
-    for state_point in itertools.product(*state_grid.values()):
-        # build a dictionary from these states, as scope for the optimization
-        state_vals = {k: v for k, v in zip(state_grid.keys(), state_point)}
-
-        # The value of the action is computed given the fixed scope and the
-        # states for the current point on the state-grid.
-        pre_states = scope.copy()
-        pre_states.update(state_vals)
-
-        # prepare function to optimize
-        def negated_value(a):
-            dr = {c: get_action_rule(a[i]) for i, c in enumerate(controls)}
-
-            # negative, for minimization later
-            return -srv_function(pre_states, dr)
-
-        if len(controls) == 0:
-            # if no controls, no optimization is necessary
-            pass
-        elif len(controls) == 1:
-            ## get lower bound.
-            ## assumes only one control currently
-            lower_bound = -1e12  # a very low number
-            feq = block.dynamics[controls[0]].lower_bound
-            if feq is not None:
-                lower_bound = feq(*[pre_states[var] for var in param_names(feq)])
-
-            ## get upper bound
-            ## assumes only one control currently
-            upper_bound = 1e12  # a very high number
-            feq = block.dynamics[controls[0]].upper_bound
-
-            if feq is not None:
-                upper_bound = feq(*[pre_states[var] for var in param_names(feq)])
-
-            bounds = ((lower_bound, upper_bound),)
-
-            res = minimize(  # choice of
-                negated_value,
-                1,  # x0 is starting guess, here arbitrary.
-                bounds=bounds,
-            )
-
-            dr_best = {c: get_action_rule(res.x[i]) for i, c in enumerate(controls)}
-
-            if res.success:
-                policy_array.sel(**state_vals).variable.data.put(
-                    0, res.x[0]
-                )  # will only work for scalar actions
-                value_array.sel(**state_vals).variable.data.put(
-                    0, srv_function(pre_states, dr_best)
-                )
-            else:
-                print(f"Optimization failure at {state_vals}.")
-                print(res)
-
-                dr_best = {c: get_action_rule(res.x[i]) for i, c in enumerate(controls)}
-
-                policy_array.sel(**state_vals).variable.data.put(0, res.x[0])  # ?
-                value_array.sel(**state_vals).variable.data.put(
-                    0, srv_function(pre_states, dr_best)
-                )
-        elif len(controls) > 1:
-            raise Exception(
-                f"Value backup iteration is not yet implemented for stages with {len(controls)} > 1 control variables."
-            )
-
-    # Use the xarray interpolator to create a decision rule. state_grid is the
-    # control's information set (see the docstring); transposing to iset order
-    # makes solve own the contract that the rule's positional arguments follow
-    # control.iset, regardless of how the caller ordered the grid.
-    dr_from_data = {
-        c: ar_from_data(policy_array.transpose(*block.dynamics[c].iset))
-        for c in controls
-    }
-
-    dec_vf = block.get_decision_value_function(dr_from_data, continuation)
-    arr_vf = block.get_arrival_value_function(
-        disc_params, dr_from_data, continuation, calibration=scope
-    )
-
-    return dr_from_data, dec_vf, arr_vf
-
-
-# Sentinels for an "open" (effectively infinite) bound, symmetric with legacy
-# ``solve``. A bound this large is treated as absent when seeding ``x0``.
+# Sentinels for an "open" (effectively infinite) bound: a bound this large is
+# treated as absent when seeding ``x0``.
 _LOWER_OPEN = -1e12
 _UPPER_OPEN = 1e12
 
@@ -745,10 +587,9 @@ def solve_step(
     static block has no arrival states for a continuation to read, so the backup
     reduces to maximizing the period reward.
 
-    Unlike legacy :func:`solve` (which rides the ``DBlock`` continuation API and
-    folds the discount factor into the continuation), this speaks the
-    ``BellmanPeriod`` protocol the rest of the torch stack uses, with an explicit
-    discount factor and multi-reward summation, and is empty-shock-safe.
+    Speaks the ``BellmanPeriod`` protocol the rest of the torch stack uses, with
+    an explicit discount factor and multi-reward summation, and is
+    empty-shock-safe.
 
     Shocks are handled by their information role, which is derived from the
     block's own structure (:mod:`skagent.relevance`) rather than inferred from
