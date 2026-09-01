@@ -725,6 +725,7 @@ def solve_step(
     agent: str | None = None,
     scope: Mapping = {},
     disc_params: Mapping = {},
+    decision_rules: Mapping[str, Callable] | None = None,
     x0: float = 1.0,
     x0_policy: Mapping[str, xr.DataArray] | None = None,
     artificial_borrowing_constraint: bool = False,
@@ -796,6 +797,12 @@ def solve_step(
         gridded or integrated. Note this fixes a value for the solve; it does not
         make the symbol a model parameter, so it does not affect any shock's
         information role.
+    decision_rules : Mapping[str, Callable], optional
+        Rules for the controls *not* being optimized here, which is what reduces
+        a multi-control block to one control's problem. Supplied per call, since
+        which rules the others are held at is a property of the question rather
+        than of the model; the controls being optimized are pinned to their trial
+        values and ignore any rule given for them.
     disc_params : Mapping, optional
         Per-shock discretization arguments, keyed by shock symbol (e.g.
         ``{"theta": {"N": 7}}``), forwarded to that shock's
@@ -975,7 +982,13 @@ def solve_step(
             sh = {**obs, **extra_shocks}
             # One block pass: the ex post values carry the reward symbols, the
             # discount factor and the next-period arrival states alike.
-            post = bp.post_function(states, ctrl, shocks=sh, parameters=params)
+            post = bp.post_function(
+                states,
+                ctrl,
+                shocks=sh,
+                parameters=params,
+                decision_rules=decision_rules,
+            )
             r = sum(post[s] for s in reward_syms)
             beta = bp.resolve_discount_factor(post)
             s_next = bp.select_arrival_states(post)

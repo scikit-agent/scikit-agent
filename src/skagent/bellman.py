@@ -68,8 +68,6 @@ class BellmanPeriod(GroundedBlock):
         though nothing is discounted.
     calibration : dict[str, Any]
         Dictionary of calibration parameters for the model.
-    decision_rules : dict[str, Callable] | None, optional
-        Dictionary mapping control variable names to decision rule functions.
     rng : numpy.random.Generator, optional
         Generator for this period's shock draws. Since the shocks are resolved
         against this period's calibration, it is the period rather than the
@@ -83,8 +81,6 @@ class BellmanPeriod(GroundedBlock):
         The name of the discount factor variable.
     calibration : dict[str, Any]
         The calibration parameters.
-    decision_rules : dict[str, Callable] | None
-        The decision rules for control variables.
     arrival_states : set[str]
         The set of arrival state variable names.
     rng : numpy.random.Generator | None
@@ -96,8 +92,7 @@ class BellmanPeriod(GroundedBlock):
     block types beyond DBlock/RBlock.
     """
 
-    discount_variable: str
-    decision_rules: dict[str, Callable] | None
+    discount_variable: str | None
     arrival_states: set[str]
 
     def __init__(
@@ -105,12 +100,10 @@ class BellmanPeriod(GroundedBlock):
         block: Block,
         discount_variable: str,
         calibration: dict[str, Any],
-        decision_rules: dict[str, Callable] | None = None,
         rng: np.random.Generator | None = None,
     ) -> None:
         super().__init__(block, calibration, rng=rng)
         self.discount_variable = discount_variable
-        self.decision_rules = decision_rules
         self.arrival_states = self.block.get_arrival_states(calibration)
 
     def _resolve_inputs(
@@ -120,11 +113,13 @@ class BellmanPeriod(GroundedBlock):
         parameters: dict[str, Any] | None,
     ) -> tuple[dict[str, Any], dict[str, Callable], dict[str, Any]]:
         """Resolve ``(shocks, decision_rules, parameters)``, replacing ``None``
-        with defaults: ``{}`` for shocks; instance ``decision_rules`` then
-        ``{}`` for decision_rules; instance calibration for parameters.
+        with defaults: ``{}`` for shocks and for decision_rules; instance
+        calibration for parameters.
+
+        Decision rules are supplied per call rather than held on the period: a
+        rule is a solution, and which rules the other controls are held at is a
+        property of the question being asked rather than of the model.
         """
-        if decision_rules is None:
-            decision_rules = self.decision_rules
         if decision_rules is None:
             decision_rules = {}
         return (
