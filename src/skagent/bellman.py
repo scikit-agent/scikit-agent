@@ -60,12 +60,11 @@ class BellmanPeriod(GroundedBlock):
     ----------
     block : Block
         The underlying block model containing dynamics, shocks, and reward definitions.
-    discount_variable : str
-        A variable name which represents the discount factor for future value streams.
-        Required, and resolved out of the post-transition values. A static block
-        wrapped in a period — as :func:`skagent.solver.solve_multiple_controls`
-        requires — must still carry a discount factor in its calibration, even
-        though nothing is discounted.
+    discount_variable : str or None
+        A variable name which represents the discount factor for future value
+        streams, resolved out of the post-transition values. Pass ``None`` for a
+        static block, where nothing is discounted and there is no discount factor
+        to name; :meth:`resolve_discount_factor` then returns ``1.0``.
     calibration : dict[str, Any]
         Dictionary of calibration parameters for the model.
     rng : numpy.random.Generator, optional
@@ -77,8 +76,9 @@ class BellmanPeriod(GroundedBlock):
     ----------
     block : Block
         The underlying block model.
-    discount_variable : str
-        The name of the discount factor variable.
+    discount_variable : str or None
+        The name of the discount factor variable, or ``None`` when nothing is
+        discounted.
     calibration : dict[str, Any]
         The calibration parameters.
     arrival_states : set[str]
@@ -98,7 +98,7 @@ class BellmanPeriod(GroundedBlock):
     def __init__(
         self,
         block: Block,
-        discount_variable: str,
+        discount_variable: str | None,
         calibration: dict[str, Any],
         rng: np.random.Generator | None = None,
     ) -> None:
@@ -680,8 +680,13 @@ class BellmanPeriod(GroundedBlock):
         with a diagnostic message if the discount variable is missing.
         Expects the post-transition output returned by
         :meth:`post_function`.
+
+        Returns ``1.0`` when the period names no discount variable, which is the
+        static case: there is no future value stream to discount.
         """
         dv = self.discount_variable
+        if dv is None:
+            return 1.0
         if dv not in post:
             raise KeyError(
                 f"Discount variable '{dv}' not found in post-transition output. "

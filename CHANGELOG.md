@@ -75,6 +75,17 @@ and this project adheres to
 
 ### Changed
 
+- `vfi.bellman_step` is now `vfi.solve_step`. It applies to static and dynamic
+  periods alike, so it is no longer named for Bellman; `solve_bellman`, which
+  iterates it to a fixed point, keeps its name.
+- `BellmanPeriod` takes `discount_variable=None` for a static period, where
+  nothing is discounted; `resolve_discount_factor` then returns `1.0`. Passing a
+  name that the post-transition output lacks still raises.
+- `BellmanPeriod` no longer takes `decision_rules`. Rules for the controls not
+  being optimized are passed per call, which `post_function` and the loss and
+  environment modules already did; `solve_step` takes them too.
+- `TabularBestResponseSolver` takes a `GroundedBlock` instead of a block and a
+  calibration. It was already building one internally to draw its shocks.
 - A shock argument referring to a symbol the scope does not assign now raises a
   `KeyError` naming the shock and the argument, not just the symbol.
 - `solve_multiple_controls` takes its calibration from the period it is given.
