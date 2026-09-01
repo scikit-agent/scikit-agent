@@ -717,7 +717,7 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
     return lb, ub
 
 
-def bellman_step(
+def solve_step(
     bp: BellmanPeriod,
     continuation_vf: Callable,
     state_grid: AxisSpec,
@@ -730,15 +730,19 @@ def bellman_step(
     artificial_borrowing_constraint: bool = False,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
-    One exact value backup over *state_grid* on the ``BellmanPeriod`` protocol.
+    One exact value backup over *state_grid*.
 
-    This is the per-iteration update of value-function iteration: at each grid
-    point the optimal control is found with :func:`scipy.optimize.minimize`,
-    maximizing the period reward plus the discounted *continuation* value of the
-    resulting arrival states. Under a terminal (zero) continuation,
-    ``continuation_vf = lambda s, sh, p: 0.0``, the result is the single-step
-    solution; the value-iteration wrapper ``solve_bellman`` iterates it to a
-    fixed point.
+    At each grid point the optimal control is found with
+    :func:`scipy.optimize.minimize`, maximizing the period reward plus the
+    discounted *continuation* value of the resulting arrival states. Under a
+    terminal (zero) continuation, ``continuation_vf = lambda s, sh, p: 0.0``, the
+    result is the single-step solution; the value-iteration wrapper
+    :func:`solve_bellman` iterates it to a fixed point.
+
+    Applies to static and dynamic periods alike, which is why it is not named for
+    Bellman: a period naming no discount variable discounts by ``1.0``, and a
+    static block has no arrival states for a continuation to read, so the backup
+    reduces to maximizing the period reward.
 
     Unlike legacy :func:`solve` (which rides the ``DBlock`` continuation API and
     folds the discount factor into the continuation), this speaks the
@@ -832,7 +836,7 @@ def bellman_step(
     controls = list(bp.get_controls())
     if len(controls) == 0:
         raise NotImplementedError(
-            "bellman_step needs at least one control; a control-free block has "
+            "solve_step needs at least one control; a control-free block has "
             "no decision to optimize."
         )
 
@@ -1007,7 +1011,7 @@ def bellman_step(
         res = min(results, key=lambda r: r.fun)  # ties keep the earliest candidate
         if not res.success:
             logging.warning(
-                "bellman_step optimization did not converge at %s: %s",
+                "solve_step optimization did not converge at %s: %s",
                 point_vals,
                 res.message,
             )
@@ -1100,7 +1104,7 @@ def value_array_to_function(
     :func:`solve_bellman` feeds iteration *n*'s value grid back as iteration
     *(n+1)*'s continuation. This wraps the grid as a callable in the
     ``bp.compute_value`` convention ``wf(states, shocks, parameters)``, so it
-    drops straight into :func:`bellman_step`'s ``continuation_vf`` slot.
+    drops straight into :func:`solve_step`'s ``continuation_vf`` slot.
 
     The decision value grid ranges over arrival states and any *observed*-shock
     axes. Those shock axes are first integrated out into the arrival value
@@ -1129,7 +1133,7 @@ def value_array_to_function(
     ----------
     value_array : xarray.DataArray
         A gridded decision value function, e.g. the ``value_array`` returned by
-        :func:`bellman_step`; its axes are arrival states and any observed-shock
+        :func:`solve_step`; its axes are arrival states and any observed-shock
         nodes.
     bp : BellmanPeriod
         The recurring period; used to identify and discretize the shock axes.
@@ -1201,7 +1205,7 @@ def solve_bellman(
     """
     Solve a recurring ``BellmanPeriod`` by value-function iteration.
 
-    Iterates :func:`bellman_step` to a fixed point: each backup uses the previous
+    Iterates :func:`solve_step` to a fixed point: each backup uses the previous
     iterate's value grid as its continuation (rebuilt via
     :func:`value_array_to_function`) and offers the previous iterate's
     ``policy_array`` as a per-point warm start — one multi-start candidate among
@@ -1210,7 +1214,7 @@ def solve_bellman(
     grid falls below *tol*, or after *max_iter* iterations.
 
     Iteration 1 uses the terminal (zero) continuation, so
-    ``solve_bellman(..., max_iter=1)`` reproduces :func:`bellman_step` under a
+    ``solve_bellman(..., max_iter=1)`` reproduces :func:`solve_step` under a
     terminal continuation. For an infinite-horizon problem the loop converges
     geometrically (modulus the discount factor) to the stationary solution; for a
     finite horizon of length ``T`` set ``max_iter=T``.
@@ -1240,7 +1244,7 @@ def solve_bellman(
         The recurring period providing the model mechanics.
     state_grid : AxisSpec
         A grid over the value function's domain (arrival states and/or observed
-        shocks); see :func:`bellman_step`.
+        shocks); see :func:`solve_step`.
     continuation_vf : callable, optional
         Initial continuation guess ``continuation_vf(states, shocks, parameters)``.
         Defaults to the terminal (zero) continuation.
@@ -1252,13 +1256,13 @@ def solve_bellman(
     disc_params : Mapping, optional
         Per-shock discretization arguments, threaded into each backup (for
         hidden shocks) and into :func:`value_array_to_function` (for observed
-        shocks); see :func:`bellman_step`.
+        shocks); see :func:`solve_step`.
     tol : float, optional
         Convergence tolerance on the sup-norm change in the value grid.
     max_iter : int, optional
         Maximum number of backups.
     x0 : float, optional
-        Modest multi-start seed candidate passed to :func:`bellman_step`.
+        Modest multi-start seed candidate passed to :func:`solve_step`.
     raise_on_nonconvergence : bool, optional
         If ``True``, raise :class:`RuntimeError` when the loop hits *max_iter*
         with the sup-norm change still above *tol*; otherwise emit a
@@ -1266,14 +1270,14 @@ def solve_bellman(
         ``OptimizeResult.success`` convention, O5). At a finite horizon set
         through *max_iter* this condition is expected, so leave it ``False``.
     artificial_borrowing_constraint : bool, optional
-        Forwarded to :func:`bellman_step`: confine next-period arrival states to
+        Forwarded to :func:`solve_step`: confine next-period arrival states to
         the state grid (grid edge = slack artificial borrowing limit),
         so the rebuilt continuation is never extrapolated off-grid.
 
     Returns
     -------
     dr_from_data : dict of callable
-        One decision rule per control at the fixed point (see :func:`bellman_step`).
+        One decision rule per control at the fixed point (see :func:`solve_step`).
     value_array : xarray.DataArray
         The converged value grid. Its ``attrs`` carry ``n_iter``, ``converged``
         (bool), and ``residual`` (the final sup-norm change).
@@ -1307,7 +1311,7 @@ def solve_bellman(
     converged = False
     residual = float("inf")
     for it in range(max_iter):
-        dr, value_array, policy_array = bellman_step(
+        dr, value_array, policy_array = solve_step(
             bp,
             cont,
             state_grid,

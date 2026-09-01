@@ -277,9 +277,9 @@ def bp_terminal(states, shocks, parameters):
     return 0.0
 
 
-class test_vfi_bellman_step(unittest.TestCase):
+class test_vfi_solve_step(unittest.TestCase):
     """
-    Phase-2 design: ``vfi.bellman_step`` — one exact value backup
+    Phase-2 design: ``vfi.solve_step`` — one exact value backup
     on the ``BellmanPeriod`` protocol; single- and multi-control (one joint
     ``scipy.minimize`` over the stacked control vector, per-control iset
     projection).
@@ -287,7 +287,7 @@ class test_vfi_bellman_step(unittest.TestCase):
     Under a terminal (zero) continuation each conftest case reduces to a single
     backward-induction step whose optimum is the case's analytic ``optimal_dr``.
     These mirror ``test_vfi_conftest`` (which exercises legacy ``solve``) but
-    drive ``bellman_step`` and assert its 3-tuple return contract. The
+    drive ``solve_step`` and assert its 3-tuple return contract. The
     Mechanism-B reindex is also exercised: a control whose information set
     is a derived pre-state (``case_3``'s ``m = a + theta``, D-2's ``m = a·R + y``).
     """
@@ -297,7 +297,7 @@ class test_vfi_bellman_step(unittest.TestCase):
     ATOL = 1e-3
 
     def _step(self, case, state_grid, scope):
-        return vfi.bellman_step(case["bp"], bp_terminal, state_grid, scope=scope)
+        return vfi.solve_step(case["bp"], bp_terminal, state_grid, scope=scope)
 
     def test_case_0_interior_optimum(self):
         # u = -c^2, unconstrained -> c* = 0 for all a
@@ -401,7 +401,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # solve_bellman uses across iterations).
         grid = {"a": np.linspace(0, 2, 11)}
         _, _, policy1 = self._step(case_0, grid, case_0["calibration"])
-        _, _, policy2 = vfi.bellman_step(
+        _, _, policy2 = vfi.solve_step(
             case_0["bp"],
             bp_terminal,
             grid,
@@ -449,7 +449,7 @@ class test_vfi_bellman_step(unittest.TestCase):
             "b": np.linspace(-1.5, 1.5, 5),  # outside c.iset = [a, theta]
             "theta": np.linspace(-1, 1, 5),
         }
-        dr, value_array, policy = vfi.bellman_step(
+        dr, value_array, policy = vfi.solve_step(
             case_11["bp"], continuation, grid, agent="agent"
         )
         # c.iset = [a, theta]; the b axis is outside it and the optimum is
@@ -482,7 +482,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # inside the max: E_theta[-(theta - c)^2] = -(Var[theta] + (E[theta]-c)^2)
         # is maximized at c = E[theta] = 0, independent of a. This is the minimal
         # unit test of the hidden-shock discretization.
-        dr, value_array, _ = vfi.bellman_step(
+        dr, value_array, _ = vfi.solve_step(
             case_2["bp"],
             bp_terminal,
             {"a": np.linspace(0, 1, 5)},
@@ -516,7 +516,7 @@ class test_vfi_bellman_step(unittest.TestCase):
 
         bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
         grid = {"a": np.linspace(0.5, 5.0, 12)}
-        dr, _, _ = vfi.bellman_step(bp, u2_continuation, grid, scope=cal)
+        dr, _, _ = vfi.solve_step(bp, u2_continuation, grid, scope=cal)
         for a in [1.0, 2.0, 3.0]:
             m = R * a + 1.0  # psi = 1 at sigma_psi = 0
             want = float(
@@ -544,7 +544,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         def solve(sigma_psi):
             cal = {**bm.u2_calibration, "sigma_psi": sigma_psi}
             bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
-            dr, _, _ = vfi.bellman_step(
+            dr, _, _ = vfi.solve_step(
                 bp, u2_continuation, grid, scope=cal, disc_params={"psi": {"N": 7}}
             )
             return np.array([dr["c"](m) for m in ms])
@@ -575,7 +575,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         def solve(sigma_psi):
             cal = {**bm.u2_calibration, "sigma_psi": sigma_psi}
             bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
-            dr, _, _ = vfi.bellman_step(
+            dr, _, _ = vfi.solve_step(
                 bp, u2_continuation, grid, scope=cal, disc_params={"psi": {"N": 7}}
             )
             return np.array([dr["c"](m) for m in ms])
@@ -603,7 +603,7 @@ class test_vfi_bellman_step(unittest.TestCase):
             return quad_a * m_next - (quad_b * kappa / 2.0) * (m_next + H) ** 2
 
         bp = BellmanPeriod(bm.u1_block, "DiscFac", cal)
-        dr, _, _ = vfi.bellman_step(
+        dr, _, _ = vfi.solve_step(
             bp,
             u1_continuation,
             {"A": np.linspace(0.5, 6.0, 14)},
@@ -636,7 +636,7 @@ class test_vfi_bellman_step(unittest.TestCase):
             return B * np.log(R * (states["a"] + h))
 
         bp = BellmanPeriod(bm.u3_block, "DiscFac", cal)
-        dr, _, _ = vfi.bellman_step(
+        dr, _, _ = vfi.solve_step(
             bp,
             u3_continuation,
             {"a": np.linspace(0.5, 8.0, 14)},
@@ -663,7 +663,7 @@ class test_vfi_bellman_step(unittest.TestCase):
             return B * wealth ** (1 - sigma) / (1 - sigma)
 
         bp = BellmanPeriod(bm.u3_block, "DiscFac", cal)
-        dr, _, _ = vfi.bellman_step(
+        dr, _, _ = vfi.solve_step(
             bp,
             u3_continuation,
             {"a": np.linspace(0.5, 8.0, 14)},
@@ -681,7 +681,7 @@ class test_vfi_bellman_step(unittest.TestCase):
     def test_case_3_derived_iset_reproject(self):
         # u = -(m - c)^2 with iset = [m], m = a + theta a derived pre-state. The
         # grid is over the arrival state a (theta, psi fixed in scope, so the
-        # map a -> m = a + theta is 1-D and strictly monotone); bellman_step
+        # map a -> m = a + theta is 1-D and strictly monotone); solve_step
         # reindexes the policy onto the m coordinate -> c* = m. theta is held at
         # a non-zero value so the m axis genuinely differs from the a axis.
         theta0 = 0.5
@@ -722,7 +722,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # ``[0, m + H]`` is ~17.7, far above the true optimum (~1.2) and outside
         # L-BFGS-B's basin, so on that seed alone the backup stalls at ~6.97; the
         # clamped ``x0`` candidate lands in the basin and wins on ``res.fun``.
-        dr, _, _ = vfi.bellman_step(bp, d2_continuation, grid, scope=cal)
+        dr, _, _ = vfi.solve_step(bp, d2_continuation, grid, scope=cal)
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
@@ -765,7 +765,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # ungridded-arrival-state guard does not apply. No seeding hint: as in D-2,
         # multi-start covers the [0, m + H] box whose midpoint stalls.
         scope = {**cal, "liv": 1.0}
-        dr, _, _ = vfi.bellman_step(bp, d3_continuation, grid, scope=scope)
+        dr, _, _ = vfi.solve_step(bp, d3_continuation, grid, scope=scope)
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y
             want = float(np.asarray(bm.d3_analytical_policy({"a": a}, {}, cal)["c"]))
@@ -775,7 +775,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         # Gridding case_3 over BOTH a and theta makes m = a + theta vary along two
         # grid axes, so no axis can be relabelled m. The 25 (m, c) pairs are
         # samples of one 1-D rule and are gathered into it: c* = m.
-        dr, _, _ = vfi.bellman_step(
+        dr, _, _ = vfi.solve_step(
             case_3["bp"],
             bp_terminal,
             {"a": np.linspace(0.1, 2.0, 5), "theta": np.linspace(-1, 1, 5)},
@@ -800,7 +800,7 @@ class test_vfi_bellman_step(unittest.TestCase):
         )
         bp = BellmanPeriod(block, "beta", {"beta": 0.9})
         with self.assertRaises(NotImplementedError):
-            vfi.bellman_step(
+            vfi.solve_step(
                 bp,
                 bp_terminal,
                 {
@@ -837,7 +837,7 @@ class test_vfi_bellman_step(unittest.TestCase):
 class test_vfi_solve_bellman(unittest.TestCase):
     """
     Phase-2 design: ``vfi.solve_bellman`` — value-function iteration
-    that drives ``bellman_step`` to a fixed point, rebuilding the continuation
+    that drives ``solve_step`` to a fixed point, rebuilding the continuation
     from each iterate's value grid via ``vfi.value_array_to_function``.
 
     The headline test is **D-4**: a deterministic CRRA model with a binding
@@ -927,7 +927,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         #
         # The dead slice is degenerate: at liv = 0 reward and continuation are both
         # 0, so the objective is constant in c and the optimizer returns its seed.
-        # bellman_step marks those points UNIDENTIFIED and the iset projection
+        # solve_step marks those points UNIDENTIFIED and the iset projection
         # takes its invariance check and its surviving slice over identified points
         # only (liv is outside c's iset = [m], so the axis is dropped).
         cal = bm.d3_calibration
@@ -965,9 +965,9 @@ class test_vfi_solve_bellman(unittest.TestCase):
             self.assertAlmostEqual(got, want, delta=8e-2)
             self.assertLess(abs(got - want), abs(got - kappa * (m + H)))
 
-    def test_max_iter_one_matches_bellman_step(self):
+    def test_max_iter_one_matches_solve_step(self):
         # Iteration 1 uses the terminal (zero) continuation, so max_iter=1 is
-        # exactly a single bellman_step under a terminal continuation (loop
+        # exactly a single solve_step under a terminal continuation (loop
         # wiring check). It cannot converge in one step -> converged=False + warn.
         cal = bm.d4_calibration
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
@@ -975,7 +975,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             dr_loop, va_loop, _ = vfi.solve_bellman(bp, grid, scope=cal, max_iter=1)
-        dr_step, va_step, _ = vfi.bellman_step(bp, bp_terminal, grid, scope=cal)
+        dr_step, va_step, _ = vfi.solve_step(bp, bp_terminal, grid, scope=cal)
         self.assertFalse(va_loop.attrs["converged"])
         self.assertEqual(va_loop.attrs["n_iter"], 1)
         self.assertTrue(np.allclose(va_loop.values, va_step.values))
@@ -1302,13 +1302,13 @@ class test_vfi_stateless(unittest.TestCase):
         )
         return BellmanPeriod(block, "beta", {"beta": 0.9})
 
-    def test_bellman_step_accepts_an_empty_grid(self):
+    def test_solve_step_accepts_an_empty_grid(self):
         # A contract fact about the grid argument, not a recommendation: the
         # backup degenerates to a single constrained maximization of the reward.
         bp = self._one_shot()
         self.assertEqual(bp.arrival_states, set())
 
-        _, value, policy = vfi.bellman_step(bp, bp_terminal, {})
+        _, value, policy = vfi.solve_step(bp, bp_terminal, {})
 
         self.assertAlmostEqual(float(policy["x"]), 0.3, places=6)
         self.assertAlmostEqual(float(value), 0.0, places=6)
