@@ -84,6 +84,17 @@ below.
    :members:
 ```
 
+## Cournot
+
+Quantity competition among several firms: the smallest model with an entity
+class, an agent role and an aggregation. Its decision profiles are supplied
+rather than solved for, since the model has a crossing.
+
+```{eval-rst}
+.. automodule:: skagent.models.cournot
+   :members:
+```
+
 ## Multi-Agent Influence Diagrams (MAIDs)
 
 Game-theoretic influence diagrams from the literature, encoded to illustrate

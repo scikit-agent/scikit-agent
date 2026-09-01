@@ -65,6 +65,15 @@ does, and is what solvers, simulators and environments are handed.
    :show-inheritance:
 ```
 
+### Entity
+
+```{eval-rst}
+.. autoclass:: skagent.block.Entity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
 ## Model Utilities
 
 ### Simulation Dynamics

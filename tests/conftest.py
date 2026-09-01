@@ -2,6 +2,7 @@ from contextlib import contextmanager
 
 import pytest
 
+import skagent.models.cournot as cournot
 from skagent.bellman import BellmanPeriod
 from skagent.distributions import MeanOneLogNormal, Normal, Uniform
 import skagent.grid as grid
@@ -407,3 +408,22 @@ case_11 = {
     ),
 }
 case_11["bp"] = BellmanPeriod(case_11["block"], "beta", {"beta": 0.9})
+
+# The smallest model with an entity class, an agent role and an aggregation.
+# Unlike case_0 .. case_11 it carries no ``bp``: the model has a crossing, so
+# each firm's optimal quantity depends on what the others chose, which is not a
+# dynamic programming problem. Its decision rules are supplied, not solved for.
+case_12 = {
+    "block": cournot.cournot_block,
+    "calibration": cournot.collusion_calibration(),
+    "supplied_dr": {"q": cournot.profile_rules(cournot.PROFILES["cournot-nash"])},
+    "signatures": {
+        "c": frozenset({"firm"}),
+        "q": frozenset({"firm"}),
+        "Q": frozenset(),
+        "P": frozenset(),
+        "u": frozenset({"firm"}),
+    },
+    "crossings": {"Q": [("q", frozenset({"firm"}), frozenset())]},
+    "agent_populations": {"firm": "firm"},
+}

@@ -10,6 +10,26 @@ and this project adheres to
 
 ### Added
 
+- `skagent.block.Entity`, and an `entity` field on `DBlock` and `RBlock`. A
+  variable defined in a block carrying an entity is an attribute of that entity
+  class; one defined in a block carrying none is axis-free. An entity has a name
+  and no size: how many instances exist is read from the calibration, under a
+  key equal to the entity's name.
+- `Block.signatures`, `Block.entities`, `Block.crossings` and
+  `Block.agent_populations`, all derived from one walk of the block tree.
+  `crossings` reports the equations that read out of an entity class, with the
+  axes to reduce and the axes to broadcast.
+- `skagent.models.cournot`: quantity competition among firms, the smallest model
+  with an entity class, an agent role and an aggregation. Ships two calibrations
+  -- many firms with heterogeneous costs, whose expected profit carries the
+  variance of costs, and three identical firms with the Nash, joint-monopoly and
+  single-defector profiles. The profiles are supplied, not found.
+- `Simulator` allocates and records per-instance variables on their entity axes.
+  A variable's history is `(T_sim, sample_count)` when axis-free and
+  `(T_sim, sample_count, size)` when it is an attribute of a class with `size`
+  instances; a block declaring no entity keeps the `(T_sim, sample_count)`
+  histories it already had. Shapes are validated each period, and a non-finite
+  value entering a reduction raises rather than becoming every instance's.
 - Continuous one-shot and iterated Prisoner's Dilemma blocks, including
   per-player utilities, memory-one repeated-game state, strategic-relevance
   coverage, solver-boundary tests, and multi-period simulation tests.
@@ -97,6 +117,9 @@ and this project adheres to
 
 ### Fixed
 
+- A `Uniform` whose bounds coincide, and a `Normal` with zero spread, draw their
+  point mass instead of `NaN`. Drawing by inverting the quantile function
+  returns `NaN` for a zero-spread distribution where sampling directly does not.
 - `!Control` produced a token that discarded its arguments, so a YAML-loaded
   block had no controls and the agent's name was parsed as an expression and
   reported as an arrival state. The tag now builds a `Control`, whose bounds may

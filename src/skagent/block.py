@@ -21,6 +21,31 @@ from skagent.rule import Rule, format_rule
 from skagent.utils import param_names, takes_arguments
 
 
+@dataclass
+class Entity:
+    """A class of things a model describes several of.
+
+    An entity carries a name and nothing else. How many instances exist is not a
+    property of the model but of the population it is run over, and is read from
+    the calibration under a key equal to this name: a model declaring
+    ``Entity("firm")`` is simulated against a calibration containing
+    ``{"firm": 3}``.
+
+    A consequence worth knowing before choosing a name: because the cardinality
+    is looked up by the entity's name, an entity shares a namespace with the
+    model's parameters. A model with an entity called ``"firm"`` cannot also have
+    an unrelated parameter called ``"firm"``.
+
+    Parameters
+    ----------
+    name : str
+        The entity class's name, e.g. ``"firm"`` or ``"household"``. Also the
+        calibration key giving how many instances there are.
+    """
+
+    name: str
+
+
 class Aggregate:
     """
     Used to designate a shock as an aggregate shock.
@@ -223,6 +248,7 @@ def simulate_dynamics(
     dynamics: Mapping[str, Union[Callable, Control]],
     pre: Mapping[str, Any],
     dr: Mapping[str, Callable],
+    shapes: Mapping[str, tuple] | None = None,
 ):
     """
     From the beginning-of-period state (pre), follow the dynamics,
@@ -239,11 +265,26 @@ def simulate_dynamics(
     pre : Mapping[str, Any]
         Bound values for all variables that must be known before beginning the period's dynamics.
 
+    shapes : Mapping[str, tuple], optional
+        The shape each symbol's value must take. An equation may return one
+        value where its shape calls for an array, meaning the same value for
+        every position; where *shapes* says so, such a value is broadcast as it
+        is produced, so that a later equation reducing over it is handed the
+        array it expects.
+
 
     dr : Mapping[str, Callable]
         Decision rules for all the Control variables in the dynamics.
     """
     vals = pre.copy()
+
+    def broadcast(sym):
+        """Widen a single returned value to *sym*'s declared shape."""
+        if shapes is None:
+            return
+        shape = shapes.get(sym)
+        if shape and np.ndim(vals[sym]) == 0:
+            vals[sym] = np.full(shape, vals[sym])
 
     for sym in dynamics:
         # Using the fact that Python dictionaries are ordered
@@ -285,6 +326,8 @@ def simulate_dynamics(
 
             vals[sym] = update_fn(*[vals[var] for var in param_names(update_fn)])
 
+        broadcast(sym)
+
     return vals
 
 
@@ -321,6 +364,91 @@ class Block:
         dyn = self.get_dynamics()
 
         return {sym: dyn[sym] for sym in dyn if isinstance(dyn[sym], Control)}
+
+    def entities(self):
+        """The entity classes this block tree declares, by name.
+
+        Returns
+        -------
+        dict[str, Entity]
+        """
+        found = {}
+        for signature in self.signatures().values():
+            for name in sorted(signature):
+                found.setdefault(name, Entity(name))
+        return found
+
+    def signatures(self):
+        """Each symbol's entity signature: the classes it is an attribute of.
+
+        A symbol defined in a block carrying an entity is an attribute of that
+        entity class. A symbol defined in a block carrying none is axis-free, and
+        its signature is empty. An :class:`Aggregate` shock is axis-free wherever
+        it is declared, so that an economy-wide shock may sit beside the
+        per-instance equations that read it.
+
+        Returns
+        -------
+        dict[str, frozenset[str]]
+        """
+        return self._signatures(frozenset())
+
+    def crossings(self):
+        """The equations that read out of an entity class, and what they cross.
+
+        An equation crosses when it reads an argument whose signature is not
+        contained in its own, which means the argument carries an axis the
+        equation must summarise away. Reading *into* an entity -- an axis-free
+        value used inside a per-instance equation -- is an ordinary broadcast and
+        is not reported, since nothing has to be decided about it.
+
+        Returns
+        -------
+        dict[str, list[tuple[str, frozenset[str], frozenset[str]]]]
+            Maps a symbol to one entry per crossing argument: the argument's
+            name, the axes that must be reduced away, and the axes to broadcast
+            along.
+        """
+        sigs = self.signatures()
+        report = {}
+        for sym, update_fn in self.get_dynamics().items():
+            own = sigs.get(sym, frozenset())
+            for arg in extract_dependencies(update_fn):
+                if arg not in sigs:
+                    continue
+                reduced = sigs[arg] - own
+                if reduced:
+                    report.setdefault(sym, []).append((arg, reduced, own - sigs[arg]))
+        return report
+
+    def agent_populations(self):
+        """Each agent role, and the entity class whose instances hold it.
+
+        An agent name declares a ROLE; it never creates an entity class. The role
+        attaches to the class of the block its control is declared in, and to
+        nothing when that block carries none. A role reported as ``None`` is a
+        single agent rather than a population.
+
+        Returns
+        -------
+        dict[str, str | None]
+        """
+        sigs = self.signatures()
+        populations = {}
+        for sym, update_fn in self.get_dynamics().items():
+            if not isinstance(update_fn, Control) or update_fn.agent is None:
+                continue
+            signature = sigs.get(sym, frozenset())
+            entity = next(iter(signature)) if len(signature) == 1 else None
+            role = update_fn.agent
+            if role in populations and populations[role] != entity:
+                raise ValueError(
+                    f"agent role {role!r} is declared in blocks of different "
+                    f"entity classes ({populations[role]!r} and {entity!r}); a "
+                    "role belongs to one population"
+                )
+            populations[role] = entity
+        return populations
 
     def get_arrival_states(self, calibration=None):
         """
@@ -548,6 +676,7 @@ class DBlock(Block):
     # TODO: make this collection of equations into a named type.
     dynamics: dict = field(default_factory=dict)
     reward: dict = field(default_factory=dict)
+    entity: "Entity | None" = None
 
     def construct_shocks(self, calibration, rng=None):
         """
@@ -629,6 +758,22 @@ class DBlock(Block):
         # for r in self.reward:
         #    if isinstance(self.reward[r], str):
         #        self.reward[r] = math_text_to_lambda(self.reward[r])
+
+    def _signatures(self, inherited):
+        """This block's symbols, each mapped to its entity signature.
+
+        *inherited* is the signature imposed by the enclosing blocks. This
+        block's own entity, if it declares one, is added to it.
+        """
+        signature = inherited | ({self.entity.name} if self.entity else set())
+        signature = frozenset(signature)
+        sigs = {}
+        for sym, shock in self.shocks.items():
+            # An Aggregate shock is axis-free wherever it is declared.
+            sigs[sym] = frozenset() if isinstance(shock, Aggregate) else signature
+        for sym in self.dynamics:
+            sigs[sym] = signature
+        return sigs
 
     def get_shocks(self):
         return self.shocks
@@ -887,6 +1032,7 @@ class RBlock(Block):
     name: str = ""
     description: str = ""
     blocks: List[Block] = field(default_factory=list)
+    entity: "Entity | None" = None
 
     def construct_shocks(self, calibration, rng=None):
         """
@@ -947,6 +1093,16 @@ class RBlock(Block):
         for block in self.blocks:
             merged.update(getter(block))
         return merged
+
+    def _signatures(self, inherited):
+        """Merged over the sub-blocks, each seeing this block's entity too."""
+        signature = frozenset(
+            inherited | ({self.entity.name} if self.entity else set())
+        )
+        sigs = {}
+        for block in self.blocks:
+            sigs.update(block._signatures(signature))
+        return sigs
 
     def get_shocks(self):
         return self._merge_from_blocks(lambda b: b.get_shocks())
