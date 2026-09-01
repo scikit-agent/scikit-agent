@@ -15,40 +15,6 @@ The model is static: there are no arrival states, so simulating it for
 Because the price is a function of the mean rather than the sum, the slope on
 *total* quantity is :math:`b/N`. That keeps the two readings of :math:`N` below
 in one model without changing an equation.
-
-Two calibrations, and the pair is the point
--------------------------------------------
-
-**Heterogeneous costs** (:func:`heterogeneous_calibration`). Under the supplied
-rule :math:`q_i = (A - c_i)/2b`, with :math:`m = E[c]` and :math:`v = Var(c)`:
-
-.. math::
-    Q = \frac{A - m}{2b}, \qquad P = \frac{A + m}{2}, \qquad
-    E[u] = \frac{(A - m)^2/2 + v}{2b}
-
-The variance term is what makes this a real test. An aggregate-only claim on
-:math:`Q` or :math:`P` is satisfied by a population that has silently lost its
-cross-section, because a mean survives a collapse; :math:`E[u]` carries the
-second moment and does not. Here :math:`N` is a numerical knob: the answers
-converge as it grows.
-
-**Three oligopolists** (:func:`collusion_calibration`). With cost degenerate and
-:math:`N = 3` this is textbook Cournot, and three profiles are hand-derivable
-(:data:`PROFILES`). Here :math:`N` is part of the model: it enters the effective
-demand slope, so changing it asks a different question rather than refining the
-answer.
-
-What the library does not do with it
-------------------------------------
-
-It does not *find* the profiles. They are supplied as decision rules and
-simulated forward. The model has a crossing, so each firm's optimal quantity
-depends on what the others chose, which is an equilibrium problem rather than a
-dynamic programming one.
-
-The deviation profile is an asymmetric *assignment* of rules over a symmetric
-model: three firms are handed three rules, two of which are equal. No rule reads
-a firm's position, and the model is the same in all three profiles.
 """
 
 import numpy as np
@@ -77,7 +43,7 @@ payoff_block = DBlock(
     reward={"u": "firm"},
 )
 
-# The firm class is declared twice because the population acts before the market
+# The firm entity is declared twice because the population acts before the market
 # clears and is paid after. Declaration order is what fixes the dynamics order,
 # so there is no timing annotation anywhere in the model.
 cournot_block = RBlock(
