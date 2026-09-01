@@ -277,8 +277,9 @@ order off the graph and solves in it, tabulating rather than training a network.
 ## Value Function Iteration
 
 Classical dynamic programming for recurring problems, implemented as backwards
-induction over a block's value function. See {py:func}`skagent.algos.vfi.solve`.
-The neural Bellman- and Euler-equation losses
+induction over a block's value function: {py:func}`skagent.algos.vfi.solve_step`
+is one exact backup, and {py:func}`skagent.algos.vfi.solve_bellman` iterates it
+to a fixed point. The neural Bellman- and Euler-equation losses
 ({py:class}`~skagent.loss.BellmanEquationLoss`,
 {py:class}`~skagent.loss.EulerEquationLoss`) provide deep-learning alternatives
 for the recurring case; the {doc}`Maliar method <maliar>` page explains those
