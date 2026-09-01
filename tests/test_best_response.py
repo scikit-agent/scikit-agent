@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from skagent.algos.best_response import TabularBestResponseSolver, TabulatedRule
+from skagent.ground import GroundedBlock
 from skagent.algos.vfi import get_action_rule
 from skagent.block import Control, DBlock
 from skagent.distributions import Uniform
@@ -19,9 +20,12 @@ import skagent.models.macid as macid
 SHOCK_SAMPLES = 10_000
 
 
-def solver(block, seed=0, **kwargs):
+def solver(block, seed=0, calibration=None, **kwargs):
     return TabularBestResponseSolver(
-        block, shock_samples=SHOCK_SAMPLES, rng=np.random.default_rng(seed), **kwargs
+        GroundedBlock(block, {} if calibration is None else calibration),
+        shock_samples=SHOCK_SAMPLES,
+        rng=np.random.default_rng(seed),
+        **kwargs,
     )
 
 
@@ -300,7 +304,9 @@ class TestSamplesDeprecation:
     def test_sets_shock_samples(self):
         with pytest.warns(DeprecationWarning):
             solved = TabularBestResponseSolver(
-                macid.tree_killer_block, samples=1_000, rng=np.random.default_rng(0)
+                GroundedBlock(macid.tree_killer_block, {}),
+                samples=1_000,
+                rng=np.random.default_rng(0),
             )
 
         assert solved.shock_samples == 1_000

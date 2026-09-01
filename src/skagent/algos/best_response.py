@@ -126,14 +126,14 @@ class TabularBestResponseSolver:
 
     Parameters
     ----------
-    block : skagent.block.DBlock
-        The block to solve. Its dynamics must be declared in topological order,
-        as the library requires of any block, and its controls must carry the
-        ``agent`` attribution needed to tell whose payoff each maximizes when
-        the block's utilities are owned by more than one agent.
-    calibration : dict, optional
-        Parameter values, used both to construct the block's shocks and as
-        values for any parameter the dynamics refer to. Defaults to empty.
+    ground : skagent.ground.GroundedBlock
+        The block-and-calibration pair to solve. The block's dynamics must be
+        declared in topological order, as the library requires of any block, and
+        its controls must carry the ``agent`` attribution needed to tell whose
+        payoff each maximizes when the block's utilities are owned by more than
+        one agent. The calibration supplies both the arguments the block's
+        shocks are constructed from and the values any parameter the dynamics
+        refer to.
     actions : array_like, optional
         Candidate actions to search, shared by every decision. Defaults to
         ``action_count`` points spanning ``[0, 1]``.
@@ -147,7 +147,8 @@ class TabularBestResponseSolver:
         decision's information cells, so each cell's expectation rests on the
         samples that reached it rather than on all of them.
     rng : numpy.random.Generator, optional
-        Generator for the shock draws.
+        Generator for the shock draws, overriding the one *ground* carries. When
+        neither supplies a generator, an unseeded one is used.
     max_cells : int, optional
         Upper limit on the number of information cells a single decision may
         have. Exceeding it raises, since grouping samples by observed value only
@@ -155,9 +156,9 @@ class TabularBestResponseSolver:
 
     Notes
     -----
-    Constructing the solver draws the block's shocks against *calibration*. The
-    block itself is left as its author wrote it, so one block may be solved at
-    several calibrations.
+    Constructing the solver draws the block's shocks from *ground*. The block
+    itself is left as its author wrote it, so one block may be solved at several
+    calibrations by grounding it against each.
 
     Expectations are Monte Carlo estimates; a solved rule is exact only up to
     sampling error, which falls as *shock_samples* rises.
@@ -165,8 +166,7 @@ class TabularBestResponseSolver:
 
     def __init__(
         self,
-        block,
-        calibration=None,
+        ground: GroundedBlock,
         *,
         actions=None,
         action_count=21,
@@ -184,8 +184,13 @@ class TabularBestResponseSolver:
                 stacklevel=2,
             )
             shock_samples = samples
-        self.block = block
-        self.calibration = {} if calibration is None else dict(calibration)
+        if rng is not None:
+            ground = ground.with_rng(rng)
+        elif ground.rng is None:
+            ground = ground.with_rng(np.random.default_rng())
+        self.ground = ground
+        self.block = ground.block
+        self.calibration = ground.calibration
         self.actions = (
             np.linspace(0.0, 1.0, action_count)
             if actions is None
@@ -193,13 +198,11 @@ class TabularBestResponseSolver:
         )
         self.shock_samples = shock_samples
         self.max_cells = max_cells
-        self.rng = np.random.default_rng() if rng is None else rng
+        self.rng = ground.rng
 
-        self.decisions = list(block.get_controls())
+        self.decisions = list(self.block.get_controls())
 
-        self.shocks = GroundedBlock(block, self.calibration, rng=self.rng).draw_shocks(
-            self.shock_samples
-        )
+        self.shocks = self.ground.draw_shocks(self.shock_samples)
 
     # -- inputs read off the block ------------------------------------------
 
