@@ -76,7 +76,7 @@ References
        Representing and Solving Games." *IJCAI-01*, 1027-1034. (Extended in
        *Games and Economic Behavior* 45(1), 2003, 181-221.)
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-72
+.. GENERATED FROM PYTHON SOURCE LINES 61-73
 
 .. code-block:: Python
 
@@ -87,6 +87,7 @@ References
     import matplotlib.pyplot as plt
     import numpy as np
     from skagent.algos.best_response import TabularBestResponseSolver
+    from skagent.ground import GroundedBlock
     from skagent.algos.vfi import get_action_rule
     from skagent.models.macid import tree_killer_block as block
 
@@ -98,7 +99,7 @@ References
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 74-91
+.. GENERATED FROM PYTHON SOURCE LINES 75-92
 
 Representing This as a MACID
 ------------------------------
@@ -118,7 +119,7 @@ variable (the shocks ``u_TS`` and ``u_TDead``). This is equivalent in
 distribution and makes the noise a node like any other. Here are the block's
 dynamics, in topological order:
 
-.. GENERATED FROM PYTHON SOURCE LINES 91-94
+.. GENERATED FROM PYTHON SOURCE LINES 92-95
 
 .. code-block:: Python
 
@@ -146,12 +147,12 @@ dynamics, in topological order:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 95-97
+.. GENERATED FROM PYTHON SOURCE LINES 96-98
 
 Agent attribution is declared on the ``Control`` itself, for decisions, and in
 the block's ``reward`` mapping, for utilities:
 
-.. GENERATED FROM PYTHON SOURCE LINES 97-104
+.. GENERATED FROM PYTHON SOURCE LINES 98-105
 
 .. code-block:: Python
 
@@ -181,7 +182,7 @@ the block's ``reward`` mapping, for utilities:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 105-113
+.. GENERATED FROM PYTHON SOURCE LINES 106-114
 
 What makes the graph a game rather than a causal model is that a decision
 node's parents are its **information set** -- what the decision-maker observes
@@ -192,7 +193,7 @@ ignorance of the poison. Alice's ``BP``, by contrast, has both ``PT`` and
 ``TDoc`` as parents. Had ``TDoc`` been given ``PT`` as a parent too, it would
 be a different game over the same causal structure.
 
-.. GENERATED FROM PYTHON SOURCE LINES 113-122
+.. GENERATED FROM PYTHON SOURCE LINES 114-123
 
 .. code-block:: Python
 
@@ -223,7 +224,7 @@ be a different game over the same causal structure.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 123-145
+.. GENERATED FROM PYTHON SOURCE LINES 124-146
 
 Strategic Relevance
 ---------------------
@@ -248,7 +249,7 @@ this graph, though not necessarily for the numbers in this particular block.
 ``relies_on`` computes that criterion, and answers the pairwise question
 directly:
 
-.. GENERATED FROM PYTHON SOURCE LINES 145-152
+.. GENERATED FROM PYTHON SOURCE LINES 146-153
 
 .. code-block:: Python
 
@@ -277,7 +278,7 @@ directly:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 153-169
+.. GENERATED FROM PYTHON SOURCE LINES 154-170
 
 Reading the table: Bob's ``TDoc`` relies on nothing -- his optimal response to
 a sick tree does not depend on how Alice plays. Alice's ``BP`` relies on
@@ -296,7 +297,7 @@ induction. If it has a cycle, the decisions in that cycle must be solved
 ``condensation()`` reports both at once: the strongly connected components, in
 solution order.
 
-.. GENERATED FROM PYTHON SOURCE LINES 169-175
+.. GENERATED FROM PYTHON SOURCE LINES 170-176
 
 .. code-block:: Python
 
@@ -321,12 +322,12 @@ solution order.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 176-178
+.. GENERATED FROM PYTHON SOURCE LINES 177-179
 
 The relevance graph is acyclic, so the game decomposes: each component in the
 ``condensation()`` order relies only on components already solved.
 
-.. GENERATED FROM PYTHON SOURCE LINES 178-186
+.. GENERATED FROM PYTHON SOURCE LINES 179-187
 
 .. code-block:: Python
 
@@ -350,7 +351,7 @@ The relevance graph is acyclic, so the game decomposes: each component in the
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 187-214
+.. GENERATED FROM PYTHON SOURCE LINES 188-215
 
 Solving in Relevance Order
 ----------------------------
@@ -380,13 +381,13 @@ What it does for each decision:
   every information cell is reached and every conditional expectation is
   defined.
 
-.. GENERATED FROM PYTHON SOURCE LINES 214-225
+.. GENERATED FROM PYTHON SOURCE LINES 215-226
 
 .. code-block:: Python
 
 
     solver = TabularBestResponseSolver(
-        block, shock_samples=50_000, rng=np.random.default_rng(0)
+        GroundedBlock(block, {}), shock_samples=50_000, rng=np.random.default_rng(0)
     )
     policies = solver.solve()
 
@@ -410,7 +411,7 @@ What it does for each decision:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 226-237
+.. GENERATED FROM PYTHON SOURCE LINES 227-238
 
 The solution, decision by decision:
 
@@ -424,7 +425,7 @@ The solution, decision by decision:
 
 Aggregate outcomes under the solved profile:
 
-.. GENERATED FROM PYTHON SOURCE LINES 237-244
+.. GENERATED FROM PYTHON SOURCE LINES 238-245
 
 .. code-block:: Python
 
@@ -454,7 +455,7 @@ Aggregate outcomes under the solved profile:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 245-253
+.. GENERATED FROM PYTHON SOURCE LINES 246-254
 
 Checking the Relevance Graph Empirically
 ------------------------------------------
@@ -465,7 +466,7 @@ decision under a deliberately different profile.
 **Claim 1: TDoc relies on nothing.** Bob's best response should be identical
 whether Alice never poisons and never builds, or always does both.
 
-.. GENERATED FROM PYTHON SOURCE LINES 253-261
+.. GENERATED FROM PYTHON SOURCE LINES 254-262
 
 .. code-block:: Python
 
@@ -491,13 +492,13 @@ whether Alice never poisons and never builds, or always does both.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 262-265
+.. GENERATED FROM PYTHON SOURCE LINES 263-266
 
 **Claim 2: BP does not rely on PT** (though it observes it). Alice's patio
 rule should be unchanged when the policy generating ``PT`` is reweighted --
 and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
-.. GENERATED FROM PYTHON SOURCE LINES 265-287
+.. GENERATED FROM PYTHON SOURCE LINES 266-288
 
 .. code-block:: Python
 
@@ -540,13 +541,13 @@ and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 288-291
+.. GENERATED FROM PYTHON SOURCE LINES 289-292
 
 **Claim 3: PT relies on TDoc.** Replace Bob's rule with a passive one that
 never calls the doctor, re-solve Alice's patio rule against it, and her
 poisoning decision should move.
 
-.. GENERATED FROM PYTHON SOURCE LINES 291-297
+.. GENERATED FROM PYTHON SOURCE LINES 292-298
 
 .. code-block:: Python
 
@@ -570,13 +571,13 @@ poisoning decision should move.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 298-301
+.. GENERATED FROM PYTHON SOURCE LINES 299-302
 
 Poisoning is only worthwhile against a Bob who lets the tree die. This is the
 content of the relevance edge ``PT -> TDoc``, and the reason ``TDoc`` had to be
 solved first.
 
-.. GENERATED FROM PYTHON SOURCE LINES 301-329
+.. GENERATED FROM PYTHON SOURCE LINES 302-330
 
 .. code-block:: Python
 
@@ -620,13 +621,13 @@ solved first.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 330-333
+.. GENERATED FROM PYTHON SOURCE LINES 331-334
 
 Bob's side of the game, for comparison: his payoff as a function of the fee he
 is willing to pay, conditional on what he observes. The two curves are the two
 information cells of ``TDoc``, and neither depends on anything Alice does.
 
-.. GENERATED FROM PYTHON SOURCE LINES 333-354
+.. GENERATED FROM PYTHON SOURCE LINES 334-355
 
 .. code-block:: Python
 
@@ -666,7 +667,7 @@ information cells of ``TDoc``, and neither depends on anything Alice does.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.221 seconds)
+   **Total running time of the script:** (0 minutes 4.371 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_tree_killer_relevance.py:

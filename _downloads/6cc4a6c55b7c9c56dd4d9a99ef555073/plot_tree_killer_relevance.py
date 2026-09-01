@@ -65,6 +65,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 from skagent.algos.best_response import TabularBestResponseSolver
+from skagent.ground import GroundedBlock
 from skagent.algos.vfi import get_action_rule
 from skagent.models.macid import tree_killer_block as block
 
@@ -213,7 +214,7 @@ plt.tight_layout()
 #   defined.
 
 solver = TabularBestResponseSolver(
-    block, shock_samples=50_000, rng=np.random.default_rng(0)
+    GroundedBlock(block, {}), shock_samples=50_000, rng=np.random.default_rng(0)
 )
 policies = solver.solve()
 
