@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Added
 
+- `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
+  composed block executes its own dynamics and computes its own rewards. Both
+  read the merged dynamics, so an `RBlock` behaves as a leaf block does; every
+  multi-agent and entity model is an `RBlock`, and no solver could run one.
+  `RBlock.dynamics` is a merged property alongside the existing `RBlock.reward`,
+  since consumers reach for that attribute directly.
 - `Block.get_control`, the `Control` declared at a symbol, raising when the
   symbol is not a control. The tabular solver and `GymEnv` each carried their
   own copy of that check; both now resolve through it.
@@ -81,6 +87,17 @@ and this project adheres to
   readings numerically against the mechanisms.
 
 ### Changed
+
+- `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
+  an entity class, naming the classes and which leading axis a reduction over
+  the entity axis would be taken over instead -- the shock sample for the
+  former, the state grid for the latter. Neither has an equilibrium concept, so
+  on a model whose price or aggregate is a reduction over instances they would
+  return a plausible number for a different model: solving Cournot at three
+  firms this way gives each firm the joint-monopoly quantity rather than the
+  Nash one. The refusal is deliberately broad -- any declared entity class, not
+  only a detected reduction -- and will narrow once the detection mechanism is
+  settled.
 
 - `vfi.bellman_step` is now `vfi.solve_step`. It applies to static and dynamic
   periods alike, so it is no longer named for Bellman; `solve_bellman`, which
