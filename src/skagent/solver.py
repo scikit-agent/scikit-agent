@@ -50,8 +50,10 @@ def solve_multiple_controls(
         Training epochs per pass. Default is 200.
     loss : type, optional
         A loss-function class with signature
-        ``loss(bellman_period, parameters, other_dr, agent=...)``. Defaults to
-        :class:`skagent.loss.StaticRewardLoss`.
+        ``loss(bellman_period, *, agent=..., other_dr=...)``, which is the
+        shape every loss in :mod:`skagent.loss` takes. The period carries the
+        calibration the loss is evaluated at, so it is not passed separately.
+        Defaults to :class:`skagent.loss.StaticRewardLoss`.
 
     Returns
     -------
@@ -108,9 +110,8 @@ def solve_multiple_controls(
             givens,
             loss(
                 bellman_period,
-                bellman_period.calibration,
-                dict_of_decision_rules,
                 agent=bellman_period.block.deciding_agent(control_sym),
+                other_dr=dict_of_decision_rules,
             ),
             epochs=epochs,
         )
