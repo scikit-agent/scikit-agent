@@ -136,6 +136,13 @@ and this project adheres to
 
 ### Fixed
 
+- `static_reward` sums the reward symbols in scope instead of taking the first,
+  so an agent owning several reward variables is optimized against all of them.
+  A single agent whose reward was `u + v` was previously trained against `u`
+  alone. Games are still not solvable through this path: with no agent named,
+  the sum is every agent's reward added, which is a planner's objective and no
+  player's, so a two-agent block trained this way returns the profile that
+  maximizes joint surplus rather than an equilibrium.
 - A `Uniform` whose bounds coincide, and a `Normal` with zero spread, draw their
   point mass instead of `NaN`. Drawing by inverting the quantile function
   returns `NaN` for a zero-spread distribution where sampling directly does not.

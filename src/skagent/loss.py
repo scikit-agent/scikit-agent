@@ -35,6 +35,9 @@ def static_reward(
     """
     Returns the reward for an agent for a block, given a decision rule, states, shocks, and calibration.
 
+    The reward is the SUM of the reward symbols in scope: an agent owning
+    several reward variables has a payoff of all of them, not of one.
+
     Parameters
     ----------
     bellman_period : BellmanPeriod
@@ -48,7 +51,15 @@ def static_reward(
     parameters : dict, optional
         Calibration parameters.
     agent : str or None, optional
-        Name of reference agent for rewards.
+        Name of reference agent for rewards. When omitted, every reward symbol
+        in the block is summed, which is one agent's payoff only if the block
+        has one agent; on a block whose utilities have several owners it is the
+        sum of their payoffs and no agent's objective.
+
+    Raises
+    ------
+    ValueError
+        If any reward symbol in scope is NaN.
     """
     if shocks is None:
         shocks = {}
@@ -61,7 +72,7 @@ def static_reward(
             states, shocks=shocks, parameters=parameters, decision_rules=dr
         )
 
-    rsym = bellman_period.get_reward_sym(agent)
+    reward_syms = bellman_period.get_reward_syms(agent)
 
     reward = bellman_period.reward_function(
         states,
@@ -72,12 +83,17 @@ def static_reward(
         decision_rules=dr,
     )
 
-    if isinstance(reward[rsym], torch.Tensor) and torch.any(torch.isnan(reward[rsym])):
-        raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
-    if isinstance(reward[rsym], np.ndarray) and np.any(np.isnan(reward[rsym])):
-        raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
+    total_reward = 0
+    for rsym in reward_syms:
+        if isinstance(reward[rsym], torch.Tensor) and torch.any(
+            torch.isnan(reward[rsym])
+        ):
+            raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
+        if isinstance(reward[rsym], np.ndarray) and np.any(np.isnan(reward[rsym])):
+            raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
+        total_reward = total_reward + reward[rsym]
 
-    return reward[rsym]
+    return total_reward
 
 
 def _prepare_loss_inputs(
