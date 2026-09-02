@@ -248,17 +248,12 @@ class GymEnv(gym.Env):
                     f"`control_sym` is given; block has controls={controls}"
                 )
             control_sym = controls[0]
-        elif control_sym not in controls:
-            raise ValueError(
-                f"control_sym {control_sym!r} is not a control of the block "
-                f"(controls={controls})"
-            )
 
         self.bp = bp
         self.initial = initial
         self.max_episode_steps = max_episode_steps
         self.control_sym = control_sym
-        self.control = bp.block.dynamics[control_sym]
+        self.control = bp.block.get_control(control_sym)
         self.iset: list[str] = list(self.control.iset)
         self.reward_syms = bp.get_reward_syms()
         self.default_lower = float(default_lower)

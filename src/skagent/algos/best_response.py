@@ -206,14 +206,6 @@ class TabularBestResponseSolver:
 
     # -- inputs read off the block ------------------------------------------
 
-    def _control(self, decision):
-        if decision not in self.decisions:
-            raise ValueError(
-                f"{decision!r} is not a control of this block; the controls are "
-                f"{self.decisions}"
-            )
-        return self.block.get_dynamics()[decision]
-
     # -- policies ------------------------------------------------------------
 
     def mixed_rule(self, weights=None):
@@ -273,7 +265,7 @@ class TabularBestResponseSolver:
         -------
         ConditionalPayoffs
         """
-        control = self._control(decision)
+        control = self.block.get_control(decision)
         agent = self.block.deciding_agent(decision)
         upstream = self.decisions[: self.decisions.index(decision)]
 
@@ -342,7 +334,9 @@ class TabularBestResponseSolver:
         """
         cells, _, actions, payoff = self.conditional_payoffs(decision, policies)
         return TabulatedRule(
-            self._control(decision).iset, cells, actions[payoff.argmax(axis=1)]
+            self.block.get_control(decision).iset,
+            cells,
+            actions[payoff.argmax(axis=1)],
         )
 
     def solve(self, policies=None):

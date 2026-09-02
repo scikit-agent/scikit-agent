@@ -450,6 +450,22 @@ class Block:
             populations[role] = entity
         return populations
 
+    def get_control(self, control_sym):
+        """The :class:`Control` declared at *control_sym*.
+
+        Raises
+        ------
+        ValueError
+            If *control_sym* is not a control of this block.
+        """
+        controls = self.get_controls()
+        if control_sym not in controls:
+            raise ValueError(
+                f"{control_sym!r} is not a control of this block; the controls "
+                f"are {list(controls)}"
+            )
+        return self.get_dynamics()[control_sym]
+
     def deciding_agent(self, control_sym):
         """The agent whose payoff a control maximizes.
 
@@ -464,7 +480,7 @@ class Block:
             If the control names no agent while the block's utilities have
             several owners, or if its agent owns no reward variable here.
         """
-        agent = self.get_dynamics()[control_sym].agent
+        agent = self.get_control(control_sym).agent
         owners = set(self.reward.values())
         if agent is None:
             if len(owners) > 1:
@@ -1139,10 +1155,6 @@ class RBlock(Block):
 
     def get_shocks(self):
         return self._merge_from_blocks(lambda b: b.get_shocks())
-
-    def get_controls(self):
-        dyn = self.get_dynamics()
-        return [sym for sym in dyn if isinstance(dyn[sym], Control)]
 
     def get_dynamics(self):
         return self._merge_from_blocks(lambda b: b.get_dynamics())

@@ -131,6 +131,49 @@ class TestARoleIsNotAnEntity:
         }
 
 
+class TestGetControls:
+    """A composed block reports its controls the way a leaf block does."""
+
+    def test_an_rblock_returns_a_mapping(self):
+        """`RBlock` overrode this with a list, so `.items()` failed on it."""
+        controls = cournot.cournot_block.get_controls()
+
+        assert {sym: control.agent for sym, control in controls.items()} == {
+            "q": "firm"
+        }
+
+    def test_a_leaf_and_a_composed_block_agree_in_type(self):
+        leaf = DBlock(
+            name="leaf", dynamics={"a": Control([], agent="p"), "u": lambda a: -a}
+        )
+        composed = RBlock(name="composed", blocks=[leaf])
+
+        assert type(composed.get_controls()) is type(leaf.get_controls())
+
+
+class TestGetControl:
+    """The block is what knows which of its symbols are controls."""
+
+    def block(self):
+        return DBlock(
+            name="one_player",
+            dynamics={"a": Control([]), "u": lambda a: -a},
+            reward={"u": "p"},
+        )
+
+    def test_a_control_is_returned(self):
+        assert self.block().get_control("a").iset == []
+
+    def test_a_symbol_that_is_not_a_control_raises(self):
+        """A reward variable is a dynamic, but it is not a decision."""
+        with pytest.raises(ValueError, match="not a control"):
+            self.block().get_control("u")
+
+    def test_an_unknown_symbol_raises(self):
+        with pytest.raises(ValueError, match="not a control"):
+            self.block().get_control("nonesuch")
+
+
 class TestTheDecidingAgent:
     """Whose payoff a control maximizes, read off the block."""
 
