@@ -450,6 +450,39 @@ class Block:
             populations[role] = entity
         return populations
 
+    def deciding_agent(self, control_sym):
+        """The agent whose payoff a control maximizes.
+
+        Read off the control's ``agent`` attribution and checked against the
+        block's reward owners. ``None`` where the control names no agent and the
+        block's utilities have a single owner, there being nothing to
+        disambiguate.
+
+        Raises
+        ------
+        ValueError
+            If the control names no agent while the block's utilities have
+            several owners, or if its agent owns no reward variable here.
+        """
+        agent = self.get_dynamics()[control_sym].agent
+        owners = set(self.reward.values())
+        if agent is None:
+            if len(owners) > 1:
+                raise ValueError(
+                    f"control {control_sym!r} has no agent attribution, but "
+                    f"this block's utilities are owned by "
+                    f"{sorted(map(str, owners))}; attribute the control to say "
+                    "whose payoff it maximizes"
+                )
+            return None
+        if agent not in owners:
+            raise ValueError(
+                f"agent {agent!r} of control {control_sym!r} owns no reward "
+                f"variable in this block; its utilities are owned by "
+                f"{sorted(map(str, owners))}"
+            )
+        return agent
+
     def get_arrival_states(self, calibration=None):
         """
         Return a list of symbols that are:

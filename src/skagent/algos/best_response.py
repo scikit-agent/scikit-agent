@@ -214,26 +214,6 @@ class TabularBestResponseSolver:
             )
         return self.block.get_dynamics()[decision]
 
-    def _agent(self, decision):
-        """The agent whose payoff ``decision`` maximizes."""
-        agent = self._control(decision).agent
-        owners = set(self.block.reward.values())
-        if agent is None:
-            if len(owners) > 1:
-                raise ValueError(
-                    f"control {decision!r} has no agent attribution, but this "
-                    f"block's utilities are owned by {sorted(map(str, owners))}; "
-                    "attribute the control to say whose payoff it maximizes"
-                )
-            return None
-        if agent not in owners:
-            raise ValueError(
-                f"agent {agent!r} of control {decision!r} owns no reward "
-                f"variable in this block; its utilities are owned by "
-                f"{sorted(map(str, owners))}"
-            )
-        return agent
-
     # -- policies ------------------------------------------------------------
 
     def mixed_rule(self, weights=None):
@@ -294,7 +274,7 @@ class TabularBestResponseSolver:
         ConditionalPayoffs
         """
         control = self._control(decision)
-        agent = self._agent(decision)
+        agent = self.block.deciding_agent(decision)
         upstream = self.decisions[: self.decisions.index(decision)]
 
         # Simulate under the current profile to get the joint distribution of

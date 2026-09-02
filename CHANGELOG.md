@@ -10,6 +10,10 @@ and this project adheres to
 
 ### Added
 
+- `Block.deciding_agent`, the agent whose payoff a control maximizes: read off
+  the control's attribution and checked against the block's reward owners, so a
+  solver is never left to guess. `TabularBestResponseSolver` and
+  `solve_multiple_controls` both resolve through it.
 - `skagent.block.Entity`, and an `entity` field on `DBlock` and `RBlock`. A
   variable defined in a block carrying an entity is an attribute of that entity
   class; one defined in a block carrying none is axis-free. An entity has a name
@@ -139,10 +143,15 @@ and this project adheres to
 - `static_reward` sums the reward symbols in scope instead of taking the first,
   so an agent owning several reward variables is optimized against all of them.
   A single agent whose reward was `u + v` was previously trained against `u`
-  alone. Games are still not solvable through this path: with no agent named,
-  the sum is every agent's reward added, which is a planner's objective and no
-  player's, so a two-agent block trained this way returns the profile that
-  maximizes joint surplus rather than an equilibrium.
+  alone.
+- `StaticRewardLoss` takes the agent whose payoff it maximizes, and
+  `solve_multiple_controls` reads it off each control it trains, so a network no
+  longer maximizes another agent's objective. Every control was previously
+  trained against the block's first reward symbol: on a two-player game that
+  trained player 2's network to maximize player 1's payoff, and the solved
+  profile was neither player's best response. A control carrying no attribution
+  on a block whose utilities have several owners now raises instead of picking
+  an owner.
 - A `Uniform` whose bounds coincide, and a `Normal` with zero spread, draw their
   point mass instead of `NaN`. Drawing by inverting the quantile function
   returns `NaN` for a zero-spread distribution where sampling directly does not.

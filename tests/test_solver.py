@@ -7,6 +7,7 @@ import torch
 import skagent.bellman as bellman
 import skagent.block as block
 import skagent.grid as grid
+import skagent.models.macid as macid
 from skagent.solver import solve_multiple_controls
 
 # Deterministic test seed - change this single value to modify all seeding
@@ -58,6 +59,47 @@ class TestSolveMultipleControls:
 
         assert np.max(np.abs(c - a.cpu().numpy())) < 0.05
         assert d == pytest.approx(CALIBRATION["k"], abs=0.05)
+
+
+class TestAgentAttribution:
+    """Each network maximizes the payoff of its own control's agent."""
+
+    def test_the_prisoners_dilemma_reaches_mutual_defection(self):
+        """A two-agent game, solved by nets that each serve their own player."""
+        torch.manual_seed(TEST_SEED)
+        period = bellman.BellmanPeriod(macid.prisoners_dilemma_block, None, {})
+        givens = grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 32}})
+
+        rules = solve_multiple_controls(
+            ["D1", "D2", "D1", "D2"], period, givens, epochs=150
+        )
+
+        actions = [
+            float(rules[sym]().detach().cpu().numpy().mean()) for sym in ("D1", "D2")
+        ]
+        # Defection is dominant, so the equilibrium is the upper corner. Trained
+        # against the summed reward instead, both players would cooperate; trained
+        # against the first reward symbol, the second player would serve the
+        # first and cooperate alone.
+        assert actions == pytest.approx([1.0, 1.0], abs=0.02)
+
+    def test_an_unattributed_control_among_several_owners_raises(self):
+        """Better to refuse than to train a net on someone else's objective."""
+        blk = block.DBlock(
+            name="unattributed",
+            dynamics={
+                "a1": block.Control([]),
+                "a2": block.Control([], agent="p2"),
+                "u1": lambda a1: -a1,
+                "u2": lambda a2: -a2,
+            },
+            reward={"u1": "p1", "u2": "p2"},
+        )
+        period = bellman.BellmanPeriod(blk, None, {})
+        givens = grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 4}})
+
+        with pytest.raises(ValueError, match="no agent attribution"):
+            solve_multiple_controls(["a1"], period, givens, epochs=1)
 
 
 class TestTheCalibrationArgument:

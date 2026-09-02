@@ -21,6 +21,12 @@ def solve_multiple_controls(
     ``["c", "d", "c"]``), which is the multi-control analogue of a best-response
     sweep.
 
+    Each network maximizes the payoff of the agent its control is attributed
+    to, read off the block by
+    :meth:`~skagent.block.Block.deciding_agent`. On a block whose utilities
+    have more than one owner, a control carrying no attribution raises rather
+    than being trained against someone else's objective.
+
     Currently restricted to single-period (non-recurring) reward objectives;
     by default the negative immediate reward
     (:class:`skagent.loss.StaticRewardLoss`) is maximized.
@@ -55,7 +61,9 @@ def solve_multiple_controls(
     Raises
     ------
     ValueError
-        If *calibration* is given and disagrees with the period's.
+        If *calibration* is given and disagrees with the period's, or if a
+        control in *control_order* carries no agent attribution on a block
+        whose utilities have several owners.
     """
     if calibration is not None:
         warnings.warn(
@@ -102,6 +110,7 @@ def solve_multiple_controls(
                 bellman_period,
                 bellman_period.calibration,
                 dict_of_decision_rules,
+                agent=bellman_period.block.deciding_agent(control_sym),
             ),
             epochs=epochs,
         )

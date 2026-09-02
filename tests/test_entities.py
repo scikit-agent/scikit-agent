@@ -61,7 +61,7 @@ def collusion_calibration(size=3):
 
 def fixed_rules(quantities):
     """One decision rule per firm, so a profile may be asymmetric."""
-    return np.array([(lambda v: (lambda c: v))(v) for v in quantities])
+    return np.array([(lambda v: lambda c: v)(v) for v in quantities])
 
 
 class TestTheDeclaration:
@@ -129,6 +129,35 @@ class TestARoleIsNotAnEntity:
         assert self.study_block().crossings() == {
             "f": [("d", frozenset({"subject"}), frozenset())]
         }
+
+
+class TestTheDecidingAgent:
+    """Whose payoff a control maximizes, read off the block."""
+
+    def test_each_control_reports_its_own_agent(self):
+        block = DBlock(
+            name="two_players",
+            dynamics={
+                "a1": Control([], agent="p1"),
+                "a2": Control([], agent="p2"),
+                "u1": lambda a1, a2: a1 - a2,
+                "u2": lambda a1, a2: a2 - a1,
+            },
+            reward={"u1": "p1", "u2": "p2"},
+        )
+
+        assert block.deciding_agent("a1") == "p1"
+        assert block.deciding_agent("a2") == "p2"
+
+    def test_one_owner_needs_no_attribution(self):
+        """With a single owner there is nothing to disambiguate."""
+        block = DBlock(
+            name="one_player",
+            dynamics={"a": Control([]), "u": lambda a: -a},
+            reward={"u": "p"},
+        )
+
+        assert block.deciding_agent("a") is None
 
 
 class TestAnAggregateEscapesItsEntity:
