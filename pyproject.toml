@@ -95,6 +95,10 @@ packages = ["src/skagent"]
 packages = ["src/skagent"]
 
 [tool.pytest.ini_options]
+# Deliberately NOT setting `-n` here. Ten of the ~800 tests are 85% of the wall
+# clock, so `pytest -n auto` roughly halves the suite -- but how much it helps,
+# and whether it helps at all, depends on the machine's core count, so the
+# choice belongs to the invocation rather than to the project.
 # Put the project root on sys.path so tests can do `from tests.conftest import ...`
 # under a plain `pytest` invocation (not just `python -m pytest`).
 pythonpath = ["."]

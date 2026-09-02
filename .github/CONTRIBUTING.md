@@ -32,6 +32,18 @@ You can also/alternatively run `pre-commit run` (changes only) or
 uv run --no-sync pytest
 ```
 
+Ten of the roughly 800 tests are about 85% of the wall clock, so running them
+across cores is worth it on a multi-core machine:
+
+```bash
+uv run --no-sync pytest -n auto
+```
+
+How much that helps depends on the machine, and it cannot beat the single
+longest test, so the project does not set `-n` for you. On one 16-core box the
+suite went from 257s to 133s. Run serially while debugging a failure: parallel
+output interleaves, and `-x` stops approximately rather than immediately.
+
 # Coverage
 
 ```bash

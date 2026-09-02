@@ -1,6 +1,8 @@
 from contextlib import contextmanager
+import os
 
 import pytest
+import torch
 
 import skagent.models.cournot as cournot
 from skagent.bellman import BellmanPeriod
@@ -54,6 +56,16 @@ def count_calls(obj, name):
         yield counter
     finally:
         delattr(obj, name)
+
+
+# Torch runs its own intra-op thread pool. Under xdist that pool is created per
+# worker, so the workers oversubscribe the machine and the parallel run gets
+# slower rather than faster: measured on a 16-core box, capping to one thread per
+# worker ran the suite in 133s against 170s uncapped. Capped only when there IS
+# another worker to contend with, so a serial run keeps torch's own threading,
+# which is what the heavy training tests are written against.
+if os.environ.get("PYTEST_XDIST_WORKER"):
+    torch.set_num_threads(1)
 
 
 def pytest_addoption(parser):
