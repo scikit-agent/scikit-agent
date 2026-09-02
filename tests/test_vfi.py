@@ -12,6 +12,7 @@ from conftest import (
     case_11,
     count_calls,
 )
+import pytest
 import skagent.algos.vfi as vfi
 from skagent.bellman import BellmanPeriod
 from skagent.block import Control, DBlock
@@ -674,6 +675,37 @@ class test_vfi_solve_bellman(unittest.TestCase):
     check that exercises the convergence loop and active-bound handling.
     """
 
+    def test_d4_constrained_loop_converges_to_a_sane_policy(self):
+        """The constrained convergence loop, without the oracle's dense grid.
+
+        The oracle test below is deselected by default, and it is the only place
+        the loop is iterated to a fixed point on a model whose borrowing
+        constraint BINDS -- the other iterated tests use the unconstrained
+        closed-form models. This keeps that path in the default run at a
+        fourteenth of the cost by asking whether the loop converges and whether
+        the policy it returns is economically coherent, rather than whether it
+        matches the oracle to 2%.
+        """
+        cal = bm.d4_calibration
+        R, y = cal["R"], cal["y"]
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+
+        dr, value_array, _ = vfi.solve_bellman(
+            bp, {"a": np.linspace(0.0, 7.5, 9)}, scope=cal, tol=1e-3, max_iter=200
+        )
+
+        self.assertTrue(value_array.attrs["converged"])
+        self.assertGreater(value_array.attrs["n_iter"], 1)
+
+        cash = [a * R + y for a in (0.25, 1.0, 3.0, 6.0)]
+        consumption = [float(dr["c"](m)) for m in cash]
+        for m, c in zip(cash, consumption):
+            self.assertGreater(c, 0.0, f"consumption must be positive at m={m}")
+            self.assertLessEqual(c, m + 1e-9, f"c must not exceed m at m={m}")
+        for lower, upper in zip(consumption, consumption[1:]):
+            self.assertGreater(upper, lower, "consumption must rise with wealth")
+
+    @pytest.mark.oracle
     def test_d4_converges_to_reference_oracle(self):
         # D-4 has no closed form; compare the converged policy to the dense-grid
         # VFI oracle. Two independent exact solvers should agree to ~1% (grid

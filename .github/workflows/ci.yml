@@ -88,7 +88,7 @@ jobs:
 
       - name: Test package
         run: >-
-          uv run --no-sync pytest -ra -n auto --cov --cov-report=xml
+          uv run --no-sync pytest -ra -n auto --runoracle --cov --cov-report=xml
           --cov-report=term --durations=20
 
       - name: Upload coverage report

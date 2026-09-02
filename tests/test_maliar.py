@@ -2,6 +2,7 @@ from conftest import case_1, case_3, case_4
 import logging
 import numpy as np
 import os
+import pytest
 import skagent.algos.maliar as maliar
 import skagent.bellman as bellman
 import skagent.grid as grid
@@ -673,6 +674,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
             f"only on average. Max relative error: {max_rel_error:.4f}",
         )
 
+    @pytest.mark.oracle
     def test_maliar_training_loop_u3_buffer_stock(self):
         """
         Test maliar_training_loop with U-3 buffer stock model (CRRA=2, with constraint).
@@ -1016,6 +1018,7 @@ class TestU3OneSidedConstraintTraining(unittest.TestCase):
     sign condition.
     """
 
+    @pytest.mark.oracle
     def test_u3_one_sided_euler_loss_preserves_kkt_sign(self):
         """At low wealth the borrowing constraint c <= m binds, so the
         Euler residual must be non-negative: u'(c) - betaR E[u'(c')] >= 0.
@@ -1130,6 +1133,7 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
     anchor.
     """
 
+    @pytest.mark.oracle
     def test_d4_euler_fb_matches_vfi_within_one_percent(self):
         torch.manual_seed(TEST_SEED)
 

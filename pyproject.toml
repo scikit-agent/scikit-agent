@@ -106,4 +106,5 @@ pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
     "slow: long-running tests (e.g. RL convergence); deselected unless --runslow is passed.",
+    "oracle: heavy convergence oracle; deselected unless --runoracle is passed, and run by CI.",
 ]

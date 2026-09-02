@@ -40,9 +40,27 @@ uv run --no-sync pytest -n auto
 ```
 
 How much that helps depends on the machine, and it cannot beat the single
-longest test, so the project does not set `-n` for you. On one 16-core box the
-suite went from 257s to 133s. Run serially while debugging a failure: parallel
-output interleaves, and `-x` stops approximately rather than immediately.
+longest test, so the project does not set `-n` for you. Run serially while
+debugging a failure: parallel output interleaves, and `-x` stops approximately
+rather than immediately.
+
+Four convergence tests are more than half the remaining wall clock, and they are
+deselected by default so the local loop stays short. **CI runs them**, so
+nothing they cover is unguarded. Run them yourself before proposing a change to
+a solver, a loss, or a benchmark model:
+
+```bash
+uv run --no-sync pytest -n auto --runoracle
+```
+
+On one 16-core box: 257s serially with everything, 134s with
+`-n auto --runoracle`, and 68s for the default fast loop. The default run still
+checks four benchmark models against analytic answers, so it is not merely a
+wiring test; what the oracle group adds is the two most expensive models, U-3
+and D-4.
+
+`--runslow` is a different and smaller group: RL convergence tests that are not
+wanted by default anywhere, CI included.
 
 # Coverage
 

@@ -75,15 +75,33 @@ def pytest_addoption(parser):
         default=False,
         help="run tests marked @pytest.mark.slow (e.g. RL convergence tests)",
     )
+    parser.addoption(
+        "--runoracle",
+        action="store_true",
+        default=False,
+        help="run tests marked @pytest.mark.oracle (heavy convergence oracles)",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        return
-    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
+    """Deselect the two opt-in groups, which are gated for different reasons.
+
+    ``slow`` is deselected because those tests are not wanted by default
+    anywhere, CI included. ``oracle`` is deselected only to keep the local loop
+    short: the tests are wanted, and CI runs them, so nothing they cover is
+    lost by skipping them here.
+    """
+    gated = [
+        ("slow", "--runslow"),
+        ("oracle", "--runoracle"),
+    ]
+    for marker, option in gated:
+        if config.getoption(option):
+            continue
+        skip = pytest.mark.skip(reason=f"need {option} option to run")
+        for item in items:
+            if marker in item.keywords:
+                item.add_marker(skip)
 
 
 case_0 = {
