@@ -10,6 +10,9 @@ and this project adheres to
 
 ### Added
 
+- `Block.get_control`, the `Control` declared at a symbol, raising when the
+  symbol is not a control. The tabular solver and `GymEnv` each carried their
+  own copy of that check; both now resolve through it.
 - `Block.deciding_agent`, the agent whose payoff a control maximizes: read off
   the control's attribution and checked against the block's reward owners, so a
   solver is never left to guess. `TabularBestResponseSolver` and
@@ -140,6 +143,12 @@ and this project adheres to
 
 ### Fixed
 
+- `RBlock.get_controls` returned a list of symbols where `Block.get_controls`
+  returns a mapping from symbol to `Control`, so the accessor's type depended on
+  whether a block was composed. `RBlock` no longer overrides it: the inherited
+  implementation reads the merged dynamics and is correct for both. Every
+  multi-agent and entity model is an `RBlock`, so `.items()` and indexing worked
+  on single-block models and failed on exactly the composed ones.
 - `static_reward` sums the reward symbols in scope instead of taking the first,
   so an agent owning several reward variables is optimized against all of them.
   A single agent whose reward was `u + v` was previously trained against `u`
