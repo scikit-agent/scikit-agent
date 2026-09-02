@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Distributions" href="distributions.html"><link rel="prev" title="Environments" href="environments.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Loss Functions - scikit-agent 0.1.1.dev64+ga51c8d49b</title>
+        <title>Loss Functions - scikit-agent 0.1.1.dev67+g9c6162ec9</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev64+ga51c8d49b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev67+g9c6162ec9</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -405,15 +405,32 @@ constrained controls (default: False).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.loss.StaticRewardLoss">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.loss.</span></span><span class="sig-name descname"><span class="pre">StaticRewardLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.loss.StaticRewardLoss" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.loss.</span></span><span class="sig-name descname"><span class="pre">StaticRewardLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.loss.StaticRewardLoss" title="Link to this definition">¶</a></dt>
 <dd><p>A loss function that computes the negative reward for a block,
 assuming it is executed just once (a non-dynamic model)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bellman_period</strong> (<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><em>BellmanPeriod</em></a>) – The period whose reward is maximized.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Calibration the reward is evaluated at.</p></li>
+<li><p><strong>other_dr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> of </em><em>callable</em><em>, </em><em>optional</em>) – Decision rules for the controls this loss is not training, held fixed.</p></li>
+<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Whose payoff to maximize: the sum of the reward symbols that agent
+owns. Required on a block whose utilities have more than one owner,
+since without it the loss maximizes the sum of every agent’s reward –
+a planner’s objective, and no player’s. Use
+<a class="reference internal" href="blocks.html#skagent.block.Block.deciding_agent" title="skagent.block.Block.deciding_agent"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.Block.deciding_agent()</span></code></a> to read it off the control
+being trained.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.loss.static_reward">
 <span class="sig-prename descclassname"><span class="pre">skagent.loss.</span></span><span class="sig-name descname"><span class="pre">static_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.loss.static_reward" title="Link to this definition">¶</a></dt>
 <dd><p>Returns the reward for an agent for a block, given a decision rule, states, shocks, and calibration.</p>
+<p>The reward is the SUM of the reward symbols in scope: an agent owning
+several reward variables has a payoff of all of them, not of one.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -422,8 +439,14 @@ assuming it is executed just once (a non-dynamic model)</p>
 <li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Initial states, symbols to values.</p></li>
 <li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Shock variable values.</p></li>
 <li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Calibration parameters.</p></li>
-<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em><em>, </em><em>optional</em>) – Name of reference agent for rewards.</p></li>
+<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em><em>, </em><em>optional</em>) – Name of reference agent for rewards. When omitted, every reward symbol
+in the block is summed, which is one agent’s payoff only if the block
+has one agent; on a block whose utilities have several owners it is the
+sum of their payoffs and no agent’s objective.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If any reward symbol in scope is NaN.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -510,7 +533,7 @@ assuming it is executed just once (a non-dynamic model)</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=8afbc480"></script>
+</div><script src="../_static/documentation_options.js?v=b9dc30c8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
