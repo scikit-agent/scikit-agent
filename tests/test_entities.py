@@ -131,6 +131,37 @@ class TestARoleIsNotAnEntity:
         }
 
 
+class TestComposedBlocksExecute:
+    """A composed block runs its own dynamics, as a leaf block does."""
+
+    def two_stage(self):
+        # The reward is declared on the leaf; a composed block merges it.
+        first = DBlock(
+            name="first",
+            dynamics={"b": lambda a: a + 1.0, "u": lambda b: -b},
+            reward={"u": "p"},
+        )
+        second = DBlock(name="second", dynamics={"c": lambda b: b * 2.0})
+        return RBlock(name="composed", blocks=[first, second])
+
+    def test_an_rblock_transitions(self):
+        """`transition` was DBlock-only, so no solver could run a composed model."""
+        out = RBlock(name="composed", blocks=[self.two_stage()]).transition(
+            {"a": 1.0}, {}
+        )
+
+        assert out["b"] == 2.0 and out["c"] == 4.0
+
+    def test_an_rblock_calculates_reward(self):
+        vals = {"a": 1.0, "b": 2.0, "c": 4.0}
+
+        assert self.two_stage().calc_reward(vals, agent="p") == {"u": -2.0}
+
+    def test_an_rblock_exposes_merged_dynamics_as_an_attribute(self):
+        """Consumers reach for ``block.dynamics`` directly in eleven places."""
+        assert list(self.two_stage().dynamics) == ["b", "u", "c"]
+
+
 class TestGetControls:
     """A composed block reports its controls the way a leaf block does."""
 

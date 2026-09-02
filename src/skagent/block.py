@@ -450,6 +450,107 @@ class Block:
             populations[role] = entity
         return populations
 
+    def transition(self, pre, dr, screen=False, until=None, fix=None):
+        if fix is None:
+            fix = []
+        """
+        Computes the state variables following pre-given states,
+        given a decision rule for all controls.
+
+        Parameters
+        -----------
+        pre
+        dr
+
+        screen: Boolean
+            If True, the remove any dynamics that are prior to the first given state.
+            Defaults to False.
+
+        until: str or None
+            If not None, a symb which is the last symbol to simulate forward.
+            Useful for not overwriting prestates with poststates.
+
+        fix: list of string
+            A list of symbols to make static, rather than dynamic.
+            The symbol must appear in both dynamics and pre.
+        """
+        dyn = self.get_dynamics().copy()
+
+        if screen:
+            # don't simulate any states that are logically prior
+            # to those that have already been given.
+            met_pre = False  # this is a hack; really should use dependency graph
+            for sym in list(dyn.keys()):
+                if not met_pre:
+                    if sym in pre:
+                        met_pre = True
+                        del dyn[sym]
+                    elif sym not in pre and sym not in dr:
+                        del dyn[sym]
+
+            # this will break if there's a directly recursive label,
+            # i.e. if dynamics at time t for variable 'a'
+            # depend on state of 'a' at time t-1
+            # This is a forbidden case in CDC's design.
+
+        if until:
+            # Validate that `until` is a valid symbol in `dyn`
+            if until not in dyn:
+                raise ValueError(
+                    f"The `until` parameter ({until}) does not match any valid symbol in `dyn`. Available symbols: {list(dyn.keys())}"
+                )
+            # don't simulate any states that are logically after
+            # the until state
+            met_until = False  # this is a hack; really should use dependency graph
+            for sym in list(dyn.keys()):
+                if not met_until:
+                    if sym == until:
+                        met_until = True
+                else:
+                    del dyn[sym]
+
+        for sym in fix:
+            if sym in dyn and sym in pre:
+                del dyn[sym]
+            else:
+                raise Exception(
+                    f"Attempting to fix variable ({sym}) but it is not in either dyn ({sym in dyn}) or pre ({sym in pre})"
+                )
+
+        return simulate_dynamics(dyn, pre, dr)
+
+    def calc_reward(self, vals, agent=None):
+        """
+        Computes the reward for a given set of variable values
+
+        Parameters
+        ----------
+        vals : Mapping[str, Any]
+            Values for every variable the reward formulas depend on.
+
+        agent : str, optional
+            If given, compute only the reward variables attributed to this
+            agent. Their sum is that agent's payoff. Defaults to all reward
+            variables in the block.
+
+        Returns
+        -------
+        dict
+            Mapping from reward variable to value.
+        """
+        rvals = {}
+
+        for sym in self.reward:
+            if agent is not None and self.reward[sym] != agent:
+                continue
+
+            update_fn = self.get_dynamics()[sym]
+            if isinstance(update_fn, Rule):
+                update_fn = update_fn.update_func()
+            rvals[sym] = update_fn(*[vals[var] for var in param_names(update_fn)])
+
+        return rvals
+
     def get_control(self, control_sym):
         """The :class:`Control` declared at *control_sym*.
 
@@ -840,107 +941,6 @@ class DBlock(Block):
         # as arguments to the dynamics (currently excluded from this list).
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
-    def transition(self, pre, dr, screen=False, until=None, fix=None):
-        if fix is None:
-            fix = []
-        """
-        Computes the state variables following pre-given states,
-        given a decision rule for all controls.
-
-        Parameters
-        -----------
-        pre
-        dr
-
-        screen: Boolean
-            If True, the remove any dynamics that are prior to the first given state.
-            Defaults to False.
-
-        until: str or None
-            If not None, a symb which is the last symbol to simulate forward.
-            Useful for not overwriting prestates with poststates.
-
-        fix: list of string
-            A list of symbols to make static, rather than dynamic.
-            The symbol must appear in both dynamics and pre.
-        """
-        dyn = self.dynamics.copy()
-
-        if screen:
-            # don't simulate any states that are logically prior
-            # to those that have already been given.
-            met_pre = False  # this is a hack; really should use dependency graph
-            for sym in list(dyn.keys()):
-                if not met_pre:
-                    if sym in pre:
-                        met_pre = True
-                        del dyn[sym]
-                    elif sym not in pre and sym not in dr:
-                        del dyn[sym]
-
-            # this will break if there's a directly recursive label,
-            # i.e. if dynamics at time t for variable 'a'
-            # depend on state of 'a' at time t-1
-            # This is a forbidden case in CDC's design.
-
-        if until:
-            # Validate that `until` is a valid symbol in `dyn`
-            if until not in dyn:
-                raise ValueError(
-                    f"The `until` parameter ({until}) does not match any valid symbol in `dyn`. Available symbols: {list(dyn.keys())}"
-                )
-            # don't simulate any states that are logically after
-            # the until state
-            met_until = False  # this is a hack; really should use dependency graph
-            for sym in list(dyn.keys()):
-                if not met_until:
-                    if sym == until:
-                        met_until = True
-                else:
-                    del dyn[sym]
-
-        for sym in fix:
-            if sym in dyn and sym in pre:
-                del dyn[sym]
-            else:
-                raise Exception(
-                    f"Attempting to fix variable ({sym}) but it is not in either dyn ({sym in dyn}) or pre ({sym in pre})"
-                )
-
-        return simulate_dynamics(dyn, pre, dr)
-
-    def calc_reward(self, vals, agent=None):
-        """
-        Computes the reward for a given set of variable values
-
-        Parameters
-        ----------
-        vals : Mapping[str, Any]
-            Values for every variable the reward formulas depend on.
-
-        agent : str, optional
-            If given, compute only the reward variables attributed to this
-            agent. Their sum is that agent's payoff. Defaults to all reward
-            variables in the block.
-
-        Returns
-        -------
-        dict
-            Mapping from reward variable to value.
-        """
-        rvals = {}
-
-        for sym in self.reward:
-            if agent is not None and self.reward[sym] != agent:
-                continue
-
-            update_fn = self.dynamics[sym]
-            if isinstance(update_fn, Rule):
-                update_fn = update_fn.update_func()
-            rvals[sym] = update_fn(*[vals[var] for var in param_names(update_fn)])
-
-        return rvals
-
     def get_state_rule_value_function_from_continuation(
         self, continuation, screen=False
     ):
@@ -1161,6 +1161,16 @@ class RBlock(Block):
 
     def get_vars(self):
         return list(self.get_shocks().keys()) + list(self.get_dynamics().keys())
+
+    @property
+    def dynamics(self):
+        """The dynamics of all subblocks, in declaration order.
+
+        A composed block has no dynamics of its own; this is the merged view its
+        subblocks give, so that a consumer reaching for ``block.dynamics`` sees
+        the same thing on a composed block as on a leaf one.
+        """
+        return self.get_dynamics()
 
     @property
     def reward(self):

@@ -200,6 +200,18 @@ class TabularBestResponseSolver:
         self.max_cells = max_cells
         self.rng = ground.rng
 
+        entities = self.block.entities()
+        if entities:
+            raise NotImplementedError(
+                f"this solver has no equilibrium concept for the entity "
+                f"class(es) {sorted(entities)}, and its leading axis is a "
+                "sample of shock draws rather than a population -- so an "
+                "equation reducing over the entity axis would be reduced over "
+                "the samples instead, answering a different model. Solve one "
+                "instance's decision against a supplied profile, or use a "
+                "solver that names an equilibrium concept."
+            )
+
         self.decisions = list(self.block.get_controls())
 
         self.shocks = self.ground.draw_shocks(self.shock_samples)

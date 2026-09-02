@@ -19,6 +19,7 @@ from skagent.block import Control, DBlock
 from skagent.loss import BellmanEquationLoss
 from skagent.grid import device
 import skagent.models.benchmarks as bm
+import skagent.models.cournot as cournot
 import skagent.models.consumer as cons
 import skagent.models.fisher as fisher
 import numpy as np
@@ -674,6 +675,16 @@ class test_vfi_solve_bellman(unittest.TestCase):
     ``d4_vfi_reference_policy`` (a dense cash-on-hand VFI) — a solver-vs-solver
     check that exercises the convergence loop and active-bound handling.
     """
+
+    def test_a_block_with_an_entity_class_is_refused(self):
+        """The leading axis is the state grid, so a reduction over an entity
+        axis would be taken over grid points and return a plausible number for
+        a different model."""
+        cal = cournot.collusion_calibration()
+        bp = BellmanPeriod(cournot.cournot_block, None, cal)
+
+        with pytest.raises(NotImplementedError, match="no equilibrium concept"):
+            vfi.solve_step(bp, lambda s, sh, p: 0.0, {"c": np.array([4.0])}, scope=cal)
 
     def test_d4_constrained_loop_converges_to_a_sane_policy(self):
         """The constrained convergence loop, without the oracle's dense grid.

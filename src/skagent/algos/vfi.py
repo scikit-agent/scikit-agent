@@ -688,6 +688,18 @@ def solve_step(
             "no decision to optimize."
         )
 
+    entities = bp.block.entities()
+    if entities:
+        raise NotImplementedError(
+            f"solve_step has no equilibrium concept for the entity class(es) "
+            f"{sorted(entities)}, and its leading axis is the STATE GRID rather "
+            "than a population -- so an equation reducing over the entity axis "
+            "would be reduced over the grid points instead, returning a "
+            "plausible number for a different model. Supply the crossing "
+            "variables through *scope* and solve one instance's problem, or use "
+            "a solver that names an equilibrium concept."
+        )
+
     grid_axes = list(state_grid.keys())
     shock_syms = set(bp.get_shocks())
     arrival = bp.arrival_states

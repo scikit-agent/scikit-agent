@@ -15,6 +15,7 @@ from skagent.ground import GroundedBlock
 from skagent.algos.vfi import get_action_rule
 from skagent.block import Control, DBlock
 from skagent.distributions import Uniform
+import skagent.models.cournot as cournot
 import skagent.models.macid as macid
 
 SHOCK_SAMPLES = 10_000
@@ -118,6 +119,17 @@ class TestSolve:
         """Neither game admits the one-at-a-time order this solver requires."""
         with pytest.raises(NotImplementedError, match="solved jointly"):
             solver(block).solve()
+
+
+class TestEntityRefusal:
+    """This solver's leading axis is a sample, not a population."""
+
+    def test_a_block_with_an_entity_class_is_refused(self):
+        """Without the refusal it returns the collusive 3, not the Nash 4.5."""
+        with pytest.raises(NotImplementedError, match="no equilibrium concept"):
+            TabularBestResponseSolver(
+                GroundedBlock(cournot.cournot_block, cournot.collusion_calibration())
+            )
 
 
 class TestRelevanceOrder:
