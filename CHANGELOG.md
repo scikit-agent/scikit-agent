@@ -97,7 +97,8 @@ and this project adheres to
   firms this way gives each firm the joint-monopoly quantity rather than the
   Nash one. The refusal is deliberately broad -- any declared entity class, not
   only a detected reduction -- and will narrow once the detection mechanism is
-  settled.
+  settled. Solving these models is the point, so the refusal is temporary; the
+  condition for lifting it is recorded where the check is made.
 
 - `vfi.bellman_step` is now `vfi.solve_step`. It applies to static and dynamic
   periods alike, so it is no longer named for Bellman; `solve_bellman`, which
