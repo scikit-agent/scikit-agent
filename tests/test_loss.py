@@ -4,7 +4,8 @@ import os
 import skagent.ann as ann
 import skagent.bellman as bellman
 import skagent.block as block
-from skagent.loss import CustomLoss, static_reward
+import skagent.grid as grid
+from skagent.loss import CustomLoss, StaticRewardLoss, static_reward
 import torch
 import unittest
 
@@ -120,3 +121,34 @@ class TestStaticReward(unittest.TestCase):
             static_reward(period, {"c": lambda: 3.0}, {})
 
         self.assertIn("v", str(caught.exception))
+
+
+class TestStaticRewardLossAgent:
+    """The loss maximizes the payoff of the agent it is given, and no other."""
+
+    def period(self):
+        blk = block.DBlock(
+            name="two_agents",
+            dynamics={
+                "c": block.Control([], agent="a"),
+                "u": lambda c: 2.0 * c,
+                "v": lambda c: 10.0 - c,
+            },
+            reward={"u": "a", "v": "b"},
+        )
+        return bellman.BellmanPeriod(blk, None, {})
+
+    def losses_at(self, agent):
+        period = self.period()
+        givens = grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 2}})
+        loss = StaticRewardLoss(period, period.calibration, agent=agent)
+        return float(torch.as_tensor(loss({"c": lambda: 3.0}, givens)).mean())
+
+    def test_each_agent_gets_its_own_payoff(self):
+        # u = 6 belongs to a, v = 7 belongs to b. The loss is the negative.
+        assert self.losses_at("a") == -6.0
+        assert self.losses_at("b") == -7.0
+
+    def test_naming_no_agent_sums_both(self):
+        """A planner's objective, and no player's -- kept explicit."""
+        assert self.losses_at(None) == -13.0

@@ -44,7 +44,7 @@ def solve_multiple_controls(
         Training epochs per pass. Default is 200.
     loss : type, optional
         A loss-function class with signature
-        ``loss(bellman_period, parameters, other_dr)``. Defaults to
+        ``loss(bellman_period, parameters, other_dr, agent=...)``. Defaults to
         :class:`skagent.loss.StaticRewardLoss`.
 
     Returns

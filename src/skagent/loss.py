@@ -150,13 +150,30 @@ class StaticRewardLoss:
     """
     A loss function that computes the negative reward for a block,
     assuming it is executed just once (a non-dynamic model)
+
+    Parameters
+    ----------
+    bellman_period : BellmanPeriod
+        The period whose reward is maximized.
+    parameters : dict
+        Calibration the reward is evaluated at.
+    other_dr : dict of callable, optional
+        Decision rules for the controls this loss is not training, held fixed.
+    agent : str, optional
+        Whose payoff to maximize: the sum of the reward symbols that agent
+        owns. Required on a block whose utilities have more than one owner,
+        since without it the loss maximizes the sum of every agent's reward --
+        a planner's objective, and no player's. Use
+        :meth:`skagent.block.Block.deciding_agent` to read it off the control
+        being trained.
     """
 
-    def __init__(self, bellman_period, parameters, other_dr=None):
+    def __init__(self, bellman_period, parameters, other_dr=None, agent=None):
         self.bellman_period = bellman_period
         self.parameters = parameters
         self.arrival_variables = self.bellman_period.arrival_states
         self.other_dr = other_dr if other_dr is not None else {}
+        self.agent = agent
 
     def __call__(self, new_dr, input_grid: Grid):
         """
@@ -175,7 +192,7 @@ class StaticRewardLoss:
             fresh_dr,
             states,
             parameters=self.parameters,
-            agent=None,  ## TODO: Pass through the agent?
+            agent=self.agent,
             shocks=shock_vals,
             ## Handle multiple decision rules?
         )
