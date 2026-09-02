@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev67+g9c6162ec9</title>
+        <title>Blocks - scikit-agent 0.1.1.dev72+g88e464eb3</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev67+g9c6162ec9</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev72+g88e464eb3</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -318,6 +318,28 @@ single agent rather than a population.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.calc_reward">
+<span class="sig-name descname"><span class="pre">calc_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.calc_reward" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the reward for a given set of variable values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vals</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Values for every variable the reward formulas depend on.</p></li>
+<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – If given, compute only the reward variables attributed to this
+agent. Their sum is that agent’s payoff. Defaults to all reward
+variables in the block.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping from reward variable to value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.Block.crossings">
 <span class="sig-name descname"><span class="pre">crossings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.crossings" title="Link to this definition">¶</a></dt>
 <dd><p>The equations that read out of an entity class, and what they cross.</p>
@@ -429,6 +451,17 @@ the form {“agent1” : [“var1”, “var2”, … ], “agent2” : [“var3
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.get_control">
+<span class="sig-name descname"><span class="pre">get_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_sym</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.get_control" title="Link to this definition">¶</a></dt>
+<dd><p>The <a class="reference internal" href="#skagent.block.Control" title="skagent.block.Control"><code class="xref py py-class docutils literal notranslate"><span class="pre">Control</span></code></a> declared at <em>control_sym</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>control_sym</em> is not a control of this block.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.Block.get_controls">
 <span class="sig-name descname"><span class="pre">get_controls</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.get_controls" title="Link to this definition">¶</a></dt>
 <dd><p>Returns only the Control variables from the Block dynamics.</p>
@@ -515,6 +548,11 @@ per-instance equations that read it.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.transition">
+<span class="sig-name descname"><span class="pre">transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pre</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.transition" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.Block.visualize">
 <span class="sig-name descname"><span class="pre">visualize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.visualize" title="Link to this definition">¶</a></dt>
 <dd><p>Return a PyDot graph visualization of this block.</p>
@@ -573,28 +611,6 @@ to optimize.</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.block.DBlock.calc_reward">
-<span class="sig-name descname"><span class="pre">calc_reward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.calc_reward" title="Link to this definition">¶</a></dt>
-<dd><p>Computes the reward for a given set of variable values</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>vals</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Values for every variable the reward formulas depend on.</p></li>
-<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – If given, compute only the reward variables attributed to this
-agent. Their sum is that agent’s payoff. Defaults to all reward
-variables in the block.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Mapping from reward variable to value.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.construct_shocks">
 <span class="sig-name descname"><span class="pre">construct_shocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.construct_shocks" title="Link to this definition">¶</a></dt>
@@ -740,11 +756,6 @@ the dynamics.</p>
 <span class="sig-name descname"><span class="pre">shocks</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span><a class="headerlink" href="#skagent.block.DBlock.shocks" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.block.DBlock.transition">
-<span class="sig-name descname"><span class="pre">transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pre</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.transition" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 </section>
@@ -803,16 +814,19 @@ Returned rather than stored, for the reason
 It replaces any DBlocks with new blocks with discretized shocks.</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="skagent.block.RBlock.dynamics">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dynamics</span></span><a class="headerlink" href="#skagent.block.RBlock.dynamics" title="Link to this definition">¶</a></dt>
+<dd><p>The dynamics of all subblocks, in declaration order.</p>
+<p>A composed block has no dynamics of its own; this is the merged view its
+subblocks give, so that a consumer reaching for <code class="docutils literal notranslate"><span class="pre">block.dynamics</span></code> sees
+the same thing on a composed block as on a leaf one.</p>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="skagent.block.RBlock.entity">
 <span class="sig-name descname"><span class="pre">entity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#skagent.block.Entity" title="skagent.block.Entity"><span class="pre">Entity</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#skagent.block.RBlock.entity" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.block.RBlock.get_controls">
-<span class="sig-name descname"><span class="pre">get_controls</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.RBlock.get_controls" title="Link to this definition">¶</a></dt>
-<dd><p>Returns only the Control variables from the Block dynamics.</p>
-</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.RBlock.get_dynamics">
@@ -1221,6 +1235,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#block">Block</a><ul>
 <li><a class="reference internal" href="#skagent.block.Block"><code class="docutils literal notranslate"><span class="pre">Block</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.block.Block.agent_populations"><code class="docutils literal notranslate"><span class="pre">Block.agent_populations()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.calc_reward"><code class="docutils literal notranslate"><span class="pre">Block.calc_reward()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.crossings"><code class="docutils literal notranslate"><span class="pre">Block.crossings()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.deciding_agent"><code class="docutils literal notranslate"><span class="pre">Block.deciding_agent()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.display"><code class="docutils literal notranslate"><span class="pre">Block.display()</span></code></a></li>
@@ -1229,11 +1244,13 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.Block.formulas"><code class="docutils literal notranslate"><span class="pre">Block.formulas()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_arrival_states"><code class="docutils literal notranslate"><span class="pre">Block.get_arrival_states()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_attributions"><code class="docutils literal notranslate"><span class="pre">Block.get_attributions()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.get_control"><code class="docutils literal notranslate"><span class="pre">Block.get_control()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_controls"><code class="docutils literal notranslate"><span class="pre">Block.get_controls()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.relevance_graph"><code class="docutils literal notranslate"><span class="pre">Block.relevance_graph()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.relies_on"><code class="docutils literal notranslate"><span class="pre">Block.relies_on()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.shock_roles"><code class="docutils literal notranslate"><span class="pre">Block.shock_roles()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.signatures"><code class="docutils literal notranslate"><span class="pre">Block.signatures()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.transition"><code class="docutils literal notranslate"><span class="pre">Block.transition()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.visualize"><code class="docutils literal notranslate"><span class="pre">Block.visualize()</span></code></a></li>
 </ul>
 </li>
@@ -1241,7 +1258,6 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 </li>
 <li><a class="reference internal" href="#dblock">DBlock</a><ul>
 <li><a class="reference internal" href="#skagent.block.DBlock"><code class="docutils literal notranslate"><span class="pre">DBlock</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.block.DBlock.calc_reward"><code class="docutils literal notranslate"><span class="pre">DBlock.calc_reward()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.construct_shocks"><code class="docutils literal notranslate"><span class="pre">DBlock.construct_shocks()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.deep_replace"><code class="docutils literal notranslate"><span class="pre">DBlock.deep_replace()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.description"><code class="docutils literal notranslate"><span class="pre">DBlock.description</span></code></a></li>
@@ -1258,7 +1274,6 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.name"><code class="docutils literal notranslate"><span class="pre">DBlock.name</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.reward"><code class="docutils literal notranslate"><span class="pre">DBlock.reward</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.DBlock.shocks"><code class="docutils literal notranslate"><span class="pre">DBlock.shocks</span></code></a></li>
-<li><a class="reference internal" href="#skagent.block.DBlock.transition"><code class="docutils literal notranslate"><span class="pre">DBlock.transition()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1269,8 +1284,8 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.construct_shocks"><code class="docutils literal notranslate"><span class="pre">RBlock.construct_shocks()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.description"><code class="docutils literal notranslate"><span class="pre">RBlock.description</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.discretize"><code class="docutils literal notranslate"><span class="pre">RBlock.discretize()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.RBlock.dynamics"><code class="docutils literal notranslate"><span class="pre">RBlock.dynamics</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.entity"><code class="docutils literal notranslate"><span class="pre">RBlock.entity</span></code></a></li>
-<li><a class="reference internal" href="#skagent.block.RBlock.get_controls"><code class="docutils literal notranslate"><span class="pre">RBlock.get_controls()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.get_dynamics"><code class="docutils literal notranslate"><span class="pre">RBlock.get_dynamics()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.get_shocks"><code class="docutils literal notranslate"><span class="pre">RBlock.get_shocks()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.RBlock.get_vars"><code class="docutils literal notranslate"><span class="pre">RBlock.get_vars()</span></code></a></li>
@@ -1336,7 +1351,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=b9dc30c8"></script>
+</div><script src="../_static/documentation_options.js?v=6cbe060b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
