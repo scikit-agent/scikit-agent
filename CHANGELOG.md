@@ -88,6 +88,20 @@ and this project adheres to
 
 ### Changed
 
+- Every loss in `skagent.loss` now takes the same shape:
+  `Loss(bellman_period, *, agent=None, ...)`, with loss-specific arguments
+  keyword-only. `parameters` is gone from all six: the period already carries
+  the calibration a loss is evaluated at, and passing it separately let the two
+  disagree. `CustomLoss` takes a period rather than a block, like its siblings.
+  Previously the six disagreed on argument order and on whether `parameters` was
+  required, optional or absent. What `__call__` takes still differs, and
+  deliberately: `CustomLoss` and `StaticRewardLoss` require a mapping from
+  control symbol to decision rule, because they merge it over `other_dr`, while
+  the other four also accept a whole-period decision function.
+- `EstimatedDiscountedLifetimeRewardLoss` takes the agent whose discounted
+  payoff it maximizes, as the other losses do. It previously summed the reward
+  symbols of every agent, so a two-player game trained through it optimized a
+  planner's objective and no player's. `big_t` is now keyword-only.
 - `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
   an entity class, naming the classes and which leading axis a reduction over
   the entity axis would be taken over instead -- the shock sample for the

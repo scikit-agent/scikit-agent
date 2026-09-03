@@ -145,9 +145,7 @@ over time rather than acting myopically:
 ```python
 import skagent.loss as loss
 
-loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
-    bp, big_t=10, parameters=calibration
-)
+loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(bp, big_t=10)
 ```
 
 ### 4. Train and read off the decision rule
@@ -217,7 +215,7 @@ states = grid.Grid.from_config(
 )
 
 policy = ann.BlockPolicyNet(bp, width=16)
-loss_fn = loss.StaticRewardLoss(bp, calibration)
+loss_fn = loss.StaticRewardLoss(bp)
 ann.train_block_nn(policy, states, loss_fn, epochs=500)
 
 c = policy.decision_function({"a": states["a"]}, {"psi": states["psi"]}, calibration)[

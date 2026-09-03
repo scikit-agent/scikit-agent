@@ -42,11 +42,7 @@ class test_ann_lr(unittest.TestCase):
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def test_case_0(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_0["bp"],
-            1,
-            parameters=case_0["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_0["bp"], big_t=1)
 
         states_0_N = case_0["givens"]
 
@@ -61,11 +57,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_1(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_1["bp"],
-            1,
-            parameters=case_1["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_1["bp"], big_t=1)
 
         given_0_N = case_1["givens"][1]
 
@@ -90,11 +82,7 @@ class test_ann_lr(unittest.TestCase):
         """
         Running case 1 with big_t == 2
         """
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_1["bp"],
-            2,
-            parameters=case_1["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_1["bp"], big_t=2)
 
         given_0_N = case_1["givens"][2]
 
@@ -115,11 +103,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_2(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_2["bp"],
-            1,
-            parameters=case_2["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_2["bp"], big_t=1)
 
         given_0_N = case_2["givens"]
 
@@ -140,11 +124,7 @@ class test_ann_lr(unittest.TestCase):
             rng=np.random.default_rng(TEST_SEED),
         )
 
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            bp,
-            1,
-            parameters=case_3["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(bp, big_t=1)
 
         given_0_N = case_3["givens"][1]
 
@@ -164,11 +144,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.03))
 
     def test_case_3_2(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_3["bp"],
-            2,
-            parameters=case_3["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_3["bp"], big_t=2)
 
         given_0_N = case_3["givens"][2]
 
@@ -188,11 +164,7 @@ class test_ann_lr(unittest.TestCase):
         self.assertTrue(torch.allclose(c_ann.flatten(), given_m.flatten(), atol=0.04))
 
     def test_case_5_double_bounded_upper_binds(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_5["bp"],
-            1,
-            parameters=case_5["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_5["bp"], big_t=1)
 
         given_0_N = case_5["givens"]
 
@@ -210,11 +182,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_6_double_bounded_lower_binds(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_6["bp"],
-            1,
-            parameters=case_6["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_6["bp"], big_t=1)
 
         given_0_N = case_6["givens"]
 
@@ -232,11 +200,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_7_only_lower_bound(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_7["bp"],
-            1,
-            parameters=case_7["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_7["bp"], big_t=1)
 
         given_0_N = case_7["givens"]
 
@@ -256,11 +220,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_8_only_upper_bound(self):
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_8["bp"],
-            1,
-            parameters=case_8["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_8["bp"], big_t=1)
 
         given_0_N = case_8["givens"]
 
@@ -318,11 +278,7 @@ class test_ann_lr(unittest.TestCase):
         )
 
     def test_case_9_empty_information_set(self):
-        loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_9["bp"],
-            2,
-            parameters=case_9["calibration"],
-        )
+        loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(case_9["bp"], big_t=2)
 
         given_0_N = case_9["givens"]
 
@@ -348,9 +304,7 @@ class test_ann_lr(unittest.TestCase):
         pfbp = bellman.BellmanPeriod(pfblock, "DiscFac", pfm.calibration)
 
         ### Loss function
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            pfbp, 1, parameters=pfm.calibration
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(pfbp, big_t=1)
 
         ### Setting up the training
 
@@ -395,11 +349,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
-            loss.StaticRewardLoss(
-                case_10["bp"],
-                case_10["calibration"],
-                dict_of_decision_rules,
-            ),
+            loss.StaticRewardLoss(case_10["bp"], other_dr=dict_of_decision_rules),
             epochs=200,
         )
 
@@ -407,11 +357,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_nn(
             cpns["d"],
             case_10["givens"],
-            loss.StaticRewardLoss(
-                case_10["bp"],
-                case_10["calibration"],
-                dict_of_decision_rules,
-            ),
+            loss.StaticRewardLoss(case_10["bp"], other_dr=dict_of_decision_rules),
             epochs=200,
         )
 
@@ -422,11 +368,7 @@ class test_ann_multiple_controls(unittest.TestCase):
         ann.train_block_nn(
             cpns["c"],
             case_10["givens"],
-            loss.StaticRewardLoss(
-                case_10["bp"],
-                case_10["calibration"],
-                dict_of_decision_rules,
-            ),
+            loss.StaticRewardLoss(case_10["bp"], other_dr=dict_of_decision_rules),
             epochs=100,
         )
 

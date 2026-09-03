@@ -143,11 +143,7 @@ class TestMaliarTrainingLoop(unittest.TestCase):
             }
         )
 
-        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(
-            case_4["bp"],
-            big_t,
-            case_4["calibration"],
-        )
+        edlrl = loss.EstimatedDiscountedLifetimeRewardLoss(case_4["bp"], big_t=big_t)
 
         # Use fixed random seed for deterministic training
         ann, states = maliar.maliar_training_loop(
@@ -273,7 +269,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
         nrbp = bellman.BellmanPeriod(no_reward_block, "beta", {"beta": 0.95})
 
         with self.assertRaises(Exception) as context:
-            loss.BellmanEquationLoss(nrbp, dummy_value_function)
+            loss.BellmanEquationLoss(nrbp, value_function=dummy_value_function)
         self.assertIn("No reward variables found in block", str(context.exception))
 
     def test_bellman_loss_function_integration(self):
@@ -295,9 +291,7 @@ class TestBellmanLossFunctions(unittest.TestCase):
             return 10.0 * wealth  # Linear value function
 
         loss_function = loss.BellmanEquationLoss(
-            self.bp,
-            simple_value_function,
-            self.parameters,
+            self.bp, value_function=simple_value_function
         )
 
         # Test with the learned decision function
@@ -417,7 +411,7 @@ def test_get_euler_residual_loss():
     )
 
     # Create Euler equation loss function
-    loss_fn = loss.EulerEquationLoss(test_bp, parameters=d2_calibration)
+    loss_fn = loss.EulerEquationLoss(test_bp)
 
     # Test that loss function works with the analytical optimal policy
     losses = loss_fn(d2_policy, input_grid)
@@ -523,7 +517,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         policy_net = BlockPolicyNet(bp, width=32, init_seed=TEST_SEED)
 
         # Create Euler equation loss
-        euler_loss_fn = loss.EulerEquationLoss(bp, parameters=d2_calibration)
+        euler_loss_fn = loss.EulerEquationLoss(bp)
 
         # Create training grid with states (D-2 is deterministic, no shocks needed)
         n_grid_points = 64
@@ -620,10 +614,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # foc_weight=1.0 adds the FOC term (Maliar et al. 2021, eq. 14)
         # for faster convergence.
         bellman_loss_fn = loss.BellmanEquationLoss(
-            bp,
-            pvnet.get_value_function(),
-            parameters=u2_calibration,
-            foc_weight=1.0,
+            bp, value_function=pvnet.get_value_function(), foc_weight=1.0
         )
 
         # Training grid with two shock copies (AiO expectation operator)
@@ -717,11 +708,7 @@ class TestEulerResidualsBenchmarks(unittest.TestCase):
         # constrained=True: the borrowing constraint c <= m turns the Euler
         # equation into an inequality (u'(c) >= betaR E[u'(c')]); the one-sided
         # loss penalizes only negative residuals (overconsumption).
-        euler_loss_fn = loss.EulerEquationLoss(
-            bp,
-            parameters=u3_calibration,
-            constrained=True,  # Key fix: use one-sided loss for borrowing constraint
-        )
+        euler_loss_fn = loss.EulerEquationLoss(bp, constrained=True)
 
         # Train the policy with enough iterations for convergence.
         # More iterations allow the Maliar simulation-based state updates
@@ -934,16 +921,8 @@ class TestEulerLossConstrainedIntegration(unittest.TestCase):
         )
 
         # Create loss functions with both settings
-        loss_unconstrained = loss.EulerEquationLoss(
-            bp,
-            parameters=u3_calibration,
-            constrained=False,
-        )
-        loss_constrained = loss.EulerEquationLoss(
-            bp,
-            parameters=u3_calibration,
-            constrained=True,
-        )
+        loss_unconstrained = loss.EulerEquationLoss(bp, constrained=False)
+        loss_constrained = loss.EulerEquationLoss(bp, constrained=True)
 
         # Create a simple test grid (small to avoid OOM)
         test_grid = grid.Grid.from_config(
@@ -1045,11 +1024,7 @@ class TestU3OneSidedConstraintTraining(unittest.TestCase):
         )
 
         # Create Euler equation loss with constrained=True
-        euler_loss_fn = loss.EulerEquationLoss(
-            bp,
-            parameters=u3_calibration,
-            constrained=True,
-        )
+        euler_loss_fn = loss.EulerEquationLoss(bp, constrained=True)
 
         # Train the policy
         trained_net, _ = maliar.maliar_training_loop(
@@ -1146,9 +1121,7 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
 
         # Policy-only network (Euler method, no value head).
         policy_net = BlockPolicyNet(bp, width=64, init_seed=TEST_SEED)
-        euler_loss_fn = loss.EulerEquationLoss(
-            bp, parameters=d4_calibration, constrained=True
-        )
+        euler_loss_fn = loss.EulerEquationLoss(bp, constrained=True)
 
         R = d4_calibration["R"]
         y = d4_calibration["y"]
@@ -1254,7 +1227,7 @@ class TestBilateralFischerBurmeister(unittest.TestCase):
         states = {"a": a_test}
         input_grid = grid.Grid.from_dict({"a": a_test})
 
-        loss_fn = loss.EulerEquationLoss(bp, parameters=cal, constrained=True)
+        loss_fn = loss.EulerEquationLoss(bp, constrained=True)
         actual = loss_fn(df_at_lower_bound, input_grid)
 
         # Expected: FB(-f, slack) squared, with slack = c - lb = 0.
@@ -1377,7 +1350,7 @@ class TestEulerLossAllInOneOperator(unittest.TestCase):
         independent second next-period residual internally. A single-draw square
         is deterministic given the grid, so identical outputs would betray it."""
         torch.manual_seed(TEST_SEED)
-        bp, _, cal = self._stochastic_u3()
+        bp, _, _ = self._stochastic_u3()
         n = 1024
         ones = torch.ones(n, dtype=torch.float64)
         g = grid.Grid.from_dict(
@@ -1389,7 +1362,7 @@ class TestEulerLossAllInOneOperator(unittest.TestCase):
                 "theta_1": ones,
             }
         )
-        loss_fn = loss.EulerEquationLoss(bp, parameters=cal)
+        loss_fn = loss.EulerEquationLoss(bp)
         out1 = loss_fn(self._half_cash_on_hand, g)
         out2 = loss_fn(self._half_cash_on_hand, g)
         self.assertFalse(
@@ -1411,7 +1384,7 @@ class TestEulerLossAllInOneOperator(unittest.TestCase):
         n = 1024
         ones = torch.ones(n, dtype=torch.float64)
         states = {"a": torch.linspace(0.5, 5.0, n, dtype=torch.float64)}
-        loss_fn = loss.EulerEquationLoss(bp, parameters=cal)
+        loss_fn = loss.EulerEquationLoss(bp)
         df = self._half_cash_on_hand
 
         n_draws = 200
@@ -1475,11 +1448,7 @@ class TestConstrainedWarning(unittest.TestCase):
         bp = bellman.BellmanPeriod(no_bound_block, "DiscFac", calibration)
 
         with self.assertLogs("skagent.loss", level=logging.WARNING) as cm:
-            loss.EulerEquationLoss(
-                bp,
-                parameters=calibration,
-                constrained=True,
-            )
+            loss.EulerEquationLoss(bp, constrained=True)
 
         self.assertTrue(
             any("constrained=True but no Control" in msg for msg in cm.output),
@@ -1495,11 +1464,7 @@ class TestConstrainedWarning(unittest.TestCase):
 
         logger = logging.getLogger("skagent.loss")
         with self.assertNoLogs(logger, level=logging.WARNING):
-            loss.EulerEquationLoss(
-                bp,
-                parameters=u3_calibration,
-                constrained=True,
-            )
+            loss.EulerEquationLoss(bp, constrained=True)
 
 
 class TestSimulateForwardValidation(unittest.TestCase):
@@ -1587,9 +1552,7 @@ class TestMaliarTrainingLoopValidation(unittest.TestCase):
                 "g": {"min": 0, "max": 5, "count": 3},
             }
         )
-        self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
-            self.bp, 2, case_4["calibration"]
-        )
+        self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(self.bp, big_t=2)
         self.calibration = case_4["calibration"]
 
     def test_max_iterations_zero_raises(self):
@@ -1766,9 +1729,7 @@ class TestMaliarHyperparameters(unittest.TestCase):
                 "g": {"min": 0, "max": 5, "count": 3},
             }
         )
-        self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(
-            self.bp, 2, case_4["calibration"]
-        )
+        self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(self.bp, big_t=2)
         self.calibration = case_4["calibration"]
 
     def test_network_width_affects_parameter_count(self):
@@ -1950,11 +1911,7 @@ class TestComputeSlack(unittest.TestCase):
             reward={"u": "consumer"},
         )
         self.bp = bellman.BellmanPeriod(self.block, "beta", {"beta": 0.95, "R": 1.04})
-        self.loss_fn = loss.EulerEquationLoss(
-            self.bp,
-            parameters={"beta": 0.95, "R": 1.04},
-            constrained=True,
-        )
+        self.loss_fn = loss.EulerEquationLoss(self.bp, constrained=True)
 
     def test_slack_positive_when_not_binding(self):
         """Slack > 0 when control is below upper bound."""
@@ -1987,7 +1944,7 @@ class TestComputeSlack(unittest.TestCase):
             reward={"u": "consumer"},
         )
         bp_no_ub = bellman.BellmanPeriod(block_no_ub, "beta", {"beta": 0.95})
-        loss_fn = loss.EulerEquationLoss(bp_no_ub, parameters={"beta": 0.95})
+        loss_fn = loss.EulerEquationLoss(bp_no_ub)
         slack = loss_fn._compute_slack(
             "c", {"c": torch.tensor([1.0])}, {"a": torch.tensor([2.0])}, {}
         )
@@ -2011,7 +1968,7 @@ class TestMultiControlConstrainedLoss(unittest.TestCase):
         )
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
 
-        loss_fn = loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, constrained=True)
+        loss_fn = loss.EulerEquationLoss(bp, constrained=True)
 
         input_grid = grid.Grid.from_dict({"a": torch.linspace(1.0, 5.0, 5)})
 
@@ -2063,7 +2020,7 @@ class TestEulerEquationLossWeightValidation(unittest.TestCase):
         )
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
         with self.assertRaises(ValueError, msg="weight must be > 0"):
-            loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, weight=0.0)
+            loss.EulerEquationLoss(bp, weight=0.0)
 
     def test_negative_weight_raises(self):
         block = model.DBlock(
@@ -2077,7 +2034,7 @@ class TestEulerEquationLossWeightValidation(unittest.TestCase):
         )
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
         with self.assertRaises(ValueError, msg="weight must be > 0"):
-            loss.EulerEquationLoss(bp, parameters={"beta": 0.9}, weight=-1.0)
+            loss.EulerEquationLoss(bp, weight=-1.0)
 
 
 class TestBellmanEquationLossValidation(unittest.TestCase):
@@ -2112,7 +2069,5 @@ class TestBellmanEquationLossValidation(unittest.TestCase):
         bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
         with self.assertRaises(ValueError, msg="foc_weight must be >= 0"):
             loss.BellmanEquationLoss(
-                bp,
-                value_function=lambda s, sh, p: s["a"],
-                foc_weight=-0.5,
+                bp, value_function=lambda s, sh, p: s["a"], foc_weight=-0.5
             )
