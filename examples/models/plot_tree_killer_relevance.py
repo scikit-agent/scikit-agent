@@ -64,10 +64,11 @@ import io
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
-from skagent.algos.best_response import TabularBestResponseSolver
+from skagent.algos.tabular import TabularBestResponseSolver
 from skagent.ground import GroundedBlock
 from skagent.algos.vfi import get_action_rule
 from skagent.models.macid import tree_killer_block as block
+from skagent.solver import solve_in_relevance_order
 
 # sphinx_gallery_thumbnail_number = 1
 
@@ -188,15 +189,16 @@ plt.tight_layout()
 # Solving in Relevance Order
 # ----------------------------
 #
-# :class:`~skagent.algos.best_response.TabularBestResponseSolver` solves a block this
-# way round: ``solve()`` walks the relevance graph's ``condensation()`` and
-# computes each decision's best response against the rules already found. No
-# iteration to a fixed point is needed, because the graph is acyclic -- every
-# rule a decision relies on is settled by the time its turn comes. Had a
-# component held more than one decision, the solver would refuse it as the
+# :func:`~skagent.solver.solve_in_relevance_order` solves a block this way
+# round: it walks the relevance graph's ``condensation()`` and computes each
+# decision's best response against the rules already found, using the solver it
+# is given. No iteration to a fixed point is needed, because the graph is
+# acyclic -- every rule a decision relies on is settled by the time its turn
+# comes. Had a component held more than one decision, it would refuse it as the
 # simultaneous-move equilibrium problem it is.
 #
-# What it does for each decision:
+# What :class:`~skagent.algos.tabular.TabularBestResponseSolver` does for each
+# decision:
 #
 # - searches a grid of candidate actions, here the ``[0, 1]`` intensities that
 #   this encoding relaxes the game's binary decisions to;
@@ -209,14 +211,14 @@ plt.tight_layout()
 #   implies -- when ``BP`` sees Bob call the doctor, it infers the tree was sick;
 # - maximises the payoff of the **agent who owns the decision**: the sum of that
 #   agent's utility nodes;
-# - holds the decisions not yet solved at a full-support mixed rule, so that
-#   every information cell is reached and every conditional expectation is
-#   defined.
+# - holds the decisions not yet solved at a rule that spreads the candidate
+#   actions across the samples, so that every information cell is reached and
+#   every conditional expectation is defined.
 
 solver = TabularBestResponseSolver(
     GroundedBlock(block, {}), shock_samples=50_000, rng=np.random.default_rng(0)
 )
-policies = solver.solve()
+policies = solve_in_relevance_order(solver)
 
 for decision, rule in policies.items():
     table = rule.to_dict()
@@ -270,7 +272,7 @@ for label, weights in [
     ("skewed to PT=1", 1.0 + 3.0 * solver.actions),
 ]:
     tables[label] = solver.best_response(
-        "BP", dict(policies, PT=solver.mixed_rule(weights))
+        "BP", dict(policies, PT=solver.spread_rule(weights))
     ).to_dict()
 
 disagreements = {
@@ -291,7 +293,7 @@ for tdoc in sorted({cell[1] for cell in tables["uniform"]}):
 # poisoning decision should move.
 
 passive = dict(policies, TDoc=get_action_rule(0.0))
-passive["BP"] = solver.best_response("BP", dict(passive, PT=solver.mixed_rule()))
+passive["BP"] = solver.best_response("BP", dict(passive, PT=solver.spread_rule()))
 print(f"PT against Bob's solved rule : {policies['PT'].to_dict()}")
 print(f"PT against a passive Bob     : {solver.best_response('PT', passive).to_dict()}")
 
