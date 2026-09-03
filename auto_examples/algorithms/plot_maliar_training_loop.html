@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="PPO via Stable-Baselines3 on the D-4 Benchmark" href="plot_sb3_ppo.html"><link rel="prev" title="Training a Policy Network Against a Known Solution" href="plot_train_against_known_solution.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>The Maliar Training Loop on a Model With No Closed-Form Solution - scikit-agent 0.1.1.dev72+g88e464eb3</title>
+        <title>The Maliar Training Loop on a Model With No Closed-Form Solution - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev72+g88e464eb3</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -380,7 +380,7 @@ borrowing constraint with the smooth Fischer-Burmeister equation (Maliar et
 al. 2021, eq. 25), which the control’s <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code> (<span class="math notranslate nohighlight">\(c \le m\)</span>)
 supplies. The loss is policy-only here, so a plain
 <a class="reference internal" href="../../api/algorithms.html#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code></a> is trained internally by the loop.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">euler_loss_fn</span> <span class="o">=</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">loss</span><span class="o">.</span><span class="n">EulerEquationLoss</span></a><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">u3_calibration</span></a><span class="p">,</span> <span class="n">constrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">euler_loss_fn</span> <span class="o">=</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">loss</span><span class="o">.</span><span class="n">EulerEquationLoss</span></a><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">constrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -498,7 +498,7 @@ wealth grows.</p>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../../_images/sphx_glr_plot_maliar_training_loop_001.png" srcset="../../_images/sphx_glr_plot_maliar_training_loop_001.png" alt="Maliar loop recovers a concave buffer-stock policy (U-3)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 27.839 seconds)</p>
+<img src="../../_images/sphx_glr_plot_maliar_training_loop_001.png" srcset="../../_images/sphx_glr_plot_maliar_training_loop_001.png" alt="Maliar loop recovers a concave buffer-stock policy (U-3)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 42.318 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-algorithms-plot-maliar-training-loop-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/d6108266968c75a0ed3eefb277a05425/plot_maliar_training_loop.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_maliar_training_loop.ipynb</span></code></a></p>
@@ -598,7 +598,7 @@ wealth grows.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=6cbe060b"></script>
+</div><script src="../../_static/documentation_options.js?v=e19ef39a"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

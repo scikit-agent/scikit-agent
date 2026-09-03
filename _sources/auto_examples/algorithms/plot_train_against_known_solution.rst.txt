@@ -185,15 +185,14 @@ Step 3: Define the Bellman-equation loss
 head. ``foc_weight=1.0`` adds the first-order-condition term (Maliar et al.
 2021, eq. 14), which speeds convergence.
 
-.. GENERATED FROM PYTHON SOURCE LINES 130-138
+.. GENERATED FROM PYTHON SOURCE LINES 130-137
 
 .. code-block:: Python
 
 
     bellman_loss_fn = loss.BellmanEquationLoss(
         bp,
-        pvnet.get_value_function(),
-        parameters=u2_calibration,
+        value_function=pvnet.get_value_function(),
         foc_weight=1.0,
     )
 
@@ -204,7 +203,7 @@ head. ``foc_weight=1.0`` adds the first-order-condition term (Maliar et al.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-156
+.. GENERATED FROM PYTHON SOURCE LINES 138-155
 
 Step 4: Train on re-sampled states, snapshotting at increasing depths
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -224,7 +223,7 @@ as training proceeds rather than only its final fit. The depths are
 checkpoints of one continuous run (the optimizer is threaded through), so
 snapshotting only observes training, it does not perturb it.
 
-.. GENERATED FROM PYTHON SOURCE LINES 156-201
+.. GENERATED FROM PYTHON SOURCE LINES 155-200
 
 .. code-block:: Python
 
@@ -286,7 +285,7 @@ snapshotting only observes training, it does not perturb it.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 202-210
+.. GENERATED FROM PYTHON SOURCE LINES 201-209
 
 Step 5: Compare the deepest-trained policy to the analytical solution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -297,7 +296,7 @@ level, the mean relative error falls to about one percent (here 0.98%), an
 order of magnitude tighter than the several-percent floor of Euler-only
 training on this unconstrained model.
 
-.. GENERATED FROM PYTHON SOURCE LINES 210-223
+.. GENERATED FROM PYTHON SOURCE LINES 209-222
 
 .. code-block:: Python
 
@@ -328,7 +327,7 @@ training on this unconstrained model.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 224-233
+.. GENERATED FROM PYTHON SOURCE LINES 223-232
 
 Step 6: Plot the policy converging onto the analytical solution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -340,7 +339,7 @@ training deepens the curves march onto the closed-form linear PIH rule, making
 it visible that the error keeps shrinking with training rather than stalling.
 The lower panel shows the pointwise relative error at the deepest snapshot.
 
-.. GENERATED FROM PYTHON SOURCE LINES 233-262
+.. GENERATED FROM PYTHON SOURCE LINES 232-261
 
 .. code-block:: Python
 
@@ -388,7 +387,7 @@ The lower panel shows the pointwise relative error at the deepest snapshot.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 12.291 seconds)
+   **Total running time of the script:** (0 minutes 18.578 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_train_against_known_solution.py:

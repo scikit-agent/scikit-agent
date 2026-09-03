@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Training a Policy Network Against a Known Solution" href="plot_train_against_known_solution.html"><link rel="prev" title="Algorithms" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Solving a Block Directly (Non-Recurring) - scikit-agent 0.1.1.dev72+g88e464eb3</title>
+        <title>Solving a Block Directly (Non-Recurring) - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev72+g88e464eb3</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -364,7 +364,7 @@ the grid by its base name, <code class="docutils literal notranslate"><span clas
 <span class="p">)</span>
 
 <span class="n">policy</span> <span class="o">=</span> <a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="torch.nn.Module" class="sphx-glr-backref-module-torch-nn sphx-glr-backref-type-py-class"><span class="n">ann</span><span class="o">.</span><span class="n">BlockPolicyNet</span></a><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
-<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">StaticRewardLoss</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">)</span>
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">StaticRewardLoss</span><span class="p">(</span><span class="n">bp</span><span class="p">)</span>
 <span class="n">ann</span><span class="o">.</span><span class="n">train_block_nn</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">learned_c</span></a> <span class="o">=</span> <span class="p">(</span>
@@ -465,7 +465,7 @@ Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pyto
 max |u| over the grid: 2.50e-05
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.437 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 11.932 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-algorithms-plot-direct-block-solve-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/60fae9bad17155edd8889caaa9c51028/plot_direct_block_solve.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_direct_block_solve.ipynb</span></code></a></p>
@@ -558,7 +558,7 @@ max |u| over the grid: 2.50e-05
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=6cbe060b"></script>
+</div><script src="../../_static/documentation_options.js?v=e19ef39a"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

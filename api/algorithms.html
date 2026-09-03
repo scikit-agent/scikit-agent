@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev72+g88e464eb3</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev72+g88e464eb3</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -2047,8 +2047,10 @@ than silently evaluating a period’s losses at parameters the period was
 not built with.</p></li>
 <li><p><strong>epochs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Training epochs per pass. Default is 200.</p></li>
 <li><p><strong>loss</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – A loss-function class with signature
-<code class="docutils literal notranslate"><span class="pre">loss(bellman_period,</span> <span class="pre">parameters,</span> <span class="pre">other_dr,</span> <span class="pre">agent=...)</span></code>. Defaults to
-<a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.loss.StaticRewardLoss</span></code></a>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">loss(bellman_period,</span> <span class="pre">*,</span> <span class="pre">agent=...,</span> <span class="pre">other_dr=...)</span></code>, which is the
+shape every loss in <a class="reference internal" href="loss.html#module-skagent.loss" title="skagent.loss"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.loss</span></code></a> takes. The period carries the
+calibration the loss is evaluated at, so it is not passed separately.
+Defaults to <a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.loss.StaticRewardLoss</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -2385,7 +2387,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=6cbe060b"></script>
+</div><script src="../_static/documentation_options.js?v=e19ef39a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
