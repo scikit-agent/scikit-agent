@@ -10,7 +10,13 @@ import skagent.grid as grid
 import skagent.ground as ground
 import skagent.models.cournot as cournot
 import skagent.models.macid as macid
-from skagent.solver import project, solve_multiple_controls, solve_symmetric_equilibrium
+from skagent.solver import (
+    ExactBestResponse,
+    NeuralBestResponse,
+    project,
+    solve_multiple_controls,
+    solve_symmetric_equilibrium,
+)
 
 # Deterministic test seed - change this single value to modify all seeding
 # Using same seed as test_maliar.py for consistency across test suite
@@ -229,35 +235,69 @@ class TestTheProjectionRefusesWhatItCannotSplit:
             project(cournot_ground(size=1))
 
 
-class TestTheEquilibriumSolverReachesCournotNash:
-    """Solve the projected instance, swap the rule in as the others', repeat."""
+def neural_method(projected, epochs=300):
+    torch.manual_seed(TEST_SEED)
+    return NeuralBestResponse(projected, cournot_panel(), epochs=epochs)
 
+
+def exact_method(projected):
+    return ExactBestResponse(
+        projected,
+        {"c_actor": np.array([COST])},
+        scope={**projected.calibration, "c_other": COST},
+    )
+
+
+def solved_quantity(rule):
+    # The two methods' rules do not accept the same input type -- a policy net
+    # wants a tensor, the backup's interpolant an array -- which is one more
+    # place the method axis is not yet uniform.
+    try:
+        found = rule(np.array([COST]))
+    except TypeError:
+        found = rule(torch.full((8,), COST))
+    if isinstance(found, torch.Tensor):
+        return float(found.detach().cpu().numpy().mean())
+    return float(np.atleast_1d(found).ravel()[0])
+
+
+class TestEitherMethodReachesCournotNash:
+    """The schedule takes the method's word for the solve and the distance, so
+    swapping the method must not move the answer."""
+
+    @pytest.mark.parametrize(
+        "build", [neural_method, exact_method], ids=["neural", "exact"]
+    )
     @pytest.mark.parametrize("size", [2, 3, 4])
-    def test_it_converges_to_the_analytic_nash_quantity(self, size):
-        torch.manual_seed(TEST_SEED)
+    def test_it_converges_to_the_analytic_nash_quantity(self, build, size):
+        projected = project(cournot_ground(size))
         rule, info = solve_symmetric_equilibrium(
-            cournot_ground(size),
-            cournot_panel(),
-            damping=2.0 / (size + 1),
-            epochs=300,
-            max_iterations=12,
+            build(projected), damping=2.0 / (size + 1), max_iterations=12
         )
         assert info["converged"]
-        found = rule(cournot_panel()["c_actor"]).detach().cpu().numpy().mean()
-        assert found == pytest.approx(cournot.nash_quantity(size=size), abs=0.02)
+        assert solved_quantity(rule) == pytest.approx(
+            cournot.nash_quantity(size=size), abs=0.02
+        )
 
-    def test_undamped_at_four_firms_reports_failure_rather_than_a_number(self):
+    @pytest.mark.parametrize(
+        "build", [neural_method, exact_method], ids=["neural", "exact"]
+    )
+    def test_undamped_at_four_firms_reports_failure_rather_than_a_number(self, build):
         # The best-response slope is -(N-1)/2, so at four firms the undamped
         # iteration diverges. The residual is on the RULE, so this comes back as
         # a refusal to claim convergence rather than as whatever the last
         # iterate happened to be.
-        torch.manual_seed(TEST_SEED)
+        projected = project(cournot_ground(4))
         _, info = solve_symmetric_equilibrium(
-            cournot_ground(4),
-            cournot_panel(),
-            damping=1.0,
-            epochs=200,
-            max_iterations=8,
+            build(projected), damping=1.0, max_iterations=8
         )
         assert not info["converged"]
         assert info["distances"] == sorted(info["distances"])
+
+
+class TestTheScheduleRefusesAnUnprojectedProblem:
+    def test_a_block_with_no_solved_instance_raises(self):
+        period = ground.GroundedBlock(macid.prisoners_dilemma_block, {})
+        method = ExactBestResponse(period, {})
+        with pytest.raises(ValueError, match="one control named for the solved"):
+            solve_symmetric_equilibrium(method)

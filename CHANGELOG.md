@@ -12,11 +12,16 @@ and this project adheres to
 
 - `skagent.solver.project`, which splits a population model's entity class into
   the instance being solved and the others, and `solve_symmetric_equilibrium`,
-  which trains a policy network for the solved instance, swaps the trained rule
-  in as the others', and repeats until the rule stops moving. Together they
-  reach the Cournot-Nash quantity at two, three and four firms. The projection
-  copies each per-instance equation once per side and synthesizes exactly one
-  equation, which CONCATENATES the two sides back into the original symbol; the
+  which solves the instance's decision against the others' current rule, swaps
+  the solved rule in as the others', and repeats until the rule stops moving.
+- `skagent.solver.NeuralBestResponse` and `ExactBestResponse`, two method
+  objects the schedule accepts interchangeably. Each carries its own
+  construction configuration beside its algorithm -- a training panel and an
+  epoch count for one, a state grid and a continuation for the other -- so the
+  schedule keeps only the damping, the residual and the swap. Both reach the
+  Cournot-Nash quantity at two, three and four firms. The projection copies each
+  per-instance equation once per side and synthesizes exactly one equation,
+  which CONCATENATES the two sides back into the original symbol; the
   aggregating equation is then copied verbatim and reads it. So the transform
   reassembles the entity axis and never inspects the reduction, and a mean, a
   sum, a maximum or a masked mean project alike. Symmetric equilibria only: the

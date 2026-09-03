@@ -4,10 +4,15 @@ import warnings
 import numpy as np
 
 import skagent.ann as ann
+import skagent.algos.vfi as vfi
 import skagent.bellman as bellman_module
 import skagent.loss as loss_module
 from skagent.block import Control, DBlock
 from skagent.utils import param_names
+
+#: How :func:`project` names the solved instance's symbols, and the others'.
+ACTOR_SUFFIX = "_actor"
+OTHER_SUFFIX = "_other"
 
 
 def solve_multiple_controls(
@@ -180,9 +185,17 @@ def _joining_equation(actor_sym, other_sym, others_count):
         import torch
 
         if isinstance(actor, torch.Tensor) or isinstance(other, torch.Tensor):
-            a = torch.as_tensor(actor).reshape(-1, 1)
-            o = torch.as_tensor(other).reshape(-1, 1).expand(a.shape[0], others_count)
-            return torch.cat([a, o], dim=-1)
+            # Either side may be a plain number -- a supplied constant rule is
+            # one -- so both are lifted onto whichever side is already a tensor.
+            reference = actor if isinstance(actor, torch.Tensor) else other
+            a = torch.as_tensor(
+                actor, dtype=reference.dtype, device=reference.device
+            ).reshape(-1, 1)
+            o = torch.as_tensor(
+                other, dtype=reference.dtype, device=reference.device
+            ).reshape(-1, 1)
+            rows = max(a.shape[0], o.shape[0])
+            return torch.cat([a.expand(rows, 1), o.expand(rows, others_count)], dim=-1)
         return np.concatenate(
             [
                 np.atleast_1d(np.asarray(actor, dtype=float)),
@@ -236,7 +249,7 @@ def _per_instance(equation, joined):
     return per_instance
 
 
-def project(ground, actor_suffix="_actor", other_suffix="_other"):
+def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     """One instance's problem, with the rest of its class beside it.
 
     The entity class is split in two -- the instance being solved, and the
@@ -357,11 +370,153 @@ def project(ground, actor_suffix="_actor", other_suffix="_other"):
     return GroundedBlock(projected, dict(calibration), rng=ground.rng)
 
 
+class NeuralBestResponse:
+    """Best responses by training a policy network, and what that needs.
+
+    A method object carries its own construction configuration beside its
+    algorithm, so that a schedule can take any method without carrying every
+    method's arguments on its own signature. This one needs a training panel
+    and an epoch count; the exact backup needs a state grid and a continuation
+    instead, and neither needs the other's.
+
+    Parameters
+    ----------
+    ground : skagent.ground.GroundedBlock
+        The problem being solved, already projected if it is a population.
+    panel : skagent.grid.Grid
+        What the network trains on and what two rules are compared over. Must
+        carry every shock of the block, since the loss evaluates the whole
+        period.
+    epochs : int, optional
+        Training epochs per best response.
+    width : int, optional
+        Hidden width of the policy network.
+    """
+
+    def __init__(self, ground, panel, epochs=200, width=32):
+        self.ground = ground
+        self.panel = panel
+        self.epochs = epochs
+        self.width = width
+        self.period = bellman_module.BellmanPeriod(
+            ground.block, None, ground.calibration
+        )
+        self.decisions = list(ground.block.get_controls())
+
+    def best_response(self, decision, policies):
+        """Train a network for *decision*, holding the rest of *policies* fixed."""
+        net = ann.BlockPolicyNet(self.period, control_sym=decision, width=self.width)
+        ann.train_block_nn(
+            net,
+            self.panel,
+            loss_module.StaticRewardLoss(
+                self.period,
+                self.ground.calibration,
+                {sym: rule for sym, rule in policies.items() if sym != decision},
+                agent=self.ground.block.deciding_agent(decision),
+            ),
+            epochs=self.epochs,
+        )
+        return net.get_decision_rule(length=self.panel.n())[decision]
+
+    def rule_distance(self, new_rule, old_rule, iset):
+        """Supremum norm between two rules, evaluated on the training panel.
+
+        A network has no cells to compare, so the comparison is over a common
+        batch -- which is why the distance is the method's operation and not the
+        schedule's.
+        """
+        return _sup_norm(new_rule, old_rule, [self.panel[sym] for sym in iset])
+
+
+class ExactBestResponse:
+    """Best responses by exact backup over a state grid.
+
+    The method-object counterpart of :class:`NeuralBestResponse`: same two
+    operations, entirely different construction configuration.
+
+    Parameters
+    ----------
+    ground : skagent.ground.GroundedBlock
+        The problem being solved, already projected if it is a population.
+    state_grid : Mapping
+        The grid the backup optimizes over, and where two rules are compared.
+        An information-set variable must appear here rather than in *scope*,
+        even as a single point, since a rule over it needs an axis to vary
+        along.
+    scope : Mapping, optional
+        Shocks pinned to a fixed realization. Defaults to the calibration.
+    continuation : Callable, optional
+        The continuation value. Defaults to a terminal (zero) one, which is
+        what makes the backup a single-period solve.
+    disc_params : Mapping, optional
+        Per-shock discretization arguments for the shocks integrated inside the
+        maximization.
+    """
+
+    def __init__(
+        self, ground, state_grid, scope=None, continuation=None, disc_params=None
+    ):
+        self.ground = ground
+        self.state_grid = state_grid
+        self.scope = ground.calibration if scope is None else scope
+        self.continuation = (
+            (lambda states, shocks, parameters: 0.0)
+            if continuation is None
+            else continuation
+        )
+        self.disc_params = {} if disc_params is None else disc_params
+        self.period = bellman_module.BellmanPeriod(
+            ground.block, None, ground.calibration
+        )
+        self.decisions = list(ground.block.get_controls())
+
+    def best_response(self, decision, policies):
+        """Back up *decision* alone, holding the rest of *policies* fixed."""
+        rules, _value, _policy = vfi.solve_step(
+            self.period,
+            self.continuation,
+            self.state_grid,
+            scope=self.scope,
+            agent=self.ground.block.deciding_agent(decision),
+            control=decision,
+            decision_rules={
+                sym: rule for sym, rule in policies.items() if sym != decision
+            },
+            disc_params=self.disc_params,
+        )
+        return rules[decision]
+
+    def rule_distance(self, new_rule, old_rule, iset):
+        """Supremum norm between two rules over the grid they were solved on."""
+        observed = [
+            np.atleast_1d(np.asarray(self.state_grid[sym], dtype=float))
+            if sym in self.state_grid
+            else np.atleast_1d(np.asarray(self.scope[sym], dtype=float))
+            for sym in iset
+        ]
+        return _sup_norm(new_rule, old_rule, observed)
+
+
+def _sup_norm(first, second, observed):
+    """The largest gap between two rules over a common set of observations."""
+    import torch
+
+    def values(rule):
+        out = rule(*observed)
+        if isinstance(out, torch.Tensor):
+            return out.detach().cpu().numpy()
+        return np.asarray(out, dtype=float)
+
+    with torch.no_grad():
+        return float(np.max(np.abs(values(first) - values(second))))
+
+
 def _swap_in(rule, iset):
     """The solved instance's rule, readable as the others' rule.
 
     The two sides' information sets differ only in their symbols' suffixes, so
-    the swap is a rename: the rule is called positionally either way.
+    the swap is a rename: a rule is called positionally either way.
     """
 
     def swapped(*observed):
@@ -379,9 +534,13 @@ def _swap_in(rule, iset):
 def _blend(previous, response, damping, iset):
     """``(1 - damping) * previous + damping * response``, as a rule.
 
-    Damping interpolates the two rules pointwise. It cannot move the fixed
-    point -- a rule equal to its own blend is a rule equal to its own best
+    Pointwise, so it serves any callable representation. It cannot move the
+    fixed point -- a rule equal to its own blend is a rule equal to its own best
     response -- so it changes how the iteration travels and not where it stops.
+
+    A representation with structure of its own, such as a rule tabulated over
+    cells, is flattened to a plain callable by this and would need its own blend
+    to keep that structure.
     """
     if damping == 1.0:
         return response
@@ -398,127 +557,123 @@ def _blend(previous, response, damping, iset):
     return blended
 
 
+def _constant_rule(value, iset):
+    """A rule playing *value* whatever it observes."""
+
+    def rule(*observed):
+        return value
+
+    rule.__signature__ = inspect.Signature(
+        [
+            inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            for name in iset
+        ]
+    )
+    return rule
+
+
 def solve_symmetric_equilibrium(
-    ground,
-    givens,
+    method,
     *,
     damping=1.0,
     tolerance=1e-3,
     max_iterations=20,
-    epochs=200,
     initial=None,
 ):
-    """A symmetric equilibrium of a population model, by iterated best response.
+    """A symmetric equilibrium, by iterated best response over a projection.
 
-    Projects the model with :func:`project`, trains a policy network for the
-    solved instance against the others' current rule, swaps the trained rule in
-    as the others', and repeats until the rule stops moving. A rule that is its
-    own best response is an equilibrium of the projected game, and because the
-    others play whatever the solved instance plays, it is a symmetric
-    equilibrium of the population model.
+    Takes a projected problem -- one instance's decision beside the rest of its
+    class, as :func:`project` builds -- solves the instance's decision against
+    the others' current rule, swaps the solved rule in as the others', and
+    repeats until the rule stops moving. A rule that is its own best response is
+    an equilibrium of the projected game, and because the others play whatever
+    the solved instance plays, it is a symmetric equilibrium of the population.
 
-    **Damping is not a convergence aid but a correctness requirement**, and how
-    many instances there are decides it. Undamped iteration converges only where
-    the best response is a contraction; where its slope is -1 the iterates cycle
-    between two points forever without error, and past that they diverge until
-    the controls' bounds catch them and oscillate between those. Both return a
+    The method supplies both the per-decision solve and the distance between two
+    rules, since only it knows how a rule is represented. The schedule supplies
+    the damping, the residual test and the swap.
+
+    **Damping is a correctness requirement rather than a convergence aid.**
+    Undamped iteration converges only where best response is a contraction;
+    where its slope is -1 the iterates cycle between two points forever, and
+    past that they diverge until the controls' bounds catch them. Both return a
     plausible number under an iteration cap, which is why the residual here is
     on the RULE and never on the count.
 
     Parameters
     ----------
-    ground : skagent.ground.GroundedBlock
-        The population model and its calibration, as :func:`project` requires.
-    givens : skagent.grid.Grid
-        The panel the network trains on and the rules are compared over. Must
-        carry every shock of the projected block under its projected names --
-        the others' as well as the solved instance's, since the loss evaluates
-        the whole period.
+    method : NeuralBestResponse or ExactBestResponse
+        The per-decision solver, carrying its own configuration and the
+        projected problem it solves. Any object with ``ground``,
+        ``best_response(decision, policies)`` and
+        ``rule_distance(new, old, iset)`` serves.
     damping : float, optional
         How far to move toward the best response each round, in ``(0, 1]``.
         Default 1.0, which is undamped.
     tolerance : float, optional
-        The rule is converged when it moves less than this, in supremum norm
-        over *givens*.
+        The rule is converged when it moves less than this.
     max_iterations : int, optional
-        How many rounds before giving up. Reaching this is not convergence and
-        is reported as such.
-    epochs : int, optional
-        Training epochs per round.
+        Rounds before giving up. Reaching this is not convergence and is
+        reported as such.
     initial : Callable, optional
-        The others' rule on the first round. Defaults to an untrained network,
-        which is what makes the first best response a response to something.
+        The others' rule on the first round. Defaults to a constant at the
+        midpoint of the solved control's declared bounds.
 
     Returns
     -------
     rule : Callable
-        The equilibrium decision rule, in the ORIGINAL model's symbols.
+        The equilibrium decision rule, in the solved instance's symbols.
     info : dict
-        ``converged``, ``iterations``, and ``distances``, the rule movement per
-        round.
-    """
-    projected = project(ground)
-    (control,) = [
-        sym for sym in projected.block.get_controls() if sym.endswith("_actor")
-    ]
-    partner = control.replace("_actor", "_other")
-    actor_iset = projected.block.get_control(control).iset
-    other_iset = projected.block.get_control(partner).iset
+        ``converged``, ``iterations`` and ``distances``.
 
-    period = bellman_module.BellmanPeriod(projected.block, None, projected.calibration)
-    agent = projected.block.deciding_agent(control)
-    observed = [givens[sym] for sym in actor_iset]
+    Raises
+    ------
+    ValueError
+        If the method's block does not carry a projected pair of controls.
+    """
+    block = method.ground.block
+    solved = [sym for sym in block.get_controls() if sym.endswith(ACTOR_SUFFIX)]
+    if len(solved) != 1:
+        raise ValueError(
+            f"expected one control named for the solved instance (ending "
+            f"{ACTOR_SUFFIX!r}) and found {sorted(solved)}; the method's block "
+            "should be one that project() built"
+        )
+    (decision,) = solved
+    partner = decision[: -len(ACTOR_SUFFIX)] + OTHER_SUFFIX
+    solved_iset = block.get_control(decision).iset
+    partner_iset = block.get_control(partner).iset
 
     rule = (
-        _swap_in(initial, other_iset)
+        _swap_in(initial, partner_iset)
         if initial is not None
-        else ann.BlockPolicyNet(period, control_sym=partner).get_decision_rule(
-            length=givens.n()
-        )[partner]
+        else _constant_rule(_midpoint(block.get_control(decision)), partner_iset)
     )
 
     distances = []
     for _ in range(max_iterations):
-        net = ann.BlockPolicyNet(period, control_sym=control)
-        ann.train_block_nn(
-            net,
-            givens,
-            loss_module.StaticRewardLoss(
-                period, projected.calibration, {partner: rule}, agent=agent
-            ),
-            epochs=epochs,
+        response = _swap_in(
+            method.best_response(decision, {decision: rule, partner: rule}),
+            partner_iset,
         )
-        response = net.get_decision_rule(length=givens.n())[control]
-        moved = _rule_distance(rule, _swap_in(response, other_iset), observed)
+        moved = method.rule_distance(response, rule, partner_iset)
         distances.append(moved)
-        rule = _blend(rule, _swap_in(response, other_iset), damping, other_iset)
+        rule = _blend(rule, response, damping, partner_iset)
         if moved < tolerance:
-            return _swap_in(rule, actor_iset), {
-                "converged": True,
-                "iterations": len(distances),
-                "distances": distances,
-            }
-    return _swap_in(rule, actor_iset), {
-        "converged": False,
+            break
+    return _swap_in(rule, solved_iset), {
+        "converged": distances[-1] < tolerance,
         "iterations": len(distances),
         "distances": distances,
     }
 
 
-def _rule_distance(first, second, observed):
-    """Supremum norm between two rules over a common panel.
+def _midpoint(control):
+    """A starting action: halfway between the control's declared bounds.
 
-    Each rule representation has its own natural metric; for a network it is to
-    evaluate both on the same batch, which is what this does.
+    A constant rather than an untrained network, so that where the iteration
+    starts is a property of the model and not of a seed.
     """
-    import torch
-
-    def values(rule):
-        out = rule(*observed)
-        if isinstance(out, torch.Tensor):
-            return out.detach().cpu().numpy()
-        return np.asarray(out)
-
-    with torch.no_grad():
-        gap = values(first) - values(second)
-    return float(np.max(np.abs(gap)))
+    lower = 0.0 if control.lower_bound is None else float(control.lower_bound())
+    upper = lower if control.upper_bound is None else float(control.upper_bound())
+    return (lower + upper) / 2
