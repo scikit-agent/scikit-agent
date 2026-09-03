@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Added
 
+- `skagent.models.lemons`, Akerlof's market for adverse selection. Sellers know
+  the quality they hold and buyers price only the average of what is offered, so
+  the unique equilibrium is no trade. The price is a structural equation rather
+  than a decision, which leaves the model with one decision and an acyclic
+  relevance graph while it still needs a fixed point; the price is read before
+  it is written, so simulating T periods runs T rounds of the clearing map.
 - `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
   composed block executes its own dynamics and computes its own rewards. Both
   read the merged dynamics, so an `RBlock` behaves as a leaf block does; every

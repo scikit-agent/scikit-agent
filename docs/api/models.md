@@ -95,6 +95,19 @@ rather than solved for, since the model has a crossing.
    :members:
 ```
 
+## Lemons
+
+Akerlof's market for adverse selection: sellers know what they hold, buyers can
+price only the average of what is offered, and the unique equilibrium is no
+trade. The price is a structural equation rather than a decision, so the model
+has one decision and an acyclic relevance graph while still needing a fixed
+point.
+
+```{eval-rst}
+.. automodule:: skagent.models.lemons
+   :members:
+```
+
 ## Multi-Agent Influence Diagrams (MAIDs)
 
 Game-theoretic influence diagrams from the literature, encoded to illustrate
