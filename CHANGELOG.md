@@ -10,6 +10,17 @@ and this project adheres to
 
 ### Added
 
+- `skagent.solver.project`, which splits a population model's entity class into
+  the instance being solved and the others, and `solve_symmetric_equilibrium`,
+  which trains a policy network for the solved instance, swaps the trained rule
+  in as the others', and repeats until the rule stops moving. Together they
+  reach the Cournot-Nash quantity at two, three and four firms. The projection
+  copies each per-instance equation once per side and synthesizes exactly one
+  equation, which CONCATENATES the two sides back into the original symbol; the
+  aggregating equation is then copied verbatim and reads it. So the transform
+  reassembles the entity axis and never inspects the reduction, and a mean, a
+  sum, a maximum or a masked mean project alike. Symmetric equilibria only: the
+  others are one rule.
 - `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
   composed block executes its own dynamics and computes its own rewards. Both
   read the merged dynamics, so an `RBlock` behaves as a leaf block does; every
