@@ -1091,9 +1091,7 @@ class test_vfi_protocol(unittest.TestCase):
         def zero_value_function(states, shocks, parameters):
             return torch.zeros_like(states["a"])
 
-        loss_fn = BellmanEquationLoss(
-            case_1["bp"], zero_value_function, parameters=case_1["calibration"]
-        )
+        loss_fn = BellmanEquationLoss(case_1["bp"], value_function=zero_value_function)
         # givens[2] carries a, theta_0, theta_1 (two independent shock draws)
         loss = loss_fn(dr_t, case_1["givens"][2])
 

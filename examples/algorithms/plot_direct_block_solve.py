@@ -80,7 +80,7 @@ states = grid.Grid.from_config(
 )
 
 policy = ann.BlockPolicyNet(bp, width=16)
-loss_fn = loss.StaticRewardLoss(bp, calibration)
+loss_fn = loss.StaticRewardLoss(bp)
 ann.train_block_nn(policy, states, loss_fn, epochs=500)
 
 learned_c = (

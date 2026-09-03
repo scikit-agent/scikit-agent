@@ -4,8 +4,16 @@ import os
 import skagent.ann as ann
 import skagent.bellman as bellman
 import skagent.block as block
+import inspect
 import skagent.grid as grid
-from skagent.loss import CustomLoss, StaticRewardLoss, static_reward
+from skagent.loss import (
+    BellmanEquationLoss,
+    CustomLoss,
+    EstimatedDiscountedLifetimeRewardLoss,
+    EulerEquationLoss,
+    StaticRewardLoss,
+    static_reward,
+)
 import torch
 import unittest
 
@@ -141,11 +149,96 @@ class TestStaticRewardLossAgent:
     def losses_at(self, agent):
         period = self.period()
         givens = grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 2}})
-        loss = StaticRewardLoss(period, period.calibration, agent=agent)
+        loss = StaticRewardLoss(period, agent=agent)
         return float(torch.as_tensor(loss({"c": lambda: 3.0}, givens)).mean())
 
     def test_each_agent_gets_its_own_payoff(self):
         # u = 6 belongs to a, v = 7 belongs to b. The loss is the negative.
+        assert self.losses_at("a") == -6.0
+        assert self.losses_at("b") == -7.0
+
+    def test_naming_no_agent_sums_both(self):
+        """A planner's objective, and no player's -- kept explicit."""
+        assert self.losses_at(None) == -13.0
+
+
+#: Every loss in the module, so the uniformity tests cannot silently skip one.
+LOSS_CLASSES = [
+    CustomLoss,
+    StaticRewardLoss,
+    EstimatedDiscountedLifetimeRewardLoss,
+    BellmanEquationLoss,
+    EulerEquationLoss,
+]
+
+
+class TestTheLossApi:
+    """One shape for every loss, so the family cannot drift apart again."""
+
+    def test_the_period_is_the_only_positional_argument(self):
+        """`CustomLoss` also takes the function it wraps, and nothing else is
+        positional: a loss reads its calibration from the period."""
+        for cls in LOSS_CLASSES:
+            positional = [
+                name
+                for name, param in inspect.signature(cls).parameters.items()
+                if param.kind is param.POSITIONAL_OR_KEYWORD
+            ]
+            expected = (
+                ["loss_function", "bellman_period"]
+                if cls is CustomLoss
+                else ["bellman_period"]
+            )
+            assert positional == expected, cls.__name__
+
+    def test_no_loss_takes_parameters(self):
+        """The period carries the calibration; passing it twice let the two
+        disagree."""
+        for cls in LOSS_CLASSES:
+            assert "parameters" not in inspect.signature(cls).parameters, cls.__name__
+
+    def test_every_loss_is_told_whose_payoff_it_maximizes(self):
+        for cls in LOSS_CLASSES:
+            agent = inspect.signature(cls).parameters.get("agent")
+            assert agent is not None, cls.__name__
+            assert agent.kind is agent.KEYWORD_ONLY, cls.__name__
+
+    def test_every_loss_reads_the_periods_calibration(self):
+        blk = block.DBlock(
+            name="scaled",
+            dynamics={"c": block.Control([], agent="a"), "u": lambda c, k: k * c},
+            reward={"u": "a"},
+        )
+        one = bellman.BellmanPeriod(blk, None, {"k": 1.0})
+        two = bellman.BellmanPeriod(blk, None, {"k": 2.0})
+
+        assert StaticRewardLoss(one).parameters == {"k": 1.0}
+        assert StaticRewardLoss(two).parameters == {"k": 2.0}
+
+
+class TestLifetimeRewardAgent:
+    """The discounted lifetime objective is one agent's, not everyone's."""
+
+    def losses_at(self, agent):
+        period = bellman.BellmanPeriod(
+            block.DBlock(
+                name="two_agents",
+                dynamics={
+                    "c": block.Control([], agent="a"),
+                    "u": lambda c: 2.0 * c,
+                    "v": lambda c: 10.0 - c,
+                },
+                reward={"u": "a", "v": "b"},
+            ),
+            None,
+            {},
+        )
+        givens = grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 2}})
+        loss_fn = EstimatedDiscountedLifetimeRewardLoss(period, big_t=1, agent=agent)
+        return float(torch.as_tensor(loss_fn({"c": lambda: 3.0}, givens)).mean())
+
+    def test_each_agent_gets_its_own_payoff(self):
+        # u = 6 belongs to a, v = 7 belongs to b, undiscounted over one period.
         assert self.losses_at("a") == -6.0
         assert self.losses_at("b") == -7.0
 

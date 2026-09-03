@@ -195,7 +195,7 @@ maximizes reward. `train_block_nn` runs the optimizer:
 
 ```python
 policy = ska.BlockPolicyNet(bp, width=16)
-loss_fn = loss.StaticRewardLoss(bp, track_calibration)
+loss_fn = loss.StaticRewardLoss(bp)
 ann.train_block_nn(policy, states, loss_fn, epochs=500)
 ```
 
