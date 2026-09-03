@@ -164,3 +164,8 @@ uv.lock
 docs/_build/
 docs/auto_examples/
 **/sg_execution_times.rst
+
+# Working design notes and TODOs. Untracked by intent: they are the project's
+# own record rather than shipped documentation, and keeping them out of the
+# index also keeps the formatting hooks off them.
+design/
