@@ -16,11 +16,13 @@ rest of the toolkit:
   function iteration on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
   the model, using established RL libraries (see below)
-- **Best response**: Solve the decisions of a multi-decision block one at a
-  time, in the order its relevance graph implies, each maximizing its own
-  agent's payoff conditional on what it observes (see below)
+- **Best response**: Solve one decision at a time against the others' current
+  rules, each maximizing its own agent's payoff conditional on what it observes.
+  Available as a tabulated payoff table, a policy network, or an exact backup
 
-The rest of this guide covers these in turn.
+The rest of this guide covers the methods themselves. Pairing them with a
+schedule — which decision is solved when, and whether the result is iterated to
+an equilibrium — is covered in {doc}`solvers`.
 
 ## Reinforcement Learning
 
@@ -227,52 +229,12 @@ U-2's control is bounded (`0.01 <= c <= 0.1*m + 2`), set via the `lower_bound` /
 `upper_bound` arguments to {py:class}`~skagent.block.Control` in its definition;
 the policy network enforces such bounds automatically.
 
-## Blocks with multiple controls
+## Blocks with more than one decision
 
-When a block has more than one control, train one policy network per control and
-let each network treat the others' current policies as fixed — a best-response
-sweep. {py:func}`skagent.solver.solve_in_order` runs the sweep, and
-{py:class}`skagent.solver.NeuralBestResponse` supplies each network. The
-benchmark registry has no multi-control model, so we use a small illustrative
-block whose reward is maximized at `c = a` and `d = k`:
-
-```python
-import skagent.block as block
-from skagent.ground import GroundedBlock
-from skagent.solver import NeuralBestResponse, solve_in_order
-
-calibration = {"k": 3, "beta": 0.9}
-
-b = block.DBlock(
-    name="two controls",
-    dynamics={
-        "c": block.Control(["a"], agent="agent"),
-        "d": block.Control([], agent="agent"),  # empty information set
-        "u": lambda a, c, d, k: -((a - c) ** 2) - (k - d) ** 2,
-    },
-    reward={"u": "agent"},
-)
-states = grid.Grid.from_config({"a": {"min": -2, "max": 2, "count": 11}})
-
-method = NeuralBestResponse(GroundedBlock(b, calibration), states, epochs=200)
-
-# Repeat a symbol to schedule an extra refinement pass after its neighbour
-# has been updated.
-decision_rules = solve_in_order(method, ["c", "d", "c"])
-# optimal: c = a and d = 3, so the reward u is approximately 0
-```
-
-The return value is a dictionary mapping each control symbol to its trained
-decision rule, suitable for passing to `reward_function` or to simulation.
-
-The order to sweep in, and whether a control needs a second pass at all, is a
-structural property of the block: its relevance graph (see
-{doc}`../api/analysis`). For the block above the graph is cyclic — `c` and `d`
-strategically rely on each other, forming a single component — which is why `c`
-is scheduled twice. When the graph is acyclic, one pass per decision suffices,
-since everything a decision relies on is already solved by the time its turn
-comes; {class}`skagent.algos.tabular.TabularBestResponseSolver` reads that order
-off the graph and solves in it, tabulating rather than training a network.
+Everything above solves a single decision. When a block has several — or several
+agents, or a population of them — the question becomes which decision to solve
+first, what to hold the others at, and when to stop. That is a separate concern
+from the numerical method, and it has its own page: see {doc}`solvers`.
 
 ## Value Function Iteration
 
