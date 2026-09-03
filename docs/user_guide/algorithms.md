@@ -231,13 +231,15 @@ the policy network enforces such bounds automatically.
 
 When a block has more than one control, train one policy network per control and
 let each network treat the others' current policies as fixed — a best-response
-sweep. {py:func}`skagent.solver.solve_multiple_controls` automates this. The
+sweep. {py:func}`skagent.solver.solve_in_order` runs the sweep, and
+{py:class}`skagent.solver.NeuralBestResponse` supplies each network. The
 benchmark registry has no multi-control model, so we use a small illustrative
 block whose reward is maximized at `c = a` and `d = k`:
 
 ```python
 import skagent.block as block
-from skagent.solver import solve_multiple_controls
+from skagent.ground import GroundedBlock
+from skagent.solver import NeuralBestResponse, solve_in_order
 
 calibration = {"k": 3, "beta": 0.9}
 
@@ -250,13 +252,13 @@ b = block.DBlock(
     },
     reward={"u": "agent"},
 )
-bp = bellman.BellmanPeriod(b, "beta", calibration)
-
 states = grid.Grid.from_config({"a": {"min": -2, "max": 2, "count": 11}})
+
+method = NeuralBestResponse(GroundedBlock(b, calibration), states, epochs=200)
 
 # Repeat a symbol to schedule an extra refinement pass after its neighbour
 # has been updated.
-decision_rules = solve_multiple_controls(["c", "d", "c"], bp, states, epochs=200)
+decision_rules = solve_in_order(method, ["c", "d", "c"])
 # optimal: c = a and d = 3, so the reward u is approximately 0
 ```
 

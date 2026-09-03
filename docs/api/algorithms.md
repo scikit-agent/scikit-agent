@@ -159,16 +159,16 @@ functions.
 .. autofunction:: skagent.ann.aggregate_net_loss
 ```
 
-```{eval-rst}
-.. autofunction:: skagent.solver.solve_multiple_controls
-```
-
 ## Equilibrium Schedules and Methods
 
 A schedule decides which decision is solved when, and asks a method for each
 solve; a method carries one algorithm and the configuration that algorithm
 needs. The pairing is free: the same schedule takes a policy network or an exact
 backup and returns the same answer.
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_in_order
+```
 
 ```{eval-rst}
 .. autofunction:: skagent.solver.solve_in_relevance_order

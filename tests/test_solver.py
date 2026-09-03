@@ -1,4 +1,4 @@
-"""Tests for skagent.solver (solve_multiple_controls)."""
+"""Tests for skagent.solver: projections, schedules and methods."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ from skagent.solver import (
     ExactBestResponse,
     NeuralBestResponse,
     project,
-    solve_multiple_controls,
+    solve_in_order,
     solve_symmetric_equilibrium,
 )
 
@@ -52,35 +52,83 @@ def states():
     return grid.Grid.from_config({"a": {"min": -2, "max": 2, "count": 11}})
 
 
-class TestSolveMultipleControls:
-    def test_every_control_reaches_its_optimum(self):
+def two_control_ground(calibration=None):
+    return ground.GroundedBlock(
+        two_control_period().block,
+        dict(CALIBRATION) if calibration is None else calibration,
+    )
+
+
+class TestSolvingInAGivenOrder:
+    """The schedule takes its order from the caller; any method supplies the solves."""
+
+    def test_a_policy_network_reaches_every_control_optimum(self):
         torch.manual_seed(TEST_SEED)
         givens = states()
+        method = NeuralBestResponse(two_control_ground(), givens, epochs=200)
 
-        rules = solve_multiple_controls(
-            ["c", "d", "c"], two_control_period(), givens, epochs=100
-        )
+        rules = solve_in_order(method, ["c", "d", "c"])
 
         a = givens["a"].flatten()
         c = rules["c"](a).detach().cpu().numpy().flatten()
-        d = rules["d"]().detach().cpu().numpy().flatten()
-
         assert np.max(np.abs(c - a.cpu().numpy())) < 0.05
-        assert d == pytest.approx(CALIBRATION["k"], abs=0.05)
+        assert rules["d"]().detach().cpu().numpy().flatten() == pytest.approx(
+            CALIBRATION["k"], abs=0.05
+        )
+
+    def test_an_exact_backup_reaches_the_same_optima(self):
+        # Same schedule, same order, a different method. The backup needs bounds
+        # to search between, which is its own configuration and not the model's.
+        bounded = block.DBlock(
+            name="two controls",
+            dynamics={
+                "c": block.Control(
+                    ["a"], lower_bound=-2.0, upper_bound=2.0, agent="agent"
+                ),
+                "d": block.Control([], lower_bound=0.0, upper_bound=5.0, agent="agent"),
+                "u": lambda a, c, d, k: -((a - c) ** 2) - (k - d) ** 2,
+            },
+            reward={"u": "agent"},
+        )
+        method = ExactBestResponse(
+            ground.GroundedBlock(bounded, dict(CALIBRATION)),
+            {"a": np.linspace(-2, 2, 9)},
+            scope=dict(CALIBRATION),
+        )
+
+        rules = solve_in_order(method, ["c", "d", "c"])
+
+        assert float(np.atleast_1d(rules["c"](np.array([1.0]))).ravel()[0]) == (
+            pytest.approx(1.0, abs=1e-3)
+        )
+        assert float(np.atleast_1d(rules["d"]()).ravel()[0]) == pytest.approx(
+            CALIBRATION["k"], abs=1e-3
+        )
+
+    def test_a_decision_left_out_of_the_order_is_not_solved(self):
+        # It comes back at its STARTING rule, a constant and visibly
+        # provisional. An untrained policy network would be callable, numeric,
+        # and indistinguishable from a solved rule.
+        method = ExactBestResponse(
+            two_control_ground(), {"a": np.linspace(-2, 2, 9)}, scope=dict(CALIBRATION)
+        )
+        rules = solve_in_order(method, ["c"])
+        assert float(np.atleast_1d(rules["d"]()).ravel()[0]) == 0.0
 
 
 class TestAgentAttribution:
-    """Each network maximizes the payoff of its own control's agent."""
+    """Each solve maximizes the payoff of its own control's agent."""
 
     def test_the_prisoners_dilemma_reaches_mutual_defection(self):
         """A two-agent game, solved by nets that each serve their own player."""
         torch.manual_seed(TEST_SEED)
-        period = bellman.BellmanPeriod(macid.prisoners_dilemma_block, None, {})
-        givens = grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 32}})
-
-        rules = solve_multiple_controls(
-            ["D1", "D2", "D1", "D2"], period, givens, epochs=150
+        method = NeuralBestResponse(
+            ground.GroundedBlock(macid.prisoners_dilemma_block, {}),
+            grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 32}}),
+            epochs=150,
         )
+
+        rules = solve_in_order(method, ["D1", "D2", "D1", "D2"])
 
         actions = [
             float(rules[sym]().detach().cpu().numpy().mean()) for sym in ("D1", "D2")
@@ -103,33 +151,13 @@ class TestAgentAttribution:
             },
             reward={"u1": "p1", "u2": "p2"},
         )
-        period = bellman.BellmanPeriod(blk, None, {})
-        givens = grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 4}})
-
+        method = NeuralBestResponse(
+            ground.GroundedBlock(blk, {}),
+            grid.Grid.from_config({"z": {"min": 0.0, "max": 1.0, "count": 4}}),
+            epochs=1,
+        )
         with pytest.raises(ValueError, match="no agent attribution"):
-            solve_multiple_controls(["a1"], period, givens, epochs=1)
-
-
-class TestTheCalibrationArgument:
-    """The period already carries a calibration; a second copy may disagree.
-
-    Nothing downstream reconciles the two, so a caller who passes both can hand
-    a period one calibration and evaluate its losses at another.
-    """
-
-    def test_a_disagreeing_calibration_raises(self):
-        with pytest.warns(DeprecationWarning), pytest.raises(ValueError, match="'k'"):
-            solve_multiple_controls(
-                ["c"], two_control_period(), states(), {"k": 4, "beta": 0.9}, epochs=1
-            )
-
-    def test_passing_the_calibration_is_deprecated(self):
-        torch.manual_seed(TEST_SEED)
-
-        with pytest.warns(DeprecationWarning, match="bellman_period"):
-            solve_multiple_controls(
-                ["c"], two_control_period(), states(), dict(CALIBRATION), epochs=1
-            )
+            solve_in_order(method, ["a1"])
 
 
 # --- Cournot: projecting a population, and iterating to its equilibrium ----

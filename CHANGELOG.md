@@ -8,6 +8,21 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Removed
+
+- `skagent.solver.solve_multiple_controls`, replaced by
+  `solve_in_order(method, order)` with a method object. It fused a schedule with
+  a method: the caller's `control_order` was the schedule, and the rest was a
+  policy network per control. Split apart, the same order can now drive a
+  tabular solver or an exact backup, not only networks. Its deprecated
+  `calibration` argument goes with it. Two defects die with it. It returned
+  UNTRAINED networks for controls the caller left out of the order -- callable,
+  numeric and indistinguishable from a solved rule; a starting profile is now a
+  constant per control, so an unsolved decision is visibly provisional. And it
+  derived no order at all, so a repeated symbol was an iterated best response
+  with no convergence test; `solve_in_order` says so, and points at a schedule
+  that measures one.
+
 ### Changed
 
 - `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep

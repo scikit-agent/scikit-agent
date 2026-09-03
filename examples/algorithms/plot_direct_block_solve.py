@@ -16,7 +16,7 @@ This example walks through two cases:
 
 #. a single control that must learn to track a shock, and
 #. a block with two controls, solved with
-   :func:`skagent.solver.solve_multiple_controls`.
+   :func:`skagent.solver.solve_in_order`.
 
 It is the runnable companion to the :doc:`/user_guide/algorithms` guide.
 """
@@ -37,7 +37,8 @@ import skagent.block as block
 import skagent.grid as grid
 import skagent.loss as loss
 from skagent.distributions import Normal
-from skagent.solver import solve_multiple_controls
+from skagent.ground import GroundedBlock
+from skagent.solver import NeuralBestResponse, solve_in_order
 
 SEED = 10077693
 torch.manual_seed(SEED)
@@ -133,11 +134,15 @@ bp2 = bellman.BellmanPeriod(b2, "beta", multi_calibration)
 multi_states = grid.Grid.from_config({"a": {"min": -2, "max": 2, "count": 11}})
 
 # %%
-# :func:`~skagent.solver.solve_multiple_controls` trains one network per control
-# in turn, each treating the others' current policies as fixed. Repeating a
-# symbol in the order list schedules an extra refinement pass for it.
+# :func:`~skagent.solver.solve_in_order` solves the controls in the order given,
+# each treating the others' current policies as fixed, and
+# :class:`~skagent.solver.NeuralBestResponse` trains a network for each one.
+# Repeating a symbol in the order list schedules an extra refinement pass for it.
 
-decision_rules = solve_multiple_controls(["c", "d", "c"], bp2, multi_states, epochs=200)
+method = NeuralBestResponse(
+    GroundedBlock(b2, multi_calibration), multi_states, epochs=200
+)
+decision_rules = solve_in_order(method, ["c", "d", "c"])
 
 a_vals = multi_states["a"].flatten()
 c_vals = decision_rules["c"](a_vals).detach().cpu().numpy()

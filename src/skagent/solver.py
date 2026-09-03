@@ -1,6 +1,5 @@
 import inspect
 import logging
-import warnings
 
 import numpy as np
 
@@ -16,129 +15,6 @@ logger = logging.getLogger(__name__)
 #: How :func:`project` names the solved instance's symbols, and the others'.
 ACTOR_SUFFIX = "_actor"
 OTHER_SUFFIX = "_other"
-
-
-def solve_multiple_controls(
-    control_order, bellman_period, givens, calibration=None, epochs=200, loss=None
-):
-    """
-    Solve a block with more than one control by training a policy network
-    for each control in turn.
-
-    Each control is given its own :class:`skagent.ann.BlockPolicyNet`. The
-    networks are trained one at a time, in the order given by
-    ``control_order``, with every network treating the other networks' current
-    policies as fixed. A control may appear in ``control_order`` more than once
-    to refine it after its neighbours have been updated (e.g.
-    ``["c", "d", "c"]``), which is the multi-control analogue of a best-response
-    sweep.
-
-    Each network maximizes the payoff of the agent its control is attributed
-    to, read off the block by
-    :meth:`~skagent.block.Block.deciding_agent`. On a block whose utilities
-    have more than one owner, a control carrying no attribution raises rather
-    than being trained against someone else's objective.
-
-    Currently restricted to single-period (non-recurring) reward objectives;
-    by default the negative immediate reward
-    (:class:`skagent.loss.StaticRewardLoss`) is maximized.
-
-    Parameters
-    ----------
-    control_order : list of str
-        Control symbols, in the order they should be solved. Symbols may repeat
-        to schedule additional refinement passes.
-    bellman_period : BellmanPeriod
-        The model period whose controls are being solved.
-    givens : skagent.grid.Grid
-        Grid of arrival states and shock realizations to train over.
-    calibration : dict, optional
-        Deprecated. The period supplied as *bellman_period* already carries the
-        calibration the losses are evaluated at, and that is the one used. If
-        given, it must agree with the period's; a disagreement raises rather
-        than silently evaluating a period's losses at parameters the period was
-        not built with.
-    epochs : int, optional
-        Training epochs per pass. Default is 200.
-    loss : type, optional
-        A loss-function class with signature
-        ``loss(bellman_period, *, agent=..., other_dr=...)``, which is the
-        shape every loss in :mod:`skagent.loss` takes. The period carries the
-        calibration the loss is evaluated at, so it is not passed separately.
-        Defaults to :class:`skagent.loss.StaticRewardLoss`.
-
-    Returns
-    -------
-    dict
-        Mapping from each control symbol to its trained decision rule.
-
-    Raises
-    ------
-    ValueError
-        If *calibration* is given and disagrees with the period's, or if a
-        control in *control_order* carries no agent attribution on a block
-        whose utilities have several owners.
-    """
-    if calibration is not None:
-        warnings.warn(
-            "calibration is deprecated; the period passed as bellman_period "
-            "already carries one, and that is what the losses are evaluated "
-            "at.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        differing = _differing_symbols(calibration, bellman_period.calibration)
-        if differing:
-            raise ValueError(
-                f"calibration disagrees with bellman_period.calibration on "
-                f"{differing}; the period is built from a calibration, so pass "
-                "only the period"
-            )
-
-    # TODO: allow a variable 'loss function generator' once the API has
-    # solidified.
-    if loss is None:
-        loss = loss_module.StaticRewardLoss
-
-    # Control policy networks for each control in the block.
-    cpns = {}
-
-    # Invent Policy Neural Networks for each Control variable.
-    for control_sym in bellman_period.get_controls():
-        cpns[control_sym] = ann.BlockPolicyNet(bellman_period, control_sym=control_sym)
-
-    dict_of_decision_rules = {
-        k: v
-        for d in [
-            cpns[control_sym].get_decision_rule(length=givens.n())
-            for control_sym in cpns
-        ]
-        for k, v in d.items()
-    }
-
-    for control_sym in control_order:
-        ann.train_block_nn(
-            cpns[control_sym],
-            givens,
-            loss(
-                bellman_period,
-                agent=bellman_period.block.deciding_agent(control_sym),
-                other_dr=dict_of_decision_rules,
-            ),
-            epochs=epochs,
-        )
-
-    return dict_of_decision_rules
-
-
-def _differing_symbols(first, second):
-    """The symbols on which two calibrations disagree, sorted."""
-    missing = object()
-    return sorted(
-        sym
-        for sym in set(first) | set(second)
-        if not np.array_equal(first.get(sym, missing), second.get(sym, missing))
-    )
 
 
 def _renamed(fn, mapping):
@@ -374,6 +250,20 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     return GroundedBlock(projected, dict(calibration), rng=ground.rng)
 
 
+def _starting_policies(block):
+    """A visibly provisional rule for every decision: a constant at mid-bounds.
+
+    A starting profile is what an unsolved decision is held at, and it must not
+    be mistakable for a solved one. An untrained policy network is exactly that
+    mistake -- it is callable, it returns numbers, and nothing about it says it
+    has not been trained -- so these are constants instead.
+    """
+    return {
+        sym: _constant_rule(_midpoint(control), control.iset)
+        for sym, control in block.get_controls().items()
+    }
+
+
 class NeuralBestResponse:
     """Best responses by training a policy network, and what that needs.
 
@@ -423,6 +313,10 @@ class NeuralBestResponse:
             epochs=self.epochs,
         )
         return net.get_decision_rule(length=self.panel.n())[decision]
+
+    def initial_policies(self):
+        """A starting profile: every decision at a constant, none of them solved."""
+        return _starting_policies(self.ground.block)
 
     def rule_distance(self, new_rule, old_rule, iset):
         """Supremum norm between two rules, evaluated on the training panel.
@@ -491,6 +385,10 @@ class ExactBestResponse:
             disc_params=self.disc_params,
         )
         return rules[decision]
+
+    def initial_policies(self):
+        """A starting profile: every decision at a constant, none of them solved."""
+        return _starting_policies(self.ground.block)
 
     def rule_distance(self, new_rule, old_rule, iset):
         """Supremum norm between two rules over the grid they were solved on."""
@@ -682,6 +580,50 @@ def _midpoint(control):
     lower = 0.0 if control.lower_bound is None else float(control.lower_bound())
     upper = lower if control.upper_bound is None else float(control.upper_bound())
     return (lower + upper) / 2
+
+
+def solve_in_order(method, order, policies=None):
+    """Solve the named decisions, one at a time, in the order given.
+
+    The schedule that takes its order from the caller rather than deriving one.
+    Each decision is solved against the rules already in hand, so a symbol
+    repeated in *order* is refined after its neighbours have moved --
+    ``["c", "d", "c"]`` -- which is a best-response sweep run by hand.
+
+    **There is no convergence test here.** The iteration stops because *order*
+    ran out, not because anything settled, so a repeated symbol is a fixed
+    number of refinement passes and not a fixed point. Where a fixed point is
+    what is wanted, use a schedule that measures one:
+    :func:`solve_symmetric_equilibrium` iterates against a residual.
+
+    A decision absent from *order* is returned at its starting rule and HAS NOT
+    BEEN SOLVED. That is the caller's choice, since the caller writes the order,
+    but the returned profile does not distinguish the two.
+
+    Parameters
+    ----------
+    method : object
+        A per-decision solver, as :class:`NeuralBestResponse`,
+        :class:`ExactBestResponse` and
+        :class:`skagent.algos.tabular.TabularBestResponseSolver` are. Needs
+        ``best_response(decision, policies)`` and, when *policies* is omitted,
+        ``initial_policies()``.
+    order : sequence of str
+        The decisions to solve, in order. Symbols may repeat.
+    policies : Mapping[str, Callable], optional
+        The profile to start from, with a rule for every decision. Defaults to
+        the method's own starting profile.
+
+    Returns
+    -------
+    dict
+        A decision rule per control of the block.
+    """
+    policies = method.initial_policies() if policies is None else dict(policies)
+    for decision in order:
+        policies[decision] = method.best_response(decision, policies)
+        logger.info("solved %s", decision)
+    return policies
 
 
 def solve_in_relevance_order(method, policies=None):
