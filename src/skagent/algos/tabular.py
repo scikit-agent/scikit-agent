@@ -225,11 +225,21 @@ class TabularBestResponseSolver:
 
     # -- policies ------------------------------------------------------------
 
-    def mixed_rule(self, weights=None):
-        """A full-support mixed rule: every action played on some samples.
+    def spread_rule(self, weights=None):
+        """A rule spreading the candidate actions across the samples.
 
-        Held by decisions that are not yet solved, so that every information
-        cell is reached and every conditional expectation is defined.
+        Held by decisions that are not yet solved. Conditional payoffs are
+        estimated by GROUPING simulated samples, so a placeholder playing one
+        constant action would induce only the observations that action
+        produces, leaving every cell reachable only under another action empty
+        and its conditional expectation undefined. Spreading the actions over
+        the sample axis is what keeps every cell populated.
+
+        This is coverage, not randomization: the assignment is deterministic
+        and the sample axis holds shock draws rather than repeated plays, so
+        the share of samples playing an action is not a probability of playing
+        it. A control that genuinely randomizes declares that on itself and
+        draws from a shock.
 
         Parameters
         ----------
@@ -254,8 +264,8 @@ class TabularBestResponseSolver:
         return get_action_rule(np.resize(drawn, self.shock_samples))
 
     def initial_policies(self):
-        """A mixed rule for every decision in the block."""
-        return {sym: self.mixed_rule() for sym in self.decisions}
+        """A spread rule for every decision in the block."""
+        return {sym: self.spread_rule() for sym in self.decisions}
 
     # -- payoffs and best responses -----------------------------------------
 

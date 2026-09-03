@@ -76,7 +76,7 @@ class TestSolve:
     def test_solve_accepts_starting_policies(self, tree_killer):
         """Rules given for decisions are replaced as those decisions are solved."""
         start = {"PT": get_action_rule(1.0), "TDoc": get_action_rule(1.0)}
-        start["BP"] = tree_killer.mixed_rule()
+        start["BP"] = tree_killer.spread_rule()
 
         policies = solve_in_relevance_order(tree_killer, start)
 
@@ -161,7 +161,7 @@ class TestRelevanceOrder:
 
         passive = dict(policies, TDoc=get_action_rule(0.0))
         passive["BP"] = tree_killer.best_response(
-            "BP", dict(passive, PT=tree_killer.mixed_rule())
+            "BP", dict(passive, PT=tree_killer.spread_rule())
         )
 
         assert policies["PT"].to_dict() == {(): 0.0}
@@ -255,7 +255,7 @@ class TestPayoffs:
 
 class TestMixedRule:
     def test_every_action_is_played(self, tree_killer):
-        played = np.unique(tree_killer.mixed_rule()())
+        played = np.unique(tree_killer.spread_rule()())
 
         assert np.allclose(played, tree_killer.actions)
 
@@ -263,14 +263,14 @@ class TestMixedRule:
         weights = np.ones_like(tree_killer.actions)
         weights[-1] = 100.0
 
-        played = tree_killer.mixed_rule(weights)()
+        played = tree_killer.spread_rule(weights)()
 
         assert np.allclose(np.unique(played), tree_killer.actions)
         assert (played == tree_killer.actions[-1]).mean() > 0.5
 
     def test_wrong_number_of_weights_raises(self, tree_killer):
         with pytest.raises(ValueError, match="weights"):
-            tree_killer.mixed_rule([1.0, 1.0])
+            tree_killer.spread_rule([1.0, 1.0])
 
 
 class TestTabulatedRule:
