@@ -41,29 +41,32 @@ from a continuation value function and the stage dynamics of model blocks.
    :no-index:
 ```
 
-## Best Response
+## Tabular Best Response
 
-Solves a block's decisions one at a time, in the order given by its relevance
-graph (see {doc}`analysis`), each decision maximizing its own agent's payoff
-conditional on what that decision observes. For blocks whose relevance graph is
-acyclic; a cyclic component has to be solved as a simultaneous-move equilibrium
-and raises instead.
+Solves one decision at a time from a tabulated payoff table: for every value of
+what the decision-maker observes, the action maximizing their own agent's payoff
+conditional on that observation, against a supplied rule for every other
+decision. What order the decisions are solved in belongs to a schedule rather
+than to the method -- see {func}`skagent.solver.solve_in_relevance_order`, which
+takes the order from the block's relevance graph (see {doc}`analysis`) and
+raises on a cyclic component, since those decisions have to be solved as a
+simultaneous-move equilibrium.
 
 ```{eval-rst}
-.. automodule:: skagent.algos.best_response
+.. automodule:: skagent.algos.tabular
    :members:
 ```
 
 ### Core Best-Response Classes
 
 ```{eval-rst}
-.. autoclass:: skagent.algos.best_response.TabularBestResponseSolver
+.. autoclass:: skagent.algos.tabular.TabularBestResponseSolver
    :members:
    :no-index:
 ```
 
 ```{eval-rst}
-.. autoclass:: skagent.algos.best_response.TabulatedRule
+.. autoclass:: skagent.algos.tabular.TabulatedRule
    :members:
    :no-index:
 ```
@@ -158,6 +161,35 @@ functions.
 
 ```{eval-rst}
 .. autofunction:: skagent.solver.solve_multiple_controls
+```
+
+## Equilibrium Schedules and Methods
+
+A schedule decides which decision is solved when, and asks a method for each
+solve; a method carries one algorithm and the configuration that algorithm
+needs. The pairing is free: the same schedule takes a policy network or an exact
+backup and returns the same answer.
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_in_relevance_order
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.project
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_symmetric_equilibrium
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.NeuralBestResponse
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.ExactBestResponse
+   :members:
 ```
 
 ## Grid and Computational Tools

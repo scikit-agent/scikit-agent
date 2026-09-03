@@ -1105,7 +1105,7 @@ def solve_bellman(
 
     A period with no arrival states is not a dynamic problem — nothing carries
     between periods — and is refused. Such a block is solved statically, by
-    :class:`skagent.algos.best_response.TabularBestResponseSolver` or
+    :class:`skagent.algos.tabular.TabularBestResponseSolver` or
     :func:`skagent.solver.solve_multiple_controls`. Every arrival state must be
     an axis of *state_grid*, since the continuation is rebuilt from the value
     grid and cannot represent dependence on a variable the grid has no axis for.
@@ -1177,7 +1177,7 @@ def solve_bellman(
             "period with no arrival states is not dynamic: nothing carries "
             "between periods, so there is no fixed point to seek. Solve the "
             "block statically instead — TabularBestResponseSolver "
-            "(skagent.algos.best_response) for a tabular policy over finitely "
+            "(skagent.algos.tabular) for a tabular policy over finitely "
             "many observations, or solve_multiple_controls (skagent.solver) for "
             "a differentiable one."
         )

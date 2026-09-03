@@ -1,5 +1,5 @@
 """
-Tests for skagent.algos.best_response.
+Tests for skagent.algos.tabular.
 
 The solved rules are asserted exactly. They are Monte Carlo estimates, so the
 sample counts here are the smallest at which the reported actions are stable
@@ -10,7 +10,8 @@ over with a looser assertion.
 import numpy as np
 import pytest
 
-from skagent.algos.best_response import TabularBestResponseSolver, TabulatedRule
+from skagent.algos.tabular import TabularBestResponseSolver, TabulatedRule
+from skagent.solver import solve_in_relevance_order
 from skagent.ground import GroundedBlock
 from skagent.algos.vfi import get_action_rule
 from skagent.block import Control, DBlock
@@ -54,7 +55,7 @@ simultaneous_block = DBlock(
 class TestSolve:
     def test_solution_of_a_sequential_game(self, tree_killer):
         """Each decision is solved conditional on what it observes."""
-        policies = tree_killer.solve()
+        policies = solve_in_relevance_order(tree_killer)
 
         # Bob treats a sick tree at full intensity, and otherwise buys only
         # enough treatment to rule out the baseline chance of death.
@@ -77,7 +78,7 @@ class TestSolve:
         start = {"PT": get_action_rule(1.0), "TDoc": get_action_rule(1.0)}
         start["BP"] = tree_killer.mixed_rule()
 
-        policies = tree_killer.solve(start)
+        policies = solve_in_relevance_order(tree_killer, start)
 
         assert policies["TDoc"].to_dict() == {(0.0,): 0.2, (1.0,): 1.0}
         assert policies["PT"].to_dict() == {(): 0.0}
@@ -87,7 +88,7 @@ class TestSolve:
         assert not simultaneous_block.relevance_graph().is_acyclic()
 
         with pytest.raises(NotImplementedError) as excinfo:
-            solver(simultaneous_block).solve()
+            solve_in_relevance_order(solver(simultaneous_block))
 
         message = str(excinfo.value)
         assert "a1" in message and "a2" in message
@@ -118,7 +119,7 @@ class TestSolve:
     def test_prisoners_dilemma_cyclic_component_is_refused(self, block):
         """Neither game admits the one-at-a-time order this solver requires."""
         with pytest.raises(NotImplementedError, match="solved jointly"):
-            solver(block).solve()
+            solve_in_relevance_order(solver(block))
 
 
 class TestEntityRefusal:
@@ -137,7 +138,7 @@ class TestRelevanceOrder:
 
     def test_best_response_ignores_a_policy_it_does_not_rely_on(self, tree_killer):
         """``TDoc`` relies on nothing, so opposed profiles give the same rule."""
-        policies = tree_killer.solve()
+        policies = solve_in_relevance_order(tree_killer)
 
         responses = [
             tree_killer.best_response(
@@ -155,7 +156,7 @@ class TestRelevanceOrder:
 
     def test_best_response_follows_a_policy_it_relies_on(self, tree_killer):
         """``PT`` relies on ``TDoc``: replacing Bob's rule moves Alice's."""
-        policies = tree_killer.solve()
+        policies = solve_in_relevance_order(tree_killer)
         assert macid.tree_killer_block.relies_on("PT", "TDoc")
 
         passive = dict(policies, TDoc=get_action_rule(0.0))
@@ -232,7 +233,7 @@ class TestPayoffs:
         )
 
         with pytest.raises(ValueError, match="owns no reward variable"):
-            solver(block).solve()
+            solve_in_relevance_order(solver(block))
 
     def test_too_many_information_cells_raises(self):
         """Conditioning by grouping samples needs observations that repeat."""
@@ -249,7 +250,7 @@ class TestPayoffs:
         )
 
         with pytest.raises(ValueError, match="max_cells"):
-            solver(block, max_cells=100).solve()
+            solve_in_relevance_order(solver(block, max_cells=100))
 
 
 class TestMixedRule:
@@ -303,7 +304,7 @@ class TestTabulatedRule:
 
     def test_is_usable_as_a_decision_rule(self, tree_killer):
         """A solved rule drives ``Block.transition`` like any other rule."""
-        policies = tree_killer.solve()
+        policies = solve_in_relevance_order(tree_killer)
         vals = macid.tree_killer_block.transition(dict(tree_killer.shocks), policies)
 
         # The patio is built exactly when the doctor was called in earnest.

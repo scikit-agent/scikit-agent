@@ -8,6 +8,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
+  over the relevance graph moved out to
+  `skagent.solver.solve_in_relevance_order`. The module is named for its
+  algorithm, as the rest of `algos` is, and holds only the tabulated payoff
+  table; deciding which decision is solved when is a schedule's job, and the
+  same schedule now serves any method. What was `solver.solve()` is
+  `solve_in_relevance_order(solver)`.
+
 ### Added
 
 - `skagent.solver.project`, which splits a population model's entity class into

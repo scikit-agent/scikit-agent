@@ -1,4 +1,5 @@
 import inspect
+import logging
 import warnings
 
 import numpy as np
@@ -9,6 +10,8 @@ import skagent.bellman as bellman_module
 import skagent.loss as loss_module
 from skagent.block import Control, DBlock
 from skagent.utils import param_names
+
+logger = logging.getLogger(__name__)
 
 #: How :func:`project` names the solved instance's symbols, and the others'.
 ACTOR_SUFFIX = "_actor"
@@ -679,3 +682,54 @@ def _midpoint(control):
     lower = 0.0 if control.lower_bound is None else float(control.lower_bound())
     upper = lower if control.upper_bound is None else float(control.upper_bound())
     return (lower + upper) / 2
+
+
+def solve_in_relevance_order(method, policies=None):
+    """Solve every decision once, in the order the relevance graph gives.
+
+    A schedule rather than a method: it decides WHICH decision is solved when,
+    and asks the method for each solve. Every decision rule a decision
+    strategically relies on is already computed when its turn comes, so one
+    pass suffices and no iteration is needed.
+
+    This is the acyclic case. A cyclic component is a set of decisions that
+    rely on each other and admit no one-at-a-time order; solving those is a
+    simultaneous-move equilibrium problem, which
+    :func:`solve_symmetric_equilibrium` handles for a population and which a
+    joint schedule would handle in general.
+
+    Parameters
+    ----------
+    method : object
+        A per-decision solver carrying the problem, as
+        :class:`NeuralBestResponse` and
+        :class:`skagent.algos.tabular.TabularBestResponseSolver` do. Needs
+        ``ground``, ``best_response(decision, policies)`` and, when *policies*
+        is omitted, ``initial_policies()``.
+    policies : Mapping[str, Callable], optional
+        Starting rules for the decisions, replaced one by one as they are
+        solved. Defaults to the method's own starting profile.
+
+    Returns
+    -------
+    dict
+        A decision rule per control of the block.
+
+    Raises
+    ------
+    NotImplementedError
+        If the relevance graph has a cyclic component.
+    """
+    ground = method.ground
+    policies = method.initial_policies() if policies is None else dict(policies)
+    for component in ground.block.relevance_graph(ground.calibration).condensation():
+        if len(component) > 1:
+            raise NotImplementedError(
+                f"decisions {sorted(component)} strategically rely on each "
+                "other and must be solved jointly, as a simultaneous-move "
+                "equilibrium; only acyclic relevance graphs are supported"
+            )
+        (decision,) = component
+        policies[decision] = method.best_response(decision, policies)
+        logger.info("solved %s", decision)
+    return policies

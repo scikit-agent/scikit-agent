@@ -269,8 +269,8 @@ structural property of the block: its relevance graph (see
 strategically rely on each other, forming a single component — which is why `c`
 is scheduled twice. When the graph is acyclic, one pass per decision suffices,
 since everything a decision relies on is already solved by the time its turn
-comes; {class}`skagent.algos.best_response.TabularBestResponseSolver` reads that
-order off the graph and solves in it, tabulating rather than training a network.
+comes; {class}`skagent.algos.tabular.TabularBestResponseSolver` reads that order
+off the graph and solves in it, tabulating rather than training a network.
 
 ## Value Function Iteration
 

@@ -1,30 +1,27 @@
 """
-Best-response solving for blocks with several decisions.
+Best responses from a tabulated payoff table.
 
-Solves the decisions of a :class:`~skagent.block.DBlock` one at a time, in the
-order given by the block's relevance graph, so that every decision rule a
-decision strategically relies on is already computed when its turn comes. This
-requires the relevance graph to be acyclic; a cyclic component is a set of
-decisions that have to be solved jointly, which is a simultaneous-move
-equilibrium problem and is not attempted here.
+One decision at a time: for every value of what the decision-maker observes,
+the action maximizing their expected payoff conditional on that observation,
+against a supplied rule for every other decision. What ORDER the decisions are
+solved in, and whether the result is iterated to a fixed point, belong to a
+schedule rather than here -- :func:`skagent.solver.solve_in_relevance_order` is
+the sweep this module used to carry.
 
-Each decision is solved *per information cell*: for every value of what the
-decision-maker observes, the action maximizing their expected payoff conditional
-on that observation. Expectations are estimated by drawing *shock_samples*
-realizations of the block's shocks once, at construction, and reusing the same
-draws for every candidate action (common random numbers), so that comparisons
-between actions carry far less error than their levels do. Conditioning is done
-by grouping the simulated samples, which makes
-the beliefs at a decision the posterior induced by the other decision rules in
-the profile.
+Expectations are estimated by drawing *shock_samples* realizations of the
+block's shocks once, at construction, and reusing the same draws for every
+candidate action (common random numbers), so that comparisons between actions
+carry far less error than their levels do. Conditioning is done by grouping the
+simulated samples, which makes the beliefs at a decision the posterior induced
+by the other decision rules in the profile.
 
-The representation is tabular, which sets the limits of this module: a decision's
-information set must take finitely many values under the profile being played,
-since a cell with no repeats has no conditional expectation to estimate, and the
-actions searched are a finite set. Shocks may be continuous -- they are
-integrated over, never conditioned on. For continuous observations, or where a
-differentiable policy is wanted, :func:`skagent.solver.solve_multiple_controls`
-performs the same sweep with a policy network per control in place of a table.
+The representation is tabular, which sets the limits of this module: a
+decision's information set must take finitely many values under the profile
+being played, since a cell with no repeats has no conditional expectation to
+estimate, and the actions searched are a finite set. Shocks may be continuous
+-- they are integrated over, never conditioned on. For continuous observations,
+or where a differentiable policy is wanted, use
+:class:`skagent.solver.NeuralBestResponse` in the same schedule.
 """
 
 from collections import namedtuple
@@ -358,37 +355,3 @@ class TabularBestResponseSolver:
             cells,
             actions[payoff.argmax(axis=1)],
         )
-
-    def solve(self, policies=None):
-        """Solve every decision, in relevance-graph order.
-
-        Parameters
-        ----------
-        policies : Mapping[str, Callable], optional
-            Starting rules for the decisions, replaced one by one as they are
-            solved. Defaults to a mixed rule per decision, which is what makes
-            the conditional expectation at every information cell defined.
-
-        Returns
-        -------
-        dict
-            A decision rule per control of the block.
-
-        Raises
-        ------
-        NotImplementedError
-            If the relevance graph has a cyclic component: those decisions rely
-            on each other and admit no one-at-a-time order.
-        """
-        policies = self.initial_policies() if policies is None else dict(policies)
-        for component in self.block.relevance_graph(self.calibration).condensation():
-            if len(component) > 1:
-                raise NotImplementedError(
-                    f"decisions {sorted(component)} strategically rely on each "
-                    "other and must be solved jointly, as a simultaneous-move "
-                    "equilibrium; only acyclic relevance graphs are supported"
-                )
-            (decision,) = component
-            policies[decision] = self.best_response(decision, policies)
-            logger.info("solved %s", decision)
-        return policies
