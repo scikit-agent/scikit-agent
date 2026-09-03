@@ -412,8 +412,9 @@ class NeuralBestResponse:
             self.panel,
             loss_module.StaticRewardLoss(
                 self.period,
-                self.ground.calibration,
-                {sym: rule for sym, rule in policies.items() if sym != decision},
+                other_dr={
+                    sym: rule for sym, rule in policies.items() if sym != decision
+                },
                 agent=self.ground.block.deciding_agent(decision),
             ),
             epochs=self.epochs,
