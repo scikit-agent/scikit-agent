@@ -26,6 +26,32 @@ and this project adheres to
 
 ### Changed
 
+- A model diagram draws an entity class as a plate: a box around the symbols the
+  class declares per instance, labelled with the class's name and its size.
+  `ModelAnalyzer` reads the class from the block tree's declarations rather than
+  inferring one per agent role, so a model with several agents and one of each
+  is no longer boxed as though it had a population of them, and the equation
+  that reads out of a class is visibly the one crossing the box.
+- A model diagram no longer draws a calibration parameter that no equation
+  reads. A calibration written for a family of blocks carries the other blocks'
+  parameters, which arrived on the diagram as nodes joined to nothing: seven of
+  the nineteen in the consumption-saving figure. Only parameters are dropped, so
+  an unread shock, state, control or reward stays visible.
+- The shapes: a shock is a double-bordered ellipse rather than a triangle, a
+  calibration parameter is unbordered, and the hexagon now means the discount
+  factor. `Block.visualize`, `Block.display` and `utils.plot_block_diagram` take
+  `discount`, since a block does not know which of its parameters a period
+  discounts by, and that variable is drawn even though no equation reads it.
+- `Block.visualize` takes a `title`, and `utils.plot_block_diagram` passes an
+  empty one, so a figure carries its caption once instead of also carrying the
+  block's name.
+- A symbol the model assigns is no longer read as a parameter just because the
+  calibration holds a value for it. In the consumption-portfolio model `b` reads
+  the `R` that the portfolio block assigns later in the period, which is last
+  period's `R`, and the calibration's entry is that symbol's first-period
+  arrival value. The dependency is now classified as lagged, which is what the
+  simulator has always done with it, and the diagram reads left to right instead
+  of drawing the period's first equation at its right-hand end.
 - `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
   over the relevance graph has moved out to
   `skagent.solver.solve_in_relevance_order`. The module is now named for its

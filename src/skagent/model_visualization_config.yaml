@@ -5,13 +5,14 @@ graph_config:
   title: "ModelStructure"
   graph_type: "digraph"
 
-# Variable shape configuration (MODIFIED)
+# Variable shape configuration
 variable_shapes:
-  shock: "triangle"
+  shock: "ellipse" # double-bordered, by the peripheries in node_styles
   state: "ellipse"
   control: "box"
   reward: "diamond"
-  param: "hexagon"
+  param: "plaintext" # a calibration parameter is unbordered
+  discount: "hexagon" # reserved for a variable named as the discount factor
   default: "ellipse"
 
 # Node style configuration
@@ -20,6 +21,13 @@ node_styles:
     style: "filled"
     fontcolor: "#000000"
     fontname: "Arial"
+  # Per-kind overrides of the default, applied before the fill is chosen. A
+  # kind whose style does not ask to be filled is drawn without a fill.
+  by_kind:
+    shock:
+      peripheries: "2"
+    param:
+      style: ""
   previous_period:
     style: "filled,dashed"
     tooltip_prefix: "Previous period "

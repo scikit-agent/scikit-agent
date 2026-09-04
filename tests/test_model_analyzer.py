@@ -169,8 +169,17 @@ class TestAgentAssignments(unittest.TestCase):
         result = analyzer.analyze()
         agents = {meta["agent"] for meta in result.node_meta.values()}
         self.assertIn("consumer", agents)
-        self.assertIsInstance(result.plates, dict)
-        self.assertIn("consumer", result.plates)
+
+    def test_an_agent_role_is_not_a_plate(self):
+        """A plate is a declared entity class, and this block declares none.
+
+        The consumption block has one agent and one of it. Drawing a box around
+        an agent's variables would say the model describes several consumers,
+        which is a claim only an entity declaration can make.
+        """
+        result = ModelAnalyzer(consumption_block, self.calibration).analyze()
+        self.assertIn("consumer", {m["agent"] for m in result.node_meta.values()})
+        self.assertEqual(result.plates, {})
 
     def test_block_agent_override(self):
         """Test block-level agent assignment."""
@@ -214,12 +223,35 @@ class TestRBlockLagDetection(unittest.TestCase):
         self.assertIn(("a", "stigma"), instant)
         self.assertIn(("a", "k"), instant)
 
-    def test_genuine_arrival_state_is_the_only_lag_edge(self):
-        """``k`` is the sole arrival state, so ``k -> b`` is the only lag edge."""
+    def test_a_symbol_read_before_the_block_that_assigns_it_is_lagged(self):
+        """``b`` reads the ``R`` the portfolio block has not computed yet.
+
+        ``b = k * R / PermGroFac`` runs in the consumption block, and ``R`` is
+        assigned later in the period by the portfolio block, so the ``R`` that
+        ``b`` reads is last period's. The simulator agrees: its period scope is
+        the calibration updated with the previous period's values
+        (``Simulator._get_pre_state``), so the computed ``R`` is what ``b`` gets
+        from the second period on.
+
+        The calibration's ``R`` is that symbol's first-period arrival value in
+        this model, not a constant, which is why holding a calibration entry is
+        no longer enough to make a read instantaneous.
+        """
+        self.assertEqual(sorted(self.result.edges["lag"]), [("R", "b"), ("k", "b")])
+
+    def test_the_arrival_states_disagree_with_the_lag_edges(self):
+        """A disagreement pinned rather than resolved.
+
+        ``Block.get_arrival_states`` discards every calibration key at the end
+        of its walk, so it reports ``R`` as a parameter of this model while the
+        analyzer and the simulator both treat it as arriving from the previous
+        period. Deciding which is right changes the state space the solvers
+        carry for the portfolio model, so it is not settled here.
+        """
         self.assertEqual(
             cons_portfolio_problem.get_arrival_states(portfolio_calibration), {"k"}
         )
-        self.assertEqual(self.result.edges["lag"], [("k", "b")])
+        self.assertIn(("R", "b"), self.result.edges["lag"])
 
 
 if __name__ == "__main__":
