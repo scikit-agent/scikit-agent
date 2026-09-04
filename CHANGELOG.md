@@ -53,6 +53,11 @@ and this project adheres to
   epoch count for the first, a state grid and a continuation for the second --
   so the schedule keeps only the damping, the residual and the swap. Both reach
   the Cournot-Nash quantity at two, three and four firms.
+- `docs/user_guide/solvers.md` explains how a method pairs with a schedule, how
+  to choose among the three schedules, and what projecting a population does.
+- `examples/models/plot_cournot_equilibrium.py` diagrams the Cournot model and
+  its projection, iterates best responses to the Nash quantity at two, three and
+  four firms, and watches the undamped iteration cycle and then diverge.
 - `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
   composed block executes its own dynamics and computes its own rewards. Both
   read the merged dynamics, so an `RBlock` behaves as a leaf block does; every

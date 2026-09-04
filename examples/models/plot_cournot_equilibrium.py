@@ -3,15 +3,15 @@ r"""
 Cournot: Solving for a Nash Equilibrium
 ###############################################
 
-The Tree Killer example solves a game by *decomposing* it: its decisions fall
-into an order, and each one can be settled once the decisions it relies on have
-been settled. This example concerns a game where that approach fails.
-
 Several firms each choose how much to produce. The market price falls with the
 average quantity supplied, so a firm's best output depends on what the other
-firms choose, and their best outputs depend in turn on its choice. There is no
-first decision. Instead, the game has a **fixed point**, a quantity that is its
-own best response; that quantity is the Cournot-Nash equilibrium.
+firms choose, and their best outputs depend in turn on its choice.
+
+Some games can be solved by decomposing them: their decisions fall into an
+order, and each one can be settled once the decisions it relies on have been
+settled. This game admits no such order, because there is no decision here that
+can be settled first. What it has instead is a **fixed point**, a quantity that
+is its own best response; that quantity is the Cournot-Nash equilibrium.
 
 This page does four things:
 
@@ -23,15 +23,113 @@ This page does four things:
 The Model
 ==========
 
-:math:`N` firms each draw a marginal cost :math:`c_i` and choose a quantity
-:math:`q_i`. The market clears on the *average* quantity:
+Cournot (1838) [1]_ describes :math:`N` firms selling one identical good. Each
+firm draws a marginal cost and chooses a quantity, the quantities together
+determine the price, and each firm is paid at that common price.
+
+Notation
+--------
+
+- **Shock**: :math:`c_i`, firm :math:`i`'s marginal cost, drawn uniformly on
+  :math:`[c_l, c_h]`. The calibration used below gives every firm the same cost
+  :math:`c`, which is what makes the equilibrium symmetric.
+- **Control**: :math:`q_i`, firm :math:`i`'s quantity, the one decision it makes.
+- **Aggregate**: :math:`Q`, the average quantity. It is the only quantity that
+  leaves the firm class, and it is what couples the firms to each other.
+- **Price**: :math:`P`, set by inverse demand from :math:`Q`.
+- **Payoff**: :math:`u_i`, firm :math:`i`'s profit.
 
 .. math::
-    Q = \frac{1}{N}\sum_i q_i, \qquad P = A - b\,Q, \qquad
+    Q = \frac{1}{N}\sum_j q_j, \qquad P = A - b\,Q, \qquad
     u_i = (P - c_i)\, q_i
 
-The model is static, since it has no arrival states, so solving it describes
-one play of a one-shot game.
+Demand is written against the *average* rather than the total, so :math:`b` is
+the slope on the average and :math:`b/N` is the slope on total quantity. Both
+readings of :math:`N` then live in one model: it is the size of the population
+and it is a parameter of demand, and neither reading needs an extra equation.
+
+The model is static, since it has no arrival states, so solving it describes one
+play of a one-shot game.
+
+The best response
+-----------------
+
+Firm :math:`i` takes the other firms' quantities as given. Writing
+:math:`\bar q` for the quantity each of the other :math:`N - 1` firms produces,
+its profit is
+
+.. math::
+    u_i = \left(A - \frac{b}{N}\bigl(q_i + (N-1)\bar q\bigr) - c_i\right) q_i
+
+which is concave in :math:`q_i`, so the first-order condition
+
+.. math::
+    A - c_i - \frac{b}{N}\bigl(2 q_i + (N-1)\bar q\bigr) = 0
+
+gives the best response
+
+.. math::
+    q_i^{\ast}(\bar q)
+        = \frac{1}{2}\left(\frac{N (A - c_i)}{b} - (N-1)\,\bar q\right)
+
+The slope of that line in :math:`\bar q` is :math:`-(N-1)/2`. It is the single
+most important number on this page: it is negative, so the firms' quantities are
+strategic substitutes, and its magnitude passes 1 at :math:`N = 3`, which is
+where iterating best responses stops working and the damping of section 4
+becomes necessary.
+
+The equilibrium, and the outcome the firms would prefer
+-------------------------------------------------------
+
+At a symmetric equilibrium every firm plays the same :math:`q^{\ast}`, so
+setting :math:`q_i = \bar q = q^{\ast}` above and solving gives the
+Cournot-Nash quantity, while maximizing the firms' *joint* profit instead gives
+the monopoly quantity they would rather share:
+
+.. math::
+    q^{\ast} = \frac{N (A - c)}{b\,(N + 1)}, \qquad
+    q^{m} = \frac{A - c}{2 b}
+
+At the calibration used here -- :math:`A = 10`, :math:`b = 1`, :math:`c = 4` and
+:math:`N = 3` -- those are :math:`q^{\ast} = 4.5` and :math:`q^{m} = 3`. The
+three profiles printed below are exactly these two and one deviation from the
+second, and every number in them follows from the equations above:
+
+.. list-table::
+    :header-rows: 1
+
+    * - profile
+      - per firm
+      - :math:`Q`
+      - :math:`P`
+      - payoff
+    * - Cournot-Nash
+      - 4.5
+      - 4.5
+      - 5.5
+      - 6.75 each
+    * - joint monopoly
+      - 3.0
+      - 3.0
+      - 7.0
+      - 9.0 each
+    * - one firm deviates
+      - 6.0 against 3.0
+      - 4.0
+      - 6.0
+      - 12.0 to the deviator, 6.0 to the others
+
+The deviation is the best response to a cartel:
+:math:`q^{\ast}(3.0) = \tfrac{1}{2}(3 \cdot 6 - 2 \cdot 3) = 6.0`. That is why
+the cartel is not an equilibrium and 4.5 is.
+
+References
+----------
+
+.. [1] Cournot, A. A. (1838). *Recherches sur les principes mathematiques de la
+       theorie des richesses*. Translated by N. T. Bacon as *Researches into the
+       Mathematical Principles of the Theory of Wealth*, Macmillan, 1897.
+
 """
 
 # %%
@@ -65,13 +163,13 @@ plot_block_diagram(
 )
 
 # %%
-# Three profiles, and why the equilibrium is not the good one
-# =============================================================
+# Three profiles, and why the firms do not reach the one they prefer
+# ====================================================================
 #
 # The model ships three hand-derived profiles. They are the prisoner's dilemma
 # in disguise, which is what makes the equilibrium worth computing rather than
 # guessing, because the outcome the firms reach is not the outcome they would
-# prefer.
+# rank highest.
 
 for label, quantities in cournot.PROFILES.items():
     print(f"{label:16s} {quantities}")
@@ -87,6 +185,12 @@ print("                           expense of the other two, which fall to 6.0")
 # stable, because any single firm gains by producing more. That is why 4.5 is
 # where the market lands. The equilibrium is a prediction rather than a
 # recommendation.
+#
+# Whose ranking this is matters. The cartel is preferred by the firms, and only
+# by the firms: it pays them 9.0 each by holding output down and the price up,
+# which is the same thing as charging buyers more for less. Nothing computed on
+# this page speaks to which outcome is better overall, since the model carries
+# the firms' payoffs and no one else's.
 #
 # Projecting the population
 # ===========================
