@@ -1188,4 +1188,4 @@ class test_vfi_stateless(unittest.TestCase):
 
         message = str(caught.exception)
         self.assertIn("TabularBestResponseSolver", message)
-        self.assertIn("solve_multiple_controls", message)
+        self.assertIn("NeuralBestResponse", message)

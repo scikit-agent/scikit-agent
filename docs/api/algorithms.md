@@ -41,29 +41,34 @@ from a continuation value function and the stage dynamics of model blocks.
    :no-index:
 ```
 
-## Best Response
+## Tabular Best Response
 
-Solves a block's decisions one at a time, in the order given by its relevance
-graph (see {doc}`analysis`), each decision maximizing its own agent's payoff
-conditional on what that decision observes. For blocks whose relevance graph is
-acyclic; a cyclic component has to be solved as a simultaneous-move equilibrium
-and raises instead.
+The tabular best-response solver solves one decision at a time from a tabulated
+payoff table. For every value of what the decision-maker observes, it reports
+the action that maximizes the payoff of the agent making that decision,
+conditional on the observation and on a supplied rule for every other decision.
+The order in which the decisions are solved belongs to a schedule rather than to
+the method. {func}`skagent.solver.solve_in_relevance_order` supplies one such
+order, which it takes from the block's relevance graph (see {doc}`analysis`),
+and it raises an error when that graph has a cyclic component, because the
+decisions in a cycle have to be solved together as a simultaneous-move
+equilibrium.
 
 ```{eval-rst}
-.. automodule:: skagent.algos.best_response
+.. automodule:: skagent.algos.tabular
    :members:
 ```
 
 ### Core Best-Response Classes
 
 ```{eval-rst}
-.. autoclass:: skagent.algos.best_response.TabularBestResponseSolver
+.. autoclass:: skagent.algos.tabular.TabularBestResponseSolver
    :members:
    :no-index:
 ```
 
 ```{eval-rst}
-.. autoclass:: skagent.algos.best_response.TabulatedRule
+.. autoclass:: skagent.algos.tabular.TabulatedRule
    :members:
    :no-index:
 ```
@@ -156,8 +161,38 @@ functions.
 .. autofunction:: skagent.ann.aggregate_net_loss
 ```
 
+## Equilibrium Schedules and Methods
+
+A schedule decides when each decision is solved, and it asks a method to carry
+out each solve. A method carries one algorithm together with the configuration
+that algorithm needs. The pairing is free: the same schedule accepts either a
+policy network or an exact backup, and it returns the same answer in either
+case.
+
 ```{eval-rst}
-.. autofunction:: skagent.solver.solve_multiple_controls
+.. autofunction:: skagent.solver.solve_in_order
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_in_relevance_order
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.project
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_symmetric_equilibrium
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.NeuralBestResponse
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.ExactBestResponse
+   :members:
 ```
 
 ## Grid and Computational Tools
