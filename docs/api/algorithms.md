@@ -43,14 +43,16 @@ from a continuation value function and the stage dynamics of model blocks.
 
 ## Tabular Best Response
 
-Solves one decision at a time from a tabulated payoff table: for every value of
-what the decision-maker observes, the action maximizing their own agent's payoff
-conditional on that observation, against a supplied rule for every other
-decision. What order the decisions are solved in belongs to a schedule rather
-than to the method -- see {func}`skagent.solver.solve_in_relevance_order`, which
-takes the order from the block's relevance graph (see {doc}`analysis`) and
-raises on a cyclic component, since those decisions have to be solved as a
-simultaneous-move equilibrium.
+The tabular best-response solver solves one decision at a time from a tabulated
+payoff table. For every value of what the decision-maker observes, it reports
+the action that maximizes the payoff of the agent making that decision,
+conditional on the observation and on a supplied rule for every other decision.
+The order in which the decisions are solved belongs to a schedule rather than to
+the method. {func}`skagent.solver.solve_in_relevance_order` supplies one such
+order, which it takes from the block's relevance graph (see {doc}`analysis`),
+and it raises an error when that graph has a cyclic component, because the
+decisions in a cycle have to be solved together as a simultaneous-move
+equilibrium.
 
 ```{eval-rst}
 .. automodule:: skagent.algos.tabular
@@ -161,10 +163,11 @@ functions.
 
 ## Equilibrium Schedules and Methods
 
-A schedule decides which decision is solved when, and asks a method for each
-solve; a method carries one algorithm and the configuration that algorithm
-needs. The pairing is free: the same schedule takes a policy network or an exact
-backup and returns the same answer.
+A schedule decides when each decision is solved, and it asks a method to carry
+out each solve. A method carries one algorithm together with the configuration
+that algorithm needs. The pairing is free: the same schedule accepts either a
+policy network or an exact backup, and it returns the same answer in either
+case.
 
 ```{eval-rst}
 .. autofunction:: skagent.solver.solve_in_order

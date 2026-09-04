@@ -193,9 +193,9 @@ plt.tight_layout()
 # round: it walks the relevance graph's ``condensation()`` and computes each
 # decision's best response against the rules already found, using the solver it
 # is given. No iteration to a fixed point is needed, because the graph is
-# acyclic -- every rule a decision relies on is settled by the time its turn
-# comes. Had a component held more than one decision, it would refuse it as the
-# simultaneous-move equilibrium problem it is.
+# acyclic, so every rule a decision relies on is settled by the time its turn
+# comes. Had a component held more than one decision, the schedule would have
+# refused it as the simultaneous-move equilibrium problem it is.
 #
 # What :class:`~skagent.algos.tabular.TabularBestResponseSolver` does for each
 # decision:

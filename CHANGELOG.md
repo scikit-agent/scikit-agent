@@ -10,47 +10,49 @@ and this project adheres to
 
 ### Removed
 
-- `skagent.solver.solve_multiple_controls`, replaced by
-  `solve_in_order(method, order)` with a method object. It fused a schedule with
-  a method: the caller's `control_order` was the schedule, and the rest was a
-  policy network per control. Split apart, the same order can now drive a
-  tabular solver or an exact backup, not only networks. Its deprecated
-  `calibration` argument goes with it. Two defects die with it. It returned
-  UNTRAINED networks for controls the caller left out of the order -- callable,
-  numeric and indistinguishable from a solved rule; a starting profile is now a
-  constant per control, so an unsolved decision is visibly provisional. And it
-  derived no order at all, so a repeated symbol was an iterated best response
-  with no convergence test; `solve_in_order` says so, and points at a schedule
-  that measures one.
+- `skagent.solver.solve_multiple_controls` has been replaced by
+  `solve_in_order(method, order)`, which takes a method object. The old function
+  fused a schedule with a method: the caller's `control_order` was the schedule,
+  and the rest of the function was a policy network per control. Now that the
+  two are separate, the same order can drive a tabular solver or an exact backup
+  and not only a network. The deprecated `calibration` argument goes with it.
+  Removing the function also removes two defects. It returned untrained networks
+  for the controls the caller left out of the order, and those networks were
+  callable, numeric and indistinguishable from a solved rule; a starting profile
+  is now a constant per control, so an unsolved decision is visibly provisional.
+  It also derived no order of its own, so a repeated symbol amounted to an
+  iterated best response with no convergence test. `solve_in_order` says as much
+  and points to a schedule that does test for convergence.
 
 ### Changed
 
 - `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
-  over the relevance graph moved out to
-  `skagent.solver.solve_in_relevance_order`. The module is named for its
-  algorithm, as the rest of `algos` is, and holds only the tabulated payoff
-  table; deciding which decision is solved when is a schedule's job, and the
-  same schedule now serves any method. What was `solver.solve()` is
+  over the relevance graph has moved out to
+  `skagent.solver.solve_in_relevance_order`. The module is now named for its
+  algorithm, as the rest of `algos` is, and it holds only the tabulated payoff
+  table. Deciding when each decision is solved is a schedule's job, and the same
+  schedule now serves any method. What was `solver.solve()` is now
   `solve_in_relevance_order(solver)`.
 
 ### Added
 
-- `skagent.solver.project`, which splits a population model's entity class into
-  the instance being solved and the others, and `solve_symmetric_equilibrium`,
-  which solves the instance's decision against the others' current rule, swaps
-  the solved rule in as the others', and repeats until the rule stops moving.
-- `skagent.solver.NeuralBestResponse` and `ExactBestResponse`, two method
-  objects the schedule accepts interchangeably. Each carries its own
+- `skagent.solver.project` splits a population model's entity class into the
+  instance being solved and the others, and `solve_symmetric_equilibrium` solves
+  that instance's decision against the others' current rule, swaps the solved
+  rule in as the others' rule, and repeats until the rule stops moving. The
+  projection copies each per-instance equation once per side and synthesizes
+  exactly one equation, which concatenates the two sides back into the original
+  symbol; the aggregating equation is then copied verbatim and reads that
+  symbol. The transform therefore reassembles the entity axis without inspecting
+  the reduction, so a mean, a sum, a maximum and a masked mean all project
+  alike. Only symmetric equilibria are supported, since the other instances
+  share a single rule.
+- `skagent.solver.NeuralBestResponse` and `ExactBestResponse` are two method
+  objects that a schedule accepts interchangeably. Each one carries its own
   construction configuration beside its algorithm -- a training panel and an
-  epoch count for one, a state grid and a continuation for the other -- so the
-  schedule keeps only the damping, the residual and the swap. Both reach the
-  Cournot-Nash quantity at two, three and four firms. The projection copies each
-  per-instance equation once per side and synthesizes exactly one equation,
-  which CONCATENATES the two sides back into the original symbol; the
-  aggregating equation is then copied verbatim and reads it. So the transform
-  reassembles the entity axis and never inspects the reduction, and a mean, a
-  sum, a maximum or a masked mean project alike. Symmetric equilibria only: the
-  others are one rule.
+  epoch count for the first, a state grid and a continuation for the second --
+  so the schedule keeps only the damping, the residual and the swap. Both reach
+  the Cournot-Nash quantity at two, three and four firms.
 - `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
   composed block executes its own dynamics and computes its own rewards. Both
   read the merged dynamics, so an `RBlock` behaves as a leaf block does; every

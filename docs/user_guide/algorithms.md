@@ -16,13 +16,14 @@ rest of the toolkit:
   function iteration on a grid
 - **Reinforcement Learning**: Learn a policy by trial-and-error interaction with
   the model, using established RL libraries (see below)
-- **Best response**: Solve one decision at a time against the others' current
-  rules, each maximizing its own agent's payoff conditional on what it observes.
-  Available as a tabulated payoff table, a policy network, or an exact backup
+- **Best response**: Solve one decision at a time against the other decisions'
+  current rules, so that each decision maximizes its own agent's payoff
+  conditional on what that decision observes. It is available as a tabulated
+  payoff table, as a policy network, or as an exact backup
 
-The rest of this guide covers the methods themselves. Pairing them with a
-schedule — which decision is solved when, and whether the result is iterated to
-an equilibrium — is covered in {doc}`solvers`.
+The rest of this guide covers the methods themselves. The {doc}`solvers` guide
+explains how to pair a method with a schedule, which is what decides when each
+decision is solved and whether the result is iterated to an equilibrium.
 
 ## Reinforcement Learning
 
@@ -231,10 +232,11 @@ the policy network enforces such bounds automatically.
 
 ## Blocks with more than one decision
 
-Everything above solves a single decision. When a block has several — or several
-agents, or a population of them — the question becomes which decision to solve
-first, what to hold the others at, and when to stop. That is a separate concern
-from the numerical method, and it has its own page: see {doc}`solvers`.
+Everything above solves a single decision. When a block has several decisions,
+or several agents, or a population of agents, three further questions arise:
+which decision should be solved first, which rules should the other decisions be
+held at, and when should the process stop. These questions are separate from the
+choice of numerical method, and the {doc}`solvers` guide answers them.
 
 ## Value Function Iteration
 

@@ -13,9 +13,9 @@ scikit-learn conventions. It provides:
 represent different stages or aspects of economic behavior.
 
 **🔬 Multiple Solution Methods**: Choose from value function iteration, neural
-networks, and other modern computational approaches — and combine them with a
-schedule that decides which decision is solved when, for models with several
-decisions or several agents.
+networks, and other modern computational approaches. For a model with several
+decisions or several agents, combine one of these methods with a schedule that
+decides when each decision is solved.
 
 **📊 Rich Simulation Tools**: Generate synthetic data with powerful Monte Carlo
 simulators that handle heterogeneity, aging, and complex dynamics.

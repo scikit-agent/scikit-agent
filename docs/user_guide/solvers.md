@@ -2,26 +2,28 @@
 
 An algorithm solves _one_ decision: given everything else about a model, it
 finds the action, or the rule, that maximizes some payoff. Most models ask for
-more than that. They have several decisions, or several agents, or a population
-of agents whose choices depend on each other — and then someone has to say which
-decision is solved next, what the others are held at while it is, and when to
-stop.
+more than that. They have several decisions, or several agents, or a whole
+population of agents whose choices depend on one another. Someone then has to
+say which decision is solved next, which rules the other decisions are held at
+while it is solved, and when the process should stop.
 
-That is what this page is about. {doc}`algorithms` covers the numerical
-technologies; this covers how a problem is posed to them.
+That is the subject of this page. The {doc}`algorithms` guide covers the
+numerical methods themselves; this page covers how a problem with more than one
+decision is posed to them.
 
 ## Two pieces: a method and a schedule
 
-A **method** solves one decision against a supplied profile of everyone else's
-rules. A **schedule** decides which decision that is, and repeats.
+A **method** solves a single decision, given a supplied profile of rules for
+everyone else. A **schedule** decides which decision is solved next, and it
+repeats that step until the model is solved.
 
-The two are separate objects, and they pair freely: any schedule accepts any
-method. That is the point of the split — swapping a policy network for an exact
-backup should change how accurately a decision is solved, not which decision
-gets solved when.
+The two are separate objects, and they pair freely, because any schedule accepts
+any method. That separation is the point of the design: swapping a policy
+network for an exact backup should change how accurately a decision is solved,
+and it should not change which decision is solved when.
 
-A method carries whatever _its own algorithm_ needs, which is why the schedules
-do not have to:
+Each method carries whatever _its own algorithm_ needs, so the schedules do not
+have to carry it:
 
 | Method                                                       | What it uses              | What it needs to be built with    |
 | ------------------------------------------------------------ | ------------------------- | --------------------------------- |
@@ -29,18 +31,19 @@ do not have to:
 | {py:class}`~skagent.solver.ExactBestResponse`                | an exact backup on a grid | a state grid, a continuation      |
 | {py:class}`~skagent.algos.tabular.TabularBestResponseSolver` | a tabulated payoff table  | candidate actions, a sample count |
 
-Every method offers the same three operations:
-`best_response(decision, policies)`, `rule_distance(new, old, iset)`, and
-`initial_policies()` — the profile to start from, before anything has been
-solved.
+Every method offers the same three operations. The first,
+`best_response(decision, policies)`, solves one decision against the rules
+supplied for the others. The second, `rule_distance(new, old, iset)`, measures
+how far two rules differ. The third, `initial_policies()`, returns the profile
+to start from, before anything has been solved.
 
 ## Choosing a schedule
 
 ### You know the order: `solve_in_order`
 
 {py:func}`~skagent.solver.solve_in_order` solves the decisions you name, in the
-order you name them. Repeat a symbol to refine it after its neighbours have
-moved.
+order you name them. Repeating a symbol schedules a further pass over that
+decision, once its neighbours have moved.
 
 ```python
 import skagent.block as block
@@ -66,22 +69,24 @@ decision_rules = solve_in_order(method, ["c", "d", "c"])
 # optimal: c = a and d = 3, so the reward u is approximately 0
 ```
 
-The return value maps each control symbol to its decision rule, ready for
-`reward_function` or for simulation.
+The return value maps each control symbol to its decision rule, which is ready
+to pass to `reward_function` or to a simulation.
 
-Two things to know. A decision you leave out of the order comes back at its
-_starting_ rule and has not been solved — the returned profile does not
-distinguish the two. And the sweep stops because your list ran out, not because
-anything converged: a repeated symbol buys a fixed number of refinement passes,
-not a fixed point.
+Two points are worth knowing about this schedule. First, a decision you leave
+out of the order is returned at its _starting_ rule, which means that it has not
+been solved, and the returned profile does not distinguish a solved rule from an
+unsolved one. Second, the sweep stops because your list of decisions ran out,
+and not because anything converged, so a repeated symbol buys a fixed number of
+refinement passes rather than a fixed point.
 
 ### The model knows the order: `solve_in_relevance_order`
 
 Which decision must be solved before which is usually a property of the model
-rather than a choice. A decision that strategically relies on another cannot be
-solved until that other one is. The block's relevance graph records this (see
-{doc}`../api/analysis`), and {py:func}`~skagent.solver.solve_in_relevance_order`
-reads the order off it:
+rather than a choice the user makes. A decision that strategically relies on
+another cannot be solved until that other decision has been solved. The block's
+relevance graph records these dependencies (see {doc}`../api/analysis`), and
+{py:func}`~skagent.solver.solve_in_relevance_order` reads the order off that
+graph:
 
 ```python
 from skagent.algos.tabular import TabularBestResponseSolver
@@ -92,20 +97,21 @@ decision_rules = solve_in_relevance_order(method)
 ```
 
 One pass per decision suffices here, because everything a decision relies on is
-settled by the time its turn comes. If the graph has a cycle — decisions that
-rely on each other — there is no such order, and this schedule refuses rather
-than picking one. That refusal is the honest answer: a cycle is a
-simultaneous-move equilibrium problem, and needs the next schedule.
+already settled by the time its turn comes. If the graph contains a cycle, which
+means that two or more decisions rely on each other, then no such order exists,
+and this schedule raises an error rather than choosing an order arbitrarily.
+That refusal is the honest answer, because a cycle is a simultaneous-move
+equilibrium problem, and it calls for the next schedule.
 
 ### The decisions depend on each other: `solve_symmetric_equilibrium`
 
-When a population of agents each responds to what the others do, no order
-exists. What you want is a _fixed point_: a rule that is its own best response.
-{py:func}`~skagent.solver.solve_symmetric_equilibrium` iterates toward one —
-solve, substitute the answer back in as everyone else's rule, repeat — and stops
-when the rule stops moving.
+When every agent in a population responds to what the other agents do, no such
+order exists. What is wanted instead is a _fixed point_, which is a rule that is
+its own best response. {py:func}`~skagent.solver.solve_symmetric_equilibrium`
+iterates toward one: it solves the decision, substitutes the answer back in as
+everyone else's rule, and repeats until the rule stops moving.
 
-This needs a **projection** first, described below.
+This schedule first needs a **projection**, which the next section describes.
 
 ```python
 import numpy as np
@@ -126,48 +132,53 @@ info["converged"]  # True; False would mean it did not settle, not a fallback an
 rule(np.array([4.0]))  # 4.5, the Cournot-Nash quantity for three firms
 ```
 
-**Damping is not optional here, and it is not a speed knob.** Each round moves
-only a fraction `L` of the way toward the best response:
+**Damping is not optional here, and it is not a speed control.** Each round
+moves the rule only a fraction `L` of the way toward the best response:
 
 ```
 next = (1 - L) * current + L * best_response(current)
 ```
 
-Undamped iteration only converges when the best response is a contraction. In
-Cournot competition it is not, once there are enough firms: with three the
-iterates oscillate between two quantities forever, and with four they run to the
-bounds you declared on the control and bounce between those. Neither raises. A
-damped iteration reaches the equilibrium instead, and damping cannot move the
-answer — a rule equal to its own damped update is a rule equal to its own best
-response, so it changes only how you get there.
+Undamped iteration converges only when the best response is a contraction. In
+Cournot competition the best response is not a contraction once there are enough
+firms. With three firms the iterates oscillate between two quantities forever,
+and with four firms they run out to the bounds declared on the control and then
+bounce between them. Neither failure raises an error. A damped iteration reaches
+the equilibrium instead, and damping cannot change the answer, because a rule
+that equals its own damped update is also a rule that equals its own best
+response. Damping therefore changes only how the iteration gets there.
 
-Because the schedule tests the _rule_ rather than counting iterations, a run
-that fails to settle reports `converged: False` instead of handing back its last
-iterate.
+Because the schedule tests whether the _rule_ has stopped moving rather than
+counting iterations, a run that fails to settle reports `converged: False`
+instead of handing back its last iterate.
 
 ## Projecting a population
 
-A model with an entity class describes many agents at once — several firms, many
-households. A method solves one decision, so something has to turn "what should
-all the firms do" into "what should _this_ firm do, given the others".
+A model with an entity class describes many agents at once, such as several
+firms or many households. A method solves one decision, so something has to turn
+the question "what should all the firms do?" into the question "what should
+_this_ firm do, given what the others do?"
 
-{py:func}`~skagent.solver.project` does that. It splits the entity class into
-the instance being solved and the rest, and gives you back an ordinary block
-with two controls: `<control>_actor` and `<control>_other`.
+{py:func}`~skagent.solver.project` performs that translation. It splits the
+entity class into the instance being solved and the rest of the class, and it
+returns an ordinary block with two controls, `<control>_actor` and
+`<control>_other`.
 
-The one thing worth understanding about it: your aggregating equations are
-**copied unchanged**. If your model says `Q = q.mean()`, the projection does not
-rewrite that into a formula about one firm and `N - 1` others. It reassembles
-the population and lets your own equation run on it. So a mean, a sum, a maximum
-or any other reduction you wrote projects without the library needing to know
-which one you used — and the solved firm's own share of the aggregate is there
-by construction, rather than being something the projection computes.
+The one thing worth understanding about the projection is that your aggregating
+equations are **copied unchanged**. If your model says `Q = q.mean()`, the
+projection does not rewrite that equation into a formula about one firm and
+`N - 1` other firms. It reassembles the population and lets your own equation
+run on it. A mean, a sum, a maximum, or any other reduction you wrote therefore
+projects without the library needing to know which one you used, and the solved
+firm's own share of the aggregate is present by construction rather than being
+something the projection computes.
 
-Two current limits. The others are held at a single shared rule, so the
-equilibrium found is a _symmetric_ one; a game whose only equilibria are
-asymmetric cannot be expressed this way. And a masked reduction — a mean over
-only the instances meeting some condition — does not currently work with the
-neural method, though it is fine with the others.
+The projection has two current limits. The other instances are held at a single
+shared rule, so the equilibrium it finds is a _symmetric_ one, and a game whose
+only equilibria are asymmetric cannot be expressed in this shape. A masked
+reduction, such as a mean taken over only the instances that meet some
+condition, does not currently work with the neural method, although it does work
+with the others.
 
 ---
 

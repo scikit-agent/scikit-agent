@@ -1,12 +1,13 @@
 """
 Best responses from a tabulated payoff table.
 
-One decision at a time: for every value of what the decision-maker observes,
-the action maximizing their expected payoff conditional on that observation,
-against a supplied rule for every other decision. What ORDER the decisions are
-solved in, and whether the result is iterated to a fixed point, belong to a
-schedule rather than here -- :func:`skagent.solver.solve_in_relevance_order` is
-the sweep this module used to carry.
+The solver here handles one decision at a time. For every value of what the
+decision-maker observes, it reports the action that maximizes their expected
+payoff, conditional on that observation and on a supplied rule for every other
+decision. The order in which the decisions are solved, and whether the result
+is iterated to a fixed point, belong to a schedule rather than to this module;
+:func:`skagent.solver.solve_in_relevance_order` is the sweep this module used
+to carry.
 
 Expectations are estimated by drawing *shock_samples* realizations of the
 block's shocks once, at construction, and reusing the same draws for every
@@ -228,12 +229,13 @@ class TabularBestResponseSolver:
     def spread_rule(self, weights=None):
         """A rule spreading the candidate actions across the samples.
 
-        Held by decisions that are not yet solved. Conditional payoffs are
-        estimated by GROUPING simulated samples, so a placeholder playing one
-        constant action would induce only the observations that action
-        produces, leaving every cell reachable only under another action empty
-        and its conditional expectation undefined. Spreading the actions over
-        the sample axis is what keeps every cell populated.
+        This rule is held by the decisions that are not yet solved.
+        Conditional payoffs are estimated by grouping simulated samples, so a
+        placeholder playing one constant action would induce only the
+        observations that action produces. Every cell reachable only under
+        another action would then be empty, and its conditional expectation
+        undefined. Spreading the actions over the sample axis is what keeps
+        every cell populated.
 
         This is coverage, not randomization: the assignment is deterministic
         and the sample axis holds shock draws rather than repeated plays, so

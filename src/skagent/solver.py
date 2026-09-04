@@ -96,11 +96,11 @@ def _per_instance(equation, joined):
     """The author's aggregating equation, applied one instance-population at a time.
 
     An equation that reduces over an entity axis is written against that axis
-    ALONE -- the simulator guarantees it by iterating the sample axis in Python,
-    so a bare ``q.mean()`` means the mean over instances. A batched solver has
-    no such loop, and the same ``q.mean()`` would reduce the batch as well,
-    returning one number for the whole panel. That is a wrong answer that looks
-    right whenever the panel is degenerate.
+    alone, and the simulator guarantees as much by iterating the sample axis in
+    Python, so a bare ``q.mean()`` means the mean over instances. A batched
+    solver has no such loop, and the same ``q.mean()`` would reduce the batch as
+    well, returning one number for the whole panel. That is a wrong answer that
+    looks right whenever the panel is degenerate.
 
     ``torch.vmap`` is that loop, vectorized: it maps the equation over the batch
     so the equation sees an entity axis and nothing else. Gradients flow through
@@ -134,23 +134,24 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
 
     The entity class is split in two -- the instance being solved, and the
     others -- and every per-instance equation is copied once per side under a
-    suffixed name. For each symbol an aggregating equation reads over the class,
-    ONE equation is synthesized that CONCATENATES the two sides back into the
-    original symbol; the aggregating equation is then copied verbatim and reads
-    it. So the projection reassembles the entity axis and never inspects the
-    reduction, and a mean, a sum, a maximum or a masked mean all project alike.
+    suffixed name. For each symbol that an aggregating equation reads over the
+    class, exactly one equation is synthesized, and it concatenates the two
+    sides back into the original symbol; the aggregating equation is then copied
+    verbatim and reads that symbol. The projection therefore reassembles the
+    entity axis without inspecting the reduction, so a mean, a sum, a maximum
+    and a masked mean all project alike.
 
     The two sides' rewards are attributed to suffixed agent roles, so a solver
     told which agent it serves maximizes one instance's payoff rather than the
     class's total.
 
-    Two properties of this first scope, both narrower than the transform has to
-    stay:
+    This first scope has two properties, and both are narrower than the
+    transform has to remain:
 
-    - **The others are ONE rule, broadcast.** The projected block holds a single
-      control for the whole remainder of the class, so the equilibrium sought is
-      a symmetric one. A class of genuinely distinct rivals is expressible in
-      this shape and is not built here.
+    - **The other instances share one broadcast rule.** The projected block
+      holds a single control for the whole remainder of the class, so the
+      equilibrium sought is a symmetric one. A class of genuinely distinct
+      rivals is expressible in this shape, but it is not built here.
     - **The projected block declares no entity.** The split lives in the shapes
       -- the solved instance is a scalar, the others broadcast to ``N - 1`` --
       rather than in two declarations, because the solvers refuse a block that
@@ -497,11 +498,11 @@ def solve_symmetric_equilibrium(
     the damping, the residual test and the swap.
 
     **Damping is a correctness requirement rather than a convergence aid.**
-    Undamped iteration converges only where best response is a contraction;
-    where its slope is -1 the iterates cycle between two points forever, and
-    past that they diverge until the controls' bounds catch them. Both return a
-    plausible number under an iteration cap, which is why the residual here is
-    on the RULE and never on the count.
+    Undamped iteration converges only where the best response is a contraction.
+    Where its slope is -1 the iterates cycle between two points forever, and
+    past that they diverge until the controls' bounds catch them. Both failures
+    return a plausible number under an iteration cap, which is why the residual
+    here is measured on the rule and never on the iteration count.
 
     Parameters
     ----------
@@ -585,20 +586,21 @@ def _midpoint(control):
 def solve_in_order(method, order, policies=None):
     """Solve the named decisions, one at a time, in the order given.
 
-    The schedule that takes its order from the caller rather than deriving one.
+    This schedule takes its order from the caller rather than deriving one.
     Each decision is solved against the rules already in hand, so a symbol
-    repeated in *order* is refined after its neighbours have moved --
-    ``["c", "d", "c"]`` -- which is a best-response sweep run by hand.
+    repeated in *order*, as in ``["c", "d", "c"]``, is refined after its
+    neighbours have moved. The result is a best-response sweep run by hand.
 
     **There is no convergence test here.** The iteration stops because *order*
-    ran out, not because anything settled, so a repeated symbol is a fixed
-    number of refinement passes and not a fixed point. Where a fixed point is
-    what is wanted, use a schedule that measures one:
+    ran out, and not because anything settled, so a repeated symbol buys a
+    fixed number of refinement passes rather than a fixed point. Where a fixed
+    point is wanted, use a schedule that measures one:
     :func:`solve_symmetric_equilibrium` iterates against a residual.
 
-    A decision absent from *order* is returned at its starting rule and HAS NOT
-    BEEN SOLVED. That is the caller's choice, since the caller writes the order,
-    but the returned profile does not distinguish the two.
+    A decision absent from *order* is returned at its starting rule, which
+    means that it has not been solved. That is the caller's choice, since the
+    caller writes the order, but the returned profile does not distinguish a
+    solved rule from an unsolved one.
 
     Parameters
     ----------
@@ -629,10 +631,10 @@ def solve_in_order(method, order, policies=None):
 def solve_in_relevance_order(method, policies=None):
     """Solve every decision once, in the order the relevance graph gives.
 
-    A schedule rather than a method: it decides WHICH decision is solved when,
-    and asks the method for each solve. Every decision rule a decision
-    strategically relies on is already computed when its turn comes, so one
-    pass suffices and no iteration is needed.
+    This is a schedule rather than a method: it decides when each decision is
+    solved, and it asks the method to carry out each solve. Every decision rule
+    that a decision strategically relies on has already been computed when its
+    turn comes, so one pass suffices and no iteration is needed.
 
     This is the acyclic case. A cyclic component is a set of decisions that
     rely on each other and admit no one-at-a-time order; solving those is a
