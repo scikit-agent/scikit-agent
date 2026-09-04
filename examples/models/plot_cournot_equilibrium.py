@@ -40,9 +40,29 @@ import numpy as np
 import skagent.models.cournot as cournot
 from skagent.ground import GroundedBlock
 from skagent.solver import ExactBestResponse, project, solve_symmetric_equilibrium
+from skagent.utils import plot_block_diagram
+
+# sphinx_gallery_thumbnail_number = 1
 
 COST = 4.0
 market = GroundedBlock(cournot.cournot_block, cournot.collusion_calibration(size=3))
+
+# %%
+# The model as a graph
+# ======================
+#
+# The cost ``c`` is a shock, the quantity ``q`` is the firm's decision, and
+# ``u`` is the firm's payoff. The one edge that leaves the firm class is ``Q``,
+# the average quantity, and it sets the price ``P`` that every firm is paid at.
+# A single decision node stands for the whole class, which is what makes this a
+# population model rather than a three-firm game written out three times.
+
+plot_block_diagram(
+    cournot.cournot_block,
+    "Cournot: each firm's quantity feeds the average, which sets the price",
+    calibration=market.calibration,
+    figsize=(9, 4.5),
+)
 
 # %%
 # Three profiles, and why the equilibrium is not the good one
@@ -78,8 +98,12 @@ print("                           expense of the other two, which fall to 6.0")
 
 projected = project(market)
 
-print("controls :", list(projected.block.get_controls()))
-print("dynamics :", list(projected.block.get_dynamics()))
+plot_block_diagram(
+    projected.block,
+    "Projected: one firm's decision beside the rest of its class",
+    calibration=projected.calibration,
+    figsize=(9, 5),
+)
 
 # %%
 # The class has been split into the firm being solved (``_actor``) and the rest
