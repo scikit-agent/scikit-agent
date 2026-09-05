@@ -87,12 +87,14 @@ class ModelVisualizer:
         agent = m.get("agent", "other")
 
         style = dict(self.ns["default"])  # base
+        style.update(self.ns.get("by_kind", {}).get(kind, {}))
         # add shape
         style["shape"] = self._node_shape(kind)
-        # fill by agent color
-        fill = self.agent_colors.get(agent, self.cc["default_other_color"])
-        style["style"] = style.get("style", "") + ",filled"
-        style["fillcolor"] = fill
+        # fill by agent color, for the kinds drawn filled
+        if "filled" in style.get("style", ""):
+            style["fillcolor"] = self.agent_colors.get(
+                agent, self.cc["default_other_color"]
+            )
 
         # Apply previous_period style for lag variables (ending with *)
         if name.endswith("*"):
@@ -102,6 +104,35 @@ class ModelVisualizer:
         node = pydot.Node(name, **style)
         self.nodes[name] = node
         return node
+
+    def _touched_nodes(self):
+        """Every node an edge of the drawn graph reaches.
+
+        A lag edge is drawn from the previous-period node, so its source counts
+        as ``<source>*`` rather than as the source itself.
+        """
+        touched = set()
+        for kind, pairs in self.edges.items():
+            for source, target in pairs:
+                touched.add(f"{source}*" if kind == "lag" else source)
+                touched.add(target)
+        return touched
+
+    def _drawn(self, name):
+        """Whether *name* is drawn at all.
+
+        A calibration parameter no equation reads is dropped. It is an artifact
+        of a calibration written for a family of blocks -- the other blocks'
+        parameters come along with it -- rather than a fact about this block, and
+        it arrives on the diagram as a node connected to nothing. Only
+        parameters are dropped: an unread SHOCK, STATE, CONTROL or REWARD is a
+        defect in the model, and the diagram is where it should be visible. A
+        variable named as the discount factor is likewise kept, since no
+        equation reads it and it is still part of the problem.
+        """
+        if self.meta.get(name, {}).get("kind") != "param":
+            return True
+        return name in self._touched_nodes()
 
     def create_graph(self, title=None):
         """
@@ -123,21 +154,25 @@ class ModelVisualizer:
         # 1) New graph
         gconf = self.gc
         graph = pydot.Dot(graph_type=gconf["graph_type"])
-        # title
+        # title; an empty one leaves the graph unlabelled, which is what a
+        # caller drawing its own caption (as `utils.plot_block_diagram` does)
+        # wants, since the alternative is two titles on one figure
         if title is None:
             if self.title is not None:
                 title = self.title
             else:
                 title = gconf["title"]
-        graph.set_label(title)
-        graph.set_labelloc("t")
+        if title:
+            graph.set_label(title)
+            graph.set_labelloc("t")
         # layout
         graph.set("rankdir", self.gl["rankdir"])
         graph.set("nodesep", str(self.gl["node_padding"]))
 
         # 2) pre-create nodes (incl. ALL prev-period nodes for lag edges)
         for var in self.meta:
-            self._make_node(var)
+            if self._drawn(var):
+                self._make_node(var)
 
         # Create previous period nodes for lag edges ONLY if not already provided by analyzer
         for src, tgt in self.edges.get("lag", []):
@@ -163,9 +198,10 @@ class ModelVisualizer:
                 else info["label"]
             )
             # pydot.Cluster automatically adds "cluster_" prefix to graph_name
+            size = info.get("size", "")
             sg = pydot.Cluster(
                 graph_name=agent,  # Don't add "cluster_" prefix - pydot does it automatically
-                label=f"{info['size']} {lbl}",
+                label=f"{size} {lbl}" if size != "" else str(lbl),
                 labeljust="r",
                 style=self.gl["cluster_style"],
                 fillcolor=self.gl["cluster_fillcolor"],
@@ -176,6 +212,8 @@ class ModelVisualizer:
 
         # 4) add nodes to plates or root based on their plate metadata
         for name, m in self.meta.items():
+            if name not in self.nodes:
+                continue
             node = self.nodes[name]
             pl = m.get("plate")
             if pl and pl in plate_subs:

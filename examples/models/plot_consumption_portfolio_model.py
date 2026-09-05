@@ -140,7 +140,7 @@ cons.cons_problem.display_formulas()
 # Step 2b: Visualize the Consumption Block
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-img, _ = cons.cons_problem.display(cons.calibration)
+img, _ = cons.cons_problem.display(cons.calibration, discount="DiscFac")
 
 plt.figure(figsize=(10, 8))
 plt.imshow(img)
@@ -157,7 +157,7 @@ cons.cons_portfolio_problem.display_formulas()
 # Step 3b: Inspect and visualize the Portfolio Block
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-img, _ = cons.cons_portfolio_problem.display(cons.calibration)
+img, _ = cons.cons_portfolio_problem.display(cons.calibration, discount="DiscFac")
 
 plt.figure(figsize=(10, 8))
 plt.imshow(img)

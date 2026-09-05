@@ -3,6 +3,7 @@ Test cases for ModelVisualizer to ensure it correctly processes
 ModelAnalyzer output and generates valid graph diagrams.
 """
 
+import copy
 import sys
 import unittest
 
@@ -58,7 +59,7 @@ class TestModelVisualizerCore(unittest.TestCase):
     def test_make_node_styling(self):
         """
         _make_node applies _node_shape based on kind,
-        and injects fillcolor and style for all node types.
+        and fills every kind that is drawn filled.
         """
         viz = ModelVisualizer(self.analysis_dict)
 
@@ -73,11 +74,70 @@ class TestModelVisualizerCore(unittest.TestCase):
             # Shape matches kind
             self.assertEqual(attrs["shape"], viz._node_shape(meta["kind"]))
 
-            # Fill color equals agent's color
-            self.assertEqual(attrs["fillcolor"], viz.agent_colors[meta["agent"]])
+            if meta["kind"] == "param":
+                # A parameter is unbordered and unfilled: it is the calibration
+                # showing through rather than a variable of the model.
+                self.assertNotIn("filled", attrs["style"])
+                self.assertNotIn("fillcolor", attrs)
+            else:
+                self.assertEqual(attrs["fillcolor"], viz.agent_colors[meta["agent"]])
+                self.assertIn("filled", attrs["style"])
 
-            # Style contains 'filled'
-            self.assertIn("filled", attrs["style"])
+    def test_a_shock_is_a_double_bordered_ellipse(self):
+        """The shape vocabulary distinguishes a draw from a computed value."""
+        viz = ModelVisualizer(self.analysis_dict)
+
+        shock = viz._make_node("eps").get_attributes()
+        state = viz._make_node("x").get_attributes()
+
+        self.assertEqual(shock["shape"], "ellipse")
+        self.assertEqual(shock["peripheries"], "2")
+        self.assertEqual(state["shape"], "ellipse")
+        self.assertNotIn("peripheries", state)
+
+    def test_an_unread_parameter_is_not_drawn(self):
+        """A parameter no equation reads is dropped; a read one is kept."""
+        analysis = copy.deepcopy(self.analysis_dict)
+        analysis["node_meta"]["unused"] = {
+            "kind": "param",
+            "agent": "global",
+            "plate": None,
+            "observed": False,
+        }
+
+        viz = ModelVisualizer(analysis)
+        viz.create_graph()
+
+        self.assertNotIn("unused", viz.nodes)
+        self.assertIn("param", viz.nodes)  # read by y = x + param
+
+    def test_a_discount_factor_is_drawn_even_when_unread(self):
+        """No equation reads a discount factor, and it is still the problem's."""
+        analysis = copy.deepcopy(self.analysis_dict)
+        analysis["node_meta"]["beta"] = {
+            "kind": "discount",
+            "agent": "global",
+            "plate": None,
+            "observed": False,
+        }
+
+        viz = ModelVisualizer(analysis)
+        viz.create_graph()
+
+        self.assertIn("beta", viz.nodes)
+        self.assertEqual(viz.nodes["beta"].get_attributes()["shape"], "hexagon")
+
+    def test_an_empty_title_leaves_the_graph_unlabelled(self):
+        """So that a caller drawing its own caption does not draw two."""
+        self.assertIsNone(
+            ModelVisualizer(self.analysis_dict, title="").create_graph().get_label()
+        )
+        self.assertEqual(
+            ModelVisualizer(self.analysis_dict, title="Model")
+            .create_graph()
+            .get_label(),
+            "Model",
+        )
 
     def test_lag_variable_styling(self):
         """
@@ -165,6 +225,27 @@ class TestModelVisualizerCore(unittest.TestCase):
         viz2 = ModelVisualizer(dict(self.analysis_dict))
 
         self.assertEqual(viz1.agent_colors, viz2.agent_colors)
+
+
+class TestDiscountFactor(unittest.TestCase):
+    """A block does not know which parameter is its discount factor."""
+
+    def test_visualize_takes_the_discount_symbol(self):
+        block = DBlock(
+            name="discounted",
+            dynamics={"x": lambda param: param},
+            reward={"x": "agent1"},
+        )
+        calibration = {"param": 1.0, "beta": 0.96}
+
+        plain = block.visualize(calibration).create_graph()
+        named = block.visualize(calibration, discount="beta").create_graph()
+
+        # Unnamed, beta is an unread parameter and is not drawn at all. Named,
+        # it is drawn, and as the one shape reserved for it.
+        self.assertNotIn("beta", [n.get_name() for n in plain.get_nodes()])
+        (beta,) = [n for n in named.get_nodes() if n.get_name() == "beta"]
+        self.assertEqual(beta.get_attributes()["shape"], "hexagon")
 
 
 class TestModelVisualizerPlates(unittest.TestCase):

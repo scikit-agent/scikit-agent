@@ -703,7 +703,7 @@ class Block:
         )
         return shock_roles(scim, self.get_shocks())
 
-    def visualize(self, calibration):
+    def visualize(self, calibration, title=None, discount=None):
         """
         Return a PyDot graph visualization of this block.
 
@@ -715,6 +715,17 @@ class Block:
         calibration: dict
             A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
 
+        title: str, optional
+            The graph's label. Defaults to the block's name; pass ``""`` to
+            leave the graph unlabelled, which is what a caller supplying its own
+            caption wants.
+
+        discount: str, optional
+            The calibration symbol serving as the discount factor, drawn as such
+            rather than as an ordinary parameter. A block does not know which of
+            its parameters this is, since the choice is made by the period built
+            over it: pass ``BellmanPeriod.discount_variable``.
+
         Returns
         -----------
 
@@ -722,14 +733,16 @@ class Block:
             A PyDot graph representation of the model.
         """
         # Generate analysis
-        analyzer = ModelAnalyzer(self, calibration)
+        analyzer = ModelAnalyzer(self, calibration, discount=discount)
         analyzer.analyze()
 
-        viz = ModelVisualizer(analyzer.to_dict(), title=self.name)
+        viz = ModelVisualizer(
+            analyzer.to_dict(), title=self.name if title is None else title
+        )
 
         return viz
 
-    def display(self, calibration):
+    def display(self, calibration, discount=None):
         """
         Displays (as in a notebook) an SVG of the visualized graph of this block.
 
@@ -741,6 +754,10 @@ class Block:
         calibration: dict
             A dictionary of parameters used for calibration. Here, it indicates which symbols are not dynamic.
 
+        discount: str, optional
+            The calibration symbol serving as the discount factor, as in
+            :meth:`visualize`.
+
 
         Returns
         -----------
@@ -748,7 +765,7 @@ class Block:
         img : matplotlib.image.mpimg
         svg_content : str
         """
-        viz = self.visualize(calibration)
+        viz = self.visualize(calibration, discount=discount)
 
         viz.display()
 
