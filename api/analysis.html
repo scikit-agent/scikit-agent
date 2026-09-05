@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev94+g542baf04e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
@@ -219,6 +220,7 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
@@ -311,12 +313,12 @@ truth and exposes it in two forms:</p>
 - shock edge: dependency from an exogenous shock</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.model_analyzer.ModelAnalyzer">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.model_analyzer.</span></span><span class="sig-name descname"><span class="pre">ModelAnalyzer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.model_analyzer.</span></span><span class="sig-name descname"><span class="pre">ModelAnalyzer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer" title="Link to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Analyze a scikit-agent DBlock or RBlock and extract:</dt><dd><ul class="simple">
 <li><p>node_meta: kind, agent, plate, observed for each variable</p></li>
 <li><p>edges: instant / lag / param / shock dependencies</p></li>
-<li><p>plates: loop-notation plates inferred from agents</p></li>
+<li><p>plates: the entity classes the block tree declares</p></li>
 </ul>
 </dd>
 </dl>
@@ -607,9 +609,9 @@ without any of them however many were there to begin with.</p>
 d-separation test, read two ways: across decisions it is the Koller &amp; Milch
 s-reachability criterion, and the order the resulting relevance graph implies,
 <a class="reference internal" href="#skagent.relevance.RelevanceGraph.condensation" title="skagent.relevance.RelevanceGraph.condensation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">condensation()</span></code></a>, is what
-<a class="reference internal" href="algorithms.html#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> solves a block in
-(see <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a>). Run from a shock instead, it tells a solver whether to
-grid that shock or integrate it inside the maximization.</p>
+<a class="reference internal" href="algorithms.html#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.tabular.TabularBestResponseSolver</span></code></a> solves a block in (see
+<a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a>). Run from a shock instead, it tells a solver whether to grid
+that shock or integrate it inside the maximization.</p>
 <section id="incentive-criteria">
 <h3>Incentive criteria<a class="headerlink" href="#incentive-criteria" title="Link to this heading">¶</a></h3>
 <p>The same substrate answers a third question, about a node that is neither a
@@ -1153,7 +1155,7 @@ the graph per decision rather than per (shock, decision) pair.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=e19ef39a"></script>
+</div><script src="../_static/documentation_options.js?v=8efc4dea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

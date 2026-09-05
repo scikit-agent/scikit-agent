@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Model Analysis and Visualization" href="analysis.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Utils - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
+        <title>Utils - scikit-agent 0.1.1.dev94+g542baf04e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
@@ -219,6 +220,7 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
@@ -435,7 +437,7 @@ argument names once per variable per pass.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.utils.plot_block_diagram">
-<span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">plot_block_diagram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(9,</span> <span class="pre">7)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.plot_block_diagram" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">plot_block_diagram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(9,</span> <span class="pre">7)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.plot_block_diagram" title="Link to this definition">¶</a></dt>
 <dd><p>Render <em>block</em>’s model diagram into a new matplotlib figure.</p>
 <p><a class="reference internal" href="blocks.html#skagent.block.Block.display" title="skagent.block.Block.display"><code class="xref py py-meth docutils literal notranslate"><span class="pre">display()</span></code></a> shows the diagram in a notebook and
 returns the image; this puts the image on a figure instead, which is what a
@@ -451,6 +453,8 @@ line of noise.</p>
 symbols are static rather than dynamic. Defaults to empty.</p></li>
 <li><p><strong>figsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Figure size in inches, for diagrams that are wider than they are tall or
 the reverse.</p></li>
+<li><p><strong>discount</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – The calibration symbol serving as the discount factor, passed to
+<a class="reference internal" href="blocks.html#skagent.block.Block.visualize" title="skagent.block.Block.visualize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">visualize()</span></code></a>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -616,7 +620,7 @@ for occasionally binding constraints in loss functions:</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=e19ef39a"></script>
+</div><script src="../_static/documentation_options.js?v=8efc4dea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

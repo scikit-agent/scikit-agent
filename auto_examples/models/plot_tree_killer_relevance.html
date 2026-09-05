@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Benchmark Consumption Models" href="plot_benchmark_models.html"><link rel="prev" title="Incentives in Grade Prediction: Observing Versus Responding" href="plot_incentives_1_grade_prediction.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Strategic Relevance: Solving the Tree Killer - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
+        <title>Strategic Relevance: Solving the Tree Killer - scikit-agent 0.1.1.dev94+g542baf04e</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
@@ -219,6 +220,7 @@
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Models</a><input aria-label="Toggle navigation of Models" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
@@ -350,10 +352,11 @@ Representing and Solving Games.” <em>IJCAI-01</em>, 1027-1034. (Extended in
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.image</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpimg</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.algos.best_response</span><span class="w"> </span><span class="kn">import</span> <span class="n">TabularBestResponseSolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.algos.tabular</span><span class="w"> </span><span class="kn">import</span> <span class="n">TabularBestResponseSolver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.ground</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroundedBlock</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.algos.vfi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_action_rule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.macid</span><span class="w"> </span><span class="kn">import</span> <span class="n">tree_killer_block</span> <span class="k">as</span> <span class="n">block</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_in_relevance_order</span>
 </pre></div>
 </div>
 </section>
@@ -498,14 +501,15 @@ solution order: [{'TDoc'}, {'BP'}, {'PT'}]
 <img src="../../_images/sphx_glr_plot_tree_killer_relevance_002.png" srcset="../../_images/sphx_glr_plot_tree_killer_relevance_002.png" alt="Relevance graph (edge $D \rightarrow D'$: $D$ relies on $D'$)" class = "sphx-glr-single-img"/></section>
 <section id="solving-in-relevance-order">
 <h3>Solving in Relevance Order<a class="headerlink" href="#solving-in-relevance-order" title="Link to this heading">¶</a></h3>
-<p><a class="reference internal" href="../../api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">TabularBestResponseSolver</span></code></a> solves a block this
-way round: <code class="docutils literal notranslate"><span class="pre">solve()</span></code> walks the relevance graph’s <code class="docutils literal notranslate"><span class="pre">condensation()</span></code> and
-computes each decision’s best response against the rules already found. No
-iteration to a fixed point is needed, because the graph is acyclic – every
-rule a decision relies on is settled by the time its turn comes. Had a
-component held more than one decision, the solver would refuse it as the
-simultaneous-move equilibrium problem it is.</p>
-<p>What it does for each decision:</p>
+<p><a class="reference internal" href="../../api/algorithms.html#skagent.solver.solve_in_relevance_order" title="skagent.solver.solve_in_relevance_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_in_relevance_order()</span></code></a> solves a block this way
+round: it walks the relevance graph’s <code class="docutils literal notranslate"><span class="pre">condensation()</span></code> and computes each
+decision’s best response against the rules already found, using the solver it
+is given. No iteration to a fixed point is needed, because the graph is
+acyclic, so every rule a decision relies on is settled by the time its turn
+comes. Had a component held more than one decision, the schedule would have
+refused it as the simultaneous-move equilibrium problem it is.</p>
+<p>What <a class="reference internal" href="../../api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">TabularBestResponseSolver</span></code></a> does for each
+decision:</p>
 <ul class="simple">
 <li><p>searches a grid of candidate actions, here the <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code> intensities that
 this encoding relaxes the game’s binary decisions to;</p></li>
@@ -518,14 +522,14 @@ the simulated samples, which makes the beliefs those the rest of the profile
 implies – when <code class="docutils literal notranslate"><span class="pre">BP</span></code> sees Bob call the doctor, it infers the tree was sick;</p></li>
 <li><p>maximises the payoff of the <strong>agent who owns the decision</strong>: the sum of that
 agent’s utility nodes;</p></li>
-<li><p>holds the decisions not yet solved at a full-support mixed rule, so that
-every information cell is reached and every conditional expectation is
-defined.</p></li>
+<li><p>holds the decisions not yet solved at a rule that spreads the candidate
+actions across the samples, so that every information cell is reached and
+every conditional expectation is defined.</p></li>
 </ul>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">TabularBestResponseSolver</span><span class="p">(</span>
     <span class="n">GroundedBlock</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="p">{}),</span> <span class="n">shock_samples</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.default_rng" title="numpy.random.default_rng" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span></a><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="p">)</span>
-<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a> <span class="o">=</span> <span class="n">solve_in_relevance_order</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 
 <span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision</span></a><span class="p">,</span> <span class="n">rule</span> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a><span class="o">.</span><span class="n">items</span><span class="p">():</span>
     <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">table</span></a> <span class="o">=</span> <span class="n">rule</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
@@ -593,7 +597,7 @@ and, cell by cell, should not vary with the observed value of <code class="docut
     <span class="p">(</span><span class="s2">"skewed to PT=1"</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="mf">3.0</span> <span class="o">*</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">solver</span><span class="o">.</span><span class="n">actions</span></a><span class="p">),</span>
 <span class="p">]:</span>
     <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">tables</span></a><span class="p">[</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">best_response</span><span class="p">(</span>
-        <span class="s2">"BP"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a><span class="p">,</span> <span class="n">PT</span><span class="o">=</span><span class="n">solver</span><span class="o">.</span><span class="n">mixed_rule</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">weights</span></a><span class="p">))</span>
+        <span class="s2">"BP"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a><span class="p">,</span> <span class="n">PT</span><span class="o">=</span><span class="n">solver</span><span class="o">.</span><span class="n">spread_rule</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">weights</span></a><span class="p">))</span>
     <span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
 <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">disagreements</span></a> <span class="o">=</span> <span class="p">{</span>
@@ -620,7 +624,7 @@ cells where the best response differs: 0 {}
 never calls the doctor, re-solve Alice’s patio rule against it, and her
 poisoning decision should move.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">passive</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a><span class="p">,</span> <span class="n">TDoc</span><span class="o">=</span><span class="n">get_action_rule</span><span class="p">(</span><span class="mf">0.0</span><span class="p">))</span>
-<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">passive</span></a><span class="p">[</span><span class="s2">"BP"</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">best_response</span><span class="p">(</span><span class="s2">"BP"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">passive</span></a><span class="p">,</span> <span class="n">PT</span><span class="o">=</span><span class="n">solver</span><span class="o">.</span><span class="n">mixed_rule</span><span class="p">()))</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">passive</span></a><span class="p">[</span><span class="s2">"BP"</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">best_response</span><span class="p">(</span><span class="s2">"BP"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">passive</span></a><span class="p">,</span> <span class="n">PT</span><span class="o">=</span><span class="n">solver</span><span class="o">.</span><span class="n">spread_rule</span><span class="p">()))</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"PT against Bob's solved rule : </span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">policies</span></a><span class="p">[</span><span class="s1">'PT'</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"PT against a passive Bob     : </span><span class="si">{</span><span class="n">solver</span><span class="o">.</span><span class="n">best_response</span><span class="p">(</span><span class="s1">'PT'</span><span class="p">,</span><span class="w"> </span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">passive</span></a><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
@@ -685,7 +689,7 @@ information cells of <code class="docutils literal notranslate"><span class="pre
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" srcset="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" alt="Bob's best response, per information cell" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.128 seconds)</p>
+<img src="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" srcset="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" alt="Bob's best response, per information cell" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.132 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-tree-killer-relevance-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/5fe208a5eb30622739ce37ebcdec9e9c/plot_tree_killer_relevance.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_tree_killer_relevance.ipynb</span></code></a></p>
@@ -784,7 +788,7 @@ information cells of <code class="docutils literal notranslate"><span class="pre
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=e19ef39a"></script>
+</div><script src="../../_static/documentation_options.js?v=8efc4dea"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

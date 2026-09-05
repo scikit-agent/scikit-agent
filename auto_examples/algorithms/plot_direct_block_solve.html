@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Training a Policy Network Against a Known Solution" href="plot_train_against_known_solution.html"><link rel="prev" title="Algorithms" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Solving a Block Directly (Non-Recurring) - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
+        <title>Solving a Block Directly (Non-Recurring) - scikit-agent 0.1.1.dev94+g542baf04e</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
@@ -219,6 +220,7 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
@@ -307,7 +309,7 @@ iteration or the Bellman/Euler equation losses.</p>
 <ol class="arabic simple">
 <li><p>a single control that must learn to track a shock, and</p></li>
 <li><p>a block with two controls, solved with
-<a class="reference internal" href="../../api/algorithms.html#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a>.</p></li>
+<a class="reference internal" href="../../api/algorithms.html#skagent.solver.solve_in_order" title="skagent.solver.solve_in_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_in_order()</span></code></a>.</p></li>
 </ol>
 <p>It is the runnable companion to the <a class="reference internal" href="../../user_guide/algorithms.html"><span class="doc">Algorithms Guide</span></a> guide.</p>
 <section id="setup">
@@ -323,7 +325,8 @@ iteration or the Bellman/Euler equation losses.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skagent.grid</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">grid</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skagent.loss</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">loss</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3/library/abc.html#abc.ABC" title="abc.ABC" class="sphx-glr-backref-module-abc sphx-glr-backref-type-py-class"><span class="n">Normal</span></a>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_multiple_controls</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.ground</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroundedBlock</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeuralBestResponse</span><span class="p">,</span> <span class="n">solve_in_order</span>
 
 <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">SEED</span></a> <span class="o">=</span> <span class="mi">10077693</span>
 <a href="https://docs.pytorch.org/docs/stable/generated/torch.manual_seed.html#torch.manual_seed" title="torch.manual_seed" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-function"><span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">SEED</span></a><span class="p">)</span>
@@ -415,10 +418,14 @@ information set, so its optimal value is a constant.</p>
 <span class="n">multi_states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">"a"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"min"</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">11</span><span class="p">}})</span>
 </pre></div>
 </div>
-<p><a class="reference internal" href="../../api/algorithms.html#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_multiple_controls()</span></code></a> trains one network per control
-in turn, each treating the others’ current policies as fixed. Repeating a
-symbol in the order list schedules an extra refinement pass for it.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rules</span></a> <span class="o">=</span> <span class="n">solve_multiple_controls</span><span class="p">([</span><span class="s2">"c"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">],</span> <span class="n">bp2</span><span class="p">,</span> <span class="n">multi_states</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<p><a class="reference internal" href="../../api/algorithms.html#skagent.solver.solve_in_order" title="skagent.solver.solve_in_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_in_order()</span></code></a> solves the controls in the order given,
+each treating the others’ current policies as fixed, and
+<a class="reference internal" href="../../api/algorithms.html#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a> trains a network for each one.
+Repeating a symbol in the order list schedules an extra refinement pass for it.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">method</span> <span class="o">=</span> <span class="n">NeuralBestResponse</span><span class="p">(</span>
+    <span class="n">GroundedBlock</span><span class="p">(</span><span class="n">b2</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">multi_calibration</span></a><span class="p">),</span> <span class="n">multi_states</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span>
+<span class="p">)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rules</span></a> <span class="o">=</span> <span class="n">solve_in_order</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="p">[</span><span class="s2">"c"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">])</span>
 
 <a href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="torch.Tensor" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">a_vals</span></a> <span class="o">=</span> <span class="n">multi_states</span><span class="p">[</span><span class="s2">"a"</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">c_vals</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">decision_rules</span></a><span class="p">[</span><span class="s2">"c"</span><span class="p">](</span><a href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="torch.Tensor" class="sphx-glr-backref-module-torch sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">a_vals</span></a><span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
@@ -459,13 +466,13 @@ constant <code class="docutils literal notranslate"><span class="pre">k</span> <
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/scikit-agent/scikit-agent/examples/algorithms/plot_direct_block_solve.py:174: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/scikit-agent/scikit-agent/examples/algorithms/plot_direct_block_solve.py:179: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
 Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:820.)
   print(f"max |u| over the grid: {float(rewards['u'].abs().max()):.2e}")
-max |u| over the grid: 2.50e-05
+max |u| over the grid: 1.48e-04
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 11.932 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 12.106 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-algorithms-plot-direct-block-solve-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/60fae9bad17155edd8889caaa9c51028/plot_direct_block_solve.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_direct_block_solve.ipynb</span></code></a></p>
@@ -558,7 +565,7 @@ max |u| over the grid: 2.50e-05
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=e19ef39a"></script>
+</div><script src="../../_static/documentation_options.js?v=8efc4dea"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

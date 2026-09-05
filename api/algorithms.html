@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev94+g542baf04e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
@@ -219,6 +220,7 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
@@ -406,8 +408,9 @@ the residual is a sup-norm change between iterates, not an error against the
 <code class="docutils literal notranslate"><span class="pre">T</span></code>-period answer.</p>
 <p>A period with no arrival states is not a dynamic problem — nothing carries
 between periods — and is refused. Such a block is solved statically, by
-<a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> or
-<a class="reference internal" href="#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a>. Every arrival state must be
+<a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.tabular.TabularBestResponseSolver</span></code></a> or
+<a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.solver.NeuralBestResponse</span></code></a>, driven by
+<a class="reference internal" href="#skagent.solver.solve_in_order" title="skagent.solver.solve_in_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_in_order()</span></code></a>. Every arrival state must be
 an axis of <em>state_grid</em>, since the continuation is rebuilt from the value
 grid and cannot represent dependence on a variable the grid has no axis for.</p>
 <p>Shocks are discretized internally: <em>disc_params</em> is threaded into every
@@ -464,7 +467,7 @@ so the rebuilt continuation is never extrapolated off-grid.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.vfi.solve_step">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve_step" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve_step" title="Link to this definition">¶</a></dt>
 <dd><p>One exact value backup over <em>state_grid</em>.</p>
 <p>At each grid point the optimal control is found with
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a>, maximizing the period reward plus the
@@ -548,6 +551,7 @@ over-crediting off-grid successors. Single control with an affine
 successor only (raises otherwise). The limit must be <em>slack</em> at the
 states of interest (it is just the grid floor), or it biases the policy
 where it binds.</p></li>
+<li><p><strong>control</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -655,7 +659,7 @@ value at <code class="docutils literal notranslate"><span class="pre">states</sp
 <h3>Core VFI Functions<a class="headerlink" href="#core-vfi-functions" title="Link to this heading">¶</a></h3>
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>One exact value backup over <em>state_grid</em>.</p>
 <p>At each grid point the optimal control is found with
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a>, maximizing the period reward plus the
@@ -739,6 +743,7 @@ over-crediting off-grid successors. Single control with an affine
 successor only (raises otherwise). The limit must be <em>slack</em> at the
 states of interest (it is just the grid floor), or it biases the policy
 where it binds.</p></li>
+<li><p><strong>control</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -781,8 +786,9 @@ the residual is a sup-norm change between iterates, not an error against the
 <code class="docutils literal notranslate"><span class="pre">T</span></code>-period answer.</p>
 <p>A period with no arrival states is not a dynamic problem — nothing carries
 between periods — and is refused. Such a block is solved statically, by
-<a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> or
-<a class="reference internal" href="#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a>. Every arrival state must be
+<a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.tabular.TabularBestResponseSolver</span></code></a> or
+<a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.solver.NeuralBestResponse</span></code></a>, driven by
+<a class="reference internal" href="#skagent.solver.solve_in_order" title="skagent.solver.solve_in_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_in_order()</span></code></a>. Every arrival state must be
 an axis of <em>state_grid</em>, since the continuation is rebuilt from the value
 grid and cannot represent dependence on a variable the grid has no axis for.</p>
 <p>Shocks are discretized internally: <em>disc_params</em> is threaded into every
@@ -908,39 +914,42 @@ empty mapping yields a zero-dimensional array.</p>
 
 </section>
 </section>
-<section id="best-response">
-<h2>Best Response<a class="headerlink" href="#best-response" title="Link to this heading">¶</a></h2>
-<p>Solves a block’s decisions one at a time, in the order given by its relevance
-graph (see <a class="reference internal" href="analysis.html"><span class="doc">Model Analysis and Visualization</span></a>), each decision maximizing its own agent’s payoff
-conditional on what that decision observes. For blocks whose relevance graph is
-acyclic; a cyclic component has to be solved as a simultaneous-move equilibrium
-and raises instead.</p>
-<p id="module-skagent.algos.best_response">Best-response solving for blocks with several decisions.</p>
-<p>Solves the decisions of a <a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a> one at a time, in the
-order given by the block’s relevance graph, so that every decision rule a
-decision strategically relies on is already computed when its turn comes. This
-requires the relevance graph to be acyclic; a cyclic component is a set of
-decisions that have to be solved jointly, which is a simultaneous-move
-equilibrium problem and is not attempted here.</p>
-<p>Each decision is solved <em>per information cell</em>: for every value of what the
-decision-maker observes, the action maximizing their expected payoff conditional
-on that observation. Expectations are estimated by drawing <em>shock_samples</em>
-realizations of the block’s shocks once, at construction, and reusing the same
-draws for every candidate action (common random numbers), so that comparisons
-between actions carry far less error than their levels do. Conditioning is done
-by grouping the simulated samples, which makes
-the beliefs at a decision the posterior induced by the other decision rules in
-the profile.</p>
-<p>The representation is tabular, which sets the limits of this module: a decision’s
-information set must take finitely many values under the profile being played,
-since a cell with no repeats has no conditional expectation to estimate, and the
-actions searched are a finite set. Shocks may be continuous – they are
-integrated over, never conditioned on. For continuous observations, or where a
-differentiable policy is wanted, <a class="reference internal" href="#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a>
-performs the same sweep with a policy network per control in place of a table.</p>
+<section id="tabular-best-response">
+<h2>Tabular Best Response<a class="headerlink" href="#tabular-best-response" title="Link to this heading">¶</a></h2>
+<p>The tabular best-response solver solves one decision at a time from a tabulated
+payoff table. For every value of what the decision-maker observes, it reports
+the action that maximizes the payoff of the agent making that decision,
+conditional on the observation and on a supplied rule for every other decision.
+The order in which the decisions are solved belongs to a schedule rather than to
+the method. <a class="reference internal" href="#skagent.solver.solve_in_relevance_order" title="skagent.solver.solve_in_relevance_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_in_relevance_order()</span></code></a> supplies one such
+order, which it takes from the block’s relevance graph (see <a class="reference internal" href="analysis.html"><span class="doc">Model Analysis and Visualization</span></a>),
+and it raises an error when that graph has a cyclic component, because the
+decisions in a cycle have to be solved together as a simultaneous-move
+equilibrium.</p>
+<p id="module-skagent.algos.tabular">Best responses from a tabulated payoff table.</p>
+<p>The solver here handles one decision at a time. For every value of what the
+decision-maker observes, it reports the action that maximizes their expected
+payoff, conditional on that observation and on a supplied rule for every other
+decision. The order in which the decisions are solved, and whether the result
+is iterated to a fixed point, belong to a schedule rather than to this module;
+<a class="reference internal" href="#skagent.solver.solve_in_relevance_order" title="skagent.solver.solve_in_relevance_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_in_relevance_order()</span></code></a> is the sweep this module used
+to carry.</p>
+<p>Expectations are estimated by drawing <em>shock_samples</em> realizations of the
+block’s shocks once, at construction, and reusing the same draws for every
+candidate action (common random numbers), so that comparisons between actions
+carry far less error than their levels do. Conditioning is done by grouping the
+simulated samples, which makes the beliefs at a decision the posterior induced
+by the other decision rules in the profile.</p>
+<p>The representation is tabular, which sets the limits of this module: a
+decision’s information set must take finitely many values under the profile
+being played, since a cell with no repeats has no conditional expectation to
+estimate, and the actions searched are a finite set. Shocks may be continuous
+– they are integrated over, never conditioned on. For continuous observations,
+or where a differentiable policy is wanted, use
+<a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.solver.NeuralBestResponse</span></code></a> in the same schedule.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">ConditionalPayoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">counts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payoff</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.ConditionalPayoffs">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.tabular.</span></span><span class="sig-name descname"><span class="pre">ConditionalPayoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">counts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payoff</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.ConditionalPayoffs" title="Link to this definition">¶</a></dt>
 <dd><p>Expected payoffs by information cell and action.</p>
 <dl class="simple">
 <dt>cells<span class="classifier">numpy.ndarray</span></dt><dd><p>Shape <code class="docutils literal notranslate"><span class="pre">(n_cells,</span> <span class="pre">len(iset))</span></code>; the distinct observed values of the
@@ -955,34 +964,34 @@ decision’s agent in each cell for each action.</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.actions">
-<span class="sig-name descname"><span class="pre">actions</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.actions" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.ConditionalPayoffs.actions">
+<span class="sig-name descname"><span class="pre">actions</span></span><a class="headerlink" href="#skagent.algos.tabular.ConditionalPayoffs.actions" title="Link to this definition">¶</a></dt>
 <dd><p>Alias for field number 2</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.cells">
-<span class="sig-name descname"><span class="pre">cells</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.cells" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.ConditionalPayoffs.cells">
+<span class="sig-name descname"><span class="pre">cells</span></span><a class="headerlink" href="#skagent.algos.tabular.ConditionalPayoffs.cells" title="Link to this definition">¶</a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.counts">
-<span class="sig-name descname"><span class="pre">counts</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.counts" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.ConditionalPayoffs.counts">
+<span class="sig-name descname"><span class="pre">counts</span></span><a class="headerlink" href="#skagent.algos.tabular.ConditionalPayoffs.counts" title="Link to this definition">¶</a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="skagent.algos.best_response.ConditionalPayoffs.payoff">
-<span class="sig-name descname"><span class="pre">payoff</span></span><a class="headerlink" href="#skagent.algos.best_response.ConditionalPayoffs.payoff" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.ConditionalPayoffs.payoff">
+<span class="sig-name descname"><span class="pre">payoff</span></span><a class="headerlink" href="#skagent.algos.tabular.ConditionalPayoffs.payoff" title="Link to this definition">¶</a></dt>
 <dd><p>Alias for field number 3</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabularBestResponseSolver">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.tabular.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabularBestResponseSolver" title="Link to this definition">¶</a></dt>
 <dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1018,8 +1027,8 @@ calibrations by grounding it against each.</p>
 <p>Expectations are Monte Carlo estimates; a solved rule is exact only up to
 sampling error, which falls as <em>shock_samples</em> rises.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.best_response">
-<span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.best_response" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabularBestResponseSolver.best_response">
+<span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabularBestResponseSolver.best_response" title="Link to this definition">¶</a></dt>
 <dd><p>The payoff-maximizing rule for <code class="docutils literal notranslate"><span class="pre">decision</span></code> against <code class="docutils literal notranslate"><span class="pre">policies</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1033,14 +1042,14 @@ response is computed against.</p></li>
 <dd class="field-even"><p>One action per information cell.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule" title="skagent.algos.best_response.TabulatedRule">TabulatedRule</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.algos.tabular.TabulatedRule" title="skagent.algos.tabular.TabulatedRule">TabulatedRule</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.conditional_payoffs">
-<span class="sig-name descname"><span class="pre">conditional_payoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.conditional_payoffs" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabularBestResponseSolver.conditional_payoffs">
+<span class="sig-name descname"><span class="pre">conditional_payoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabularBestResponseSolver.conditional_payoffs" title="Link to this definition">¶</a></dt>
 <dd><p>Estimate <code class="docutils literal notranslate"><span class="pre">decision</span></code>’s payoffs by information cell and action.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1051,23 +1060,39 @@ response is computed against.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs" title="skagent.algos.best_response.ConditionalPayoffs">ConditionalPayoffs</a></p>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.algos.tabular.ConditionalPayoffs" title="skagent.algos.tabular.ConditionalPayoffs">ConditionalPayoffs</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.initial_policies">
-<span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.initial_policies" title="Link to this definition">¶</a></dt>
-<dd><p>A mixed rule for every decision in the block.</p>
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabularBestResponseSolver.initial_policies">
+<span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabularBestResponseSolver.initial_policies" title="Link to this definition">¶</a></dt>
+<dd><p>A spread rule for every decision in the block.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.mixed_rule">
-<span class="sig-name descname"><span class="pre">mixed_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.mixed_rule" title="Link to this definition">¶</a></dt>
-<dd><p>A full-support mixed rule: every action played on some samples.</p>
-<p>Held by decisions that are not yet solved, so that every information
-cell is reached and every conditional expectation is defined.</p>
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabularBestResponseSolver.payoff">
+<span class="sig-name descname"><span class="pre">payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabularBestResponseSolver.payoff" title="Link to this definition">¶</a></dt>
+<dd><p>The sum of <code class="docutils literal notranslate"><span class="pre">agent</span></code>’s utility nodes, per sample.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabularBestResponseSolver.spread_rule">
+<span class="sig-name descname"><span class="pre">spread_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabularBestResponseSolver.spread_rule" title="Link to this definition">¶</a></dt>
+<dd><p>A rule spreading the candidate actions across the samples.</p>
+<p>This rule is held by the decisions that are not yet solved.
+Conditional payoffs are estimated by grouping simulated samples, so a
+placeholder playing one constant action would induce only the
+observations that action produces. Every cell reachable only under
+another action would then be empty, and its conditional expectation
+undefined. Spreading the actions over the sample axis is what keeps
+every cell populated.</p>
+<p>This is coverage, not randomization: the assignment is deterministic
+and the sample axis holds shock draws rather than repeated plays, so
+the share of samples playing an action is not a probability of playing
+it. A control that genuinely randomizes declares that on itself and
+draws from a shock.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>weights</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Relative shares of the samples per action, one per candidate action.
@@ -1082,40 +1107,11 @@ Defaults to equal shares.</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.payoff">
-<span class="sig-name descname"><span class="pre">payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.payoff" title="Link to this definition">¶</a></dt>
-<dd><p>The sum of <code class="docutils literal notranslate"><span class="pre">agent</span></code>’s utility nodes, per sample.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabularBestResponseSolver.solve">
-<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">policies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabularBestResponseSolver.solve" title="Link to this definition">¶</a></dt>
-<dd><p>Solve every decision, in relevance-graph order.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em><em>, </em><em>optional</em>) – Starting rules for the decisions, replaced one by one as they are
-solved. Defaults to a mixed rule per decision, which is what makes
-the conditional expectation at every information cell defined.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A decision rule per control of the block.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><strong>NotImplementedError</strong></a> – If the relevance graph has a cyclic component: those decisions rely
-    on each other and admit no one-at-a-time order.</p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabulatedRule">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabulatedRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabulatedRule" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabulatedRule">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.tabular.</span></span><span class="sig-name descname"><span class="pre">TabulatedRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabulatedRule" title="Link to this definition">¶</a></dt>
 <dd><p>A decision rule tabulated over the cells of an information set.</p>
 <p>Follows the library’s decision-rule calling convention: the information-set
 values are passed as positional arguments in <code class="docutils literal notranslate"><span class="pre">iset</span></code> order. An observation
@@ -1133,8 +1129,8 @@ points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.algos.best_response.TabulatedRule.to_dict">
-<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.best_response.TabulatedRule.to_dict" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.algos.tabular.TabulatedRule.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.tabular.TabulatedRule.to_dict" title="Link to this definition">¶</a></dt>
 <dd><p>The rule as <code class="docutils literal notranslate"><span class="pre">{observed</span> <span class="pre">values:</span> <span class="pre">action}</span></code>, rounded for display.</p>
 </dd></dl>
 
@@ -1144,7 +1140,7 @@ points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_
 <h3>Core Best-Response Classes<a class="headerlink" href="#core-best-response-classes" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.tabular.</span></span><span class="sig-name descname"><span class="pre">TabularBestResponseSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shock_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Solve a block’s decisions by best response, in relevance-graph order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1195,7 +1191,7 @@ response is computed against.</p></li>
 <dd class="field-even"><p>One action per information cell.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule" title="skagent.algos.best_response.TabulatedRule">TabulatedRule</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.algos.tabular.TabulatedRule" title="skagent.algos.tabular.TabulatedRule">TabulatedRule</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1213,7 +1209,7 @@ response is computed against.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs" title="skagent.algos.best_response.ConditionalPayoffs">ConditionalPayoffs</a></p>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.algos.tabular.ConditionalPayoffs" title="skagent.algos.tabular.ConditionalPayoffs">ConditionalPayoffs</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1221,15 +1217,31 @@ response is computed against.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
-<dd><p>A mixed rule for every decision in the block.</p>
+<dd><p>A spread rule for every decision in the block.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">mixed_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>A full-support mixed rule: every action played on some samples.</p>
-<p>Held by decisions that are not yet solved, so that every information
-cell is reached and every conditional expectation is defined.</p>
+<span class="sig-name descname"><span class="pre">payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>The sum of <code class="docutils literal notranslate"><span class="pre">agent</span></code>’s utility nodes, per sample.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">spread_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>A rule spreading the candidate actions across the samples.</p>
+<p>This rule is held by the decisions that are not yet solved.
+Conditional payoffs are estimated by grouping simulated samples, so a
+placeholder playing one constant action would induce only the
+observations that action produces. Every cell reachable only under
+another action would then be empty, and its conditional expectation
+undefined. Spreading the actions over the sample axis is what keeps
+every cell populated.</p>
+<p>This is coverage, not randomization: the assignment is deterministic
+and the sample axis holds shock draws rather than repeated plays, so
+the share of samples playing an action is not a probability of playing
+it. A control that genuinely randomizes declares that on itself and
+draws from a shock.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>weights</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Relative shares of the samples per action, one per candidate action.
@@ -1244,40 +1256,11 @@ Defaults to equal shares.</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>The sum of <code class="docutils literal notranslate"><span class="pre">agent</span></code>’s utility nodes, per sample.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">policies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Solve every decision, in relevance-graph order.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em><em>, </em><em>optional</em>) – Starting rules for the decisions, replaced one by one as they are
-solved. Defaults to a mixed rule per decision, which is what makes
-the conditional expectation at every information cell defined.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A decision rule per control of the block.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><strong>NotImplementedError</strong></a> – If the relevance graph has a cyclic component: those decisions rely
-    on each other and admit no one-at-a-time order.</p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.best_response.</span></span><span class="sig-name descname"><span class="pre">TabulatedRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em><span class="sig-paren">)</span></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.algos.tabular.</span></span><span class="sig-name descname"><span class="pre">TabulatedRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>A decision rule tabulated over the cells of an information set.</p>
 <p>Follows the library’s decision-rule calling convention: the information-set
 values are passed as positional arguments in <code class="docutils literal notranslate"><span class="pre">iset</span></code> order. An observation
@@ -2013,61 +1996,277 @@ Return the mean.</p>
 </dl>
 </dd></dl>
 
+</section>
+</section>
+<section id="equilibrium-schedules-and-methods">
+<h2>Equilibrium Schedules and Methods<a class="headerlink" href="#equilibrium-schedules-and-methods" title="Link to this heading">¶</a></h2>
+<p>A schedule decides when each decision is solved, and it asks a method to carry
+out each solve. A method carries one algorithm together with the configuration
+that algorithm needs. The pairing is free: the same schedule accepts either a
+policy network or an exact backup, and it returns the same answer in either
+case.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.solver.solve_multiple_controls">
-<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_multiple_controls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_multiple_controls" title="Link to this definition">¶</a></dt>
-<dd><p>Solve a block with more than one control by training a policy network
-for each control in turn.</p>
-<p>Each control is given its own <a class="reference internal" href="#skagent.ann.BlockPolicyNet" title="skagent.ann.BlockPolicyNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.ann.BlockPolicyNet</span></code></a>. The
-networks are trained one at a time, in the order given by
-<code class="docutils literal notranslate"><span class="pre">control_order</span></code>, with every network treating the other networks’ current
-policies as fixed. A control may appear in <code class="docutils literal notranslate"><span class="pre">control_order</span></code> more than once
-to refine it after its neighbours have been updated (e.g.
-<code class="docutils literal notranslate"><span class="pre">[&quot;c&quot;,</span> <span class="pre">&quot;d&quot;,</span> <span class="pre">&quot;c&quot;]</span></code>), which is the multi-control analogue of a best-response
-sweep.</p>
-<p>Each network maximizes the payoff of the agent its control is attributed
-to, read off the block by
-<a class="reference internal" href="blocks.html#skagent.block.Block.deciding_agent" title="skagent.block.Block.deciding_agent"><code class="xref py py-meth docutils literal notranslate"><span class="pre">deciding_agent()</span></code></a>. On a block whose utilities
-have more than one owner, a control carrying no attribution raises rather
-than being trained against someone else’s objective.</p>
-<p>Currently restricted to single-period (non-recurring) reward objectives;
-by default the negative immediate reward
-(<a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.loss.StaticRewardLoss</span></code></a>) is maximized.</p>
+<dt class="sig sig-object py" id="skagent.solver.solve_in_order">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_in_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_in_order" title="Link to this definition">¶</a></dt>
+<dd><p>Solve the named decisions, one at a time, in the order given.</p>
+<p>This schedule takes its order from the caller rather than deriving one.
+Each decision is solved against the rules already in hand, so a symbol
+repeated in <em>order</em>, as in <code class="docutils literal notranslate"><span class="pre">[&quot;c&quot;,</span> <span class="pre">&quot;d&quot;,</span> <span class="pre">&quot;c&quot;]</span></code>, is refined after its
+neighbours have moved. The result is a best-response sweep run by hand.</p>
+<p><strong>There is no convergence test here.</strong> The iteration stops because <em>order</em>
+ran out, and not because anything settled, so a repeated symbol buys a
+fixed number of refinement passes rather than a fixed point. Where a fixed
+point is wanted, use a schedule that measures one:
+<a class="reference internal" href="#skagent.solver.solve_symmetric_equilibrium" title="skagent.solver.solve_symmetric_equilibrium"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_symmetric_equilibrium()</span></code></a> iterates against a residual.</p>
+<p>A decision absent from <em>order</em> is returned at its starting rule, which
+means that it has not been solved. That is the caller’s choice, since the
+caller writes the order, but the returned profile does not distinguish a
+solved rule from an unsolved one.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>control_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Control symbols, in the order they should be solved. Symbols may repeat
-to schedule additional refinement passes.</p></li>
-<li><p><strong>bellman_period</strong> (<a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><em>BellmanPeriod</em></a>) – The model period whose controls are being solved.</p></li>
-<li><p><strong>givens</strong> (<a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><em>skagent.grid.Grid</em></a>) – Grid of arrival states and shock realizations to train over.</p></li>
-<li><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Deprecated. The period supplied as <em>bellman_period</em> already carries the
-calibration the losses are evaluated at, and that is the one used. If
-given, it must agree with the period’s; a disagreement raises rather
-than silently evaluating a period’s losses at parameters the period was
-not built with.</p></li>
-<li><p><strong>epochs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Training epochs per pass. Default is 200.</p></li>
-<li><p><strong>loss</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – A loss-function class with signature
-<code class="docutils literal notranslate"><span class="pre">loss(bellman_period,</span> <span class="pre">*,</span> <span class="pre">agent=...,</span> <span class="pre">other_dr=...)</span></code>, which is the
-shape every loss in <a class="reference internal" href="loss.html#module-skagent.loss" title="skagent.loss"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.loss</span></code></a> takes. The period carries the
-calibration the loss is evaluated at, so it is not passed separately.
-Defaults to <a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.loss.StaticRewardLoss</span></code></a>.</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><em>object</em></a>) – A per-decision solver, as <a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a>,
+<a class="reference internal" href="#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExactBestResponse</span></code></a> and
+<a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.tabular.TabularBestResponseSolver</span></code></a> are. Needs
+<code class="docutils literal notranslate"><span class="pre">best_response(decision,</span> <span class="pre">policies)</span></code> and, when <em>policies</em> is omitted,
+<code class="docutils literal notranslate"><span class="pre">initial_policies()</span></code>.</p></li>
+<li><p><strong>order</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The decisions to solve, in order. Symbols may repeat.</p></li>
+<li><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em><em>, </em><em>optional</em>) – The profile to start from, with a rule for every decision. Defaults to
+the method’s own starting profile.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Mapping from each control symbol to its trained decision rule.</p>
+<dd class="field-even"><p>A decision rule per control of the block.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.solver.solve_in_relevance_order">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_in_relevance_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_in_relevance_order" title="Link to this definition">¶</a></dt>
+<dd><p>Solve every decision once, in the order the relevance graph gives.</p>
+<p>This is a schedule rather than a method: it decides when each decision is
+solved, and it asks the method to carry out each solve. Every decision rule
+that a decision strategically relies on has already been computed when its
+turn comes, so one pass suffices and no iteration is needed.</p>
+<p>This is the acyclic case. A cyclic component is a set of decisions that
+rely on each other and admit no one-at-a-time order; solving those is a
+simultaneous-move equilibrium problem, which
+<a class="reference internal" href="#skagent.solver.solve_symmetric_equilibrium" title="skagent.solver.solve_symmetric_equilibrium"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_symmetric_equilibrium()</span></code></a> handles for a population and which a
+joint schedule would handle in general.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><em>object</em></a>) – A per-decision solver carrying the problem, as
+<a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a> and
+<a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.tabular.TabularBestResponseSolver</span></code></a> do. Needs
+<code class="docutils literal notranslate"><span class="pre">ground</span></code>, <code class="docutils literal notranslate"><span class="pre">best_response(decision,</span> <span class="pre">policies)</span></code> and, when <em>policies</em>
+is omitted, <code class="docutils literal notranslate"><span class="pre">initial_policies()</span></code>.</p></li>
+<li><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em><em>, </em><em>optional</em>) – Starting rules for the decisions, replaced one by one as they are
+solved. Defaults to the method’s own starting profile.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A decision rule per control of the block.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>calibration</em> is given and disagrees with the period’s, or if a
-    control in <em>control_order</em> carries no agent attribution on a block
-    whose utilities have several owners.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.14)"><strong>NotImplementedError</strong></a> – If the relevance graph has a cyclic component.</p>
 </dd>
 </dl>
 </dd></dl>
 
-</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.solver.project">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actor_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_actor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_other'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.project" title="Link to this definition">¶</a></dt>
+<dd><p>One instance’s problem, with the rest of its class beside it.</p>
+<p>The entity class is split in two – the instance being solved, and the
+others – and every per-instance equation is copied once per side under a
+suffixed name. For each symbol that an aggregating equation reads over the
+class, exactly one equation is synthesized, and it concatenates the two
+sides back into the original symbol; the aggregating equation is then copied
+verbatim and reads that symbol. The projection therefore reassembles the
+entity axis without inspecting the reduction, so a mean, a sum, a maximum
+and a masked mean all project alike.</p>
+<p>The two sides’ rewards are attributed to suffixed agent roles, so a solver
+told which agent it serves maximizes one instance’s payoff rather than the
+class’s total.</p>
+<p>This first scope has two properties, and both are narrower than the
+transform has to remain:</p>
+<ul class="simple">
+<li><p><strong>The other instances share one broadcast rule.</strong> The projected block
+holds a single control for the whole remainder of the class, so the
+equilibrium sought is a symmetric one. A class of genuinely distinct
+rivals is expressible in this shape, but it is not built here.</p></li>
+<li><p><strong>The projected block declares no entity.</strong> The split lives in the shapes
+– the solved instance is a scalar, the others broadcast to <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span></code> –
+rather than in two declarations, because the solvers refuse a block that
+declares an entity class at all, and re-keying that refusal is a separate
+decision.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ground</strong> (<a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><em>skagent.ground.GroundedBlock</em></a>) – The population model and the calibration it is solved at. Its block must
+declare exactly one entity class of at least two instances, and the
+calibration must give that class’s size under its own name.</p></li>
+<li><p><strong>actor_suffix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – How the two sides’ symbols are named.</p></li>
+<li><p><strong>other_suffix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – How the two sides’ symbols are named.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The projected problem, carrying two controls: the solved instance’s and
+the others’.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock">skagent.ground.GroundedBlock</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the block does not declare exactly one entity class, if the
+    calibration does not size it, or if it holds fewer than two instances.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.solver.solve_symmetric_equilibrium">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_symmetric_equilibrium</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">damping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_symmetric_equilibrium" title="Link to this definition">¶</a></dt>
+<dd><p>A symmetric equilibrium, by iterated best response over a projection.</p>
+<p>Takes a projected problem – one instance’s decision beside the rest of its
+class, as <a class="reference internal" href="#skagent.solver.project" title="skagent.solver.project"><code class="xref py py-func docutils literal notranslate"><span class="pre">project()</span></code></a> builds – solves the instance’s decision against
+the others’ current rule, swaps the solved rule in as the others’, and
+repeats until the rule stops moving. A rule that is its own best response is
+an equilibrium of the projected game, and because the others play whatever
+the solved instance plays, it is a symmetric equilibrium of the population.</p>
+<p>The method supplies both the per-decision solve and the distance between two
+rules, since only it knows how a rule is represented. The schedule supplies
+the damping, the residual test and the swap.</p>
+<p><strong>Damping is a correctness requirement rather than a convergence aid.</strong>
+Undamped iteration converges only where the best response is a contraction.
+Where its slope is -1 the iterates cycle between two points forever, and
+past that they diverge until the controls’ bounds catch them. Both failures
+return a plausible number under an iteration cap, which is why the residual
+here is measured on the rule and never on the iteration count.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><em>NeuralBestResponse</em></a><em> or </em><a class="reference internal" href="#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><em>ExactBestResponse</em></a>) – The per-decision solver, carrying its own configuration and the
+projected problem it solves. Any object with <code class="docutils literal notranslate"><span class="pre">ground</span></code>,
+<code class="docutils literal notranslate"><span class="pre">best_response(decision,</span> <span class="pre">policies)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">rule_distance(new,</span> <span class="pre">old,</span> <span class="pre">iset)</span></code> serves.</p></li>
+<li><p><strong>damping</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – How far to move toward the best response each round, in <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1]</span></code>.
+Default 1.0, which is undamped.</p></li>
+<li><p><strong>tolerance</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The rule is converged when it moves less than this.</p></li>
+<li><p><strong>max_iterations</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Rounds before giving up. Reaching this is not convergence and is
+reported as such.</p></li>
+<li><p><strong>initial</strong> (<em>Callable</em><em>, </em><em>optional</em>) – The others’ rule on the first round. Defaults to a constant at the
+midpoint of the solved control’s declared bounds.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>rule</strong> (<em>Callable</em>) – The equilibrium decision rule, in the solved instance’s symbols.</p></li>
+<li><p><strong>info</strong> (<em>dict</em>) – <code class="docutils literal notranslate"><span class="pre">converged</span></code>, <code class="docutils literal notranslate"><span class="pre">iterations</span></code> and <code class="docutils literal notranslate"><span class="pre">distances</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the method’s block does not carry a projected pair of controls.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.solver.NeuralBestResponse">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">NeuralBestResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">panel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.NeuralBestResponse" title="Link to this definition">¶</a></dt>
+<dd><p>Best responses by training a policy network, and what that needs.</p>
+<p>A method object carries its own construction configuration beside its
+algorithm, so that a schedule can take any method without carrying every
+method’s arguments on its own signature. This one needs a training panel
+and an epoch count; the exact backup needs a state grid and a continuation
+instead, and neither needs the other’s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ground</strong> (<a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><em>skagent.ground.GroundedBlock</em></a>) – The problem being solved, already projected if it is a population.</p></li>
+<li><p><strong>panel</strong> (<a class="reference internal" href="#skagent.grid.Grid" title="skagent.grid.Grid"><em>skagent.grid.Grid</em></a>) – What the network trains on and what two rules are compared over. Must
+carry every shock of the block, since the loss evaluates the whole
+period.</p></li>
+<li><p><strong>epochs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Training epochs per best response.</p></li>
+<li><p><strong>width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Hidden width of the policy network.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.NeuralBestResponse.best_response">
+<span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.NeuralBestResponse.best_response" title="Link to this definition">¶</a></dt>
+<dd><p>Train a network for <em>decision</em>, holding the rest of <em>policies</em> fixed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.NeuralBestResponse.initial_policies">
+<span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.NeuralBestResponse.initial_policies" title="Link to this definition">¶</a></dt>
+<dd><p>A starting profile: every decision at a constant, none of them solved.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.NeuralBestResponse.rule_distance">
+<span class="sig-name descname"><span class="pre">rule_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iset</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.NeuralBestResponse.rule_distance" title="Link to this definition">¶</a></dt>
+<dd><p>Supremum norm between two rules, evaluated on the training panel.</p>
+<p>A network has no cells to compare, so the comparison is over a common
+batch – which is why the distance is the method’s operation and not the
+schedule’s.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.solver.ExactBestResponse">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">ExactBestResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactBestResponse" title="Link to this definition">¶</a></dt>
+<dd><p>Best responses by exact backup over a state grid.</p>
+<p>The method-object counterpart of <a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a>: same two
+operations, entirely different construction configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ground</strong> (<a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><em>skagent.ground.GroundedBlock</em></a>) – The problem being solved, already projected if it is a population.</p></li>
+<li><p><strong>state_grid</strong> (<em>Mapping</em>) – The grid the backup optimizes over, and where two rules are compared.
+An information-set variable must appear here rather than in <em>scope</em>,
+even as a single point, since a rule over it needs an axis to vary
+along.</p></li>
+<li><p><strong>scope</strong> (<em>Mapping</em><em>, </em><em>optional</em>) – Shocks pinned to a fixed realization. Defaults to the calibration.</p></li>
+<li><p><strong>continuation</strong> (<em>Callable</em><em>, </em><em>optional</em>) – The continuation value. Defaults to a terminal (zero) one, which is
+what makes the backup a single-period solve.</p></li>
+<li><p><strong>disc_params</strong> (<em>Mapping</em><em>, </em><em>optional</em>) – Per-shock discretization arguments for the shocks integrated inside the
+maximization.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.ExactBestResponse.best_response">
+<span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactBestResponse.best_response" title="Link to this definition">¶</a></dt>
+<dd><p>Back up <em>decision</em> alone, holding the rest of <em>policies</em> fixed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.ExactBestResponse.initial_policies">
+<span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactBestResponse.initial_policies" title="Link to this definition">¶</a></dt>
+<dd><p>A starting profile: every decision at a constant, none of them solved.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.ExactBestResponse.rule_distance">
+<span class="sig-name descname"><span class="pre">rule_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iset</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactBestResponse.rule_distance" title="Link to this definition">¶</a></dt>
+<dd><p>Supremum norm between two rules over the grid they were solved on.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="grid-and-computational-tools">
 <h2>Grid and Computational Tools<a class="headerlink" href="#grid-and-computational-tools" title="Link to this heading">¶</a></h2>
@@ -2257,25 +2456,24 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 <li><a class="reference internal" href="#core-vfi-functions">Core VFI Functions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#best-response">Best Response</a><ul>
-<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.actions"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.actions</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.cells"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.cells</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.counts"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.counts</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.ConditionalPayoffs.payoff"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.payoff</span></code></a></li>
+<li><a class="reference internal" href="#tabular-best-response">Tabular Best Response</a><ul>
+<li><a class="reference internal" href="#skagent.algos.tabular.ConditionalPayoffs"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.algos.tabular.ConditionalPayoffs.actions"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.actions</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.ConditionalPayoffs.cells"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.cells</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.ConditionalPayoffs.counts"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.counts</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.ConditionalPayoffs.payoff"><code class="docutils literal notranslate"><span class="pre">ConditionalPayoffs.payoff</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.best_response"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.best_response()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.conditional_payoffs"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.conditional_payoffs()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.initial_policies"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.initial_policies()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.mixed_rule"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.mixed_rule()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.payoff"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.payoff()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabularBestResponseSolver.solve"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.solve()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver.best_response"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.best_response()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver.conditional_payoffs"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.conditional_payoffs()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver.initial_policies"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.initial_policies()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver.payoff"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.payoff()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver.spread_rule"><code class="docutils literal notranslate"><span class="pre">TabularBestResponseSolver.spread_rule()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule"><code class="docutils literal notranslate"><span class="pre">TabulatedRule</span></code></a><ul>
-<li><a class="reference internal" href="#skagent.algos.best_response.TabulatedRule.to_dict"><code class="docutils literal notranslate"><span class="pre">TabulatedRule.to_dict()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabulatedRule"><code class="docutils literal notranslate"><span class="pre">TabulatedRule</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.algos.tabular.TabulatedRule.to_dict"><code class="docutils literal notranslate"><span class="pre">TabulatedRule.to_dict()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#core-best-response-classes">Core Best-Response Classes</a></li>
@@ -2349,7 +2547,25 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 <li><a class="reference internal" href="#training-functions">Training Functions</a><ul>
 <li><a class="reference internal" href="#skagent.ann.train_block_nn"><code class="docutils literal notranslate"><span class="pre">train_block_nn()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.ann.aggregate_net_loss"><code class="docutils literal notranslate"><span class="pre">aggregate_net_loss()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.solver.solve_multiple_controls"><code class="docutils literal notranslate"><span class="pre">solve_multiple_controls()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#equilibrium-schedules-and-methods">Equilibrium Schedules and Methods</a><ul>
+<li><a class="reference internal" href="#skagent.solver.solve_in_order"><code class="docutils literal notranslate"><span class="pre">solve_in_order()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.solve_in_relevance_order"><code class="docutils literal notranslate"><span class="pre">solve_in_relevance_order()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.project"><code class="docutils literal notranslate"><span class="pre">project()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.solve_symmetric_equilibrium"><code class="docutils literal notranslate"><span class="pre">solve_symmetric_equilibrium()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.NeuralBestResponse"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.solver.NeuralBestResponse.best_response"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse.best_response()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.NeuralBestResponse.initial_policies"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse.initial_policies()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.NeuralBestResponse.rule_distance"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse.rule_distance()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.solver.ExactBestResponse"><code class="docutils literal notranslate"><span class="pre">ExactBestResponse</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.solver.ExactBestResponse.best_response"><code class="docutils literal notranslate"><span class="pre">ExactBestResponse.best_response()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.ExactBestResponse.initial_policies"><code class="docutils literal notranslate"><span class="pre">ExactBestResponse.initial_policies()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.ExactBestResponse.rule_distance"><code class="docutils literal notranslate"><span class="pre">ExactBestResponse.rule_distance()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -2387,7 +2603,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=e19ef39a"></script>
+</div><script src="../_static/documentation_options.js?v=8efc4dea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

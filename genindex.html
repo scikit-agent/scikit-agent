@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#"><link rel="search" title="Search" href="search.html">
 
-    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - scikit-agent 0.1.1.dev94+g542baf04e</title>
 <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -166,7 +166,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
+      <a href="index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -201,6 +201,7 @@
 <li class="toctree-l2"><a class="reference internal" href="user_guide/blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide/constraints.html">Constraining an Optimization Problem</a></li>
@@ -217,6 +218,7 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="auto_examples/models/plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
 <li class="toctree-l3"><a class="reference internal" href="auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
@@ -288,7 +290,7 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/models.html#skagent.models.cournot.A">A (in module skagent.models.cournot)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.ConditionalPayoffs.actions">actions (skagent.algos.best_response.ConditionalPayoffs attribute)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.ConditionalPayoffs.actions">actions (skagent.algos.tabular.ConditionalPayoffs attribute)</a>
 </li>
         <li><a href="api/analysis.html#skagent.relevance.admits_ici">admits_ici() (in module skagent.relevance)</a>
 </li>
@@ -338,12 +340,18 @@
 </li>
         <li><a href="api/distributions.html#skagent.distributions.Bernoulli">Bernoulli (class in skagent.distributions)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver.best_response">best_response() (skagent.algos.best_response.TabularBestResponseSolver method)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver.best_response">best_response() (skagent.algos.tabular.TabularBestResponseSolver method)</a>
+
+        <ul>
+          <li><a href="api/algorithms.html#skagent.solver.ExactBestResponse.best_response">(skagent.solver.ExactBestResponse method)</a>
 </li>
-        <li><a href="api/blocks.html#skagent.block.Block">Block (class in skagent.block)</a>
+          <li><a href="api/algorithms.html#skagent.solver.NeuralBestResponse.best_response">(skagent.solver.NeuralBestResponse method)</a>
 </li>
+        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/blocks.html#skagent.block.Block">Block (class in skagent.block)</a>
+</li>
         <li><a href="api/bellman.html#skagent.bellman.BellmanPeriod.block">block (skagent.bellman.BellmanPeriod attribute)</a>
 
         <ul>
@@ -378,7 +386,7 @@
         </ul></li>
         <li><a href="api/algorithms.html#skagent.grid.cartesian_product">cartesian_product() (in module skagent.grid)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.ConditionalPayoffs.cells">cells (skagent.algos.best_response.ConditionalPayoffs attribute)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.ConditionalPayoffs.cells">cells (skagent.algos.tabular.ConditionalPayoffs attribute)</a>
 </li>
         <li><a href="api/simulation.html#skagent.simulation.monte_carlo.Simulator.clear_history">clear_history() (skagent.simulation.monte_carlo.Simulator method)</a>
 </li>
@@ -402,9 +410,9 @@
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver.conditional_payoffs">conditional_payoffs() (skagent.algos.best_response.TabularBestResponseSolver method)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver.conditional_payoffs">conditional_payoffs() (skagent.algos.tabular.TabularBestResponseSolver method)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.ConditionalPayoffs">ConditionalPayoffs (class in skagent.algos.best_response)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.ConditionalPayoffs">ConditionalPayoffs (class in skagent.algos.tabular)</a>
 </li>
         <li><a href="api/blocks.html#skagent.block.construct_shocks">construct_shocks() (in module skagent.block)</a>
 
@@ -426,7 +434,7 @@
 </li>
         <li><a href="api/parser.html#skagent.parser.control_constructor">control_constructor() (in module skagent.parser)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.ConditionalPayoffs.counts">counts (skagent.algos.best_response.ConditionalPayoffs attribute)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.ConditionalPayoffs.counts">counts (skagent.algos.tabular.ConditionalPayoffs attribute)</a>
 </li>
         <li><a href="api/utils.html#skagent.utils.create_vectorized_function_wrapper_with_mapping">create_vectorized_function_wrapper_with_mapping() (in module skagent.utils)</a>
 </li>
@@ -585,6 +593,8 @@
         <li><a href="api/models.html#skagent.models.benchmarks.euler_equation_test">euler_equation_test() (in module skagent.models.benchmarks)</a>
 </li>
         <li><a href="api/loss.html#skagent.loss.EulerEquationLoss">EulerEquationLoss (class in skagent.loss)</a>
+</li>
+        <li><a href="api/algorithms.html#skagent.solver.ExactBestResponse">ExactBestResponse (class in skagent.solver)</a>
 </li>
         <li><a href="api/distributions.html#skagent.distributions.expected">expected() (in module skagent.distributions)</a>
 </li>
@@ -780,10 +790,16 @@
 </li>
         <li><a href="api/analysis.html#skagent.model_analyzer.ModelAnalyzer.influence_graph">influence_graph() (skagent.model_analyzer.ModelAnalyzer method)</a>
 </li>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver.initial_policies">initial_policies() (skagent.algos.tabular.TabularBestResponseSolver method)</a>
+
+        <ul>
+          <li><a href="api/algorithms.html#skagent.solver.ExactBestResponse.initial_policies">(skagent.solver.ExactBestResponse method)</a>
+</li>
+          <li><a href="api/algorithms.html#skagent.solver.NeuralBestResponse.initial_policies">(skagent.solver.NeuralBestResponse method)</a>
+</li>
+        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver.initial_policies">initial_policies() (skagent.algos.best_response.TabularBestResponseSolver method)</a>
-</li>
         <li><a href="api/simulation.html#skagent.simulation.monte_carlo.Simulator.initialize_sim">initialize_sim() (skagent.simulation.monte_carlo.Simulator method)</a>
 </li>
         <li><a href="api/analysis.html#skagent.relevance.RelevanceGraph.is_acyclic">is_acyclic() (skagent.relevance.RelevanceGraph method)</a>
@@ -856,8 +872,6 @@
 </li>
         <li><a href="api/analysis.html#skagent.relevance.MIXED">MIXED (in module skagent.relevance)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver.mixed_rule">mixed_rule() (skagent.algos.best_response.TabularBestResponseSolver method)</a>
-</li>
         <li><a href="api/algorithms.html#skagent.algos.sb3.PPOAgent.model">model (skagent.algos.sb3.PPOAgent attribute)</a>
 </li>
         <li><a href="api/analysis.html#skagent.model_analyzer.ModelAnalyzer">ModelAnalyzer (class in skagent.model_analyzer)</a>
@@ -866,11 +880,11 @@
     module
 
         <ul>
-          <li><a href="api/algorithms.html#module-skagent.algos.best_response">skagent.algos.best_response</a>
-</li>
           <li><a href="api/algorithms.html#module-skagent.algos.maliar">skagent.algos.maliar</a>
 </li>
           <li><a href="api/algorithms.html#module-skagent.algos.sb3">skagent.algos.sb3</a>
+</li>
+          <li><a href="api/algorithms.html#module-skagent.algos.tabular">skagent.algos.tabular</a>
 </li>
           <li><a href="api/algorithms.html#module-skagent.algos.vfi">skagent.algos.vfi</a>
 </li>
@@ -945,6 +959,8 @@
 </li>
         <li><a href="api/algorithms.html#skagent.ann.Net">Net (class in skagent.ann)</a>
 </li>
+        <li><a href="api/algorithms.html#skagent.solver.NeuralBestResponse">NeuralBestResponse (class in skagent.solver)</a>
+</li>
         <li><a href="api/analysis.html#skagent.relevance.RelevanceGraph.nodes">nodes() (skagent.relevance.RelevanceGraph method)</a>
 </li>
         <li><a href="api/distributions.html#skagent.distributions.Normal">Normal (class in skagent.distributions)</a>
@@ -975,18 +991,18 @@
 </li>
         <li><a href="api/analysis.html#skagent.influence.SCIM.parents">parents() (skagent.influence.SCIM method)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.ConditionalPayoffs.payoff">payoff (skagent.algos.best_response.ConditionalPayoffs attribute)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.ConditionalPayoffs.payoff">payoff (skagent.algos.tabular.ConditionalPayoffs attribute)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver.payoff">payoff() (skagent.algos.best_response.TabularBestResponseSolver method)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver.payoff">payoff() (skagent.algos.tabular.TabularBestResponseSolver method)</a>
 </li>
         <li><a href="api/utils.html#skagent.utils.plot_block_diagram">plot_block_diagram() (in module skagent.utils)</a>
 </li>
         <li><a href="api/algorithms.html#skagent.algos.sb3.PolicySnapshot">PolicySnapshot (class in skagent.algos.sb3)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/bellman.html#skagent.bellman.BellmanPeriod.post_function">post_function() (skagent.bellman.BellmanPeriod method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/algorithms.html#skagent.algos.sb3.PPOAgent">PPOAgent (class in skagent.algos.sb3)</a>
 </li>
         <li><a href="api/algorithms.html#skagent.algos.sb3.PolicySnapshot.predict_unscaled">predict_unscaled() (skagent.algos.sb3.PolicySnapshot method)</a>
@@ -1000,6 +1016,8 @@
         <li><a href="api/models.html#skagent.models.cournot.profile_rules">profile_rules() (in module skagent.models.cournot)</a>
 </li>
         <li><a href="api/models.html#skagent.models.cournot.PROFILES">PROFILES (in module skagent.models.cournot)</a>
+</li>
+        <li><a href="api/algorithms.html#skagent.solver.project">project() (in module skagent.solver)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -1025,10 +1043,10 @@
         </ul></li>
         <li><a href="api/environments.html#skagent.env.GymEnv.reset">reset() (skagent.env.GymEnv method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/simulation.html#skagent.simulation.monte_carlo.Simulator.reset_rng">reset_rng() (skagent.simulation.monte_carlo.Simulator method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/bellman.html#skagent.bellman.BellmanPeriod.resolve_discount_factor">resolve_discount_factor() (skagent.bellman.BellmanPeriod method)</a>
 </li>
         <li><a href="api/blocks.html#skagent.block.DBlock.reward">reward (skagent.block.DBlock attribute)</a>
@@ -1043,6 +1061,12 @@
 
         <ul>
           <li><a href="api/blocks.html#skagent.ground.GroundedBlock.rng">(skagent.ground.GroundedBlock attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="api/algorithms.html#skagent.solver.ExactBestResponse.rule_distance">rule_distance() (skagent.solver.ExactBestResponse method)</a>
+
+        <ul>
+          <li><a href="api/algorithms.html#skagent.solver.NeuralBestResponse.rule_distance">(skagent.solver.NeuralBestResponse method)</a>
 </li>
         </ul></li>
     </ul></td>
@@ -1086,13 +1110,6 @@
         <li><a href="api/simulation.html#skagent.simulation.monte_carlo.Simulator">Simulator (class in skagent.simulation.monte_carlo)</a>
 </li>
         <li>
-    skagent.algos.best_response
-
-        <ul>
-          <li><a href="api/algorithms.html#module-skagent.algos.best_response">module</a>
-</li>
-        </ul></li>
-        <li>
     skagent.algos.maliar
 
         <ul>
@@ -1104,6 +1121,13 @@
 
         <ul>
           <li><a href="api/algorithms.html#module-skagent.algos.sb3">module</a>
+</li>
+        </ul></li>
+        <li>
+    skagent.algos.tabular
+
+        <ul>
+          <li><a href="api/algorithms.html#module-skagent.algos.tabular">module</a>
 </li>
         </ul></li>
         <li>
@@ -1266,13 +1290,17 @@
 </li>
         <li><a href="api/algorithms.html#skagent.algos.sb3.PPOAgent.snapshot">snapshot() (skagent.algos.sb3.PPOAgent method)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver.solve">solve() (skagent.algos.best_response.TabularBestResponseSolver method)</a>
-</li>
         <li><a href="api/algorithms.html#skagent.algos.vfi.solve_bellman">solve_bellman() (in module skagent.algos.vfi)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.solver.solve_multiple_controls">solve_multiple_controls() (in module skagent.solver)</a>
+        <li><a href="api/algorithms.html#skagent.solver.solve_in_order">solve_in_order() (in module skagent.solver)</a>
+</li>
+        <li><a href="api/algorithms.html#skagent.solver.solve_in_relevance_order">solve_in_relevance_order() (in module skagent.solver)</a>
 </li>
         <li><a href="api/algorithms.html#skagent.algos.vfi.solve_step">solve_step() (in module skagent.algos.vfi)</a>
+</li>
+        <li><a href="api/algorithms.html#skagent.solver.solve_symmetric_equilibrium">solve_symmetric_equilibrium() (in module skagent.solver)</a>
+</li>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver.spread_rule">spread_rule() (skagent.algos.tabular.TabularBestResponseSolver method)</a>
 </li>
         <li><a href="api/simulation.html#skagent.simulation.monte_carlo.Simulator.state_vars">state_vars (skagent.simulation.monte_carlo.Simulator attribute)</a>
 </li>
@@ -1308,9 +1336,9 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/models.html#skagent.models.fisher.T">T (in module skagent.models.fisher)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver">TabularBestResponseSolver (class in skagent.algos.best_response)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver">TabularBestResponseSolver (class in skagent.algos.tabular)</a>
 </li>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabulatedRule">TabulatedRule (class in skagent.algos.best_response)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabulatedRule">TabulatedRule (class in skagent.algos.tabular)</a>
 </li>
         <li><a href="api/utils.html#skagent.utils.takes_arguments">takes_arguments() (in module skagent.utils)</a>
 </li>
@@ -1320,7 +1348,7 @@
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/algorithms.html#skagent.algos.best_response.TabulatedRule.to_dict">to_dict() (skagent.algos.best_response.TabulatedRule method)</a>
+        <li><a href="api/algorithms.html#skagent.algos.tabular.TabulatedRule.to_dict">to_dict() (skagent.algos.tabular.TabulatedRule method)</a>
 
         <ul>
           <li><a href="api/algorithms.html#skagent.grid.Grid.to_dict">(skagent.grid.Grid method)</a>
@@ -1445,7 +1473,7 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=e19ef39a"></script>
+</div><script src="_static/documentation_options.js?v=8efc4dea"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

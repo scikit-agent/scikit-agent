@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solvers Guide" href="solvers.html"><link rel="prev" title="Simulation Guide" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms Guide - scikit-agent 0.1.1.dev76+gbfa5be3dd</title>
+        <title>Algorithms Guide - scikit-agent 0.1.1.dev94+g542baf04e</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev76+gbfa5be3dd</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -203,6 +203,7 @@
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="maliar.html">Solving Models with the Maliar Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constraints.html">Constraining an Optimization Problem</a></li>
@@ -219,6 +220,7 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
@@ -306,11 +308,14 @@ objective function; see <a class="reference internal" href="maliar.html"><span c
 function iteration on a grid</p></li>
 <li><p><strong>Reinforcement Learning</strong>: Learn a policy by trial-and-error interaction with
 the model, using established RL libraries (see below)</p></li>
-<li><p><strong>Best response</strong>: Solve the decisions of a multi-decision block one at a
-time, in the order its relevance graph implies, each maximizing its own
-agent’s payoff conditional on what it observes (see below)</p></li>
+<li><p><strong>Best response</strong>: Solve one decision at a time against the other decisions’
+current rules, so that each decision maximizes its own agent’s payoff
+conditional on what that decision observes. It is available as a tabulated
+payoff table, as a policy network, or as an exact backup</p></li>
 </ul>
-<p>The rest of this guide covers these in turn.</p>
+<p>The rest of this guide covers the methods themselves. The <a class="reference internal" href="solvers.html"><span class="doc">Solvers Guide</span></a> guide
+explains how to pair a method with a schedule, which is what decides when each
+decision is solved and whether the result is iterated to an equilibrium.</p>
 </section>
 <section id="reinforcement-learning">
 <h2>Reinforcement Learning<a class="headerlink" href="#reinforcement-learning" title="Link to this heading">¶</a></h2>
@@ -502,47 +507,13 @@ illustrate shock handling.</p>
 the policy network enforces such bounds automatically.</p>
 </section>
 </section>
-<section id="blocks-with-multiple-controls">
-<h2>Blocks with multiple controls<a class="headerlink" href="#blocks-with-multiple-controls" title="Link to this heading">¶</a></h2>
-<p>When a block has more than one control, train one policy network per control and
-let each network treat the others’ current policies as fixed — a best-response
-sweep. <a class="reference internal" href="../api/algorithms.html#skagent.solver.solve_multiple_controls" title="skagent.solver.solve_multiple_controls"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.solver.solve_multiple_controls()</span></code></a> automates this. The
-benchmark registry has no multi-control model, so we use a small illustrative
-block whose reward is maximized at <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">=</span> <span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">=</span> <span class="pre">k</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent.block</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">block</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_multiple_controls</span>
-
-<span class="n">calibration</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"beta"</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}</span>
-
-<span class="n">b</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">"two controls"</span><span class="p">,</span>
-    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"c"</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"a"</span><span class="p">],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">"agent"</span><span class="p">),</span>
-        <span class="s2">"d"</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">Control</span><span class="p">([],</span> <span class="n">agent</span><span class="o">=</span><span class="s2">"agent"</span><span class="p">),</span>  <span class="c1"># empty information set</span>
-        <span class="s2">"u"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="o">-</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="n">reward</span><span class="o">=</span><span class="p">{</span><span class="s2">"u"</span><span class="p">:</span> <span class="s2">"agent"</span><span class="p">},</span>
-<span class="p">)</span>
-<span class="n">bp</span> <span class="o">=</span> <span class="n">bellman</span><span class="o">.</span><span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">"beta"</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span>
-
-<span class="n">states</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">"a"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"min"</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">11</span><span class="p">}})</span>
-
-<span class="c1"># Repeat a symbol to schedule an extra refinement pass after its neighbour</span>
-<span class="c1"># has been updated.</span>
-<span class="n">decision_rules</span> <span class="o">=</span> <span class="n">solve_multiple_controls</span><span class="p">([</span><span class="s2">"c"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">],</span> <span class="n">bp</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-<span class="c1"># optimal: c = a and d = 3, so the reward u is approximately 0</span>
-</pre></div>
-</div>
-<p>The return value is a dictionary mapping each control symbol to its trained
-decision rule, suitable for passing to <code class="docutils literal notranslate"><span class="pre">reward_function</span></code> or to simulation.</p>
-<p>The order to sweep in, and whether a control needs a second pass at all, is a
-structural property of the block: its relevance graph (see
-<a class="reference internal" href="../api/analysis.html"><span class="doc">Model Analysis and Visualization</span></a>). For the block above the graph is cyclic — <code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">d</span></code>
-strategically rely on each other, forming a single component — which is why <code class="docutils literal notranslate"><span class="pre">c</span></code>
-is scheduled twice. When the graph is acyclic, one pass per decision suffices,
-since everything a decision relies on is already solved by the time its turn
-comes; <a class="reference internal" href="../api/algorithms.html#skagent.algos.best_response.TabularBestResponseSolver" title="skagent.algos.best_response.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.best_response.TabularBestResponseSolver</span></code></a> reads that
-order off the graph and solves in it, tabulating rather than training a network.</p>
+<section id="blocks-with-more-than-one-decision">
+<h2>Blocks with more than one decision<a class="headerlink" href="#blocks-with-more-than-one-decision" title="Link to this heading">¶</a></h2>
+<p>Everything above solves a single decision. When a block has several decisions,
+or several agents, or a population of agents, three further questions arise:
+which decision should be solved first, which rules should the other decisions be
+held at, and when should the process stop. These questions are separate from the
+choice of numerical method, and the <a class="reference internal" href="solvers.html"><span class="doc">Solvers Guide</span></a> guide answers them.</p>
 </section>
 <section id="value-function-iteration">
 <h2>Value Function Iteration<a class="headerlink" href="#value-function-iteration" title="Link to this heading">¶</a></h2>
@@ -565,12 +536,12 @@ losses and the training loop that fits them.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="maliar.html">
+          <a class="next-page" href="solvers.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Solving Models with the Maliar Method</div>
+                <div class="title">Solvers Guide</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -633,7 +604,7 @@ losses and the training loop that fits them.</p>
 <li><a class="reference internal" href="#working-with-shocks">Working with shocks</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#blocks-with-multiple-controls">Blocks with multiple controls</a></li>
+<li><a class="reference internal" href="#blocks-with-more-than-one-decision">Blocks with more than one decision</a></li>
 <li><a class="reference internal" href="#value-function-iteration">Value Function Iteration</a></li>
 </ul>
 </li>
@@ -646,7 +617,7 @@ losses and the training loop that fits them.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=e19ef39a"></script>
+</div><script src="../_static/documentation_options.js?v=8efc4dea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

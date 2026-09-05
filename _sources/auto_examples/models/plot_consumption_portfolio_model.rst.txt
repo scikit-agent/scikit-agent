@@ -229,7 +229,7 @@ Step 2b: Visualize the Consumption Block
 .. code-block:: Python
 
 
-    img, _ = cons.cons_problem.display(cons.calibration)
+    img, _ = cons.cons_problem.display(cons.calibration, discount="DiscFac")
 
     plt.figure(figsize=(10, 8))
     plt.imshow(img)
@@ -296,7 +296,7 @@ Step 3b: Inspect and visualize the Portfolio Block
 .. code-block:: Python
 
 
-    img, _ = cons.cons_portfolio_problem.display(cons.calibration)
+    img, _ = cons.cons_portfolio_problem.display(cons.calibration, discount="DiscFac")
 
     plt.figure(figsize=(10, 8))
     plt.imshow(img)
@@ -597,7 +597,7 @@ due to stock-return risk.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.125 seconds)
+   **Total running time of the script:** (0 minutes 1.000 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_consumption_portfolio_model.py:

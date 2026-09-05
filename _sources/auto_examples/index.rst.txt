@@ -173,6 +173,23 @@ computed.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Several firms each choose how much to produce. The market price falls with the average quantity supplied, so a firm&#x27;s best output depends on what the other firms choose, and their best outputs depend in turn on its choice.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_cournot_equilibrium_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_cournot_equilibrium`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Cournot: Solving for a Nash Equilibrium</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="The resource extraction problem models the optimal management of a renewable resource (fishery, forest, wildlife, etc.). The decision-maker must balance immediate profits from extraction against preserving the resource stock for future use.">
 
 .. only:: html
