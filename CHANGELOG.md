@@ -62,6 +62,22 @@ and this project adheres to
 
 ### Added
 
+- `skagent.models.aiyagari`, many households saving out of labour income whose
+  average assets are the economy's capital, which sets the interest rate and
+  wage they all face. The market block is declared before the households, so
+  capital is read off the assets they arrived with and simulating T periods runs
+  T rounds of the aggregate's law of motion. Under a fixed savings rate that law
+  has a closed form -- `capital_map`, whose fixed point is `stationary_capital`
+  and whose slope is below one for every savings rate -- so the model checks the
+  arithmetic of a dynamic path through an entity class and not only its shape.
+  At a thousand households over two hundred periods the aggregate arrives within
+  1.5% of its analytic stationary point. Capital depreciates, so the interest
+  rate is a marginal product net of depreciation as in the paper, and the
+  capital-output ratio is `s / (1 - s(1 - delta))` rather than the `s / (1 - s)`
+  of an economy whose capital lasts forever. `savings_rate_for` inverts the
+  relationship, since cash on hand includes a household's whole asset position
+  and a savings rate here is not the textbook fraction of income.
+
 - `skagent.solver.project` splits a population model's entity class into the
   instance being solved and the others, and `solve_symmetric_equilibrium` solves
   that instance's decision against the others' current rule, swaps the solved

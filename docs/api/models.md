@@ -95,6 +95,19 @@ rather than solved for, since the model has a crossing.
    :members:
 ```
 
+## Aiyagari
+
+Many households saving out of labour income, whose average assets are the
+economy's capital and therefore set the interest rate and wage they all face.
+Under a fixed savings rate the aggregate has a closed form, so the model checks
+the arithmetic of a dynamic path through an entity class rather than only its
+shape.
+
+```{eval-rst}
+.. automodule:: skagent.models.aiyagari
+   :members:
+```
+
 ## Multi-Agent Influence Diagrams (MAIDs)
 
 Game-theoretic influence diagrams from the literature, encoded to illustrate
