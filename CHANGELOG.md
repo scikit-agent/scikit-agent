@@ -120,6 +120,9 @@ and this project adheres to
 - Continuous one-shot and iterated Prisoner's Dilemma blocks, including
   per-player utilities, memory-one repeated-game state, strategic-relevance
   coverage, solver-boundary tests, and multi-period simulation tests.
+- `solve_in_relevance_order` can iterate simultaneous best responses for cyclic
+  relevance components, returning pure-strategy fixed points and raising on
+  non-convergence within a configurable iteration limit and tolerance.
 - `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
   density each backend already provides.
 - `skagent.relevance` gains the four single-decision incentive criteria of

@@ -1,5 +1,6 @@
 import inspect
 import logging
+import numbers
 
 import numpy as np
 
@@ -628,19 +629,17 @@ def solve_in_order(method, order, policies=None):
     return policies
 
 
-def solve_in_relevance_order(method, policies=None):
-    """Solve every decision once, in the order the relevance graph gives.
+def solve_in_relevance_order(
+    method, policies=None, *, max_iterations=25, tolerance=1e-6
+):
+    """Solve every decision in relevance-component order.
 
     This is a schedule rather than a method: it decides when each decision is
-    solved, and it asks the method to carry out each solve. Every decision rule
-    that a decision strategically relies on has already been computed when its
-    turn comes, so one pass suffices and no iteration is needed.
-
-    This is the acyclic case. A cyclic component is a set of decisions that
-    rely on each other and admit no one-at-a-time order; solving those is a
-    simultaneous-move equilibrium problem, which
-    :func:`solve_symmetric_equilibrium` handles for a population and which a
-    joint schedule would handle in general.
+    solved, and it asks the method to carry out each solve. Acyclic components
+    are solved once, after every decision rule they rely on has been computed.
+    For a cyclic component, every decision's best response is computed against
+    the same previous profile and installed simultaneously. This repeats until
+    every policy is within *tolerance* of its own response.
 
     Parameters
     ----------
@@ -648,11 +647,18 @@ def solve_in_relevance_order(method, policies=None):
         A per-decision solver carrying the problem, as
         :class:`NeuralBestResponse` and
         :class:`skagent.algos.tabular.TabularBestResponseSolver` do. Needs
-        ``ground``, ``best_response(decision, policies)`` and, when *policies*
-        is omitted, ``initial_policies()``.
+        ``ground``, ``best_response(decision, policies)``,
+        ``rule_distance(new, old, iset)`` and, when *policies* is omitted,
+        ``initial_policies()``.
     policies : Mapping[str, Callable], optional
         Starting rules for the decisions, replaced one by one as they are
         solved. Defaults to the method's own starting profile.
+    max_iterations : int, optional
+        Maximum number of simultaneous best-response updates for a cyclic
+        relevance component. Must be at least 1. Defaults to 25.
+    tolerance : float, optional
+        Maximum rule distance at convergence. Must be positive. Defaults to
+        1e-6.
 
     Returns
     -------
@@ -662,18 +668,68 @@ def solve_in_relevance_order(method, policies=None):
     Raises
     ------
     NotImplementedError
-        If the relevance graph has a cyclic component.
+        If a cyclic component belongs to a recurring block.
+    RuntimeError
+        If a cyclic component does not converge within *max_iterations*.
+    ValueError
+        If *max_iterations* is less than 1 or *tolerance* is not positive.
+    TypeError
+        If *max_iterations* is not an integer.
     """
+    if not isinstance(max_iterations, numbers.Integral):
+        raise TypeError(
+            f"max_iterations must be an integer, got {type(max_iterations).__name__}"
+        )
+    if max_iterations < 1:
+        raise ValueError(f"max_iterations must be >= 1, got {max_iterations}")
+    if tolerance <= 0:
+        raise ValueError(f"tolerance must be > 0, got {tolerance}")
+
     ground = method.ground
     policies = method.initial_policies() if policies is None else dict(policies)
+    arrival_states = ground.block.get_arrival_states(ground.calibration)
     for component in ground.block.relevance_graph(ground.calibration).condensation():
-        if len(component) > 1:
+        if len(component) == 1:
+            (decision,) = component
+            policies[decision] = method.best_response(decision, policies)
+            logger.info("solved %s", decision)
+            continue
+
+        if arrival_states:
             raise NotImplementedError(
-                f"decisions {sorted(component)} strategically rely on each "
-                "other and must be solved jointly, as a simultaneous-move "
-                "equilibrium; only acyclic relevance graphs are supported"
+                "cyclic components in recurring blocks are not supported; "
+                f"decisions {sorted(component)} depend on arrival states "
+                f"{sorted(arrival_states)}"
             )
-        (decision,) = component
-        policies[decision] = method.best_response(decision, policies)
-        logger.info("solved %s", decision)
+
+        for iteration in range(1, max_iterations + 1):
+            responses = {
+                decision: method.best_response(decision, policies)
+                for decision in component
+            }
+            converged = all(
+                method.rule_distance(
+                    responses[decision],
+                    policies[decision],
+                    ground.block.get_control(decision).iset,
+                )
+                <= tolerance
+                for decision in component
+            )
+
+            # Every response above was computed against the same profile; only
+            # now replace the component's policies simultaneously.
+            policies.update(responses)
+            if converged:
+                logger.info(
+                    "solved cyclic component %s in %d iterations",
+                    sorted(component),
+                    iteration,
+                )
+                break
+        else:
+            raise RuntimeError(
+                f"decisions {sorted(component)} did not converge within "
+                f"{max_iterations} iterations"
+            )
     return policies

@@ -120,7 +120,7 @@ class TabulatedRule:
 
 
 class TabularBestResponseSolver:
-    """Solve a block's decisions by best response, in relevance-graph order.
+    """Solve a block's decisions by best response, in relevance-component order.
 
     Parameters
     ----------
@@ -366,4 +366,12 @@ class TabularBestResponseSolver:
             self.block.get_control(decision).iset,
             cells,
             actions[payoff.argmax(axis=1)],
+        )
+
+    def rule_distance(self, new_rule, old_rule, iset):
+        """Largest action difference over the new tabulated rule's cells."""
+        observed = [new_rule.cells[:, column] for column in range(len(iset))]
+        old_actions = old_rule(*observed) if iset else old_rule()
+        return float(
+            np.max(np.abs(np.asarray(new_rule.actions) - np.asarray(old_actions)))
         )
