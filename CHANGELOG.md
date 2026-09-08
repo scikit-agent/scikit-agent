@@ -66,18 +66,19 @@ and this project adheres to
   paper's own numbers: quality uniform on `[0, 2]` and buyers who value a car at
   three halves of what its owner does, so `lemons_calibration()` with no
   arguments is the model of the paper's section II and its answer is the
-  paper's. The module is five leaf blocks -- two quality distributions, two
-  seller decisions and a payoff -- plus the market, and each version of the
-  market is a different composition of them, so no equation is written twice.
-  Where the payoff block sits says which price a seller is paid at, and where
-  the market block sits says whether the price is known when the seller decides,
-  so declaration order is the whole of the timing. In `lemons_block` the sellers
-  anticipate the price their own supply induces, and the equilibrium is a fixed
-  point in rules that a solver has to find; in `naive_lemons_block` they respond
-  to a price already posted, so simulating T periods runs T rounds of the
-  clearing map; in `monopsony_block` a buyer commits to the price before supply,
-  and the model is a single backward induction. All three have an acyclic
-  relevance graph, and only one of them can be solved a decision at a time.
+  paper's. The module is eight leaf blocks -- two quality distributions, two
+  seller decisions, a seller payoff, the market, and a buyer's bid and surplus
+  -- and each version of the market is a different composition of them, so no
+  equation is written twice. Where the payoff block sits says which price a
+  seller is paid at, and where the market block sits says whether the price is
+  known when the seller decides, so declaration order is the whole of the
+  timing. In `lemons_block` the sellers anticipate the price their own supply
+  induces, and the equilibrium is a fixed point in rules that a solver has to
+  find; in `naive_lemons_block` they respond to a price already posted, so
+  simulating T periods runs T rounds of the clearing map; in `monopsony_block` a
+  buyer commits to the price before supply, and the model is a single backward
+  induction. All three have an acyclic relevance graph, and only one of them can
+  be solved a decision at a time.
 - `peaches_block` and `naive_peaches_block`, the same market with Akerlof's
   automobiles in place of a spread of quality: a car is a peach or a lemon and
   nothing between. A uniform range makes the clearing map exactly linear, so the

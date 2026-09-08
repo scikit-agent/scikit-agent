@@ -11,15 +11,15 @@ that clears a competitive market is the buyer valuation of what actually trades:
     S_i = 1 \iff p \geq \theta_i, \qquad u_i = S_i (p - \theta_i), \qquad
     p = m \, E[\theta_i \mid S_i = 1]
 
-The paper's own numbers are the defaults here: quality uniform on
-:math:`[0, 2]`, and buyers who value a car at :math:`3/2` of what its owner
-does. So :func:`lemons_calibration` with no arguments is the model of the
+The defaults here are the paper's own numbers [Akerlof1970]_: quality uniform
+on :math:`[0, 2]`, and buyers who value a car at :math:`3/2` of what its owner
+does. So :func:`lemons_calibration` with no arguments is the model of that
 paper's section II, and its answer is the paper's -- no trade at all, although
 every car is worth more to a buyer than to the seller holding it.
 
-The module builds its markets out of five leaf blocks. Each states one thing
-about the market, and every version below is a different composition of the same
-five, so no equation is written twice:
+The module builds its markets out of eight leaf blocks. Each states one thing
+about the market, and every version below is a different composition of them, so
+no equation is written twice:
 
     spread_quality_block    quality is uniform between the ends of the range
     two_type_quality_block  a car is a peach or a lemon, and nothing between
@@ -27,32 +27,38 @@ five, so no equation is written twice:
     offer_block             the seller decides, seeing the price on the table
     seller_payoff_block     the seller's surplus, at whatever price is current
     market_block            the competitive price, given what was offered
+    bid_block               a buyer names the price instead
+    surplus_block           that buyer's surplus, per seller
 
-**Where the payoff block sits is what says which price the seller is paid at**,
-and where the market block sits is what says whether the price is known when the
-seller decides. Declaration order is the whole of the timing, so there is no
-timing annotation anywhere in the model.
+The first two are alternatives to each other, and so are the next two: a market
+takes one quality distribution and one seller decision. The last two are the
+monopsony market's, and no other version composes them.
 
-Three timings, and they differ in nothing else:
+Where the payoff block sits determines which price the seller is paid at, and
+where the market block sits determines whether the price is known when the
+seller decides. Declaration order is therefore the whole of the timing, and
+there is no timing annotation anywhere in the model. The three timings differ in
+nothing else.
 
-**Sellers anticipate the price their own supply induces** -- :data:`lemons_block`
-and :data:`peaches_block`. The sellers decide, the market clears on what they
-offered, and they are paid at that price. Nothing is lagged, and no seller reads
-a price. A seller's rule is a best response to the price that rule induces once
-every seller follows it, so the equilibrium is a FIXED POINT IN RULES and a
+In :data:`lemons_block` and :data:`peaches_block` the sellers anticipate the
+price their own supply induces. They decide, the market clears on what they
+offered, and they are paid at that price. Nothing is lagged and no seller reads
+a price, so a seller's rule is a best response to the price that rule induces
+once every seller follows it. The equilibrium is a fixed point in rules, and a
 solver has to find it.
 
-**Sellers respond to a price already posted** -- :data:`naive_lemons_block` and
-:data:`naive_peaches_block`. The payoff block comes before the market block, so
-sellers are paid at the price they responded to and the market then clears at
-what their decisions imply. The price is read before it is written, which makes
-it an arrival state: period :math:`t`'s sellers face period :math:`t-1`'s
-clearing price, simulating :math:`T` periods runs :math:`T` rounds of the
-clearing map, and no solver is needed to watch the same equilibrium arrive.
+In :data:`naive_lemons_block` and :data:`naive_peaches_block` the sellers
+respond to a price already posted. The payoff block comes before the market
+block, so sellers are paid at the price they responded to and the market then
+clears at what their decisions imply. The price is read before it is written,
+which makes it an arrival state: period :math:`t`'s sellers face period
+:math:`t-1`'s clearing price. Simulating :math:`T` periods therefore runs
+:math:`T` rounds of the clearing map, and no solver is needed to watch the same
+equilibrium arrive.
 
-**A buyer commits to a price before supply** -- :data:`monopsony_block`. The
-price becomes a decision, owned by a buyer who names it to maximize its own
-surplus and cannot see quality:
+In :data:`monopsony_block` a buyer commits to a price before supply. The price
+becomes a decision, owned by a buyer who names it to maximize its own surplus
+and cannot see quality:
 
 .. math::
     p \in [\ell, h] \text{ chosen by the buyer}, \qquad
@@ -61,32 +67,33 @@ surplus and cannot see quality:
 The buyer's payoff is written per seller rather than as a total, so the closed
 forms below do not depend on how many sellers there are.
 
-**A buyer who priced AFTER supply was committed would pay the floor**, which is
-why the buyer commits first and why the competitive price is a market condition
-rather than anyone's choice. Once the pool is fixed, the buyer's surplus is
+A buyer that named a price only after the cars had been offered would name the
+lowest price it was allowed to. Once the pool is fixed, its surplus is
 :math:`v(m\bar\theta - p)` in a volume and a grade it can no longer change, so
-it falls in the price at every price: the best response is the lower bound, the
-sellers anticipate that, and the market shuts for a reason that has nothing to
-do with adverse selection. Competition among buyers is what pins the price up to
-the value of what trades.
+the surplus falls in the price at every price and the best response is the lower
+bound. Sellers anticipate that and offer nothing, so the market shuts for a
+reason that has nothing to do with adverse selection. That is why the buyer here
+commits first, and why a competitive price is a condition on the market rather
+than any one participant's choice: competition among buyers is what holds the
+price up to the value of what trades.
 
-**None of the timings has a cycle its relevance graph can see, and they need
-three different treatments.** Where the price is anticipated, a seller's payoff
-runs through it to every other seller's decision, so the model is a genuine
-strategic fixed point among instances of one class -- and ``relies_on("S", "S")``
+None of the timings has a cycle that its relevance graph can see, and they
+still need three different treatments. Where the price is anticipated, a
+seller's payoff runs through it to every other seller's decision, so the model
+is a strategic fixed point among instances of one class; ``relies_on("S", "S")``
 is nonetheless ``False``, because that reliance is not derivable without
 expanding the class. Where the price is posted, the same call is ``False`` and
-CORRECT: this period's payoff turns on last period's price, so within a period
-there is no reliance to find. Where a buyer commits, the graph reports two nodes
-and the one edge from the price to the sell decision, and its topological order
-is genuine backward induction.
+correct, since this period's payoff turns on last period's price and within a
+period there is no reliance to find. Where a buyer commits, the graph reports
+two nodes and one edge, from the price to the sell decision, and its topological
+order is backward induction.
 
-**Two quality distributions, and they fail in different ways.** Section II's
-uniform makes the clearing map exactly linear, since
+The market behaves differently under the two quality distributions. The
+uniform of section II makes the clearing map exactly linear, since
 :math:`E[\theta \mid \theta \leq p]` is :math:`(\ell + p)/2`, so the only prices
 it can reproduce are no trade, a corner, or -- at :math:`m = 2` exactly -- every
 price at once. The paper's automobiles are two types rather than a spread, and
-that is where the market becomes interesting: only lemons trade at
+that is where a second price becomes possible: only lemons trade at
 :math:`m\ell`, and if peaches are common enough there is a second price,
 :math:`m E[\theta]`, at which everything trades. Which one the market reaches
 depends on where it starts. See :data:`MARKETS` and :data:`PEACH_MARKETS` for
@@ -106,30 +113,38 @@ under two readings. Iterated, they are the price path a posted-price market
 simulates; read once, they give the price an anticipated price induces. An
 anticipating market's equilibria are therefore exactly their fixed points.
 
-**What signalling would need**, since it is the paper's own answer and this
-model is meant to reach it. Akerlof's section IV names guarantees, brand names
-and licensing as the institutions that counteract adverse selection, and all of
-them work the same way: the seller takes a costly action whose cost is LOWER for
-higher quality, so that taking it is credible. Two things have to change here,
-and the two-type quality is the first of them, since a separating equilibrium
-separates types. The second is that the market must be able to price a SEGMENT
-rather than a pool: the clearing price would read an observable per-seller
-signal and return one price per signal value, and each seller would be paid at
-its own. That is a change to :data:`market_block` and to what
-:data:`seller_payoff_block` reads, and it adds a second control to
-:data:`supply_block` -- which is why the seller's information set is its quality
-alone, so a second decision drops in beside the first.
+Signalling is the paper's own answer to adverse selection, and this model is
+shaped to reach it. Section IV of [Akerlof1970]_ names guarantees, brand names
+and licensing as the institutions that counteract it, and all of them work the
+same way: the seller takes a costly action whose cost is lower for higher quality, so
+that taking it is credible. Two things have to change here. The first is
+already in place, since a separating equilibrium separates types and
+:data:`two_type_quality_block` supplies them. The second is that the price stops
+being one number: the buyer commits to a pricing rule, taking the seller's
+signal as its information set, and that rule is applied once per seller. Each
+seller is then paid at the price its own signal earns. That adds a second
+control to :data:`supply_block`, which is why the seller's information set is
+its quality alone, so a signalling decision drops in beside the sell decision.
 
-**The empty pool is the collapse, and the value there belongs to the model.**
-Where the price is below every seller's valuation nobody sells, so the clearing
-price averages over nothing. This model answers 0, which is what makes no trade
-a fixed point rather than a NaN; a different market answers differently, so the
-choice is stated at the reduction and not inferred.
+When the price is below what every
+seller thinks their own car is worth, nothing is offered at all, and the
+clearing price would be an average over an empty market. This model answers
+zero. That is a choice rather than a definition, and it is what makes no trade
+an equilibrium rather than an error: a market at a price of zero has nothing
+offered to it, so it clears at zero again and stays there. A different market
+could reasonably answer something else, so the value is written into the
+clearing equation rather than supplied by the library.
 
 Binary decisions are relaxed to continuous ``[0, 1]`` controls, pending
 discrete-action support, following the convention of
 :mod:`skagent.models.macid`. :func:`seller_rule` and :func:`supply_rule` return
 exact 0 and 1, so the relaxation costs the supplied equilibria nothing.
+
+References
+----------
+.. [Akerlof1970] Akerlof, G.A. (1970). "The Market for 'Lemons': Quality
+       Uncertainty and the Market Mechanism." The Quarterly Journal of
+       Economics, 84(3), 488-500. https://doi.org/10.2307/1879431
 """
 
 from skagent.block import Control, DBlock, Entity, RBlock
