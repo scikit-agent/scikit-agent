@@ -164,7 +164,7 @@ parameters settle or a maximum iteration count is reached.
 import skagent.algos.maliar as maliar
 import skagent.loss as loss
 
-euler_loss = loss.EulerEquationLoss(bp, parameters=calibration, constrained=True)
+euler_loss = loss.EulerEquationLoss(bp, constrained=True)
 
 policy, states = maliar.maliar_training_loop(
     bp,

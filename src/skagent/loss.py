@@ -114,34 +114,55 @@ def _prepare_loss_inputs(
     return states, shock_vals, fresh_dr
 
 
-# TODO: CustomLoss is left ambiguously about Blocks and BellmanPeriods for now.
 class CustomLoss:
     """
     A custom loss function that computes the negative reward for a block,
     assuming it is executed just once (a non-dynamic model)
+
+    Parameters
+    ----------
+    loss_function : callable
+        ``loss_function(bellman_period, dr, states, shocks=, parameters=,
+        agent=)`` returning a per-sample reward, whose negative is the loss.
+    bellman_period : BellmanPeriod
+        The period being trained. Its calibration is what the loss is evaluated
+        at.
+    agent : str, optional
+        Whose payoff to maximize. See :class:`StaticRewardLoss`.
+    other_dr : dict of callable, optional
+        Decision rules for the controls this loss is not training, held fixed.
     """
 
-    def __init__(self, loss_function, block, parameters=None, other_dr=None):
-        self.block = block
-        self.parameters = parameters
-        self.arrival_variables = self.block.arrival_states
+    def __init__(self, loss_function, bellman_period, *, agent=None, other_dr=None):
+        self.bellman_period = bellman_period
+        self.parameters = bellman_period.calibration
+        self.arrival_variables = bellman_period.arrival_states
         self.other_dr = other_dr if other_dr is not None else {}
         self.loss_function = loss_function
+        self.agent = agent
 
-    def __call__(self, new_dr, input_grid: Grid):
-        """
-        new_dr : dict of callable
+    def __call__(self, dr, input_grid: Grid):
+        """*dr* maps each control symbol to a decision RULE -- a function over
+        that control's information set -- and is merged over *other_dr*. A
+        decision FUNCTION, which takes the arrival states, shocks and
+        calibration in total, is not accepted here: there is nothing to merge
+        one into.
         """
         states, shock_vals, fresh_dr = _prepare_loss_inputs(
-            self.block, input_grid, self.arrival_variables, self.other_dr, new_dr
+            self.bellman_period,
+            input_grid,
+            self.arrival_variables,
+            self.other_dr,
+            dr,
         )
 
         neg_loss = self.loss_function(
-            self.block,
+            self.bellman_period,
             fresh_dr,
             states,
             parameters=self.parameters,
             shocks=shock_vals,
+            agent=self.agent,
         )
         return -neg_loss
 
@@ -155,8 +176,6 @@ class StaticRewardLoss:
     ----------
     bellman_period : BellmanPeriod
         The period whose reward is maximized.
-    parameters : dict
-        Calibration the reward is evaluated at.
     other_dr : dict of callable, optional
         Decision rules for the controls this loss is not training, held fixed.
     agent : str, optional
@@ -168,23 +187,26 @@ class StaticRewardLoss:
         being trained.
     """
 
-    def __init__(self, bellman_period, parameters, other_dr=None, agent=None):
+    def __init__(self, bellman_period, *, agent=None, other_dr=None):
         self.bellman_period = bellman_period
-        self.parameters = parameters
+        self.parameters = bellman_period.calibration
         self.arrival_variables = self.bellman_period.arrival_states
         self.other_dr = other_dr if other_dr is not None else {}
         self.agent = agent
 
-    def __call__(self, new_dr, input_grid: Grid):
-        """
-        new_dr : dict of callable
+    def __call__(self, dr, input_grid: Grid):
+        """*dr* maps each control symbol to a decision RULE -- a function over
+        that control's information set -- and is merged over *other_dr*. A
+        decision FUNCTION, which takes the arrival states, shocks and
+        calibration in total, is not accepted here: there is nothing to merge
+        one into.
         """
         states, shock_vals, fresh_dr = _prepare_loss_inputs(
             self.bellman_period,
             input_grid,
             self.arrival_variables,
             self.other_dr,
-            new_dr,
+            dr,
         )
 
         r = static_reward(
@@ -206,17 +228,24 @@ class EstimatedDiscountedLifetimeRewardLoss:
     Parameters
     -----------
 
-    bellman_period
-    big_t: int
-        The number of time steps to compute reward for
-    parameters
+    bellman_period : BellmanPeriod
+        The period being trained. Its calibration is what the loss is evaluated
+        at.
+    big_t : int
+        The number of time steps to compute reward for.
+    agent : str, optional
+        Whose payoff to maximize: the sum of the reward symbols that agent owns,
+        discounted over *big_t* periods. Required on a block whose utilities
+        have more than one owner, since without it the loss maximizes the sum of
+        every agent's reward -- a planner's objective, and no player's.
     """
 
-    def __init__(self, bellman_period, big_t, parameters):
+    def __init__(self, bellman_period, *, big_t, agent=None):
         self.bellman_period = bellman_period
-        self.parameters = parameters
+        self.parameters = bellman_period.calibration
         self.arrival_variables = self.bellman_period.arrival_states
         self.big_t = big_t
+        self.agent = agent
 
     def __call__(self, df: Callable, input_grid: Grid):
         # convoluted
@@ -247,9 +276,8 @@ class EstimatedDiscountedLifetimeRewardLoss:
             {sym: given_vals[sym] for sym in self.arrival_variables},
             self.big_t,
             parameters=self.parameters,
-            agent=None,  # TODO: Pass through the agent?
+            agent=self.agent,
             shocks_by_t=shocks_by_t,
-            # Handle multiple decision rules?
         )
         return -edlr
 
@@ -266,7 +294,7 @@ class _EquationLossBase(ABC):
     def __init__(
         self,
         bellman_period: BellmanPeriod,
-        parameters: dict[str, Any] | None = None,
+        *,
         agent: str | None = None,
     ) -> None:
         from skagent.bellman import BellmanPeriod as _BellmanPeriod
@@ -277,7 +305,7 @@ class _EquationLossBase(ABC):
                 f"got {type(bellman_period).__name__}"
             )
         self.bellman_period = bellman_period
-        self.parameters = parameters
+        self.parameters = bellman_period.calibration
         # Defensive copy to prevent external mutation of arrival_states
         self.arrival_variables: set[str] = set(bellman_period.arrival_states)
 
@@ -358,12 +386,12 @@ class BellmanEquationLoss(_EquationLossBase):
     def __init__(
         self,
         bellman_period: BellmanPeriod,
+        *,
         value_function: dict[str, Callable] | Callable,
-        parameters: dict[str, Any] | None = None,
         agent: str | None = None,
         foc_weight: float = 0.0,
     ) -> None:
-        super().__init__(bellman_period, parameters=parameters, agent=agent)
+        super().__init__(bellman_period, agent=agent)
         if not callable(value_function) and not isinstance(value_function, dict):
             raise TypeError(
                 "value_function must be a callable or a dict mapping agent "
@@ -534,12 +562,12 @@ class EulerEquationLoss(_EquationLossBase):
     def __init__(
         self,
         bellman_period: BellmanPeriod,
-        parameters: dict[str, Any] | None = None,
+        *,
         agent: str | None = None,
         weight: float = 1.0,
         constrained: bool = False,
     ) -> None:
-        super().__init__(bellman_period, parameters=parameters, agent=agent)
+        super().__init__(bellman_period, agent=agent)
 
         if weight <= 0:
             raise ValueError(f"weight must be > 0, got {weight}")

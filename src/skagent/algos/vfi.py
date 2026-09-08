@@ -401,7 +401,7 @@ def _shock_nodes(bp, shock, disc_params):
     return np.asarray(disc.points, dtype=float).ravel()
 
 
-def _resolve_shock_roles(bp, params, grid_axes):
+def _resolve_shock_roles(bp, params, grid_axes, controls=None):
     """Resolve each shock's information role once for the whole backup.
 
     A role is a property of the block, not of a grid point, so it is settled
@@ -434,6 +434,8 @@ def _resolve_shock_roles(bp, params, grid_axes):
     *params* governs only which shocks are fixed realizations.
     """
     per_control = bp.block.shock_roles(bp.calibration)
+    if controls is not None:
+        per_control = {c: r for c, r in per_control.items() if c in controls}
     resolved = {}
 
     for shock in bp.get_shocks():
@@ -565,6 +567,7 @@ def solve_step(
     state_grid: AxisSpec,
     *,
     agent: str | None = None,
+    control: str | None = None,
     scope: Mapping = {},
     disc_params: Mapping = {},
     decision_rules: Mapping[str, Callable] | None = None,
@@ -681,7 +684,7 @@ def solve_step(
         The gridded optimal control(s) over the state grid, keyed by control
         symbol (a dict for forward-compatibility with multi-control, O1).
     """
-    controls = list(bp.get_controls())
+    controls = list(bp.get_controls()) if control is None else [control]
     if len(controls) == 0:
         raise NotImplementedError(
             "solve_step needs at least one control; a control-free block has "
@@ -726,7 +729,7 @@ def solve_step(
     # Each shock's information role, resolved once from the block's own structure
     # rather than inferred from what the caller happened to grid. A shock pinned
     # in ``scope`` is a fixed realization and is governed by neither branch below.
-    roles = _resolve_shock_roles(bp, params, grid_axes)
+    roles = _resolve_shock_roles(bp, params, grid_axes, controls)
 
     # A shock some information set accounts for becomes a node axis, so the
     # pre-state and each control's bounds are computed *per node* rather than at
@@ -1102,8 +1105,9 @@ def solve_bellman(
 
     A period with no arrival states is not a dynamic problem — nothing carries
     between periods — and is refused. Such a block is solved statically, by
-    :class:`skagent.algos.best_response.TabularBestResponseSolver` or
-    :func:`skagent.solver.solve_multiple_controls`. Every arrival state must be
+    :class:`skagent.algos.tabular.TabularBestResponseSolver` or
+    :class:`skagent.solver.NeuralBestResponse`, driven by
+    :func:`skagent.solver.solve_in_order`. Every arrival state must be
     an axis of *state_grid*, since the continuation is rebuilt from the value
     grid and cannot represent dependence on a variable the grid has no axis for.
 
@@ -1174,9 +1178,9 @@ def solve_bellman(
             "period with no arrival states is not dynamic: nothing carries "
             "between periods, so there is no fixed point to seek. Solve the "
             "block statically instead — TabularBestResponseSolver "
-            "(skagent.algos.best_response) for a tabular policy over finitely "
-            "many observations, or solve_multiple_controls (skagent.solver) for "
-            "a differentiable one."
+            "(skagent.algos.tabular) for a tabular policy over finitely "
+            "many observations, or NeuralBestResponse (skagent.solver) for "
+            "a differentiable one, driven by solve_in_order."
         )
 
     cont = continuation_vf if continuation_vf is not None else (lambda s, sh, p: 0.0)

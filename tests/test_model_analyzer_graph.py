@@ -3,7 +3,11 @@ Tests for the ModelAnalyzer graph refactor:
 
   1. Regression: to_dict() is byte-for-byte equivalent to a golden snapshot
      captured from the pre-refactor code, on the existing consumer benchmark
-     models. This guarantees ModelVisualizer's contract is unchanged.
+     models. This guarantees ModelVisualizer's contract is unchanged. The
+     snapshot's `plates` were re-taken when plates became the block tree's
+     declared entity classes rather than its agent roles: neither consumer
+     model declares a class, so both are now unplated, and the node metadata
+     and edges are unchanged.
   2. influence_graph(): the SCIM view consumed by skagent.relevance.
 
 The golden dict lives in tests/data/model_analyzer_golden.json.

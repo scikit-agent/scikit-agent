@@ -8,6 +8,58 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Removed
+
+- `skagent.solver.solve_multiple_controls` has been replaced by
+  `solve_in_order(method, order)`, which takes a method object. The old function
+  fused a schedule with a method: the caller's `control_order` was the schedule,
+  and the rest of the function was a policy network per control. Now that the
+  two are separate, the same order can drive a tabular solver or an exact backup
+  and not only a network. The deprecated `calibration` argument goes with it.
+  Removing the function also removes two defects. It returned untrained networks
+  for the controls the caller left out of the order, and those networks were
+  callable, numeric and indistinguishable from a solved rule; a starting profile
+  is now a constant per control, so an unsolved decision is visibly provisional.
+  It also derived no order of its own, so a repeated symbol amounted to an
+  iterated best response with no convergence test. `solve_in_order` says as much
+  and points to a schedule that does test for convergence.
+
+### Changed
+
+- A model diagram draws an entity class as a plate: a box around the symbols the
+  class declares per instance, labelled with the class's name and its size.
+  `ModelAnalyzer` reads the class from the block tree's declarations rather than
+  inferring one per agent role, so a model with several agents and one of each
+  is no longer boxed as though it had a population of them, and the equation
+  that reads out of a class is visibly the one crossing the box.
+- A model diagram no longer draws a calibration parameter that no equation
+  reads. A calibration written for a family of blocks carries the other blocks'
+  parameters, which arrived on the diagram as nodes joined to nothing: seven of
+  the nineteen in the consumption-saving figure. Only parameters are dropped, so
+  an unread shock, state, control or reward stays visible.
+- The shapes: a shock is a double-bordered ellipse rather than a triangle, a
+  calibration parameter is unbordered, and the hexagon now means the discount
+  factor. `Block.visualize`, `Block.display` and `utils.plot_block_diagram` take
+  `discount`, since a block does not know which of its parameters a period
+  discounts by, and that variable is drawn even though no equation reads it.
+- `Block.visualize` takes a `title`, and `utils.plot_block_diagram` passes an
+  empty one, so a figure carries its caption once instead of also carrying the
+  block's name.
+- A symbol the model assigns is no longer read as a parameter just because the
+  calibration holds a value for it. In the consumption-portfolio model `b` reads
+  the `R` that the portfolio block assigns later in the period, which is last
+  period's `R`, and the calibration's entry is that symbol's first-period
+  arrival value. The dependency is now classified as lagged, which is what the
+  simulator has always done with it, and the diagram reads left to right instead
+  of drawing the period's first equation at its right-hand end.
+- `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
+  over the relevance graph has moved out to
+  `skagent.solver.solve_in_relevance_order`. The module is now named for its
+  algorithm, as the rest of `algos` is, and it holds only the tabulated payoff
+  table. Deciding when each decision is solved is a schedule's job, and the same
+  schedule now serves any method. What was `solver.solve()` is now
+  `solve_in_relevance_order(solver)`.
+
 ### Added
 
 - `skagent.models.lemons`, Akerlof's market for adverse selection, in three
@@ -27,6 +79,28 @@ and this project adheres to
   sold, so it carries no boolean index, no branch on the data and no dynamic
   shape. It differentiates and batches under `torch` where a masked mean
   refuses, and where the sell decision is 0 or 1 the two agree exactly.
+- `skagent.solver.project` splits a population model's entity class into the
+  instance being solved and the others, and `solve_symmetric_equilibrium` solves
+  that instance's decision against the others' current rule, swaps the solved
+  rule in as the others' rule, and repeats until the rule stops moving. The
+  projection copies each per-instance equation once per side and synthesizes
+  exactly one equation, which concatenates the two sides back into the original
+  symbol; the aggregating equation is then copied verbatim and reads that
+  symbol. The transform therefore reassembles the entity axis without inspecting
+  the reduction, so a mean, a sum, a maximum and a masked mean all project
+  alike. Only symmetric equilibria are supported, since the other instances
+  share a single rule.
+- `skagent.solver.NeuralBestResponse` and `ExactBestResponse` are two method
+  objects that a schedule accepts interchangeably. Each one carries its own
+  construction configuration beside its algorithm -- a training panel and an
+  epoch count for the first, a state grid and a continuation for the second --
+  so the schedule keeps only the damping, the residual and the swap. Both reach
+  the Cournot-Nash quantity at two, three and four firms.
+- `docs/user_guide/solvers.md` explains how a method pairs with a schedule, how
+  to choose among the three schedules, and what projecting a population does.
+- `examples/models/plot_cournot_equilibrium.py` diagrams the Cournot model and
+  its projection, iterates best responses to the Nash quantity at two, three and
+  four firms, and watches the undamped iteration cycle and then diverge.
 - `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
   composed block executes its own dynamics and computes its own rewards. Both
   read the merged dynamics, so an `RBlock` behaves as a leaf block does; every

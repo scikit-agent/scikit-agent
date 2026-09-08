@@ -29,10 +29,10 @@ class ModelAnalyzer:
     Analyze a scikit-agent DBlock or RBlock and extract:
       - node_meta: kind, agent, plate, observed for each variable
       - edges: instant / lag / param / shock dependencies
-      - plates: loop-notation plates inferred from agents
+      - plates: the entity classes the block tree declares
     """
 
-    def __init__(self, model, calibration, block_agent=None):
+    def __init__(self, model, calibration, block_agent=None, discount=None):
         """
         Parameters
         ----------
@@ -42,10 +42,17 @@ class ModelAnalyzer:
             Calibration parameters
         block_agent : str, optional
             Agent/plate assignment at the block level
+        discount : str, optional
+            The calibration symbol serving as the discount factor. It is
+            classified ``discount`` rather than ``param``, which is what marks
+            it as a variable the model was solved against rather than one its
+            equations read. A block does not know this on its own, since the
+            choice lives on the period built over it.
         """
         self.model = model
         self.calibration = calibration
         self.block_agent = block_agent
+        self.discount = discount
 
         # Storage
         self.G = nx.DiGraph()  # annotated dependency graph: the source of truth
@@ -77,9 +84,22 @@ class ModelAnalyzer:
         """Classify every variable and record its metadata."""
         from skagent.block import Control  # TODO: move to separate module
 
-        for blk in self._blocks:
-            plate = self.block_agent or getattr(blk, "agent", None)
+        signatures = self.model.signatures()
 
+        def plate_of(var):
+            """The entity class *var* is an attribute of, if exactly one is.
+
+            A symbol declared inside an entity class is drawn inside that
+            class's plate. A symbol of no class, or of several nested ones
+            (which nothing yet builds, and which has no innermost class to
+            pick), is drawn outside every plate.
+            """
+            classes = signatures.get(var, frozenset())
+            if len(classes) == 1:
+                return next(iter(classes))
+            return self.block_agent
+
+        for blk in self._blocks:
             # A control that declares no agent, in a block whose rewards all
             # belong to one agent, belongs to that agent: there is no other
             # candidate. With several reward owners the control must say which.
@@ -88,32 +108,34 @@ class ModelAnalyzer:
                 next(iter(reward_agents)) if len(reward_agents) == 1 else None
             )
 
-            # Shocks - no plate assignment
+            # Shocks - plated when the class declares them per instance
             for var in blk.get_shocks():
                 self.node_meta[var] = {
                     "kind": "shock",
                     "agent": "global",
-                    "plate": None,
+                    "plate": plate_of(var),
                     "observed": False,
                 }
 
-            # Dynamics - assigned to block's plate
+            # Dynamics - plated by the entity class they are an attribute of
             for var, rule in blk.get_dynamics().items():
                 if isinstance(rule, Control):
                     kind = "control"
-                    agent = rule.agent or plate or sole_reward_agent or "global"
+                    agent = (
+                        rule.agent or self.block_agent or sole_reward_agent or "global"
+                    )
                     if not isinstance(agent, str):
                         agent = str(agent) if agent else "global"
                     observed = True
                 else:
                     kind = "state"
-                    agent = plate or "global"
+                    agent = self.block_agent or "global"
                     observed = False
 
                 self.node_meta[var] = {
                     "kind": kind,
                     "agent": agent,
-                    "plate": plate,
+                    "plate": plate_of(var),
                     "observed": observed,
                 }
 
@@ -125,15 +147,15 @@ class ModelAnalyzer:
                 self.node_meta[var] = {
                     "kind": "reward",
                     "agent": agent_name,
-                    "plate": plate,
+                    "plate": plate_of(var),
                     "observed": True,
                 }
 
-        # Parameters - no plate assignment
+        # Parameters - axis-free, so never plated
         for param in self.calibration:
             if param not in self.node_meta:
                 self.node_meta[param] = {
-                    "kind": "param",
+                    "kind": "discount" if param == self.discount else "param",
                     "agent": "global",
                     "plate": None,
                     "observed": False,
@@ -181,6 +203,13 @@ class ModelAnalyzer:
         dependency lagged -- unless the calibration supplies a value for the
         symbol, or the symbol is a shock realized within the period. Neither of
         those reaches back a period, so neither is lagged.
+
+        A symbol the model ASSIGNS is not a parameter, whatever the calibration
+        holds for it: the calibration is supplying its arrival value for the
+        first period. So the calibration escape applies only to symbols no block
+        assigns. Reading one that is assigned later in the period -- as the
+        normalized consumption block's ``b`` reads the ``R`` that the portfolio
+        block goes on to compute -- is a read of last period's value.
         """
         position = self._dynamics_positions()
         shocks = {s for blk in self._blocks for s in blk.get_shocks()}
@@ -189,9 +218,10 @@ class ModelAnalyzer:
                 if var not in position:
                     continue
                 for dep in self._raw_deps.get(var, []):
-                    if dep in position and position[dep] < position[var]:
-                        continue  # reads the value assigned earlier this period
-                    if dep in self.calibration or dep in shocks:
+                    if dep in position:
+                        if position[dep] < position[var]:
+                            continue  # the value assigned earlier this period
+                    elif dep in self.calibration or dep in shocks:
                         continue
                     self._time_deps.add((var, dep))
 
@@ -233,31 +263,27 @@ class ModelAnalyzer:
         self.edges = {kind: sorted(set(pairs)) for kind, pairs in edges.items()}
 
     def _collect_plates(self):
+        """Build the plates: the model's declared entity classes.
+
+        A plate is a class the model says it has several of, so it is read from
+        the block tree's entity declarations and sized from the calibration.
+        An agent role is not a plate: one agent may hold several decisions and
+        several agents may be instances of one class, so drawing a box per role
+        boxes the wrong thing.
         """
-        Build plates from unique plate assignments at the block level,
-        AND from agent assignments at the variable level.
-        """
-        # 1. Collect plates explicitly defined at the block level
-        plates_from_blocks = {
-            meta["plate"] for meta in self.node_meta.values() if meta["plate"]
-        }
+        entities = self.model.entities()
 
-        # 2. Collect agents assigned to specific variables (and treat them as plates)
-        # This correctly finds agents defined on Control objects.
-        plates_from_agents = {
-            meta["agent"]
-            for meta in self.node_meta.values()
-            if meta.get("agent") and meta["agent"] != "global"
-        }
-
-        # 3. Combine both sources to get a complete set of plates
-        plates_set = plates_from_blocks.union(plates_from_agents)
-
-        for plate_name in plates_set:
-            self.plates[plate_name] = {
-                "label": plate_name.capitalize(),
-                "size": "",
+        for name in entities:
+            self.plates[name] = {
+                "label": name,
+                "size": self.calibration.get(name, ""),
             }
+
+        # A plate assigned to a node by *block_agent* is drawn as well, so that
+        # the caller-supplied grouping does not silently vanish.
+        assigned = {meta["plate"] for meta in self.node_meta.values() if meta["plate"]}
+        for name in assigned - set(entities):
+            self.plates[name] = {"label": name, "size": ""}
 
     def _add_lag_variables(self):
         """Add metadata for lag variables (e.g., p* for p_{t-1})."""

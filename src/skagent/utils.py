@@ -295,7 +295,9 @@ def compute_gradients_for_tensors(
     return gradients
 
 
-def plot_block_diagram(block, title=None, calibration=None, figsize=(9, 7)):
+def plot_block_diagram(
+    block, title=None, calibration=None, figsize=(9, 7), discount=None
+):
     """Render *block*'s model diagram into a new matplotlib figure.
 
     :meth:`~skagent.block.Block.display` shows the diagram in a notebook and
@@ -316,10 +318,17 @@ def plot_block_diagram(block, title=None, calibration=None, figsize=(9, 7)):
     figsize : tuple of float
         Figure size in inches, for diagrams that are wider than they are tall or
         the reverse.
+    discount : str, optional
+        The calibration symbol serving as the discount factor, passed to
+        :meth:`~skagent.block.Block.visualize`.
     """
     import matplotlib.pyplot as plt
 
-    img, _ = block.visualize({} if calibration is None else calibration).get_image()
+    img, _ = block.visualize(
+        {} if calibration is None else calibration,
+        title="",  # the figure's title is set below; the graph carries no second one
+        discount=discount,
+    ).get_image()
 
     plt.figure(figsize=figsize)
     plt.imshow(img)

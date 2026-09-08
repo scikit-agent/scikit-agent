@@ -130,8 +130,7 @@ pvnet = BlockPolicyValueNet(bp, width=32)
 
 bellman_loss_fn = loss.BellmanEquationLoss(
     bp,
-    pvnet.get_value_function(),
-    parameters=u2_calibration,
+    value_function=pvnet.get_value_function(),
     foc_weight=1.0,
 )
 

@@ -96,7 +96,7 @@ bp = bellman.BellmanPeriod(u3_block, "DiscFac", u3_calibration, rng=rng)
 # supplies. The loss is policy-only here, so a plain
 # :class:`~skagent.ann.BlockPolicyNet` is trained internally by the loop.
 
-euler_loss_fn = loss.EulerEquationLoss(bp, parameters=u3_calibration, constrained=True)
+euler_loss_fn = loss.EulerEquationLoss(bp, constrained=True)
 
 # %%
 # Step 3: Run the Maliar training loop

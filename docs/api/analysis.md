@@ -37,9 +37,9 @@ What a decision must still account for, given what it already knows. One
 d-separation test, read two ways: across decisions it is the Koller & Milch
 s-reachability criterion, and the order the resulting relevance graph implies,
 {meth}`~skagent.relevance.RelevanceGraph.condensation`, is what
-{class}`skagent.algos.best_response.TabularBestResponseSolver` solves a block in
-(see {doc}`algorithms`). Run from a shock instead, it tells a solver whether to
-grid that shock or integrate it inside the maximization.
+{class}`skagent.algos.tabular.TabularBestResponseSolver` solves a block in (see
+{doc}`algorithms`). Run from a shock instead, it tells a solver whether to grid
+that shock or integrate it inside the maximization.
 
 ### Incentive criteria
 

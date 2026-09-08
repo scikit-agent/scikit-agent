@@ -491,6 +491,51 @@ class TestDegenerateDistributionsDraw:
         assert np.array_equal(drawn, np.full(3, 1.0))
 
 
+class TestTheDiagramShowsTheClass:
+    """A population model is drawn as one, in plate notation."""
+
+    def test_the_analyzer_reads_the_declared_entity(self):
+        from skagent.model_analyzer import ModelAnalyzer
+
+        analyzer = ModelAnalyzer(cournot_block(), collusion_calibration()).analyze()
+
+        # Read from the declaration rather than from agent attribution, which
+        # drew Cournot as though it had no population and no aggregation.
+        assert "firm" in analyzer.plates
+        assert analyzer.plates["firm"]["size"] == 3
+
+        # The plate holds what the class declares per instance; the aggregate
+        # and the price sit outside it, and that boundary is the crossing.
+        plated = {
+            sym for sym, meta in analyzer.node_meta.items() if meta["plate"] == "firm"
+        }
+        assert plated == {"c", "q", "u"}
+        assert analyzer.node_meta["Q"]["plate"] is None
+        assert analyzer.node_meta["P"]["plate"] is None
+
+    def test_the_diagram_draws_the_class_as_a_plate(self):
+        graph = cournot_block().visualize(collusion_calibration()).create_graph()
+        (plate,) = graph.get_subgraphs()
+
+        # The box is what says the model describes several firms rather than
+        # one, and it is sized by the calibration.
+        assert "3" in plate.get_label() and "irm" in plate.get_label()
+        assert {node.get_name() for node in plate.get_nodes()} == {"c", "q", "u"}
+
+        # The aggregate and the price are drawn outside the box, so the edge
+        # into Q is visibly the one that leaves the class.
+        outside = {node.get_name() for node in graph.get_nodes()}
+        assert {"Q", "P"} <= outside
+        assert not outside & {"c", "q", "u"}
+
+    def test_the_class_size_is_the_plates_label_and_not_a_node(self):
+        graph = cournot_block().visualize(collusion_calibration()).create_graph()
+
+        # `firm` sizes the class, and the calibration carries it under the
+        # class's own name. Drawn as a parameter it is a node joined to nothing.
+        assert "firm" not in {node.get_name() for node in graph.get_nodes()}
+
+
 class TestWhatDoesNotWorkYet:
     """The parts of the entity feature that are declared but not honoured.
 
@@ -525,20 +570,6 @@ class TestWhatDoesNotWorkYet:
         # A class relying on itself is one node with a self-loop, which is what
         # plate notation draws and what distinguishes this from a lone decision.
         assert graph.edges()
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="ModelAnalyzer infers populations from agent attribution rather "
-        "than reading the block's entity metadata",
-    )
-    def test_the_analyzer_reads_the_declared_entity(self):
-        from skagent.model_analyzer import ModelAnalyzer
-
-        analyzer = ModelAnalyzer(cournot_block(), collusion_calibration())
-
-        # Without this the model diagram draws Cournot as though it had no
-        # population and no aggregation.
-        assert "firm" in analyzer.plates
 
     @pytest.mark.xfail(
         strict=True,

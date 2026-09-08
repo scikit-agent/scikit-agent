@@ -11,7 +11,7 @@ The magnitudes are nonetheless chosen so that each game is strategically
 non-degenerate -- no decision has an optimum that is independent of the others --
 so that a solver exercises the structure rather than sidestepping it. Games whose
 relevance graph is acyclic can be solved by
-``skagent.algos.best_response.TabularBestResponseSolver``; a cyclic one needs a joint
+``skagent.algos.tabular.TabularBestResponseSolver``; a cyclic one needs a joint
 equilibrium solution, which the library does not offer.
 
 Encoding conventions (a deliberate departure from the source presentations):
