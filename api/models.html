@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev94+g542baf04e</title>
+        <title>Models - scikit-agent 0.1.1.dev96+g4496881ac</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev96+g4496881ac</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1260,10 +1260,10 @@ they pin down is graphical structure (information sets, agent ownership,
 dependencies), and their functional forms and payoff magnitudes are illustrative.
 The magnitudes are nonetheless chosen so that each game is strategically
 non-degenerate – no decision has an optimum that is independent of the others –
-so that a solver exercises the structure rather than sidestepping it. Games whose
-relevance graph is acyclic can be solved by
-<code class="docutils literal notranslate"><span class="pre">skagent.algos.tabular.TabularBestResponseSolver</span></code>; a cyclic one needs a joint
-equilibrium solution, which the library does not offer.</p>
+so that a solver exercises the structure rather than sidestepping it.
+<code class="docutils literal notranslate"><span class="pre">skagent.solver.solve_in_relevance_order</span></code> solves acyclic components once and
+iterates simultaneous best responses for cyclic components, returning a
+pure-strategy fixed point or reporting non-convergence.</p>
 <p>Encoding conventions (a deliberate departure from the source presentations):</p>
 <ul class="simple">
 <li><p>Chance nodes are given in structural-causal form rather than as conditional
@@ -1580,7 +1580,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=8efc4dea"></script>
+</div><script src="../_static/documentation_options.js?v=c680fa45"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

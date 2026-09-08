@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Solvers Guide - scikit-agent 0.1.1.dev94+g542baf04e</title>
+        <title>Solvers Guide - scikit-agent 0.1.1.dev96+g4496881ac</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev94+g542baf04e</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev96+g4496881ac</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -397,12 +397,13 @@ graph:</p>
 <span class="n">decision_rules</span> <span class="o">=</span> <span class="n">solve_in_relevance_order</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>One pass per decision suffices here, because everything a decision relies on is
-already settled by the time its turn comes. If the graph contains a cycle, which
-means that two or more decisions rely on each other, then no such order exists,
-and this schedule raises an error rather than choosing an order arbitrarily.
-That refusal is the honest answer, because a cycle is a simultaneous-move
-equilibrium problem, and it calls for the next schedule.</p>
+<p>One pass per decision suffices for an acyclic component, because everything a
+decision relies on is already settled by the time its turn comes. If a component
+contains a cycle, the schedule repeatedly computes every decision’s best
+response against the same previous profile and installs those responses
+simultaneously. It returns a pure-strategy fixed point when the policies settle
+within tolerance and raises on non-convergence. Mixed-strategy equilibria and
+recurring cyclic games are not supported by this schedule.</p>
 </section>
 <section id="the-decisions-depend-on-each-other-solve-symmetric-equilibrium">
 <h3>The decisions depend on each other: <code class="docutils literal notranslate"><span class="pre">solve_symmetric_equilibrium</span></code><a class="headerlink" href="#the-decisions-depend-on-each-other-solve-symmetric-equilibrium" title="Link to this heading">¶</a></h3>
@@ -560,7 +561,7 @@ with the others.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=8efc4dea"></script>
+</div><script src="../_static/documentation_options.js?v=c680fa45"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

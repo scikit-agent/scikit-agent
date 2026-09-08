@@ -352,7 +352,7 @@ The relevance graph is acyclic, so the game decomposes: each component in the
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 189-217
+.. GENERATED FROM PYTHON SOURCE LINES 189-218
 
 Solving in Relevance Order
 ----------------------------
@@ -362,8 +362,9 @@ round: it walks the relevance graph's ``condensation()`` and computes each
 decision's best response against the rules already found, using the solver it
 is given. No iteration to a fixed point is needed, because the graph is
 acyclic, so every rule a decision relies on is settled by the time its turn
-comes. Had a component held more than one decision, the schedule would have
-refused it as the simultaneous-move equilibrium problem it is.
+comes. A component with several mutually reliant decisions would instead be
+iterated, with every best response computed against the same previous profile,
+until it reached a pure-strategy fixed point or reported non-convergence.
 
 What :class:`~skagent.algos.tabular.TabularBestResponseSolver` does for each
 decision:
@@ -383,7 +384,7 @@ decision:
   actions across the samples, so that every information cell is reached and
   every conditional expectation is defined.
 
-.. GENERATED FROM PYTHON SOURCE LINES 217-228
+.. GENERATED FROM PYTHON SOURCE LINES 218-229
 
 .. code-block:: Python
 
@@ -413,7 +414,7 @@ decision:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 229-240
+.. GENERATED FROM PYTHON SOURCE LINES 230-241
 
 The solution, decision by decision:
 
@@ -427,7 +428,7 @@ The solution, decision by decision:
 
 Aggregate outcomes under the solved profile:
 
-.. GENERATED FROM PYTHON SOURCE LINES 240-247
+.. GENERATED FROM PYTHON SOURCE LINES 241-248
 
 .. code-block:: Python
 
@@ -457,7 +458,7 @@ Aggregate outcomes under the solved profile:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 248-256
+.. GENERATED FROM PYTHON SOURCE LINES 249-257
 
 Checking the Relevance Graph Empirically
 ------------------------------------------
@@ -468,7 +469,7 @@ decision under a deliberately different profile.
 **Claim 1: TDoc relies on nothing.** Bob's best response should be identical
 whether Alice never poisons and never builds, or always does both.
 
-.. GENERATED FROM PYTHON SOURCE LINES 256-264
+.. GENERATED FROM PYTHON SOURCE LINES 257-265
 
 .. code-block:: Python
 
@@ -494,13 +495,13 @@ whether Alice never poisons and never builds, or always does both.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 265-268
+.. GENERATED FROM PYTHON SOURCE LINES 266-269
 
 **Claim 2: BP does not rely on PT** (though it observes it). Alice's patio
 rule should be unchanged when the policy generating ``PT`` is reweighted --
 and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
-.. GENERATED FROM PYTHON SOURCE LINES 268-290
+.. GENERATED FROM PYTHON SOURCE LINES 269-291
 
 .. code-block:: Python
 
@@ -543,13 +544,13 @@ and, cell by cell, should not vary with the observed value of ``PT`` at all.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 291-294
+.. GENERATED FROM PYTHON SOURCE LINES 292-295
 
 **Claim 3: PT relies on TDoc.** Replace Bob's rule with a passive one that
 never calls the doctor, re-solve Alice's patio rule against it, and her
 poisoning decision should move.
 
-.. GENERATED FROM PYTHON SOURCE LINES 294-300
+.. GENERATED FROM PYTHON SOURCE LINES 295-301
 
 .. code-block:: Python
 
@@ -573,13 +574,13 @@ poisoning decision should move.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 301-304
+.. GENERATED FROM PYTHON SOURCE LINES 302-305
 
 Poisoning is only worthwhile against a Bob who lets the tree die. This is the
 content of the relevance edge ``PT -> TDoc``, and the reason ``TDoc`` had to be
 solved first.
 
-.. GENERATED FROM PYTHON SOURCE LINES 304-332
+.. GENERATED FROM PYTHON SOURCE LINES 305-333
 
 .. code-block:: Python
 
@@ -623,13 +624,13 @@ solved first.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 333-336
+.. GENERATED FROM PYTHON SOURCE LINES 334-337
 
 Bob's side of the game, for comparison: his payoff as a function of the fee he
 is willing to pay, conditional on what he observes. The two curves are the two
 information cells of ``TDoc``, and neither depends on anything Alice does.
 
-.. GENERATED FROM PYTHON SOURCE LINES 336-357
+.. GENERATED FROM PYTHON SOURCE LINES 337-358
 
 .. code-block:: Python
 
@@ -669,7 +670,7 @@ information cells of ``TDoc``, and neither depends on anything Alice does.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.132 seconds)
+   **Total running time of the script:** (0 minutes 6.017 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_tree_killer_relevance.py:
