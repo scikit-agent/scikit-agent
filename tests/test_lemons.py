@@ -5,20 +5,20 @@ import pytest
 import torch
 
 import skagent.models.lemons as lemons
-from skagent.algos.best_response import TabularBestResponseSolver
+from skagent.algos.tabular import TabularBestResponseSolver
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
 
 SIZE = 50000
+TOP = lemons.QUALITY_HIGH
 
 
-def naive_run(p0, periods, seed=0, **configuration):
-    """Simulate the posted-price market from *p0*; each period is one round."""
+def play(block, calibration, rules, arrival=None, periods=1, seed=0):
     sim = Simulator(
-        lemons.lemons_calibration(size=SIZE, **configuration),
-        lemons.naive_lemons_block,
-        {"S": lemons.seller_rule},
-        {"p": p0},
+        calibration,
+        block,
+        rules,
+        {} if arrival is None else arrival,
         sample_count=1,
         T_sim=periods,
         seed=seed,
@@ -27,46 +27,56 @@ def naive_run(p0, periods, seed=0, **configuration):
     return sim.simulate()
 
 
-def anticipated_run(price, seed=0, **configuration):
+def posted_run(p0, periods, **market):
+    """Simulate the posted-price market from *p0*; each period is one round."""
+    return play(
+        lemons.naive_lemons_block,
+        lemons.lemons_calibration(size=SIZE, **market),
+        {"S": lemons.seller_rule},
+        {"p": p0},
+        periods,
+    )
+
+
+def anticipated_run(price, **market):
     """Play the anticipated-price market once, with sellers expecting *price*."""
-    sim = Simulator(
-        lemons.lemons_calibration(size=SIZE, **configuration),
+    return play(
         lemons.lemons_block,
+        lemons.lemons_calibration(size=SIZE, **market),
         {"S": lemons.supply_rule(price)},
-        {},
-        sample_count=1,
-        T_sim=1,
-        seed=seed,
     )
-    sim.initialize_sim()
-    return sim.simulate()
 
 
-def buyer_run(price, seed=0, **configuration):
+def peaches_run(p0, periods, **market):
+    """Simulate the posted-price market for peaches and lemons."""
+    return play(
+        lemons.naive_peaches_block,
+        lemons.peaches_calibration(size=SIZE, **market),
+        {"S": lemons.seller_rule},
+        {"p": p0},
+        periods,
+    )
+
+
+def buyer_run(price, **market):
     """Play the monopsony market once at *price*, and return the buyer's surplus."""
-    sim = Simulator(
-        lemons.lemons_calibration(size=SIZE, **configuration),
+    history = play(
         lemons.monopsony_block,
+        lemons.lemons_calibration(size=SIZE, **market),
         {"p": lemons.bid_rule(price), "S": lemons.seller_rule},
-        {},
-        sample_count=1,
-        T_sim=1,
-        seed=seed,
     )
-    sim.initialize_sim()
-    return np.asarray(sim.simulate()["w"]).ravel()[0]
+    return np.asarray(history["w"]).ravel()[0]
 
 
 class TestTheClearingPriceRunsOnEveryPath:
     """It is a weighted mean, so no path has to special-case it."""
 
     def test_it_agrees_with_a_mean_over_the_items_that_sold(self):
-        theta = np.random.default_rng(0).uniform(0, 1, 5000)
-        for price in (0.3, 0.75, 1.0):
+        theta = np.random.default_rng(0).uniform(0, TOP, 5000)
+        for price in (0.6, 1.5, TOP):
             S = lemons.seller_rule(theta, price)
-            sold = theta[S > 0.5]
             assert lemons.clearing_price(theta, S, 1.5) == pytest.approx(
-                1.5 * sold.mean()
+                1.5 * theta[S > 0.5].mean()
             )
 
     def test_it_differentiates_and_batches_under_torch(self):
@@ -96,15 +106,16 @@ class TestThePostedPriceIterationIsASimulation:
     def test_the_price_path_is_the_analytic_contraction(self):
         # If ``p`` were not an arrival state the sellers would face the price
         # their own decisions imply, and no iteration would happen at all.
-        path = np.asarray(naive_run(1.0, 10)["p"]).ravel()
-        assert path == pytest.approx(lemons.clearing_path(1.0, 10), abs=0.02)
+        path = np.asarray(posted_run(TOP, 10)["p"]).ravel()
+        assert path == pytest.approx(lemons.clearing_path(TOP, 10), abs=0.02)
 
     def test_the_market_trades_before_it_collapses(self):
         # Without this the collapse below is indistinguishable from a market
-        # that never traded.
-        history = naive_run(1.0, 10)
+        # that never traded. The payoff block sits before the market block, so
+        # a seller is paid at the price it responded to and never overpays.
+        history = posted_run(TOP, 10)
         volume = np.asarray(history["S"]).sum(axis=-1).ravel()
-        assert volume[0] > 0.4 * SIZE
+        assert volume[0] > 0.9 * SIZE
         assert volume[-1] < 0.1 * SIZE
         assert (np.asarray(history["u"]) >= 0).all()
 
@@ -112,7 +123,7 @@ class TestThePostedPriceIterationIsASimulation:
 class TestAnticipationMakesItAFixedPointInRules:
     """Nothing is lagged, so the equilibrium has to be solved for rather than run."""
 
-    @pytest.mark.parametrize("anticipated", [1.0, 0.6, 0.3])
+    @pytest.mark.parametrize("anticipated", [2.2, 1.0, 0.3])
     def test_the_price_a_rule_induces_is_the_clearing_map_of_the_price_it_expects(
         self, anticipated
     ):
@@ -125,19 +136,15 @@ class TestAnticipationMakesItAFixedPointInRules:
         market = lemons.MARKETS["partial-collapse"]
         equilibrium = lemons.clearing_fixed_points(**market)[-1]
         induced = np.asarray(anticipated_run(equilibrium, **market)["p"]).ravel()[0]
-        assert induced == pytest.approx(equilibrium, abs=0.01)
+        assert induced == pytest.approx(equilibrium, abs=0.02)
 
 
-class TestEachConfigurationReachesItsFixedPoint:
+class TestEachUniformConfigurationReachesItsFixedPoint:
     """The premium and the quality floor between them decide where the price goes."""
 
     @pytest.mark.parametrize(
         "configuration, reached",
-        [
-            ("collapse", 0.0),
-            ("partial-collapse", 0.6),
-            ("no-collapse", 1.25),
-        ],
+        [("akerlof", 0.0), ("partial-collapse", 1.2), ("no-collapse", 2.5)],
     )
     def test_the_price_settles_where_the_closed_form_says(self, configuration, reached):
         # ``knife-edge`` is excluded deliberately: its map is the identity, so
@@ -148,15 +155,14 @@ class TestEachConfigurationReachesItsFixedPoint:
         # highest price it reproduces.
         assert lemons.clearing_fixed_points(**market)[-1] == pytest.approx(reached)
 
-        path = np.asarray(naive_run(1.0, 40, **market)["p"]).ravel()
-        assert path[-1] == pytest.approx(reached, abs=0.02)
+        path = np.asarray(posted_run(TOP, 40, **market)["p"]).ravel()
+        assert path[-1] == pytest.approx(reached, abs=0.03)
 
     def test_the_knife_edge_stays_where_it_started(self):
         # At a premium of exactly 2 the map's slope is 1, so every price up to
         # the top of the quality range reproduces itself.
-        market = lemons.MARKETS["knife-edge"]
-        path = np.asarray(naive_run(0.7, 20, **market)["p"]).ravel()
-        assert path == pytest.approx(0.7, abs=0.02)
+        path = np.asarray(posted_run(1.4, 20, **lemons.MARKETS["knife-edge"])["p"])
+        assert path.ravel() == pytest.approx(1.4, abs=0.03)
 
     def test_the_quality_floor_divides_the_two_basins(self):
         # The floor is what makes the collapse partial: a market that starts
@@ -164,18 +170,60 @@ class TestEachConfigurationReachesItsFixedPoint:
         # starts above it unravels down to the higher price rather than to zero.
         market = lemons.MARKETS["partial-collapse"]
         floor = market["low"]
-        assert np.asarray(naive_run(floor - 0.05, 6, **market)["p"]) == pytest.approx(
+        assert np.asarray(posted_run(floor - 0.05, 6, **market)["p"]) == pytest.approx(
             0.0
         )
-        above = np.asarray(naive_run(floor + 0.05, 40, **market)["p"]).ravel()
-        assert above[-1] == pytest.approx(0.6, abs=0.02)
+        above = np.asarray(posted_run(floor + 0.05, 40, **market)["p"]).ravel()
+        assert above[-1] == pytest.approx(1.2, abs=0.03)
+
+
+class TestTwoTypesGiveAPriceTheUniformMarketCannot:
+    """Akerlof's cars: a peach or a lemon, and a market that need not collapse."""
+
+    @pytest.mark.parametrize("p0, reached", [(0.3, 0.0), (1.0, 0.6), (2.5, 2.28)])
+    def test_where_the_market_lands_depends_on_where_it_starts(self, p0, reached):
+        market = lemons.PEACH_MARKETS["two-prices"]
+        assert any(
+            reached == pytest.approx(price)
+            for price in lemons.peaches_fixed_points(**market)
+        )
+
+        path = np.asarray(peaches_run(p0, 25, **market)["p"]).ravel()
+        assert path[-1] == pytest.approx(reached, abs=0.03)
+
+    def test_the_middle_price_is_a_market_in_lemons_alone(self):
+        # This is what the uniform market has no room for: trade survives, and
+        # every peach is withheld. The price is a lemon's worth times the
+        # premium and does not depend on what a peach is worth or how many
+        # there are.
+        market = lemons.PEACH_MARKETS["two-prices"]
+        history = peaches_run(1.0, 25, **market)
+        sold = np.asarray(history["S"])[-1].ravel()
+        quality = np.asarray(history["theta"])[-1].ravel()
+
+        assert sold.mean() == pytest.approx(1 - market["share"], abs=0.02)
+        assert quality[sold > 0.5].max() == pytest.approx(0.4)
+
+    def test_peaches_trade_only_where_they_are_common_enough(self):
+        # Below the critical share no price a buyer will pay for the average car
+        # is enough to bring a peach out, however the market is started.
+        critical = lemons.peach_share_for_trade()
+        assert critical == pytest.approx(0.5833, abs=1e-4)
+
+        assert len(lemons.peaches_fixed_points(share=critical - 0.05)) == 2
+        assert len(lemons.peaches_fixed_points(share=critical + 0.05)) == 3
+
+        scarce = lemons.PEACH_MARKETS["lemons-only"]
+        assert scarce["share"] < critical
+        path = np.asarray(peaches_run(2.5, 25, **scarce)["p"]).ravel()
+        assert path[-1] == pytest.approx(0.6, abs=0.03)
 
 
 class TestNoTradeIsAnEquilibriumEverywhere:
     """At ``p = 0`` nobody offers, and that is a price the market reproduces."""
 
     def test_the_empty_pool_stays_at_zero_rather_than_going_nan(self):
-        history = naive_run(0.0, 4)
+        history = posted_run(0.0, 4)
         assert np.asarray(history["p"]).ravel() == pytest.approx(0.0)
         assert not np.isnan(np.asarray(history["p"])).any()
         assert np.asarray(history["S"]).sum() == 0.0
@@ -197,12 +245,11 @@ class TestTheBuyerCanCommitToThePriceInstead:
         # there the buyer's own price is the lower of the two.
         market = lemons.MARKETS["partial-collapse"]
         best = lemons.monopsony_price(**market)
-        competitive = lemons.clearing_fixed_points(**market)[-1]
-        assert best < competitive
+        assert best < lemons.clearing_fixed_points(**market)[-1]
 
         # And it is a maximum rather than a corner the bounds happened to give.
-        assert buyer_run(best, **market) > buyer_run(best - 0.1, **market)
-        assert buyer_run(best, **market) > buyer_run(best + 0.1, **market)
+        assert buyer_run(best, **market) > buyer_run(best - 0.6, **market)
+        assert buyer_run(best, **market) > buyer_run(best + 0.6, **market)
 
 
 class TestAnAcyclicGraphDoesNotMeanASweepSuffices:
@@ -211,7 +258,7 @@ class TestAnAcyclicGraphDoesNotMeanASweepSuffices:
     @pytest.mark.parametrize(
         "block",
         [lemons.lemons_block, lemons.naive_lemons_block],
-        ids=["anticipated", "naive"],
+        ids=["anticipated", "posted"],
     )
     def test_the_relevance_graph_sees_one_decision_and_no_cycle(self, block):
         graph = block.relevance_graph(lemons.lemons_calibration())

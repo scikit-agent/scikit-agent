@@ -97,12 +97,13 @@ rather than solved for, since the model has a crossing.
 
 ## Lemons
 
-Akerlof's market for adverse selection: sellers know what they hold and buyers
-can price only the average of what is offered, so the better items leave the
-market first. Three versions share the same sellers and differ in when the price
-is set -- anticipated by the sellers, posted from the round before, or committed
-to by a buyer. All three have an acyclic relevance graph, and only one of them
-can be solved a decision at a time.
+Akerlof's market for adverse selection, at the paper's own numbers: sellers know
+what they hold and buyers can price only the average of what is offered, so the
+better cars leave the market first. Five leaf blocks compose into several
+markets, which differ in when the price is set -- anticipated by the sellers,
+posted from the round before, or committed to by a buyer -- and in whether
+quality is a spread or Akerlof's two types. All of them have an acyclic
+relevance graph, and only some can be solved a decision at a time.
 
 ```{eval-rst}
 .. automodule:: skagent.models.lemons

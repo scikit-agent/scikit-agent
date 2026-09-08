@@ -2,32 +2,53 @@ r"""
 Akerlof (1970) adverse selection: the market for lemons.
 
 Sellers know the quality of what they hold; buyers do not, and can price only
-the average quality of what is offered. Each seller draws a quality
+the average quality of what is offered. Each seller holds one item of quality
 :math:`\theta`, values it at :math:`\theta`, and parts with it only if the price
 covers that. A buyer values the same item at a premium :math:`m`, so the price
 that clears a competitive market is the buyer valuation of what actually trades:
 
 .. math::
-    \theta_i \sim U[\ell, h], \qquad S_i = 1 \iff p \geq \theta_i, \qquad
-    u_i = S_i (p - \theta_i), \qquad p = m \, E[\theta_i \mid S_i = 1]
+    S_i = 1 \iff p \geq \theta_i, \qquad u_i = S_i (p - \theta_i), \qquad
+    p = m \, E[\theta_i \mid S_i = 1]
 
-Every version below shares those sellers and that clearing price. What differs
-is WHEN the price is determined relative to the decision it feeds, and that
-alone decides what it takes to solve the model.
+The paper's own numbers are the defaults here: quality uniform on
+:math:`[0, 2]`, and buyers who value a car at :math:`3/2` of what its owner
+does. So :func:`lemons_calibration` with no arguments is the model of the
+paper's section II, and its answer is the paper's -- no trade at all, although
+every car is worth more to a buyer than to the seller holding it.
 
-**Sellers anticipate the price their own supply induces** --
-:data:`lemons_block`, and the one an economist means by the Akerlof equilibrium.
-Sellers act on their own quality alone, the market clears on what they offered,
-and they are paid at that price. Nothing is lagged. A seller's rule is a best
-response to the price that rule induces once every seller follows it, so the
-equilibrium is a FIXED POINT IN RULES and a solver has to find it.
+The module builds its markets out of five leaf blocks. Each states one thing
+about the market, and every version below is a different composition of the same
+five, so no equation is written twice:
 
-**Sellers respond to a price already posted** -- :data:`naive_lemons_block`. The
-price is read before the market writes it, which makes it an arrival state:
-period :math:`t`'s sellers face period :math:`t-1`'s clearing price. Simulating
-:math:`T` periods therefore runs :math:`T` rounds of the clearing map, and the
-price column is the iterates. This version needs no solver, which makes it the
-cheapest way to watch the same equilibrium arrive.
+    spread_quality_block    quality is uniform between the ends of the range
+    two_type_quality_block  a car is a peach or a lemon, and nothing between
+    supply_block            the seller decides, seeing only its own quality
+    offer_block             the seller decides, seeing the price on the table
+    seller_payoff_block     the seller's surplus, at whatever price is current
+    market_block            the competitive price, given what was offered
+
+**Where the payoff block sits is what says which price the seller is paid at**,
+and where the market block sits is what says whether the price is known when the
+seller decides. Declaration order is the whole of the timing, so there is no
+timing annotation anywhere in the model.
+
+Three timings, and they differ in nothing else:
+
+**Sellers anticipate the price their own supply induces** -- :data:`lemons_block`
+and :data:`peaches_block`. The sellers decide, the market clears on what they
+offered, and they are paid at that price. Nothing is lagged, and no seller reads
+a price. A seller's rule is a best response to the price that rule induces once
+every seller follows it, so the equilibrium is a FIXED POINT IN RULES and a
+solver has to find it.
+
+**Sellers respond to a price already posted** -- :data:`naive_lemons_block` and
+:data:`naive_peaches_block`. The payoff block comes before the market block, so
+sellers are paid at the price they responded to and the market then clears at
+what their decisions imply. The price is read before it is written, which makes
+it an arrival state: period :math:`t`'s sellers face period :math:`t-1`'s
+clearing price, simulating :math:`T` periods runs :math:`T` rounds of the
+clearing map, and no solver is needed to watch the same equilibrium arrive.
 
 **A buyer commits to a price before supply** -- :data:`monopsony_block`. The
 price becomes a decision, owned by a buyer who names it to maximize its own
@@ -49,45 +70,61 @@ sellers anticipate that, and the market shuts for a reason that has nothing to
 do with adverse selection. Competition among buyers is what pins the price up to
 the value of what trades.
 
-**None of the three has a cycle its relevance graph can see, and they need
-three different treatments.** In :data:`lemons_block` a seller's payoff runs
-through the price to every other seller's decision, so the model is a genuine
-strategic fixed point among instances of one class -- and
-``relies_on("S", "S")`` is nonetheless ``False``, because that reliance is not
-derivable without expanding the class. In :data:`naive_lemons_block` the same
-call is ``False`` and CORRECT: this period's payoff turns on last period's
-price, so within a period there is no reliance to find. In
-:data:`monopsony_block` the graph reports two nodes and the one edge from the
-price to the sell decision, and its topological order is genuine backward
-induction. So a cyclicity test cannot tell the first two apart, and only one of
-them can be solved a decision at a time.
+**None of the timings has a cycle its relevance graph can see, and they need
+three different treatments.** Where the price is anticipated, a seller's payoff
+runs through it to every other seller's decision, so the model is a genuine
+strategic fixed point among instances of one class -- and ``relies_on("S", "S")``
+is nonetheless ``False``, because that reliance is not derivable without
+expanding the class. Where the price is posted, the same call is ``False`` and
+CORRECT: this period's payoff turns on last period's price, so within a period
+there is no reliance to find. Where a buyer commits, the graph reports two nodes
+and the one edge from the price to the sell decision, and its topological order
+is genuine backward induction.
 
-**Two knobs move the market between four regimes**, and both are calibration
-parameters. The premium :math:`m` decides whether the clearing map contracts,
-since its slope is :math:`m/2`; the quality floor :math:`\ell` decides whether
-the unravelling has anywhere to stop. See :data:`MARKETS` for the four named
-configurations and :func:`clearing_fixed_points` for the general answer.
+**Two quality distributions, and they fail in different ways.** Section II's
+uniform makes the clearing map exactly linear, since
+:math:`E[\theta \mid \theta \leq p]` is :math:`(\ell + p)/2`, so the only prices
+it can reproduce are no trade, a corner, or -- at :math:`m = 2` exactly -- every
+price at once. The paper's automobiles are two types rather than a spread, and
+that is where the market becomes interesting: only lemons trade at
+:math:`m\ell`, and if peaches are common enough there is a second price,
+:math:`m E[\theta]`, at which everything trades. Which one the market reaches
+depends on where it starts. See :data:`MARKETS` and :data:`PEACH_MARKETS` for
+the named configurations, and :func:`clearing_fixed_points` and
+:func:`peaches_fixed_points` for the general answers.
 
-With no floor and a premium below :math:`2`, conditional on sale
-:math:`\theta \sim U[0, p]`, so :math:`E[\theta \mid \text{sale}] = p/2` and the
-map is :math:`p' = (m/2)\,p`: a contraction whose only fixed point is
-:math:`p = 0`. No trade, though every item has a buyer who values it above its
-holder. With a floor the same map has a second, higher fixed point at
-:math:`m\ell / (2 - m)`, and the market unravels down to it rather than away:
-the top of the market is destroyed and the bottom keeps trading. Above the
-threshold :math:`m = 2` the collapse is unstable instead, and the price runs up
-to :math:`m(\ell + h)/2`, where every item trades.
+Within the uniform family the quality floor is what decides whether the
+unravelling has anywhere to stop. With no floor and a premium below 2 the map is
+a contraction onto :math:`p = 0`. With a floor the same map has a second, higher
+fixed point at :math:`m\ell/(2 - m)`, and the market unravels down to it rather
+than away: the top of the market is destroyed and the bottom keeps trading.
+Above the threshold :math:`m = 2` the collapse is unstable instead, and the
+price runs up to :math:`m(\ell + h)/2`, where every item trades.
 
-:func:`clearing_map` is the same function under both readings. Iterated, it is
-the price path :data:`naive_lemons_block` simulates; read once, it is the price
-an anticipated price induces in :data:`lemons_block`, whose equilibrium is
-therefore exactly where the map has a fixed point.
+:func:`clearing_map` and :func:`peaches_clearing_map` are each the same function
+under two readings. Iterated, they are the price path a posted-price market
+simulates; read once, they give the price an anticipated price induces. An
+anticipating market's equilibria are therefore exactly their fixed points.
+
+**What signalling would need**, since it is the paper's own answer and this
+model is meant to reach it. Akerlof's section IV names guarantees, brand names
+and licensing as the institutions that counteract adverse selection, and all of
+them work the same way: the seller takes a costly action whose cost is LOWER for
+higher quality, so that taking it is credible. Two things have to change here,
+and the two-type quality is the first of them, since a separating equilibrium
+separates types. The second is that the market must be able to price a SEGMENT
+rather than a pool: the clearing price would read an observable per-seller
+signal and return one price per signal value, and each seller would be paid at
+its own. That is a change to :data:`market_block` and to what
+:data:`seller_payoff_block` reads, and it adds a second control to
+:data:`supply_block` -- which is why the seller's information set is its quality
+alone, so a second decision drops in beside the first.
 
 **The empty pool is the collapse, and the value there belongs to the model.**
-Where the price is zero nobody sells, so the clearing price averages over
-nothing. This model answers 0, which is what makes no trade a fixed point rather
-than a NaN; a different market answers differently, so the choice is stated at
-the reduction and not inferred.
+Where the price is below every seller's valuation nobody sells, so the clearing
+price averages over nothing. This model answers 0, which is what makes no trade
+a fixed point rather than a NaN; a different market answers differently, so the
+choice is stated at the reduction and not inferred.
 
 Binary decisions are relaxed to continuous ``[0, 1]`` controls, pending
 discrete-action support, following the convention of
@@ -96,17 +133,25 @@ exact 0 and 1, so the relaxation costs the supplied equilibria nothing.
 """
 
 from skagent.block import Control, DBlock, Entity, RBlock
-from skagent.distributions import Uniform
+from skagent.distributions import Bernoulli, Uniform
 
 PREMIUM = 1.5
-"""Default for how much more a buyer values an item than the seller holding it."""
+"""How much more a buyer values an item than the seller holding it.
+
+Akerlof's own 3/2: his sellers value a car at its quality, his buyers at three
+halves of it.
+"""
+
+QUALITY_LOW = 0.0
+QUALITY_HIGH = 2.0
+"""The ends of the quality range, and Akerlof's own: uniform on [0, 2]."""
 
 PREMIUM_THRESHOLD = 2.0
-"""The premium at which the clearing map's slope is exactly 1.
+"""The premium at which the uniform market's clearing map has slope exactly 1.
 
 Below it the map contracts and the market collapses; above it no trade is an
 unstable fixed point and the price runs up until every item trades. The
-threshold does not depend on the quality support.
+threshold does not depend on the quality range.
 """
 
 _EMPTY_POOL = 1e-12
@@ -142,11 +187,23 @@ def clearing_price(theta, S, premium):
     return premium * (weight * theta).sum() / (weight.sum() + _EMPTY_POOL)
 
 
+spread_quality_block = DBlock(
+    name="quality",
+    shocks={"theta": (Uniform, {"low": "ql", "high": "qh"})},
+)
+
+two_type_quality_block = DBlock(
+    name="quality",
+    shocks={"peach": (Bernoulli, {"p": "share"})},
+    dynamics={"theta": lambda peach, ql, qh: ql + (qh - ql) * peach},
+)
+
+# No price in the information set: what a seller expects the market to pay is
+# carried by its rule rather than read, which is what makes the equilibrium a
+# fixed point in rules. A signalling decision would join this block and share
+# the same information set.
 supply_block = DBlock(
     name="supply",
-    shocks={"theta": (Uniform, {"low": "ql", "high": "qh"})},
-    # No price in the information set: a seller acts on its own quality, and
-    # what it expects the market to pay is carried by the rule rather than read.
     dynamics={
         "S": Control(["theta"], lower_bound=0.0, upper_bound=1.0, agent="seller")
     },
@@ -154,21 +211,18 @@ supply_block = DBlock(
 
 offer_block = DBlock(
     name="offer",
-    shocks={"theta": (Uniform, {"low": "ql", "high": "qh"})},
     dynamics={
-        "S": Control(["theta", "p"], lower_bound=0.0, upper_bound=1.0, agent="seller"),
-        "u": lambda S, p, theta: S * (p - theta),
+        "S": Control(["theta", "p"], lower_bound=0.0, upper_bound=1.0, agent="seller")
     },
-    reward={"u": "seller"},
 )
-
-market_block = DBlock(name="market", dynamics={"p": clearing_price})
 
 seller_payoff_block = DBlock(
     name="seller_payoff",
     dynamics={"u": lambda S, p, theta: S * (p - theta)},
     reward={"u": "seller"},
 )
+
+market_block = DBlock(name="market", dynamics={"p": clearing_price})
 
 bid_block = DBlock(
     name="bid",
@@ -189,43 +243,55 @@ surplus_block = DBlock(
     reward={"w": "buyer"},
 )
 
-# The sellers supply, the market clears on what they supplied, and they are paid
-# at the price that clearing produced. The seller class is declared twice
-# because it acts before the market and is paid after; declaration order is what
-# fixes the dynamics order, so there is no timing annotation in the model.
+
+def _sellers(quality, decision):
+    """The seller class: what its members hold, and what they decide."""
+    return RBlock(name="sellers", entity=Entity("seller"), blocks=[quality, decision])
+
+
+_payoffs = RBlock(name="payoffs", entity=Entity("seller"), blocks=[seller_payoff_block])
+
+# Supply, then clearing, then payment: the price is not known when the sellers
+# decide and is not left over from anywhere, so they can only anticipate it.
 lemons_block = RBlock(
     name="lemons",
-    blocks=[
-        RBlock(name="sellers", entity=Entity("seller"), blocks=[supply_block]),
-        market_block,
-        RBlock(name="payoffs", entity=Entity("seller"), blocks=[seller_payoff_block]),
-    ],
+    blocks=[_sellers(spread_quality_block, supply_block), market_block, _payoffs],
 )
 
-# The same market with the price moved in front of the sellers, which is what
-# makes it a lag: they respond to what the last round cleared at.
+peaches_block = RBlock(
+    name="peaches",
+    blocks=[_sellers(two_type_quality_block, supply_block), market_block, _payoffs],
+)
+
+# Payment before clearing: the sellers are paid at the price they responded to,
+# and the market then clears at what their decisions imply. That is what makes
+# the price a lag rather than an outcome of this round.
 naive_lemons_block = RBlock(
     name="naive_lemons",
-    blocks=[
-        RBlock(name="sellers", entity=Entity("seller"), blocks=[offer_block]),
-        market_block,
-    ],
+    blocks=[_sellers(spread_quality_block, offer_block), _payoffs, market_block],
 )
 
-# The same sellers again, with the price named by a buyer who moves first rather
-# than left over from the last round.
+naive_peaches_block = RBlock(
+    name="naive_peaches",
+    blocks=[_sellers(two_type_quality_block, offer_block), _payoffs, market_block],
+)
+
+# The price named first, by a buyer, rather than left over from the last round.
 monopsony_block = RBlock(
     name="monopsony",
     blocks=[
         bid_block,
-        RBlock(name="sellers", entity=Entity("seller"), blocks=[offer_block]),
+        _sellers(spread_quality_block, offer_block),
+        _payoffs,
         surplus_block,
     ],
 )
 
 
-def lemons_calibration(size=10000, low=0.0, high=1.0, premium=PREMIUM):
+def lemons_calibration(size=10000, low=QUALITY_LOW, high=QUALITY_HIGH, premium=PREMIUM):
     """A market of *size* sellers whose quality is uniform on ``[low, high]``.
+
+    The defaults are Akerlof's section II.
 
     Parameters
     ----------
@@ -233,7 +299,7 @@ def lemons_calibration(size=10000, low=0.0, high=1.0, premium=PREMIUM):
         How many sellers. The clearing price is an average over those who sold,
         so this is the accuracy of the fixed point rather than part of the model.
     low, high : float, optional
-        Support of the quality distribution. ``low`` is the quality floor.
+        The ends of the quality range. ``low`` is the quality floor.
     premium : float, optional
         How much more a buyer values an item than the seller holding it.
 
@@ -244,27 +310,74 @@ def lemons_calibration(size=10000, low=0.0, high=1.0, premium=PREMIUM):
     return {"ql": low, "qh": high, "seller": size, "premium": premium}
 
 
+def peaches_calibration(
+    size=10000, low=0.4, high=QUALITY_HIGH, premium=PREMIUM, share=0.5
+):
+    """A market of *size* sellers holding a peach or a lemon and nothing between.
+
+    Parameters
+    ----------
+    size : int, optional
+        How many sellers.
+    low, high : float, optional
+        The quality of a lemon and of a peach.
+    premium : float, optional
+        How much more a buyer values an item than the seller holding it.
+    share : float, optional
+        The fraction of cars that are peaches.
+
+    Returns
+    -------
+    dict
+    """
+    return {
+        "ql": low,
+        "qh": high,
+        "seller": size,
+        "premium": premium,
+        "share": share,
+    }
+
+
 MARKETS = {
-    "collapse": {"premium": 1.5, "low": 0.0},
-    "partial-collapse": {"premium": 1.5, "low": 0.2},
+    "akerlof": {"premium": 1.5, "low": 0.0},
+    "partial-collapse": {"premium": 1.5, "low": 0.4},
     "knife-edge": {"premium": 2.0, "low": 0.0},
     "no-collapse": {"premium": 2.5, "low": 0.0},
 }
-"""Four configurations of :func:`lemons_calibration`, on quality up to 1.
+"""Four configurations of :func:`lemons_calibration`, on quality up to 2.
 
 Each is a pair of arguments rather than a whole calibration, so the number of
-sellers stays the caller's: ``lemons_calibration(size=1000, **MARKETS["collapse"])``.
+sellers stays the caller's: ``lemons_calibration(size=1000, **MARKETS["akerlof"])``.
 
     name               competitive prices     monopsony price and payoff
-    collapse           0                      0,   and 0
-    partial-collapse   0 and 0.6              0.4, and 0.0125
-    knife-edge         every price up to 1    any, and 0
-    no-collapse        0 (unstable) and 1.25  1,   and 0.25
+    akerlof            0                      0,   and 0
+    partial-collapse   0 and 1.2              0.8, and 0.025
+    knife-edge         every price up to 2    any, and 0
+    no-collapse        0 (unstable) and 2.5   2,   and 0.5
 
-Under ``partial-collapse`` the two competitive prices are both stable and the
-quality floor divides their basins: a market that starts below the floor has
-nobody willing to sell and stays collapsed, and one that starts above it
-unravels down to 0.6 rather than to nothing.
+``akerlof`` is the paper's own section II. Under ``partial-collapse`` the two
+competitive prices are both stable and the quality floor divides their basins: a
+market that starts below the floor has nobody willing to sell and stays
+collapsed, and one that starts above it unravels down to 1.2 rather than to
+nothing.
+"""
+
+PEACH_MARKETS = {
+    "lemons-only": {"share": 0.3},
+    "two-prices": {"share": 0.7},
+}
+"""Two configurations of :func:`peaches_calibration`, at its default qualities.
+
+    name          competitive prices
+    lemons-only   0 and 0.6
+    two-prices    0 and 0.6 and 2.28
+
+A lemon is worth 0.4 and a peach 2.0, so at a price of 0.6 the lemons all sell
+and no peach does, whatever peaches are worth and however many there are. The
+second price exists only where peaches are common enough to carry the average,
+which is :func:`peach_share_for_trade` and is 0.583 here; above it a market that
+starts high stays high and one that starts low still collapses to the lemons.
 """
 
 
@@ -289,8 +402,8 @@ def seller_rule(theta, p):
 def supply_rule(price):
     """Supply as though the market will clear at *price*, seeing only quality.
 
-    The equilibrium rule of :data:`lemons_block` is this one at a fixed point of
-    :func:`clearing_map`.
+    The equilibrium rule of an anticipating market is this one at a fixed point
+    of that market's clearing map.
 
     Parameters
     ----------
@@ -320,11 +433,8 @@ def bid_rule(price):
     return lambda: price
 
 
-def clearing_map(p, premium=PREMIUM, low=0.0, high=1.0):
-    """The price that sellers facing *p* bring about.
-
-    Iterated, this is the path :data:`naive_lemons_block` simulates; read once,
-    it is the price an anticipated *p* induces in :data:`lemons_block`.
+def clearing_map(p, premium=PREMIUM, low=QUALITY_LOW, high=QUALITY_HIGH):
+    """The price that sellers facing *p* bring about, on a uniform quality range.
 
     Parameters
     ----------
@@ -342,8 +452,33 @@ def clearing_map(p, premium=PREMIUM, low=0.0, high=1.0):
     return premium * (low + min(p, high)) / 2
 
 
-def clearing_path(p0, periods, premium=PREMIUM, low=0.0, high=1.0):
-    """The clearing map iterated from *p0*, one price per round.
+def peaches_clearing_map(p, premium=PREMIUM, low=0.4, high=QUALITY_HIGH, share=0.5):
+    """The price that sellers facing *p* bring about, in a two-type market.
+
+    Below a lemon's worth nothing is offered; between the two qualities only
+    lemons are, and their average quality does not depend on the price at all;
+    at or above a peach's worth everything is.
+
+    Parameters
+    ----------
+    p : float
+        The price the sellers act on.
+    premium, low, high, share : float, optional
+        As in :func:`peaches_calibration`.
+
+    Returns
+    -------
+    float
+    """
+    if p < low:
+        return 0.0
+    if p < high:
+        return premium * low
+    return premium * ((1 - share) * low + share * high)
+
+
+def clearing_path(p0, periods, mapping=None, **market):
+    """A clearing map iterated from *p0*, one price per round.
 
     Parameters
     ----------
@@ -351,24 +486,27 @@ def clearing_path(p0, periods, premium=PREMIUM, low=0.0, high=1.0):
         The starting price.
     periods : int
         How many rounds.
-    premium, low, high : float, optional
-        As in :func:`lemons_calibration`.
+    mapping : callable, optional
+        The clearing map. Defaults to :func:`clearing_map`.
+    **market
+        Passed to *mapping*.
 
     Returns
     -------
     list of float
         Length *periods*, the price after each round.
     """
+    step = clearing_map if mapping is None else mapping
     path = []
     p = p0
     for _ in range(periods):
-        p = clearing_map(p, premium, low, high)
+        p = step(p, **market)
         path.append(p)
     return path
 
 
-def clearing_fixed_points(premium=PREMIUM, low=0.0, high=1.0):
-    """The prices the competitive market reproduces.
+def clearing_fixed_points(premium=PREMIUM, low=QUALITY_LOW, high=QUALITY_HIGH):
+    """The prices a uniform-quality competitive market reproduces.
 
     These are the equilibria of :data:`lemons_block` and the rest points of
     :data:`naive_lemons_block`. No trade is always one of them. A second appears
@@ -398,8 +536,53 @@ def clearing_fixed_points(premium=PREMIUM, low=0.0, high=1.0):
     return tuple(points)
 
 
-def buyer_payoff(p, premium=PREMIUM, low=0.0, high=1.0):
-    """The monopsonist's surplus per seller at price *p*.
+def peaches_fixed_points(premium=PREMIUM, low=0.4, high=QUALITY_HIGH, share=0.5):
+    """The prices a two-type competitive market reproduces.
+
+    Up to three, and the middle one is what the uniform market cannot have: a
+    price at which trade survives and every peach is withheld.
+
+    Parameters
+    ----------
+    premium, low, high, share : float, optional
+        As in :func:`peaches_calibration`.
+
+    Returns
+    -------
+    tuple of float
+        In increasing order.
+    """
+    points = [0.0]
+    lemons_only = premium * low
+    if low <= lemons_only < high:
+        points.append(lemons_only)
+    complete = premium * ((1 - share) * low + share * high)
+    if complete >= high:
+        points.append(complete)
+    return tuple(points)
+
+
+def peach_share_for_trade(premium=PREMIUM, low=0.4, high=QUALITY_HIGH):
+    """The share of peaches above which a market in peaches exists at all.
+
+    Below it, no price a buyer will pay for the average car is enough to bring a
+    peach out, whatever the market does.
+
+    Parameters
+    ----------
+    premium, low, high : float, optional
+        As in :func:`peaches_calibration`.
+
+    Returns
+    -------
+    float
+        A share, which may exceed 1 where no share of peaches is enough.
+    """
+    return (high / premium - low) / (high - low)
+
+
+def buyer_payoff(p, premium=PREMIUM, low=QUALITY_LOW, high=QUALITY_HIGH):
+    """The monopsonist's surplus per seller at price *p*, on uniform quality.
 
     Parameters
     ----------
@@ -418,7 +601,7 @@ def buyer_payoff(p, premium=PREMIUM, low=0.0, high=1.0):
     return share * (premium * (low + min(p, high)) / 2 - p)
 
 
-def monopsony_price(premium=PREMIUM, low=0.0, high=1.0):
+def monopsony_price(premium=PREMIUM, low=QUALITY_LOW, high=QUALITY_HIGH):
     """The price that maximizes :func:`buyer_payoff`.
 
     Parameters
