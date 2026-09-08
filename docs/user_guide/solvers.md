@@ -96,12 +96,13 @@ method = TabularBestResponseSolver(GroundedBlock(b, calibration))
 decision_rules = solve_in_relevance_order(method)
 ```
 
-One pass per decision suffices here, because everything a decision relies on is
-already settled by the time its turn comes. If the graph contains a cycle, which
-means that two or more decisions rely on each other, then no such order exists,
-and this schedule raises an error rather than choosing an order arbitrarily.
-That refusal is the honest answer, because a cycle is a simultaneous-move
-equilibrium problem, and it calls for the next schedule.
+One pass per decision suffices for an acyclic component, because everything a
+decision relies on is already settled by the time its turn comes. If a component
+contains a cycle, the schedule repeatedly computes every decision's best
+response against the same previous profile and installs those responses
+simultaneously. It returns a pure-strategy fixed point when the policies settle
+within tolerance and raises on non-convergence. Mixed-strategy equilibria and
+recurring cyclic games are not supported by this schedule.
 
 ### The decisions depend on each other: `solve_symmetric_equilibrium`
 

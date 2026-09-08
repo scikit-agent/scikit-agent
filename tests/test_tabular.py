@@ -52,6 +52,22 @@ simultaneous_block = DBlock(
 )
 
 
+# Player 1 wants equal actions and player 2 wants different actions. With the
+# pure actions 0 and 1, simultaneous best responses cycle instead of converging.
+matching_pennies_block = DBlock(
+    **{
+        "name": "matching_pennies",
+        "dynamics": {
+            "a1": Control([], agent="p1"),
+            "a2": Control([], agent="p2"),
+            "u1": lambda a1, a2: -((a1 - a2) ** 2),
+            "u2": lambda a1, a2: (a1 - a2) ** 2,
+        },
+        "reward": {"u1": "p1", "u2": "p2"},
+    }
+)
+
+
 class TestSolve:
     def test_solution_of_a_sequential_game(self, tree_killer):
         """Each decision is solved conditional on what it observes."""
@@ -83,15 +99,52 @@ class TestSolve:
         assert policies["TDoc"].to_dict() == {(0.0,): 0.2, (1.0,): 1.0}
         assert policies["PT"].to_dict() == {(): 0.0}
 
-    def test_cyclic_relevance_graph_raises(self):
-        """Decisions that rely on each other admit no one-at-a-time order."""
+    def test_solution_of_a_convergent_cyclic_game(self):
+        """Mutually reliant decisions converge to a simultaneous fixed point."""
         assert not simultaneous_block.relevance_graph().is_acyclic()
 
-        with pytest.raises(NotImplementedError) as excinfo:
-            solve_in_relevance_order(solver(simultaneous_block))
+        policies = solve_in_relevance_order(solver(simultaneous_block))
+
+        assert policies["a1"].to_dict() == {(): 0.5}
+        assert policies["a2"].to_dict() == {(): 0.5}
+
+    def test_cyclic_decisions_respond_to_the_same_profile(self, monkeypatch):
+        """No response is installed until every response has been computed."""
+        game = solver(simultaneous_block, actions=np.array([0.0, 1.0]))
+        start = {
+            "a1": get_action_rule(0.0),
+            "a2": get_action_rule(0.0),
+        }
+        profiles_seen = []
+        original_best_response = game.best_response
+
+        def recording_best_response(decision, policies):
+            profiles_seen.append(
+                (decision, float(policies["a1"]()), float(policies["a2"]()))
+            )
+            return original_best_response(decision, policies)
+
+        monkeypatch.setattr(game, "best_response", recording_best_response)
+
+        with pytest.raises(RuntimeError, match="did not converge within 1 iteration"):
+            solve_in_relevance_order(game, start, max_iterations=1)
+
+        assert {decision for decision, _, _ in profiles_seen} == {"a1", "a2"}
+        assert all((a1, a2) == (0.0, 0.0) for _, a1, a2 in profiles_seen)
+
+    def test_matching_pennies_reports_non_convergence(self):
+        game = solver(matching_pennies_block, actions=np.array([0.0, 1.0]))
+        start = {
+            "a1": get_action_rule(0.0),
+            "a2": get_action_rule(0.0),
+        }
+
+        with pytest.raises(RuntimeError) as excinfo:
+            solve_in_relevance_order(game, start, max_iterations=4)
 
         message = str(excinfo.value)
         assert "a1" in message and "a2" in message
+        assert "did not converge within 4 iterations" in message
 
     def test_prisoners_dilemma_defection_is_dominant(self):
         """Each player defects whether the other cooperates or defects."""
@@ -108,18 +161,25 @@ class TestSolve:
                 response = game.best_response(decision, profile)
                 assert np.all(response.actions == 1.0)
 
-    @pytest.mark.parametrize(
-        "block",
-        [
+    def test_one_shot_prisoners_dilemma_solves_to_mutual_defection(self):
+        game = solver(
             macid.prisoners_dilemma_block,
+            actions=np.array([0.0, 1.0]),
+        )
+
+        policies = solve_in_relevance_order(game)
+
+        assert policies["D1"].to_dict() == {(): 1.0}
+        assert policies["D2"].to_dict() == {(): 1.0}
+
+    def test_iterated_prisoners_dilemma_raises_for_recurring_block(self):
+        game = solver(
             macid.iterated_prisoners_dilemma_block,
-        ],
-        ids=["one-shot", "iterated"],
-    )
-    def test_prisoners_dilemma_cyclic_component_is_refused(self, block):
-        """Neither game admits the one-at-a-time order this solver requires."""
-        with pytest.raises(NotImplementedError, match="solved jointly"):
-            solve_in_relevance_order(solver(block))
+            actions=np.array([0.0, 1.0]),
+        )
+
+        with pytest.raises(NotImplementedError, match="recurring blocks"):
+            solve_in_relevance_order(game)
 
 
 class TestEntityRefusal:
@@ -309,6 +369,86 @@ class TestTabulatedRule:
 
         # The patio is built exactly when the doctor was called in earnest.
         assert np.allclose(np.asarray(vals["BP"]), np.asarray(vals["TDoc"]) == 1.0)
+
+
+class TestRuleDistance:
+    def test_matching_unconditional_rules_have_zero_distance(self):
+        current = get_action_rule(1.0)
+        response = TabulatedRule([], np.zeros((1, 0)), [1.0])
+        game = solver(
+            macid.prisoners_dilemma_block,
+            actions=np.array([0.0, 1.0]),
+        )
+
+        assert game.rule_distance(response, current, []) == 0.0
+
+    def test_different_unconditional_rules_have_positive_distance(self):
+        current = get_action_rule(0.0)
+        response = TabulatedRule([], np.zeros((1, 0)), [1.0])
+        game = solver(
+            macid.prisoners_dilemma_block,
+            actions=np.array([0.0, 1.0]),
+        )
+
+        assert game.rule_distance(response, current, []) == 1.0
+
+    def test_nearby_action_has_small_distance(self):
+        current = get_action_rule(0.999999)
+        response = TabulatedRule([], np.zeros((1, 0)), [1.0])
+        game = solver(
+            macid.prisoners_dilemma_block,
+            actions=np.array([0.0, 1.0]),
+        )
+
+        distance = game.rule_distance(response, current, [])
+        assert distance <= 1e-5
+        assert distance > 1e-7
+
+    def test_every_information_cell_must_match(self):
+        game = solver(macid.prisoners_dilemma_block)
+        current = TabulatedRule(["x"], [[0.0], [1.0]], [0.2, 0.8])
+        matching = TabulatedRule(["x"], [[0.0], [1.0]], [0.2, 0.8])
+        differing = TabulatedRule(["x"], [[0.0], [1.0]], [0.2, 0.9])
+
+        assert game.rule_distance(matching, current, ["x"]) == 0.0
+        assert game.rule_distance(differing, current, ["x"]) == pytest.approx(0.1)
+
+
+class TestSolveConfiguration:
+    def test_tolerance_controls_cyclic_convergence(self):
+        game = solver(
+            macid.prisoners_dilemma_block,
+            actions=np.array([0.0, 1.0]),
+        )
+        near_defection = {
+            "D1": get_action_rule(0.999999),
+            "D2": get_action_rule(0.999999),
+        }
+
+        policies = solve_in_relevance_order(
+            game, near_defection, max_iterations=1, tolerance=1e-5
+        )
+        assert policies["D1"].to_dict() == {(): 1.0}
+        assert policies["D2"].to_dict() == {(): 1.0}
+
+        with pytest.raises(RuntimeError, match="did not converge within 1 iteration"):
+            solve_in_relevance_order(
+                game, near_defection, max_iterations=1, tolerance=1e-7
+            )
+
+    @pytest.mark.parametrize("max_iterations", [0, -1])
+    def test_iteration_limit_must_be_positive(self, tree_killer, max_iterations):
+        with pytest.raises(ValueError, match="max_iterations must be >= 1"):
+            solve_in_relevance_order(tree_killer, max_iterations=max_iterations)
+
+    def test_iteration_limit_must_be_an_integer(self, tree_killer):
+        with pytest.raises(TypeError, match="max_iterations must be an integer"):
+            solve_in_relevance_order(tree_killer, max_iterations=1.5)
+
+    @pytest.mark.parametrize("tolerance", [0.0, -1e-6])
+    def test_tolerance_must_be_positive(self, tree_killer, tolerance):
+        with pytest.raises(ValueError, match="tolerance must be > 0"):
+            solve_in_relevance_order(tree_killer, tolerance=tolerance)
 
 
 class TestSamplesDeprecation:

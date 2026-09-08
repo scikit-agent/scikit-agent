@@ -49,10 +49,11 @@ the action that maximizes the payoff of the agent making that decision,
 conditional on the observation and on a supplied rule for every other decision.
 The order in which the decisions are solved belongs to a schedule rather than to
 the method. {func}`skagent.solver.solve_in_relevance_order` supplies one such
-order, which it takes from the block's relevance graph (see {doc}`analysis`),
-and it raises an error when that graph has a cyclic component, because the
-decisions in a cycle have to be solved together as a simultaneous-move
-equilibrium.
+schedule, which takes components from the block's relevance graph (see
+{doc}`analysis`). Acyclic components are solved once. Cyclic components use
+simultaneous best-response iteration and either reach a pure-strategy fixed
+point or report non-convergence. Mixed-strategy equilibria and recurring cyclic
+games are not supported.
 
 ```{eval-rst}
 .. automodule:: skagent.algos.tabular

@@ -194,8 +194,9 @@ plt.tight_layout()
 # decision's best response against the rules already found, using the solver it
 # is given. No iteration to a fixed point is needed, because the graph is
 # acyclic, so every rule a decision relies on is settled by the time its turn
-# comes. Had a component held more than one decision, the schedule would have
-# refused it as the simultaneous-move equilibrium problem it is.
+# comes. A component with several mutually reliant decisions would instead be
+# iterated, with every best response computed against the same previous profile,
+# until it reached a pure-strategy fixed point or reported non-convergence.
 #
 # What :class:`~skagent.algos.tabular.TabularBestResponseSolver` does for each
 # decision:
