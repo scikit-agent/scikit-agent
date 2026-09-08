@@ -71,7 +71,12 @@ and this project adheres to
   and whose slope is below one for every savings rate -- so the model checks the
   arithmetic of a dynamic path through an entity class and not only its shape.
   At a thousand households over two hundred periods the aggregate arrives within
-  1% of its analytic stationary point.
+  1.5% of its analytic stationary point. Capital depreciates, so the interest
+  rate is a marginal product net of depreciation as in the paper, and the
+  capital-output ratio is `s / (1 - s(1 - delta))` rather than the `s / (1 - s)`
+  of an economy whose capital lasts forever. `savings_rate_for` inverts the
+  relationship, since cash on hand includes a household's whole asset position
+  and a savings rate here is not the textbook fraction of income.
 
 - `skagent.solver.project` splits a population model's entity class into the
   instance being solved and the others, and `solve_symmetric_equilibrium` solves

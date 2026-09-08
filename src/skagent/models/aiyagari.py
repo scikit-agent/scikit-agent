@@ -27,6 +27,7 @@ One value for the whole economy, and capitalised for it:
 Calibration parameters:
 
     alpha        capital's share of output
+    delta        the fraction of capital that wears out each period
     CRRA         relative risk aversion in the household's utility
     sigma_theta  how dispersed the labour endowment is
     household    how many households there are
@@ -35,8 +36,8 @@ The model
 ----------
 
 .. math::
-    K = \frac{1}{N}\sum_j a_j, \qquad R = \alpha K^{\alpha - 1}, \qquad
-    W = (1 - \alpha) K^{\alpha}
+    K = \frac{1}{N}\sum_j a_j, \qquad R = \alpha K^{\alpha - 1} - \delta,
+    \qquad W = (1 - \alpha) K^{\alpha}
 
 .. math::
     z_i = \theta_i W + (1 + R) a_i, \qquad
@@ -46,18 +47,24 @@ The two prices are the marginal products of Cobb-Douglas production in its
 intensive form, :math:`Y = K^{\alpha} L^{1-\alpha}`, with labour normalised to
 one unit per head: the endowment has mean one and every household supplies it
 whatever the wage, so :math:`L` drops out of both formulas. Factors are paid
-their marginal products, so output is exactly exhausted,
-:math:`RK + W = K^{\alpha}`, and capital's share of it is :math:`\alpha`.
+their marginal products, so output is exactly exhausted before depreciation,
+:math:`(R + \delta) K + W = K^{\alpha}`, and capital's share of it is
+:math:`\alpha`.
 
-There is no depreciation here, and that is a real difference from
-[Aiyagari1994]_. A household earns :math:`(1+R)` on its assets where :math:`R`
-is the gross marginal product of capital, whereas Aiyagari's own interest rate
-is net of a depreciation rate. So :math:`W + (1+R)K` comes to output plus the whole
-existing capital stock, which is where the :math:`+ K` in the law of motion
-below comes from, and the savings rate is a fraction of cash on hand rather
-than of income: at :math:`s = 0.9` a household consumes a tenth of its wealth
-each period, not a tenth of its earnings. The stationary capital-output ratio
-is then exactly :math:`s/(1-s)`, which is 9 at that rate.
+A fraction :math:`\delta` of the capital stock wears out each period, so
+:math:`R` is the marginal product of capital net of that, and a household's
+assets earn :math:`(1 + R)`. This is the rate [Aiyagari1994]_ works with.
+Depreciation is also what keeps the model's scale sensible: a household's
+resources :math:`W + (1+R)K` come to output plus the capital that survived,
+:math:`K^{\alpha} + (1-\delta)K`, so the stationary capital-output ratio is
+exactly :math:`s/(1 - s(1-\delta))`. With no depreciation that is
+:math:`s/(1-s)`, which reaches 9 at plausible savings rates, about three times
+what an economy shows, because nothing ever wears out.
+
+The savings rate is a fraction of cash on hand rather than of income, so it is
+not the textbook savings rate and picking one by eye is misleading.
+:func:`savings_rate_for` inverts the relationship instead, returning the rate at
+which the economy settles at a given interest rate.
 
 The market block is declared before the households, so :math:`K` is computed
 from the assets the households arrived with rather than the ones they are about
@@ -80,13 +87,13 @@ consumes :math:`(1-s)z`, then :math:`a' = s z`, and averaging over the class
 with :math:`E[\theta] = 1`:
 
 .. math::
-    K' = s\,(W + (1 + R) K) = s\,(K^{\alpha} + K)
+    K' = s\,(W + (1 + R) K) = s\,(K^{\alpha} + (1 - \delta) K)
 
-so the stationary capital solves :math:`K^{1-\alpha} = s / (1-s)`, giving
-:math:`R^{*} = \alpha (1-s)/s` exactly. The map's slope there is
-:math:`s(1-\alpha) + \alpha`, which is below 1 for every :math:`s < 1` and
-:math:`\alpha < 1`, so the aggregate converges from any starting capital and the
-convergence needs no damping.
+so the stationary capital solves :math:`K^{1-\alpha} = s / (1 - s(1-\delta))`,
+giving :math:`R^{*} = \alpha (1 - s(1-\delta))/s - \delta` exactly. The map's
+slope there is :math:`\alpha + s(1-\delta)(1-\alpha)`, which is below 1 whenever
+:math:`s(1-\delta) < 1`, so the aggregate converges from any starting capital
+and the convergence needs no damping.
 
 That claim is cross-sectional rather than optimal. The savings rate is a rule of
 thumb, no household is solving anything, and the aggregate still arrives where
@@ -106,12 +113,20 @@ from skagent.distributions import MeanOneLogNormal
 CAPITAL_SHARE = 0.36
 """Capital's share of output, the exponent on capital in the production function."""
 
+DEPRECIATION = 0.08
+"""The fraction of the capital stock that wears out each period.
+
+A conventional value for an annual calibration. Setting it to zero gives a model
+in which capital lasts forever, whose capital-output ratio is about three times
+an economy's.
+"""
+
 market_block = DBlock(
     name="market",
     dynamics={
         # Reads out of the household class, so this is the model's one crossing.
         "K": lambda a: a.mean(),
-        "R": lambda K, alpha: alpha * K ** (alpha - 1),
+        "R": lambda K, alpha, delta: alpha * K ** (alpha - 1) - delta,
         "W": lambda K, alpha: (1 - alpha) * K**alpha,
     },
 )
@@ -148,7 +163,9 @@ aiyagari_block = RBlock(
 )
 
 
-def aiyagari_calibration(size=1000, alpha=CAPITAL_SHARE, crra=2.0, sigma=1.0):
+def aiyagari_calibration(
+    size=1000, alpha=CAPITAL_SHARE, delta=DEPRECIATION, crra=2.0, sigma=1.0
+):
     """An economy of *size* households.
 
     Parameters
@@ -158,6 +175,8 @@ def aiyagari_calibration(size=1000, alpha=CAPITAL_SHARE, crra=2.0, sigma=1.0):
         is the accuracy of the aggregate rather than part of the model.
     alpha : float, optional
         Capital's share of output.
+    delta : float, optional
+        The fraction of the capital stock that wears out each period.
     crra : float, optional
         Relative risk aversion in the household's utility. It does not enter the
         aggregate under a fixed savings rate.
@@ -171,6 +190,7 @@ def aiyagari_calibration(size=1000, alpha=CAPITAL_SHARE, crra=2.0, sigma=1.0):
     return {
         "household": size,
         "alpha": alpha,
+        "delta": delta,
         "CRRA": crra,
         "sigma_theta": sigma,
     }
@@ -192,7 +212,7 @@ def savings_rule(rate):
     return lambda z: (1 - rate) * z
 
 
-def capital_map(capital, rate, alpha=CAPITAL_SHARE):
+def capital_map(capital, rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
     """The capital an economy holding *capital* per head leaves for next period.
 
     Iterated, this is the path :data:`aiyagari_block` simulates under
@@ -206,15 +226,17 @@ def capital_map(capital, rate, alpha=CAPITAL_SHARE):
         The savings rate the households follow.
     alpha : float, optional
         Capital's share of output.
+    delta : float, optional
+        The fraction of the capital stock that wears out each period.
 
     Returns
     -------
     float
     """
-    return rate * (capital**alpha + capital)
+    return rate * (capital**alpha + (1 - delta) * capital)
 
 
-def stationary_capital(rate, alpha=CAPITAL_SHARE):
+def stationary_capital(rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
     """The capital per head that reproduces itself under *rate*.
 
     Parameters
@@ -223,15 +245,17 @@ def stationary_capital(rate, alpha=CAPITAL_SHARE):
         The savings rate the households follow.
     alpha : float, optional
         Capital's share of output.
+    delta : float, optional
+        The fraction of the capital stock that wears out each period.
 
     Returns
     -------
     float
     """
-    return (rate / (1 - rate)) ** (1 / (1 - alpha))
+    return (rate / (1 - rate * (1 - delta))) ** (1 / (1 - alpha))
 
 
-def stationary_prices(rate, alpha=CAPITAL_SHARE):
+def stationary_prices(rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
     """The interest rate and wage at :func:`stationary_capital`.
 
     Parameters
@@ -240,24 +264,26 @@ def stationary_prices(rate, alpha=CAPITAL_SHARE):
         The savings rate the households follow.
     alpha : float, optional
         Capital's share of output.
+    delta : float, optional
+        The fraction of the capital stock that wears out each period.
 
     Returns
     -------
     dict
         ``R`` and ``W``.
     """
-    capital = stationary_capital(rate, alpha)
+    capital = stationary_capital(rate, alpha, delta)
     return {
-        "R": alpha * (1 - rate) / rate,
+        "R": alpha * (1 - rate * (1 - delta)) / rate - delta,
         "W": (1 - alpha) * capital**alpha,
     }
 
 
-def convergence_rate(rate, alpha=CAPITAL_SHARE):
+def convergence_rate(rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
     """The slope of :func:`capital_map` at its fixed point.
 
-    Below 1 for every savings rate below 1, which is why the aggregate converges
-    from any starting capital without damping.
+    Below 1 whenever ``rate * (1 - delta)`` is, which is why the aggregate
+    converges from any starting capital without damping.
 
     Parameters
     ----------
@@ -265,9 +291,35 @@ def convergence_rate(rate, alpha=CAPITAL_SHARE):
         The savings rate the households follow.
     alpha : float, optional
         Capital's share of output.
+    delta : float, optional
+        The fraction of the capital stock that wears out each period.
 
     Returns
     -------
     float
     """
-    return rate * (1 - alpha) + alpha
+    return alpha + rate * (1 - delta) * (1 - alpha)
+
+
+def savings_rate_for(interest, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
+    """The savings rate at which the economy settles at interest rate *interest*.
+
+    The inverse of :func:`stationary_prices`' first entry. Cash on hand includes
+    a household's whole asset position, so a savings rate here is not the
+    textbook fraction of income and is easier to choose by the interest rate it
+    implies than by eye.
+
+    Parameters
+    ----------
+    interest : float
+        The net interest rate the economy should settle at.
+    alpha : float, optional
+        Capital's share of output.
+    delta : float, optional
+        The fraction of the capital stock that wears out each period.
+
+    Returns
+    -------
+    float
+    """
+    return alpha / (interest + delta + alpha * (1 - delta))
