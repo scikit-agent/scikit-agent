@@ -79,6 +79,12 @@ and this project adheres to
   buyer commits to the price before supply, and the model is a single backward
   induction. All three have an acyclic relevance graph, and only one of them can
   be solved a decision at a time.
+- `examples/models/plot_lemons_adverse_selection.py`, a gallery page for the
+  lemons market. It plots each market's clearing map against the 45-degree line
+  to show which prices reproduce themselves, simulates the walk down to each of
+  them, and asks the relevance graph which of the four markets can be solved one
+  decision at a time. The graph gives the same answer for three of them, and for
+  one of those it is wrong; projecting the seller class separates all four.
 - `peaches_block` and `naive_peaches_block`, the same market with Akerlof's
   automobiles in place of a spread of quality: a car is a peach or a lemon and
   nothing between. A uniform range makes the clearing map exactly linear, so the
