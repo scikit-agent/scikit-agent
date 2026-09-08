@@ -10,12 +10,23 @@ and this project adheres to
 
 ### Added
 
-- `skagent.models.lemons`, Akerlof's market for adverse selection. Sellers know
-  the quality they hold and buyers price only the average of what is offered, so
-  the unique equilibrium is no trade. The price is a structural equation rather
-  than a decision, which leaves the model with one decision and an acyclic
-  relevance graph while it still needs a fixed point; the price is read before
-  it is written, so simulating T periods runs T rounds of the clearing map.
+- `skagent.models.lemons`, Akerlof's market for adverse selection, in three
+  versions that share their sellers and differ in when the price is set. In
+  `lemons_block` the sellers anticipate the price their own supply induces, so
+  the equilibrium is a fixed point in rules and a solver has to find it. In
+  `naive_lemons_block` they respond to a price already posted, which makes it an
+  arrival state, so simulating T periods runs T rounds of the clearing map and
+  no solver is needed. In `monopsony_block` a buyer commits to the price before
+  supply, which makes it a decision and the model a single backward induction.
+  All three have an acyclic relevance graph, and only one of them can be solved
+  a decision at a time. The premium a buyer pays over a seller's own valuation
+  and the quality floor are both calibration parameters, and `MARKETS` names
+  four configurations, from total collapse to a market in which every item
+  trades.
+- The clearing price is a weighted mean rather than a mean over the items that
+  sold, so it carries no boolean index, no branch on the data and no dynamic
+  shape. It differentiates and batches under `torch` where a masked mean
+  refuses, and where the sell decision is 0 or 1 the two agree exactly.
 - `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
   composed block executes its own dynamics and computes its own rewards. Both
   read the merged dynamics, so an `RBlock` behaves as a leaf block does; every

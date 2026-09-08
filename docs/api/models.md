@@ -97,11 +97,12 @@ rather than solved for, since the model has a crossing.
 
 ## Lemons
 
-Akerlof's market for adverse selection: sellers know what they hold, buyers can
-price only the average of what is offered, and the unique equilibrium is no
-trade. The price is a structural equation rather than a decision, so the model
-has one decision and an acyclic relevance graph while still needing a fixed
-point.
+Akerlof's market for adverse selection: sellers know what they hold and buyers
+can price only the average of what is offered, so the better items leave the
+market first. Three versions share the same sellers and differ in when the price
+is set -- anticipated by the sellers, posted from the round before, or committed
+to by a buyer. All three have an acyclic relevance graph, and only one of them
+can be solved a decision at a time.
 
 ```{eval-rst}
 .. automodule:: skagent.models.lemons
