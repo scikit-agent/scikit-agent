@@ -13,14 +13,14 @@ RATE = aiyagari.savings_rate_for(0.04)
 STATIONARY = aiyagari.stationary_capital(RATE)
 
 
-def run(size, periods, start=1.0, seed=0):
-    """Simulate the economy from a common starting level of assets."""
+def run(size, periods, start=1.0, seed=0, samples=1):
+    """Simulate *samples* independent economies from a common start."""
     sim = Simulator(
         aiyagari.aiyagari_calibration(size=size),
         aiyagari.aiyagari_block,
         {"c": aiyagari.savings_rule(RATE)},
         {"a": start},
-        sample_count=1,
+        sample_count=samples,
         T_sim=periods,
         seed=seed,
     )
@@ -66,9 +66,15 @@ class TestTheAggregateReachesItsStationaryPoint:
         # the economy starts decides nothing but how long it takes.
         assert aiyagari.convergence_rate(RATE) < 1
 
-        capital = np.asarray(run(size=500, periods=120, start=80.0)["K"]).ravel()
-        assert capital[0] > STATIONARY
-        assert capital[-1] == pytest.approx(STATIONARY, rel=0.05)
+        # Averaged over eight independent economies rather than read off one.
+        # The aggregate is a mean over a finite cross-section, so a single run's
+        # stationary capital carries sampling noise that no number of periods
+        # removes: run once, six seeds spread this from -3.3% to +3.5%, and
+        # averaged over samples they span -0.4% to +1.0% for thirty more
+        # milliseconds. Averaging is what the sample axis is for.
+        capital = np.asarray(run(size=500, periods=120, start=80.0, samples=8)["K"])
+        assert capital[0].mean() > STATIONARY
+        assert capital[-1].mean() == pytest.approx(STATIONARY, rel=0.03)
 
 
 class TestThePathIsTheAggregatesOwnLawOfMotion:
@@ -98,6 +104,41 @@ class TestTheCrossSectionSurvives:
         # distinct. Their assets have to spread.
         assets = np.asarray(long_run["a"])[-1].ravel()
         assert assets.std() > 0.1 * assets.mean()
+
+
+class TestEachSampleIsItsOwnEconomy:
+    """A reduction over the households must not reach across the sample axis."""
+
+    def test_the_aggregate_is_the_mean_within_a_sample_every_period(self):
+        history = run(size=200, periods=30, samples=4)
+        capital = np.asarray(history["K"])
+        assets = np.asarray(history["a"])
+        assert capital.shape == (30, 4)
+        assert assets.shape == (30, 4, 200)
+
+        # The market clears on the assets the households arrived with, which are
+        # the ones they left the period before holding. Taken within the sample
+        # and never across it.
+        assert capital[1:] == pytest.approx(assets[:-1].mean(axis=-1))
+
+    def test_the_economies_stay_apart_and_all_of_them_arrive(self):
+        # `test_entities` pins the same property on Cournot, but that model is
+        # static and its test runs one period, so it cannot show the aggregate
+        # staying per-sample once it feeds an arrival state that feeds the next
+        # period's aggregate. This is the first dynamic model where it could go
+        # wrong over time rather than at once.
+        capital = np.asarray(run(size=1000, periods=120, samples=4)["K"])
+        assert len(np.unique(capital[1])) == capital.shape[1]
+        assert len(np.unique(capital[-1])) == capital.shape[1]
+
+        # They are four draws of one economy rather than four economies, which
+        # is two claims: that they are centred on the same capital, and that
+        # they do not drift apart. Asserting instead that every sample lands
+        # within a band of K* would be a claim about one economy's sampling
+        # noise, which is not what this test is about and is several times
+        # noisier.
+        assert capital[-1].mean() == pytest.approx(STATIONARY, rel=0.03)
+        assert capital[-1].std() < 0.05 * STATIONARY
 
 
 class TestTheTiming:
