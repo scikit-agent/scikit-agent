@@ -60,6 +60,8 @@ engine. Construction of a ``SCIM`` from a scikit-agent Block lives in
 networkx so the criteria can be developed and tested in isolation.
 """
 
+from collections import namedtuple
+
 import networkx as nx
 
 __all__ = [
@@ -67,6 +69,7 @@ __all__ = [
     "HIDDEN",
     "MIXED",
     "is_s_reachable",
+    "Plate",
     "RelevanceGraph",
     "shock_roles",
     "is_requisite",
@@ -140,8 +143,22 @@ def is_s_reachable(scim, d1, d2):
     return dummy in probe.d_connected(targets, scim.context(d1))
 
 
+#: A class a decision is one rule per instance of, and how many instances
+#: there are. The size is part of it because the answers depend on it: a class
+#: of one has no other instance to rely on, and a fixed point over a class of
+#: many needs its size to know how fast it may step.
+Plate = namedtuple("Plate", ["entity", "size"])
+
+
 class RelevanceGraph:
     """A relevance graph over decision nodes (edge d1 -> d2 iff d1 relies on d2).
+
+    No decision relies on itself, so a self-loop only ever arises from
+    :meth:`contracted`, which is also what annotates it: the decision carries
+    the :class:`Plate` it is one rule per instance of, and the edge is marked as
+    holding across that class's instances rather than within one. Read
+    :meth:`plate` and :meth:`crosses_instances` rather than inferring either
+    from the shape.
 
     Wraps a ``networkx.DiGraph`` but never leaks it: all helpers return native
     Python types.
@@ -186,6 +203,61 @@ class RelevanceGraph:
         """The reliance edges (d1, d2) meaning "d1 relies on d2", as a list."""
         return list(self._g.edges)
 
+    def contracted(self, names, plate):
+        """This graph with one entity class's decisions contracted onto one name.
+
+        An expanded class holds two decisions -- the instance being solved, and
+        the rest of the class -- which stand for one rule, so they contract back
+        onto the class's own symbol. A reliance between them becomes a self-loop
+        on it, and because that says something the shape alone does not, both
+        are recorded: each contracted decision carries *plate*, and an edge
+        between two decisions that contract onto one name is marked as crossing
+        that class's instances.
+
+        Parameters
+        ----------
+        names : Mapping
+            The new name of each decision. A decision the mapping omits keeps
+            its own name.
+        plate : Plate
+            The class whose decisions are being contracted, and its size.
+
+        Returns
+        -------
+        RelevanceGraph
+        """
+        graph = nx.relabel_nodes(self._g, names, copy=True)
+        for decision in set(names.values()) & set(graph):
+            graph.nodes[decision]["plate"] = plate
+        for first, second in self._g.edges:
+            if first != second and names.get(first, first) == names.get(second, second):
+                graph.edges[names[first], names[second]]["cross_instance"] = True
+        return type(self)(graph)
+
+    def plate(self, decision):
+        """The class *decision* is one rule per instance of, or ``None``.
+
+        Returns
+        -------
+        Plate or None
+            ``None`` where the decision is taken once rather than by every
+            instance of an entity class.
+        """
+        self._check_decision(decision)
+        return self._g.nodes[decision].get("plate")
+
+    def crosses_instances(self, first, second):
+        """True iff *first* relies on *second* as taken by OTHER instances.
+
+        Where *first* and *second* name one decision, this is what its self-loop
+        means: one rule per instance, and each instance has to account for the
+        others. Read with :meth:`plate`, which names the class.
+        """
+        self._check_decision(first)
+        self._check_decision(second)
+        edge = self._g.get_edge_data(first, second) or {}
+        return edge.get("cross_instance", False)
+
     def is_acyclic(self):
         """True iff the relevance graph has no cycles."""
         return nx.is_directed_acyclic_graph(self._g)
@@ -217,8 +289,23 @@ class RelevanceGraph:
         import pydot
 
         dot = pydot.Dot(graph_type="digraph")
+        plates = {}
         for node in self._g.nodes:
-            dot.add_node(pydot.Node(str(node), shape="box"))
+            plate = self._g.nodes[node].get("plate")
+            if plate is None:
+                dot.add_node(pydot.Node(str(node), shape="box"))
+                continue
+            if plate.entity not in plates:
+                # Plate notation, as the model diagram draws it: the box says
+                # there are several of these, so a self-loop inside it reads as
+                # one instance relying on the others.
+                plates[plate.entity] = pydot.Cluster(
+                    graph_name=plate.entity,
+                    label=f"{plate.size} {plate.entity}",
+                    labeljust="r",
+                )
+                dot.add_subgraph(plates[plate.entity])
+            plates[plate.entity].add_node(pydot.Node(str(node), shape="box"))
         for src, tgt in self._g.edges:
             dot.add_edge(pydot.Edge(str(src), str(tgt)))
         return dot

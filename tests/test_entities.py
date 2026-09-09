@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import skagent.models.cournot as cournot
+import skagent.models.lemons as lemons
 from skagent.block import Aggregate, Control, DBlock, Entity, RBlock
 from skagent.distributions import Normal, Uniform
 from skagent.simulation.monte_carlo import Simulator
@@ -536,6 +537,91 @@ class TestTheDiagramShowsTheClass:
         assert "firm" not in {node.get_name() for node in graph.get_nodes()}
 
 
+class TestOneInstanceReliesOnTheOthers:
+    """Reliance within a class, which needs the class expanded to be found."""
+
+    def test_a_firm_relies_on_the_other_firms(self):
+        block = cournot_block()
+        calibration = collusion_calibration()
+
+        # Each firm's payoff runs through the average quantity to the price, so
+        # every firm relies on every other. One symbol cannot refer to another
+        # instance of itself, so the reliance is derived on an expansion of the
+        # class and reported on the class's own symbol as a self-loop.
+        assert block.relies_on("q", "q", calibration)
+
+        graph = block.relevance_graph(calibration)
+        assert graph.nodes() == ["q"] and graph.edges() == [("q", "q")]
+        assert not graph.is_acyclic()
+
+    def test_the_self_loop_says_which_class_it_crosses(self):
+        # A self-loop on its own would not distinguish one instance relying on
+        # the others from a decision that somehow relied on its own value, so
+        # the graph carries the class and the size rather than leaving the
+        # reading to the shape.
+        graph = cournot_block().relevance_graph(collusion_calibration())
+        assert graph.plate("q") == ("firm", 3)
+        assert graph.crosses_instances("q", "q")
+
+        # And the drawing is plate notation: the box says there are three of
+        # these, so the loop inside it is one firm relying on the other two.
+        plate = graph.draw().get_subgraphs()[0]
+        assert "3" in plate.get_label() and "firm" in plate.get_label()
+        assert [node.get_name() for node in plate.get_nodes()] == ["q"]
+
+    def test_a_decision_taken_once_carries_no_plate(self):
+        graph = lemons.monopsony_block.relevance_graph(lemons.lemons_calibration())
+        assert graph.plate("p") is None
+        assert graph.plate("S") == ("seller", 10000)
+        assert not graph.crosses_instances("p", "S")
+
+    def test_a_market_of_one_firm_is_a_monopolist(self):
+        # A class of one has no other instance to rely on, so expanding it
+        # unconditionally would report a game in a monopoly.
+        graph = cournot_block().relevance_graph(collusion_calibration(size=1))
+        assert graph.edges() == [] and graph.is_acyclic()
+
+    def test_asking_without_a_size_for_the_class_is_refused(self):
+        # How many instances there are decides the answer, and a block that
+        # reads out of a class cannot supply it.
+        with pytest.raises(ValueError, match="supply a size for 'firm'"):
+            cournot_block().relevance_graph()
+
+    def test_a_model_with_several_classes_cannot_be_expanded_yet(self):
+        two_sided = RBlock(
+            name="two_sided",
+            blocks=[
+                RBlock(
+                    name="firms",
+                    entity=Entity("firm"),
+                    blocks=[
+                        DBlock(
+                            name="offer",
+                            dynamics={"q": Control(["A"], agent="firm")},
+                        )
+                    ],
+                ),
+                RBlock(
+                    name="buyers",
+                    entity=Entity("buyer"),
+                    blocks=[
+                        DBlock(
+                            name="bid",
+                            dynamics={"d": Control(["A"], agent="buyer")},
+                        )
+                    ],
+                ),
+                DBlock(
+                    name="market",
+                    dynamics={"P": lambda q, d: q.mean() - d.mean()},
+                ),
+            ],
+        )
+
+        with pytest.raises(ValueError, match="expansion takes one class"):
+            two_sided.relevance_graph({"A": A, "firm": 3, "buyer": 3})
+
+
 class TestWhatDoesNotWorkYet:
     """The parts of the entity feature that are declared but not honoured.
 
@@ -543,33 +629,6 @@ class TestWhatDoesNotWorkYet:
     succeeds and returns something a reader would act on. Marked strict, so that
     implementing any of them fails here and the marker comes off.
     """
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="the relevance graph is not computed on an entity expansion, so "
-        "it reports one node with no edges",
-    )
-    def test_a_firm_relies_on_the_other_firms(self):
-        block = cournot_block()
-        calibration = collusion_calibration()
-
-        # Each firm's payoff runs through the average quantity to the price, so
-        # every firm relies on every other. Presented as a single node with no
-        # edges, the model reads as one decision taken in isolation -- an
-        # acyclic singleton, which is also what the cyclicity test looks for.
-        assert block.relies_on("q", "q", calibration)
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="the relevance graph is not entity-attributed, so cross-instance "
-        "reliance has nowhere to appear",
-    )
-    def test_the_relevance_graph_shows_the_cross_instance_edge(self):
-        graph = cournot_block().relevance_graph(collusion_calibration())
-
-        # A class relying on itself is one node with a self-loop, which is what
-        # plate notation draws and what distinguishes this from a lone decision.
-        assert graph.edges()
 
     @pytest.mark.xfail(
         strict=True,

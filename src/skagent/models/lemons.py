@@ -77,16 +77,15 @@ commits first, and why a competitive price is a condition on the market rather
 than any one participant's choice: competition among buyers is what holds the
 price up to the value of what trades.
 
-None of the timings has a cycle that its relevance graph can see, and they
-still need three different treatments. Where the price is anticipated, a
-seller's payoff runs through it to every other seller's decision, so the model
-is a strategic fixed point among instances of one class; ``relies_on("S", "S")``
-is nonetheless ``False``, because that reliance is not derivable without
-expanding the class. Where the price is posted, the same call is ``False`` and
-correct, since this period's payoff turns on last period's price and within a
-period there is no reliance to find. Where a buyer commits, the graph reports
-two nodes and one edge, from the price to the sell decision, and its topological
-order is backward induction.
+The three timings need three different treatments, and the relevance graph
+tells them apart. Where the price is anticipated, a seller's payoff runs
+through it to every other seller's decision, so the model is a strategic fixed
+point among instances of one class and ``relies_on("S", "S")`` is ``True``:
+one decision, and it is its own predecessor, so no order solves it. Where the
+price is posted, the same call is ``False`` and correct, since this period's
+payoff turns on last period's price and within a period there is no reliance to
+find. Where a buyer commits, the graph reports two nodes and one edge, from the
+price to the sell decision, and its topological order is backward induction.
 
 The market behaves differently under the two quality distributions. The
 uniform of section II makes the clearing map exactly linear, since

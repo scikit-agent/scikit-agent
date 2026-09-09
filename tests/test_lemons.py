@@ -252,42 +252,32 @@ class TestTheBuyerCanCommitToThePriceInstead:
         assert buyer_run(best, **market) > buyer_run(best + 0.6, **market)
 
 
-class TestAnAcyclicGraphDoesNotMeanASweepSuffices:
-    """Three timings, one cyclicity verdict, and three correct treatments."""
+class TestThreeTimingsAndThreeTreatments:
+    """One decision, three timings, and a different verdict on each."""
 
-    @pytest.mark.parametrize(
-        "block",
-        [lemons.lemons_block, lemons.naive_lemons_block],
-        ids=["anticipated", "posted"],
-    )
-    def test_the_relevance_graph_sees_one_decision_and_no_cycle(self, block):
-        graph = block.relevance_graph(lemons.lemons_calibration())
-        assert list(graph.nodes()) == ["S"]
-        assert list(graph.edges()) == []
-        # So the sweep's own refusal, which fires on a component of more than
-        # one decision, would not fire on either: it would solve S against
-        # whatever price it was handed and return a rule inconsistent with the
-        # price that rule induces.
+    def test_an_anticipated_price_makes_a_seller_rely_on_the_others(self):
+        # A seller's payoff runs through the price it anticipates to every other
+        # seller's decision, so the model is a strategic fixed point among the
+        # instances of one class.
+        graph = lemons.lemons_block.relevance_graph(lemons.lemons_calibration())
+        assert list(graph.nodes()) == ["S"] and list(graph.edges()) == [("S", "S")]
+        assert not graph.is_acyclic()
+
+        # And the count of a component's members does not see it: there is one
+        # decision to solve, and it is its own predecessor. A schedule that read
+        # cyclicity off that count would solve S against whatever price it was
+        # handed and return a rule inconsistent with the price that rule induces.
         assert all(len(component) == 1 for component in graph.condensation())
 
-    def test_only_one_of_the_two_is_correctly_reported_as_isolated(self):
+    def test_a_posted_price_leaves_each_seller_on_its_own(self):
         # The posted-price sellers are paid at a price their own round cannot
         # move, so having no edge is the truth about them.
         calibration = lemons.lemons_calibration()
+        graph = lemons.naive_lemons_block.relevance_graph(calibration)
+        assert list(graph.nodes()) == ["S"] and list(graph.edges()) == []
         assert not lemons.naive_lemons_block.relies_on("S", "S", calibration)
         assert "p" in lemons.naive_lemons_block.get_arrival_states()
         assert "p" not in lemons.lemons_block.get_arrival_states()
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="cross-instance reliance is not derivable without expanding the "
-        "entity class, so a seller's reliance on the rest of the market is lost",
-    )
-    def test_a_seller_relies_on_the_other_sellers(self):
-        # Where the price is not lagged, a seller's payoff runs through it to
-        # every other seller's decision. Reported as an isolated node, the model
-        # reads as one decision that can be taken on its own.
-        assert lemons.lemons_block.relies_on("S", "S", lemons.lemons_calibration())
 
     def test_a_committed_price_is_a_second_decision_and_an_order_to_solve_in(self):
         graph = lemons.monopsony_block.relevance_graph(lemons.lemons_calibration())
