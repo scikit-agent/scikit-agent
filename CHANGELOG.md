@@ -62,6 +62,42 @@ and this project adheres to
 
 ### Added
 
+- `skagent.models.lemons`, Akerlof's market for adverse selection, at the
+  paper's own numbers: quality uniform on `[0, 2]` and buyers who value a car at
+  three halves of what its owner does, so `lemons_calibration()` with no
+  arguments is the model of the paper's section II and its answer is the
+  paper's. The module is eight leaf blocks -- two quality distributions, two
+  seller decisions, a seller payoff, the market, and a buyer's bid and surplus
+  -- and each version of the market is a different composition of them, so no
+  equation is written twice. Where the payoff block sits says which price a
+  seller is paid at, and where the market block sits says whether the price is
+  known when the seller decides, so declaration order is the whole of the
+  timing. In `lemons_block` the sellers anticipate the price their own supply
+  induces, and the equilibrium is a fixed point in rules that a solver has to
+  find; in `naive_lemons_block` they respond to a price already posted, so
+  simulating T periods runs T rounds of the clearing map; in `monopsony_block` a
+  buyer commits to the price before supply, and the model is a single backward
+  induction. All three have an acyclic relevance graph, and only one of them can
+  be solved a decision at a time.
+- `examples/models/plot_lemons_adverse_selection.py`, a gallery page for the
+  lemons market. It plots each market's clearing map against the 45-degree line
+  to show which prices reproduce themselves, simulates the walk down to each of
+  them, and asks the relevance graph which of the four markets can be solved one
+  decision at a time. The graph gives the same answer for three of them, and for
+  one of those it is wrong; projecting the seller class separates all four.
+- `peaches_block` and `naive_peaches_block`, the same market with Akerlof's
+  automobiles in place of a spread of quality: a car is a peach or a lemon and
+  nothing between. A uniform range makes the clearing map exactly linear, so the
+  only prices it can reproduce are no trade, a corner, or every price at once.
+  Two types give a market in lemons alone at a price that does not depend on
+  what a peach is worth, and, where peaches are common enough, a second price at
+  which everything trades. Which one a market reaches depends on where it
+  starts. `peach_share_for_trade` is the share of peaches below which no price a
+  buyer will pay is enough to bring one out.
+- The clearing price is a weighted mean rather than a mean over the items that
+  sold, so it carries no boolean index, no branch on the data and no dynamic
+  shape. It differentiates and batches under `torch` where a masked mean
+  refuses, and where the sell decision is 0 or 1 the two agree exactly.
 - `skagent.solver.project` splits a population model's entity class into the
   instance being solved and the others, and `solve_symmetric_equilibrium` solves
   that instance's decision against the others' current rule, swaps the solved
@@ -165,20 +201,6 @@ and this project adheres to
 
 ### Changed
 
-- Every loss in `skagent.loss` now takes the same shape:
-  `Loss(bellman_period, *, agent=None, ...)`, with loss-specific arguments
-  keyword-only. `parameters` is gone from all six: the period already carries
-  the calibration a loss is evaluated at, and passing it separately let the two
-  disagree. `CustomLoss` takes a period rather than a block, like its siblings.
-  Previously the six disagreed on argument order and on whether `parameters` was
-  required, optional or absent. What `__call__` takes still differs, and
-  deliberately: `CustomLoss` and `StaticRewardLoss` require a mapping from
-  control symbol to decision rule, because they merge it over `other_dr`, while
-  the other four also accept a whole-period decision function.
-- `EstimatedDiscountedLifetimeRewardLoss` takes the agent whose discounted
-  payoff it maximizes, as the other losses do. It previously summed the reward
-  symbols of every agent, so a two-player game trained through it optimized a
-  planner's objective and no player's. `big_t` is now keyword-only.
 - `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
   an entity class, naming the classes and which leading axis a reduction over
   the entity axis would be taken over instead -- the shock sample for the
