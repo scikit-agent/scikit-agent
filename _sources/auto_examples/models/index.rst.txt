@@ -148,6 +148,23 @@ computed.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A seller knows what their own car is worth. A buyer does not, and can offer only what the average car on the market is worth. Every seller holding a car better than that average would rather keep it, so the good cars leave; the average falls; more sellers withdraw. Akerlof (1970) [1]_ showed that this can run all the way down, until nothing trades at all, even though every car is worth more to a buyer than to the person holding it.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_lemons_adverse_selection_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_lemons_adverse_selection`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Lemons: Adverse Selection, and Three Markets That Look Alike</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -165,4 +182,5 @@ computed.
    /auto_examples/models/plot_incentives_1_grade_prediction
    /auto_examples/models/plot_tree_killer_relevance
    /auto_examples/models/plot_benchmark_models
+   /auto_examples/models/plot_lemons_adverse_selection
 

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev96+g4496881ac</title>
+        <title>Models - scikit-agent 0.1.1.dev103+g767d027fa</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev96+g4496881ac</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev103+g767d027fa</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -226,6 +226,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
 </ul>
 </li>
 </ul>
@@ -1246,6 +1247,520 @@ each rule is a constant function, and none reads a firm’s position.</p>
 </dd></dl>
 
 </section>
+<section id="lemons">
+<h2>Lemons<a class="headerlink" href="#lemons" title="Link to this heading">¶</a></h2>
+<p>Akerlof’s market for adverse selection, at the paper’s own numbers: sellers know
+what they hold and buyers can price only the average of what is offered, so the
+better cars leave the market first. Eight leaf blocks compose into several
+markets, which differ in when the price is set – anticipated by the sellers,
+posted from the round before, or committed to by a buyer – and in whether
+quality is a spread or Akerlof’s two types. All of them have an acyclic
+relevance graph, and only some can be solved a decision at a time.</p>
+<p id="module-skagent.models.lemons">Akerlof (1970) adverse selection: the market for lemons.</p>
+<p>Sellers know the quality of what they hold; buyers do not, and can price only
+the average quality of what is offered. Each seller holds one item of quality
+<span class="math notranslate nohighlight">\(\theta\)</span>, values it at <span class="math notranslate nohighlight">\(\theta\)</span>, and parts with it only if the price
+covers that. A buyer values the same item at a premium <span class="math notranslate nohighlight">\(m\)</span>, so the price
+that clears a competitive market is the buyer valuation of what actually trades:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[S_i = 1 \iff p \geq \theta_i, \qquad u_i = S_i (p - \theta_i), \qquad
+p = m \, E[\theta_i \mid S_i = 1]\]</div>
+</div>
+<p>The defaults here are the paper’s own numbers <a class="reference internal" href="#akerlof1970" id="id1"><span>[Akerlof1970]</span></a>: quality uniform
+on <span class="math notranslate nohighlight">\([0, 2]\)</span>, and buyers who value a car at <span class="math notranslate nohighlight">\(3/2\)</span> of what its owner
+does. So <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a> with no arguments is the model of that
+paper’s section II, and its answer is the paper’s – no trade at all, although
+every car is worth more to a buyer than to the seller holding it.</p>
+<p>The module builds its markets out of eight leaf blocks. Each states one thing
+about the market, and every version below is a different composition of them, so
+no equation is written twice:</p>
+<blockquote>
+<div><p>spread_quality_block    quality is uniform between the ends of the range
+two_type_quality_block  a car is a peach or a lemon, and nothing between
+supply_block            the seller decides, seeing only its own quality
+offer_block             the seller decides, seeing the price on the table
+seller_payoff_block     the seller’s surplus, at whatever price is current
+market_block            the competitive price, given what was offered
+bid_block               a buyer names the price instead
+surplus_block           that buyer’s surplus, per seller</p>
+</div></blockquote>
+<p>The first two are alternatives to each other, and so are the next two: a market
+takes one quality distribution and one seller decision. The last two are the
+monopsony market’s, and no other version composes them.</p>
+<p>Where the payoff block sits determines which price the seller is paid at, and
+where the market block sits determines whether the price is known when the
+seller decides. Declaration order is therefore the whole of the timing, and
+there is no timing annotation anywhere in the model. The three timings differ in
+nothing else.</p>
+<p>In <code class="xref py py-data docutils literal notranslate"><span class="pre">lemons_block</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">peaches_block</span></code> the sellers anticipate the
+price their own supply induces. They decide, the market clears on what they
+offered, and they are paid at that price. Nothing is lagged and no seller reads
+a price, so a seller’s rule is a best response to the price that rule induces
+once every seller follows it. The equilibrium is a fixed point in rules, and a
+solver has to find it.</p>
+<p>In <code class="xref py py-data docutils literal notranslate"><span class="pre">naive_lemons_block</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">naive_peaches_block</span></code> the sellers
+respond to a price already posted. The payoff block comes before the market
+block, so sellers are paid at the price they responded to and the market then
+clears at what their decisions imply. The price is read before it is written,
+which makes it an arrival state: period <span class="math notranslate nohighlight">\(t\)</span>’s sellers face period
+<span class="math notranslate nohighlight">\(t-1\)</span>’s clearing price. Simulating <span class="math notranslate nohighlight">\(T\)</span> periods therefore runs
+<span class="math notranslate nohighlight">\(T\)</span> rounds of the clearing map, and no solver is needed to watch the same
+equilibrium arrive.</p>
+<p>In <code class="xref py py-data docutils literal notranslate"><span class="pre">monopsony_block</span></code> a buyer commits to a price before supply. The price
+becomes a decision, owned by a buyer who names it to maximize its own surplus
+and cannot see quality:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[p \in [\ell, h] \text{ chosen by the buyer}, \qquad
+w = E[S_i (m \theta_i - p)]\]</div>
+</div>
+<p>The buyer’s payoff is written per seller rather than as a total, so the closed
+forms below do not depend on how many sellers there are.</p>
+<p>A buyer that named a price only after the cars had been offered would name the
+lowest price it was allowed to. Once the pool is fixed, its surplus is
+<span class="math notranslate nohighlight">\(v(m\bar\theta - p)\)</span> in a volume and a grade it can no longer change, so
+the surplus falls in the price at every price and the best response is the lower
+bound. Sellers anticipate that and offer nothing, so the market shuts for a
+reason that has nothing to do with adverse selection. That is why the buyer here
+commits first, and why a competitive price is a condition on the market rather
+than any one participant’s choice: competition among buyers is what holds the
+price up to the value of what trades.</p>
+<p>None of the timings has a cycle that its relevance graph can see, and they
+still need three different treatments. Where the price is anticipated, a
+seller’s payoff runs through it to every other seller’s decision, so the model
+is a strategic fixed point among instances of one class; <code class="docutils literal notranslate"><span class="pre">relies_on(&quot;S&quot;,</span> <span class="pre">&quot;S&quot;)</span></code>
+is nonetheless <code class="docutils literal notranslate"><span class="pre">False</span></code>, because that reliance is not derivable without
+expanding the class. Where the price is posted, the same call is <code class="docutils literal notranslate"><span class="pre">False</span></code> and
+correct, since this period’s payoff turns on last period’s price and within a
+period there is no reliance to find. Where a buyer commits, the graph reports
+two nodes and one edge, from the price to the sell decision, and its topological
+order is backward induction.</p>
+<p>The market behaves differently under the two quality distributions. The
+uniform of section II makes the clearing map exactly linear, since
+<span class="math notranslate nohighlight">\(E[\theta \mid \theta \leq p]\)</span> is <span class="math notranslate nohighlight">\((\ell + p)/2\)</span>, so the only prices
+it can reproduce are no trade, a corner, or – at <span class="math notranslate nohighlight">\(m = 2\)</span> exactly – every
+price at once. The paper’s automobiles are two types rather than a spread, and
+that is where a second price becomes possible: only lemons trade at
+<span class="math notranslate nohighlight">\(m\ell\)</span>, and if peaches are common enough there is a second price,
+<span class="math notranslate nohighlight">\(m E[\theta]\)</span>, at which everything trades. Which one the market reaches
+depends on where it starts. See <a class="reference internal" href="#skagent.models.lemons.MARKETS" title="skagent.models.lemons.MARKETS"><code class="xref py py-data docutils literal notranslate"><span class="pre">MARKETS</span></code></a> and <a class="reference internal" href="#skagent.models.lemons.PEACH_MARKETS" title="skagent.models.lemons.PEACH_MARKETS"><code class="xref py py-data docutils literal notranslate"><span class="pre">PEACH_MARKETS</span></code></a> for
+the named configurations, and <a class="reference internal" href="#skagent.models.lemons.clearing_fixed_points" title="skagent.models.lemons.clearing_fixed_points"><code class="xref py py-func docutils literal notranslate"><span class="pre">clearing_fixed_points()</span></code></a> and
+<a class="reference internal" href="#skagent.models.lemons.peaches_fixed_points" title="skagent.models.lemons.peaches_fixed_points"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_fixed_points()</span></code></a> for the general answers.</p>
+<p>Within the uniform family the quality floor is what decides whether the
+unravelling has anywhere to stop. With no floor and a premium below 2 the map is
+a contraction onto <span class="math notranslate nohighlight">\(p = 0\)</span>. With a floor the same map has a second, higher
+fixed point at <span class="math notranslate nohighlight">\(m\ell/(2 - m)\)</span>, and the market unravels down to it rather
+than away: the top of the market is destroyed and the bottom keeps trading.
+Above the threshold <span class="math notranslate nohighlight">\(m = 2\)</span> the collapse is unstable instead, and the
+price runs up to <span class="math notranslate nohighlight">\(m(\ell + h)/2\)</span>, where every item trades.</p>
+<p><a class="reference internal" href="#skagent.models.lemons.clearing_map" title="skagent.models.lemons.clearing_map"><code class="xref py py-func docutils literal notranslate"><span class="pre">clearing_map()</span></code></a> and <a class="reference internal" href="#skagent.models.lemons.peaches_clearing_map" title="skagent.models.lemons.peaches_clearing_map"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_clearing_map()</span></code></a> are each the same function
+under two readings. Iterated, they are the price path a posted-price market
+simulates; read once, they give the price an anticipated price induces. An
+anticipating market’s equilibria are therefore exactly their fixed points.</p>
+<p>Signalling is the paper’s own answer to adverse selection, and this model is
+shaped to reach it. Section IV of <a class="reference internal" href="#akerlof1970" id="id2"><span>[Akerlof1970]</span></a> names guarantees, brand names
+and licensing as the institutions that counteract it, and all of them work the
+same way: the seller takes a costly action whose cost is lower for higher quality, so
+that taking it is credible. Two things have to change here. The first is
+already in place, since a separating equilibrium separates types and
+<code class="xref py py-data docutils literal notranslate"><span class="pre">two_type_quality_block</span></code> supplies them. The second is that the price stops
+being one number: the buyer commits to a pricing rule, taking the seller’s
+signal as its information set, and that rule is applied once per seller. Each
+seller is then paid at the price its own signal earns. That adds a second
+control to <code class="xref py py-data docutils literal notranslate"><span class="pre">supply_block</span></code>, which is why the seller’s information set is
+its quality alone, so a signalling decision drops in beside the sell decision.</p>
+<p>When the price is below what every
+seller thinks their own car is worth, nothing is offered at all, and the
+clearing price would be an average over an empty market. This model answers
+zero. That is a choice rather than a definition, and it is what makes no trade
+an equilibrium rather than an error: a market at a price of zero has nothing
+offered to it, so it clears at zero again and stays there. A different market
+could reasonably answer something else, so the value is written into the
+clearing equation rather than supplied by the library.</p>
+<p>Binary decisions are relaxed to continuous <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code> controls, pending
+discrete-action support, following the convention of
+<a class="reference internal" href="#module-skagent.models.macid" title="skagent.models.macid"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.macid</span></code></a>. <a class="reference internal" href="#skagent.models.lemons.seller_rule" title="skagent.models.lemons.seller_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">seller_rule()</span></code></a> and <a class="reference internal" href="#skagent.models.lemons.supply_rule" title="skagent.models.lemons.supply_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">supply_rule()</span></code></a> return
+exact 0 and 1, so the relaxation costs the supplied equilibria nothing.</p>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="akerlof1970" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>Akerlof1970<span class="fn-bracket">]</span></span>
+<p>Akerlof, G.A. (1970). “The Market for ‘Lemons’: Quality
+Uncertainty and the Market Mechanism.” The Quarterly Journal of
+Economics, 84(3), 488-500. <a class="reference external" href="https://doi.org/10.2307/1879431">https://doi.org/10.2307/1879431</a></p>
+</div>
+</div>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.lemons.MARKETS">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">MARKETS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'akerlof':</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'premium':</span> <span class="pre">1.5},</span> <span class="pre">'knife-edge':</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'premium':</span> <span class="pre">2.0},</span> <span class="pre">'no-collapse':</span> <span class="pre">{'low':</span> <span class="pre">0.0,</span> <span class="pre">'premium':</span> <span class="pre">2.5},</span> <span class="pre">'partial-collapse':</span> <span class="pre">{'low':</span> <span class="pre">0.4,</span> <span class="pre">'premium':</span> <span class="pre">1.5}}</span></span><a class="headerlink" href="#skagent.models.lemons.MARKETS" title="Link to this definition">¶</a></dt>
+<dd><p>Four configurations of <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>, on quality up to 2.</p>
+<p>Each is a pair of arguments rather than a whole calibration, so the number of
+sellers stays the caller’s: <code class="docutils literal notranslate"><span class="pre">lemons_calibration(size=1000,</span> <span class="pre">**MARKETS[&quot;akerlof&quot;])</span></code>.</p>
+<blockquote>
+<div><p>name               competitive prices     monopsony price and payoff
+akerlof            0                      0,   and 0
+partial-collapse   0 and 1.2              0.8, and 0.025
+knife-edge         every price up to 2    any, and 0
+no-collapse        0 (unstable) and 2.5   2,   and 0.5</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">akerlof</span></code> is the paper’s own section II. Under <code class="docutils literal notranslate"><span class="pre">partial-collapse</span></code> the two
+competitive prices are both stable and the quality floor divides their basins: a
+market that starts below the floor has nobody willing to sell and stays
+collapsed, and one that starts above it unravels down to 1.2 rather than to
+nothing.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.lemons.PEACH_MARKETS">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">PEACH_MARKETS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'lemons-only':</span> <span class="pre">{'share':</span> <span class="pre">0.3},</span> <span class="pre">'two-prices':</span> <span class="pre">{'share':</span> <span class="pre">0.7}}</span></span><a class="headerlink" href="#skagent.models.lemons.PEACH_MARKETS" title="Link to this definition">¶</a></dt>
+<dd><p>Two configurations of <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>, at its default qualities.</p>
+<blockquote>
+<div><p>name          competitive prices
+lemons-only   0 and 0.6
+two-prices    0 and 0.6 and 2.28</p>
+</div></blockquote>
+<p>A lemon is worth 0.4 and a peach 2.0, so at a price of 0.6 the lemons all sell
+and no peach does, whatever peaches are worth and however many there are. The
+second price exists only where peaches are common enough to carry the average,
+which is <a class="reference internal" href="#skagent.models.lemons.peach_share_for_trade" title="skagent.models.lemons.peach_share_for_trade"><code class="xref py py-func docutils literal notranslate"><span class="pre">peach_share_for_trade()</span></code></a> and is 0.583 here; above it a market that
+starts high stays high and one that starts low still collapses to the lemons.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.lemons.PREMIUM">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">PREMIUM</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.5</span></span><a class="headerlink" href="#skagent.models.lemons.PREMIUM" title="Link to this definition">¶</a></dt>
+<dd><p>How much more a buyer values an item than the seller holding it.</p>
+<p>Akerlof’s own 3/2: his sellers value a car at its quality, his buyers at three
+halves of it.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.lemons.PREMIUM_THRESHOLD">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">PREMIUM_THRESHOLD</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2.0</span></span><a class="headerlink" href="#skagent.models.lemons.PREMIUM_THRESHOLD" title="Link to this definition">¶</a></dt>
+<dd><p>The premium at which the uniform market’s clearing map has slope exactly 1.</p>
+<p>Below it the map contracts and the market collapses; above it no trade is an
+unstable fixed point and the price runs up until every item trades. The
+threshold does not depend on the quality range.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.lemons.QUALITY_HIGH">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">QUALITY_HIGH</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2.0</span></span><a class="headerlink" href="#skagent.models.lemons.QUALITY_HIGH" title="Link to this definition">¶</a></dt>
+<dd><p>uniform on [0, 2].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The ends of the quality range, and Akerlof’s own</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.bid_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">bid_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">price</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.bid_rule" title="Link to this definition">¶</a></dt>
+<dd><p>A buyer that always names <em>price</em>, as a decision rule for <code class="docutils literal notranslate"><span class="pre">p</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A rule taking no arguments, since the buyer’s information set is empty.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.buyer_payoff">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">buyer_payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.buyer_payoff" title="Link to this definition">¶</a></dt>
+<dd><p>The monopsonist’s surplus per seller at price <em>p</em>, on uniform quality.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the buyer names.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.clearing_fixed_points">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">clearing_fixed_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.clearing_fixed_points" title="Link to this definition">¶</a></dt>
+<dd><p>The prices a uniform-quality competitive market reproduces.</p>
+<p>These are the equilibria of <code class="xref py py-data docutils literal notranslate"><span class="pre">lemons_block</span></code> and the rest points of
+<code class="xref py py-data docutils literal notranslate"><span class="pre">naive_lemons_block</span></code>. No trade is always one of them. A second appears
+either where the unravelling stops at the quality floor, or, above
+<a class="reference internal" href="#skagent.models.lemons.PREMIUM_THRESHOLD" title="skagent.models.lemons.PREMIUM_THRESHOLD"><code class="xref py py-data docutils literal notranslate"><span class="pre">PREMIUM_THRESHOLD</span></code></a>, where every item trades.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>In increasing order. At the threshold with no quality floor the map is
+the identity below <em>high</em> and the two values returned are the ends of a
+continuum of fixed points rather than two isolated ones.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a> of <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.clearing_map">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">clearing_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.clearing_map" title="Link to this definition">¶</a></dt>
+<dd><p>The price that sellers facing <em>p</em> bring about, on a uniform quality range.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers act on.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.clearing_path">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">clearing_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">periods</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">market</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.clearing_path" title="Link to this definition">¶</a></dt>
+<dd><p>A clearing map iterated from <em>p0</em>, one price per round.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The starting price.</p></li>
+<li><p><strong>periods</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – How many rounds.</p></li>
+<li><p><strong>mapping</strong> (<em>callable</em><em>, </em><em>optional</em>) – The clearing map. Defaults to <a class="reference internal" href="#skagent.models.lemons.clearing_map" title="skagent.models.lemons.clearing_map"><code class="xref py py-func docutils literal notranslate"><span class="pre">clearing_map()</span></code></a>.</p></li>
+<li><p><strong>**market</strong> – Passed to <em>mapping</em>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Length <em>periods</em>, the price after each round.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.clearing_price">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">clearing_price</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">S</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.clearing_price" title="Link to this definition">¶</a></dt>
+<dd><p>The competitive price: buyer valuation of the average item that sold.</p>
+<p>A weighted mean rather than a mean over a selection, which is what keeps it
+usable on every path the library solves on: there is no boolean index, no
+branch on the data and no dynamic shape, so it differentiates and batches
+under <code class="docutils literal notranslate"><span class="pre">torch</span></code> as readily as it evaluates under <code class="docutils literal notranslate"><span class="pre">numpy</span></code>. Where the sell
+decision is 0 or 1 the two forms agree exactly; where it is relaxed to a
+probability of selling, the weighted form is the expected quality of what
+trades, which is the mixed extension rather than an approximation of it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> (<em>array</em>) – Quality, one per seller.</p></li>
+<li><p><strong>S</strong> (<em>array</em>) – The sell decision, one per seller, as a weight in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – How much more a buyer values an item than the seller holding it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>premium</em> times the average quality offered, and 0 when nothing is.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.lemons_calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">lemons_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.lemons_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>A market of <em>size</em> sellers whose quality is uniform on <code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high]</span></code>.</p>
+<p>The defaults are Akerlof’s section II.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many sellers. The clearing price is an average over those who sold,
+so this is the accuracy of the fixed point rather than part of the model.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The ends of the quality range. <code class="docutils literal notranslate"><span class="pre">low</span></code> is the quality floor.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The ends of the quality range. <code class="docutils literal notranslate"><span class="pre">low</span></code> is the quality floor.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – How much more a buyer values an item than the seller holding it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.monopsony_price">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">monopsony_price</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.monopsony_price" title="Link to this definition">¶</a></dt>
+<dd><p>The price that maximizes <a class="reference internal" href="#skagent.models.lemons.buyer_payoff" title="skagent.models.lemons.buyer_payoff"><code class="xref py py-func docutils literal notranslate"><span class="pre">buyer_payoff()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>At and above <a class="reference internal" href="#skagent.models.lemons.PREMIUM_THRESHOLD" title="skagent.models.lemons.PREMIUM_THRESHOLD"><code class="xref py py-data docutils literal notranslate"><span class="pre">PREMIUM_THRESHOLD</span></code></a> the buyer takes the whole market
+at <em>high</em>. Below it the buyer bids the floor up by a factor of
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">(2</span> <span class="pre">-</span> <span class="pre">premium)</span></code>, which with no floor is no trade at all.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.peach_share_for_trade">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">peach_share_for_trade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.peach_share_for_trade" title="Link to this definition">¶</a></dt>
+<dd><p>The share of peaches above which a market in peaches exists at all.</p>
+<p>Below it, no price a buyer will pay for the average car is enough to bring a
+peach out, whatever the market does.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A share, which may exceed 1 where no share of peaches is enough.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.peaches_calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">peaches_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">share</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.peaches_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>A market of <em>size</em> sellers holding a peach or a lemon and nothing between.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many sellers.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The quality of a lemon and of a peach.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The quality of a lemon and of a peach.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – How much more a buyer values an item than the seller holding it.</p></li>
+<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of cars that are peaches.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.peaches_clearing_map">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">peaches_clearing_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">share</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.peaches_clearing_map" title="Link to this definition">¶</a></dt>
+<dd><p>The price that sellers facing <em>p</em> bring about, in a two-type market.</p>
+<p>Below a lemon’s worth nothing is offered; between the two qualities only
+lemons are, and their average quality does not depend on the price at all;
+at or above a peach’s worth everything is.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers act on.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.peaches_fixed_points">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">peaches_fixed_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">share</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.peaches_fixed_points" title="Link to this definition">¶</a></dt>
+<dd><p>The prices a two-type competitive market reproduces.</p>
+<p>Up to three, and the middle one is what the uniform market cannot have: a
+price at which trade survives and every peach is withheld.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>In increasing order.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a> of <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.seller_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">seller_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.seller_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Sell if and only if the posted price covers the seller’s own valuation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> (<em>array</em>) – Quality, one per seller.</p></li>
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers can see.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0 where the item sells, 0.0 where it does not.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.lemons.supply_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.lemons.</span></span><span class="sig-name descname"><span class="pre">supply_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">price</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.lemons.supply_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Supply as though the market will clear at <em>price</em>, seeing only quality.</p>
+<p>The equilibrium rule of an anticipating market is this one at a fixed point
+of that market’s clearing map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers anticipate.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A rule of quality alone.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 <section id="multi-agent-influence-diagrams-maids">
 <h2>Multi-Agent Influence Diagrams (MAIDs)<a class="headerlink" href="#multi-agent-influence-diagrams-maids" title="Link to this heading">¶</a></h2>
 <p>Game-theoretic influence diagrams from the literature, encoded to illustrate
@@ -1559,6 +2074,28 @@ on to query it.</p>
 <li><a class="reference internal" href="#skagent.models.cournot.profile_rules"><code class="docutils literal notranslate"><span class="pre">profile_rules()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#lemons">Lemons</a><ul>
+<li><a class="reference internal" href="#skagent.models.lemons.MARKETS"><code class="docutils literal notranslate"><span class="pre">MARKETS</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.PEACH_MARKETS"><code class="docutils literal notranslate"><span class="pre">PEACH_MARKETS</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.PREMIUM"><code class="docutils literal notranslate"><span class="pre">PREMIUM</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.PREMIUM_THRESHOLD"><code class="docutils literal notranslate"><span class="pre">PREMIUM_THRESHOLD</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.QUALITY_HIGH"><code class="docutils literal notranslate"><span class="pre">QUALITY_HIGH</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.bid_rule"><code class="docutils literal notranslate"><span class="pre">bid_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.buyer_payoff"><code class="docutils literal notranslate"><span class="pre">buyer_payoff()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.clearing_fixed_points"><code class="docutils literal notranslate"><span class="pre">clearing_fixed_points()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.clearing_map"><code class="docutils literal notranslate"><span class="pre">clearing_map()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.clearing_path"><code class="docutils literal notranslate"><span class="pre">clearing_path()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.clearing_price"><code class="docutils literal notranslate"><span class="pre">clearing_price()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.lemons_calibration"><code class="docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.monopsony_price"><code class="docutils literal notranslate"><span class="pre">monopsony_price()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.peach_share_for_trade"><code class="docutils literal notranslate"><span class="pre">peach_share_for_trade()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.peaches_calibration"><code class="docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.peaches_clearing_map"><code class="docutils literal notranslate"><span class="pre">peaches_clearing_map()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.peaches_fixed_points"><code class="docutils literal notranslate"><span class="pre">peaches_fixed_points()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.seller_rule"><code class="docutils literal notranslate"><span class="pre">seller_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.lemons.supply_rule"><code class="docutils literal notranslate"><span class="pre">supply_rule()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#multi-agent-influence-diagrams-maids">Multi-Agent Influence Diagrams (MAIDs)</a></li>
 <li><a class="reference internal" href="#ai-safety-influence-diagrams">AI-safety influence diagrams</a><ul>
 <li><a class="reference internal" href="#skagent.models.safety.incentives.content_recommender_block"><code class="docutils literal notranslate"><span class="pre">content_recommender_block</span></code></a></li>
@@ -1580,7 +2117,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=c680fa45"></script>
+</div><script src="../_static/documentation_options.js?v=078d3470"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
