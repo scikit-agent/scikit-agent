@@ -12,7 +12,7 @@ from skagent.distributions import (
 )
 import numpy as np
 from skagent.model_analyzer import ModelAnalyzer
-from skagent.relevance import RelevanceGraph, shock_roles
+from skagent.relevance import Plate, RelevanceGraph, shock_roles
 from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
@@ -635,6 +635,74 @@ class Block:
 
         return maybe_lag_variables
 
+    def _entity_expansion(self, calibration):
+        """This block with one entity class split in two, and how to read it back.
+
+        A decision taken by every instance of a class is one symbol, and one
+        symbol cannot refer to another instance of itself. So a reliance between
+        two instances is not expressible on this block and is derived on an
+        expansion of it instead: the class is separated into the instance
+        deciding and the rest of it, which gives the two sides distinct symbols,
+        and the criterion then runs unchanged. The names map back onto the
+        class's own symbol, under which such a reliance is a self-loop.
+
+        Returns
+        -------
+        tuple or None
+            The expanded pair, the name each of its symbols reads back as, and
+            the class those names contract onto, or ``None`` where the class
+            does not have to be expanded: a block whose equations never read out
+            of an entity class has no cross-instance reliance to find, and a
+            class of one instance has no other instance to rely on.
+
+        Raises
+        ------
+        ValueError
+            If the block reads out of an entity class that cannot be expanded:
+            one of several declared classes, or a class the calibration does not
+            size.
+        """
+        if not self.crossings():
+            # A reduction written inside a per-instance equation is not reported
+            # as a crossing, and for the same reason the expansion would not
+            # rejoin the axis it reduces over, so such a block is left
+            # unexpanded rather than expanded wrongly.
+            return None
+
+        entities = self.entities()
+        if len(entities) != 1:
+            raise ValueError(
+                f"this block reads out of an entity class, so strategic "
+                f"reliance among that class's instances is derived by expanding "
+                f"it; expansion takes one class and this block declares "
+                f"{sorted(entities)}"
+            )
+        (entity,) = entities
+        if entity not in calibration:
+            raise ValueError(
+                f"calibration gives no size for entity class {entity!r}, and "
+                f"whether one instance relies on another depends on whether "
+                f"there is another; supply a size for {entity!r} to ask"
+            )
+        size = int(calibration[entity])
+        if size < 2:
+            return None
+
+        from skagent.ground import GroundedBlock
+        from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project
+
+        names = {
+            sym + suffix: sym
+            for sym, axes in self.signatures().items()
+            if entity in axes
+            for suffix in (ACTOR_SUFFIX, OTHER_SUFFIX)
+        }
+        return (
+            project(GroundedBlock(self, calibration)),
+            names,
+            Plate(entity, size),
+        )
+
     def relevance_graph(self, calibration=None):
         """Return the strategic-relevance graph over this block's controls.
 
@@ -642,25 +710,56 @@ class Block:
         ``d1 -> d2`` means decision ``d1`` strategically relies on decision
         ``d2`` (Koller & Milch s-reachability). See :mod:`skagent.relevance`.
 
+        A decision every instance of an entity class takes may rely on the other
+        instances of that class, which is reported as a self-loop: it is one
+        rule that has to account for itself, so no order among decisions solves
+        it and a fixed point in the rule does. Such a decision carries the
+        :class:`~skagent.relevance.Plate` it is one rule per instance of, and
+        its edge is marked as crossing that class -- read
+        :meth:`~skagent.relevance.RelevanceGraph.plate` and
+        :meth:`~skagent.relevance.RelevanceGraph.crosses_instances` rather than
+        reading the self-loop on its own. Deriving any of it needs the class's
+        size, so a block that reads out of an entity class raises unless
+        *calibration* sizes that class.
+
         Parameters
         ----------
         calibration : dict, optional
-            Calibration parameters, used only to identify parameter symbols.
-            Relevance is a structural property, so this defaults to an empty
-            dict.
+            Calibration parameters, used to identify parameter symbols and to
+            size an entity class. Relevance is otherwise a structural property,
+            so this defaults to an empty dict.
 
         Returns
         -------
         skagent.relevance.RelevanceGraph
+
+        Raises
+        ------
+        ValueError
+            If the block reads out of an entity class that cannot be expanded;
+            see :meth:`entities` and :meth:`crossings`.
         """
-        scim = ModelAnalyzer(self, calibration or {}).analyze().influence_graph()
-        return RelevanceGraph.from_scim(scim)
+        calibration = calibration or {}
+        expansion = self._entity_expansion(calibration)
+        if expansion is None:
+            scim = ModelAnalyzer(self, calibration).analyze().influence_graph()
+            return RelevanceGraph.from_scim(scim)
+
+        expanded, names, plate = expansion
+        scim = (
+            ModelAnalyzer(expanded.block, expanded.calibration)
+            .analyze()
+            .influence_graph()
+        )
+        return RelevanceGraph.from_scim(scim).contracted(names, plate)
 
     def relies_on(self, first, second, calibration=None):
         """Whether control ``first`` strategically relies on control ``second``.
 
         ``first`` relies on ``second`` when, to optimize the decision rule at
         ``first``, the agent must account for the decision rule at ``second``.
+        One name given twice asks whether the instances of an entity class rely
+        on one another; see :meth:`relevance_graph`.
 
         Parameters
         ----------

@@ -24,6 +24,27 @@ and this project adheres to
   iterated best response with no convergence test. `solve_in_order` says as much
   and points to a schedule that does test for convergence.
 
+### Fixed
+
+- `Block.relevance_graph` finds a decision's reliance on the other instances of
+  its own entity class and reports it on the class's own symbol, as a self-loop.
+  Cournot's three interdependent firms were reported as one decision with no
+  edges, so the model read as one firm deciding alone. One symbol cannot refer
+  to another instance of itself, so the criterion now runs on a split of the
+  class -- `solver.project`'s -- and the projected names are read back. A class
+  of one keeps its edgeless report, and a class the calibration does not size
+  raises instead of being answered as though it held one instance.
+- A `RelevanceGraph` says what a self-loop means instead of leaving it to the
+  shape: `plate(decision)` gives the `Plate` -- the entity class and its size --
+  that the decision is one rule per instance of, and `crosses_instances` says
+  whether a reliance holds across that class's instances. `draw()` puts a plated
+  decision in a labelled box, as the model diagram does, so the loop inside it
+  reads as one instance relying on the others.
+- `solve_in_relevance_order` refuses a decision that relies on itself, naming
+  `project` and `solve_symmetric_equilibrium`. A component's member count is not
+  on its own the cyclicity test: such a decision is a component of one, and one
+  pass returns a rule inconsistent with the aggregate that rule induces.
+
 ### Changed
 
 - A model diagram draws an entity class as a plate: a box around the symbols the

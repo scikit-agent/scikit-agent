@@ -104,6 +104,14 @@ simultaneously. It returns a pure-strategy fixed point when the policies settle
 within tolerance and raises on non-convergence. Mixed-strategy equilibria and
 recurring cyclic games are not supported by this schedule.
 
+A decision taken by every instance of an entity class may rely on the _other
+instances of its own class_, which the graph reports as a self-loop:
+`graph.plate("q")` names the class and how many instances it has, and
+`graph.crosses_instances("q", "q")` is what the loop means. There is one
+decision to solve and it is its own predecessor, so no order settles it and this
+schedule refuses it, naming the projection and the fixed-point schedule below
+instead.
+
 ### The decisions depend on each other: `solve_symmetric_equilibrium`
 
 When every agent in a population responds to what the other agents do, no such
