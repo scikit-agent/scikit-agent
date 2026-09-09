@@ -10,6 +10,7 @@ import skagent.grid as grid
 import skagent.ground as ground
 import skagent.models.cournot as cournot
 import skagent.models.macid as macid
+import skagent.models.privacy as privacy
 from skagent.solver import (
     ExactBestResponse,
     NeuralBestResponse,
@@ -246,6 +247,26 @@ class TestTheAggregateIsPerSampleNotPerPanel:
         assert values["Q"].detach().cpu().numpy() == pytest.approx(
             [(5 + 3 + 3) / 3, (1 + 3 + 3) / 3, (9 + 3 + 3) / 3]
         )
+
+
+class TestADecisionOverTheWholeClassSurvivesTheProjection:
+    """A projection splits the class; a decision that reads all of it does not."""
+
+    def test_it_is_copied_against_the_rejoined_symbols(self):
+        projected = project(
+            ground.GroundedBlock(privacy.local_block, privacy.calibration(1.0, size=5))
+        ).block
+        controls = projected.get_controls()
+
+        # The analyst's estimate reads the whole subject class, so it is one
+        # decision on both sides of the split rather than two. The joins the
+        # projection synthesizes are what its information set now names, so the
+        # declaration is copied exactly as the author wrote it.
+        assert controls["f"].iset == ["c", "d"]
+        assert {"c", "d"} <= set(projected.get_dynamics())
+        assert ["c_actor", "c_other"] == [
+            sym for sym in controls if sym.startswith("c_")
+        ]
 
 
 class TestTheProjectionRefusesWhatItCannotSplit:

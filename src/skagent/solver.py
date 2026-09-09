@@ -227,9 +227,15 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
                     actor[argument], other[argument], size - 1
                 )
                 joined.add(argument)
-        dynamics[sym] = (
-            _per_instance(equation, joined) if sym in crossings else equation
-        )
+        if isinstance(equation, Control) or sym not in crossings:
+            # A DECISION over the class needs no per-instance wrapper: its rule
+            # is supplied rather than evaluated here, and the joins above have
+            # already restored the symbols its information set names. Such a
+            # rule reads a whole class, which is what no policy network in this
+            # library is shaped for, so it is supplied rather than solved.
+            dynamics[sym] = equation
+        else:
+            dynamics[sym] = _per_instance(equation, joined)
 
     projected = DBlock(
         name=f"{block.name}_projected",

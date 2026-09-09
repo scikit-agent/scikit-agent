@@ -110,6 +110,23 @@ relevance graph, and only some can be solved a decision at a time.
    :members:
 ```
 
+## Differential Privacy
+
+Benthall and Cummings' two causal games for tuning a differential-privacy
+parameter: data subjects decide whether to share, an analyst estimates a
+population mean from the reports that arrive, and a designer above both chooses
+how much noise the mechanism adds. The two games are the local and central trust
+models, which differ only in whether each subject privatizes its own report or
+the analyst privatizes the estimate. Both agents' equilibrium rules have closed
+forms, so the model is an oracle for the machinery that finds them: an exact
+backup returns the subjects' threshold rule exactly, while the analyst's
+estimator, whose information set is the whole class, is supplied.
+
+```{eval-rst}
+.. automodule:: skagent.models.privacy
+   :members:
+```
+
 ## Multi-Agent Influence Diagrams (MAIDs)
 
 Game-theoretic influence diagrams from the literature, encoded to illustrate
