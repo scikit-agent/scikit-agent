@@ -426,8 +426,8 @@ print(f"only {scarce['share']:.0%} peaches, started at 2.5 -> {path[-1]:.4f}")
 # which decision has to account for which. If the graph is acyclic, the
 # decisions can be settled one at a time, in order.
 #
-# Asked about the class as it is declared, the graph gives the same answer for
-# every version of this market:
+# Asked about the class as it is declared, the graph separates the four
+# versions of this market:
 
 MARKETS_TO_CHECK = [
     ("anticipated", lemons.lemons_block, lemons.lemons_calibration(size=SELLERS)),
@@ -446,11 +446,21 @@ MARKETS_TO_CHECK = [
 
 
 def report(rows):
-    """One row per market: its decisions, what relies on what, and the verdict."""
+    """One row per market: its decisions, what relies on what, and the verdict.
+
+    A reliance that holds across the instances of a class is named with the
+    class in brackets, since on the class's own symbol it is a self-loop and the
+    shape alone would not say so.
+    """
     print(f"{'market':22} {'decisions':28} {'relies on':42} solvable in order")
     for label, graph in rows:
-        relies = ", ".join(f"{a} -> {b}" for a, b in graph.edges()) or "(none)"
+        edges = [
+            f"{a} -> {b}"
+            + (f" [{graph.plate(a).entity}]" if graph.crosses_instances(a, b) else "")
+            for a, b in graph.edges()
+        ]
         answer = "yes" if graph.is_acyclic() else "no"
+        relies = ", ".join(edges) or "(none)"
         print(f"{label:22} {', '.join(graph.nodes()):28} {relies:42} {answer}")
 
 
@@ -462,18 +472,22 @@ report(
 )
 
 # %%
-# Three of those four are reported as a single decision that relies on nothing,
-# and for one of them that is wrong. In the anticipated market a seller's payoff
-# runs through the price to every other seller's decision, so there is no order
-# to solve in; the market needs a rule that is its own best response. In the
-# posted-price market the same report is correct, because that period's payoff
-# turns on the previous round's price and within a round there is nothing to
-# account for.
+# The two anticipated markets report the sell decision as relying on itself,
+# across the seller class: a seller's payoff runs through the price to every
+# other seller's decision, so what is wanted is one rule that is its own best
+# response rather than a step in an order. What the bracket in that column reads
+# off is :meth:`~skagent.relevance.RelevanceGraph.crosses_instances`, beside
+# :meth:`~skagent.relevance.RelevanceGraph.plate`, which names the class and its
+# size -- ``Plate(entity='seller', size=20000)`` here. In the posted-price market the same decision relies on nothing, and
+# that is correct, because that period's payoff turns on the previous round's
+# price and within a round there is nothing to account for. The two blocks
+# differ only in where the payoff block sits.
 #
-# The two blocks differ only in where the payoff block sits, so no analysis that
-# reads the class as one node can separate them. What separates them is
-# splitting the class into the seller being solved and the rest of the class,
-# which is what :func:`~skagent.solver.project` does:
+# One symbol cannot refer to another instance of itself, so that reliance is
+# derived on a split of the class -- one node for the seller being solved, one
+# for the rest of it -- which is what :func:`~skagent.solver.project` builds.
+# Asked of the projection directly, the same reliance is a pair of edges between
+# the two sides:
 
 
 def projected_graph(block, calibration):
@@ -489,7 +503,8 @@ report(
 )
 
 # %%
-# Now the four separate, and each answer is the right one.
+# The self-loop in the first report is that pair read back onto the class's own
+# symbol, so the two reports say the same thing about each market.
 #
 # The two anticipated markets have edges in both directions between the seller
 # being solved and the rest of the class: each has to account for the other, and
@@ -502,10 +517,3 @@ report(
 # The market where a buyer commits has two edges, both from the price to the
 # sellers, and no cycle. Its topological order is backward induction: solve the
 # sellers against a price, then the buyer against the sellers.
-#
-# .. note::
-#    Splitting the class by hand is not something a caller should have to do to
-#    get a true answer out of the analysis layer, and it will not stay that way.
-#    What the split supplies is the distinction between a seller and its rivals,
-#    which the declared model leaves implicit because one node stands for the
-#    whole class.

@@ -668,7 +668,8 @@ def solve_in_relevance_order(
     Raises
     ------
     NotImplementedError
-        If a cyclic component belongs to a recurring block.
+        If a cyclic component belongs to a recurring block, or if a decision
+        relies on the other instances of its own entity class.
     RuntimeError
         If a cyclic component does not converge within *max_iterations*.
     ValueError
@@ -688,9 +689,25 @@ def solve_in_relevance_order(
     ground = method.ground
     policies = method.initial_policies() if policies is None else dict(policies)
     arrival_states = ground.block.get_arrival_states(ground.calibration)
-    for component in ground.block.relevance_graph(ground.calibration).condensation():
+    graph = ground.block.relevance_graph(ground.calibration)
+    for component in graph.condensation():
         if len(component) == 1:
             (decision,) = component
+            # A component of one is solved in one pass unless it relies on
+            # ITSELF, which a decision taken by every instance of an entity
+            # class does. That is a fixed point in one rule rather than an
+            # order among decisions, so the count of members is not on its own
+            # the cyclicity test.
+            if graph.relies_on(decision, decision):
+                plate = graph.plate(decision)
+                raise NotImplementedError(
+                    f"decision {decision!r} is one rule per instance of entity "
+                    f"class {plate.entity!r}, and it relies on the other "
+                    f"{plate.size - 1}, so there is no order that solves it: "
+                    f"every instance responds to what the others do. Separate "
+                    f"one instance from the rest with skagent.solver.project "
+                    f"and solve the projection with solve_symmetric_equilibrium."
+                )
             policies[decision] = method.best_response(decision, policies)
             logger.info("solved %s", decision)
             continue

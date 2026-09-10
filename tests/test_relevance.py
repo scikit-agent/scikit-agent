@@ -17,7 +17,7 @@ import networkx as nx
 import pytest
 
 from skagent.influence import DUMMY_PREFIX, SCIM
-from skagent.relevance import RelevanceGraph, is_s_reachable
+from skagent.relevance import Plate, RelevanceGraph, is_s_reachable
 
 
 # ----------------------------------------------------------------------------
@@ -178,6 +178,24 @@ def test_dummy_name_collision_is_avoided():
     scim.graph.add_edge(f"{DUMMY_PREFIX}Dp", "U")
     # D still relies on Dp (the collision must be sidestepped, result unchanged).
     assert is_s_reachable(scim, "D", "Dp") is True
+
+
+def test_contracted_merges_two_decisions_and_says_what_the_loop_means():
+    graph = RelevanceGraph(
+        nx.DiGraph([("d_actor", "d_other"), ("d_other", "d_actor"), ("d_actor", "e")])
+    )
+
+    contracted = graph.contracted({"d_actor": "d", "d_other": "d"}, Plate("subject", 4))
+
+    assert sorted(contracted.nodes()) == ["d", "e"]
+    assert sorted(contracted.edges()) == [("d", "d"), ("d", "e")]
+    assert contracted.plate("d") == ("subject", 4)
+    assert contracted.crosses_instances("d", "d")
+
+    # The edge to a decision OUTSIDE the class is an ordinary reliance: every
+    # instance relies on `e`, and no instance relies on another through it.
+    assert not contracted.crosses_instances("d", "e")
+    assert contracted.plate("e") is None
 
 
 def test_draw_returns_pydot_graph():
