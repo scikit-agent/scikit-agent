@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="API Reference" href="../../api/index.html"><link rel="prev" title="Benchmark Consumption Models" href="plot_benchmark_models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Lemons: Adverse Selection, and Three Markets That Look Alike - scikit-agent 0.1.1.dev103+g767d027fa</title>
+        <title>Lemons: Adverse Selection, and Three Markets That Look Alike - scikit-agent 0.1.1.dev105+gcad1cc1f3</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev103+g767d027fa</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev105+gcad1cc1f3</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -730,8 +730,8 @@ the lemons:</p>
 The relevance graph answers that: its nodes are decisions and its edges say
 which decision has to account for which. If the graph is acyclic, the
 decisions can be settled one at a time, in order.</p>
-<p>Asked about the class as it is declared, the graph gives the same answer for
-every version of this market:</p>
+<p>Asked about the class as it is declared, the graph separates the four
+versions of this market:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">MARKETS_TO_CHECK</span></a> <span class="o">=</span> <span class="p">[</span>
     <span class="p">(</span><span class="s2">"anticipated"</span><span class="p">,</span> <span class="n">lemons</span><span class="o">.</span><span class="n">lemons_block</span><span class="p">,</span> <span class="n">lemons</span><span class="o">.</span><span class="n">lemons_calibration</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">SELLERS</span></a><span class="p">)),</span>
     <span class="p">(</span>
@@ -749,11 +749,21 @@ every version of this market:</p>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="n">rows</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""One row per market: its decisions, what relies on what, and the verdict."""</span>
+<span class="w">    </span><span class="sd">"""One row per market: its decisions, what relies on what, and the verdict.</span>
+
+<span class="sd">    A reliance that holds across the instances of a class is named with the</span>
+<span class="sd">    class in brackets, since on the class's own symbol it is a self-loop and the</span>
+<span class="sd">    shape alone would not say so.</span>
+<span class="sd">    """</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'market'</span><span class="si">:</span><span class="s2">22</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'decisions'</span><span class="si">:</span><span class="s2">28</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'relies on'</span><span class="si">:</span><span class="s2">42</span><span class="si">}</span><span class="s2"> solvable in order"</span><span class="p">)</span>
     <span class="k">for</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="p">,</span> <span class="n">graph</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
-        <span class="n">relies</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">())</span> <span class="ow">or</span> <span class="s2">"(none)"</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">" [</span><span class="si">{</span><span class="n">graph</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">.</span><span class="n">entity</span><span class="si">}</span><span class="s2">]"</span> <span class="k">if</span> <span class="n">graph</span><span class="o">.</span><span class="n">crosses_instances</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">()</span>
+        <span class="p">]</span>
         <span class="n">answer</span> <span class="o">=</span> <span class="s2">"yes"</span> <span class="k">if</span> <span class="n">graph</span><span class="o">.</span><span class="n">is_acyclic</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"no"</span>
+        <span class="n">relies</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"(none)"</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">label</span></a><span class="si">:</span><span class="s2">22</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span><span class="si">:</span><span class="s2">28</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">relies</span><span class="si">:</span><span class="s2">42</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">answer</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 
@@ -766,23 +776,27 @@ every version of this market:</p>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>market                 decisions                    relies on                                  solvable in order
-anticipated            S                            (none)                                     yes
+anticipated            S                            S -&gt; S [seller]                            no
 posted price           S                            (none)                                     yes
-peaches, anticipated   S                            (none)                                     yes
+peaches, anticipated   S                            S -&gt; S [seller]                            no
 buyer commits          p, S                         p -&gt; S                                     yes
 </pre></div>
 </div>
-<p>Three of those four are reported as a single decision that relies on nothing,
-and for one of them that is wrong. In the anticipated market a seller’s payoff
-runs through the price to every other seller’s decision, so there is no order
-to solve in; the market needs a rule that is its own best response. In the
-posted-price market the same report is correct, because that period’s payoff
-turns on the previous round’s price and within a round there is nothing to
-account for.</p>
-<p>The two blocks differ only in where the payoff block sits, so no analysis that
-reads the class as one node can separate them. What separates them is
-splitting the class into the seller being solved and the rest of the class,
-which is what <a class="reference internal" href="../../api/algorithms.html#skagent.solver.project" title="skagent.solver.project"><code class="xref py py-func docutils literal notranslate"><span class="pre">project()</span></code></a> does:</p>
+<p>The two anticipated markets report the sell decision as relying on itself,
+across the seller class: a seller’s payoff runs through the price to every
+other seller’s decision, so what is wanted is one rule that is its own best
+response rather than a step in an order. What the bracket in that column reads
+off is <a class="reference internal" href="../../api/analysis.html#skagent.relevance.RelevanceGraph.crosses_instances" title="skagent.relevance.RelevanceGraph.crosses_instances"><code class="xref py py-meth docutils literal notranslate"><span class="pre">crosses_instances()</span></code></a>, beside
+<a class="reference internal" href="../../api/analysis.html#skagent.relevance.RelevanceGraph.plate" title="skagent.relevance.RelevanceGraph.plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate()</span></code></a>, which names the class and its
+size – <code class="docutils literal notranslate"><span class="pre">Plate(entity='seller',</span> <span class="pre">size=20000)</span></code> here. In the posted-price market the same decision relies on nothing, and
+that is correct, because that period’s payoff turns on the previous round’s
+price and within a round there is nothing to account for. The two blocks
+differ only in where the payoff block sits.</p>
+<p>One symbol cannot refer to another instance of itself, so that reliance is
+derived on a split of the class – one node for the seller being solved, one
+for the rest of it – which is what <a class="reference internal" href="../../api/algorithms.html#skagent.solver.project" title="skagent.solver.project"><code class="xref py py-func docutils literal notranslate"><span class="pre">project()</span></code></a> builds.
+Asked of the projection directly, the same reliance is a pair of edges between
+the two sides:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">projected_graph</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">):</span>
     <span class="n">projected</span> <span class="o">=</span> <span class="n">project</span><span class="p">(</span><span class="n">GroundedBlock</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">))</span>
     <span class="k">return</span> <span class="n">projected</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">relevance_graph</span><span class="p">(</span><span class="n">projected</span><span class="o">.</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">calibration</span></a><span class="p">)</span>
@@ -803,7 +817,8 @@ peaches, anticipated   S_actor, S_other             S_actor -&gt; S_other, S_oth
 buyer commits          p, S_actor, S_other          p -&gt; S_actor, p -&gt; S_other                 yes
 </pre></div>
 </div>
-<p>Now the four separate, and each answer is the right one.</p>
+<p>The self-loop in the first report is that pair read back onto the class’s own
+symbol, so the two reports say the same thing about each market.</p>
 <p>The two anticipated markets have edges in both directions between the seller
 being solved and the rest of the class: each has to account for the other, and
 the component is cyclic. These are the markets that need an equilibrium.</p>
@@ -813,15 +828,7 @@ enough.</p>
 <p>The market where a buyer commits has two edges, both from the price to the
 sellers, and no cycle. Its topological order is backward induction: solve the
 sellers against a price, then the buyer against the sellers.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Splitting the class by hand is not something a caller should have to do to
-get a true answer out of the analysis layer, and it will not stay that way.
-What the split supplies is the distinction between a seller and its rivals,
-which the declared model leaves implicit because one node stands for the
-whole class.</p>
-</div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.711 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.808 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-lemons-adverse-selection-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/1b16fb9f12eeabb9f5992c02c451c900/plot_lemons_adverse_selection.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_lemons_adverse_selection.ipynb</span></code></a></p>
@@ -929,7 +936,7 @@ whole class.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=078d3470"></script>
+</div><script src="../../_static/documentation_options.js?v=91bfd604"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

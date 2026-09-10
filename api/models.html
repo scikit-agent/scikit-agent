@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev103+g767d027fa</title>
+        <title>Models - scikit-agent 0.1.1.dev105+gcad1cc1f3</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev103+g767d027fa</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev105+gcad1cc1f3</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1326,16 +1326,15 @@ reason that has nothing to do with adverse selection. That is why the buyer here
 commits first, and why a competitive price is a condition on the market rather
 than any one participant’s choice: competition among buyers is what holds the
 price up to the value of what trades.</p>
-<p>None of the timings has a cycle that its relevance graph can see, and they
-still need three different treatments. Where the price is anticipated, a
-seller’s payoff runs through it to every other seller’s decision, so the model
-is a strategic fixed point among instances of one class; <code class="docutils literal notranslate"><span class="pre">relies_on(&quot;S&quot;,</span> <span class="pre">&quot;S&quot;)</span></code>
-is nonetheless <code class="docutils literal notranslate"><span class="pre">False</span></code>, because that reliance is not derivable without
-expanding the class. Where the price is posted, the same call is <code class="docutils literal notranslate"><span class="pre">False</span></code> and
-correct, since this period’s payoff turns on last period’s price and within a
-period there is no reliance to find. Where a buyer commits, the graph reports
-two nodes and one edge, from the price to the sell decision, and its topological
-order is backward induction.</p>
+<p>The three timings need three different treatments, and the relevance graph
+tells them apart. Where the price is anticipated, a seller’s payoff runs
+through it to every other seller’s decision, so the model is a strategic fixed
+point among instances of one class and <code class="docutils literal notranslate"><span class="pre">relies_on(&quot;S&quot;,</span> <span class="pre">&quot;S&quot;)</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>:
+one decision, and it is its own predecessor, so no order solves it. Where the
+price is posted, the same call is <code class="docutils literal notranslate"><span class="pre">False</span></code> and correct, since this period’s
+payoff turns on last period’s price and within a period there is no reliance to
+find. Where a buyer commits, the graph reports two nodes and one edge, from the
+price to the sell decision, and its topological order is backward induction.</p>
 <p>The market behaves differently under the two quality distributions. The
 uniform of section II makes the clearing map exactly linear, since
 <span class="math notranslate nohighlight">\(E[\theta \mid \theta \leq p]\)</span> is <span class="math notranslate nohighlight">\((\ell + p)/2\)</span>, so the only prices
@@ -2117,7 +2116,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=078d3470"></script>
+</div><script src="../_static/documentation_options.js?v=91bfd604"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

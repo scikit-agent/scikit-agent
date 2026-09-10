@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev103+g767d027fa</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev105+gcad1cc1f3</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev103+g767d027fa</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev105+gcad1cc1f3</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -613,6 +613,19 @@ s-reachability criterion, and the order the resulting relevance graph implies,
 <a class="reference internal" href="algorithms.html#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.tabular.TabularBestResponseSolver</span></code></a> solves a block in (see
 <a class="reference internal" href="algorithms.html"><span class="doc">Algorithms</span></a>). Run from a shock instead, it tells a solver whether to grid
 that shock or integrate it inside the maximization.</p>
+<p>A decision taken by every instance of an entity class may rely on the other
+instances of that class, and one symbol cannot refer to another instance of
+itself. <a class="reference internal" href="blocks.html#skagent.block.Block.relevance_graph" title="skagent.block.Block.relevance_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relevance_graph()</span></code></a> therefore runs the
+criterion on a split of the class – the instance deciding, and the rest of it,
+as <a class="reference internal" href="algorithms.html#skagent.solver.project" title="skagent.solver.project"><code class="xref py py-func docutils literal notranslate"><span class="pre">project()</span></code></a> builds it – and reports such a reliance on
+the class’s own symbol, as a self-loop.</p>
+<p>That shape is annotated rather than left to be inferred, because a self-loop on
+its own does not say whether a decision accounts for other instances of itself
+or for its own value. <a class="reference internal" href="#skagent.relevance.RelevanceGraph.plate" title="skagent.relevance.RelevanceGraph.plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate()</span></code></a> gives the
+<a class="reference internal" href="#skagent.relevance.Plate" title="skagent.relevance.Plate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Plate</span></code></a> the decision is one rule per instance of –
+the class and its size – and
+<a class="reference internal" href="#skagent.relevance.RelevanceGraph.crosses_instances" title="skagent.relevance.RelevanceGraph.crosses_instances"><code class="xref py py-meth docutils literal notranslate"><span class="pre">crosses_instances()</span></code></a> says whether a
+reliance holds across that class’s instances rather than within one.</p>
 <section id="incentive-criteria">
 <h3>Incentive criteria<a class="headerlink" href="#incentive-criteria" title="Link to this heading">¶</a></h3>
 <p>The same substrate answers a third question, about a node that is neither a
@@ -712,9 +725,36 @@ networkx so the criteria can be developed and tested in isolation.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="skagent.relevance.Plate">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">Plate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.Plate" title="Link to this definition">¶</a></dt>
+<dd><p>A class a decision is one rule per instance of, and how many instances
+there are. The size is part of it because the answers depend on it: a class
+of one has no other instance to rely on, and a fixed point over a class of
+many needs its size to know how fast it may step.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.relevance.Plate.entity">
+<span class="sig-name descname"><span class="pre">entity</span></span><a class="headerlink" href="#skagent.relevance.Plate.entity" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.relevance.Plate.size">
+<span class="sig-name descname"><span class="pre">size</span></span><a class="headerlink" href="#skagent.relevance.Plate.size" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="skagent.relevance.RelevanceGraph">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.relevance.</span></span><span class="sig-name descname"><span class="pre">RelevanceGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph" title="Link to this definition">¶</a></dt>
 <dd><p>A relevance graph over decision nodes (edge d1 -&gt; d2 iff d1 relies on d2).</p>
+<p>No decision relies on itself, so a self-loop only ever arises from
+<a class="reference internal" href="#skagent.relevance.RelevanceGraph.contracted" title="skagent.relevance.RelevanceGraph.contracted"><code class="xref py py-meth docutils literal notranslate"><span class="pre">contracted()</span></code></a>, which is also what annotates it: the decision carries
+the <a class="reference internal" href="#skagent.relevance.Plate" title="skagent.relevance.Plate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Plate</span></code></a> it is one rule per instance of, and the edge is marked as
+holding across that class’s instances rather than within one. Read
+<a class="reference internal" href="#skagent.relevance.RelevanceGraph.plate" title="skagent.relevance.RelevanceGraph.plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate()</span></code></a> and <a class="reference internal" href="#skagent.relevance.RelevanceGraph.crosses_instances" title="skagent.relevance.RelevanceGraph.crosses_instances"><code class="xref py py-meth docutils literal notranslate"><span class="pre">crosses_instances()</span></code></a> rather than inferring either
+from the shape.</p>
 <p>Wraps a <code class="docutils literal notranslate"><span class="pre">networkx.DiGraph</span></code> but never leaks it: all helpers return native
 Python types.</p>
 <dl class="py method">
@@ -725,6 +765,40 @@ Python types.</p>
 only on components appearing <em>earlier</em> in the list. Solving the game in
 this order (a la Koller &amp; Milch Algorithm 1) means every decision an
 SCC relies on is already solved by the time the SCC is reached.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.relevance.RelevanceGraph.contracted">
+<span class="sig-name descname"><span class="pre">contracted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plate</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph.contracted" title="Link to this definition">¶</a></dt>
+<dd><p>This graph with one entity class’s decisions contracted onto one name.</p>
+<p>An expanded class holds two decisions – the instance being solved, and
+the rest of the class – which stand for one rule, so they contract back
+onto the class’s own symbol. A reliance between them becomes a self-loop
+on it, and because that says something the shape alone does not, both
+are recorded: each contracted decision carries <em>plate</em>, and an edge
+between two decisions that contract onto one name is marked as crossing
+that class’s instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>names</strong> (<em>Mapping</em>) – The new name of each decision. A decision the mapping omits keeps
+its own name.</p></li>
+<li><p><strong>plate</strong> (<a class="reference internal" href="#skagent.relevance.Plate" title="skagent.relevance.Plate"><em>Plate</em></a>) – The class whose decisions are being contracted, and its size.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.relevance.RelevanceGraph" title="skagent.relevance.RelevanceGraph">RelevanceGraph</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.relevance.RelevanceGraph.crosses_instances">
+<span class="sig-name descname"><span class="pre">crosses_instances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph.crosses_instances" title="Link to this definition">¶</a></dt>
+<dd><p>True iff <em>first</em> relies on <em>second</em> as taken by OTHER instances.</p>
+<p>Where <em>first</em> and <em>second</em> name one decision, this is what its self-loop
+means: one rule per instance, and each instance has to account for the
+others. Read with <a class="reference internal" href="#skagent.relevance.RelevanceGraph.plate" title="skagent.relevance.RelevanceGraph.plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate()</span></code></a>, which names the class.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -758,6 +832,21 @@ pairs of <code class="docutils literal notranslate"><span class="pre">scim</span
 <dt class="sig sig-object py" id="skagent.relevance.RelevanceGraph.nodes">
 <span class="sig-name descname"><span class="pre">nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph.nodes" title="Link to this definition">¶</a></dt>
 <dd><p>The decision nodes, as a list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.relevance.RelevanceGraph.plate">
+<span class="sig-name descname"><span class="pre">plate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.relevance.RelevanceGraph.plate" title="Link to this definition">¶</a></dt>
+<dd><p>The class <em>decision</em> is one rule per instance of, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code> where the decision is taken once rather than by every
+instance of an entity class.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#skagent.relevance.Plate" title="skagent.relevance.Plate">Plate</a> or None</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1122,13 +1211,21 @@ the graph per decision rather than per (shock, decision) pair.</p>
 <li><a class="reference internal" href="#skagent.relevance.HIDDEN"><code class="docutils literal notranslate"><span class="pre">HIDDEN</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.MIXED"><code class="docutils literal notranslate"><span class="pre">MIXED</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.OBSERVED"><code class="docutils literal notranslate"><span class="pre">OBSERVED</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.Plate"><code class="docutils literal notranslate"><span class="pre">Plate</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.relevance.Plate.entity"><code class="docutils literal notranslate"><span class="pre">Plate.entity</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.Plate.size"><code class="docutils literal notranslate"><span class="pre">Plate.size</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.condensation"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.condensation()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.contracted"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.contracted()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.crosses_instances"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.crosses_instances()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.draw"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.draw()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.edges"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.edges()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.from_scim"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.from_scim()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.is_acyclic"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.is_acyclic()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.nodes"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.nodes()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.plate"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.plate()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.relies_on"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.relies_on()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.relevance.RelevanceGraph.sccs"><code class="docutils literal notranslate"><span class="pre">RelevanceGraph.sccs()</span></code></a></li>
 </ul>
@@ -1156,7 +1253,7 @@ the graph per decision rather than per (shock, decision) pair.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=078d3470"></script>
+</div><script src="../_static/documentation_options.js?v=91bfd604"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

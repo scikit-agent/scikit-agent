@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev103+g767d027fa</title>
+        <title>Blocks - scikit-agent 0.1.1.dev105+gcad1cc1f3</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev103+g767d027fa</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev105+gcad1cc1f3</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -481,14 +481,29 @@ the form {“agent1” : [“var1”, “var2”, … ], “agent2” : [“var3
 <p>Nodes are the block’s control (decision) variables; a directed edge
 <code class="docutils literal notranslate"><span class="pre">d1</span> <span class="pre">-&gt;</span> <span class="pre">d2</span></code> means decision <code class="docutils literal notranslate"><span class="pre">d1</span></code> strategically relies on decision
 <code class="docutils literal notranslate"><span class="pre">d2</span></code> (Koller &amp; Milch s-reachability). See <a class="reference internal" href="analysis.html#module-skagent.relevance" title="skagent.relevance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.relevance</span></code></a>.</p>
+<p>A decision every instance of an entity class takes may rely on the other
+instances of that class, which is reported as a self-loop: it is one
+rule that has to account for itself, so no order among decisions solves
+it and a fixed point in the rule does. Such a decision carries the
+<a class="reference internal" href="analysis.html#skagent.relevance.Plate" title="skagent.relevance.Plate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Plate</span></code></a> it is one rule per instance of, and
+its edge is marked as crossing that class – read
+<a class="reference internal" href="analysis.html#skagent.relevance.RelevanceGraph.plate" title="skagent.relevance.RelevanceGraph.plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate()</span></code></a> and
+<a class="reference internal" href="analysis.html#skagent.relevance.RelevanceGraph.crosses_instances" title="skagent.relevance.RelevanceGraph.crosses_instances"><code class="xref py py-meth docutils literal notranslate"><span class="pre">crosses_instances()</span></code></a> rather than
+reading the self-loop on its own. Deriving any of it needs the class’s
+size, so a block that reads out of an entity class raises unless
+<em>calibration</em> sizes that class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Calibration parameters, used only to identify parameter symbols.
-Relevance is a structural property, so this defaults to an empty
-dict.</p>
+<dd class="field-odd"><p><strong>calibration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Calibration parameters, used to identify parameter symbols and to
+size an entity class. Relevance is otherwise a structural property,
+so this defaults to an empty dict.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="analysis.html#skagent.relevance.RelevanceGraph" title="skagent.relevance.RelevanceGraph">skagent.relevance.RelevanceGraph</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the block reads out of an entity class that cannot be expanded;
+    see <a class="reference internal" href="#skagent.block.Block.entities" title="skagent.block.Block.entities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">entities()</span></code></a> and <a class="reference internal" href="#skagent.block.Block.crossings" title="skagent.block.Block.crossings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">crossings()</span></code></a>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -498,7 +513,9 @@ dict.</p>
 <span class="sig-name descname"><span class="pre">relies_on</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.relies_on" title="Link to this definition">¶</a></dt>
 <dd><p>Whether control <code class="docutils literal notranslate"><span class="pre">first</span></code> strategically relies on control <code class="docutils literal notranslate"><span class="pre">second</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">first</span></code> relies on <code class="docutils literal notranslate"><span class="pre">second</span></code> when, to optimize the decision rule at
-<code class="docutils literal notranslate"><span class="pre">first</span></code>, the agent must account for the decision rule at <code class="docutils literal notranslate"><span class="pre">second</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">first</span></code>, the agent must account for the decision rule at <code class="docutils literal notranslate"><span class="pre">second</span></code>.
+One name given twice asks whether the instances of an entity class rely
+on one another; see <a class="reference internal" href="#skagent.block.Block.relevance_graph" title="skagent.block.Block.relevance_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relevance_graph()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1367,7 +1384,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=078d3470"></script>
+</div><script src="../_static/documentation_options.js?v=91bfd604"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
