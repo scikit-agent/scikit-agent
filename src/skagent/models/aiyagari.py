@@ -116,8 +116,9 @@ whole half-line, and the global convergence rests on its shape.
 
 A finite class averages an endowment only close to one, so each simulated
 period adds :math:`s\,W(\bar\theta - 1)` to the map, where :math:`\bar\theta` is
-that period's average draw. With that term added back the simulated path
-matches the closed form to rounding error.
+that period's average draw. :func:`capital_map` takes that average as its
+``endowment`` argument, and with it the simulated path matches the closed form
+to rounding error.
 
 That claim is cross-sectional rather than optimal. The savings rate is a rule of
 thumb, no household is solving anything, and the aggregate still arrives where
@@ -238,7 +239,7 @@ def savings_rule(rate):
     return lambda z: (1 - rate) * z
 
 
-def capital_map(capital, rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
+def capital_map(capital, rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION, endowment=1.0):
     """The capital an economy holding *capital* per head leaves for next period.
 
     Iterated, this is the path :data:`aiyagari_block` simulates under
@@ -254,12 +255,17 @@ def capital_map(capital, rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
         Capital's share of output.
     delta : float, optional
         The fraction of the capital stock that wears out each period.
+    endowment : float, optional
+        The households' average labour endowment this period. It is one in
+        expectation, the default; a finite class draws an average only close
+        to one, and passing the realized average makes the map exact.
 
     Returns
     -------
     float
     """
-    return rate * (capital**alpha + (1 - delta) * capital)
+    wage = (1 - alpha) * capital**alpha
+    return rate * (capital**alpha + (1 - delta) * capital + wage * (endowment - 1))
 
 
 def stationary_capital(rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
