@@ -77,12 +77,9 @@ class TestTheAggregateReachesItsStationaryPoint:
         # stationary point sets the speed of the last stretch.
         assert aiyagari.convergence_rate(RATE) < 1
 
-        # Averaged over eight independent economies rather than read off one.
-        # The aggregate is a mean over a finite cross-section, so a single run's
-        # stationary capital carries sampling noise that no number of periods
-        # removes: run once, six seeds spread this from -3.3% to +3.5%, and
-        # averaged over samples they span -0.4% to +1.0% for thirty more
-        # milliseconds. Averaging is what the sample axis is for.
+        # Averaging eight economies is what the sample axis is for: a single run's
+        # stationary capital carries finite-sample noise no number of periods removes.
+        # Six seeds: -3.3% to +3.5% run once, -0.4% to +1.0% averaged, tens of ms more.
         capital = run(size=500, periods=120, start=80.0, samples=8)["K"]
         assert capital[0].mean() > STATIONARY
         assert capital[-1].mean() == pytest.approx(STATIONARY, rel=0.03)
@@ -134,21 +131,16 @@ class TestEachSampleIsItsOwnEconomy:
         assert capital[1:] == pytest.approx(assets[:-1].mean(axis=-1))
 
     def test_the_economies_stay_apart_and_all_of_them_arrive(self):
-        # `test_entities` pins the same property on Cournot, but that model is
-        # static and its test runs one period, so it cannot show the aggregate
-        # staying per-sample once it feeds an arrival state that feeds the next
-        # period's aggregate. This is the first dynamic model where it could go
-        # wrong over time rather than at once.
+        # `test_entities` pins this on Cournot, which is static and runs one period.
+        # This is the first dynamic model where it could go wrong over time: the
+        # aggregate feeds an arrival state that feeds the next period's aggregate.
         capital = run(size=1000, periods=120, samples=4)["K"]
         assert len(np.unique(capital[1])) == capital.shape[1]
         assert len(np.unique(capital[-1])) == capital.shape[1]
 
-        # They are four draws of one economy rather than four economies, which
-        # is two claims: that they are centred on the same capital, and that
-        # they do not drift apart. Asserting instead that every sample lands
-        # within a band of K* would be a claim about one economy's sampling
-        # noise, which is not what this test is about and is several times
-        # noisier.
+        # Four draws of one economy: centred on the same capital and not drifting
+        # apart. A band around K* for each sample would instead test one
+        # economy's sampling noise, which is several times larger.
         assert capital[-1].mean() == pytest.approx(STATIONARY, rel=0.03)
         assert capital[-1].std() < 0.05 * STATIONARY
 
