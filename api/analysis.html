@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev105+gcad1cc1f3</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.1.1.dev114+g064f32b2d</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev105+gcad1cc1f3</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev114+g064f32b2d</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -344,7 +344,7 @@ Lag edges are excluded here (single-period scope); cross-period reliance
 is handled by the unrolling machinery separately.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>dynamic</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Make the diagram faithful to one period of a recurring problem, by
+<dd class="field-odd"><p><strong>dynamic</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Make the diagram faithful to one period of a recurring problem, by
 splitting each reassigned variable’s arrival value into its own
 <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;*</span></code> node and adding a continuation-value utility node per
 deciding agent
@@ -543,7 +543,7 @@ stands in for that rule.</p>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(scim,</span> <span class="pre">dummy)</span></code> – a new SCIM, and the name of the added node.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -560,7 +560,7 @@ is no longer a DAG.</p>
 <dd class="field-odd"><p><a class="reference internal" href="#skagent.influence.SCIM" title="skagent.influence.SCIM">SCIM</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If either endpoint is absent, or the edge would create a cycle.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If either endpoint is absent, or the edge would create a cycle.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -883,10 +883,10 @@ trivially and so admit the incentive.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision.</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -911,10 +911,10 @@ the same paper.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
     decision, which the definition excludes.</p>
 </dd>
 </dl>
@@ -937,10 +937,10 @@ path from <code class="docutils literal notranslate"><span class="pre">node</spa
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
     decision, which the definition excludes: a decision is already under the
     agent’s control.</p>
 </dd>
@@ -963,10 +963,10 @@ diagram with the information link <code class="docutils literal notranslate"><sp
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, or if <code class="docutils literal notranslate"><span class="pre">node</span></code> is the
     decision or descends from it – there is no diagram in which such a node
     is observed, since the added information link would close a cycle.</p>
 </dd>
@@ -991,10 +991,10 @@ Nilsson 2001) is one for which <code class="docutils literal notranslate"><span 
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, if <code class="docutils literal notranslate"><span class="pre">node</span></code> is not an
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the diagram holds more than one decision, if <code class="docutils literal notranslate"><span class="pre">node</span></code> is not an
     observation of <code class="docutils literal notranslate"><span class="pre">decision</span></code>, or if the deciding agent owns no objective
     downstream of the decision.</p>
 </dd>
@@ -1016,7 +1016,7 @@ relevance graph)?</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1088,10 +1088,10 @@ parents are its information set.</p></li>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{decision:</span> <span class="pre">{shock:</span> <span class="pre">role}}</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a decision has no objective nodes. Nothing is then reachable, so every
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a decision has no objective nodes. Nothing is then reachable, so every
     shock would classify <a class="reference internal" href="#skagent.relevance.OBSERVED" title="skagent.relevance.OBSERVED"><code class="xref py py-data docutils literal notranslate"><span class="pre">OBSERVED</span></code></a> – the one direction that must not
     be silent, since it invites a solver to condition on a shock the agent
     cannot see. It means the deciding agent owns no reward downstream of its
@@ -1253,7 +1253,7 @@ the graph per decision rather than per (shock, decision) pair.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=91bfd604"></script>
+</div><script src="../_static/documentation_options.js?v=c803088a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
