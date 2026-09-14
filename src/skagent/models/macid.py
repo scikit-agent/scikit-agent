@@ -9,10 +9,10 @@ they pin down is graphical structure (information sets, agent ownership,
 dependencies), and their functional forms and payoff magnitudes are illustrative.
 The magnitudes are nonetheless chosen so that each game is strategically
 non-degenerate -- no decision has an optimum that is independent of the others --
-so that a solver exercises the structure rather than sidestepping it. Games whose
-relevance graph is acyclic can be solved by
-``skagent.algos.tabular.TabularBestResponseSolver``; a cyclic one needs a joint
-equilibrium solution, which the library does not offer.
+so that a solver exercises the structure rather than sidestepping it.
+``skagent.solver.solve_in_relevance_order`` solves acyclic components once and
+iterates simultaneous best responses for cyclic components, returning a
+pure-strategy fixed point or reporting non-convergence.
 
 Encoding conventions (a deliberate departure from the source presentations):
 

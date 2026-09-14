@@ -15,6 +15,7 @@ from skagent.solver import (
     NeuralBestResponse,
     project,
     solve_in_order,
+    solve_in_relevance_order,
     solve_symmetric_equilibrium,
 )
 
@@ -329,3 +330,12 @@ class TestTheScheduleRefusesAnUnprojectedProblem:
         method = ExactBestResponse(period, {})
         with pytest.raises(ValueError, match="one control named for the solved"):
             solve_symmetric_equilibrium(method)
+
+    def test_a_population_asked_for_an_order_is_sent_to_the_fixed_point(self):
+        # One decision that relies on itself is a component of one, so the
+        # relevance schedule would otherwise solve it in a single pass against
+        # a profile no instance is playing.
+        panel = grid.Grid.from_config({"c": {"min": COST, "max": COST, "count": 8}})
+        method = NeuralBestResponse(cournot_ground(), panel, epochs=1)
+        with pytest.raises(NotImplementedError, match="entity class 'firm'"):
+            solve_in_relevance_order(method)

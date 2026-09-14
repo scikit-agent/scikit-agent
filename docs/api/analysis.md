@@ -41,6 +41,21 @@ s-reachability criterion, and the order the resulting relevance graph implies,
 {doc}`algorithms`). Run from a shock instead, it tells a solver whether to grid
 that shock or integrate it inside the maximization.
 
+A decision taken by every instance of an entity class may rely on the other
+instances of that class, and one symbol cannot refer to another instance of
+itself. {meth}`~skagent.block.Block.relevance_graph` therefore runs the
+criterion on a split of the class -- the instance deciding, and the rest of it,
+as {func}`~skagent.solver.project` builds it -- and reports such a reliance on
+the class's own symbol, as a self-loop.
+
+That shape is annotated rather than left to be inferred, because a self-loop on
+its own does not say whether a decision accounts for other instances of itself
+or for its own value. {meth}`~skagent.relevance.RelevanceGraph.plate` gives the
+{class}`~skagent.relevance.Plate` the decision is one rule per instance of --
+the class and its size -- and
+{meth}`~skagent.relevance.RelevanceGraph.crosses_instances` says whether a
+reliance holds across that class's instances rather than within one.
+
 ### Incentive criteria
 
 The same substrate answers a third question, about a node that is neither a
