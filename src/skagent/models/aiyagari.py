@@ -12,25 +12,31 @@ Symbols
 
 One value per household:
 
-    theta   the labour endowment drawn this period, which has mean one
-    a       assets carried in from last period, the model's arrival state
-    z       cash on hand: labour income plus assets and the interest on them
-    c       consumption, the household's one decision
-    u       the household's payoff from consuming that much
+======  ===================================================================
+theta   the labour endowment drawn this period, which has mean one
+a       assets carried in from last period, the model's arrival state
+z       cash on hand: labour income plus assets and the interest on them
+c       consumption, the household's one decision
+u       the household's payoff from consuming that much
+======  ===================================================================
 
 One value for the whole economy, and capitalised for it:
 
-    K       capital per head, the average of ``a`` over the households
-    R       the net interest rate, so a household earns ``(1 + R)`` on assets
-    W       the wage paid per unit of labour endowment
+======  ===================================================================
+K       capital per head, the average of ``a`` over the households
+R       the net interest rate, so a household earns ``(1 + R)`` on assets
+W       the wage paid per unit of labour endowment
+======  ===================================================================
 
 Calibration parameters:
 
-    alpha        capital's share of output
-    delta        the fraction of capital that wears out each period
-    CRRA         relative risk aversion in the household's utility
-    sigma_theta  how dispersed the labour endowment is
-    household    how many households there are
+===========  ==============================================================
+alpha        capital's share of output
+delta        the fraction of capital that wears out each period
+CRRA         relative risk aversion in the household's utility
+sigma_theta  how dispersed the labour endowment is
+household    how many households there are
+===========  ==============================================================
 
 The model
 ----------
@@ -41,7 +47,8 @@ The model
 
 .. math::
     z_i = \theta_i W + (1 + R) a_i, \qquad
-    u_i = \frac{c_i^{1-\gamma}}{1-\gamma}, \qquad a_i' = z_i - c_i
+    u_i = \frac{c_i^{1-\gamma}}{1-\gamma} \ (\log c_i \text{ at } \gamma = 1),
+    \qquad a_i' = z_i - c_i
 
 The two prices are the marginal products of Cobb-Douglas production in its
 intensive form, :math:`Y = K^{\alpha} L^{1-\alpha}`, with labour normalised to
@@ -60,6 +67,12 @@ resources :math:`W + (1+R)K` come to output plus the capital that survived,
 exactly :math:`s/(1 - s(1-\delta))`. With no depreciation that is
 :math:`s/(1-s)`, which reaches 9 at plausible savings rates, about three times
 what an economy shows, because nothing ever wears out.
+
+The labour endowment is drawn independently each period. In [Aiyagari1994]_ it
+follows a persistent AR(1) process, and that persistence is what drives the
+paper's precautionary saving. Under a fixed savings rate persistence leaves the
+aggregate's law of motion unchanged, since the class still averages an
+endowment of mean one, so this model draws it fresh each period.
 
 The savings rate is a fraction of cash on hand rather than of income, so it is
 not the textbook savings rate and picking one by eye is misleading.
@@ -90,10 +103,21 @@ with :math:`E[\theta] = 1`:
     K' = s\,(W + (1 + R) K) = s\,(K^{\alpha} + (1 - \delta) K)
 
 so the stationary capital solves :math:`K^{1-\alpha} = s / (1 - s(1-\delta))`,
-giving :math:`R^{*} = \alpha (1 - s(1-\delta))/s - \delta` exactly. The map's
-slope there is :math:`\alpha + s(1-\delta)(1-\alpha)`, which is below 1 whenever
-:math:`s(1-\delta) < 1`, so the aggregate converges from any starting capital
-and the convergence needs no damping.
+giving :math:`R^{*} = \alpha (1 - s(1-\delta))/s - \delta` exactly. The map is
+increasing and concave, passes through the origin, and leaves it steeper than
+the 45-degree line, so it crosses that line at exactly one positive capital.
+From any positive start the path therefore moves monotonically toward that
+crossing without overshooting, and the convergence needs no damping. The map's
+slope at the crossing is :math:`\alpha + s(1-\delta)(1-\alpha)`, below 1
+whenever :math:`s(1-\delta) < 1`; it sets the speed of the last stretch, each
+period closing a fraction one minus the slope of the remaining gap. Away from
+the crossing the slope can exceed 1, so the map is not a contraction on the
+whole half-line, and the global convergence rests on its shape.
+
+A finite class averages an endowment only close to one, so each simulated
+period adds :math:`s\,W(\bar\theta - 1)` to the map, where :math:`\bar\theta` is
+that period's average draw. With that term added back the simulated path
+matches the closed form to rounding error.
 
 That claim is cross-sectional rather than optimal. The savings rate is a rule of
 thumb, no household is solving anything, and the aggregate still arrives where
@@ -106,6 +130,8 @@ References
        Aggregate Saving." *The Quarterly Journal of Economics*, 109(3),
        659-684. https://doi.org/10.2307/2118417
 """
+
+import numpy as np
 
 from skagent.block import Control, DBlock, Entity, RBlock
 from skagent.distributions import MeanOneLogNormal
@@ -139,7 +165,7 @@ household_block = DBlock(
         "c": Control(
             ["z"], lower_bound=0.0, upper_bound=lambda z: z, agent="household"
         ),
-        "u": lambda c, CRRA: c ** (1 - CRRA) / (1 - CRRA),
+        "u": lambda c, CRRA: np.log(c) if CRRA == 1 else c ** (1 - CRRA) / (1 - CRRA),
         # End-of-period assets, and next period's arrival value for the same
         # symbol. A tick block would only rename it, so there is none.
         "a": lambda z, c: z - c,
@@ -178,8 +204,8 @@ def aiyagari_calibration(
     delta : float, optional
         The fraction of the capital stock that wears out each period.
     crra : float, optional
-        Relative risk aversion in the household's utility. It does not enter the
-        aggregate under a fixed savings rate.
+        Relative risk aversion in the household's utility, with 1 meaning log
+        utility. It does not enter the aggregate under a fixed savings rate.
     sigma : float, optional
         Dispersion of the labour endowment, which has mean one whatever this is.
 
@@ -282,8 +308,11 @@ def stationary_prices(rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
 def convergence_rate(rate, alpha=CAPITAL_SHARE, delta=DEPRECIATION):
     """The slope of :func:`capital_map` at its fixed point.
 
-    Below 1 whenever ``rate * (1 - delta)`` is, which is why the aggregate
-    converges from any starting capital without damping.
+    Below 1 whenever ``rate * (1 - delta)`` is. Near the fixed point each period
+    closes a fraction one minus this slope of the remaining gap. Convergence
+    from any starting capital is a separate fact: the map is increasing and
+    concave through the origin, so the path approaches the fixed point
+    monotonically, even from capital low enough that the slope there exceeds 1.
 
     Parameters
     ----------
