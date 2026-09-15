@@ -88,28 +88,40 @@ class test_consumption_parsing(unittest.TestCase):
             )
 
 
-class test_malformed_document(unittest.TestCase):
-    """What a block whose keys are not a block's keys parses into today.
-
-    The fixture is the ``portfolio choice`` block as it was written before its
-    repair: ``dynamics`` one level too deep, and so a shock. Nothing refuses
-    it, which is what this pins -- a document that loses its own dynamics is
-    the case a validator is for, and the test says what it will have to catch.
-    """
+class test_block_validation(unittest.TestCase):
+    """``validate_block`` refuses a block whose keys are not a block's keys."""
 
     def setUp(self):
         with open(MALFORMED_BLOCK_PATH, "r") as f:
-            self.document = yaml.load(f, Loader=parser.skagent_loader())
+            self.malformed = yaml.load(f, Loader=parser.skagent_loader())
 
-    def test_the_dynamics_arrive_as_a_shock(self):
-        self.assertIn("dynamics", self.document["shocks"])
-        self.assertNotIn("dynamics", self.document)
+    def test_a_section_indented_one_level_too_deep_is_refused(self):
+        """The fixture is `portfolio choice` as it was written before repair."""
+        with self.assertRaises(ValueError) as caught:
+            parser.validate_block(self.malformed)
 
-    def test_the_block_it_builds_has_no_dynamics(self):
-        block = model.DBlock(**self.document)
+        message = str(caught.exception)
+        self.assertIn("portfolio choice", message)
+        self.assertIn("dynamics", message)
+        self.assertIn("shocks", message)
 
-        self.assertEqual(block.get_dynamics(), {})
-        self.assertEqual(block.get_controls(), {})
+    def test_a_key_no_block_has_is_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            parser.validate_block({"name": "typo", "dynamic": {"a": "b"}})
+
+        self.assertIn("'dynamic'", str(caught.exception))
+
+    def test_the_shipped_blocks_pass(self):
+        for block in load_consumer_config()["blocks"]:
+            parser.validate_block(block)
+
+    def test_a_recursive_block_validates_the_blocks_it_holds(self):
+        with self.assertRaises(ValueError) as caught:
+            parser.validate_block(
+                {"name": "outer", "blocks": [self.malformed]},
+            )
+
+        self.assertIn("portfolio choice", str(caught.exception))
 
 
 class test_authoring_equivalence(unittest.TestCase):

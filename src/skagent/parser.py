@@ -1,3 +1,6 @@
+from collections.abc import Mapping
+import dataclasses
+
 from skagent.distributions import Bernoulli, Lognormal, MeanOneLogNormal
 from skagent.rule import Rule
 from sympy.utilities.lambdify import lambdify
@@ -74,6 +77,70 @@ def control_constructor(loader, node):
         upper_bound=bound_from_text(args.get("upper_bound")),
         agent=args.get("agent"),
     )
+
+
+def _block_class(document):
+    """The block class a document builds: recursive if it holds sub-blocks."""
+    from skagent.block import DBlock, RBlock  # TODO: move to separate module
+
+    return RBlock if "blocks" in document else DBlock
+
+
+def validate_block(document, name=None):
+    """Refuse a block document whose keys are not a block's keys.
+
+    A block declares its parts at one level -- ``shocks``, ``dynamics``,
+    ``reward`` -- and names its variables one level below. A part indented one
+    step too deep is still valid YAML: it becomes a VARIABLE of the part above
+    it, so the block silently loses that whole section and gains a symbol
+    nobody declared. Nothing downstream can tell that apart from a block that
+    never had the section, which is why it is caught here rather than left to
+    fail later.
+
+    A document holding ``blocks`` is read as a recursive block, and its
+    sub-blocks are validated too.
+
+    Parameters
+    ----------
+    document : Mapping
+        One block, as a document holds it. A model document -- a calibration
+        beside a list of blocks -- is not a block; validate its blocks.
+    name : str, optional
+        What to call the block when something is wrong with it. Defaults to
+        the document's own ``name``.
+
+    Raises
+    ------
+    ValueError
+        If a key of the document is not one the block has a place for, or if
+        one of the block's own keys is used as a variable inside another.
+    """
+    cls = _block_class(document)
+    fields = frozenset(f.name for f in dataclasses.fields(cls))
+    label = name or document.get("name") or "<unnamed>"
+
+    unknown = sorted(set(document) - fields)
+    if unknown:
+        raise ValueError(
+            f"block {label!r} declares {unknown}, which a {cls.__name__} has no "
+            f"place for; a block's keys are {sorted(fields)}."
+        )
+
+    for section in ("shocks", "dynamics", "reward"):
+        part = document.get(section)
+        if not isinstance(part, Mapping):
+            continue
+        misplaced = sorted(set(part) & fields)
+        if misplaced:
+            raise ValueError(
+                f"block {label!r} names {misplaced} as a variable of {section!r}, "
+                f"and those are the block's own keys -- so they are indented one "
+                f"level too deep. The block has no {misplaced[0]!r} of its own, "
+                f"and {section!r} has gained a variable nothing declared."
+            )
+
+    for sub in document.get("blocks", []):
+        validate_block(sub)
 
 
 def math_text_to_lambda(text):
