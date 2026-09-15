@@ -114,6 +114,8 @@ import numpy as np
 
 import skagent.models.lemons as lemons
 from skagent.ground import GroundedBlock
+from skagent.model_analyzer import ModelAnalyzer
+from skagent.relevance import RelevanceGraph
 from skagent.simulation.monte_carlo import Simulator
 from skagent.solver import project
 from skagent.utils import plot_block_diagram
@@ -492,7 +494,8 @@ report(
 
 def projected_graph(block, calibration):
     projected = project(GroundedBlock(block, calibration))
-    return projected.block.relevance_graph(projected.calibration)
+    scim = ModelAnalyzer(projected.block, projected.calibration).analyze()
+    return RelevanceGraph.from_scim(scim.influence_graph())
 
 
 report(
