@@ -99,11 +99,15 @@ and this project adheres to
   no longer refused.
 
 - A model diagram draws an entity class as a plate: a box around the symbols the
-  class declares per instance, labelled with the class's name and its size.
-  `ModelAnalyzer` reads the class from the block tree's declarations rather than
-  inferring one per agent role, so a model with several agents and one of each
-  is no longer boxed as though it had a population of them, and the equation
-  that reads out of a class is visibly the one crossing the box.
+  class declares per instance, labelled with the class. The box names the class
+  and not how many instances it has, since no other value from the calibration
+  reaches the figure and a number on one box reads as though the whole diagram
+  were drawn for that calibration. `ModelAnalyzer` still reports the size, and
+  `RelevanceGraph.plate` still returns it. `ModelAnalyzer` reads the class from
+  the block tree's declarations rather than inferring one per agent role, so a
+  model with several agents and one of each is no longer boxed as though it had
+  a population of them, and the equation that reads out of a class is visibly
+  the one crossing the box.
 - A model diagram no longer draws a calibration parameter that no equation
   reads. A calibration written for a family of blocks carries the other blocks'
   parameters, which arrived on the diagram as nodes joined to nothing: seven of

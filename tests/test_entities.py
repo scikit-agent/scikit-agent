@@ -519,8 +519,10 @@ class TestTheDiagramShowsTheClass:
         (plate,) = graph.get_subgraphs()
 
         # The box is what says the model describes several firms rather than
-        # one, and it is sized by the calibration.
-        assert "3" in plate.get_label() and "irm" in plate.get_label()
+        # one. It names the class and not how many, since the diagram carries
+        # no other value out of the calibration.
+        assert "irm" in plate.get_label()
+        assert "3" not in plate.get_label()
         assert {node.get_name() for node in plate.get_nodes()} == {"c", "q", "u"}
 
         # The aggregate and the price are drawn outside the box, so the edge
@@ -529,12 +531,17 @@ class TestTheDiagramShowsTheClass:
         assert {"Q", "P"} <= outside
         assert not outside & {"c", "q", "u"}
 
-    def test_the_class_size_is_the_plates_label_and_not_a_node(self):
+    def test_the_class_size_is_not_drawn_at_all(self):
         graph = cournot_block().visualize(collusion_calibration()).create_graph()
 
         # `firm` sizes the class, and the calibration carries it under the
-        # class's own name. Drawn as a parameter it is a node joined to nothing.
+        # class's own name. Drawn as a parameter it is a node joined to nothing,
+        # and it is not on the box either -- but the analysis still knows it.
         assert "firm" not in {node.get_name() for node in graph.get_nodes()}
+        from skagent.model_analyzer import ModelAnalyzer
+
+        analyzer = ModelAnalyzer(cournot_block(), collusion_calibration()).analyze()
+        assert analyzer.plates["firm"]["size"] == 3
 
 
 class TestOneInstanceReliesOnTheOthers:
@@ -563,10 +570,11 @@ class TestOneInstanceReliesOnTheOthers:
         assert graph.plate("q") == ("firm", 3)
         assert graph.crosses_instances("q", "q")
 
-        # And the drawing is plate notation: the box says there are three of
-        # these, so the loop inside it is one firm relying on the other two.
+        # And the drawing is plate notation: the box says there are several of
+        # these, so the loop inside it is one firm relying on the others. The
+        # size is on the graph, which carries it above, and not on the box.
         plate = graph.draw().get_subgraphs()[0]
-        assert "3" in plate.get_label() and "firm" in plate.get_label()
+        assert plate.get_label() == "firm"
         assert [node.get_name() for node in plate.get_nodes()] == ["q"]
 
     def test_a_decision_taken_once_carries_no_plate(self):

@@ -198,10 +198,12 @@ class ModelVisualizer:
                 else info["label"]
             )
             # pydot.Cluster automatically adds "cluster_" prefix to graph_name
-            size = info.get("size", "")
+            # The box is labelled with the class and not its size: the diagram
+            # carries no other value from the calibration, and a number on one
+            # box reads as though the figure were drawn for that calibration.
             sg = pydot.Cluster(
                 graph_name=agent,  # Don't add "cluster_" prefix - pydot does it automatically
-                label=f"{size} {lbl}" if size != "" else str(lbl),
+                label=str(lbl),
                 labeljust="r",
                 style=self.gl["cluster_style"],
                 fillcolor=self.gl["cluster_fillcolor"],
