@@ -1,0 +1,15 @@
+#
+# The `portfolio choice` block as it was written before its repair: `dynamics`
+# is indented one level too deep, so it is a key of `shocks` and the block
+# declares no dynamics at all. Kept as a fixture because a document that parses
+# into a block missing its own dynamics is what a validator has to refuse.
+#
+name: portfolio choice
+shocks:
+  risky_return: !Lognormal
+    mean: Rfree + EqP
+    std: RiskyStd
+  dynamics:
+    stigma: !Control
+      iset: a
+    R: Rfree + (risky_return - Rfree) * stigma
