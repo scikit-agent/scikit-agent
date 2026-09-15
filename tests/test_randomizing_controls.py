@@ -6,6 +6,7 @@ from skagent.block import Control, DBlock, Entity, RBlock, simulate_dynamics
 from skagent.distributions import Uniform
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.model_visualizer import ModelVisualizer
+from skagent.models.macid import iterated_prisoners_dilemma_block
 from skagent.parser import skagent_loader
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
@@ -210,3 +211,36 @@ def test_entity_projection_preserves_randomization_under_copied_names():
     assert projected.get_controls()["D_actor"].randomizes is True
     assert projected.get_controls()["D_other"].randomizes is True
     assert {"u_D_actor", "u_D_other"} <= set(projected.get_shocks())
+
+
+def test_iterated_prisoners_dilemma_records_binary_actions_and_randomizers():
+    sim = Simulator(
+        {},
+        iterated_prisoners_dilemma_block,
+        {
+            "D1": lambda previous_D1, previous_D2: previous_D2,
+            "D2": lambda previous_D1, previous_D2: previous_D1,
+        },
+        {},
+        seed=4,
+        sample_count=8,
+        T_sim=3,
+    )
+    # Tit-for-Tat at probabilities 0 and 1 remains deterministic.
+    sim.vars_now["previous_D1"] = np.zeros(8)
+    sim.vars_now["previous_D2"] = np.ones(8)
+    sim.initialize_sim()
+    history = sim.simulate()
+    assert {"u_D1", "u_D2", "D1", "D2"} <= set(history)
+    np.testing.assert_array_equal(history["D1"][0], np.ones(8))
+    np.testing.assert_array_equal(history["D2"][0], np.zeros(8))
+
+
+def test_iterated_game_keeps_lagged_observations_separate_from_execution_noise():
+    block = iterated_prisoners_dilemma_block
+    scim = ModelAnalyzer(block, {}).analyze().influence_graph(dynamic=True)
+    assert set(scim.information("D1")) == {"previous_D1*", "previous_D2*"}
+    assert set(scim.information("D2")) == {"previous_D1*", "previous_D2*"}
+    roles = block.shock_roles()
+    assert roles["D1"]["u_D1"] == "hidden"
+    assert roles["D2"]["u_D2"] == "hidden"
