@@ -78,6 +78,19 @@ and this project adheres to
   transform still never inspects the reduction, and the join still broadcasts a
   rule that is constant, which is exact.
 
+- The equation `project` synthesizes to rejoin an entity axis puts that axis
+  LAST, on both backends, which is the convention the aggregating equation was
+  already read under. It disagreed with itself before: handed a batch, the numpy
+  path concatenated the samples and the rivals into one flat axis, and handed a
+  genuine spread of rivals, the torch path read them as samples and returned one
+  market per rival instead of one market. Both are wrong answers that stay
+  plausible downstream, since a population of the wrong size still averages to a
+  number. A rival value that is constant, or one per sample, is broadcast across
+  the class, which is exact where a rule is constant across it; a value that
+  already carries the entity axis is used as it is. The one shape that reads
+  both ways -- as many samples as rivals -- raises and asks for an explicit
+  entity axis.
+
 - `vfi.solve_step` refuses a block on the hazard rather than on the declaration.
   It raised for any entity class at all; it now raises when a decision it
   optimizes or an axis it grids is itself one value per member of a class, which

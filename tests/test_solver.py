@@ -12,6 +12,7 @@ import skagent.models.cournot as cournot
 import skagent.models.macid as macid
 from skagent.solver import (
     _blocks_by_class,
+    _joining_equation,
     ExactBestResponse,
     NeuralBestResponse,
     project,
@@ -486,3 +487,58 @@ class TestBlocksAreLaidOutByEntityClass:
             "second",
             "third",
         ]
+
+
+class TestTheJoinPutsTheEntityAxisLast:
+    """The rejoined symbol is ``(samples..., instances)``, on either backend.
+
+    The two arguments arrive as bare arrays, so the shapes are all the join has
+    to tell a sample axis from an entity axis. Reading one as the other is not
+    an error that surfaces: it returns a population of the wrong size and every
+    number downstream stays plausible.
+    """
+
+    RIVALS = 2
+
+    def join(self):
+        return _joining_equation("q_actor", "q_other", self.RIVALS)
+
+    @pytest.mark.parametrize("box", [np.asarray, torch.tensor], ids=["numpy", "torch"])
+    def test_a_constant_rival_fills_the_class(self, box):
+        joined = self.join()(box(2.0), box(3.0))
+
+        assert tuple(joined.shape) == (1 + self.RIVALS,)
+        assert np.asarray(joined) == pytest.approx([2.0, 3.0, 3.0])
+
+    @pytest.mark.parametrize("box", [np.asarray, torch.tensor], ids=["numpy", "torch"])
+    def test_rivals_that_differ_stay_different(self, box):
+        # One market whose two rivals did different things -- not two markets.
+        joined = self.join()(box(2.0), box([3.0, 4.0]))
+
+        assert tuple(joined.shape) == (1 + self.RIVALS,)
+        assert np.asarray(joined) == pytest.approx([2.0, 3.0, 4.0])
+
+    @pytest.mark.parametrize("box", [np.asarray, torch.tensor], ids=["numpy", "torch"])
+    def test_a_batch_is_one_market_per_sample(self, box):
+        joined = self.join()(box([2.0, 5.0, 9.0]), box(3.0))
+
+        assert tuple(joined.shape) == (3, 1 + self.RIVALS)
+        assert np.asarray(joined) == pytest.approx(
+            np.array([[2.0, 3.0, 3.0], [5.0, 3.0, 3.0], [9.0, 3.0, 3.0]])
+        )
+
+    @pytest.mark.parametrize("box", [np.asarray, torch.tensor], ids=["numpy", "torch"])
+    def test_a_batch_of_markets_whose_rivals_differ(self, box):
+        joined = self.join()(box([2.0, 5.0]), box([[3.0, 4.0], [6.0, 7.0]]))
+
+        assert tuple(joined.shape) == (2, 1 + self.RIVALS)
+        assert np.asarray(joined) == pytest.approx(
+            np.array([[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
+        )
+
+    @pytest.mark.parametrize("box", [np.asarray, torch.tensor], ids=["numpy", "torch"])
+    def test_as_many_samples_as_rivals_is_refused(self, box):
+        # The one shape that reads both ways. Answering it either way would be
+        # a different model, and nothing in the array says which.
+        with pytest.raises(ValueError, match="explicit entity axis"):
+            self.join()(box([2.0, 5.0]), box([3.0, 4.0]))
