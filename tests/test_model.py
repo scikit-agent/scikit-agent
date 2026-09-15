@@ -359,6 +359,43 @@ class test_RBlock(unittest.TestCase):
         self.assertFalse("Rfree" in arrival_states_with_cal)
 
 
+class TestComposingBlocksThatShareASymbol:
+    """A symbol two sub-blocks declare would be one symbol, and the later one."""
+
+    def test_a_repeated_symbol_is_refused(self):
+        first = model.DBlock(name="first", dynamics={"q": lambda a: a + 1})
+        second = model.DBlock(name="second", dynamics={"q": lambda b: b + 2})
+
+        with pytest.raises(ValueError, match="both declare 'q'"):
+            model.RBlock(name="both", blocks=[first, second])
+
+    def test_the_message_names_both_blocks(self):
+        first = model.DBlock(name="supply", dynamics={"q": lambda a: a})
+        second = model.DBlock(name="demand", dynamics={"q": lambda b: b})
+
+        with pytest.raises(ValueError, match="'supply' and 'demand'"):
+            model.RBlock(name="market", blocks=[first, second])
+
+    def test_a_shock_collides_with_a_dynamic_of_the_same_name(self):
+        # The merge is over declarations rather than over kinds, so a shock in
+        # one block and an equation in another are the same collision.
+        drawn = model.DBlock(name="drawn", shocks={"theta": Bernoulli(p=0.5)})
+        computed = model.DBlock(name="computed", dynamics={"theta": lambda a: a})
+
+        with pytest.raises(ValueError, match="both declare 'theta'"):
+            model.RBlock(blocks=[drawn, computed])
+
+    def test_a_symbol_read_across_blocks_is_still_fine(self):
+        # One block assigning and another reading is the ordinary composition,
+        # and it must not be caught: only a repeated DECLARATION is the defect.
+        assigns = model.DBlock(name="assigns", dynamics={"q": lambda a: a})
+        reads = model.DBlock(name="reads", dynamics={"u": lambda q: q})
+
+        composed = model.RBlock(name="fine", blocks=[assigns, reads])
+
+        assert list(composed.get_dynamics()) == ["q", "u"]
+
+
 class test_display_formula(unittest.TestCase):
     """Test formula generation functionality."""
 

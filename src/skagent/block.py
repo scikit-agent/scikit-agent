@@ -1199,6 +1199,35 @@ class RBlock(Block):
     blocks: List[Block] = field(default_factory=list)
     entity: "Entity | None" = None
 
+    def __post_init__(self):
+        """Refuse sub-blocks that declare the same symbol.
+
+        Every merged view of a composed block is a dict built in block order,
+        so a symbol two sub-blocks both declare resolves to the later one and
+        the earlier declaration is gone -- its equation never runs, and the
+        symbols that read it read something else. Where the sub-blocks carry
+        entity classes the loss is larger than the symbol: a class whose only
+        variable was overwritten is not reported at all.
+
+        There is no reading of a repeated symbol that is an author's intent. A
+        variable computed in stages is one symbol per stage, and a variable
+        carried between periods is the arrival state the tick block assigns.
+        """
+        declared = {}
+        for position, sub in enumerate(self.blocks):
+            where = sub.name or f"block {position}"
+            for sym in list(sub.get_shocks()) + list(sub.get_dynamics()):
+                if sym in declared:
+                    raise ValueError(
+                        f"{self.name or 'this block'!r} composes two blocks that "
+                        f"both declare {sym!r}: {declared[sym]!r} and {where!r}. "
+                        f"A merged block keeps the later one, so the earlier "
+                        f"declaration would be dropped without a trace. Rename "
+                        f"one of them, or compose only the block that owns the "
+                        f"symbol."
+                    )
+                declared[sym] = where
+
     def construct_shocks(self, calibration, rng=None):
         """
         This recursive block's shocks, resolved against *calibration*.
