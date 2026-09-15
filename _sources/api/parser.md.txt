@@ -20,6 +20,11 @@ callable functions.
    :no-index:
 ```
 
+```{eval-rst}
+.. autofunction:: skagent.parser.validate_block
+   :no-index:
+```
+
 `!Control` is built by a constructor rather than represented by a token class,
 so a parsed control is a `skagent.block.Control` and every consumer of a
 Python-authored block reads it unchanged.

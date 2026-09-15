@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Model Analysis and Visualization" href="analysis.html"><link rel="prev" title="Simulation" href="simulation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Parsing - scikit-agent 0.1.1.dev114+g064f32b2d</title>
+        <title>Parsing - scikit-agent 0.1.1.dev116+gb1c803c84</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev114+g064f32b2d</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev116+gb1c803c84</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -325,6 +325,35 @@ variables. Other declarations are passed through unchanged.</p>
 such as random variables and model tags.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.parser.validate_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">validate_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.parser.validate_block" title="Link to this definition">¶</a></dt>
+<dd><p>Refuse a block document whose keys are not a block’s keys.</p>
+<p>A block declares its parts at one level – <code class="docutils literal notranslate"><span class="pre">shocks</span></code>, <code class="docutils literal notranslate"><span class="pre">dynamics</span></code>,
+<code class="docutils literal notranslate"><span class="pre">reward</span></code> – and names its variables one level below. A part indented one
+step too deep is still valid YAML: it becomes a VARIABLE of the part above
+it, so the block silently loses that whole section and gains a symbol
+nobody declared. Nothing downstream can tell that apart from a block that
+never had the section, which is why it is caught here rather than left to
+fail later.</p>
+<p>A document holding <code class="docutils literal notranslate"><span class="pre">blocks</span></code> is read as a recursive block, and its
+sub-blocks are validated too.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>document</strong> (<em>Mapping</em>) – One block, as a document holds it. A model document – a calibration
+beside a list of blocks – is not a block; validate its blocks.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – What to call the block when something is wrong with it. Defaults to
+the document’s own <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a key of the document is not one the block has a place for, or if
+    one of the block’s own keys is used as a variable inside another.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <section id="core-parser-functions">
 <h2>Core Parser Functions<a class="headerlink" href="#core-parser-functions" title="Link to this heading">¶</a></h2>
 <dl class="py function">
@@ -338,6 +367,35 @@ such as random variables and model tags.</p>
 <span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">skagent_loader</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
 <dd><p>A PyYAML loader that supports tags for scikit-agent,
 such as random variables and model tags.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">skagent.parser.</span></span><span class="sig-name descname"><span class="pre">validate_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Refuse a block document whose keys are not a block’s keys.</p>
+<p>A block declares its parts at one level – <code class="docutils literal notranslate"><span class="pre">shocks</span></code>, <code class="docutils literal notranslate"><span class="pre">dynamics</span></code>,
+<code class="docutils literal notranslate"><span class="pre">reward</span></code> – and names its variables one level below. A part indented one
+step too deep is still valid YAML: it becomes a VARIABLE of the part above
+it, so the block silently loses that whole section and gains a symbol
+nobody declared. Nothing downstream can tell that apart from a block that
+never had the section, which is why it is caught here rather than left to
+fail later.</p>
+<p>A document holding <code class="docutils literal notranslate"><span class="pre">blocks</span></code> is read as a recursive block, and its
+sub-blocks are validated too.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>document</strong> (<em>Mapping</em>) – One block, as a document holds it. A model document – a calibration
+beside a list of blocks – is not a block; validate its blocks.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – What to call the block when something is wrong with it. Defaults to
+the document’s own <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a key of the document is not one the block has a place for, or if
+    one of the block’s own keys is used as a variable inside another.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <p><code class="docutils literal notranslate"><span class="pre">!Control</span></code> is built by a constructor rather than represented by a token class,
@@ -553,6 +611,7 @@ gamma <em>function</em>, so <code class="docutils literal notranslate"><span cla
 <li><a class="reference internal" href="#skagent.parser.control_constructor"><code class="docutils literal notranslate"><span class="pre">control_constructor()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.parser.math_text_to_lambda"><code class="docutils literal notranslate"><span class="pre">math_text_to_lambda()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.parser.skagent_loader"><code class="docutils literal notranslate"><span class="pre">skagent_loader()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.parser.validate_block"><code class="docutils literal notranslate"><span class="pre">validate_block()</span></code></a></li>
 <li><a class="reference internal" href="#core-parser-functions">Core Parser Functions</a></li>
 <li><a class="reference internal" href="#parser-classes">Parser Classes</a></li>
 <li><a class="reference internal" href="#rules">Rules</a><ul>
@@ -577,7 +636,7 @@ gamma <em>function</em>, so <code class="docutils literal notranslate"><span cla
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=c803088a"></script>
+</div><script src="../_static/documentation_options.js?v=493623c4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
