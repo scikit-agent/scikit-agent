@@ -26,6 +26,16 @@ and this project adheres to
 
 ### Fixed
 
+- Composing two blocks that declare the same symbol raises instead of keeping
+  the later one. Every merged view of a composed block is a dict built in block
+  order, so the earlier declaration was dropped without a trace: its equation
+  never ran, and whatever read the symbol read something else. Where the
+  sub-blocks carry entity classes the loss was larger than the symbol -- a class
+  whose only variable was overwritten was not reported at all, so the model had
+  one fewer population than it declared. No shipped model or projected block
+  repeats a symbol, which is what makes this a refusal rather than a
+  deprecation.
+
 - `ExactBestResponse.rule_distance` compares two rules over a shock that is
   neither a state-grid axis nor pinned in scope, using the shock's own
   discretization nodes -- the points the backup integrates it over. A rival's
