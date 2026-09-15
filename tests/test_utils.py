@@ -2,6 +2,8 @@ import functools
 import inspect
 import unittest
 
+import numpy as np
+import pytest
 import skagent.utils as utils
 import torch
 from skagent.algos.vfi import get_action_rule
@@ -301,3 +303,33 @@ class TestParamNames(unittest.TestCase):
 
         f.__signature__ = inspect.Signature([])
         self.assertFalse(utils.takes_arguments(f))
+
+
+class TestAnyNan:
+    """NaN is a property of the value, not of the container it arrives in."""
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            float("nan"),
+            np.float64("nan"),
+            np.array(np.nan),
+            np.array([1.0, np.nan]),
+            torch.tensor(float("nan")),
+            torch.tensor([1.0, float("nan")]),
+        ],
+        ids=["python", "numpy scalar", "0-d array", "array", "0-d tensor", "tensor"],
+    )
+    def test_a_nan_is_found_however_it_is_carried(self, value):
+        # A guard written against ndarray alone passes the first two of these,
+        # so a mechanism returning one number was unguarded where one returning
+        # an array per grid point was not.
+        assert utils.any_nan(value)
+
+    @pytest.mark.parametrize(
+        "value",
+        [0.0, np.float64(1.5), np.array([1.0, 2.0]), torch.tensor([1.0])],
+        ids=["python", "numpy scalar", "array", "tensor"],
+    )
+    def test_a_number_that_is_not_nan_is_not_reported(self, value):
+        assert not utils.any_nan(value)
