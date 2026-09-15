@@ -84,6 +84,10 @@ class SCIM:
         ``agent_utilities[agent]`` is the utility nodes owned by *agent*.
     decision_agent : mapping
         ``decision_agent[decision]`` is the agent that owns each decision.
+    decision_information : mapping, optional
+        Variables observed by each decision's policy. Defaults to the decision's
+        causal graph parents. Supplying this separately permits a causal parent,
+        such as post-policy execution noise, that the policy does not observe.
 
     Notes
     -----
@@ -93,11 +97,29 @@ class SCIM:
     stale.
     """
 
-    def __init__(self, graph, decisions, agent_utilities, decision_agent):
+    def __init__(
+        self,
+        graph,
+        decisions,
+        agent_utilities,
+        decision_agent,
+        *,
+        decision_information=None,
+    ):
         self.graph = graph
         self.decisions = list(decisions)
         self.agent_utilities = {a: list(u) for a, u in agent_utilities.items()}
         self.decision_agent = dict(decision_agent)
+        self.decision_information = {
+            decision: list(graph.predecessors(decision)) for decision in self.decisions
+        }
+        if decision_information is not None:
+            self.decision_information.update(
+                {
+                    decision: list(info)
+                    for decision, info in decision_information.items()
+                }
+            )
         self._ancestors_cache = {}
         self._d_connected_cache = {}
 
@@ -111,15 +133,25 @@ class SCIM:
     # -- vocabulary ----------------------------------------------------------
 
     def parents(self, node):
-        """The parents of *node*, which for a decision are its information set."""
+        """The causal parents of *node*."""
         return list(self.graph.predecessors(node))
 
+    def information(self, decision):
+        """The variables observed by *decision*'s policy."""
+        return list(self.decision_information.get(decision, ()))
+
+    def _copy_information(self):
+        """A mutable copy of every policy information set."""
+        return {
+            decision: list(info) for decision, info in self.decision_information.items()
+        }
+
     def context(self, decision):
-        """The conditioning set ``Pa(D) | {D}`` every criterion conditions on.
+        """The policy information plus ``{D}`` every criterion conditions on.
 
         What the decision-maker knows when choosing, plus the choice itself.
         """
-        return set(self.graph.predecessors(decision)) | {decision}
+        return set(self.information(decision)) | {decision}
 
     def utilities(self, decision):
         """Every utility node the agent deciding *decision* owns.
@@ -213,13 +245,18 @@ class SCIM:
 
     # -- transforms ----------------------------------------------------------
 
-    def _replace(self, graph, agent_utilities=None):
+    def _replace(self, graph, agent_utilities=None, decision_information=None):
         """A new SCIM over *graph*, carrying this one's node roles forward."""
         return SCIM(
             graph,
             self.decisions,
             self.agent_utilities if agent_utilities is None else agent_utilities,
             self.decision_agent,
+            decision_information=(
+                self.decision_information
+                if decision_information is None
+                else decision_information
+            ),
         )
 
     def with_lagged_arrivals(self, lag_dependencies):
@@ -232,8 +269,8 @@ class SCIM:
         node keeps its in-period parents and so denotes the end-of-period value,
         which is what the next period arrives with.
 
-        A decision's parents in the result are exactly its information set, so
-        callers may read the conditioning set off the graph.
+        A decision's lagged observations are updated from ``source`` to
+        ``source*`` in its explicit information set.
 
         Parameters
         ----------
@@ -246,6 +283,7 @@ class SCIM:
         SCIM
         """
         graph = self.graph.copy()
+        information = self._copy_information()
         for consumer, source in lag_dependencies:
             if consumer not in graph or source not in graph:
                 continue
@@ -256,7 +294,12 @@ class SCIM:
                 attrs["kind"] = "chance"
                 graph.add_node(lagged, **attrs)
             graph.add_edge(lagged, consumer)
-        return self._replace(graph)
+            if consumer in information:
+                information[consumer] = [
+                    observed for observed in information[consumer] if observed != source
+                ]
+                information[consumer].append(lagged)
+        return self._replace(graph, decision_information=information)
 
     def with_continuation(self, arrival_states):
         """Add a synthetic continuation-value utility node per deciding agent.
@@ -317,7 +360,10 @@ class SCIM:
             )
         graph = self.graph.copy()
         graph.add_edge(source, target)
-        return self._replace(graph)
+        information = self._copy_information()
+        if target in information and source not in information[target]:
+            information[target].append(source)
+        return self._replace(graph, decision_information=information)
 
     def without_edges(self, edges):
         """Drop *edges*, an iterable of ``(source, target)`` pairs.
@@ -330,8 +376,15 @@ class SCIM:
         SCIM
         """
         graph = self.graph.copy()
+        edges = list(edges)
         graph.remove_edges_from(edges)
-        return self._replace(graph)
+        information = {
+            decision: [
+                observed for observed in info if (observed, decision) not in edges
+            ]
+            for decision, info in self.decision_information.items()
+        }
+        return self._replace(graph, decision_information=information)
 
     def with_dummy_parent(self, node):
         """Add a fresh exogenous parent to *node*.

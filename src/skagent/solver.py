@@ -51,6 +51,7 @@ def _copy_control(control, mapping, agent_suffix):
         lower_bound=_renamed(control.lower_bound, mapping),
         upper_bound=_renamed(control.upper_bound, mapping),
         agent=None if control.agent is None else control.agent + agent_suffix,
+        randomizes=control.randomizes,
     )
 
 
@@ -235,7 +236,8 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
         name=f"{block.name}_projected",
         shocks={
             side[sym] if sym in per_instance else sym: declaration
-            for sym, declaration in block.get_shocks().items()
+            # Copied controls regenerate their correctly suffixed randomizers.
+            for sym, declaration in block._get_declared_shocks().items()
             for side in ((actor, other) if sym in per_instance else (actor,))
         },
         dynamics=dynamics,
