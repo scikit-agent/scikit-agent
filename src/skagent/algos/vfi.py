@@ -699,19 +699,30 @@ def solve_step(
     # a projection keeps the declaration while resolving the crossing, in
     # which case this must be re-keyed to the reduction itself first, or it
     # will refuse the very path it exists to protect.
-    entities = bp.block.entities()
-    if entities:
-        raise NotImplementedError(
-            f"solve_step has no equilibrium concept for the entity class(es) "
-            f"{sorted(entities)}, and its leading axis is the STATE GRID rather "
-            "than a population -- so an equation reducing over the entity axis "
-            "would be reduced over the grid points instead, returning a "
-            "plausible number for a different model. Supply the crossing "
-            "variables through *scope* and solve one instance's problem, or use "
-            "a solver that names an equilibrium concept."
-        )
 
     grid_axes = list(state_grid.keys())
+
+    # The hazard is an AXIS confusion: this backup's leading axis is the state
+    # grid, so a symbol it grids or optimizes must not also be one value per
+    # member of a population. A block may still CARRY a population -- the
+    # others of a projected class do, and an equation reassembling their axis
+    # into an axis-free aggregate is the point of the projection -- as long as
+    # neither the decision being solved nor an axis it varies over is itself
+    # per-instance.
+    plated = {sym for sym, axes in bp.block.signatures().items() if axes}
+    confused = sorted(plated.intersection(set(controls) | set(grid_axes)))
+    if confused:
+        raise NotImplementedError(
+            f"solve_step has no equilibrium concept for {confused}, which "
+            f"{'is' if len(confused) == 1 else 'are'} one value per member of "
+            f"an entity class and also "
+            f"{'a decision this backup optimizes or an axis it grids' if len(confused) == 1 else 'decisions this backup optimizes or axes it grids'}"
+            ". Its leading axis is the STATE GRID rather than a population, so "
+            "the two would be conflated and the answer would be a plausible "
+            "number for a different model. Separate one instance from the rest "
+            "with skagent.solver.project and solve the projection, or use a "
+            "solver that names an equilibrium concept."
+        )
     shock_syms = set(bp.get_shocks())
     arrival = bp.arrival_states
 

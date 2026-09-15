@@ -7,6 +7,7 @@ import torch
 import skagent.models.lemons as lemons
 from skagent.algos.tabular import TabularBestResponseSolver
 from skagent.ground import GroundedBlock
+from skagent.solver import project
 from skagent.simulation.monte_carlo import Simulator
 
 SIZE = 50000
@@ -296,3 +297,80 @@ class TestThreeTimingsAndThreeTreatments:
         crossings = lemons.lemons_block.crossings()
         assert set(crossings) == {"p"}
         assert {argument for argument, _, _ in crossings["p"]} == {"theta", "S"}
+
+
+class TestTheProjectionKeepsTheSellersAPopulation:
+    """The rest of the class is many sellers, and the price is what they are.
+
+    Lemons is the witness the projection needs: its clearing price is a ratio
+    of two sums over the sellers who sold, so it cannot be recovered from one
+    representative seller the way a mean of a linear rule can. Under the
+    equilibrium threshold rule a single rival either sells or does not, so a
+    market represented by one of them is either everybody or nobody.
+    """
+
+    MARKET = {"low": 0.4, "high": 2.0, "premium": 1.4}
+
+    def projected_market(self, size):
+        price = lemons.clearing_fixed_points(**self.MARKET)[1]
+        calibration = lemons.lemons_calibration(size=size, **self.MARKET)
+        projected = project(GroundedBlock(lemons.lemons_block, calibration))
+        return projected, price, lemons.supply_rule(price)
+
+    def test_the_rivals_are_a_class_one_short_of_the_whole(self):
+        projected, _, _ = self.projected_market(size=8)
+
+        assert projected.calibration["seller_other"] == 7
+        assert projected.block.signatures()["theta_other"] == frozenset(
+            {"seller_other"}
+        )
+        # Both of the market's crossings survive: quality and the sell
+        # decision are each read out of the seller class.
+        read_by_the_market = {
+            argument for argument, _, _ in projected.block.crossings()["p"]
+        }
+        assert read_by_the_market == {"theta", "S"}
+
+    def test_the_price_is_the_one_the_population_clears_at(self):
+        # The projected market is handed the same cross-section the population
+        # model would have, and has to price it the same way. Any transform
+        # that holds the rivals at one quality answers something else here.
+        projected, price, rule = self.projected_market(size=6)
+        qualities = np.random.default_rng(3).uniform(
+            self.MARKET["low"], self.MARKET["high"], 6
+        )
+
+        values = projected.block.transition(
+            {
+                **projected.calibration,
+                "theta_actor": qualities[0],
+                "theta_other": qualities[1:],
+            },
+            {"S_actor": rule, "S_other": rule},
+        )
+
+        expected = lemons.clearing_price(
+            qualities,
+            np.array([rule(quality) for quality in qualities]),
+            self.MARKET["premium"],
+        )
+        assert float(values["p"]) == pytest.approx(expected, abs=1e-12)
+
+    def test_simulating_the_projection_reaches_the_markets_own_price(self):
+        # Drawn rather than supplied: the simulator allocates one quality per
+        # rival because the class says how many there are, so the projected
+        # market clears where the population's does, up to sampling error in a
+        # market of this size.
+        projected, price, rule = self.projected_market(size=400)
+
+        history = play(
+            projected.block,
+            projected.calibration,
+            {"S_actor": rule, "S_other": rule},
+            seed=5,
+        )
+
+        assert len(np.unique(np.asarray(history["theta_other"]))) == 399
+        assert float(np.asarray(history["p"]).ravel()[0]) == pytest.approx(
+            price, abs=0.05
+        )

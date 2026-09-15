@@ -64,6 +64,27 @@ and this project adheres to
 
 ### Changed
 
+- `skagent.solver.project` keeps the rest of the class a population. The others
+  are now an entity class of their own, named for the original and sized one
+  short of it, and a rejoined symbol carries the author's own class at the
+  author's own size. Before, every symbol of the projected block was axis-free:
+  the rivals were one value broadcast to `N - 1`, so rivals drawing private
+  types could not differ from one another, and the block reported no aggregation
+  at all. On Akerlof's market that mattered rather than being untidy -- the
+  clearing price is a ratio of sums over the sellers who sold, so under the
+  equilibrium threshold rule one representative rival either sells or does not,
+  and the projected market was either everybody or nobody. Simulated at four
+  hundred sellers it now clears where the population's own fixed point is. The
+  transform still never inspects the reduction, and the join still broadcasts a
+  rule that is constant, which is exact.
+
+- `vfi.solve_step` refuses a block on the hazard rather than on the declaration.
+  It raised for any entity class at all; it now raises when a decision it
+  optimizes or an axis it grids is itself one value per member of a class, which
+  is the confusion its leading axis can actually cause. A block that carries a
+  population whose axis an equation reassembles -- what `project` returns -- is
+  no longer refused.
+
 - A model diagram draws an entity class as a plate: a box around the symbols the
   class declares per instance, labelled with the class's name and its size.
   `ModelAnalyzer` reads the class from the block tree's declarations rather than
