@@ -61,7 +61,41 @@ def _joining_equation(actor_sym, other_sym, others_count):
     It reassembles the entity axis and nothing else. Whatever reduction the
     author wrote then runs on the result verbatim, so the projection never has
     to know whether the aggregate is a mean, a sum, a maximum or a masked mean.
+
+    **The entity axis is the LAST axis**, which is the convention
+    :func:`_per_instance` already reads: a rejoined symbol of more than one
+    dimension is a sample axis followed by an entity axis, and the aggregating
+    equation is applied to each sample's population in turn. So the solved
+    instance contributes exactly one slot on that axis and the others
+    contribute ``others_count`` of them, whatever sample axis sits in front.
+
+    Three rival shapes are meaningful, and the solved instance's shape is what
+    says which one arrived, since it fixes the sample axis exactly:
+
+    - a single number, or one value per sample. A rule constant across the
+      class really does give every rival the same action, so broadcasting it
+      is exact rather than an approximation.
+    - one value per rival, with or without a sample axis in front. This is
+      what lets rivals with private draws differ from one another.
+
+    A shape that is neither raises, and so does the one case where both
+    readings fit -- as many samples as there are rivals -- because the two are
+    different models and a bare array carries no label saying which it is.
     """
+
+    def rival_axis(value_shape, sample_shape):
+        """Whether *other* needs an entity axis added before it broadcasts."""
+        if value_shape != sample_shape or not sample_shape:
+            return False
+        if sample_shape == (others_count,):
+            raise ValueError(
+                f"{other_sym!r} has shape {value_shape}, and there are as many "
+                f"samples as there are rivals ({others_count}), so it reads "
+                f"equally as one value per sample and as one value per rival. "
+                f"Give it an explicit entity axis -- shape "
+                f"{sample_shape + (others_count,)} -- to say which it is."
+            )
+        return True
 
     def join(actor, other):
         import torch
@@ -72,18 +106,19 @@ def _joining_equation(actor_sym, other_sym, others_count):
             reference = actor if isinstance(actor, torch.Tensor) else other
             a = torch.as_tensor(
                 actor, dtype=reference.dtype, device=reference.device
-            ).reshape(-1, 1)
-            o = torch.as_tensor(
-                other, dtype=reference.dtype, device=reference.device
-            ).reshape(-1, 1)
-            rows = max(a.shape[0], o.shape[0])
-            return torch.cat([a.expand(rows, 1), o.expand(rows, others_count)], dim=-1)
-        return np.concatenate(
-            [
-                np.atleast_1d(np.asarray(actor, dtype=float)),
-                np.broadcast_to(np.asarray(other, dtype=float), (others_count,)),
-            ]
-        )
+            ).unsqueeze(-1)
+            o = torch.as_tensor(other, dtype=reference.dtype, device=reference.device)
+            if rival_axis(tuple(o.shape), tuple(a.shape[:-1])):
+                o = o.unsqueeze(-1)
+            o = torch.broadcast_to(o, a.shape[:-1] + (others_count,))
+            return torch.cat([a, o], dim=-1)
+
+        a = np.asarray(actor, dtype=float)[..., None]
+        o = np.asarray(other, dtype=float)
+        if rival_axis(o.shape, a.shape[:-1]):
+            o = o[..., None]
+        o = np.broadcast_to(o, a.shape[:-1] + (others_count,))
+        return np.concatenate([a, o], axis=-1)
 
     join.__signature__ = inspect.Signature(
         [
