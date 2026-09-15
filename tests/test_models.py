@@ -284,7 +284,12 @@ class test_iterated_prisoners_dilemma(unittest.TestCase):
             "D2": lambda previous_D1, previous_D2: previous_D1,
         }
         first = macid.iterated_prisoners_dilemma_block.transition(
-            {"previous_D1": 0.0, "previous_D2": 1.0},
+            {
+                "previous_D1": 0.0,
+                "previous_D2": 1.0,
+                "u_D1": 0.5,
+                "u_D2": 0.5,
+            },
             tit_for_tat,
         )
         self.assertEqual(
@@ -314,7 +319,12 @@ class test_iterated_prisoners_dilemma(unittest.TestCase):
                 {"D1": lambda d1=d1: d1, "D2": lambda d2=d2: d2},
             )
             repeated = macid.iterated_prisoners_dilemma_block.transition(
-                {"previous_D1": 0.0, "previous_D2": 0.0},
+                {
+                    "previous_D1": 0.0,
+                    "previous_D2": 0.0,
+                    "u_D1": 0.5,
+                    "u_D2": 0.5,
+                },
                 {
                     "D1": lambda previous_D1, previous_D2, d1=d1: d1,
                     "D2": lambda previous_D1, previous_D2, d2=d2: d2,

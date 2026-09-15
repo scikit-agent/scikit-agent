@@ -134,10 +134,10 @@ offered to it, so it clears at zero again and stays there. A different market
 could reasonably answer something else, so the value is written into the
 clearing equation rather than supplied by the library.
 
-Binary decisions are relaxed to continuous ``[0, 1]`` controls, pending
-discrete-action support, following the convention of
-:mod:`skagent.models.macid`. :func:`seller_rule` and :func:`supply_rule` return
-exact 0 and 1, so the relaxation costs the supplied equilibria nothing.
+Binary decisions remain continuous ``[0, 1]`` relaxations in this model rather
+than opting into randomized binary execution. :func:`seller_rule` and
+:func:`supply_rule` return exact 0 and 1, so the relaxation costs the supplied
+equilibria nothing.
 
 References
 ----------
