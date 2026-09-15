@@ -5,7 +5,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable
 
-import numpy as np
 import torch
 
 from skagent.bellman import (
@@ -16,7 +15,7 @@ from skagent.bellman import (
     estimate_euler_residual,
 )
 from skagent.grid import Grid
-from skagent.utils import fischer_burmeister, reconcile
+from skagent.utils import any_nan, fischer_burmeister, reconcile
 
 if TYPE_CHECKING:
     from skagent.bellman import BellmanPeriod
@@ -85,11 +84,7 @@ def static_reward(
 
     total_reward = 0
     for rsym in reward_syms:
-        if isinstance(reward[rsym], torch.Tensor) and torch.any(
-            torch.isnan(reward[rsym])
-        ):
-            raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
-        if isinstance(reward[rsym], np.ndarray) and np.any(np.isnan(reward[rsym])):
+        if any_nan(reward[rsym]):
             raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
         total_reward = total_reward + reward[rsym]
 

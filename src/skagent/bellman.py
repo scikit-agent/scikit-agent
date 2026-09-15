@@ -41,7 +41,7 @@ import numpy as np
 import torch
 
 from skagent.ground import GroundedBlock
-from skagent.utils import compute_gradients_for_tensors
+from skagent.utils import any_nan, compute_gradients_for_tensors
 
 if TYPE_CHECKING:
     from skagent.block import Block
@@ -833,13 +833,7 @@ def estimate_discounted_lifetime_reward(
 
         period_reward = 0
         for rsym in reward_syms:
-            if isinstance(reward_t[rsym], torch.Tensor) and torch.any(
-                torch.isnan(reward_t[rsym])
-            ):
-                raise ValueError(f"Calculated reward {rsym} is NaN: {reward_t}")
-            if isinstance(reward_t[rsym], np.ndarray) and np.any(
-                np.isnan(reward_t[rsym])
-            ):
+            if any_nan(reward_t[rsym]):
                 raise ValueError(f"Calculated reward {rsym} is NaN: {reward_t}")
             period_reward += reward_t[rsym]
 

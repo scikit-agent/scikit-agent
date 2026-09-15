@@ -336,3 +336,28 @@ def plot_block_diagram(
     if title is not None:
         plt.title(title)
     plt.tight_layout()
+
+
+def any_nan(value):
+    """Whether *value* holds a NaN, whatever kind of number carries it.
+
+    A guard spelled ``isinstance(value, np.ndarray) and np.any(np.isnan(value))``
+    passes a Python float and a numpy scalar without looking at them, because
+    neither is an ndarray: ``isinstance(np.float64("nan"), np.ndarray)`` is
+    ``False``. So such a guard holds for the shapes a caller happens to produce
+    rather than for the values it is checking, and a mechanism returning one
+    number where another returns one per grid point is unguarded.
+
+    Parameters
+    ----------
+    value : number, ndarray or torch.Tensor
+        The value to look at. A type :func:`numpy.isnan` cannot read raises
+        rather than being reported as free of NaN.
+
+    Returns
+    -------
+    bool
+    """
+    if isinstance(value, torch.Tensor):
+        return bool(torch.any(torch.isnan(value)))
+    return bool(np.any(np.isnan(value)))

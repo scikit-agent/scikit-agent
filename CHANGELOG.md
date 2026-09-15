@@ -26,6 +26,16 @@ and this project adheres to
 
 ### Fixed
 
+- The NaN guard on a reward looks at the value rather than at the container it
+  arrives in. It was spelled as a pair of `isinstance` checks against
+  `torch.Tensor` and `np.ndarray`, and a Python float or a numpy scalar is
+  neither, so `float("nan")` and `np.float64("nan")` passed it silently. That
+  made the guard a property of the shapes a model happens to produce: the
+  shipped models return one reward per grid point, so they were checked, and a
+  mechanism returning a single number was not. Both sites now share
+  `skagent.utils.any_nan` -- the static reward in `skagent.loss` and the
+  lifetime-reward loop in `skagent.bellman`.
+
 - Composing two blocks that declare the same symbol raises instead of keeping
   the later one. Every merged view of a composed block is a dict built in block
   order, so the earlier declaration was dropped without a trace: its equation

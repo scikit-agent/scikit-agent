@@ -130,6 +130,23 @@ class TestStaticReward(unittest.TestCase):
 
         self.assertIn("v", str(caught.exception))
 
+    def test_a_nan_reward_raises_when_it_is_a_bare_number(self):
+        """A mechanism returning one number is guarded like one returning many."""
+        blk = block.DBlock(
+            name="scalar_nan_reward",
+            dynamics={
+                "c": block.Control([], agent="a"),
+                "u": lambda c: float("nan"),
+            },
+            reward={"u": "a"},
+        )
+        period = bellman.BellmanPeriod(blk, None, {})
+
+        with self.assertRaises(ValueError) as caught:
+            static_reward(period, {"c": lambda: 3.0}, {})
+
+        self.assertIn("u", str(caught.exception))
+
 
 class TestStaticRewardLossAgent:
     """The loss maximizes the payoff of the agent it is given, and no other."""
