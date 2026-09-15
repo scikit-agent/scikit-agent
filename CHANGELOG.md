@@ -28,8 +28,8 @@ and this project adheres to
 
 - `consumer.yaml`'s `portfolio choice` block declares its dynamics. `dynamics`
   was indented one level too deep, so it was a key of `shocks` and the block had
-  no share and no return. The malformed version is kept as a test fixture, since
-  nothing refuses a document that loses its own dynamics.
+  no share and no return. The malformed version is kept as the fixture
+  `validate_block` is tested against.
 
 - `Block.relevance_graph` finds a decision's reliance on the other instances of
   its own entity class and reports it on the class's own symbol, as a self-loop.
@@ -87,6 +87,13 @@ and this project adheres to
   `solve_in_relevance_order(solver)`.
 
 ### Added
+
+- `skagent.parser.validate_block` refuses a block document whose keys are not a
+  block's keys. A section indented one level too deep is valid YAML -- it
+  becomes a variable of the section above it -- so the block loses that whole
+  section and gains a symbol nothing declared, and nothing downstream can tell
+  that apart from a block that never had one. A document holding `blocks` has
+  its sub-blocks validated too.
 
 - `skagent.models.aiyagari`, many households saving out of labour income whose
   average assets are the economy's capital, which sets the interest rate and
