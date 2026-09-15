@@ -113,6 +113,23 @@ def test_context_is_the_decision_family():
     assert sorted(scim.parents("c")) == ["m", "z"]
 
 
+def test_policy_information_can_exclude_a_causal_parent():
+    graph = nx.DiGraph([("u", "D"), ("D", "U")])
+    scim = SCIM(
+        graph,
+        ["D"],
+        {"agent": ["U"]},
+        {"D": "agent"},
+        decision_information={"D": []},
+    )
+    assert scim.parents("D") == ["u"]
+    assert scim.information("D") == []
+    assert scim.context("D") == {"D"}
+
+    with_dummy, _dummy = scim.with_dummy_parent("D")
+    assert with_dummy.information("D") == []
+
+
 def test_objectives_are_owned_and_downstream():
     graph = nx.DiGraph([("c", "u"), ("d", "v")])
     scim = _scim(

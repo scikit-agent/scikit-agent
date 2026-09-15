@@ -52,6 +52,7 @@ def _copy_control(control, mapping, agent_suffix):
         lower_bound=_renamed(control.lower_bound, mapping),
         upper_bound=_renamed(control.upper_bound, mapping),
         agent=None if control.agent is None else control.agent + agent_suffix,
+        randomizes=control.randomizes,
     )
 
 
@@ -298,7 +299,8 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     other = {sym: sym + other_suffix for sym in per_instance}
 
     rivals = entity + other_suffix
-    declarations = block.get_shocks()
+    # Copied controls regenerate their correctly suffixed randomizers.
+    declarations = block._get_declared_shocks()
 
     # Every reward the projection has, keyed by the symbol that carries it. The
     # two sides' rewards go to suffixed agent roles, so a solver told which

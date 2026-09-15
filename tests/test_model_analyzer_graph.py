@@ -110,7 +110,7 @@ def test_influence_graph_consumption_block_details():
     assert scim.decisions == ["c"]
     assert scim.decision_agent == {"c": "consumer"}
     assert scim.agent_utilities == {"consumer": ["u"]}
-    # Decision parents are the information set (Control.iset) minus params.
+    # For an ordinary control, causal parents and policy information coincide.
     assert scim.parents("c") == ["m"]
 
 
