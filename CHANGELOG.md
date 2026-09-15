@@ -26,6 +26,18 @@ and this project adheres to
 
 ### Fixed
 
+- `ExactBestResponse.rule_distance` compares two rules over a shock that is
+  neither a state-grid axis nor pinned in scope, using the shock's own
+  discretization nodes -- the points the backup integrates it over. A rival's
+  private draw is such a symbol: it has no single value to compare at and no
+  axis to vary along, and it raised `KeyError` before. Pinning it in scope was
+  the only way to run a projected solve, and pinning is what stops the backup
+  integrating it, so the schedule was forced onto the one path that conditions
+  the decision on a realization the decider cannot see. On Cournot with private
+  costs uniform on `[2, 6]` at three firms, the integrated solve reproduces the
+  Bayesian-Nash rule exactly where the pinned one is wrong by 0.75 at the ends
+  of the cost range -- it recovers the level and not the slope.
+
 - `consumer.yaml`'s `portfolio choice` block declares its dynamics. `dynamics`
   was indented one level too deep, so it was a key of `shocks` and the block had
   no share and no return. The malformed version is kept as the fixture
