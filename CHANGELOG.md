@@ -26,6 +26,11 @@ and this project adheres to
 
 ### Fixed
 
+- `consumer.yaml`'s `portfolio choice` block declares its dynamics. `dynamics`
+  was indented one level too deep, so it was a key of `shocks` and the block had
+  no share and no return. The malformed version is kept as a test fixture, since
+  nothing refuses a document that loses its own dynamics.
+
 - `Block.relevance_graph` finds a decision's reliance on the other instances of
   its own entity class and reports it on the class's own symbol, as a self-loop.
   Cournot's three interdependent firms were reported as one decision with no

@@ -39,7 +39,8 @@ blocks:
       risky_return: !Lognormal
         mean: Rfree + EqP
         std: RiskyStd
-      dynamics:
-        stigma: !Control
-          iset: a
-        R: Rfree + (risky_return - Rfree) * stigma
+    dynamics:
+      stigma: !Control
+        iset: a
+        agent: consumer
+      R: Rfree + (risky_return - Rfree) * stigma
