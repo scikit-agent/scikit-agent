@@ -360,3 +360,65 @@ class TestTheScheduleRefusesAnUnprojectedProblem:
         method = NeuralBestResponse(cournot_ground(), panel, epochs=1)
         with pytest.raises(NotImplementedError, match="entity class 'firm'"):
             solve_in_relevance_order(method)
+
+
+# --- a rival whose cost is private, and what two rules are compared over ----
+
+
+def bayesian_nash_rule(size, low, high, intercept=cournot.A, slope=cournot.B):
+    """Cournot with private costs, where demand reads the MEAN quantity.
+
+    Each firm knows its own cost and the cost distribution, not its rivals'
+    draws, so it maximizes expected profit against the others' expected
+    quantity. Averaging the first-order condition over the population gives
+    ``E[q]``, and substituting it back gives one firm's rule.
+    """
+    expected = size * (intercept - (low + high) / 2) / (slope * (size + 1))
+
+    def rule(cost):
+        return (
+            size
+            * (intercept - cost - slope * (size - 1) * expected / size)
+            / (2 * slope)
+        )
+
+    return rule
+
+
+class TestARivalsPrivateDrawIsIntegratedRatherThanPinned:
+    """A rival's cost has no single value, and the equilibrium needs none."""
+
+    def test_the_solved_rule_is_the_bayesian_nash_one(self):
+        # The rival's cost is left out of scope, so the backup integrates it
+        # rather than conditioning on a realization the actor cannot see. It is
+        # also in the partner rule's information set, so the schedule's residual
+        # is measured over it -- which is what makes leaving it out possible.
+        low, high, size = 2.0, 6.0, 3
+        projected = project(
+            ground.GroundedBlock(
+                cournot.cournot_block,
+                cournot.heterogeneous_calibration(size=size, low=low, high=high),
+            )
+        )
+        method = ExactBestResponse(
+            projected,
+            {"c_actor": np.linspace(low, high, 3)},
+            disc_params={"c_other": {"N": 3}},
+        )
+
+        rule, info = solve_symmetric_equilibrium(
+            method, damping=0.5, tolerance=1e-4, max_iterations=40
+        )
+
+        assert info["converged"]
+        analytic = bayesian_nash_rule(size, low, high)
+        for cost in (low, (low + high) / 2, high):
+            found = float(np.atleast_1d(rule(cost)).ravel()[0])
+            assert found == pytest.approx(analytic(cost), abs=1e-3)
+
+    def test_a_symbol_that_is_nowhere_says_where_it_could_be(self):
+        projected = project(cournot_ground())
+        method = ExactBestResponse(projected, {"c_actor": np.array([COST])})
+
+        with pytest.raises(ValueError, match="Grid it, pin it, or declare it"):
+            method.rule_distance(lambda x: x, lambda x: x, ["not_a_symbol"])

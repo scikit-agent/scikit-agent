@@ -400,13 +400,29 @@ class ExactBestResponse:
 
     def rule_distance(self, new_rule, old_rule, iset):
         """Supremum norm between two rules over the grid they were solved on."""
-        observed = [
-            np.atleast_1d(np.asarray(self.state_grid[sym], dtype=float))
-            if sym in self.state_grid
-            else np.atleast_1d(np.asarray(self.scope[sym], dtype=float))
-            for sym in iset
-        ]
-        return _sup_norm(new_rule, old_rule, observed)
+        return _sup_norm(new_rule, old_rule, [self._observations(s) for s in iset])
+
+    def _observations(self, sym):
+        """The values *sym* takes when two rules are compared over it.
+
+        A grid axis and a pinned realization each supply them directly. A shock
+        that is neither has no single value to compare at and no axis to vary
+        along -- a rival's private draw is the case -- so it is compared over
+        its own discretization nodes, which are the points the backup
+        integrates it over.
+        """
+        if sym in self.state_grid:
+            return np.atleast_1d(np.asarray(self.state_grid[sym], dtype=float))
+        if sym in self.scope:
+            return np.atleast_1d(np.asarray(self.scope[sym], dtype=float))
+        if sym in self.period.get_shocks():
+            return vfi._shock_nodes(self.period, sym, self.disc_params)
+        raise ValueError(
+            f"{sym!r} is in a decision rule's information set, so two rules "
+            f"have to be compared over it, and it is not a state-grid axis, a "
+            f"symbol pinned in scope, or a shock of the block. Grid it, pin it, "
+            f"or declare it."
+        )
 
 
 def _sup_norm(first, second, observed):
