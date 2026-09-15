@@ -301,7 +301,7 @@ class RelevanceGraph:
                 # one instance relying on the others.
                 plates[plate.entity] = pydot.Cluster(
                     graph_name=plate.entity,
-                    label=f"{plate.size} {plate.entity}",
+                    label=plate.entity,
                     labeljust="r",
                 )
                 dot.add_subgraph(plates[plate.entity])
