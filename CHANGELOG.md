@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Removed
 
+- The deprecated `agent_count` argument to `Simulator` and `samples` argument to
+  `TabularBestResponseSolver`. Both named the wrong axis, both have said so
+  under a warning since the arguments that replaced them landed, and the warning
+  did not hold: new code was still being written in the deprecated spelling.
+  Pass `sample_count` and `shock_samples`.
+
 - `skagent.solver.solve_multiple_controls` has been replaced by
   `solve_in_order(method, order)`, which takes a method object. The old function
   fused a schedule with a method: the caller's `control_order` was the schedule,

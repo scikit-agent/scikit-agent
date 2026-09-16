@@ -27,7 +27,6 @@ or where a differentiable policy is wanted, use
 
 from collections import namedtuple
 import logging
-import warnings
 
 import numpy as np
 
@@ -171,17 +170,7 @@ class TabularBestResponseSolver:
         shock_samples=100_000,
         rng=None,
         max_cells=1024,
-        samples=None,
     ):
-        if samples is not None:
-            warnings.warn(
-                "samples is deprecated; pass shock_samples, which says which "
-                "axis it counts: realizations of the block's shocks, not "
-                "independent trajectories.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            shock_samples = samples
         if rng is not None:
             ground = ground.with_rng(rng)
         elif ground.rng is None:

@@ -247,36 +247,3 @@ class test_MonteCarloSimulatorWithConsumerModel(unittest.TestCase):
         # Verify history structure
         self.assertEqual(history["c"].shape, (10, 3))
         self.assertEqual(history["a"].shape, (10, 3))
-
-
-class test_agent_count_deprecation(unittest.TestCase):
-    """`agent_count` is accepted for one release, under a warning."""
-
-    def setUp(self):
-        self.block = DBlock(
-            **{
-                "shocks": {"theta": MeanOneLogNormal(1)},
-                "dynamics": {
-                    "m": lambda a, theta: a + theta,
-                    "c": Control(["m"]),
-                    "a": lambda m, c: m - c,
-                },
-            }
-        )
-        self.args = ({}, self.block, {"c": lambda m: m / 2}, {"a": 1.0})
-
-    def test_sets_sample_count(self):
-        with self.assertWarns(DeprecationWarning):
-            simulator = MonteCarloSimulator(*self.args, agent_count=4)
-
-        self.assertEqual(simulator.sample_count, 4)
-        self.assertFalse(hasattr(simulator, "agent_count"))
-
-    def test_same_simulation(self):
-        with self.assertWarns(DeprecationWarning):
-            old = MonteCarloSimulator(*self.args, agent_count=4, seed=1)
-        new = MonteCarloSimulator(*self.args, sample_count=4, seed=1)
-
-        old.initialize_sim()
-        new.initialize_sim()
-        self.assertTrue(np.array_equal(old.simulate()["a"], new.simulate()["a"]))
