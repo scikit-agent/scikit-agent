@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import copy
 import numbers
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -142,7 +143,7 @@ class GroundedBlock:
             A decision rule for every control of the block. This is the profile
             the expectation is taken under, so a rule left out is a symbol the
             block cannot compute.
-        measure : Sampled or Discretized
+        measure : Measure
             The reduction that turns the block's shocks into one number. There
             is no default: a sampled estimate and a discretized one carry
             different error, so a caller stating a tolerance has to have chosen
@@ -215,7 +216,42 @@ class ExpectedPayoff:
         return float(self.value)
 
 
-class Sampled:
+class Measure(ABC):
+    """How an expectation over a block's shocks is taken.
+
+    A measure reduces one axis and says which: a subclass draws the shocks and
+    reduces the draws, or discretizes them and reduces the nodes. What it
+    reduces over is its own configuration -- a sample count, a table of
+    discretization arguments -- so a caller passes a measure rather than the
+    union of every measure's arguments, and a third reduction arrives as a
+    class rather than as another branch.
+
+    The two do not carry the same error, which is why there is a type here
+    rather than a flag: sampling error falls with the number of draws, and a
+    discretization's error is a property of the rule its nodes came from.
+    """
+
+    @abstractmethod
+    def reduce(self, ground: GroundedBlock, integrand) -> ExpectedPayoff:
+        """Reduce *integrand* over this measure's axis.
+
+        Parameters
+        ----------
+        ground : GroundedBlock
+            The pair whose shocks are being integrated. A measure reads its
+            resolved distributions and, where it draws, its generator.
+        integrand : Callable
+            Takes a mapping from shock symbol to value -- one point of the
+            axis, or the whole axis at once where the measure is vectorized --
+            and returns what is being averaged.
+
+        Returns
+        -------
+        ExpectedPayoff
+        """
+
+
+class Sampled(Measure):
     """Reduce the sample axis: the mean over *n* draws of the block's shocks.
 
     Parameters
@@ -244,7 +280,7 @@ class Sampled:
         return ExpectedPayoff(mean, "samples", self.n)
 
 
-class Discretized:
+class Discretized(Measure):
     """Reduce the nodes of a discretization, against their own weights.
 
     Parameters

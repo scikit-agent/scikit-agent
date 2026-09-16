@@ -7,7 +7,7 @@ import skagent.models.macid as macid
 from skagent.bellman import BellmanPeriod
 from skagent.block import Control, DBlock, construct_shocks
 from skagent.distributions import Bernoulli, MeanOneLogNormal, Normal
-from skagent.ground import Discretized, GroundedBlock, Sampled
+from skagent.ground import Discretized, GroundedBlock, Measure, Sampled
 
 from tests.conftest import RECIPE_CALIBRATION, recipe_block
 
@@ -424,6 +424,15 @@ class TestWhatAProfileIsWorth:
         worth = ground.expected_payoff(HALF, Discretized(), states={"a": 9.0})
 
         assert float(worth) == pytest.approx(5.0, abs=1e-12)
+
+    def test_a_measure_is_one_type_with_one_contract(self):
+        # The two reductions are interchangeable at the call site and differ
+        # only in what they are configured with, which is what the shared type
+        # says; anything else answering to it serves.
+        assert issubclass(Sampled, Measure) and issubclass(Discretized, Measure)
+
+        with pytest.raises(TypeError, match="abstract"):
+            Measure()
 
     @pytest.mark.parametrize("n", [0, -1, 2.5, True])
     def test_a_sample_count_is_a_positive_integer(self, n):

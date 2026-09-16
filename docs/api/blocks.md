@@ -55,6 +55,11 @@ different error and a caller holding a number to a tolerance has to know which
 it has.
 
 ```{eval-rst}
+.. autoclass:: skagent.ground.Measure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. autoclass:: skagent.ground.Sampled
    :members:
    :undoc-members:
