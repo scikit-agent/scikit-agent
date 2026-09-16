@@ -26,6 +26,12 @@ and this project adheres to
 
 ### Fixed
 
+- `Block.relevance_graph` answers on a projected block again. A projection
+  declares the class beside the rest of itself, so it declares two, and the
+  expansion step refused it as a model of several classes. An expansion is now
+  read as it stands: the two sides are distinct symbols there, so the reliance
+  between them is an ordinary pair of edges rather than a self-loop to derive.
+
 - The NaN guard on a reward looks at the value rather than at the container it
   arrives in. It was spelled as a pair of `isinstance` checks against
   `torch.Tensor` and `np.ndarray`, and a Python float or a numpy scalar is

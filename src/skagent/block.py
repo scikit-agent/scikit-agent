@@ -669,7 +669,18 @@ class Block:
             # unexpanded rather than expanded wrongly.
             return None
 
+        from skagent.ground import GroundedBlock
+        from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project
+
         entities = self.entities()
+        if any(name + OTHER_SUFFIX in entities for name in entities):
+            # An expansion is already this block: a class beside the rest of
+            # itself. The two sides are distinct symbols there, so a reliance
+            # between them is an ordinary edge that the criterion reads off the
+            # block as it stands, and splitting a side that is already one
+            # instance's would have nothing to separate.
+            return None
+
         if len(entities) != 1:
             raise ValueError(
                 f"this block reads out of an entity class, so strategic "
@@ -687,9 +698,6 @@ class Block:
         size = int(calibration[entity])
         if size < 2:
             return None
-
-        from skagent.ground import GroundedBlock
-        from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project
 
         names = {
             sym + suffix: sym
