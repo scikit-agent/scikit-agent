@@ -12,6 +12,8 @@ every solver, simulator and environment in the library.
 from __future__ import annotations
 
 import copy
+import numbers
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -127,6 +129,53 @@ class GroundedBlock:
         other._shocks = None
         return other
 
+    def expected_payoff(self, policies, measure, *, states=None, agent=None):
+        """What a policy profile is worth, under *measure*.
+
+        Runs the block under *policies* and takes the expectation of the
+        rewards *agent* owns. The block's period is taken as it stands: this is
+        the payoff of one pass through it, with no continuation.
+
+        Parameters
+        ----------
+        policies : Mapping[str, Callable]
+            A decision rule for every control of the block. This is the profile
+            the expectation is taken under, so a rule left out is a symbol the
+            block cannot compute.
+        measure : Sampled or Discretized
+            The reduction that turns the block's shocks into one number. There
+            is no default: a sampled estimate and a discretized one carry
+            different error, so a caller stating a tolerance has to have chosen
+            which it is stating it about.
+        states : Mapping[str, Any], optional
+            Values for the symbols the block reads on arrival. A block with
+            arrival states cannot be run without them.
+        agent : str, optional
+            Whose payoff to take. Omitted, every reward symbol in the block is
+            summed, which is one agent's payoff only where the block has one
+            agent.
+
+        Returns
+        -------
+        ExpectedPayoff
+            The expectation, beside the axis that was reduced to reach it.
+        """
+
+        owners = set(self.block.reward.values())
+        if agent is not None and agent not in owners:
+            raise ValueError(
+                f"no reward in this block is attributed to agent {agent!r}, so "
+                f"its payoff is an empty sum rather than zero; the agents paid "
+                f"here are {sorted(owners)}"
+            )
+
+        def integrand(shock_values):
+            pre = {**self.calibration, **(states or {}), **shock_values}
+            vals = self.block.transition(pre, policies)
+            return sum(self.block.calc_reward(vals, agent=agent).values())
+
+        return measure.reduce(self, integrand)
+
     def draw_shocks(self, n: int) -> dict[str, Any]:
         """Draw *n* realizations of each of this instance's shocks.
 
@@ -143,3 +192,107 @@ class GroundedBlock:
         from skagent.simulation.monte_carlo import draw_shocks
 
         return draw_shocks(self.shock_distributions(), n=n)
+
+
+@dataclass(frozen=True)
+class ExpectedPayoff:
+    """An expected payoff, and the axis the expectation was taken over.
+
+    The two reductions do not carry the same kind of error -- one falls with
+    the number of draws and the other is a property of the rule the nodes came
+    from -- so a number that has lost which axis produced it cannot be held to
+    a tolerance. ``value`` is the expectation, ``axis`` is what was reduced to
+    reach it (``"samples"`` for draws of the block's shocks, ``"nodes"`` for a
+    discretization of them), and ``size`` is how many points of that axis it
+    rests on. Reading it as a plain number is ``float(result)``.
+    """
+
+    value: Any
+    axis: str
+    size: int
+
+    def __float__(self) -> float:
+        return float(self.value)
+
+
+class Sampled:
+    """Reduce the sample axis: the mean over *n* draws of the block's shocks.
+
+    Parameters
+    ----------
+    n : int
+        Realizations to draw. The estimate carries sampling error, which falls
+        as *n* rises.
+    rng : numpy.random.Generator, optional
+        Generator to draw from, in place of the one the pair carries. Two
+        reductions run against generators in the same state see the same
+        draws, which is what makes two profiles comparable rather than
+        separated by the noise of their own draws.
+    """
+
+    def __init__(self, n: int, *, rng: np.random.Generator | None = None) -> None:
+        if not isinstance(n, numbers.Integral) or isinstance(n, bool) or n < 1:
+            raise ValueError(f"n must be a positive integer, got {n!r}")
+        self.n = int(n)
+        self.rng = rng
+
+    def reduce(self, ground: GroundedBlock, integrand) -> ExpectedPayoff:
+        """The mean of *integrand* over this measure's draws of *ground*."""
+        pair = ground if self.rng is None else ground.with_rng(self.rng)
+        payoffs = integrand(pair.draw_shocks(self.n))
+        mean = payoffs.mean() if hasattr(payoffs, "mean") else np.mean(payoffs)
+        return ExpectedPayoff(mean, "samples", self.n)
+
+
+class Discretized:
+    """Reduce the nodes of a discretization, against their own weights.
+
+    Parameters
+    ----------
+    disc_params : Mapping[str, dict], optional
+        Arguments to ``Distribution.discretize``, per shock. A shock named here
+        is discretized with those arguments; a continuous shock left out is
+        discretized with its own defaults; a shock already discrete is taken as
+        it stands.
+    """
+
+    def __init__(self, disc_params: dict[str, dict] | None = None) -> None:
+        self.disc_params = dict(disc_params or {})
+
+    def reduce(self, ground: GroundedBlock, integrand) -> ExpectedPayoff:
+        """The weighted sum of *integrand* over the discretization's nodes."""
+        from skagent.block import discretized_shock_dstn
+        from skagent.distributions import DiscreteDistribution, expected
+
+        shocks = ground.shock_distributions()
+        if not shocks:
+            # Nothing to integrate: the payoff of a block with no shocks is
+            # already its own expectation, and there is no node to name.
+            return ExpectedPayoff(integrand({}), "nodes", 1)
+
+        # Every continuous shock is discretized, whether or not the caller
+        # named it: the helper's default for an unnamed shock is to take it as
+        # already discrete, which for a continuous one integrates against
+        # whatever its raw form happens to expose.
+        params = {
+            sym: self.disc_params.get(sym, {})
+            for sym, distribution in shocks.items()
+            if sym in self.disc_params
+            or not isinstance(distribution, DiscreteDistribution)
+        }
+        nodes = discretized_shock_dstn(shocks, params)
+        names = list(nodes.var_names)
+
+        def at_node(point):
+            # One shock reaches the integrand as a bare value and several as a
+            # mapping, so the node is named here rather than in the integrand.
+            values = (
+                {names[0]: point}
+                if len(names) == 1 and not isinstance(point, dict)
+                else {name: point[name] for name in names}
+            )
+            return integrand(values)
+
+        return ExpectedPayoff(
+            expected(func=at_node, dist=nodes), "nodes", len(nodes.weights)
+        )

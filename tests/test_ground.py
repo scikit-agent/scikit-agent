@@ -3,10 +3,11 @@
 import numpy as np
 import pytest
 
+import skagent.models.macid as macid
 from skagent.bellman import BellmanPeriod
 from skagent.block import Control, DBlock, construct_shocks
-from skagent.distributions import MeanOneLogNormal
-from skagent.ground import GroundedBlock
+from skagent.distributions import Bernoulli, MeanOneLogNormal, Normal
+from skagent.ground import Discretized, GroundedBlock, Sampled
 
 from tests.conftest import RECIPE_CALIBRATION, recipe_block
 
@@ -256,3 +257,175 @@ class TestRepointingTheGenerator:
         assert isinstance(copied, BellmanPeriod)
         assert copied.discount_variable == period.discount_variable
         assert copied.arrival_states == period.arrival_states
+
+
+def linear_block():
+    """A payoff linear in one normal shock, so its expectation is closed-form.
+
+    ``a`` arrives, ``theta`` is drawn, and the consumer's payoff is whatever
+    its rule returns. Under a rule that spends a fixed share of ``m``, the
+    expected payoff is that share of ``a + E[theta]`` exactly -- which is what
+    lets a reduction be checked against arithmetic rather than against another
+    reduction.
+    """
+    return DBlock(
+        **{
+            "name": "linear",
+            "shocks": {"theta": (Normal, {"mu": "mu", "sigma": "sigma"})},
+            "dynamics": {
+                "m": lambda a, theta: a + theta,
+                "c": Control(["m"], agent="consumer"),
+                "u": lambda c: c,
+            },
+            "reward": {"u": "consumer"},
+        }
+    )
+
+
+LINEAR_CALIBRATION = {"mu": 1.0, "sigma": 2.0, "a": 3.0}
+HALF = {"c": lambda m: m / 2}
+
+
+def linear_ground(**calibration):
+    return GroundedBlock(linear_block(), dict(LINEAR_CALIBRATION, **calibration))
+
+
+class TestWhatAProfileIsWorth:
+    """``expected_payoff`` under each of the two reductions."""
+
+    def test_the_discretization_is_exact_on_a_linear_payoff(self):
+        # A discretization is a rule of nodes and weights, and the Gauss-Hermite
+        # rule behind a normal shock integrates a linear integrand exactly. So
+        # this is an equality against the closed form rather than a tolerance,
+        # and three nodes reach it as well as the default seven do.
+        ground = linear_ground()
+        closed_form = (LINEAR_CALIBRATION["a"] + LINEAR_CALIBRATION["mu"]) / 2
+
+        assert float(ground.expected_payoff(HALF, Discretized())) == pytest.approx(
+            closed_form, abs=1e-12
+        )
+        assert float(
+            ground.expected_payoff(HALF, Discretized({"theta": {"n_points": 3}}))
+        ) == pytest.approx(closed_form, abs=1e-12)
+
+    def test_a_sampled_estimate_reaches_the_same_number(self):
+        # The other reduction answers the same question with sampling error in
+        # place of a rule, so it agrees to within its own standard error.
+        ground = linear_ground()
+        closed_form = (LINEAR_CALIBRATION["a"] + LINEAR_CALIBRATION["mu"]) / 2
+
+        estimate = ground.expected_payoff(HALF, Sampled(40_000, rng=rng(0)))
+
+        assert float(estimate) == pytest.approx(closed_form, abs=0.05)
+
+    def test_two_profiles_measured_on_the_same_draws_differ_only_by_the_profile(self):
+        # Comparing two profiles is the reason to ask what one is worth, and
+        # under independent draws the comparison carries both estimates' noise.
+        # Measured against generators in the same state it carries neither: the
+        # payoff here is proportional to the share spent, so the ratio is the
+        # ratio of the shares EXACTLY, which it would not be otherwise.
+        ground = linear_ground()
+        third = {"c": lambda m: m / 3}
+
+        half_worth = ground.expected_payoff(HALF, Sampled(2_000, rng=rng(7)))
+        third_worth = ground.expected_payoff(third, Sampled(2_000, rng=rng(7)))
+
+        assert float(half_worth) / float(third_worth) == pytest.approx(1.5, abs=1e-12)
+
+    def test_the_answer_says_which_axis_it_reduced(self):
+        # A number that has lost its measure cannot be held to a tolerance, so
+        # the axis and its size travel with it. The node count is the size of
+        # the integration grid, which is the product over the shocks and is not
+        # something the caller stated.
+        ground = linear_ground()
+
+        sampled = ground.expected_payoff(HALF, Sampled(64, rng=rng(0)))
+        assert (sampled.axis, sampled.size) == ("samples", 64)
+
+        discretized = ground.expected_payoff(
+            HALF, Discretized({"theta": {"n_points": 5}})
+        )
+        assert (discretized.axis, discretized.size) == ("nodes", 5)
+
+    def test_a_discrete_shock_is_taken_as_the_points_it_already_has(self):
+        # Bernoulli needs no rule: its own two points ARE the integration
+        # nodes, so the expectation is the exact weighted payoff.
+        block = DBlock(
+            **{
+                "name": "coin",
+                "shocks": {"heads": (Bernoulli, {"p": "p"})},
+                "dynamics": {"u": lambda heads: 10.0 * heads},
+                "reward": {"u": "better"},
+            }
+        )
+        ground = GroundedBlock(block, {"p": 0.3})
+
+        worth = ground.expected_payoff({}, Discretized())
+
+        assert float(worth) == pytest.approx(3.0, abs=1e-12)
+        assert (worth.axis, worth.size) == ("nodes", 2)
+
+    def test_a_block_already_discretized_is_integrated_over_its_own_nodes(self):
+        # ``Block.discretize`` returns a block whose shocks are the nodes, and
+        # a pair over one of those has nothing left to discretize. Reducing it
+        # must reach the same number as asking the original for the same rule.
+        nodes = {"theta": {"n_points": 5}}
+        pre_discretized = GroundedBlock(
+            linear_block().discretize(nodes, calibration=LINEAR_CALIBRATION),
+            LINEAR_CALIBRATION,
+        )
+
+        worth = pre_discretized.expected_payoff(HALF, Discretized())
+
+        assert float(worth) == pytest.approx(
+            float(linear_ground().expected_payoff(HALF, Discretized(nodes))),
+            abs=1e-12,
+        )
+        assert (worth.axis, worth.size) == ("nodes", 5)
+
+    def test_a_block_with_no_shocks_is_worth_what_it_pays(self):
+        # A static profile with nothing random in it has no axis to reduce, and
+        # its payoff is already its own expectation.
+        ground = GroundedBlock(macid.prisoners_dilemma_block, {})
+        defect_against_cooperate = {"D1": lambda: 1.0, "D2": lambda: 0.0}
+
+        worth = ground.expected_payoff(
+            defect_against_cooperate, Discretized(), agent="player_1"
+        )
+
+        assert float(worth) == 5.0
+        assert worth.size == 1
+
+    def test_the_payoff_is_the_one_agent_s_and_not_the_table_s(self):
+        # Two agents' rewards summed is nobody's objective, so an agent is how
+        # a multi-agent block is asked.
+        ground = GroundedBlock(macid.prisoners_dilemma_block, {})
+        mutual_defection = {"D1": lambda: 1.0, "D2": lambda: 1.0}
+
+        for agent in ("player_1", "player_2"):
+            worth = ground.expected_payoff(mutual_defection, Discretized(), agent=agent)
+            assert float(worth) == 1.0
+
+    def test_an_agent_that_owns_no_reward_is_refused(self):
+        # Its payoff would otherwise be an empty sum, which is zero and reads
+        # as an answer.
+        ground = GroundedBlock(macid.prisoners_dilemma_block, {})
+
+        with pytest.raises(ValueError, match="no reward in this block"):
+            ground.expected_payoff(
+                {"D1": lambda: 1.0, "D2": lambda: 1.0}, Sampled(4), agent="player_3"
+            )
+
+    def test_the_arrival_states_are_the_ones_given(self):
+        # ``a`` arrives rather than being calibrated, and the profile is worth
+        # something different at each value of it.
+        ground = GroundedBlock(linear_block(), {"mu": 1.0, "sigma": 2.0})
+
+        worth = ground.expected_payoff(HALF, Discretized(), states={"a": 9.0})
+
+        assert float(worth) == pytest.approx(5.0, abs=1e-12)
+
+    @pytest.mark.parametrize("n", [0, -1, 2.5, True])
+    def test_a_sample_count_is_a_positive_integer(self, n):
+        with pytest.raises(ValueError, match="positive integer"):
+            Sampled(n)
