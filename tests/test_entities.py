@@ -7,7 +7,9 @@ import skagent.models.cournot as cournot
 import skagent.models.lemons as lemons
 from skagent.block import Aggregate, Control, DBlock, Entity, RBlock
 from skagent.distributions import Normal, Uniform
+from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
+from skagent.solver import project
 
 A, B = 10.0, 1.0
 
@@ -594,6 +596,19 @@ class TestOneInstanceReliesOnTheOthers:
         # reads out of a class cannot supply it.
         with pytest.raises(ValueError, match="supply a size for 'firm'"):
             cournot_block().relevance_graph()
+
+    def test_an_expansion_is_read_as_it_stands_rather_than_expanded_again(self):
+        # A projection declares the class beside the rest of itself, so it
+        # declares two. Expanding it again would separate an instance from a
+        # side that is already one instance's; the two sides are distinct
+        # symbols there, so the reliance the self-loop stands for is an
+        # ordinary pair of edges the criterion reads off the block.
+        projected = project(GroundedBlock(cournot_block(), collusion_calibration()))
+        graph = projected.block.relevance_graph(projected.calibration)
+
+        assert set(graph.nodes()) == {"q_actor", "q_other"}
+        assert set(graph.edges()) == {("q_actor", "q_other"), ("q_other", "q_actor")}
+        assert not graph.is_acyclic()
 
     def test_a_model_with_several_classes_cannot_be_expanded_yet(self):
         two_sided = RBlock(
