@@ -260,7 +260,7 @@ for spread in (1.0, 2.0, 3.0):
 # an extra report is worth and the more noise is worth paying for it.
 #
 # The central model, where the noise is not averaged down
-# ======================================================
+# =======================================================
 #
 # Centrally the analyst is trusted with the raw data and adds one draw of noise
 # to the estimate. That noise is not divided by anything, so it enters the error
