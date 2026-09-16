@@ -449,18 +449,3 @@ class TestSolveConfiguration:
     def test_tolerance_must_be_positive(self, tree_killer, tolerance):
         with pytest.raises(ValueError, match="tolerance must be > 0"):
             solve_in_relevance_order(tree_killer, tolerance=tolerance)
-
-
-class TestSamplesDeprecation:
-    """`samples` is accepted for one release, under a warning."""
-
-    def test_sets_shock_samples(self):
-        with pytest.warns(DeprecationWarning):
-            solved = TabularBestResponseSolver(
-                GroundedBlock(macid.tree_killer_block, {}),
-                samples=1_000,
-                rng=np.random.default_rng(0),
-            )
-
-        assert solved.shock_samples == 1_000
-        assert not hasattr(solved, "samples")

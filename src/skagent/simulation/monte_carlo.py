@@ -4,7 +4,6 @@ Functions to support Monte Carlo simulation of models.
 
 from __future__ import annotations
 
-import warnings
 from typing import Mapping, Sequence, Union
 
 import numpy as np
@@ -150,17 +149,7 @@ class Simulator:
         seed=0,
         sample_count=1,
         T_sim=10,
-        agent_count=None,
     ):
-        if agent_count is not None:
-            warnings.warn(
-                "agent_count is deprecated; pass sample_count, which names the "
-                "axis this argument has always set: independent trajectories, "
-                "not interacting agents.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            sample_count = agent_count
         self.calibration = calibration
         self.block = block
 

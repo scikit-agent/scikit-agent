@@ -336,7 +336,7 @@ class test_iterated_prisoners_dilemma(unittest.TestCase):
                 "D2": lambda previous_D1, previous_D2: previous_D1,
             },
             {"previous_D1": 0.0, "previous_D2": 1.0},
-            agent_count=2,
+            sample_count=2,
             T_sim=4,
         )
         sim.initialize_sim()
@@ -365,7 +365,7 @@ class test_iterated_prisoners_dilemma(unittest.TestCase):
                 "D2": lambda previous_D1, previous_D2: previous_D1,
             },
             {"previous_D1": 0.0, "previous_D2": 0.0},
-            agent_count=2,
+            sample_count=2,
             T_sim=4,
         )
         sim.initialize_sim()
