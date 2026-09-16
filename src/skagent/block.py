@@ -551,6 +551,21 @@ class Block:
 
         return rvals
 
+    def _require_paid_agent(self, agent):
+        """Refuse an agent no reward in this block is attributed to.
+
+        Its payoff would otherwise be the sum of no reward symbols, which is
+        zero and reads as an answer rather than as a question about an agent
+        this block does not pay.
+        """
+        owners = set(self.reward.values())
+        if agent is not None and agent not in owners:
+            raise ValueError(
+                f"no reward in this block is attributed to agent {agent!r}, so "
+                f"its payoff is an empty sum rather than zero; the agents paid "
+                f"here are {sorted(owners)}"
+            )
+
     def get_control(self, control_sym):
         """The :class:`Control` declared at *control_sym*.
 
@@ -1066,39 +1081,52 @@ class DBlock(Block):
         return list(self.shocks.keys()) + list(self.dynamics.keys())
 
     def get_state_rule_value_function_from_continuation(
-        self, continuation, screen=False
+        self, continuation, screen=False, agent=None
     ):
         """
         Given a continuation value function, returns a state-rule value
         function: the value for each state and decision rule.
         This value includes both the reward for executing the rule
         'this period', and the continuation value of the resulting states.
+
+        Parameters
+        ----------
+        continuation : Callable
+            The value of the states this period's transition arrives at.
+        screen : bool, optional
+            Passed to :meth:`transition`.
+        agent : str, optional
+            Whose reward the value is of. An agent owning several reward
+            symbols is paid their sum, an additively decomposed utility being
+            one payoff written in parts. Omitted, every reward symbol in the
+            block is summed, which is one agent's payoff only where the block
+            has one agent.
         """
+        self._require_paid_agent(agent)
 
         def state_rule_value_function(pre, dr):
             vals = self.transition(pre, dr, screen=screen)
-            # TODO(roadmap: multi-reward): this takes the sole reward value and
-            # so assumes exactly one reward variable per block. Models may
-            # legitimately declare several reward symbols per agent (an
-            # additively decomposed utility, e.g. the Tree Killer benchmark);
-            # supporting that here -- summing an agent's reward symbols, and
-            # selecting the relevant agent -- is future roadmap work.
-            r = list(self.calc_reward(vals).values())[0]
+            r = sum(self.calc_reward(vals, agent=agent).values())
             cv = continuation(*[vals[var] for var in param_names(continuation)])
 
             return r + cv
 
         return state_rule_value_function
 
-    def get_decision_value_function(self, dr, continuation):
+    def get_decision_value_function(self, dr, continuation, agent=None):
         """
         Given a decision rule and a continuation value function,
         return a function for the value at the decision step/tac,
         after the shock have been realized.
+
+        *agent* selects whose reward the value is of; see
+        :meth:`get_state_rule_value_function_from_continuation`.
         """
         # TODO: it would be better to systematize these value functions per
         # block, then construct them with 'partial' methods.
-        srvf = self.get_state_rule_value_function_from_continuation(continuation)
+        srvf = self.get_state_rule_value_function_from_continuation(
+            continuation, agent=agent
+        )
 
         def decision_value_function(shpre):
             return srvf(shpre, dr)
@@ -1106,7 +1134,7 @@ class DBlock(Block):
         return decision_value_function
 
     def get_arrival_value_function(
-        self, disc_params, dr, continuation, calibration=None
+        self, disc_params, dr, continuation, calibration=None, agent=None
     ):
         """
         Returns an arrival value function, which is the value of the states
@@ -1119,11 +1147,14 @@ class DBlock(Block):
         The expectation is over the distributions themselves, so a block whose
         shocks are still declared as ``(class, arguments)`` pairs must be given
         the *calibration* to resolve them against.
+
+        *agent* selects whose reward the value is of; see
+        :meth:`get_state_rule_value_function_from_continuation`.
         """
         shocks = self._resolved_shocks(calibration)
 
         def arrival_value_function(arvs):
-            dvf = self.get_decision_value_function(dr, continuation)
+            dvf = self.get_decision_value_function(dr, continuation, agent=agent)
 
             ds = discretized_shock_dstn(shocks, disc_params)
 

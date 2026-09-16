@@ -310,7 +310,7 @@ class _EquationLossBase(ABC):
         self.agent: str | None = agent
 
         # Validate that reward variables exist (raises ValueError with agent context)
-        bellman_period.get_reward_sym(agent)
+        bellman_period.get_reward_syms(agent)
 
     @abstractmethod
     def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor: ...

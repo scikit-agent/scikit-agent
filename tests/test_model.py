@@ -473,3 +473,99 @@ class TestShockConstructionIsNotDestructive:
         fresh = recipe_block().construct_shocks(cal, rng=np.random.default_rng(1))
 
         assert np.array_equal(second["theta"].draw(20), fresh["theta"].draw(20))
+
+
+def decomposed_block():
+    """One agent's payoff written in two parts, which is one payoff.
+
+    ``u`` is what consumption is worth and ``fee`` is what it costs to take, so
+    the consumer is paid their sum. An additively decomposed utility is the
+    intended syntax for several reward symbols per agent.
+    """
+    return model.DBlock(
+        **{
+            "name": "decomposed",
+            "dynamics": {
+                "c": Control(["a"]),
+                "u": lambda c: 2.0 * c,
+                "fee": lambda c: -0.25 * c,
+                "a": lambda a, c: a - c,
+            },
+            "reward": {"u": "consumer", "fee": "consumer"},
+        }
+    )
+
+
+class TestAnAgentPaidInSeveralParts(unittest.TestCase):
+    """A value is of the WHOLE payoff, not of the first symbol declared."""
+
+    def setUp(self):
+        self.block = decomposed_block()
+        self.dr = {"c": lambda a: a / 2}
+
+    def test_the_value_sums_the_parts(self):
+        # c = 2 out of a = 4, so the parts are 4.0 and -0.5 and the payoff is
+        # 3.5. Reading one part would give 4.0, which is a number the model
+        # does not pay anyone.
+        savf = self.block.get_state_rule_value_function_from_continuation(lambda a: 0)
+
+        self.assertEqual(savf({"a": 4.0}, self.dr), 3.5)
+
+    def test_the_parts_summed_are_the_named_agent_s(self):
+        # A second agent is paid out of the same block, and its reward is not
+        # part of the consumer's value at any point.
+        block = model.DBlock(
+            **{
+                "name": "two agents",
+                "dynamics": {
+                    "c": Control(["a"]),
+                    "u": lambda c: 2.0 * c,
+                    "fee": lambda c: -0.25 * c,
+                    "tax": lambda c: 10.0 * c,
+                    "a": lambda a, c: a - c,
+                },
+                "reward": {"u": "consumer", "fee": "consumer", "tax": "state"},
+            }
+        )
+
+        consumer = block.get_state_rule_value_function_from_continuation(
+            lambda a: 0, agent="consumer"
+        )
+        state = block.get_state_rule_value_function_from_continuation(
+            lambda a: 0, agent="state"
+        )
+
+        self.assertEqual(consumer({"a": 4.0}, self.dr), 3.5)
+        self.assertEqual(state({"a": 4.0}, self.dr), 20.0)
+
+    def test_an_agent_the_block_does_not_pay_is_refused(self):
+        # Its value would otherwise be a continuation plus the sum of no
+        # rewards, which is a number.
+        with self.assertRaisesRegex(ValueError, "no reward in this block"):
+            self.block.get_state_rule_value_function_from_continuation(
+                lambda a: 0, agent="landlord"
+            )
+
+    def test_the_arrival_value_carries_the_whole_payoff_too(self):
+        # The same sum, reached through the shock expectation rather than
+        # directly, since that is the function a solver actually calls.
+        block = model.DBlock(
+            **{
+                "name": "decomposed with a shock",
+                "shocks": {"coin": Bernoulli(p=0.5)},
+                "dynamics": {
+                    "m": lambda a, coin: a + coin,
+                    "c": Control(["m"]),
+                    "u": lambda c: 2.0 * c,
+                    "fee": lambda c: -0.25 * c,
+                    "a": lambda m, c: m - c,
+                },
+                "reward": {"u": "consumer", "fee": "consumer"},
+            }
+        )
+
+        av = block.get_arrival_value_function({}, {"c": lambda m: m}, lambda a: 0)
+
+        # c = m = a + coin, and the payoff is 1.75 c, so the value at a = 1 is
+        # 1.75 * E[1 + coin] = 1.75 * 1.5.
+        self.assertAlmostEqual(float(av({"a": 1.0})), 2.625)
