@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Model Analysis and Visualization" href="analysis.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Utils - scikit-agent 0.1.1.dev117+g55a44cd50</title>
+        <title>Utils - scikit-agent 0.1.1.dev125+g58781ef0b</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev117+g55a44cd50</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev125+g58781ef0b</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -299,6 +299,27 @@
 <h2>General Utilities<a class="headerlink" href="#general-utilities" title="Link to this heading">¶</a></h2>
 <p>The utils module contains general-purpose utility functions.</p>
 <dl class="py function" id="module-skagent.utils">
+<dt class="sig sig-object py" id="skagent.utils.any_nan">
+<span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">any_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.any_nan" title="Link to this definition">¶</a></dt>
+<dd><p>Whether <em>value</em> holds a NaN, whatever kind of number carries it.</p>
+<p>A guard spelled <code class="docutils literal notranslate"><span class="pre">isinstance(value,</span> <span class="pre">np.ndarray)</span> <span class="pre">and</span> <span class="pre">np.any(np.isnan(value))</span></code>
+passes a Python float and a numpy scalar without looking at them, because
+neither is an ndarray: <code class="docutils literal notranslate"><span class="pre">isinstance(np.float64(&quot;nan&quot;),</span> <span class="pre">np.ndarray)</span></code> is
+<code class="docutils literal notranslate"><span class="pre">False</span></code>. So such a guard holds for the shapes a caller happens to produce
+rather than for the values it is checking, and a mechanism returning one
+number where another returns one per grid point is unguarded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>number</em><em>, </em><em>ndarray</em><em> or </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.14)"><em>torch.Tensor</em></a>) – The value to look at. A type <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.isnan()</span></code> cannot read raises
+rather than being reported as free of NaN.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="skagent.utils.apply_fun_to_vals">
 <span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">apply_fun_to_vals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vals</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.apply_fun_to_vals" title="Link to this definition">¶</a></dt>
 <dd><p>Applies a function to the arguments defined in <cite>vals</cite>.
@@ -593,6 +614,7 @@ for occasionally binding constraints in loss functions:</p>
             <ul>
 <li><a class="reference internal" href="#">Utils</a><ul>
 <li><a class="reference internal" href="#general-utilities">General Utilities</a><ul>
+<li><a class="reference internal" href="#skagent.utils.any_nan"><code class="docutils literal notranslate"><span class="pre">any_nan()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.apply_fun_to_vals"><code class="docutils literal notranslate"><span class="pre">apply_fun_to_vals()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.compute_gradients_for_tensors"><code class="docutils literal notranslate"><span class="pre">compute_gradients_for_tensors()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.compute_parameter_difference"><code class="docutils literal notranslate"><span class="pre">compute_parameter_difference()</span></code></a></li>
@@ -621,7 +643,7 @@ for occasionally binding constraints in loss functions:</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=95fead8f"></script>
+</div><script src="../_static/documentation_options.js?v=4a78100f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

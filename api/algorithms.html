@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev117+g55a44cd50</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev125+g58781ef0b</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev117+g55a44cd50</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev125+g58781ef0b</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -2118,19 +2118,20 @@ and a masked mean all project alike.</p>
 <p>The two sides’ rewards are attributed to suffixed agent roles, so a solver
 told which agent it serves maximizes one instance’s payoff rather than the
 class’s total.</p>
-<p>This first scope has two properties, and both are narrower than the
-transform has to remain:</p>
-<ul class="simple">
-<li><p><strong>The other instances share one broadcast rule.</strong> The projected block
-holds a single control for the whole remainder of the class, so the
-equilibrium sought is a symmetric one. A class of genuinely distinct
-rivals is expressible in this shape, but it is not built here.</p></li>
-<li><p><strong>The projected block declares no entity.</strong> The split lives in the shapes
-– the solved instance is a scalar, the others broadcast to <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span></code> –
-rather than in two declarations, because the solvers refuse a block that
-declares an entity class at all, and re-keying that refusal is a separate
-decision.</p></li>
-</ul>
+<p><strong>The rest of the class stays a population.</strong> The others are declared as an
+entity class of their own, named for the original and sized one short of
+it, so their symbols are one value per rival rather than one value shared
+by all of them. That is what lets rivals with private draws differ from one
+another: a rule they share is still evaluated once per rival, and the
+aggregate reads the spread of what they do. A rejoined symbol carries the
+class the author declared, at the size the author gave it, so the author’s
+own aggregation reduces over the same class it always did.</p>
+<p>The solved instance’s symbols carry no class, because it is one instance
+rather than a population of one, and that asymmetry is what the two sides
+are for.</p>
+<p><strong>The other instances share one rule</strong>, so the equilibrium sought is a
+symmetric one. A class of genuinely distinct rules is expressible in this
+shape but is not built here.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2142,8 +2143,8 @@ calibration must give that class’s size under its own name.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The projected problem, carrying two controls: the solved instance’s and
-the others’.</p>
+<dd class="field-even"><p>The projected problem, carrying two controls – the solved instance’s
+and the others’ – and a calibration that sizes the rivals’ class.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock">skagent.ground.GroundedBlock</a></p>
@@ -2626,7 +2627,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=95fead8f"></script>
+</div><script src="../_static/documentation_options.js?v=4a78100f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -750,10 +750,10 @@ the two sides:
  .. code-block:: none
 
     market                 decisions                    relies on                                  solvable in order
-    anticipated            S_actor, S_other             S_actor -> S_other, S_other -> S_actor     no
-    posted price           S_actor, S_other             (none)                                     yes
-    peaches, anticipated   S_actor, S_other             S_actor -> S_other, S_other -> S_actor     no
-    buyer commits          p, S_actor, S_other          p -> S_actor, p -> S_other                 yes
+    anticipated            S_other, S_actor             S_other -> S_actor, S_actor -> S_other     no
+    posted price           S_other, S_actor             (none)                                     yes
+    peaches, anticipated   S_other, S_actor             S_other -> S_actor, S_actor -> S_other     no
+    buyer commits          p, S_other, S_actor          p -> S_other, p -> S_actor                 yes
 
 
 
@@ -778,7 +778,7 @@ sellers against a price, then the buyer against the sellers.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.737 seconds)
+   **Total running time of the script:** (0 minutes 0.814 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_lemons_adverse_selection.py:
