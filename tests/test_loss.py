@@ -1,4 +1,4 @@
-from conftest import case_0
+from conftest import case_0, case_10
 import numpy as np
 import os
 import skagent.ann as ann
@@ -14,6 +14,7 @@ from skagent.loss import (
     StaticRewardLoss,
     static_reward,
 )
+import pytest
 import torch
 import unittest
 
@@ -220,6 +221,14 @@ class TestTheLossApi:
             assert agent is not None, cls.__name__
             assert agent.kind is agent.KEYWORD_ONLY, cls.__name__
 
+    def test_every_loss_can_hold_the_controls_it_is_not_training(self):
+        """Without this a loss cannot serve a best response under a schedule,
+        which is what holding the other controls at their rules is for."""
+        for cls in LOSS_CLASSES:
+            other_dr = inspect.signature(cls).parameters.get("other_dr")
+            assert other_dr is not None, cls.__name__
+            assert other_dr.kind is other_dr.KEYWORD_ONLY, cls.__name__
+
     def test_every_loss_reads_the_periods_calibration(self):
         blk = block.DBlock(
             name="scaled",
@@ -262,3 +271,77 @@ class TestLifetimeRewardAgent:
     def test_naming_no_agent_sums_both(self):
         """A planner's objective, and no player's -- kept explicit."""
         assert self.losses_at(None) == -13.0
+
+
+def _two_control_period():
+    """Two controls drawing on one resource, so each has its own Euler condition
+    and the transition reads both."""
+    blk = block.DBlock(
+        name="two_control_dynamic",
+        shocks={},
+        dynamics={
+            "m": lambda a, R, y: a * R + y,
+            "c": block.Control(
+                ["m"], lower_bound=lambda m: 0.01, upper_bound=lambda m: m, agent="ag"
+            ),
+            "d": block.Control(
+                ["m"], lower_bound=lambda m: 0.01, upper_bound=lambda m: m, agent="ag"
+            ),
+            "a": lambda m, c, d: m - c - d,
+            "u": lambda c, d: torch.log(c) + torch.log(d),
+        },
+        reward={"u": "ag"},
+    )
+    return bellman.BellmanPeriod(blk, "beta", {"R": 1.04, "y": 1.0, "beta": 0.95})
+
+
+class TestHeldDecisionRules:
+    """``other_dr`` holds the controls a loss is not training."""
+
+    def test_a_held_rule_enters_the_objective(self):
+        """case_10 rewards ``-(a - c)**2 - (k - d)**2`` with ``k = 3``, so the
+        held rule for ``d`` moves the objective by a known amount and the
+        trained control's optimum is unaffected by it."""
+        givens = grid.Grid.from_dict({"a": torch.linspace(-2, 2, 5)})
+        optimal_c = {"c": lambda a: a}
+
+        def at(d_value):
+            held = {"d": lambda: torch.tensor(float(d_value))}
+            loss_fn = EstimatedDiscountedLifetimeRewardLoss(
+                case_10["bp"], big_t=1, other_dr=held
+            )
+            return loss_fn(optimal_c, givens).mean().item()
+
+        assert at(3) == 0.0
+        assert at(0) == 9.0
+
+    def test_only_a_trained_controls_residual_is_summed(self):
+        """A held rule is not asserted to be optimal, so its Euler residual is
+        not part of the loss -- while the control itself still enters the
+        transition, which is what makes the two halves add up."""
+        period = _two_control_period()
+        givens = grid.Grid.from_dict({"a": torch.linspace(0.5, 3.0, 6)})
+        rule_c = lambda m: 0.3 * m  # noqa: E731
+        rule_d = lambda m: 0.25 * m  # noqa: E731
+
+        both = EulerEquationLoss(period)({"c": rule_c, "d": rule_d}, givens)
+        only_c = EulerEquationLoss(period, other_dr={"d": rule_d})(
+            {"c": rule_c}, givens
+        )
+        only_d = EulerEquationLoss(period, other_dr={"c": rule_c})(
+            {"d": rule_d}, givens
+        )
+
+        assert torch.equal(only_c + only_d, both)
+        assert not torch.equal(only_c, both)
+
+    def test_a_decision_function_cannot_be_merged_into(self):
+        """A decision function takes the arrival states, shocks and calibration
+        in total, so there is no per-control key to merge a held rule under."""
+        loss_fn = EstimatedDiscountedLifetimeRewardLoss(
+            case_10["bp"], big_t=1, other_dr={"d": lambda: torch.tensor(3.0)}
+        )
+        givens = grid.Grid.from_dict({"a": torch.linspace(-2, 2, 5)})
+
+        with pytest.raises(TypeError, match="decision RULES"):
+            loss_fn(lambda states, shocks, parameters: {"c": states["a"]}, givens)

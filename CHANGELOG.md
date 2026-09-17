@@ -170,6 +170,14 @@ and this project adheres to
 
 ### Added
 
+- `other_dr` on `EstimatedDiscountedLifetimeRewardLoss`, `BellmanEquationLoss`
+  and `EulerEquationLoss`, holding the controls a loss is not training at their
+  rules. All five losses now take it, so a network can serve a best response
+  under a schedule. Held controls enter the transition and the reward; their
+  first-order and Euler residuals do not, since a held rule is not asserted to
+  be optimal. Supplying them requires the trained controls to arrive as a dict
+  of decision rules rather than a decision function.
+
 - `skagent.parser.validate_block` refuses a block document whose keys are not a
   block's keys. A section indented one level too deep is valid YAML -- it
   becomes a variable of the section above it -- so the block loses that whole

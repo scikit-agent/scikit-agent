@@ -109,6 +109,44 @@ def _prepare_loss_inputs(
     return states, shock_vals, fresh_dr
 
 
+def _merge_other_dr(dr, other_dr):
+    """Merge *other_dr* under the rules being trained.
+
+    Returns ``(rules, trained)``, where *rules* is what the estimators are
+    called with and *trained* names the controls whose optimality the loss
+    asserts -- or ``None`` when *other_dr* is empty, which leaves *dr* and the
+    residual set exactly as they were.
+
+    Parameters
+    ----------
+    dr : dict of callable, or callable
+        Decision rules for the controls being trained, keyed by control symbol.
+        A decision FUNCTION, which takes the arrival states, shocks and
+        calibration in total, is accepted only when *other_dr* is empty: there
+        is nothing to merge one into.
+    other_dr : dict of callable
+        Decision rules for the controls being held fixed.
+
+    Raises
+    ------
+    TypeError
+        If *dr* is a decision function and *other_dr* is non-empty.
+    """
+    if not other_dr:
+        return dr, None
+    if callable(dr):
+        raise TypeError(
+            "other_dr holds the controls this loss is not training at their "
+            "rules, which requires the trained controls to arrive as a dict "
+            "of decision RULES keyed by control symbol; got a decision "
+            "function, which takes the arrival states, shocks and calibration "
+            "in total and so cannot be merged into. Pass "
+            "BlockPolicyNet.get_decision_rule() rather than "
+            "get_decision_function()."
+        )
+    return {**other_dr, **dr}, set(dr)
+
+
 class CustomLoss:
     """
     A custom loss function that computes the negative reward for a block,
@@ -233,16 +271,21 @@ class EstimatedDiscountedLifetimeRewardLoss:
         discounted over *big_t* periods. Required on a block whose utilities
         have more than one owner, since without it the loss maximizes the sum of
         every agent's reward -- a planner's objective, and no player's.
+    other_dr : dict of callable, optional
+        Decision rules for the controls this loss is not training, held fixed.
+        Supplying them requires *dr* to arrive as a dict of decision rules,
+        since a decision function has no per-control key to merge them under.
     """
 
-    def __init__(self, bellman_period, *, big_t, agent=None):
+    def __init__(self, bellman_period, *, big_t, agent=None, other_dr=None):
         self.bellman_period = bellman_period
         self.parameters = bellman_period.calibration
         self.arrival_variables = self.bellman_period.arrival_states
         self.big_t = big_t
         self.agent = agent
+        self.other_dr = other_dr if other_dr is not None else {}
 
-    def __call__(self, df: Callable, input_grid: Grid):
+    def __call__(self, dr: dict[str, Callable] | Callable, input_grid: Grid):
         # convoluted
         shock_vars = self.bellman_period.get_shocks()
         big_t_shock_syms = sum(
@@ -265,9 +308,11 @@ class EstimatedDiscountedLifetimeRewardLoss:
             for sym in shock_vars
         }
 
+        rules, _trained = _merge_other_dr(dr, self.other_dr)
+
         edlr = estimate_discounted_lifetime_reward(
             self.bellman_period,
-            df,
+            rules,
             {sym: given_vals[sym] for sym in self.arrival_variables},
             self.big_t,
             parameters=self.parameters,
@@ -291,6 +336,7 @@ class _EquationLossBase(ABC):
         bellman_period: BellmanPeriod,
         *,
         agent: str | None = None,
+        other_dr: dict[str, Callable] | None = None,
     ) -> None:
         from skagent.bellman import BellmanPeriod as _BellmanPeriod
 
@@ -308,12 +354,15 @@ class _EquationLossBase(ABC):
         self.shock_syms: list[str] = list(shock_vars.keys())
 
         self.agent: str | None = agent
+        self.other_dr: dict[str, Callable] = other_dr if other_dr is not None else {}
 
         # Validate that reward variables exist (raises ValueError with agent context)
         bellman_period.get_reward_sym(agent)
 
     @abstractmethod
-    def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor: ...
+    def __call__(
+        self, dr: dict[str, Callable] | Callable, input_grid: Grid
+    ) -> torch.Tensor: ...
 
     def _extract_states_and_shocks(
         self, input_grid: Grid
@@ -376,6 +425,10 @@ class BellmanEquationLoss(_EquationLossBase):
         Model parameters for calibration
     agent : str, optional
         Agent identifier for rewards
+    other_dr : dict of callable, optional
+        Decision rules for the controls this loss is not training, held fixed.
+        They enter the transition and the reward; the first-order conditions
+        *foc_weight* weighs are asserted only of the trained controls.
     """
 
     def __init__(
@@ -385,8 +438,9 @@ class BellmanEquationLoss(_EquationLossBase):
         value_function: dict[str, Callable] | Callable,
         agent: str | None = None,
         foc_weight: float = 0.0,
+        other_dr: dict[str, Callable] | None = None,
     ) -> None:
-        super().__init__(bellman_period, agent=agent)
+        super().__init__(bellman_period, agent=agent, other_dr=other_dr)
         if not callable(value_function) and not isinstance(value_function, dict):
             raise TypeError(
                 "value_function must be a callable or a dict mapping agent "
@@ -397,14 +451,17 @@ class BellmanEquationLoss(_EquationLossBase):
         self.value_function = value_function
         self.foc_weight = foc_weight
 
-    def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor:
+    def __call__(
+        self, dr: dict[str, Callable] | Callable, input_grid: Grid
+    ) -> torch.Tensor:
         """
         Bellman equation loss function.
 
         Parameters
         ----------
-        df : callable
-            Decision function from policy network
+        dr : dict of callable, or callable
+            Decision rules for the controls being trained, keyed by control
+            symbol, or a decision function covering them
         input_grid : Grid
             Grid containing current states and two independent shock realizations:
             - {shock_sym}_0: period t shocks
@@ -416,11 +473,12 @@ class BellmanEquationLoss(_EquationLossBase):
             Bellman equation residual loss (squared)
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
+        rules, trained = _merge_other_dr(dr, self.other_dr)
 
         bellman_residual = estimate_bellman_residual(
             self.bellman_period,
             self.value_function,
-            df,
+            rules,
             states_t,
             shocks,
             self.parameters,
@@ -433,12 +491,16 @@ class BellmanEquationLoss(_EquationLossBase):
             foc_residuals = estimate_bellman_foc_residual(
                 self.bellman_period,
                 self.value_function,
-                df,
+                rules,
                 states_t,
                 shocks,
                 self.parameters,
                 self.agent,
             )
+            if trained is not None:
+                foc_residuals = {
+                    sym: r for sym, r in foc_residuals.items() if sym in trained
+                }
             foc_loss = sum((r**2 for r in foc_residuals.values()), 0.0)
             loss = loss + self.foc_weight * foc_loss
 
@@ -547,6 +609,11 @@ class EulerEquationLoss(_EquationLossBase):
     constrained : bool, optional
         If True, use Fischer-Burmeister or one-sided loss for upper-bound
         constrained controls (default: False).
+    other_dr : dict of callable, optional
+        Decision rules for the controls this loss is not training, held fixed.
+        They enter the transition and the reward; a Euler residual is summed
+        only for the trained controls, since a held-fixed rule is not asserted
+        to be optimal.
 
     Examples
     --------
@@ -561,8 +628,9 @@ class EulerEquationLoss(_EquationLossBase):
         agent: str | None = None,
         weight: float = 1.0,
         constrained: bool = False,
+        other_dr: dict[str, Callable] | None = None,
     ) -> None:
-        super().__init__(bellman_period, agent=agent)
+        super().__init__(bellman_period, agent=agent, other_dr=other_dr)
 
         if weight <= 0:
             raise ValueError(f"weight must be > 0, got {weight}")
@@ -642,7 +710,9 @@ class EulerEquationLoss(_EquationLossBase):
 
         return controls_t[control_sym] - lb_value
 
-    def _aio_residual_pair(self, df: Callable, states_t: dict, shocks: dict):
+    def _aio_residual_pair(
+        self, dr: dict[str, Callable] | Callable, states_t: dict, shocks: dict
+    ):
         """Two Euler residuals sharing the current control, at two independent
         next-period shock draws (MMW JME'21 all-in-one operator, Def. 2.7).
 
@@ -659,7 +729,7 @@ class EulerEquationLoss(_EquationLossBase):
         # Current control: computed once and shared by both factors so the
         # all-in-one product cancels the cross terms to (E[f])**2.
         controls_t = self.bellman_period.compute_controls(
-            df, states_t, shocks=shocks_t, parameters=self.parameters
+            dr, states_t, shocks=shocks_t, parameters=self.parameters
         )
         # Second, independent next-period shock draw (the input grid supplies
         # the first). For deterministic models this is empty and the two
@@ -676,7 +746,7 @@ class EulerEquationLoss(_EquationLossBase):
         shocks_b.update({f"{s}_1": shocks_next_b[s] for s in shocks_next_b})
         res_a = estimate_euler_residual(
             self.bellman_period,
-            df,
+            dr,
             states_t,
             shocks_a,
             self.parameters,
@@ -685,7 +755,7 @@ class EulerEquationLoss(_EquationLossBase):
         )
         res_b = estimate_euler_residual(
             self.bellman_period,
-            df,
+            dr,
             states_t,
             shocks_b,
             self.parameters,
@@ -694,15 +764,18 @@ class EulerEquationLoss(_EquationLossBase):
         )
         return res_a, res_b, controls_t, shocks_t
 
-    def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor:
+    def __call__(
+        self, dr: dict[str, Callable] | Callable, input_grid: Grid
+    ) -> torch.Tensor:
         """
         Euler equation loss function using the AiO expectation operator.
 
         Parameters
         ----------
-        df : callable
-            Decision function from policy network.
-            Signature: df(states_t, shocks_t, parameters) -> controls_t
+        dr : dict of callable, or callable
+            Decision rules for the controls being trained, keyed by control
+            symbol, or a decision function
+            ``df(states_t, shocks_t, parameters) -> controls_t``
         input_grid : Grid
             Grid containing current states and two independent shock realizations:
             - {shock_sym}_0: shocks for transitions t → t+1
@@ -723,12 +796,16 @@ class EulerEquationLoss(_EquationLossBase):
         the squared residual, L = f(ε₀, ε₁)².
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
+        rules, trained = _merge_other_dr(dr, self.other_dr)
 
         # All-in-one operator: form the product of two residuals at independent
         # next-period draws, never the square of a single draw (MMW eq. 12).
         res_a, res_b, controls_t, shocks_t = self._aio_residual_pair(
-            df, states_t, shocks
+            rules, states_t, shocks
         )
+        if trained is not None:
+            res_a = {sym: r for sym, r in res_a.items() if sym in trained}
+            res_b = {sym: r for sym, r in res_b.items() if sym in trained}
 
         if self.constrained:
             total = 0.0
