@@ -12,6 +12,7 @@ import skagent.models.cournot as cournot
 import skagent.models.macid as macid
 import skagent.models.privacy as privacy
 from skagent.solver import (
+    _blocks_by_class,
     ExactBestResponse,
     NeuralBestResponse,
     project,
@@ -458,3 +459,51 @@ class TestARivalsPrivateDrawIsIntegratedRatherThanPinned:
 
         with pytest.raises(ValueError, match="Grid it, pin it, or declare it"):
             method.rule_distance(lambda x: x, lambda x: x, ["not_a_symbol"])
+
+
+class TestBlocksAreLaidOutByEntityClass:
+    """A block declares one class, so classified symbols imply a block tree."""
+
+    def test_contiguous_runs_of_one_class_become_one_block(self):
+        blocks = _blocks_by_class(
+            "layout",
+            [
+                ("theta", None, "seller"),
+                ("S", lambda theta: theta, "seller"),
+                ("p", lambda S: S, None),
+                ("u", lambda p: p, "seller"),
+            ],
+            shocks={"theta": "a declaration"},
+            rewards={"u": "seller"},
+        )
+
+        assert [list(b.get_dynamics()) for b in blocks] == [["S"], ["p"], ["u"]]
+        assert [b.entity.name if b.entity else None for b in blocks] == [
+            "seller",
+            None,
+            "seller",
+        ]
+        # A shock is declared by the block that holds its symbol, and a reward
+        # travels with the symbol that carries it.
+        assert blocks[0].get_shocks() == {"theta": "a declaration"}
+        assert blocks[2].reward == {"u": "seller"}
+
+    def test_the_order_survives_the_split(self):
+        # The point of keeping runs contiguous: an equation that has to run
+        # before another still does, whichever class each belongs to.
+        blocks = _blocks_by_class(
+            "layout",
+            [
+                ("first", lambda: 1, None),
+                ("second", lambda first: first, "plate"),
+                ("third", lambda second: second, None),
+            ],
+            shocks={},
+            rewards={},
+        )
+
+        assert [sym for b in blocks for sym in b.get_dynamics()] == [
+            "first",
+            "second",
+            "third",
+        ]

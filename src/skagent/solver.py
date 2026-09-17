@@ -1,6 +1,7 @@
 import inspect
 import logging
 import numbers
+from itertools import groupby
 
 import numpy as np
 
@@ -130,6 +131,54 @@ def _per_instance(equation, joined):
     return per_instance
 
 
+def _blocks_by_class(name, layout, shocks, rewards):
+    """One block per contiguous run of symbols sharing an entity class.
+
+    The inverse of :meth:`skagent.block.Block.signatures`: signatures read a
+    symbol's entity class off the block tree, and this builds the tree a set of
+    classified symbols implies. A block declares one class for everything in it,
+    so symbols of different classes need different blocks, and the runs are kept
+    CONTIGUOUS so that the order the caller laid out survives the split -- an
+    equation that has to run before another still does, whichever class each of
+    them belongs to.
+
+    Parameters
+    ----------
+    name : str
+        Stem for the sub-blocks' names, which are numbered from it.
+    layout : sequence of (str, callable or None, str or None)
+        Each symbol the tree declares, in the order it runs: its name, its
+        equation -- ``None`` for a shock, which is declared rather than
+        computed -- and the entity class it is one value per instance of, or
+        ``None`` where it is a single value.
+    shocks : Mapping
+        Shock declarations, keyed by the names *layout* uses. Each is placed in
+        the block that declares its symbol.
+    rewards : Mapping
+        Agent attributions, keyed by the names *layout* uses, for whichever
+        symbols carry one.
+
+    Returns
+    -------
+    list of skagent.block.DBlock
+    """
+    blocks = []
+    for entity_class, run in groupby(layout, key=lambda item: item[2]):
+        symbols = [(sym, equation) for sym, equation, _ in run]
+        blocks.append(
+            DBlock(
+                name=f"{name}_{len(blocks)}",
+                entity=Entity(entity_class) if entity_class else None,
+                shocks={sym: shocks[sym] for sym, _ in symbols if sym in shocks},
+                dynamics={
+                    sym: equation for sym, equation in symbols if equation is not None
+                },
+                reward={sym: rewards[sym] for sym, _ in symbols if sym in rewards},
+            )
+        )
+    return blocks
+
+
 def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     """One instance's problem, with the rest of its class beside it.
 
@@ -214,7 +263,7 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     other = {sym: sym + other_suffix for sym in per_instance}
 
     rivals = entity + other_suffix
-    shocks = block.get_shocks()
+    declarations = block.get_shocks()
 
     # Every reward the projection has, keyed by the symbol that carries it. The
     # two sides' rewards go to suffixed agent roles, so a solver told which
@@ -226,85 +275,77 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
         for side, suffix in ((actor, actor_suffix), (other, other_suffix))
     } | {sym: owner for sym, owner in block.reward.items() if sym not in per_instance}
 
-    segments = []
+    shocks = {
+        other[sym]: declaration
+        for sym, declaration in declarations.items()
+        if sym in per_instance
+    } | {
+        (actor[sym] if sym in per_instance else sym): declaration
+        for sym, declaration in declarations.items()
+    }
 
-    def segment(dynamics, *, entity_class=None, shocks=None):
-        """One sub-block of the projection, in the order it has to run."""
-        if not dynamics and not shocks:
-            return
-        segments.append(
-            DBlock(
-                name=f"{block.name}_projected_{len(segments)}",
-                entity=Entity(entity_class) if entity_class else None,
-                shocks=dict(shocks or {}),
-                dynamics=dict(dynamics),
-                reward={s: rewards[s] for s in dynamics if s in rewards},
-            )
+    def copied(equation, side, suffix):
+        """One side's copy of an author's per-instance equation."""
+        return (
+            _copy_control(equation, side, suffix)
+            if isinstance(equation, Control)
+            else _renamed(equation, side)
         )
 
-    # The rivals' symbols carry the class; the solved instance's do not, since
-    # it is one instance and not a population of one. So the two sides cannot
-    # share a block, and the order the author wrote has to survive the split:
-    # a per-instance equation may come before an aggregate and another after.
-    actor_run, other_run = {}, {}
-
-    def flush():
-        # The two sides read only their own symbols, so their order relative to
-        # each other is free; both must precede whatever rejoins them.
-        nonlocal actor_run, other_run
-        segment(other_run, entity_class=rivals)
-        segment(actor_run)
-        actor_run, other_run = {}, {}
-
-    segment(
-        {},
-        entity_class=rivals,
-        shocks={other[s]: d for s, d in shocks.items() if s in per_instance},
-    )
-    segment(
-        {},
-        shocks={(actor[s] if s in per_instance else s): d for s, d in shocks.items()},
-    )
+    # The layout: every symbol the projection declares, in the order it has to
+    # run, beside the entity class it belongs to. The rivals' symbols carry a
+    # class of their own and the solved instance's carry none, so the two sides
+    # cannot share a block; a rejoined symbol carries the class the author
+    # declared. Shocks lead, since nothing they read is in the block.
+    layout = [(other[sym], None, rivals) for sym in declarations if sym in per_instance]
+    layout += [
+        (actor[sym] if sym in per_instance else sym, None, None) for sym in declarations
+    ]
 
     joined = set()
-    for sym, equation in block.get_dynamics().items():
-        if sym in per_instance:
-            actor_run[actor[sym]] = (
-                _copy_control(equation, actor, actor_suffix)
-                if isinstance(equation, Control)
-                else _renamed(equation, actor)
-            )
-            other_run[other[sym]] = (
-                _copy_control(equation, other, other_suffix)
-                if isinstance(equation, Control)
-                else _renamed(equation, other)
-            )
+    for per_instance_run, run in groupby(
+        block.get_dynamics().items(), key=lambda item: item[0] in per_instance
+    ):
+        run = list(run)
+        if per_instance_run:
+            # Both sides before whatever rejoins them, and each side in the
+            # author's order, since a later equation may read an earlier one.
+            layout += [
+                (other[sym], copied(eq, other, other_suffix), rivals) for sym, eq in run
+            ]
+            layout += [
+                (actor[sym], copied(eq, actor, actor_suffix), None) for sym, eq in run
+            ]
             continue
-        # Axis-free. Rejoin whatever it reads out of the class, then copy it as
-        # the author wrote it.
-        flush()
-        # A rejoined symbol is one value per member of the WHOLE class, which is
-        # the class the author declared, at the size the author gave it. So the
-        # joins carry the original entity and the aggregate reduces over it --
-        # the same reduction, over the same class, that the author wrote.
-        rejoin = {}
-        for argument, _reduced, _broadcast in crossings.get(sym, []):
-            if argument not in joined:
-                rejoin[argument] = _joining_equation(
-                    actor[argument], other[argument], size - 1
-                )
+        for sym, equation in run:
+            # Rejoin whatever this equation reads out of the class, then copy it
+            # as the author wrote it. A rejoined symbol is one value per member
+            # of the WHOLE class, so it carries the author's own class at the
+            # author's own size and the aggregate reduces over the same class it
+            # always did.
+            for argument, _reduced, _broadcast in crossings.get(sym, []):
+                if argument in joined:
+                    continue
                 joined.add(argument)
-        segment(rejoin, entity_class=entity)
-        # A DECISION over the class needs no per-instance wrapper: its rule is
-        # supplied rather than evaluated here, and the joins above have already
-        # restored the symbols its information set names. Such a rule reads a
-        # whole class, which is what no policy network in this library is
-        # shaped for, so it is supplied rather than solved.
-        needs_wrapper = sym in crossings and not isinstance(equation, Control)
-        segment({sym: _per_instance(equation, joined) if needs_wrapper else equation})
-    flush()
+                layout.append(
+                    (
+                        argument,
+                        _joining_equation(actor[argument], other[argument], size - 1),
+                        entity,
+                    )
+                )
+            layout.append(
+                (
+                    sym,
+                    _per_instance(equation, joined) if sym in crossings else equation,
+                    None,
+                )
+            )
 
-    projected = RBlock(name=f"{block.name}_projected", blocks=segments)
+    projected = RBlock(
+        name=f"{block.name}_projected",
+        blocks=_blocks_by_class(f"{block.name}_projected", layout, shocks, rewards),
+    )
     return GroundedBlock(
         projected, dict(calibration) | {rivals: size - 1}, rng=ground.rng
     )
