@@ -16,7 +16,7 @@ from skagent.relevance import Plate, RelevanceGraph, shock_roles
 from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
-from typing import Any, Callable, Mapping, List, Union
+from typing import Any, Callable, Collection, Mapping, List, Union
 from skagent.rule import Rule, format_rule
 from skagent.utils import param_names, takes_arguments
 
@@ -249,6 +249,7 @@ def simulate_dynamics(
     pre: Mapping[str, Any],
     dr: Mapping[str, Callable],
     shapes: Mapping[str, tuple] | None = None,
+    bridges: Collection[str] = (),
 ):
     """
     From the beginning-of-period state (pre), follow the dynamics,
@@ -272,18 +273,45 @@ def simulate_dynamics(
         is produced, so that a later equation reducing over it is handed the
         array it expects.
 
+    bridges : Collection[str], optional
+        Symbols whose value becomes a per-instance arrival state next period.
+        These may NOT broadcast: one value standing for a whole class is a
+        cross-section replaced by its own mean, which every aggregate of the
+        result agrees with, so nothing downstream can report it.
 
     dr : Mapping[str, Callable]
         Decision rules for all the Control variables in the dynamics.
+
+    Raises
+    ------
+    ValueError
+        If a symbol named in *bridges* returns one value where its shape calls
+        for an array.
     """
     vals = pre.copy()
 
     def broadcast(sym):
-        """Widen a single returned value to *sym*'s declared shape."""
+        """Widen a single returned value to *sym*'s declared shape.
+
+        Unless *sym* is a bridge, where the same value is refused instead.
+        """
         if shapes is None:
             return
         shape = shapes.get(sym)
         if shape and np.ndim(vals[sym]) == 0:
+            if sym in bridges:
+                raise ValueError(
+                    f"the equation for {sym!r} returned one value where its "
+                    f"class calls for {shape[0]}, and {sym!r} is the arrival "
+                    f"state that value becomes next period. An ordinary "
+                    f"per-instance equation may return one value and broadcast; "
+                    f"this one may not, because at the bridge a broadcast "
+                    f"replaces the cross-section with a single number while "
+                    f"leaving every aggregate of it unchanged -- the model goes "
+                    f"on producing the same path and no later check can see it. "
+                    f"Return one value per instance; a reduction here is a "
+                    f"representative agent wearing a population's clothes."
+                )
             vals[sym] = np.full(shape, vals[sym])
 
     for sym in dynamics:

@@ -165,6 +165,14 @@ class Simulator:
         self.entities = block.entities()
         self.entity_sizes = self._resolve_entity_sizes(calibration)
         self.crossings = block.crossings()
+        # The bridge: arrival states that are attributes of an entity class.
+        # Their next-period value may not broadcast, which every other
+        # per-instance equation may; see ``_validate_period``.
+        self.plated_arrival_states = {
+            sym
+            for sym in block.get_arrival_states(calibration)
+            if self.signatures.get(sym, frozenset())
+        }
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
@@ -348,7 +356,13 @@ class Simulator:
                 for sym, value in pre.items()
             }
             per_sample.append(
-                simulate_dynamics(self.dynamics, sliced, self.dr, shapes=shapes)
+                simulate_dynamics(
+                    self.dynamics,
+                    sliced,
+                    self.dr,
+                    shapes=shapes,
+                    bridges=self.plated_arrival_states,
+                )
             )
 
         post = {}
@@ -367,6 +381,11 @@ class Simulator:
         over one is the error this whole feature exists to catch, and it is
         caught here rather than several steps downstream where the shape happens
         to stop broadcasting.
+
+        The BRIDGE is checked upstream of this, in ``simulate_dynamics``,
+        because the broadcast that hides a collapsed bridge is applied as the
+        value is produced -- by the time a period's values arrive here they
+        already carry their declared shape.
         """
         for var in self.vars:
             if var not in post:
