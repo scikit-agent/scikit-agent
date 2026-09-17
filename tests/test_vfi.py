@@ -1189,3 +1189,53 @@ class test_vfi_stateless(unittest.TestCase):
         message = str(caught.exception)
         self.assertIn("TabularBestResponseSolver", message)
         self.assertIn("NeuralBestResponse", message)
+
+
+class TestAPinnedInformationSetAxis:
+    """A grid that gives an information-set variable one point.
+
+    That is how a model says the rule need not vary along it -- the variable is
+    observed, and the optimum is expected not to depend on it. One point fixes a
+    level and says nothing about a slope, so the rule is constant there.
+    """
+
+    def _rule(self, b_grid):
+        block = DBlock(
+            name="pinned",
+            shocks={},
+            dynamics={
+                "x": Control(["b", "p"], lower_bound=0.0, upper_bound=1.0, agent="ag"),
+                "u": lambda x, p: -((x - p) ** 2),
+            },
+            reward={"u": "ag"},
+        )
+        rules, _, _ = vfi.solve_step(
+            BellmanPeriod(block, None, {}),
+            lambda states, shocks, parameters: 0.0,
+            {"p": np.linspace(0.0, 1.0, 5), "b": b_grid},
+        )
+        return rules["x"]
+
+    def test_a_one_point_axis_gives_the_fitted_value_not_nan(self):
+        """The scalar path is the one that divided by a zero spread; the batched
+        path answered correctly throughout, so a test on arrays alone would not
+        have seen this."""
+        rule = self._rule(np.array([0.0]))
+        assert rule(0.0, 0.5) == pytest.approx(0.5)
+
+    def test_the_rule_ignores_the_variable_its_axis_pins(self):
+        rule = self._rule(np.array([0.0]))
+        assert rule(0.0, 0.5) == rule(99.0, 0.5)
+
+    def test_the_two_call_shapes_agree(self):
+        """They disagreed before: one returned the answer and the other NaN."""
+        rule = self._rule(np.array([0.0]))
+        scalar = [rule(0.0, p) for p in (0.25, 0.75)]
+        batched = rule(np.zeros(2), np.array([0.25, 0.75]))
+        assert np.allclose(scalar, batched)
+
+    def test_an_axis_with_points_still_interpolates(self):
+        """The pinning is the degenerate case only; nothing changes otherwise."""
+        rule = self._rule(np.array([-1.0, 1.0]))
+        assert rule(0.0, 0.5) == pytest.approx(0.5)
+        assert np.allclose(rule(np.zeros(2), np.array([0.25, 0.75])), [0.25, 0.75])

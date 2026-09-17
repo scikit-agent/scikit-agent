@@ -61,7 +61,10 @@ def ar_from_data(da):
     da : xarray.DataArray
         The fitted policy, with one dimension per information-set variable in
         ``control.iset`` order. A zero-dimensional array encodes a constant
-        rule (empty information set).
+        rule (empty information set). A dimension of length one encodes a rule
+        constant along that variable: one grid point fixes a level and says
+        nothing about a slope, so the rule takes the value and ignores the
+        argument.
 
     Returns
     -------
@@ -88,19 +91,36 @@ def ar_from_data(da):
             # empty information set: a constant rule
             return da.values.tolist()
 
+        # A length-one axis carries a level and no slope, so there is nothing
+        # to interpolate along it and the fitted rule is constant there. It is
+        # dropped rather than interpolated: interpolation would divide by a zero
+        # spread and return NaN for every query, including at the grid point.
+        pinned = [dim for dim in dims if da.sizes[dim] == 1]
+        fitted = da.isel({dim: 0 for dim in pinned}, drop=True) if pinned else da
+        varying = [(dim, arg) for dim, arg in zip(dims, args) if dim not in pinned]
+
         batched = any(np.ndim(a) > 0 for a in args)
+        if not varying:
+            value = fitted.values.tolist()
+            if not batched:
+                return value
+            return np.full(max(np.size(a) for a in args), value)
+
         if batched:
             # vectorized (pointwise) interpolation: share a single dimension
             # across all coordinate indexers so xarray does not take the outer
             # product of the inputs.
+            length = max(np.size(a) for a in args)
             coords = {
-                dim: xr.DataArray(np.asarray(arg).ravel(), dims="_point")
-                for dim, arg in zip(dims, args)
+                dim: xr.DataArray(
+                    np.broadcast_to(np.asarray(arg).ravel(), (length,)), dims="_point"
+                )
+                for dim, arg in varying
             }
-            return da.interp(**coords).values
+            return fitted.interp(**coords).values
 
-        coords = {dim: arg for dim, arg in zip(dims, args)}
-        return da.interp(**coords).values.tolist()
+        coords = {dim: arg for dim, arg in varying}
+        return fitted.interp(**coords).values.tolist()
 
     return ar
 

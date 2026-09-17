@@ -32,6 +32,12 @@ and this project adheres to
 
 ### Fixed
 
+- A VFI decision rule whose grid gives an information-set variable a single
+  point is now constant along that variable, instead of returning NaN. One point
+  fixes a level and says nothing about a slope, so interpolating along the axis
+  divided by a zero spread. The NaN reached only the scalar calling path, so the
+  same rule answered correctly when handed arrays.
+
 - `Block.relevance_graph` answers on a projected block again. A projection
   declares the class beside the rest of itself, so it declares two, and the
   expansion step refused it as a model of several classes. An expansion is now
