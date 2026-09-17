@@ -8,7 +8,7 @@ import skagent.ann as ann
 import skagent.algos.vfi as vfi
 import skagent.bellman as bellman_module
 import skagent.loss as loss_module
-from skagent.block import Control, DBlock
+from skagent.block import Control, DBlock, Entity, RBlock
 from skagent.utils import param_names
 
 logger = logging.getLogger(__name__)
@@ -146,18 +146,22 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     told which agent it serves maximizes one instance's payoff rather than the
     class's total.
 
-    This first scope has two properties, and both are narrower than the
-    transform has to remain:
+    **The rest of the class stays a population.** The others are declared as an
+    entity class of their own, named for the original and sized one short of
+    it, so their symbols are one value per rival rather than one value shared
+    by all of them. That is what lets rivals with private draws differ from one
+    another: a rule they share is still evaluated once per rival, and the
+    aggregate reads the spread of what they do. A rejoined symbol carries the
+    class the author declared, at the size the author gave it, so the author's
+    own aggregation reduces over the same class it always did.
 
-    - **The other instances share one broadcast rule.** The projected block
-      holds a single control for the whole remainder of the class, so the
-      equilibrium sought is a symmetric one. A class of genuinely distinct
-      rivals is expressible in this shape, but it is not built here.
-    - **The projected block declares no entity.** The split lives in the shapes
-      -- the solved instance is a scalar, the others broadcast to ``N - 1`` --
-      rather than in two declarations, because the solvers refuse a block that
-      declares an entity class at all, and re-keying that refusal is a separate
-      decision.
+    The solved instance's symbols carry no class, because it is one instance
+    rather than a population of one, and that asymmetry is what the two sides
+    are for.
+
+    **The other instances share one rule**, so the equilibrium sought is a
+    symmetric one. A class of genuinely distinct rules is expressible in this
+    shape but is not built here.
 
     Parameters
     ----------
@@ -171,8 +175,8 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     Returns
     -------
     skagent.ground.GroundedBlock
-        The projected problem, carrying two controls: the solved instance's and
-        the others'.
+        The projected problem, carrying two controls -- the solved instance's
+        and the others' -- and a calibration that sizes the rivals' class.
 
     Raises
     ------
@@ -209,53 +213,101 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     actor = {sym: sym + actor_suffix for sym in per_instance}
     other = {sym: sym + other_suffix for sym in per_instance}
 
-    dynamics, joined = {}, set()
+    rivals = entity + other_suffix
+    shocks = block.get_shocks()
+
+    # Every reward the projection has, keyed by the symbol that carries it. The
+    # two sides' rewards go to suffixed agent roles, so a solver told which
+    # agent it serves maximizes one instance's payoff and not the class's total.
+    rewards = {
+        side[sym]: owner + suffix
+        for sym, owner in block.reward.items()
+        if sym in per_instance
+        for side, suffix in ((actor, actor_suffix), (other, other_suffix))
+    } | {sym: owner for sym, owner in block.reward.items() if sym not in per_instance}
+
+    segments = []
+
+    def segment(dynamics, *, entity_class=None, shocks=None):
+        """One sub-block of the projection, in the order it has to run."""
+        if not dynamics and not shocks:
+            return
+        segments.append(
+            DBlock(
+                name=f"{block.name}_projected_{len(segments)}",
+                entity=Entity(entity_class) if entity_class else None,
+                shocks=dict(shocks or {}),
+                dynamics=dict(dynamics),
+                reward={s: rewards[s] for s in dynamics if s in rewards},
+            )
+        )
+
+    # The rivals' symbols carry the class; the solved instance's do not, since
+    # it is one instance and not a population of one. So the two sides cannot
+    # share a block, and the order the author wrote has to survive the split:
+    # a per-instance equation may come before an aggregate and another after.
+    actor_run, other_run = {}, {}
+
+    def flush():
+        # The two sides read only their own symbols, so their order relative to
+        # each other is free; both must precede whatever rejoins them.
+        nonlocal actor_run, other_run
+        segment(other_run, entity_class=rivals)
+        segment(actor_run)
+        actor_run, other_run = {}, {}
+
+    segment(
+        {},
+        entity_class=rivals,
+        shocks={other[s]: d for s, d in shocks.items() if s in per_instance},
+    )
+    segment(
+        {},
+        shocks={(actor[s] if s in per_instance else s): d for s, d in shocks.items()},
+    )
+
+    joined = set()
     for sym, equation in block.get_dynamics().items():
         if sym in per_instance:
-            for side, suffix in ((actor, actor_suffix), (other, other_suffix)):
-                dynamics[side[sym]] = (
-                    _copy_control(equation, side, suffix)
-                    if isinstance(equation, Control)
-                    else _renamed(equation, side)
-                )
+            actor_run[actor[sym]] = (
+                _copy_control(equation, actor, actor_suffix)
+                if isinstance(equation, Control)
+                else _renamed(equation, actor)
+            )
+            other_run[other[sym]] = (
+                _copy_control(equation, other, other_suffix)
+                if isinstance(equation, Control)
+                else _renamed(equation, other)
+            )
             continue
         # Axis-free. Rejoin whatever it reads out of the class, then copy it as
         # the author wrote it.
+        flush()
+        # A rejoined symbol is one value per member of the WHOLE class, which is
+        # the class the author declared, at the size the author gave it. So the
+        # joins carry the original entity and the aggregate reduces over it --
+        # the same reduction, over the same class, that the author wrote.
+        rejoin = {}
         for argument, _reduced, _broadcast in crossings.get(sym, []):
             if argument not in joined:
-                dynamics[argument] = _joining_equation(
+                rejoin[argument] = _joining_equation(
                     actor[argument], other[argument], size - 1
                 )
                 joined.add(argument)
-        if isinstance(equation, Control) or sym not in crossings:
-            # A DECISION over the class needs no per-instance wrapper: its rule
-            # is supplied rather than evaluated here, and the joins above have
-            # already restored the symbols its information set names. Such a
-            # rule reads a whole class, which is what no policy network in this
-            # library is shaped for, so it is supplied rather than solved.
-            dynamics[sym] = equation
-        else:
-            dynamics[sym] = _per_instance(equation, joined)
+        segment(rejoin, entity_class=entity)
+        # A DECISION over the class needs no per-instance wrapper: its rule is
+        # supplied rather than evaluated here, and the joins above have already
+        # restored the symbols its information set names. Such a rule reads a
+        # whole class, which is what no policy network in this library is
+        # shaped for, so it is supplied rather than solved.
+        needs_wrapper = sym in crossings and not isinstance(equation, Control)
+        segment({sym: _per_instance(equation, joined) if needs_wrapper else equation})
+    flush()
 
-    projected = DBlock(
-        name=f"{block.name}_projected",
-        shocks={
-            side[sym] if sym in per_instance else sym: declaration
-            for sym, declaration in block.get_shocks().items()
-            for side in ((actor, other) if sym in per_instance else (actor,))
-        },
-        dynamics=dynamics,
-        reward={
-            side[sym]: owner + suffix
-            for sym, owner in block.reward.items()
-            if sym in per_instance
-            for side, suffix in ((actor, actor_suffix), (other, other_suffix))
-        }
-        | {
-            sym: owner for sym, owner in block.reward.items() if sym not in per_instance
-        },
+    projected = RBlock(name=f"{block.name}_projected", blocks=segments)
+    return GroundedBlock(
+        projected, dict(calibration) | {rivals: size - 1}, rng=ground.rng
     )
-    return GroundedBlock(projected, dict(calibration), rng=ground.rng)
 
 
 def _starting_policies(block):

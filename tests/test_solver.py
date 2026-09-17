@@ -189,21 +189,57 @@ class TestTheProjectionIsDerivedFromTheModel:
     def test_it_splits_the_class_and_joins_it_back(self):
         projected = project(cournot_ground()).block
         # Each per-instance equation copied per side, one synthesized join, and
-        # the aggregating equations left as the author wrote them.
+        # the aggregating equations left as the author wrote them. Both sides
+        # run before what rejoins them, and the payoffs after it.
         assert list(projected.get_dynamics()) == [
-            "q_actor",
             "q_other",
+            "q_actor",
             "q",
             "Q",
             "P",
-            "u_actor",
             "u_other",
+            "u_actor",
         ]
-        assert list(projected.get_shocks()) == ["c_actor", "c_other"]
+        assert sorted(projected.get_shocks()) == ["c_actor", "c_other"]
         # The two sides own their payoffs separately, which is what lets a
         # solver maximize one instance's rather than the class's total.
         assert projected.reward == {"u_actor": "firm_actor", "u_other": "firm_other"}
         assert projected.deciding_agent("q_actor") == "firm_actor"
+
+    def test_the_others_stay_a_population_and_the_solved_instance_does_not(self):
+        # The rest of the class is still several, so it keeps a class of its
+        # own, sized one short of the original. The solved instance is ONE
+        # instance rather than a population of one, so its symbols carry no
+        # class, and that asymmetry is what the two sides are for. A rejoined
+        # symbol is the whole class again, at the size the author gave it.
+        projected = project(cournot_ground(size=3))
+
+        assert sorted(projected.block.entities()) == ["firm", "firm_other"]
+        assert projected.calibration["firm_other"] == 2
+        assert projected.calibration["firm"] == 3
+
+        signatures = projected.block.signatures()
+        assert signatures["q_other"] == frozenset({"firm_other"})
+        assert signatures["c_other"] == frozenset({"firm_other"})
+        assert signatures["q_actor"] == frozenset()
+        assert signatures["q"] == frozenset({"firm"})
+
+    def test_the_authors_own_aggregation_survives_the_split(self):
+        # The population block reports one crossing: the market reading the
+        # firms' quantities. The projection has to still report it, over the
+        # same class, or the model it hands a solver is one with no aggregation
+        # in it at all.
+        population = cournot_ground(size=3)
+        projected = project(population)
+
+        assert population.block.crossings()["Q"][0][:2] == ("q", frozenset({"firm"}))
+        assert projected.block.crossings()["Q"][0][:2] == ("q", frozenset({"firm"}))
+        # And the join is a crossing of its own: the rejoined symbol reads the
+        # rivals' out of their class.
+        assert projected.block.crossings()["q"][0][:2] == (
+            "q_other",
+            frozenset({"firm_other"}),
+        )
 
     @pytest.mark.parametrize(
         "own,rivals,payoff",
@@ -265,9 +301,9 @@ class TestADecisionOverTheWholeClassSurvivesTheProjection:
         # declaration is copied exactly as the author wrote it.
         assert controls["f"].iset == ["c", "d"]
         assert {"c", "d"} <= set(projected.get_dynamics())
-        assert ["c_actor", "c_other"] == [
+        assert ["c_actor", "c_other"] == sorted(
             sym for sym in controls if sym.startswith("c_")
-        ]
+        )
 
 
 class TestTheProjectionRefusesWhatItCannotSplit:
