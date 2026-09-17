@@ -189,12 +189,24 @@ class TabularBestResponseSolver:
 
         # Keyed on the entity DECLARATION rather than on a detected reduction:
         # this refuses more than it strictly must and never less, and it needs
-        # no judgement about which equations reduce. Retiring it needs one of
-        # two things: either a projection hands this solver a block with the
-        # entity resolved away, in which case this never fires and can stay; or
-        # a projection keeps the declaration while resolving the crossing, in
-        # which case this must be re-keyed to the reduction itself first, or it
-        # will refuse the very path it exists to protect.
+        # no judgement about which equations reduce.
+        #
+        # A projected block is the case this over-refuses. Its rivals keep a
+        # class of their own, so this fires on a block whose only decision for
+        # this solver to take -- the solved instance's -- is axis-free with an
+        # axis-free information set. Re-keying to the hazard, as the value
+        # iteration backup's guard is keyed, would let that decision through.
+        #
+        # It is not re-keyed, because doing so alone would trade a clear
+        # refusal for an obscure one. The synthesized join that reassembles the
+        # rivals' axis expects both of its sides to arrive the same way, which
+        # holds where a backup optimizes point by point and both sides are
+        # scalars. Here a candidate action is one number for every sample while
+        # the partner's rule returns one value per sample, so the two sides
+        # disagree on whether the leading axis is the sample axis, and the join
+        # fails to broadcast. What this guard stands in front of is that
+        # disagreement; settling which side carries the sample axis is what
+        # would retire it.
         entities = self.block.entities()
         if entities:
             raise NotImplementedError(
@@ -202,9 +214,12 @@ class TabularBestResponseSolver:
                 f"class(es) {sorted(entities)}, and its leading axis is a "
                 "sample of shock draws rather than a population -- so an "
                 "equation reducing over the entity axis would be reduced over "
-                "the samples instead, answering a different model. Solve one "
-                "instance's decision against a supplied profile, or use a "
-                "solver that names an equilibrium concept."
+                "the samples instead, answering a different model. Use a "
+                "solver that names an equilibrium concept. Separating one "
+                "instance with skagent.solver.project does not yet help HERE: "
+                "the projection keeps the rivals as a class of their own, and "
+                "this solver and that projection do not agree on which axis "
+                "leads, so the refusal stands on the whole block."
             )
 
         self.decisions = list(self.block.get_controls())

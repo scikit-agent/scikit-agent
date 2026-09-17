@@ -691,15 +691,6 @@ def solve_step(
             "no decision to optimize."
         )
 
-    # Keyed on the entity DECLARATION rather than on a detected reduction:
-    # this refuses more than it strictly must and never less, and it needs
-    # no judgement about which equations reduce. Retiring it needs one of
-    # two things: either a projection hands this solver a block with the
-    # entity resolved away, in which case this never fires and can stay; or
-    # a projection keeps the declaration while resolving the crossing, in
-    # which case this must be re-keyed to the reduction itself first, or it
-    # will refuse the very path it exists to protect.
-
     grid_axes = list(state_grid.keys())
 
     # The hazard is an AXIS confusion: this backup's leading axis is the state
