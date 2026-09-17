@@ -41,7 +41,6 @@ below.
 
 ```{eval-rst}
 .. autofunction:: skagent.models.benchmarks.validate_analytical_solution
-.. autofunction:: skagent.models.benchmarks.euler_equation_test
 .. autofunction:: skagent.models.benchmarks.get_analytical_lifetime_reward
 ```
 

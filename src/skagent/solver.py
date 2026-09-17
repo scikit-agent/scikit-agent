@@ -476,9 +476,11 @@ class ExactBestResponse:
         The problem being solved, already projected if it is a population.
     state_grid : Mapping
         The grid the backup optimizes over, and where two rules are compared.
-        An information-set variable must appear here rather than in *scope*,
-        even as a single point, since a rule over it needs an axis to vary
-        along.
+        An information-set variable must appear here rather than in *scope*:
+        *scope* pins a shock to a realization, which leaves the rule no
+        argument to be a function of. A single point is enough, and gives a
+        rule constant along that variable; give it several to let the backup
+        find whether the optimum varies along it.
     scope : Mapping, optional
         Shocks pinned to a fixed realization. Defaults to the calibration.
     continuation : Callable, optional

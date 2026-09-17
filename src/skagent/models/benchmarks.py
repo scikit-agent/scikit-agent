@@ -1174,7 +1174,13 @@ BENCHMARK_MODELS = {
     "U-3": {
         "block": u3_block,
         "calibration": u3_calibration,
-        # NO analytical_policy - buffer stock requires numerical solution
+        # NO analytical_policy - buffer stock requires numerical solution.
+        # Nor is there a check that a stochastic model's solution satisfies the
+        # Euler equation. A stub claiming to be one stood here and tested
+        # nothing: it answered NOT_IMPLEMENTED for every model and SKIPPED for
+        # the one perfect-foresight case, so the gap read as a feature with a
+        # result rather than as a gap. It is recorded here instead, beside the
+        # first model that would need it.
         "test_states": _generate_u3_test_states,
     },
     "D-4": {
@@ -1398,26 +1404,6 @@ def validate_analytical_solution(
             "test_points": test_points,
             "error": f"Validation failed: {str(e)}",
         }
-
-
-def euler_equation_test(model_id: str, test_points: int = 100) -> Dict[str, Any]:
-    """Test Euler equation satisfaction for stochastic analytical solutions"""
-
-    if model_id == "D-2":
-        return {
-            "success": False,
-            "test": "SKIPPED",
-            "model_id": model_id,
-            "error": "D-2 is a perfect foresight model - Euler equation test not applicable",
-        }
-
-    # Add tests for stochastic models here when needed
-    return {
-        "success": False,
-        "test": "NOT_IMPLEMENTED",
-        "model_id": model_id,
-        "error": f"Euler test not implemented for {model_id}",
-    }
 
 
 # ANALYTICAL LIFETIME REWARD FUNCTIONS

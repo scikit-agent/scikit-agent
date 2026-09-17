@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Removed
 
+- Three unused things: `Grid.shape()`, `skagent.grid.torched()`, and
+  `skagent.models.benchmarks.euler_equation_test`. The last was a stub that
+  tested nothing — it answered `NOT_IMPLEMENTED` for every model and `SKIPPED`
+  for the one perfect-foresight case — so the missing check it stood in for is
+  now recorded beside U-3's registration instead of reported as a result.
+
 - The deprecated `agent_count` argument to `Simulator` and `samples` argument to
   `TabularBestResponseSolver`. Both named the wrong axis, both have said so
   under a warning since the arguments that replaced them landed, and the warning

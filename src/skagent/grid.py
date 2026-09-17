@@ -46,12 +46,6 @@ class Grid:
 
         return cls(list(kv.keys()), vals_stacked, torched=torched)
 
-    def shape(self):
-        """
-        Returns the shape of the grid values.
-        """
-        return self.values.shape
-
     def len(self):
         """
         Returns the number of columns, similar to a dict.
@@ -157,12 +151,3 @@ def cartesian_product(*arrays):
 
     # Reshape to get the desired output
     return cartesian.reshape(-1, len(arrays))
-
-
-def torched(grid):
-    tens = torch.FloatTensor(grid).to(device)
-
-    # patching, this should be codified as a new type
-    # tens.labels = grid.labels
-
-    return tens
