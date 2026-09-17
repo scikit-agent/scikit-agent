@@ -228,9 +228,12 @@ class TestASolverFindsWhatThePaperDerives:
         )
         grid = {
             "p_actor": np.linspace(-2.0, 2.0, 9),
-            # Two points rather than one: a rule needs an axis to vary along,
-            # and the solved rule turning out to be constant along this one is
-            # the claim of the second test below.
+            # Two points, and they are load-bearing. A single point would
+            # now be accepted -- it yields a rule constant along the axis --
+            # but the constancy would then be the fitting's, not the model's,
+            # and the second test below would assert it of any model at all.
+            # Two points give the solver the chance to act on the subject's own
+            # data, and the finding is that it does not take it.
             "b_actor": np.array([-1.0, 1.0]),
         }
         scope = {
