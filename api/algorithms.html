@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev129+ga5edfeed6</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev132+gf42f1447f</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev129+ga5edfeed6</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev132+gf42f1447f</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -332,7 +332,10 @@ the result with <a class="reference internal" href="#skagent.algos.vfi.tensor_de
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
 <code class="docutils literal notranslate"><span class="pre">control.iset</span></code> order. A zero-dimensional array encodes a constant
-rule (empty information set).</p>
+rule (empty information set). A dimension of length one encodes a rule
+constant along that variable: one grid point fixes a level and says
+nothing about a slope, so the rule takes the value and ignores the
+argument.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule <code class="docutils literal notranslate"><span class="pre">ar(*args)</span></code> taking one positional argument per dimension of
@@ -878,7 +881,10 @@ the result with <a class="reference internal" href="#skagent.algos.vfi.tensor_de
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
 <code class="docutils literal notranslate"><span class="pre">control.iset</span></code> order. A zero-dimensional array encodes a constant
-rule (empty information set).</p>
+rule (empty information set). A dimension of length one encodes a rule
+constant along that variable: one grid point fixes a level and says
+nothing about a slope, so the rule takes the value and ignores the
+argument.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule <code class="docutils literal notranslate"><span class="pre">ar(*args)</span></code> taking one positional argument per dimension of
@@ -2259,9 +2265,11 @@ operations, entirely different construction configuration.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ground</strong> (<a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><em>skagent.ground.GroundedBlock</em></a>) – The problem being solved, already projected if it is a population.</p></li>
 <li><p><strong>state_grid</strong> (<em>Mapping</em>) – The grid the backup optimizes over, and where two rules are compared.
-An information-set variable must appear here rather than in <em>scope</em>,
-even as a single point, since a rule over it needs an axis to vary
-along.</p></li>
+An information-set variable must appear here rather than in <em>scope</em>:
+<em>scope</em> pins a shock to a realization, which leaves the rule no
+argument to be a function of. A single point is enough, and gives a
+rule constant along that variable; give it several to let the backup
+find whether the optimum varies along it.</p></li>
 <li><p><strong>scope</strong> (<em>Mapping</em><em>, </em><em>optional</em>) – Shocks pinned to a fixed realization. Defaults to the calibration.</p></li>
 <li><p><strong>continuation</strong> (<em>Callable</em><em>, </em><em>optional</em>) – The continuation value. Defaults to a terminal (zero) one, which is
 what makes the backup a single-period solve.</p></li>
@@ -2327,12 +2335,6 @@ maximization.</p></li>
 <dt class="sig sig-object py" id="skagent.grid.Grid.n">
 <span class="sig-name descname"><span class="pre">n</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.grid.Grid.n" title="Link to this definition">¶</a></dt>
 <dd><p>Returns the number of values for each symbol</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skagent.grid.Grid.shape">
-<span class="sig-name descname"><span class="pre">shape</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.grid.Grid.shape" title="Link to this definition">¶</a></dt>
-<dd><p>Returns the shape of the grid values.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2601,7 +2603,6 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 <li><a class="reference internal" href="#skagent.grid.Grid.from_dict"><code class="docutils literal notranslate"><span class="pre">Grid.from_dict()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.grid.Grid.len"><code class="docutils literal notranslate"><span class="pre">Grid.len()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.grid.Grid.n"><code class="docutils literal notranslate"><span class="pre">Grid.n()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.grid.Grid.shape"><code class="docutils literal notranslate"><span class="pre">Grid.shape()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.grid.Grid.to_dict"><code class="docutils literal notranslate"><span class="pre">Grid.to_dict()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.grid.Grid.torch"><code class="docutils literal notranslate"><span class="pre">Grid.torch()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.grid.Grid.update_from_dict"><code class="docutils literal notranslate"><span class="pre">Grid.update_from_dict()</span></code></a></li>
@@ -2627,7 +2628,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=2cad28d4"></script>
+</div><script src="../_static/documentation_options.js?v=fc82071c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
