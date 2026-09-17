@@ -170,6 +170,13 @@ and this project adheres to
 
 ### Added
 
+- The simulator refuses a bridge that reduces over its own entity class. The
+  value becoming a per-instance arrival state must carry that instance axis; an
+  ordinary per-instance equation may still return one value and broadcast. A
+  broadcast at the bridge replaces the cross-section with a single number while
+  leaving every aggregate of it unchanged, so the model goes on producing the
+  same path and no later check can see it.
+
 - `skagent.parser.validate_block` refuses a block document whose keys are not a
   block's keys. A section indented one level too deep is valid YAML -- it
   becomes a variable of the section above it -- so the block loses that whole
