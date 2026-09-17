@@ -42,28 +42,41 @@ class TestTheAggregateReachesItsStationaryPoint:
         assert capital[-1] == pytest.approx(STATIONARY, rel=0.03)
 
         # It got there rather than starting there: the economy opens at the
-        # assets every household was given, two orders of magnitude below.
+        # assets every household was given, under a fifth of the stationary value.
         assert capital[0] == pytest.approx(1.0, abs=0.01)
+        assert capital[0] < 0.2 * STATIONARY
 
-    def test_the_prices_are_the_analytic_ones(self, long_run):
-        analytic = aiyagari.stationary_prices(RATE)
+    def test_the_prices_are_the_marginal_products_every_period(self, long_run):
+        capital = np.asarray(long_run["K"]).ravel()
+        alpha, delta = aiyagari.CAPITAL_SHARE, aiyagari.DEPRECIATION
 
-        # The interest rate is checked absolutely rather than relatively. It is
-        # the marginal product of capital less depreciation, a difference of two
-        # numbers several times its own size, so a small error in capital
-        # arrives here multiplied: at this calibration a 1% error in K is
-        # roughly 3% in R. Half a percentage point on an interest rate is the
-        # meaningful quantity anyway.
-        assert np.asarray(long_run["R"]).ravel()[-1] == pytest.approx(
-            analytic["R"], abs=0.005
+        # The market block's arithmetic, checked at every period's capital. With
+        # capital's endpoint pinned by the test above, this pins the endpoint
+        # prices too, so they need no tolerance of their own.
+        assert np.asarray(long_run["R"]).ravel() == pytest.approx(
+            alpha * capital ** (alpha - 1) - delta, rel=1e-12
         )
-        assert np.asarray(long_run["W"]).ravel()[-1] == pytest.approx(
-            analytic["W"], rel=0.03
+        assert np.asarray(long_run["W"]).ravel() == pytest.approx(
+            (1 - alpha) * capital**alpha, rel=1e-12
+        )
+
+    def test_the_stationary_prices_are_the_marginal_products_there(self):
+        # The closed forms must agree with the marginal products at
+        # `stationary_capital` and return the 4% `savings_rate_for` was given.
+        alpha, delta = aiyagari.CAPITAL_SHARE, aiyagari.DEPRECIATION
+        analytic = aiyagari.stationary_prices(RATE)
+        assert analytic["R"] == pytest.approx(
+            alpha * STATIONARY ** (alpha - 1) - delta, rel=1e-12
+        )
+        assert analytic["R"] == pytest.approx(0.04, rel=1e-12)
+        assert analytic["W"] == pytest.approx(
+            (1 - alpha) * STATIONARY**alpha, rel=1e-12
         )
 
     def test_it_arrives_from_above_as_well(self):
-        # The map is a contraction for every savings rate below one, so where
-        # the economy starts decides nothing but how long it takes.
+        # The map is increasing and concave through the origin, so the start
+        # decides only how long convergence takes; this slope below one at the
+        # stationary point sets the speed of the last stretch.
         assert aiyagari.convergence_rate(RATE) < 1
 
         # Averaged over eight independent economies rather than read off one.
@@ -82,12 +95,16 @@ class TestThePathIsTheAggregatesOwnLawOfMotion:
 
     def test_every_round_follows_the_closed_form(self, long_run):
         capital = np.asarray(long_run["K"]).ravel()
+        wage = np.asarray(long_run["W"]).ravel()
+        endowment = np.asarray(long_run["theta"])[:, 0, :].mean(axis=-1)
 
-        # Predicting each period's capital from the one before checks the
-        # arithmetic all the way along, where the endpoint alone would pass on
-        # any path that happened to end in the right place.
-        predicted = [aiyagari.capital_map(k, RATE) for k in capital[:-1]]
-        assert capital[1:] == pytest.approx(predicted, rel=0.02)
+        # `capital_map` assumes endowments average exactly one; a thousand draws
+        # miss by about 4%, so the saved wage on that miss is added back. Exact
+        # this way, while any tolerance on the bare map is loose or seed-fragile.
+        predicted = aiyagari.capital_map(capital[:-1], RATE) + RATE * wage[:-1] * (
+            endowment[:-1] - 1
+        )
+        assert capital[1:] == pytest.approx(predicted, rel=1e-12)
 
 
 class TestTheCrossSectionSurvives:

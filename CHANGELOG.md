@@ -8,15 +8,6 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Fixed
-
-- `skagent.solver.project` no longer raises `TypeError` on a decision that reads
-  out of the entity class it is splitting. Such a control is copied as the
-  author wrote it: the joins the projection synthesizes are what its information
-  set names, so it reads the reassembled class. It was being handed to the
-  per-instance wrapper written for equations, which asks a `Control` for
-  parameter names it does not have.
-
 ### Removed
 
 - `skagent.solver.solve_multiple_controls` has been replaced by
@@ -76,17 +67,20 @@ and this project adheres to
   wage they all face. The market block is declared before the households, so
   capital is read off the assets they arrived with and simulating T periods runs
   T rounds of the aggregate's law of motion. Under a fixed savings rate that law
-  has a closed form -- `capital_map`, whose fixed point is `stationary_capital`
-  and whose slope is below one for every savings rate -- so the model checks the
-  arithmetic of a dynamic path through an entity class and not only its shape.
-  At a thousand households over two hundred periods the aggregate arrives within
-  1.5% of its analytic stationary point. Capital depreciates, so the interest
-  rate is a marginal product net of depreciation as in the paper, and the
-  capital-output ratio is `s / (1 - s(1 - delta))` rather than the `s / (1 - s)`
-  of an economy whose capital lasts forever. `savings_rate_for` inverts the
-  relationship, since cash on hand includes a household's whole asset position
-  and a savings rate here is not the textbook fraction of income. 1% of its
-  analytic stationary point.
+  has a closed form, `capital_map`, whose fixed point is `stationary_capital`.
+  The map is increasing and concave through the origin, so the aggregate
+  converges to that point monotonically from any starting capital. The model
+  therefore checks the arithmetic of a dynamic path through an entity class and
+  not only its shape: once the realized average labour endowment is added back,
+  every simulated period matches the closed form to rounding error. At a
+  thousand households over two hundred periods the aggregate ends within 3% of
+  its analytic stationary point; the remaining gap is sampling noise in the
+  cross-sectional mean, about 1.2% across seeds. Capital depreciates, so the
+  interest rate is a marginal product net of depreciation as in the paper, and
+  the capital-output ratio is `s / (1 - s(1 - delta))` rather than the
+  `s / (1 - s)` of an economy whose capital lasts forever. `savings_rate_for`
+  inverts the relationship, since cash on hand includes a household's whole
+  asset position and a savings rate here is not the textbook fraction of income.
 - `skagent.models.privacy`: the two differential-privacy causal games of
   Benthall and Cummings (2026). Data subjects decide whether to share, an
   analyst estimates a population mean from the reports that arrive, and a
