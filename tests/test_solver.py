@@ -303,9 +303,9 @@ class TestADecisionOverTheWholeClassSurvivesTheProjection:
         # declaration is copied exactly as the author wrote it.
         assert controls["f"].iset == ["c", "d"]
         assert {"c", "d"} <= set(projected.get_dynamics())
-        assert ["c_actor", "c_other"] == sorted(
+        assert ["c_actor", "c_other"] == [
             sym for sym in controls if sym.startswith("c_")
-        )
+        ]
 
 
 class TestTheProjectionRefusesWhatItCannotSplit:

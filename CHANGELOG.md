@@ -32,6 +32,13 @@ and this project adheres to
 
 ### Fixed
 
+- `skagent.solver.project` no longer raises `TypeError` on a decision that reads
+  out of the entity class it is splitting. Such a control is copied as the
+  author wrote it: the joins the projection synthesizes are what its information
+  set names, so it reads the reassembled class. It was being handed to the
+  per-instance wrapper written for equations, which asks a `Control` for
+  parameter names it does not have.
+
 - `Block.relevance_graph` answers on a projected block again. A projection
   declares the class beside the rest of itself, so it declares two, and the
   expansion step refused it as a model of several classes. An expansion is now
@@ -169,6 +176,23 @@ and this project adheres to
   `solve_in_relevance_order(solver)`.
 
 ### Added
+
+- `skagent.models.privacy`: the two differential-privacy causal games of
+  Benthall and Cummings (2026). Data subjects decide whether to share, an
+  analyst estimates a population mean from the reports that arrive, and a
+  designer chooses the noise scale both respond to. The local and central trust
+  models differ only in whether each subject privatizes its own report or the
+  analyst privatizes the estimate, and so in whether the noise is averaged down.
+  Both equilibrium rules have closed forms, which is what makes the model an
+  oracle: an exact backup on the projected block returns the paper's threshold
+  rule exactly, since the subject's utility is linear in its decision. The
+  analyst's rule is supplied instead, because its information set is the whole
+  class. Its two reductions -- an average over those who shared, and a prior
+  when nobody did -- are weighted sums rather than a selection and a branch, so
+  a null report is a zero weight and the estimate differentiates and batches.
+- A gallery page for it: the model as a causal game in both trust models, the
+  subjects' rule solved rather than assumed, the paper's error curves, and the
+  designer's sweep with the privacy guarantee it implies.
 
 - `skagent.parser.validate_block` refuses a block document whose keys are not a
   block's keys. A section indented one level too deep is valid YAML -- it
