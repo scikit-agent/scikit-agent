@@ -8,25 +8,6 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Added
-
-- `skagent.models.privacy`: the two differential-privacy causal games of
-  Benthall and Cummings (2026). Data subjects decide whether to share, an
-  analyst estimates a population mean from the reports that arrive, and a
-  designer chooses the noise scale both respond to. The local and central trust
-  models differ only in whether each subject privatizes its own report or the
-  analyst privatizes the estimate, and so in whether the noise is averaged down.
-  Both equilibrium rules have closed forms, which is what makes the model an
-  oracle: an exact backup on the projected block returns the paper's threshold
-  rule exactly, since the subject's utility is linear in its decision. The
-  analyst's rule is supplied instead, because its information set is the whole
-  class. Its two reductions -- an average over those who shared, and a prior
-  when nobody did -- are weighted sums rather than a selection and a branch, so
-  a null report is a zero weight and the estimate differentiates and batches.
-- A gallery page for it: the model as a causal game in both trust models, the
-  subjects' rule solved rather than assumed, the paper's error curves, and the
-  designer's sweep with the privacy guarantee it implies.
-
 ### Fixed
 
 - `skagent.solver.project` no longer raises `TypeError` on a decision that reads
@@ -90,6 +71,32 @@ and this project adheres to
 
 ### Added
 
+- `skagent.models.aiyagari`, many households saving out of labour income whose
+  average assets are the economy's capital, which sets the interest rate and
+  wage they all face. The market block is declared before the households, so
+  capital is read off the assets they arrived with and simulating T periods runs
+  T rounds of the aggregate's law of motion. Under a fixed savings rate that law
+  has a closed form -- `capital_map`, whose fixed point is `stationary_capital`
+  and whose slope is below one for every savings rate -- so the model checks the
+  arithmetic of a dynamic path through an entity class and not only its shape.
+  At a thousand households over two hundred periods the aggregate arrives within
+  1% of its analytic stationary point.
+- `skagent.models.privacy`: the two differential-privacy causal games of
+  Benthall and Cummings (2026). Data subjects decide whether to share, an
+  analyst estimates a population mean from the reports that arrive, and a
+  designer chooses the noise scale both respond to. The local and central trust
+  models differ only in whether each subject privatizes its own report or the
+  analyst privatizes the estimate, and so in whether the noise is averaged down.
+  Both equilibrium rules have closed forms, which is what makes the model an
+  oracle: an exact backup on the projected block returns the paper's threshold
+  rule exactly, since the subject's utility is linear in its decision. The
+  analyst's rule is supplied instead, because its information set is the whole
+  class. Its two reductions -- an average over those who shared, and a prior
+  when nobody did -- are weighted sums rather than a selection and a branch, so
+  a null report is a zero weight and the estimate differentiates and batches.
+- A gallery page for it: the model as a causal game in both trust models, the
+  subjects' rule solved rather than assumed, the paper's error curves, and the
+  designer's sweep with the privacy guarantee it implies.
 - `skagent.models.lemons`, Akerlof's market for adverse selection, at the
   paper's own numbers: quality uniform on `[0, 2]` and buyers who value a car at
   three halves of what its owner does, so `lemons_calibration()` with no
@@ -184,9 +191,6 @@ and this project adheres to
 - Continuous one-shot and iterated Prisoner's Dilemma blocks, including
   per-player utilities, memory-one repeated-game state, strategic-relevance
   coverage, solver-boundary tests, and multi-period simulation tests.
-- `solve_in_relevance_order` can iterate simultaneous best responses for cyclic
-  relevance components, returning pure-strategy fixed points and raising on
-  non-convergence within a configurable iteration limit and tolerance.
 - `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
   density each backend already provides.
 - `skagent.relevance` gains the four single-decision incentive criteria of
@@ -229,6 +233,20 @@ and this project adheres to
 
 ### Changed
 
+- Every loss in `skagent.loss` now takes the same shape:
+  `Loss(bellman_period, *, agent=None, ...)`, with loss-specific arguments
+  keyword-only. `parameters` is gone from all six: the period already carries
+  the calibration a loss is evaluated at, and passing it separately let the two
+  disagree. `CustomLoss` takes a period rather than a block, like its siblings.
+  Previously the six disagreed on argument order and on whether `parameters` was
+  required, optional or absent. What `__call__` takes still differs, and
+  deliberately: `CustomLoss` and `StaticRewardLoss` require a mapping from
+  control symbol to decision rule, because they merge it over `other_dr`, while
+  the other four also accept a whole-period decision function.
+- `EstimatedDiscountedLifetimeRewardLoss` takes the agent whose discounted
+  payoff it maximizes, as the other losses do. It previously summed the reward
+  symbols of every agent, so a two-player game trained through it optimized a
+  planner's objective and no player's. `big_t` is now keyword-only.
 - `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
   an entity class, naming the classes and which leading axis a reduction over
   the entity axis would be taken over instead -- the shock sample for the
