@@ -165,6 +165,23 @@ computed.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A public-health analyst wants to know how common a stigmatised condition is. It can only find out by asking people, and people who answer pay a privacy cost for doing so. The analyst can promise differential privacy, which lowers that cost and brings more people in -- but the noise the promise is made of is exactly what makes the answer less accurate.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_privacy_dp_tuning_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_privacy_dp_tuning`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Differential Privacy: Tuning a Parameter With a Causal Game</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -183,4 +200,5 @@ computed.
    /auto_examples/models/plot_tree_killer_relevance
    /auto_examples/models/plot_benchmark_models
    /auto_examples/models/plot_lemons_adverse_selection
+   /auto_examples/models/plot_privacy_dp_tuning
 

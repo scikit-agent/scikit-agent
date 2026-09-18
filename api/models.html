@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev139+gd8cba33e0</title>
+        <title>Models - scikit-agent 0.1.1.dev141+g335c6c634</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev139+gd8cba33e0</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev141+g335c6c634</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -227,6 +227,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_privacy_dp_tuning.html">Differential Privacy: Tuning a Parameter With a Causal Game</a></li>
 </ul>
 </li>
 </ul>
@@ -2071,6 +2072,485 @@ implies than by eye.</p>
 </dd></dl>
 
 </section>
+<section id="differential-privacy">
+<h2>Differential Privacy<a class="headerlink" href="#differential-privacy" title="Link to this heading">¶</a></h2>
+<p>Benthall and Cummings’ two causal games for tuning a differential-privacy
+parameter: data subjects decide whether to share, an analyst estimates a
+population mean from the reports that arrive, and a designer above both chooses
+how much noise the mechanism adds. The two games are the local and central trust
+models, which differ only in whether each subject privatizes its own report or
+the analyst privatizes the estimate. Both agents’ equilibrium rules have closed
+forms, so the model is an oracle for the machinery that finds them: an exact
+backup returns the subjects’ threshold rule exactly, while the analyst’s
+estimator, whose information set is the whole class, is supplied.</p>
+<p id="module-skagent.models.privacy">Tuning a differential-privacy parameter as a causal game.</p>
+<p>An analyst wants to estimate a population mean and offers a differential-privacy
+guarantee to the people it collects data from. Each data subject decides whether
+to share. Sharing helps the estimate, which the subject values, and costs the
+subject privacy, which it does not. How much noise the mechanism adds is neither
+agent’s choice: a designer sets it, knowing that the agents will then play a
+best response to it. So the noise scale is a design parameter above an
+equilibrium rather than a parameter of anyone’s problem, and choosing it is the
+mechanism being designed.</p>
+<p>The model is Benthall and Cummings (2026) <a class="reference internal" href="#bc2026" id="id1"><span>[BC2026]</span></a>, sections 4 to 6.</p>
+<section id="two-games-and-they-differ-in-one-place">
+<h3>Two games, and they differ in one place<a class="headerlink" href="#two-games-and-they-differ-in-one-place" title="Link to this heading">¶</a></h3>
+<p>The <strong>local</strong> model has each subject add its own noise before sharing, so what
+reaches the analyst is already private. The <strong>central</strong> model has subjects share
+their true data with a trusted analyst, which adds noise once to the estimate it
+publishes. Every equation below is shared except where the noise enters:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[b_i = a + \zeta_i, \qquad
+u_i = c_i \left(q_i - \frac{p_i}{\sigma}\right), \qquad
+g = -(f - a)^2\]</div>
+</div>
+<p>with <span class="math notranslate nohighlight">\(a\)</span> the population mean, <span class="math notranslate nohighlight">\(\zeta_i \sim U(-\Delta/2, \Delta/2)\)</span>
+individual variation, <span class="math notranslate nohighlight">\(p_i \sim N(0, \sigma_p^2)\)</span> how much subject
+<span class="math notranslate nohighlight">\(i\)</span> minds sharing, <span class="math notranslate nohighlight">\(q_i\)</span> what it gains by sharing, and <span class="math notranslate nohighlight">\(\sigma\)</span>
+the noise scale. The report is <span class="math notranslate nohighlight">\(d_i = c_i(b_i + \gamma_i)\)</span> locally, with
+one <span class="math notranslate nohighlight">\(\gamma_i \sim N(0, \sigma^2)\)</span> per subject, and <span class="math notranslate nohighlight">\(d_i = c_i b_i\)</span>
+centrally, where a single <span class="math notranslate nohighlight">\(\gamma\)</span> is added to the estimate instead.</p>
+</section>
+<section id="what-each-agent-decides-and-what-is-supplied">
+<h3>What each agent decides, and what is supplied<a class="headerlink" href="#what-each-agent-decides-and-what-is-supplied" title="Link to this heading">¶</a></h3>
+<p>Both decisions have closed forms in the paper, so this module supplies both as
+rules and the blocks declare them as decisions:</p>
+<ul class="simple">
+<li><p>A subject shares iff sharing is worth more than it costs. The utility is
+linear in <span class="math notranslate nohighlight">\(c_i\)</span>, so the optimum is at a vertex whatever the control’s
+bounds: <span class="math notranslate nohighlight">\(c_i = 1\)</span> iff <span class="math notranslate nohighlight">\(p_i &lt; q_i \sigma\)</span>, which is
+<a class="reference internal" href="#skagent.models.privacy.sharing_rule" title="skagent.models.privacy.sharing_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">sharing_rule()</span></code></a>. A solver on the relaxed <span class="math notranslate nohighlight">\([0, 1]\)</span> control returns
+that rule rather than an approximation of it.</p></li>
+<li><p>The analyst’s estimate is the mean of the reports it received, which the paper
+proves is the minimum-variance unbiased estimator of <span class="math notranslate nohighlight">\(a\)</span>, so maximizing
+its accuracy is computing that mean. It is <a class="reference internal" href="#skagent.models.privacy.analyst_rule" title="skagent.models.privacy.analyst_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">analyst_rule()</span></code></a>.</p></li>
+</ul>
+<p>The analyst’s information set is the whole subject class, which no policy network
+in this library is shaped for – a rule over a class is a permutation-invariant
+architecture – so this decision is represented and supplied rather than learned.
+The subjects’ is not: their information set is per-instance, and
+<a class="reference internal" href="#skagent.models.privacy.sharing_rule" title="skagent.models.privacy.sharing_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">sharing_rule()</span></code></a> is what a solver should reproduce.</p>
+</section>
+<section id="two-reductions-written-as-weighted-means">
+<h3>Two reductions written as weighted means<a class="headerlink" href="#two-reductions-written-as-weighted-means" title="Link to this heading">¶</a></h3>
+<p>The analyst averages over the subjects who shared, and averages a <em>prior</em> when
+nobody did. Both are written as weighted sums over the whole class rather than as
+a mean over a selection and a branch on the count, so the estimate carries no
+boolean index and no branch on the data: it differentiates and batches under
+<code class="docutils literal notranslate"><span class="pre">torch</span></code> as readily as it evaluates under <code class="docutils literal notranslate"><span class="pre">numpy</span></code>. A non-sharer contributes
+nothing to either the numerator or the denominator, which is what makes a null
+report and a zero weight the same thing here, and the prior enters as one
+pseudo-observation of negligible weight, which is what makes the empty database
+return the prior exactly.</p>
+</section>
+<section id="the-designer-s-problem">
+<h3>The designer’s problem<a class="headerlink" href="#the-designer-s-problem" title="Link to this heading">¶</a></h3>
+<p>The designer maximizes an objective of its own over <span class="math notranslate nohighlight">\(\sigma\)</span>, given that
+the agents play their equilibrium at each <span class="math notranslate nohighlight">\(\sigma\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\max_\sigma h(\sigma), \qquad h = \mathbb{E}[g] + \mathbb{E}[u_i]\]</div>
+</div>
+<p>That is a sweep over equilibria rather than a solution concept or a method, so it
+is a loop a caller writes; this module supplies what the loop evaluates.
+<a class="reference internal" href="#skagent.models.privacy.designer_objective" title="skagent.models.privacy.designer_objective"><code class="xref py py-func docutils literal notranslate"><span class="pre">designer_objective()</span></code></a> is the paper’s own example of an <span class="math notranslate nohighlight">\(h\)</span>, and it
+uses the bounded subject utility of the paper’s Figure 5,
+<span class="math notranslate nohighlight">\(u_i = c_i(1 - e^{p_i}/(1 + \sigma))\)</span>, under which more noise always helps
+a subject. The base utility above is unbounded as <span class="math notranslate nohighlight">\(\sigma \to 0\)</span>: a subject
+who positively enjoys sharing gains <span class="math notranslate nohighlight">\(-p_i/\sigma\)</span>, without limit.</p>
+<p>The closed forms here are exact, and the accuracy ones are the paper’s equation
+(3) and its central analogue. The number of subjects who share is
+<span class="math notranslate nohighlight">\(n' \sim \mathrm{Binomial}(n, F_p(q\sigma))\)</span>, and the error is a variance
+divided by that count, so the count’s distribution has to be summed over rather
+than replaced by its mean.</p>
+</section>
+<section id="what-the-estimator-rests-on">
+<h3>What the estimator rests on<a class="headerlink" href="#what-the-estimator-rests-on" title="Link to this heading">¶</a></h3>
+<p>The empirical mean is unbiased because who shares is independent of what is
+being measured: <span class="math notranslate nohighlight">\(p_i\)</span> and <span class="math notranslate nohighlight">\(b_i\)</span> are drawn independently, so
+selecting on <span class="math notranslate nohighlight">\(p_i\)</span> selects a random subset of the data. That is an
+assumption about the population rather than a property of the mechanism, and
+<a class="reference internal" href="#skagent.models.privacy.analyst_rule" title="skagent.models.privacy.analyst_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">analyst_rule()</span></code></a> is the minimum-variance unbiased estimator only while it
+holds.</p>
+<div role="list" class="citation-list">
+<div class="citation" id="bc2026" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>BC2026<span class="fn-bracket">]</span></span>
+<p>Benthall, S. and Cummings, R. (2026). “Principled Differential
+Privacy Parameter Tuning with Causal Games.” FAccT ‘26.
+<a class="reference external" href="https://doi.org/10.1145/3805689.3806530">https://doi.org/10.1145/3805689.3806530</a></p>
+</div>
+</div>
+</section>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.privacy.DELTA">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">DELTA</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#skagent.models.privacy.DELTA" title="Link to this definition">¶</a></dt>
+<dd><p>The width of individual variation, so <code class="docutils literal notranslate"><span class="pre">zeta</span> <span class="pre">~</span> <span class="pre">U(-1/2,</span> <span class="pre">1/2)</span></code>.</p>
+<p>Bounded rather than normal because it is what bounds the sensitivity of the
+statistic being estimated, which is what the mechanism’s noise is calibrated to.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.privacy.Q">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">Q</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#skagent.models.privacy.Q" title="Link to this definition">¶</a></dt>
+<dd><p>What a subject gains by sharing, and the paper’s own value throughout.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.privacy.SIGMA_P">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">SIGMA_P</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#skagent.models.privacy.SIGMA_P" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">~</span> <span class="pre">N(0,</span> <span class="pre">1)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The spread of privacy concern, and the paper’s own</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.privacy.SUBJECTS">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">SUBJECTS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000</span></span><a class="headerlink" href="#skagent.models.privacy.SUBJECTS" title="Link to this definition">¶</a></dt>
+<dd><p>How many data subjects, and the size the paper’s figures are computed at.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.analyst_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">analyst_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a_mean</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.analyst_rule" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#skagent.models.privacy.estimate" title="skagent.models.privacy.estimate"><code class="xref py py-func docutils literal notranslate"><span class="pre">estimate()</span></code></a> against a fixed prior mean, as a decision rule for <code class="docutils literal notranslate"><span class="pre">f</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mean of the analyst’s prior over the population mean.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A rule of <code class="docutils literal notranslate"><span class="pre">(c,</span> <span class="pre">d)</span></code>, the class’s decisions and reports.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.privacy.bounded_local_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">bounded_local_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">RBlock(name='local_dp',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='population',</span> <span class="pre">description='',</span> <span class="pre">shocks={'a':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">'a_mean',</span> <span class="pre">'sigma':</span> <span class="pre">'a_sd'})},</span> <span class="pre">dynamics={},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">RBlock(name='subjects',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='data',</span> <span class="pre">description='',</span> <span class="pre">shocks={'zeta':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">'-delta/2',</span> <span class="pre">'high':</span> <span class="pre">'delta/2'}),</span> <span class="pre">'p':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">0.0,</span> <span class="pre">'sigma':</span> <span class="pre">'sigma_p'})},</span> <span class="pre">dynamics={'b':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='sharing',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'c':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='bounded_privacy_cost',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'u':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'u':</span> <span class="pre">'subject'},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='local_noise',</span> <span class="pre">description='',</span> <span class="pre">shocks={'gamma':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">0.0,</span> <span class="pre">'sigma':</span> <span class="pre">'sigma'})},</span> <span class="pre">dynamics={},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='local_report',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'d':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=Entity(name='subject')),</span> <span class="pre">DBlock(name='estimate',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'f':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='local_accuracy',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'g':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'g':</span> <span class="pre">'analyst'},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.privacy.bounded_local_block" title="Link to this definition">¶</a></dt>
+<dd><p>The local model under the bounded utility <a class="reference internal" href="#skagent.models.privacy.designer_objective" title="skagent.models.privacy.designer_objective"><code class="xref py py-func docutils literal notranslate"><span class="pre">designer_objective()</span></code></a> uses.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.bounded_share_probability">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">bounded_share_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.bounded_share_probability" title="Link to this definition">¶</a></dt>
+<dd><p>The fraction who share under <a class="reference internal" href="#skagent.models.privacy.bounded_sharing_rule" title="skagent.models.privacy.bounded_sharing_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">bounded_sharing_rule()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.bounded_sharing_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">bounded_sharing_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.bounded_sharing_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Share iff a lognormal privacy cost is below the benefit of sharing.</p>
+<p>The rule for the bounded utility <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">*</span> <span class="pre">(1</span> <span class="pre">-</span> <span class="pre">exp(p)</span> <span class="pre">/</span> <span class="pre">(1</span> <span class="pre">+</span> <span class="pre">sigma))</span></code> that
+<a class="reference internal" href="#skagent.models.privacy.designer_objective" title="skagent.models.privacy.designer_objective"><code class="xref py py-func docutils literal notranslate"><span class="pre">designer_objective()</span></code></a> is written against.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A rule of <code class="docutils literal notranslate"><span class="pre">(b,</span> <span class="pre">p)</span></code>, returning 1.0 where the subject shares.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.bounded_subject_utility">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">bounded_subject_utility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.bounded_subject_utility" title="Link to this definition">¶</a></dt>
+<dd><p>A subject’s expected utility under the bounded, lognormal-cost utility.</p>
+<p><code class="docutils literal notranslate"><span class="pre">E[c</span> <span class="pre">(1</span> <span class="pre">-</span> <span class="pre">exp(p)</span> <span class="pre">/</span> <span class="pre">(1</span> <span class="pre">+</span> <span class="pre">sigma))]</span></code> under <a class="reference internal" href="#skagent.models.privacy.bounded_sharing_rule" title="skagent.models.privacy.bounded_sharing_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">bounded_sharing_rule()</span></code></a>. Rises
+in <em>sigma</em> and is bounded above by the benefit of sharing, which is what
+makes the designer’s objective have an interior maximum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_sd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.calibration" title="Link to this definition">¶</a></dt>
+<dd><p>A calibration of either game at noise scale <em>sigma</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale, and the designer’s decision. Must be
+positive: the base utility divides by it.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many data subjects.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – What a subject gains by sharing.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The spread of privacy concern.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The width of individual variation, which bounds the sensitivity of the
+statistic and so what the mechanism’s noise is calibrated to.</p></li>
+<li><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The analyst’s prior over the population mean. <code class="docutils literal notranslate"><span class="pre">a_sd</span></code> is what an
+estimate falls back on when nobody shares, so it is part of the accuracy
+the designer weighs and not only a simulation detail.</p></li>
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The analyst’s prior over the population mean. <code class="docutils literal notranslate"><span class="pre">a_sd</span></code> is what an
+estimate falls back on when nobody shares, so it is part of the accuracy
+the designer weighs and not only a simulation detail.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.privacy.central_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">central_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">RBlock(name='central_dp',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='population',</span> <span class="pre">description='',</span> <span class="pre">shocks={'a':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">'a_mean',</span> <span class="pre">'sigma':</span> <span class="pre">'a_sd'})},</span> <span class="pre">dynamics={},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='dp_noise',</span> <span class="pre">description='',</span> <span class="pre">shocks={'gamma':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">0.0,</span> <span class="pre">'sigma':</span> <span class="pre">'sigma'})},</span> <span class="pre">dynamics={},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">RBlock(name='subjects',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='data',</span> <span class="pre">description='',</span> <span class="pre">shocks={'zeta':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">'-delta/2',</span> <span class="pre">'high':</span> <span class="pre">'delta/2'}),</span> <span class="pre">'p':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">0.0,</span> <span class="pre">'sigma':</span> <span class="pre">'sigma_p'})},</span> <span class="pre">dynamics={'b':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='sharing',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'c':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='privacy_cost',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'u':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'u':</span> <span class="pre">'subject'},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='central_report',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'d':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=Entity(name='subject')),</span> <span class="pre">DBlock(name='estimate',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'f':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='central_accuracy',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'f_dp':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'g':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'g':</span> <span class="pre">'analyst'},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.privacy.central_block" title="Link to this definition">¶</a></dt>
+<dd><p>a trusted analyst adds noise once, to the estimate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The central model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.central_error">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">central_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_sd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.central_error" title="Link to this definition">¶</a></dt>
+<dd><p>The analyst’s expected squared error in the central model.</p>
+<p>The noise is added once rather than per report, so it is not averaged down:
+it enters as <code class="docutils literal notranslate"><span class="pre">sigma^2</span></code> whatever the number of subjects, while what is
+averaged down is individual variation alone. That is why the two models make
+different designs optimal at the same privacy guarantee.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">E[-g]</span></code>, so smaller is better.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.designer_objective">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">designer_objective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_sd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.designer_objective" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">h</span> <span class="pre">=</span> <span class="pre">E[g]</span> <span class="pre">+</span> <span class="pre">E[u_i]</span></code>: the paper’s example of a designer’s objective.</p>
+<p>The analyst’s accuracy plus a subject’s welfare, under the bounded utility
+and the local model. Accuracy falls in <em>sigma</em> and welfare rises in it, so
+the maximum is interior: a designer weighing both chooses a noise scale that
+is neither zero nor unbounded, which is the paper’s result.</p>
+<p>A designer with a different objective is a different function here, and that
+is the point of the argument rather than a limitation of it: what is being
+designed is a trade between the parties, so the trade has to be stated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#skagent.models.privacy.bounded_subject_utility" title="skagent.models.privacy.bounded_subject_utility"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bounded_subject_utility</span></code></a></dt><dd><p>the welfare term.</p>
+</dd>
+<dt><a class="reference internal" href="#skagent.models.privacy.local_error" title="skagent.models.privacy.local_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">local_error</span></code></a></dt><dd><p>the accuracy term, negated here.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.estimate">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_mean</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.estimate" title="Link to this definition">¶</a></dt>
+<dd><p>The mean of the reports received, and the prior mean when there are none.</p>
+<p>The minimum-variance unbiased estimator of the population mean, given that
+who shares is independent of what is being measured.</p>
+<p>A weighted sum over the whole class rather than a mean over a selection: a
+subject that did not share carries weight 0 and contributes to neither the
+numerator nor the denominator, so a null report and a zero weight are the
+same thing. The prior enters as one pseudo-observation of weight
+<code class="xref py py-data docutils literal notranslate"><span class="pre">_NOBODY</span></code>, which leaves a non-empty database unmoved and is the whole
+estimate when the database is empty – the paper’s <code class="docutils literal notranslate"><span class="pre">n'</span> <span class="pre">=</span> <span class="pre">0</span></code> branch, without
+a branch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c</strong> (<em>array</em>) – The sharing decision, one per subject, as a weight in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
+<li><p><strong>d</strong> (<em>array</em>) – The report, one per subject, already weighted by the decision.</p></li>
+<li><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mean of the analyst’s prior over the population mean.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.expected_subject_utility">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">expected_subject_utility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.expected_subject_utility" title="Link to this definition">¶</a></dt>
+<dd><p>A subject’s expected utility under the base utility and its rule.</p>
+<p>Unbounded as <em>sigma</em> falls: the subjects who share at a small noise scale
+are those who most dislike privacy loss, and the utility credits them
+<code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">/</span> <span class="pre">sigma</span></code> for sharing anyway.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.privacy.local_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">local_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">RBlock(name='local_dp',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='population',</span> <span class="pre">description='',</span> <span class="pre">shocks={'a':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">'a_mean',</span> <span class="pre">'sigma':</span> <span class="pre">'a_sd'})},</span> <span class="pre">dynamics={},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">RBlock(name='subjects',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='data',</span> <span class="pre">description='',</span> <span class="pre">shocks={'zeta':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Uniform'&gt;,</span> <span class="pre">{'low':</span> <span class="pre">'-delta/2',</span> <span class="pre">'high':</span> <span class="pre">'delta/2'}),</span> <span class="pre">'p':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">0.0,</span> <span class="pre">'sigma':</span> <span class="pre">'sigma_p'})},</span> <span class="pre">dynamics={'b':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='sharing',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'c':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='privacy_cost',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'u':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'u':</span> <span class="pre">'subject'},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='local_noise',</span> <span class="pre">description='',</span> <span class="pre">shocks={'gamma':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'mu':</span> <span class="pre">0.0,</span> <span class="pre">'sigma':</span> <span class="pre">'sigma'})},</span> <span class="pre">dynamics={},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='local_report',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'d':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=Entity(name='subject')),</span> <span class="pre">DBlock(name='estimate',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'f':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">DBlock(name='local_accuracy',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'g':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'g':</span> <span class="pre">'analyst'},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.privacy.local_block" title="Link to this definition">¶</a></dt>
+<dd><p>each subject privatizes its own report.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The local model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.local_error">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">local_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_sd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.local_error" title="Link to this definition">¶</a></dt>
+<dd><p>The analyst’s expected squared error in the local model.</p>
+<p>Every report carries the mechanism’s noise as well as individual variation,
+so the variance being averaged down is <code class="docutils literal notranslate"><span class="pre">sigma^2</span> <span class="pre">+</span> <span class="pre">delta^2</span> <span class="pre">/</span> <span class="pre">12</span></code>. More noise
+therefore costs accuracy directly and buys it back by drawing more subjects
+in, which is the trade the designer is making.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">E[-g]</span></code>, so smaller is better.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.privacy_epsilon">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">privacy_epsilon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dp_delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.privacy_epsilon" title="Link to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">epsilon</span></code> the Gaussian mechanism gives at noise scale <em>sigma</em>.</p>
+<p>What the designer’s choice means as a privacy guarantee: the Gaussian
+mechanism is <code class="docutils literal notranslate"><span class="pre">(epsilon,</span> <span class="pre">dp_delta)</span></code>-differentially private for
+<code class="docutils literal notranslate"><span class="pre">epsilon</span> <span class="pre">=</span> <span class="pre">sensitivity</span> <span class="pre">*</span> <span class="pre">sqrt(2</span> <span class="pre">log(1.25</span> <span class="pre">/</span> <span class="pre">dp_delta))</span> <span class="pre">/</span> <span class="pre">sigma</span></code>, and the
+sensitivity of a mean whose entries vary by at most <em>delta</em> is <em>delta</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The width of individual variation, which is the sensitivity.</p></li>
+<li><p><strong>dp_delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The mechanism’s failure probability.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Smaller is a stronger guarantee.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.share_probability">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">share_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.share_probability" title="Link to this definition">¶</a></dt>
+<dd><p>The fraction of subjects who share at noise scale <em>sigma</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">F_p(q</span> <span class="pre">*</span> <span class="pre">sigma)</span></code>, the privacy-concern CDF at the benefit of sharing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.privacy.sharing_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.privacy.</span></span><span class="sig-name descname"><span class="pre">sharing_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.privacy.sharing_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Share iff privacy concern is below what sharing is worth.</p>
+<p>The subject’s utility <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">*</span> <span class="pre">(q</span> <span class="pre">-</span> <span class="pre">p</span> <span class="pre">/</span> <span class="pre">sigma)</span></code> is linear in the decision, so
+the optimum is at a vertex: share when the bracket is positive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – What a subject gains by sharing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A rule of <code class="docutils literal notranslate"><span class="pre">(b,</span> <span class="pre">p)</span></code>, returning 1.0 where the subject shares. It ignores
+<code class="docutils literal notranslate"><span class="pre">b</span></code>: the subject’s own data does not enter its utility, which is what
+makes the sharing decision uninformative about the data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 <section id="multi-agent-influence-diagrams-maids">
 <h2>Multi-Agent Influence Diagrams (MAIDs)<a class="headerlink" href="#multi-agent-influence-diagrams-maids" title="Link to this heading">¶</a></h2>
 <p>Game-theoretic influence diagrams from the literature, encoded to illustrate
@@ -2420,6 +2900,34 @@ on to query it.</p>
 <li><a class="reference internal" href="#skagent.models.aiyagari.stationary_prices"><code class="docutils literal notranslate"><span class="pre">stationary_prices()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#differential-privacy">Differential Privacy</a><ul>
+<li><a class="reference internal" href="#two-games-and-they-differ-in-one-place">Two games, and they differ in one place</a></li>
+<li><a class="reference internal" href="#what-each-agent-decides-and-what-is-supplied">What each agent decides, and what is supplied</a></li>
+<li><a class="reference internal" href="#two-reductions-written-as-weighted-means">Two reductions written as weighted means</a></li>
+<li><a class="reference internal" href="#the-designer-s-problem">The designer’s problem</a></li>
+<li><a class="reference internal" href="#what-the-estimator-rests-on">What the estimator rests on</a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.DELTA"><code class="docutils literal notranslate"><span class="pre">DELTA</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.Q"><code class="docutils literal notranslate"><span class="pre">Q</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.SIGMA_P"><code class="docutils literal notranslate"><span class="pre">SIGMA_P</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.SUBJECTS"><code class="docutils literal notranslate"><span class="pre">SUBJECTS</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.analyst_rule"><code class="docutils literal notranslate"><span class="pre">analyst_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.bounded_local_block"><code class="docutils literal notranslate"><span class="pre">bounded_local_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.bounded_share_probability"><code class="docutils literal notranslate"><span class="pre">bounded_share_probability()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.bounded_sharing_rule"><code class="docutils literal notranslate"><span class="pre">bounded_sharing_rule()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.bounded_subject_utility"><code class="docutils literal notranslate"><span class="pre">bounded_subject_utility()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.calibration"><code class="docutils literal notranslate"><span class="pre">calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.central_block"><code class="docutils literal notranslate"><span class="pre">central_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.central_error"><code class="docutils literal notranslate"><span class="pre">central_error()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.designer_objective"><code class="docutils literal notranslate"><span class="pre">designer_objective()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.estimate"><code class="docutils literal notranslate"><span class="pre">estimate()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.expected_subject_utility"><code class="docutils literal notranslate"><span class="pre">expected_subject_utility()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.local_block"><code class="docutils literal notranslate"><span class="pre">local_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.local_error"><code class="docutils literal notranslate"><span class="pre">local_error()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.privacy_epsilon"><code class="docutils literal notranslate"><span class="pre">privacy_epsilon()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.share_probability"><code class="docutils literal notranslate"><span class="pre">share_probability()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.privacy.sharing_rule"><code class="docutils literal notranslate"><span class="pre">sharing_rule()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#multi-agent-influence-diagrams-maids">Multi-Agent Influence Diagrams (MAIDs)</a></li>
 <li><a class="reference internal" href="#ai-safety-influence-diagrams">AI-safety influence diagrams</a><ul>
 <li><a class="reference internal" href="#skagent.models.safety.incentives.content_recommender_block"><code class="docutils literal notranslate"><span class="pre">content_recommender_block</span></code></a></li>
@@ -2441,7 +2949,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=48927c76"></script>
+</div><script src="../_static/documentation_options.js?v=fb7ec161"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
