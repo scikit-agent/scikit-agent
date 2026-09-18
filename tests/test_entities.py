@@ -735,3 +735,141 @@ class TestTheShippedModel:
         assert collude_total > nash_total
         assert defector > collude_each
         assert defect_total < collude_total
+
+
+def _savings_economy(bridge, classes=("household",)):
+    """One population saving out of a wage, with *bridge* assigning next
+    period's assets. The cross-section persists only if *bridge* keeps it."""
+    household = DBlock(
+        name="household",
+        shocks={},
+        dynamics={
+            "z": lambda W, R, a: W + (1 + R) * a,
+            "c": Control(
+                ["z"], lower_bound=0.0, upper_bound=lambda z: z, agent="household"
+            ),
+            "u": lambda c: np.log(c),
+            "a": bridge,
+        },
+        reward={"u": "household"},
+    )
+    return RBlock(
+        name="savings",
+        blocks=[
+            DBlock(
+                name="market",
+                dynamics={
+                    "K": lambda a: a.mean(),
+                    "W": lambda K: 1.0 + K,
+                    "R": lambda K: 0.04,
+                },
+            ),
+            RBlock(name="households", entity=Entity(classes[0]), blocks=[household]),
+        ],
+    )
+
+
+def _run(block, size=8, samples=2, periods=3):
+    sim = Simulator(
+        {"household": size},
+        block,
+        {"c": lambda z: 0.7 * z},
+        {"a": Uniform(low=1.0, high=5.0)},
+        sample_count=samples,
+        T_sim=periods,
+        seed=0,
+    )
+    sim.initialize_sim()
+    sim.simulate()
+    return sim
+
+
+class TestTheBridgeIsChecked:
+    """The value that becomes a per-instance arrival state may not broadcast.
+
+    A bridge that reduces leaves every aggregate of the population unchanged
+    while destroying its cross-section, so it is the one structural error no
+    later check and no summary statistic can report.
+    """
+
+    def test_a_bridge_that_keeps_the_cross_section_is_accepted(self):
+        sim = _run(_savings_economy(lambda z, c: z - c))
+        assert np.std(sim.vars_now["a"]) > 0
+
+    def test_a_bridge_that_reduces_over_its_class_raises(self):
+        with pytest.raises(ValueError, match="each instance needs its own value"):
+            _run(_savings_economy(lambda z, c: (z - c).mean()))
+
+    def test_a_bridge_that_keeps_one_value_in_an_array_raises_too(self):
+        """A reduction that keeps its axis is still a reduction. It never needs
+        widening, so a rule written against the widening lets it through."""
+        with pytest.raises(ValueError, match="each instance needs its own value"):
+            _run(_savings_economy(lambda z, c: (z - c).mean(keepdims=True)))
+
+    def test_the_collapse_it_refuses_leaves_every_aggregate_unchanged(self):
+        """Why the check has to exist rather than being caught downstream: the
+        two models agree on the aggregate path to machine precision, so nothing
+        reading totals or moments of totals can tell them apart."""
+        size = 8
+
+        def path(bridge):
+            block = _savings_economy(bridge)
+            a = np.linspace(1.0, 5.0, size)
+            capital = []
+            for _ in range(6):
+                post = block.transition(
+                    {"household": size, "a": a}, {"c": lambda z: 0.7 * z}
+                )
+                a = np.broadcast_to(np.asarray(post["a"]), (size,))
+                capital.append(float(a.mean()))
+            return capital, float(a.std())
+
+        kept, spread_kept = path(lambda z, c: z - c)
+        collapsed, spread_collapsed = path(lambda z, c: (z - c).mean())
+
+        assert np.allclose(kept, collapsed, rtol=0, atol=1e-12)
+        assert spread_kept > 0
+        assert spread_collapsed == 0.0
+
+    def test_an_ordinary_per_instance_equation_may_still_broadcast(self):
+        """The refusal is the bridge's alone; a broadcast elsewhere is how an
+        axis-free value is read inside a class and must go on working."""
+        block = _savings_economy(lambda z, c: z - c)
+        block.blocks[1].blocks[0].dynamics["flat"] = lambda: 1.0
+        sim = _run(block)
+        assert np.shape(sim.vars_now["flat"])[1:] == (8,)
+
+    def test_a_value_indexed_by_the_wrong_class_raises(self):
+        """CROSS, which exists only once two classes do: an arrival state of one
+        population handed a value indexed by another. The same rule as the
+        reduction above, reached by carrying somebody else's axis rather than
+        by dropping its own."""
+        block = RBlock(
+            name="cross",
+            blocks=[
+                DBlock(name="market", dynamics={"P": lambda a: float(np.mean(a))}),
+                RBlock(
+                    name="firms",
+                    entity=Entity("firm"),
+                    blocks=[DBlock(name="firm", dynamics={"q": lambda P: P * 2.0})],
+                ),
+                RBlock(
+                    name="hs",
+                    entity=Entity("household"),
+                    blocks=[DBlock(name="hh", dynamics={"a": lambda q: q * 1.0})],
+                ),
+            ],
+        )
+        sim = Simulator(
+            {"household": 8, "firm": 3},
+            block,
+            {},
+            {"a": Uniform(low=1.0, high=5.0)},
+            sample_count=2,
+            T_sim=2,
+            seed=0,
+        )
+        sim.initialize_sim()
+
+        with pytest.raises(ValueError, match=r"class calls for \(2, 8\)"):
+            sim.simulate()

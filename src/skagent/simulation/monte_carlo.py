@@ -142,6 +142,13 @@ class Simulator:
         self.entities = block.entities()
         self.entity_sizes = self._resolve_entity_sizes(calibration)
         self.crossings = block.crossings()
+        # The bridge: an arrival state that is an attribute of an entity class,
+        # so its value this period becomes each instance's state next period.
+        self.plated_arrival_states = {
+            sym
+            for sym in block.get_arrival_states(calibration)
+            if self.signatures.get(sym, frozenset())
+        }
 
         self.dynamics = block.get_dynamics()
         self.dr = dr
@@ -317,7 +324,13 @@ class Simulator:
         which is what keeps a reduction from silently averaging over samples as
         well as over instances.
         """
-        shapes = {var: self._entity_shape(var) for var in self.vars}
+        # A bridge is left out: widening happens as the value is produced, so
+        # widening one there would erase the evidence that it was ever single.
+        shapes = {
+            var: self._entity_shape(var)
+            for var in self.vars
+            if var not in self.plated_arrival_states
+        }
         per_sample = []
         for s in range(self.sample_count):
             sliced = {
@@ -344,6 +357,10 @@ class Simulator:
         over one is the error this whole feature exists to catch, and it is
         caught here rather than several steps downstream where the shape happens
         to stop broadcasting.
+
+        A bridge is held to the stricter rule: it must carry its class's axis,
+        where an ordinary per-instance equation may return one value for
+        everyone.
         """
         for var in self.vars:
             if var not in post:
@@ -351,8 +368,21 @@ class Simulator:
             value = np.asarray(post[var])
             expected = self._entity_shape(var)
             actual = value.shape[1:] if value.ndim else ()
+            if actual == expected:
+                continue
+            if var in self.plated_arrival_states:
+                raise ValueError(
+                    f"the equation for {var!r} returned shape {value.shape} "
+                    f"where its class calls for "
+                    f"{(self.sample_count,) + expected}, and {var!r} is an "
+                    f"arrival state, so each instance needs its own value. "
+                    f"Reducing here would replace the cross-section with a "
+                    f"single number and leave every aggregate of it unchanged, "
+                    f"so no later check and no summary statistic could report "
+                    f"it."
+                )
             # A per-instance equation may return one value, which broadcasts.
-            if actual == expected or actual == ():
+            if actual == ():
                 continue
             entities = sorted(self.signatures.get(var, frozenset()))
             described = (

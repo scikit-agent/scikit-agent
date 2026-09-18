@@ -57,6 +57,13 @@ and this project adheres to
 
 ### Fixed
 
+- The simulator refuses an arrival state that is an entity attribute but does
+  not carry that entity's axis. Each instance's state next period has to be its
+  own; a value standing for the whole class replaces the cross-section with a
+  single number and leaves every aggregate of it unchanged, so the model goes on
+  producing the same path and nothing downstream can report it. An ordinary
+  per-instance equation may still return one value and broadcast.
+
 - An agent that owns several reward symbols is paid their sum everywhere, not
   the first symbol declared.
   `Block.get_state_rule_value_function_from_continuation` took
