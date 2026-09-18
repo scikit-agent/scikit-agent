@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.1.1.dev133+gab7e70140</title>
+        <title>Models - scikit-agent 0.1.1.dev134+g2ac1bdb13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev133+gab7e70140</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev134+g2ac1bdb13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -854,13 +854,13 @@ horizon; the terminal rule is <span class="math notranslate nohighlight">\(c_1 =
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;m&quot;</span></code> (cash-on-hand at the start of period 0).</p></li>
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Arrival states. Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (assets carried into period 0).</p></li>
 <li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Unused; the model is deterministic.</p></li>
 <li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Rfree&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_0}</span></code> whose dtype follows the input cash-on-hand.</p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_0}</span></code> whose dtype follows the input assets.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
@@ -2441,7 +2441,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d91c0435"></script>
+</div><script src="../_static/documentation_options.js?v=ddd2a7e2"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

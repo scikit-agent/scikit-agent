@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Examples" href="../auto_examples/index.html"><link rel="prev" title="Constraining an Optimization Problem" href="constraints.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Models - scikit-agent 0.1.1.dev133+gab7e70140</title>
+        <title>Benchmark Models - scikit-agent 0.1.1.dev134+g2ac1bdb13</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev133+gab7e70140</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev134+g2ac1bdb13</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -318,12 +318,12 @@ model by model, with equations and plots; this page stays focused on what the
 registry contains and how to call it.</p>
 <section id="roster">
 <h2>Roster<a class="headerlink" href="#roster" title="Link to this heading">¶</a></h2>
-<p>The models below split into two groups. Seven ship in the <code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code>
+<p>The models below split into two groups. Eight ship in the <code class="docutils literal notranslate"><span class="pre">BENCHMARK_MODELS</span></code>
 registry, each reachable through
 <a class="reference internal" href="../api/models.html#skagent.models.benchmarks.list_benchmark_models" title="skagent.models.benchmarks.list_benchmark_models"><code class="xref py py-func docutils literal notranslate"><span class="pre">list_benchmark_models()</span></code></a> by the short
 registry key shown in the table. Those keys, such as <code class="docutils literal notranslate"><span class="pre">D-1</span></code> or <code class="docutils literal notranslate"><span class="pre">U-2</span></code>, are
 internal identifiers rather than names anyone uses at the whiteboard, so the
-table leads with each model’s descriptive name. The remaining four models ship
+table leads with each model’s descriptive name. The remaining three models ship
 as standalone modules.</p>
 <p><strong>Registry models</strong> (fetch with
 <a class="reference internal" href="../api/models.html#skagent.models.benchmarks.get_benchmark_model" title="skagent.models.benchmarks.get_benchmark_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_benchmark_model()</span></code></a> and the registry key):</p>
@@ -380,6 +380,12 @@ as standalone modules.</p>
 <td><p>Constant <span class="math notranslate nohighlight">\(y\)</span>, binding constraint</p></td>
 <td><p>None (VFI reference policy)</p></td>
 </tr>
+<tr class="row-odd"><td><p>Fisher two-period</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">D-5</span></code></p></td>
+<td><p>CRRA</p></td>
+<td><p>Constant <span class="math notranslate nohighlight">\(y\)</span></p></td>
+<td><p>CRRA Euler + budget<a class="footnote-reference brackets" href="#fi" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -393,19 +399,15 @@ as standalone modules.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.fisher" title="skagent.models.fisher"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fisher</span></code></a></p></td>
-<td><p>Fisher two-period</p></td>
-<td><p>CRRA Euler + budget</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.perfect_foresight" title="skagent.models.perfect_foresight"><code class="xref py py-mod docutils literal notranslate"><span class="pre">perfect_foresight</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.perfect_foresight" title="skagent.models.perfect_foresight"><code class="xref py py-mod docutils literal notranslate"><span class="pre">perfect_foresight</span></code></a></p></td>
 <td><p>PF with mortality and growth</p></td>
 <td><p>Linear in total wealth</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.perfect_foresight_normalized" title="skagent.models.perfect_foresight_normalized"><code class="xref py py-mod docutils literal notranslate"><span class="pre">perfect_foresight_normalized</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.perfect_foresight_normalized" title="skagent.models.perfect_foresight_normalized"><code class="xref py py-mod docutils literal notranslate"><span class="pre">perfect_foresight_normalized</span></code></a></p></td>
 <td><p>Same, normalized variables</p></td>
 <td><p>Linear in normalized wealth</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.resource_extraction" title="skagent.models.resource_extraction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">resource_extraction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/models.html#module-skagent.models.resource_extraction" title="skagent.models.resource_extraction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">resource_extraction</span></code></a></p></td>
 <td><p>Reed (1979) renewable resource</p></td>
 <td><p>Constant escapement</p></td>
 </tr>
@@ -470,6 +472,14 @@ form.</p></li>
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
 <p>The U-1 closed form requires the calibration restriction <span class="math notranslate nohighlight">\(\beta R = 1\)</span>; the
 Hall martingale result holds for any income process given that restriction.</p>
+</aside>
+<aside class="footnote brackets" id="fi" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>D-5’s closed form is the <em>period-0</em> rule of a two-period problem; the
+terminal rule is <span class="math notranslate nohighlight">\(c = m\)</span>. The horizon is not in the block, so a solver
+iterated to a fixed point on it answers the infinite-horizon question
+instead. <code class="docutils literal notranslate"><span class="pre">skagent.models.fisher.T</span></code> is the number of backups that reproduce
+the closed form.</p>
 </aside>
 </aside>
 
@@ -550,7 +560,7 @@ Hall martingale result holds for any income process given that restriction.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d91c0435"></script>
+</div><script src="../_static/documentation_options.js?v=ddd2a7e2"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

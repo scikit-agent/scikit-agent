@@ -169,6 +169,7 @@ re-derived here.
       U-2 (closed form   ): PASSED  U-2: Log utility (normalized), no borrowing constraint, σ_ψ=0
       U-3 (numerical only): FAILED  U-3: Buffer stock model (normalized) with CRRA=2, permanent + transitory shocks
       D-4 (numerical only): FAILED  D-4: Deterministic CRRA with binding borrowing constraint (no closed form)
+      D-5 (closed form   ): PASSED  D-5: Fisher two-period intertemporal consumption
 
 
 
@@ -709,7 +710,7 @@ Where to Read Next
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.930 seconds)
+   **Total running time of the script:** (0 minutes 0.947 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_benchmark_models.py:
