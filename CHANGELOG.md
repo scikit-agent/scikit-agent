@@ -57,6 +57,19 @@ and this project adheres to
 
 ### Fixed
 
+- An agent that owns several reward symbols is paid their sum everywhere, not
+  the first symbol declared.
+  `Block.get_state_rule_value_function_from_continuation` took
+  `calc_reward(vals).values()[0]`, and the three residual builders in
+  `skagent.bellman` took `get_reward_sym`, the first symbol matching the agent.
+  An additively decomposed utility -- the Tree Killer benchmark's Alice, paid
+  `E + V` -- was therefore valued at one of its parts, and a part that does not
+  move with the control made the Euler and FOC builders refuse the model as
+  having a reward structurally independent of the decision. The value functions
+  also take an `agent` now, and refuse one the block does not pay rather than
+  returning the empty sum. `BellmanPeriod.get_reward_sym` is removed;
+  `get_reward_syms` is what every caller wanted.
+
 - The `rng` argument to `draw_shocks` reaches the distributions a shock draws
   through, so seeding at the draw is reproducible. It set the generator on the
   shock itself and stopped there, and an `IndexDistribution` draws through one

@@ -847,3 +847,96 @@ class TestOnePassPerObjective(unittest.TestCase):
         with count_calls(bp.block, "transition") as passes:
             bellman.estimate_bellman_residual(bp, vf, df, states_t, shocks)
         self.assertEqual(passes["n"], 1)
+
+
+def _decomposed_and_fused_bps():
+    """One payoff in two parts, and the same payoff written as one symbol.
+
+    ``upkeep`` is declared FIRST and does not move with the control, which is
+    what a decomposed utility looks like at its most awkward: reading one
+    symbol reads the wrong one, and reading the wrong one here reads a payoff
+    the decision cannot affect at all.
+    """
+    decomposed = model.DBlock(
+        name="decomposed",
+        dynamics={
+            "c": model.Control(["a"]),
+            "upkeep": lambda a: -0.3 * a,
+            "u": lambda c: torch.log(c) - 0.1 * c,
+            "a": lambda a, c: a - c,
+        },
+        reward={"upkeep": "consumer", "u": "consumer"},
+    )
+    fused = model.DBlock(
+        name="fused",
+        dynamics={
+            "c": model.Control(["a"]),
+            "u": lambda a, c: -0.3 * a + torch.log(c) - 0.1 * c,
+            "a": lambda a, c: a - c,
+        },
+        reward={"u": "consumer"},
+    )
+    return (
+        bellman.BellmanPeriod(decomposed, "beta", {"beta": 0.9}),
+        bellman.BellmanPeriod(fused, "beta", {"beta": 0.9}),
+    )
+
+
+class TestAPayoffWrittenInSeveralParts(unittest.TestCase):
+    """An additively decomposed utility is one payoff, and each estimator reads all of it.
+
+    Every case here is the same claim under a different estimator: the
+    decomposed block and the block whose single reward symbol is their sum are
+    the same model, so they must return the same number.
+    """
+
+    def setUp(self):
+        self.decomposed, self.fused = _decomposed_and_fused_bps()
+        self.states = {"a": torch.tensor([2.0, 4.0])}
+        self.df = lambda s, sh, p: {"c": 0.5 * s["a"]}
+        self.vf = lambda s, sh, p: 10.0 * s["a"]
+
+    def test_the_bellman_residual_reads_the_whole_payoff(self):
+        # This one reads the reward LEVEL, so the part that does not move with
+        # the control still belongs in it.
+        both = bellman.estimate_bellman_residual(
+            self.decomposed, self.vf, self.df, self.states, {}
+        )
+        one = bellman.estimate_bellman_residual(
+            self.fused, self.vf, self.df, self.states, {}
+        )
+
+        self.assertTrue(torch.allclose(both, one))
+
+    def test_the_euler_residual_differentiates_the_whole_payoff(self):
+        # And this one reads the MARGINAL, so the part that does move with the
+        # control belongs in it -- the -0.1c term, which shifts the residual.
+        both = bellman.estimate_euler_residual(
+            self.decomposed, self.df, self.states, {}, {"beta": 0.9}
+        )
+        one = bellman.estimate_euler_residual(
+            self.fused, self.df, self.states, {}, {"beta": 0.9}
+        )
+
+        self.assertEqual(set(both), {"c"})
+        self.assertTrue(torch.allclose(both["c"], one["c"]))
+
+    def test_the_foc_residual_differentiates_the_whole_payoff(self):
+        both = bellman.estimate_bellman_foc_residual(
+            self.decomposed, self.vf, self.df, self.states, {}
+        )
+        one = bellman.estimate_bellman_foc_residual(
+            self.fused, self.vf, self.df, self.states, {}
+        )
+
+        self.assertTrue(torch.allclose(both["c"], one["c"]))
+
+    def test_a_part_the_control_cannot_move_is_not_an_independent_payoff(self):
+        # ``upkeep`` alone is structurally independent of ``c``, which is the
+        # refusal these estimators raise. It is not a payoff on its own, so the
+        # test belongs on the sum, and the sum does move with the control.
+        residual = bellman.estimate_euler_residual(
+            self.decomposed, self.df, self.states, {}, {"beta": 0.9}
+        )
+
+        self.assertTrue(torch.all(torch.isfinite(residual["c"])))

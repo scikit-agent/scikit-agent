@@ -168,19 +168,6 @@ class BellmanPeriod(GroundedBlock):
             )
         return reward_vars
 
-    def get_reward_sym(self, agent: str | None = None) -> str:
-        """Return the first reward symbol for *agent* (or any agent if *agent* is None).
-
-        If multiple reward symbols match, only the first is returned.
-        Models with multiple rewards per agent are not currently supported.
-
-        Raises
-        ------
-        ValueError
-            If no reward variables match the given agent.
-        """
-        return self.get_reward_syms(agent)[0]
-
     def compute_pre_state(
         self,
         control_sym: str,
@@ -912,8 +899,8 @@ def estimate_bellman_residual(
 
     Notes
     -----
-    Single-reward, multi-control: this function returns a single residual
-    tensor, evaluated against the first reward variable matching ``agent``.
+    Multi-control: this function returns a single residual tensor, evaluated
+    against the sum of the reward variables ``agent`` owns.
     For multi-control models it complements
     :func:`estimate_euler_residual` (which returns one residual per
     control) and :func:`estimate_bellman_foc_residual` (which returns one
@@ -921,7 +908,7 @@ def estimate_bellman_residual(
     """
     shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
 
-    reward_sym = bellman_period.get_reward_sym(agent)
+    reward_syms = bellman_period.get_reward_syms(agent)
 
     # V(s_t) — value at the period-t arrival state
     current_values = bellman_period.compute_value(
@@ -938,7 +925,7 @@ def estimate_bellman_residual(
     post = bellman_period.post_function(
         states_t, controls_t, shocks=shocks_t, parameters=parameters
     )
-    immediate_reward = post[reward_sym]
+    immediate_reward = sum(post[sym] for sym in reward_syms)
     discount_factor = bellman_period.resolve_discount_factor(post)
     next_states = bellman_period.select_arrival_states(post)
 
@@ -1046,7 +1033,7 @@ def _euler_residual_single_control(
     bellman_period: BellmanPeriod,
     discount_factor: Any,
     control_sym: str,
-    reward_sym: str,
+    reward_syms: list[str],
     states_t: dict[str, Any],
     controls_t: dict[str, Any],
     states_t_plus_1: dict[str, Any],
@@ -1074,11 +1061,14 @@ def _euler_residual_single_control(
         agent=agent,
         create_graph=True,
     )
-    marginal_reward_t = grads_t[reward_sym][control_sym]
+    # The payoff is the SUM of the agent's reward symbols, so the marginal is
+    # the sum of their marginals -- and the test below is on that sum, since a
+    # decomposed utility may have a part that does not depend on this control.
+    marginal_reward_t = sum(grads_t[sym][control_sym] for sym in reward_syms)
     if not torch.any(marginal_reward_t != 0):
         raise ValueError(
-            f"Marginal reward at period t is zero at every sample point: "
-            f"reward '{reward_sym}' is structurally independent of control "
+            f"Marginal reward at period t is zero at every sample point: the "
+            f"payoff {reward_syms} is structurally independent of control "
             f"'{control_sym}', or its gradient vanishes on the whole batch"
         )
 
@@ -1092,11 +1082,11 @@ def _euler_residual_single_control(
         agent=agent,
         create_graph=True,
     )
-    marginal_reward_t1 = grads_t1[reward_sym][control_sym]
+    marginal_reward_t1 = sum(grads_t1[sym][control_sym] for sym in reward_syms)
     if not torch.any(marginal_reward_t1 != 0):
         raise ValueError(
-            f"Marginal reward at period t+1 is zero at every sample point: "
-            f"reward '{reward_sym}' is structurally independent of control "
+            f"Marginal reward at period t+1 is zero at every sample point: the "
+            f"payoff {reward_syms} is structurally independent of control "
             f"'{control_sym}', or its gradient vanishes on the whole batch"
         )
 
@@ -1201,7 +1191,7 @@ def estimate_euler_residual(
     """
     shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
 
-    reward_sym = bellman_period.get_reward_sym(agent)
+    reward_syms = bellman_period.get_reward_syms(agent)
 
     # Period-t controls and transition
     if controls_t is None:
@@ -1233,7 +1223,7 @@ def estimate_euler_residual(
             bellman_period,
             discount_factor,
             control_sym,
-            reward_sym,
+            reward_syms,
             states_t,
             controls_t,
             states_t_plus_1,
@@ -1305,7 +1295,7 @@ def estimate_bellman_foc_residual(
         Mapping from each control symbol to its FOC residual tensor.
     """
     shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
-    reward_sym = bellman_period.get_reward_sym(agent)
+    reward_syms = bellman_period.get_reward_syms(agent)
 
     controls_t = bellman_period.compute_controls(
         df, states_t, shocks=shocks_t, parameters=parameters
@@ -1331,11 +1321,11 @@ def estimate_bellman_foc_residual(
             agent=agent,
             create_graph=True,
         )
-        mr_t = reward_grads[reward_sym][control_sym]
+        mr_t = sum(reward_grads[sym][control_sym] for sym in reward_syms)
         if not torch.any(mr_t != 0):
             raise ValueError(
-                f"Marginal reward is zero at every sample point: "
-                f"reward '{reward_sym}' is structurally independent of control "
+                f"Marginal reward is zero at every sample point: the payoff "
+                f"{reward_syms} is structurally independent of control "
                 f"'{control_sym}', or its gradient vanishes on the whole batch"
             )
 

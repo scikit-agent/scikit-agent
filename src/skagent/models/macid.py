@@ -109,13 +109,9 @@ tree_killer_block = DBlock(
             # Bob's doctor fee
             "Cost": lambda TDoc: -0.2 * TDoc,
         },
-        # TODO(roadmap: multi-reward): each agent has an additively decomposed
-        # utility (Alice: E + V; Bob: Tree + Cost), which is the intended syntax
-        # for multiple reward variables per agent. The relevance machinery
-        # aggregates these correctly, but the single-agent solver path currently
-        # assumes one reward variable per block (see Block
-        # get_state_rule_value_function_from_continuation). Handling additive
-        # multi-utility in the solver is future roadmap work.
+        # Each agent has an additively decomposed utility -- Alice: E + V;
+        # Bob: Tree + Cost -- which is the syntax for several reward variables
+        # per agent. An agent is paid their sum.
         "reward": {
             "E": "alice",
             "V": "alice",
