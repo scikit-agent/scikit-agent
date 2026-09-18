@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev134+g2ac1bdb13</title>
+        <title>Blocks - scikit-agent 0.1.1.dev137+g308018d75</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev134+g2ac1bdb13</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev137+g308018d75</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -978,6 +978,39 @@ each draws its own path.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skagent.ground.GroundedBlock.expected_payoff">
+<span class="sig-name descname"><span class="pre">expected_payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">policies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measure</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.GroundedBlock.expected_payoff" title="Link to this definition">¶</a></dt>
+<dd><p>What a policy profile is worth, under <em>measure</em>.</p>
+<p>Runs the block under <em>policies</em> and takes the expectation of the
+rewards <em>agent</em> owns. The block’s period is taken as it stands: this is
+the payoff of one pass through it, with no continuation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>policies</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – A decision rule for every control of the block. This is the profile
+the expectation is taken under, so a rule left out is a symbol the
+block cannot compute.</p></li>
+<li><p><strong>measure</strong> (<a class="reference internal" href="#skagent.ground.Measure" title="skagent.ground.Measure"><em>Measure</em></a>) – The reduction that turns the block’s shocks into one number. There
+is no default: a sampled estimate and a discretized one carry
+different error, so a caller stating a tolerance has to have chosen
+which it is stating it about.</p></li>
+<li><p><strong>states</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Values for the symbols the block reads on arrival. A block with
+arrival states cannot be run without them.</p></li>
+<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Whose payoff to take. Omitted, every reward symbol in the block is
+summed, which is one agent’s payoff only where the block has one
+agent.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The expectation, beside the axis that was reduced to reach it.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#skagent.ground.ExpectedPayoff" title="skagent.ground.ExpectedPayoff">ExpectedPayoff</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skagent.ground.GroundedBlock.shock_distributions">
 <span class="sig-name descname"><span class="pre">shock_distributions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.GroundedBlock.shock_distributions" title="Link to this definition">¶</a></dt>
 <dd><p>This instance’s shocks, resolved against its calibration.</p>
@@ -1020,6 +1053,149 @@ model, not a different model.</p>
 </dd>
 </dl>
 </dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="measures">
+<h3>Measures<a class="headerlink" href="#measures" title="Link to this heading">¶</a></h3>
+<p>What a payoff expectation is reduced over. A profile’s worth is asked for with
+one of these, since a sampled estimate and one taken over a discretization carry
+different error and a caller holding a number to a tolerance has to know which
+it has.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.ground.Measure">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ground.</span></span><span class="sig-name descname"><span class="pre">Measure</span></span><a class="headerlink" href="#skagent.ground.Measure" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>How an expectation over a block’s shocks is taken.</p>
+<p>A measure reduces one axis and says which: a subclass draws the shocks and
+reduces the draws, or discretizes them and reduces the nodes. What it
+reduces over is its own configuration – a sample count, a table of
+discretization arguments – so a caller passes a measure rather than the
+union of every measure’s arguments, and a third reduction arrives as a
+class rather than as another branch.</p>
+<p>The two do not carry the same error, which is why there is a type here
+rather than a flag: sampling error falls with the number of draws, and a
+discretization’s error is a property of the rule its nodes came from.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ground.Measure.reduce">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">reduce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">integrand</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.Measure.reduce" title="Link to this definition">¶</a></dt>
+<dd><p>Reduce <em>integrand</em> over this measure’s axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ground</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">GroundedBlock</span></code></a></span>) – The pair whose shocks are being integrated. A measure reads its
+resolved distributions and, where it draws, its generator.</p></li>
+<li><p><strong>integrand</strong> (<em>Callable</em>) – Takes a mapping from shock symbol to value – one point of the
+axis, or the whole axis at once where the measure is vectorized –
+and returns what is being averaged.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.ground.ExpectedPayoff" title="skagent.ground.ExpectedPayoff"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpectedPayoff</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.ground.Sampled">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ground.</span></span><span class="sig-name descname"><span class="pre">Sampled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.Sampled" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#skagent.ground.Measure" title="skagent.ground.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">Measure</span></code></a></p>
+<p>Reduce the sample axis: the mean over <em>n</em> draws of the block’s shocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Realizations to draw. The estimate carries sampling error, which falls
+as <em>n</em> rises.</p></li>
+<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Generator to draw from, in place of the one the pair carries. Two
+reductions run against generators in the same state see the same
+draws, which is what makes two profiles comparable rather than
+separated by the noise of their own draws.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ground.Sampled.reduce">
+<span class="sig-name descname"><span class="pre">reduce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">integrand</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.Sampled.reduce" title="Link to this definition">¶</a></dt>
+<dd><p>The mean of <em>integrand</em> over this measure’s draws of <em>ground</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ground</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">GroundedBlock</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.ground.ExpectedPayoff" title="skagent.ground.ExpectedPayoff"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpectedPayoff</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.ground.Discretized">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ground.</span></span><span class="sig-name descname"><span class="pre">Discretized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.Discretized" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#skagent.ground.Measure" title="skagent.ground.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">Measure</span></code></a></p>
+<p>Reduce the nodes of a discretization, against their own weights.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>disc_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>] | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Arguments to <code class="docutils literal notranslate"><span class="pre">Distribution.discretize</span></code>, per shock. A shock named here
+is discretized with those arguments; a continuous shock left out is
+discretized with its own defaults; a shock already discrete is taken as
+it stands.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.ground.Discretized.reduce">
+<span class="sig-name descname"><span class="pre">reduce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">integrand</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.Discretized.reduce" title="Link to this definition">¶</a></dt>
+<dd><p>The weighted sum of <em>integrand</em> over the discretization’s nodes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ground</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">GroundedBlock</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.ground.ExpectedPayoff" title="skagent.ground.ExpectedPayoff"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpectedPayoff</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.ground.ExpectedPayoff">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ground.</span></span><span class="sig-name descname"><span class="pre">ExpectedPayoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ground.ExpectedPayoff" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>An expected payoff, and the axis the expectation was taken over.</p>
+<p>The two reductions do not carry the same kind of error – one falls with
+the number of draws and the other is a property of the rule the nodes came
+from – so a number that has lost which axis produced it cannot be held to
+a tolerance. <code class="docutils literal notranslate"><span class="pre">value</span></code> is the expectation, <code class="docutils literal notranslate"><span class="pre">axis</span></code> is what was reduced to
+reach it (<code class="docutils literal notranslate"><span class="pre">&quot;samples&quot;</span></code> for draws of the block’s shocks, <code class="docutils literal notranslate"><span class="pre">&quot;nodes&quot;</span></code> for a
+discretization of them), and <code class="docutils literal notranslate"><span class="pre">size</span></code> is how many points of that axis it
+rests on. Reading it as a plain number is <code class="docutils literal notranslate"><span class="pre">float(result)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></span>)</p></li>
+<li><p><strong>axis</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>size</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.ground.ExpectedPayoff.axis">
+<span class="sig-name descname"><span class="pre">axis</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#skagent.ground.ExpectedPayoff.axis" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.ground.ExpectedPayoff.size">
+<span class="sig-name descname"><span class="pre">size</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#skagent.ground.ExpectedPayoff.size" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.ground.ExpectedPayoff.value">
+<span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span><a class="headerlink" href="#skagent.ground.ExpectedPayoff.value" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -1335,8 +1511,30 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.ground.GroundedBlock.calibration"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.calibration</span></code></a></li>
 <li><a class="reference internal" href="#skagent.ground.GroundedBlock.rng"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.rng</span></code></a></li>
 <li><a class="reference internal" href="#skagent.ground.GroundedBlock.draw_shocks"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.draw_shocks()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.GroundedBlock.expected_payoff"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.expected_payoff()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.ground.GroundedBlock.shock_distributions"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.shock_distributions()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.ground.GroundedBlock.with_rng"><code class="docutils literal notranslate"><span class="pre">GroundedBlock.with_rng()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#measures">Measures</a><ul>
+<li><a class="reference internal" href="#skagent.ground.Measure"><code class="docutils literal notranslate"><span class="pre">Measure</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.ground.Measure.reduce"><code class="docutils literal notranslate"><span class="pre">Measure.reduce()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.ground.Sampled"><code class="docutils literal notranslate"><span class="pre">Sampled</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.ground.Sampled.reduce"><code class="docutils literal notranslate"><span class="pre">Sampled.reduce()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.ground.Discretized"><code class="docutils literal notranslate"><span class="pre">Discretized</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.ground.Discretized.reduce"><code class="docutils literal notranslate"><span class="pre">Discretized.reduce()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.ground.ExpectedPayoff"><code class="docutils literal notranslate"><span class="pre">ExpectedPayoff</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.ground.ExpectedPayoff.axis"><code class="docutils literal notranslate"><span class="pre">ExpectedPayoff.axis</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.ExpectedPayoff.size"><code class="docutils literal notranslate"><span class="pre">ExpectedPayoff.size</span></code></a></li>
+<li><a class="reference internal" href="#skagent.ground.ExpectedPayoff.value"><code class="docutils literal notranslate"><span class="pre">ExpectedPayoff.value</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1384,7 +1582,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=ddd2a7e2"></script>
+</div><script src="../_static/documentation_options.js?v=aeeda715"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
