@@ -318,6 +318,37 @@ class TestWhatAProfileIsWorth:
 
         assert float(estimate) == pytest.approx(closed_form, abs=0.05)
 
+    def test_a_torch_space_rule_can_be_scored_once_it_is_wrapped(self):
+        # What NUMPYRULE is for: a policy built in torch -- a trained network,
+        # here a closed form standing in for one -- is worth the same as the
+        # numpy rule it agrees with, and could not be handed to this machinery
+        # at all before, since a torch rule stacks its arguments.
+        #
+        # The agreement is to float32 and not to the 1e-12 the discretization
+        # reaches on its own: the wrapper converts at the default dtype the
+        # networks are trained in, so the boundary costs precision even where
+        # the quadrature is exact. Asking for float64 recovers it, which is why
+        # the dtype is an argument.
+        import torch
+
+        from skagent.algos.vfi import numpy_decision_rule
+
+        def torch_half(m):
+            return torch.as_tensor(m) / 2
+
+        ground = linear_ground()
+        exact = float(ground.expected_payoff(HALF, Discretized()))
+
+        single = {"c": numpy_decision_rule(torch_half)}
+        assert float(ground.expected_payoff(single, Discretized())) == pytest.approx(
+            exact, abs=1e-6
+        )
+
+        double = {"c": numpy_decision_rule(torch_half, dtype=torch.float64)}
+        assert float(ground.expected_payoff(double, Discretized())) == pytest.approx(
+            exact, abs=1e-12
+        )
+
     def test_two_profiles_measured_on_the_same_draws_differ_only_by_the_profile(self):
         # Comparing two profiles is the reason to ask what one is worth, and
         # under independent draws the comparison carries both estimates' noise.

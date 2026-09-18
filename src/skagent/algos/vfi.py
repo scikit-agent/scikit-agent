@@ -172,6 +172,58 @@ def tensor_decision_rule(np_rule, dtype=None, device=None):
     return tdr
 
 
+def numpy_decision_rule(torch_rule, dtype=None, device=None):
+    """
+    Wrap a torch-space decision rule so it speaks numpy.
+
+    The mirror of :func:`tensor_decision_rule`. It adapts a rule built in torch
+    -- ``ann.BlockPolicyNet.get_decision_rule``, or a Stable-Baselines policy
+    through :mod:`skagent.algos.sb3` -- for the numpy-space machinery:
+    ``block.transition``, :class:`~skagent.algos.tabular.TabularBestResponseSolver`,
+    and the sampled expectations in :mod:`skagent.ground`. A torch rule stacks
+    its arguments into a tensor, so it cannot be handed numpy or scalars at all;
+    the wrapper is what makes a trained policy scorable by that machinery.
+
+    Crossing the boundary *severs* the autograd graph in this direction too: the
+    returned controls are detached and converted, so the result is valid as a
+    fixed, ground-truth or warm-start policy and not as a trainable one.
+
+    Parameters
+    ----------
+    torch_rule : callable
+        A torch-space decision rule taking positional information-set arguments
+        and returning a torch tensor.
+    dtype : torch.dtype, optional
+        Dtype the arguments are converted to. Defaults to ``torch.float32``, the
+        dtype ``grid.py`` builds its tensors with and the networks are trained
+        in. The conversion costs precision, so a numpy computation that is exact
+        in double -- a quadrature rule against a polynomial integrand, say --
+        agrees with itself only to single precision once a wrapped rule is in
+        it. Pass ``torch.float64`` where that matters and the rule tolerates it.
+    device : torch.device, optional
+        Device the arguments are placed on. Defaults to the stack's device
+        (``skagent.grid.device``).
+
+    Returns
+    -------
+    callable
+        A rule ``ndr(*args)`` accepting numpy arrays or scalars (or torch
+        tensors) and returning a numpy array.
+    """
+    import torch
+    from skagent.grid import device as default_device
+
+    dtype = torch.float32 if dtype is None else dtype
+    device = default_device if device is None else device
+
+    def ndr(*args):
+        tensor_args = [torch.as_tensor(a, dtype=dtype, device=device) for a in args]
+        out = torch_rule(*tensor_args)
+        return out.detach().cpu().numpy() if torch.is_tensor(out) else np.asarray(out)
+
+    return ndr
+
+
 #: One coordinate vector per variable, whose cartesian product is the lattice a
 #: value array is tabulated over. Unrelated to :class:`skagent.grid.Grid`, which
 #: is a batch of scattered points rather than a per-axis specification.

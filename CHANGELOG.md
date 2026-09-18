@@ -10,6 +10,16 @@ and this project adheres to
 
 ### Added
 
+- `skagent.algos.vfi.numpy_decision_rule`, the mirror of `tensor_decision_rule`:
+  it wraps a decision rule built in torch so the numpy-space machinery can call
+  it. A torch rule stacks its arguments into a tensor, so it rejects numpy and
+  scalars outright, and a trained policy could not be scored by
+  `block.transition`, the tabular solver or the sampled expectations at all.
+  Conversion severs the autograd graph in this direction too, so the result is a
+  fixed policy rather than a trainable one, and it converts at `torch.float32`
+  by default, which costs precision where the numpy computation is exact in
+  double.
+
 - `skagent.models.fisher` is registered in `BENCHMARK_MODELS` as `D-5`, so the
   Fisher two-period problem is reachable through the registry accessors like any
   other benchmark. Its closed form is the period-0 rule of a two-period problem

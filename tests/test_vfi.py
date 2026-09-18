@@ -14,6 +14,7 @@ from conftest import (
 )
 import pytest
 import skagent.algos.vfi as vfi
+import skagent.ann as ann
 from skagent.bellman import BellmanPeriod
 from skagent.block import Control, DBlock
 from skagent.loss import BellmanEquationLoss
@@ -1042,6 +1043,55 @@ class test_vfi_solve_bellman(unittest.TestCase):
             vfi.value_array_to_function(
                 value_array, case_1["bp"], disc_params={"theta": {"N": 5}}
             )
+
+
+class test_numpy_decision_rule(unittest.TestCase):
+    """The other direction: a torch-space rule made usable by the numpy stack.
+
+    ``tensor_decision_rule`` adapts a numpy rule for the torch solvers. Nothing
+    adapted a torch rule for the numpy machinery, so a trained policy could not
+    be scored by it at all -- a network's rule stacks its arguments into a
+    tensor, which rejects numpy and scalars outright rather than degrading.
+    """
+
+    def _net_rule(self):
+        block = DBlock(
+            **{
+                "name": "linear",
+                "shocks": {},
+                "dynamics": {
+                    "c": Control(["a"], agent="consumer"),
+                    "u": lambda c: -(c**2),
+                },
+                "reward": {"u": "consumer"},
+            }
+        )
+        bp = BellmanPeriod(block, None, {})
+        net = ann.BlockPolicyNet(bp, control_sym="c", width=4)
+        return net.get_decision_rule()["c"]
+
+    def test_the_torch_rule_cannot_be_called_with_numpy_until_it_is_wrapped(self):
+        rule = self._net_rule()
+        a = np.linspace(0.5, 2.0, 4)
+
+        with self.assertRaises(TypeError):
+            rule(a)
+
+        out = vfi.numpy_decision_rule(rule)(a)
+        self.assertIsInstance(out, np.ndarray)
+        self.assertEqual(out.shape, a.shape)
+
+    def test_it_returns_what_the_torch_rule_returns(self):
+        # The wrapper converts at the boundary and does nothing else, so the
+        # numbers are the network's own.
+        rule = self._net_rule()
+        a = np.linspace(0.5, 2.0, 4)
+
+        expected = rule(torch.as_tensor(a, dtype=torch.float32, device=device))
+
+        np.testing.assert_allclose(
+            vfi.numpy_decision_rule(rule)(a), expected.detach().cpu().numpy()
+        )
 
 
 class test_vfi_protocol(unittest.TestCase):
