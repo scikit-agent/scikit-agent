@@ -18,6 +18,24 @@ and this project adheres to
   question instead. `skagent.models.fisher.T` is the number of backups that
   reproduce the closed form, and the entry says so beside itself.
 
+- `skagent.models.privacy`: the two differential-privacy causal games of
+  Benthall and Cummings (2026). Data subjects decide whether to share, an
+  analyst estimates a population mean from the reports that arrive, and a
+  designer chooses the noise scale both respond to. The local and central trust
+  models differ only in whether each subject privatizes its own report or the
+  analyst privatizes the estimate, and so in whether the noise is averaged down.
+  Both equilibrium rules have closed forms, which is what makes the model an
+  oracle: an exact backup on the projected block returns the paper's threshold
+  rule exactly, since the subject's utility is linear in its decision. The
+  analyst's rule is supplied instead, because its information set is the whole
+  class. Its two reductions -- an average over those who shared, and a prior
+  when nobody did -- are weighted sums rather than a selection and a branch, so
+  a null report is a zero weight and the estimate differentiates and batches.
+
+- A gallery page for it: the model as a causal game in both trust models, the
+  subjects' rule solved rather than assumed, the paper's error curves, and the
+  designer's sweep with the privacy guarantee it implies.
+
 ### Changed
 
 - `skagent.models.fisher.analytical_policy` takes the arrival state `a` and
@@ -56,6 +74,13 @@ and this project adheres to
   and points to a schedule that does test for convergence.
 
 ### Fixed
+
+- `skagent.solver.project` no longer raises `TypeError` on a decision that reads
+  out of the entity class it is splitting. Such a control is copied as the
+  author wrote it: the joins the projection synthesizes are what its information
+  set names, so it reads the reassembled class. It was being handed to the
+  per-instance wrapper written for equations, which asks a `Control` for
+  parameter names it does not have.
 
 - The simulator refuses an arrival state that is an entity attribute but does
   not carry that entity's axis. Each instance's state next period has to be its
