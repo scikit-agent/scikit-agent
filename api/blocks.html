@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev137+g308018d75</title>
+        <title>Blocks - scikit-agent 0.1.1.dev139+gd8cba33e0</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev137+g308018d75</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev139+gd8cba33e0</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -722,7 +722,7 @@ the <em>calibration</em> to resolve them against.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.get_arrival_value_function">
-<span class="sig-name descname"><span class="pre">get_arrival_value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_arrival_value_function" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_arrival_value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">disc_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_arrival_value_function" title="Link to this definition">¶</a></dt>
 <dd><p>Returns an arrival value function, which is the value of the states
 upon arrival into the block.</p>
 <p>This involves taking an expectation over shocks (which must
@@ -731,14 +731,18 @@ value function.)</p>
 <p>The expectation is over the distributions themselves, so a block whose
 shocks are still declared as <code class="docutils literal notranslate"><span class="pre">(class,</span> <span class="pre">arguments)</span></code> pairs must be given
 the <em>calibration</em> to resolve them against.</p>
+<p><em>agent</em> selects whose reward the value is of; see
+<a class="reference internal" href="#skagent.block.DBlock.get_state_rule_value_function_from_continuation" title="skagent.block.DBlock.get_state_rule_value_function_from_continuation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_state_rule_value_function_from_continuation()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.get_decision_value_function">
-<span class="sig-name descname"><span class="pre">get_decision_value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_decision_value_function" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_decision_value_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_decision_value_function" title="Link to this definition">¶</a></dt>
 <dd><p>Given a decision rule and a continuation value function,
 return a function for the value at the decision step/tac,
 after the shock have been realized.</p>
+<p><em>agent</em> selects whose reward the value is of; see
+<a class="reference internal" href="#skagent.block.DBlock.get_state_rule_value_function_from_continuation" title="skagent.block.DBlock.get_state_rule_value_function_from_continuation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_state_rule_value_function_from_continuation()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -753,11 +757,24 @@ after the shock have been realized.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skagent.block.DBlock.get_state_rule_value_function_from_continuation">
-<span class="sig-name descname"><span class="pre">get_state_rule_value_function_from_continuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_state_rule_value_function_from_continuation" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_state_rule_value_function_from_continuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">continuation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.DBlock.get_state_rule_value_function_from_continuation" title="Link to this definition">¶</a></dt>
 <dd><p>Given a continuation value function, returns a state-rule value
 function: the value for each state and decision rule.
 This value includes both the reward for executing the rule
 ‘this period’, and the continuation value of the resulting states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>continuation</strong> (<em>Callable</em>) – The value of the states this period’s transition arrives at.</p></li>
+<li><p><strong>screen</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Passed to <code class="xref py py-meth docutils literal notranslate"><span class="pre">transition()</span></code>.</p></li>
+<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Whose reward the value is of. An agent owning several reward
+symbols is paid their sum, an additively decomposed utility being
+one payoff written in parts. Omitted, every reward symbol in the
+block is summed, which is one agent’s payoff only where the block
+has one agent.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1582,7 +1599,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=aeeda715"></script>
+</div><script src="../_static/documentation_options.js?v=48927c76"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

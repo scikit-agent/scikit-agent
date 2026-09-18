@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Models" href="models.html"><link rel="prev" title="Blocks" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Bellman Periods - scikit-agent 0.1.1.dev137+g308018d75</title>
+        <title>Bellman Periods - scikit-agent 0.1.1.dev139+gd8cba33e0</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev137+g308018d75</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev139+gd8cba33e0</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -539,25 +539,6 @@ the callable’s responsibility.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="skagent.bellman.BellmanPeriod.get_reward_sym">
-<span class="sig-name descname"><span class="pre">get_reward_sym</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.bellman.BellmanPeriod.get_reward_sym" title="Link to this definition">¶</a></dt>
-<dd><p>Return the first reward symbol for <em>agent</em> (or any agent if <em>agent</em> is None).</p>
-<p>If multiple reward symbols match, only the first is returned.
-Models with multiple rewards per agent are not currently supported.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If no reward variables match the given agent.</p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>)</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="skagent.bellman.BellmanPeriod.get_reward_syms">
 <span class="sig-name descname"><span class="pre">get_reward_syms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.bellman.BellmanPeriod.get_reward_syms" title="Link to this definition">¶</a></dt>
 <dd><p>Return all reward symbols for <em>agent</em> (or all agents if <em>agent</em> is None).</p>
@@ -899,8 +880,8 @@ symbol (callables on the iset).</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Single-reward, multi-control: this function returns a single residual
-tensor, evaluated against the first reward variable matching <code class="docutils literal notranslate"><span class="pre">agent</span></code>.
+<p>Multi-control: this function returns a single residual tensor, evaluated
+against the sum of the reward variables <code class="docutils literal notranslate"><span class="pre">agent</span></code> owns.
 For multi-control models it complements
 <a class="reference internal" href="#skagent.bellman.estimate_euler_residual" title="skagent.bellman.estimate_euler_residual"><code class="xref py py-func docutils literal notranslate"><span class="pre">estimate_euler_residual()</span></code></a> (which returns one residual per
 control) and <a class="reference internal" href="#skagent.bellman.estimate_bellman_foc_residual" title="skagent.bellman.estimate_bellman_foc_residual"><code class="xref py py-func docutils literal notranslate"><span class="pre">estimate_bellman_foc_residual()</span></code></a> (which returns one
@@ -1060,7 +1041,6 @@ residual computation and the constraint slack computation.</p></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.decision_function"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.decision_function()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_arrival_states"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_arrival_states()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_controls"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_controls()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_reward_sym"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_reward_sym()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_reward_syms"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_reward_syms()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.get_shocks"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.get_shocks()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.grad_pre_state_function"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.grad_pre_state_function()</span></code></a></li>
@@ -1088,7 +1068,7 @@ residual computation and the constraint slack computation.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=aeeda715"></script>
+</div><script src="../_static/documentation_options.js?v=48927c76"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
