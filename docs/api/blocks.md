@@ -47,6 +47,35 @@ does, and is what solvers, simulators and environments are handed.
    :show-inheritance:
 ```
 
+### Measures
+
+What a payoff expectation is reduced over. A profile's worth is asked for with
+one of these, since a sampled estimate and one taken over a discretization carry
+different error and a caller holding a number to a tolerance has to know which
+it has.
+
+```{eval-rst}
+.. autoclass:: skagent.ground.Measure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: skagent.ground.Sampled
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: skagent.ground.Discretized
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: skagent.ground.ExpectedPayoff
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
 ### Control
 
 ```{eval-rst}

@@ -211,6 +211,14 @@ and this project adheres to
 
 ### Added
 
+- `GroundedBlock.expected_payoff(policies, measure)`, what a policy profile is
+  worth. The library could find an optimal policy four ways and could not say
+  what a given one achieved. The measure is required and is a `Measure`, which
+  carries its own configuration: `Sampled(n, rng=...)` reduces draws of the
+  block's shocks, `Discretized(disc_params)` reduces the nodes of a
+  discretization. The two carry different error, so the axis reduced and its
+  size travel back with the number as an `ExpectedPayoff`.
+
 - `skagent.parser.validate_block` refuses a block document whose keys are not a
   block's keys. A section indented one level too deep is valid YAML -- it
   becomes a variable of the section above it -- so the block loses that whole
