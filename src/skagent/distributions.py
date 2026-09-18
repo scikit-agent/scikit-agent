@@ -483,6 +483,37 @@ class TimeVaryingDiscreteDistribution:
         return results
 
 
+def set_rng(obj, rng: np.random.Generator) -> None:
+    """Point *obj* and everything it draws through at *rng*.
+
+    A distribution that holds other distributions draws through the ones it
+    holds, so its own generator is not the one that produces its values:
+    :class:`IndexDistribution` draws through ``distributions[condition]`` and
+    :class:`~skagent.block.Aggregate` through ``dist``. Seeding such an object
+    means seeding what it defers to, which is why this recurses rather than
+    assigning one attribute.
+
+    Every reachable distribution is pointed at the *same* generator, so one
+    stream produces the whole draw and the sequence is reproducible from the
+    seed that generator was built with.
+
+    Parameters
+    ----------
+    obj : any
+        A distribution, or an object wrapping one. Objects carrying none of
+        ``rng``, ``dist`` or ``distributions`` are left alone.
+    rng : numpy.random.Generator
+        The generator to draw from.
+    """
+    if hasattr(obj, "rng"):
+        obj.rng = rng
+    if hasattr(obj, "dist"):
+        set_rng(obj.dist, rng)
+    if hasattr(obj, "distributions"):
+        for dist in obj.distributions:
+            set_rng(dist, rng)
+
+
 def combine_indep_dstns(*distributions) -> DiscreteDistribution:
     """
     Combine independent discrete distributions into a joint distribution

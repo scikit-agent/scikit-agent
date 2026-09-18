@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from skagent.distributions import set_rng
+
 if TYPE_CHECKING:
     from skagent.block import Block
 
@@ -88,8 +90,6 @@ class GroundedBlock:
             assign.
         """
         if self._shocks is None:
-            from skagent.simulation.monte_carlo import _set_rng_recursive
-
             self._shocks = self.block.construct_shocks(self.calibration, rng=self.rng)
             if self.rng is not None:
                 # ``construct_shocks`` injects the generator into the
@@ -99,7 +99,7 @@ class GroundedBlock:
                 # are this instance's own distributions and seeding them here
                 # leaves the block's alone.
                 for distribution in self._shocks.values():
-                    _set_rng_recursive(distribution, self.rng)
+                    set_rng(distribution, self.rng)
         return self._shocks
 
     def with_rng(self, rng: np.random.Generator | None) -> GroundedBlock:

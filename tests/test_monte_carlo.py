@@ -4,7 +4,14 @@ This file implements unit tests for the Monte Carlo simulation module
 
 import unittest
 
-from skagent.distributions import Bernoulli, IndexDistribution, MeanOneLogNormal
+from skagent.distributions import (
+    Bernoulli,
+    DiscreteDistribution,
+    IndexDistribution,
+    MeanOneLogNormal,
+    TimeVaryingDiscreteDistribution,
+    set_rng,
+)
 from skagent.block import Aggregate, Control, DBlock, simulate_dynamics
 from skagent.simulation.monte_carlo import (
     MonteCarloSimulator,
@@ -39,6 +46,23 @@ cons_dynamics = {
 cons_dr = {"cNrm": lambda mNrm: mNrm / 2}
 
 
+def _nested_shocks():
+    """Shocks that draw through distributions they hold, rather than themselves.
+
+    Both kinds keep one child per condition and draw through the child, so a
+    generator set on the parent alone never reaches the values.
+    """
+    return {
+        "psi": IndexDistribution(MeanOneLogNormal, {"sigma": [0.2, 0.4]}),
+        "eta": TimeVaryingDiscreteDistribution(
+            [
+                DiscreteDistribution([0.0, 1.0], [0.5, 0.5]),
+                DiscreteDistribution([0.0, 2.0], [0.5, 0.5]),
+            ]
+        ),
+    }
+
+
 class test_draw_shocks(unittest.TestCase):
     def test_draw_shocks(self):
         drawn = draw_shocks(cons_shocks, np.array([0, 1]))
@@ -46,6 +70,41 @@ class test_draw_shocks(unittest.TestCase):
         self.assertEqual(len(drawn["theta"]), 2)
         self.assertEqual(len(drawn["psi"]), 2)
         self.assertTrue(isinstance(drawn["agg_gro"], float))
+
+    def test_the_seed_reaches_a_nested_distribution(self):
+        """The same seed repeats a draw, and a different one changes it."""
+        conditions = np.array([0, 1, 0, 1])
+
+        first = draw_shocks(_nested_shocks(), conditions, rng=np.random.default_rng(11))
+        again = draw_shocks(_nested_shocks(), conditions, rng=np.random.default_rng(11))
+        other = draw_shocks(
+            _nested_shocks(), conditions, rng=np.random.default_rng(999)
+        )
+
+        for sym in first:
+            np.testing.assert_allclose(first[sym], again[sym])
+            self.assertFalse(np.allclose(first[sym], other[sym]), sym)
+
+    def test_seeding_the_shock_and_seeding_the_draw_agree(self):
+        """The two ways to seed a draw are one operation, not two.
+
+        One generator for the whole call, as ``draw_shocks`` passes it: the
+        shocks share a stream and take from it in the order they are drawn.
+        """
+        conditions = np.array([0, 1, 0, 1])
+
+        seeded_first = _nested_shocks()
+        shared = np.random.default_rng(11)
+        for shock in seeded_first.values():
+            set_rng(shock, shared)
+        before = draw_shocks(seeded_first, conditions)
+
+        at_the_draw = draw_shocks(
+            _nested_shocks(), conditions, rng=np.random.default_rng(11)
+        )
+
+        for sym in before:
+            np.testing.assert_allclose(before[sym], at_the_draw[sym])
 
 
 class test_simulate_dynamics(unittest.TestCase):

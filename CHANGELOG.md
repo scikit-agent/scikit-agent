@@ -38,6 +38,16 @@ and this project adheres to
 
 ### Fixed
 
+- The `rng` argument to `draw_shocks` reaches the distributions a shock draws
+  through, so seeding at the draw is reproducible. It set the generator on the
+  shock itself and stopped there, and an `IndexDistribution` draws through one
+  child per condition while a `TimeVaryingDiscreteDistribution` has no generator
+  of its own -- so on either, passing a seed silently changed nothing. Seeding
+  now recurses, through `skagent.distributions.set_rng`, which is also what
+  `Simulator` and `GroundedBlock` have always used; the library had two seeding
+  paths that disagreed and now has one. `Environment` and `GymEnv` seed at the
+  draw and were the reachable consumers.
+
 - A VFI decision rule whose grid gives an information-set variable a single
   point is now constant along that variable, instead of returning NaN. One point
   fixes a level and says nothing about a slope, so interpolating along the axis

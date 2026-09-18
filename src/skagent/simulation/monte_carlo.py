@@ -12,6 +12,7 @@ from skagent.distributions import (
     Distribution,
     IndexDistribution,
     TimeVaryingDiscreteDistribution,
+    set_rng,
 )
 from skagent.block import Aggregate
 from skagent.block import DBlock, RBlock
@@ -41,8 +42,10 @@ def draw_shocks(
         Number of draws to do. An alternative to a conditions sequence.
 
     rng : np.random.Generator, optional
-        Random number generator to use for drawing. If provided, will be used for
-        distributions that support it.
+        Random number generator to draw from. Each shock is pointed at it
+        before the draw, as is every distribution the shock draws through, so
+        the draw is reproducible from the generator's seed. Omitted, each shock
+        draws from the generator it already holds.
 
     Returns
     -------
@@ -59,49 +62,23 @@ def draw_shocks(
     for shock_var in shocks:
         shock = shocks[shock_var]
 
+        if rng is not None:
+            set_rng(shock, rng)
+
         if isinstance(shock, (int, float)):
             draws[shock_var] = np.ones(n) * shock
         elif isinstance(shock, Aggregate):
-            # For Aggregate shocks, set RNG if the distribution supports it
-            if rng is not None and hasattr(shock.dist, "rng"):
-                shock.dist.rng = rng
             draws[shock_var] = shock.dist.draw(1)[0]
         elif isinstance(shock, IndexDistribution) or isinstance(
             shock, TimeVaryingDiscreteDistribution
         ):
             ## TODO  his type test is awkward. They should share a superclass.
-            # For index-varying distributions, set RNG if supported
-            if rng is not None and hasattr(shock, "rng"):
-                shock.rng = rng
             draws[shock_var] = shock.draw(conditions)
         else:
-            # For regular distributions, set RNG if the distribution supports it
-            if rng is not None and hasattr(shock, "rng"):
-                shock.rng = rng
             draws[shock_var] = shock.draw(n)
             # this is hacky if there are no conditions.
 
     return draws
-
-
-def _set_rng_recursive(obj, rng):
-    """
-    Recursively set the RNG on an object and its nested distributions.
-
-    Parameters
-    ----------
-    obj : any
-        An object that may have rng, dist, or distributions attributes
-    rng : np.random.Generator
-        The random number generator to set
-    """
-    if hasattr(obj, "rng"):
-        obj.rng = rng
-    if hasattr(obj, "dist") and hasattr(obj.dist, "rng"):
-        obj.dist.rng = rng
-    if hasattr(obj, "distributions"):
-        for dist in obj.distributions:
-            _set_rng_recursive(dist, rng)
 
 
 class Simulator:
@@ -209,7 +186,7 @@ class Simulator:
         does not reach it. It arrives already built and needs only seeding.
         """
         for init_dist in self.initial.values():
-            _set_rng_recursive(init_dist, self.RNG)
+            set_rng(init_dist, self.RNG)
 
     def _resolve_entity_sizes(self, calibration):
         """How many instances each declared entity class has.
