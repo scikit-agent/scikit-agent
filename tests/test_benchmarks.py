@@ -142,19 +142,20 @@ class TestBenchmarksModels:
             "U-2",
             "U-3",  # Buffer stock - no analytical solution
             "D-4",  # Deterministic constrained CRRA - no analytical solution
+            "D-5",  # Fisher two-period; closed form is the period-0 rule
         ]
         actual_models = list(BENCHMARK_MODELS.keys())
 
         assert set(expected_models) == set(actual_models), (
             f"Expected {expected_models}, got {actual_models}"
         )
-        assert len(BENCHMARK_MODELS) == 7, (
-            f"Expected 7 models, got {len(BENCHMARK_MODELS)}"
+        assert len(BENCHMARK_MODELS) == 8, (
+            f"Expected 8 models, got {len(BENCHMARK_MODELS)}"
         )
 
     @pytest.mark.parametrize(
         "model_id",
-        ["D-1", "D-2", "D-3", "U-1", "U-2"],
+        ["D-1", "D-2", "D-3", "U-1", "U-2", "D-5"],
     )
     def test_model_validation(self, model_id):
         """Test that each model passes basic validation"""
@@ -257,6 +258,7 @@ class TestBenchmarksModels:
             "U-2": "Log utility normalized",
             "U-3": "Buffer stock",
             "D-4": "binding borrowing constraint",
+            "D-5": "Fisher two-period",
         }
 
         for model_id, description in models.items():
@@ -922,17 +924,18 @@ def test_benchmark_functionality():
         "U-2",
         "U-3",  # Buffer stock - numerical only
         "D-4",  # Deterministic constrained CRRA - numerical only
+        "D-5",  # Fisher two-period
     ]
     assert set(models.keys()) == set(expected_models), (
         f"Unexpected benchmark model set: {set(models.keys())}"
     )
-    assert len(models) == 7, f"Expected 7 benchmark models, got {len(models)}"
+    assert len(models) == 8, f"Expected 8 benchmark models, got {len(models)}"
 
     # Verify analytical vs numerical classification
     analytical_models = [m for m in expected_models if has_analytical_policy(m)]
     numerical_models = [m for m in expected_models if not has_analytical_policy(m)]
 
-    assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2"}, (
+    assert set(analytical_models) == {"D-1", "D-2", "D-3", "U-1", "U-2", "D-5"}, (
         f"Unexpected analytical model set: {set(analytical_models)}"
     )
     assert set(numerical_models) == {"U-3", "D-4"}, (

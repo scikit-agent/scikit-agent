@@ -159,6 +159,7 @@ BENCHMARK_ROLES = {
     "D-2": {"c": {}},
     "D-3": {"c": {"live": HIDDEN}},
     "D-4": {"c": {}},
+    "D-5": {"c": {}},
     "U-1": {"c": {"eta": OBSERVED}},
     "U-2": {"c": {"psi": OBSERVED}},
     "U-3": {"c": {"psi": OBSERVED, "theta": OBSERVED}},

@@ -1109,8 +1109,7 @@ class test_vfi_horizon(unittest.TestCase):
     def _fisher(self, n=13, a_max=4.0):
         bp = BellmanPeriod(fisher.block, "DiscFac", fisher.calibration)
         avals = np.linspace(0.0, a_max, n)
-        m = fisher.calibration["Rfree"] * avals + fisher.calibration["y"]
-        exact = fisher.analytical_policy({"m": m}, {}, fisher.calibration)["c"]
+        exact = fisher.analytical_policy({"a": avals}, {}, fisher.calibration)["c"]
         return bp, {"a": avals}, np.asarray(exact)
 
     def test_finite_horizon_recovers_the_closed_form(self):

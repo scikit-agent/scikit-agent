@@ -8,6 +8,25 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- `skagent.models.fisher` is registered in `BENCHMARK_MODELS` as `D-5`, so the
+  Fisher two-period problem is reachable through the registry accessors like any
+  other benchmark. Its closed form is the period-0 rule of a two-period problem
+  and the horizon is not in the block, which the registry has no key for: a
+  solver iterated to a fixed point on `D-5` answers the infinite-horizon
+  question instead. `skagent.models.fisher.T` is the number of backups that
+  reproduce the closed form, and the entry says so beside itself.
+
+### Changed
+
+- `skagent.models.fisher.analytical_policy` takes the arrival state `a` and
+  derives cash-on-hand itself, where it previously took `m`. Every closed form
+  in `skagent.models.benchmarks` is a function of the arrival states, deriving
+  any information set it needs from them, and this one was a function of the
+  information set instead -- so a caller solving the block on `a` had to convert
+  before asking the oracle what the answer was.
+
 ### Removed
 
 - Three unused things: `Grid.shape()`, `skagent.grid.torched()`, and

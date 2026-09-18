@@ -35,6 +35,7 @@ from __future__ import annotations
 
 from skagent.distributions import Normal, MeanOneLogNormal, Bernoulli
 from skagent.block import Control, DBlock
+from skagent.models import fisher
 import copy
 import logging
 import torch
@@ -1081,6 +1082,11 @@ def _generate_u2_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
     return {"a": a}
 
 
+def _generate_fisher_test_states(test_points: int = 10) -> Dict[str, torch.Tensor]:
+    """Generate test states for D-5 model: a (arrival assets)"""
+    return {"a": torch.linspace(0.0, 4.0, test_points)}
+
+
 def _validate_d2_d3_solution(
     model_id: str,
     test_states: Dict[str, torch.Tensor],
@@ -1190,6 +1196,17 @@ BENCHMARK_MODELS = {
         # The independent oracle is value-function iteration:
         "reference_policy": d4_vfi_reference_policy,
         "test_states": _generate_d4_test_states,
+    },
+    "D-5": {
+        "block": fisher.block,
+        "calibration": fisher.calibration,
+        # The closed form is the PERIOD-0 rule of a two-period problem, and the
+        # horizon is not in the block: `fisher.T` is the number of backups that
+        # reproduce it, and the terminal rule is c = m. A solver iterated to a
+        # fixed point on this block answers the infinite-horizon question
+        # instead, which is a different problem with a different answer.
+        "analytical_policy": fisher.analytical_policy,
+        "test_states": _generate_fisher_test_states,
     },
 }
 

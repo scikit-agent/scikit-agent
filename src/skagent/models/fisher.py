@@ -51,6 +51,7 @@ calibration = {
     "CRRA": 2.0,
     "Rfree": 1.03,
     "y": 1.0,
+    "description": "D-5: Fisher two-period intertemporal consumption",
 }
 
 block = DBlock(
@@ -80,7 +81,7 @@ def analytical_policy(states, shocks, parameters):
     Parameters
     ----------
     states : dict
-        Must contain ``"m"`` (cash-on-hand at the start of period 0).
+        Arrival states. Must contain ``"a"`` (assets carried into period 0).
     shocks : dict
         Unused; the model is deterministic.
     parameters : dict
@@ -89,7 +90,7 @@ def analytical_policy(states, shocks, parameters):
     Returns
     -------
     dict
-        ``{"c": c_0}`` whose dtype follows the input cash-on-hand.
+        ``{"c": c_0}`` whose dtype follows the input assets.
 
     Raises
     ------
@@ -107,6 +108,9 @@ def analytical_policy(states, shocks, parameters):
     if R <= 0:
         raise ValueError(f"Rfree must be positive, got {R}")
 
-    m = states["m"]
+    # The information set of ``c``: cash-on-hand, as the block's own dynamics
+    # derive it from the arrival assets.
+    m = states["a"] * R + y
+
     growth = (beta * R) ** (1 / sigma)
     return {"c": (m + y / R) / (1 + growth / R)}

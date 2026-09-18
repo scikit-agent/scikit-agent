@@ -28,12 +28,12 @@ registry contains and how to call it.
 
 ## Roster
 
-The models below split into two groups. Seven ship in the `BENCHMARK_MODELS`
+The models below split into two groups. Eight ship in the `BENCHMARK_MODELS`
 registry, each reachable through
 {py:func}`~skagent.models.benchmarks.list_benchmark_models` by the short
 registry key shown in the table. Those keys, such as `D-1` or `U-2`, are
 internal identifiers rather than names anyone uses at the whiteboard, so the
-table leads with each model's descriptive name. The remaining four models ship
+table leads with each model's descriptive name. The remaining three models ship
 as standalone modules.
 
 **Registry models** (fetch with
@@ -48,16 +48,23 @@ as standalone modules.
 | Log utility with permanent shocks (normalized) | `U-2` | Log       | Geometric random walk            | $c = (1-\beta)(m + h)$      |
 | Buffer stock                                   | `U-3` | CRRA      | Geometric random walk            | None (numerical only)       |
 | Constrained perfect foresight                  | `D-4` | CRRA      | Constant $y$, binding constraint | None (VFI reference policy) |
+| Fisher two-period                              | `D-5` | CRRA      | Constant $y$                     | CRRA Euler + budget[^fi]    |
 
 [^br]:
     The U-1 closed form requires the calibration restriction $\beta R = 1$; the
     Hall martingale result holds for any income process given that restriction.
 
+[^fi]:
+    D-5's closed form is the _period-0_ rule of a two-period problem; the
+    terminal rule is $c = m$. The horizon is not in the block, so a solver
+    iterated to a fixed point on it answers the infinite-horizon question
+    instead. `skagent.models.fisher.T` is the number of backups that reproduce
+    the closed form.
+
 **Standalone modules (not in `BENCHMARK_MODELS`):**
 
 | Module                                                 | Problem                        | Closed form                 |
 | ------------------------------------------------------ | ------------------------------ | --------------------------- |
-| {py:mod}`~skagent.models.fisher`                       | Fisher two-period              | CRRA Euler + budget         |
 | {py:mod}`~skagent.models.perfect_foresight`            | PF with mortality and growth   | Linear in total wealth      |
 | {py:mod}`~skagent.models.perfect_foresight_normalized` | Same, normalized variables     | Linear in normalized wealth |
 | {py:mod}`~skagent.models.resource_extraction`          | Reed (1979) renewable resource | Constant escapement         |
