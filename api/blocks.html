@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.1.1.dev141+g335c6c634</title>
+        <title>Blocks - scikit-agent 0.1.1.dev143+gd2ce20efb</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev141+g335c6c634</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev143+gd2ce20efb</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -473,6 +473,27 @@ the form {“agent1” : [“var1”, “var2”, … ], “agent2” : [“var3
 <dt class="sig sig-object py" id="skagent.block.Block.get_controls">
 <span class="sig-name descname"><span class="pre">get_controls</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.get_controls" title="Link to this definition">¶</a></dt>
 <dd><p>Returns only the Control variables from the Block dynamics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.block.Block.payoff">
+<span class="sig-name descname"><span class="pre">payoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Block.payoff" title="Link to this definition">¶</a></dt>
+<dd><p>What <em>agent</em> earns at <em>vals</em>: the sum of the reward symbols they own.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vals</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Values for every variable the reward formulas depend on.</p></li>
+<li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Whose payoff to take. An agent owning several reward symbols is
+paid their sum, an additively decomposed utility being one payoff
+written in parts. Omitted, every reward symbol in the block is
+summed, which is one agent’s payoff only where the block has one
+agent.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If no reward in this block is attributed to <em>agent</em>.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1473,6 +1494,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_attributions"><code class="docutils literal notranslate"><span class="pre">Block.get_attributions()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_control"><code class="docutils literal notranslate"><span class="pre">Block.get_control()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.get_controls"><code class="docutils literal notranslate"><span class="pre">Block.get_controls()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.block.Block.payoff"><code class="docutils literal notranslate"><span class="pre">Block.payoff()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.relevance_graph"><code class="docutils literal notranslate"><span class="pre">Block.relevance_graph()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.relies_on"><code class="docutils literal notranslate"><span class="pre">Block.relies_on()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.block.Block.shock_roles"><code class="docutils literal notranslate"><span class="pre">Block.shock_roles()</span></code></a></li>
@@ -1600,7 +1622,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=fb7ec161"></script>
+</div><script src="../_static/documentation_options.js?v=db571881"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

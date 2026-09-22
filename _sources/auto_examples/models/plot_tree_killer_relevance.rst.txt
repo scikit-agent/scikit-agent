@@ -435,7 +435,7 @@ Aggregate outcomes under the solved profile:
 
     solved = block.transition(dict(solver.shocks), policies)
     for agent in sorted(set(block.reward.values())):
-        print(f"expected payoff, {agent:6s}: {solver.payoff(solved, agent).mean(): .4f}")
+        print(f"expected payoff, {agent:6s}: {block.payoff(solved, agent).mean(): .4f}")
     for sym in ["PT", "TS", "TDoc", "TDead", "BP"]:
         print(f"mean {sym:6s}: {np.mean(solved[sym]):.4f}")
 
@@ -670,7 +670,7 @@ information cells of ``TDoc``, and neither depends on anything Alice does.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.407 seconds)
+   **Total running time of the script:** (0 minutes 5.955 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_tree_killer_relevance.py:
