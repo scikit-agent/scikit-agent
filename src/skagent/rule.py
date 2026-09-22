@@ -16,6 +16,7 @@ Key functions:
 - extract_dependencies: Get variables that a rule depends on
 """
 
+import ast
 import inspect
 from skagent.distributions import Distribution
 from sympy.parsing.sympy_parser import parse_expr
@@ -97,6 +98,39 @@ def extract_dependencies(rule):
     return deps
 
 
+def _lambda_body(src):
+    """The source of a lambda's body, given the source line it was defined on.
+
+    ``inspect.getsource`` hands back the whole physical line, so a lambda that
+    is a value in a dict literal arrives with its key in front of it and the
+    dict's punctuation behind: ``dynamics={"u": lambda c: c ** 2},``. Splitting
+    on the first colon takes the key's colon, and trimming trailing characters
+    cannot tell the dict's closing brace from a parenthesis the body ends with.
+
+    So the fragment is parsed instead. From ``lambda`` onwards, the longest
+    prefix that parses as a lambda expression is the lambda, and everything
+    after it belonged to the line rather than to the rule.
+
+    Returns
+    -------
+    str or None
+        The body's source, or None if *src* holds no lambda.
+    """
+    start = src.find("lambda")
+    if start == -1:
+        return None
+
+    fragment = src[start:]
+    for end in range(len(fragment), len("lambda"), -1):
+        try:
+            node = ast.parse(fragment[:end], mode="eval").body
+        except SyntaxError:
+            continue
+        if isinstance(node, ast.Lambda):
+            return ast.unparse(node.body)
+    return None
+
+
 def extract_formula(rule):
     """
     Extract formula as string from a rule.
@@ -123,13 +157,12 @@ def extract_formula(rule):
     elif callable(rule):
         try:
             src = inspect.getsource(rule).strip()
-            if "lambda" in src:
-                # Extract lambda body
-                return src.split(":", 1)[1].strip().rstrip(",)")
-            else:
-                # Try to get function name and params
-                params = list(inspect.signature(rule).parameters.keys())
-                return f"Function({', '.join(params)})"
+            body = _lambda_body(src)
+            if body is not None:
+                return body
+            # Try to get function name and params
+            params = list(inspect.signature(rule).parameters.keys())
+            return f"Function({', '.join(params)})"
         except (OSError, TypeError):
             print(rule)
             return "Function()"
