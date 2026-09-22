@@ -103,6 +103,11 @@ and this project adheres to
 
 ### Fixed
 
+- The resource-extraction gallery page drew a discounted problem without its
+  discount factor. `DiscFac` is the block's one unread parameter, so the figure
+  dropped it the way it drops any unread parameter; passing `discount=` draws it
+  as the hexagon instead.
+
 - `skagent.solver.project` no longer raises `TypeError` on a decision that reads
   out of the entity class it is splitting. Such a control is copied as the
   author wrote it: the joins the projection synthesizes are what its information
