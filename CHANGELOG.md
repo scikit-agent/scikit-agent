@@ -110,6 +110,20 @@ and this project adheres to
 
 ### Fixed
 
+- `Block.display_formulas` renders a lambda's body. It had been taking the
+  source line from the first colon onwards, which on the usual
+  `dynamics={"u": lambda ...}` is the dict key's colon, so the "formula" kept
+  the whole `lambda ...:` prefix, and trailing punctuation was trimmed by
+  stripping characters, which cannot tell the dict's closing brace from a
+  parenthesis the body ends with. The fragment is parsed now. 138 of the 147
+  equations in the shipped models are affected.
+
+- The lemons gallery page prints its fixed points to four places rather than
+  raw, marks the steps in its clearing maps with the open and filled circles
+  that say which value the market clears at, and draws each market's closed-form
+  price behind its simulated paths, so a path that wobbles is visibly wobbling
+  around the right answer rather than doing something unexplained.
+
 - The resource-extraction gallery page drew a discounted problem without its
   discount factor. `DiscFac` is the block's one unread parameter, so the figure
   dropped it the way it drops any unread parameter; passing `discount=` draws it

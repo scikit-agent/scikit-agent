@@ -283,11 +283,33 @@ for ax, (title, config, kind) in zip(axes, CONFIGS):
     # These maps step where the worst car first becomes worth offering. Blanking
     # the point just past a step stops the line being drawn across it, which
     # would show prices the market never clears at.
-    curve[np.abs(np.diff(curve, prepend=curve[0])) > 0.15] = np.nan
+    jumps = np.flatnonzero(np.abs(np.diff(curve, prepend=curve[0])) > 0.15)
+    open_ends = [(grid[j - 1], curve[j - 1]) for j in jumps]
+    closed_ends = [(grid[j], curve[j]) for j in jumps]
+    curve[jumps] = np.nan
 
     ax.plot(grid, grid, color="0.7", linestyle="--", linewidth=1.5, zorder=1)
     ax.plot(grid, curve, color=SERIES[0], linewidth=2, zorder=2)
-    ax.scatter(fixed, fixed, s=55, color=SERIES[1], zorder=3)
+
+    # A step's endpoints, in the usual convention: the price at the step is the
+    # one the upper segment gives, because a seller offers when the price covers
+    # the car exactly. Without the two marks a reader cannot tell which value
+    # the market clears at there.
+    for x, y in open_ends:
+        ax.plot(
+            x,
+            y,
+            "o",
+            markersize=5.5,
+            markerfacecolor="white",
+            markeredgecolor=SERIES[0],
+            markeredgewidth=1.4,
+            zorder=4,
+        )
+    for x, y in closed_ends:
+        ax.plot(x, y, "o", markersize=5.5, color=SERIES[0], zorder=4)
+
+    ax.scatter(fixed, fixed, s=55, color=SERIES[1], zorder=5)
     for point in fixed:
         ax.annotate(
             f"{point:.2f}",
@@ -346,9 +368,18 @@ for ax, (title, config, kind) in zip(axes, CONFIGS):
     if kind == "two-type":
         block = lemons.naive_peaches_block
         calibration = lemons.peaches_calibration(size=SELLERS, **config)
+        settles_at = lemons.peaches_fixed_points(**config)
     else:
         block = lemons.naive_lemons_block
         calibration = lemons.lemons_calibration(size=SELLERS, **config)
+        settles_at = lemons.clearing_fixed_points(**config)
+
+    # The closed form behind the paths, so a path that wobbles is visibly
+    # wobbling around the right answer. These are simulations of a finite
+    # population redrawn every round, and the top path of the right-hand panel
+    # is where that sampling is wide enough to see.
+    for price in settles_at:
+        ax.axhline(price, color="0.75", linestyle=":", linewidth=1, zorder=1)
 
     for start, colour in zip(starts, SERIES):
         # Round 0 is the price posted before any of it happened, so the first
@@ -360,6 +391,7 @@ for ax, (title, config, kind) in zip(axes, CONFIGS):
             color=colour,
             linewidth=2,
             label=f"start {start}",
+            zorder=2,
         )
     ax.set_title(title, fontsize=10)
     ax.set_xlabel("round")
@@ -370,6 +402,16 @@ axes[0].set_ylabel("clearing price")
 axes[0].legend(frameon=False, fontsize=9)
 fig.suptitle("Where each market ends up, and what it started from", fontsize=12)
 fig.tight_layout()
+
+# %%
+# The dotted lines are the prices each market reproduces, computed in closed
+# form. Every path is a simulation of 20,000 sellers whose qualities are drawn
+# again each round, so a settled price carries sampling error rather than
+# sitting exactly on its closed form. The right-hand panel shows both extremes
+# of that. Its top path settles where every car trades, so the price is the
+# premium on the sample mean of a mixed population and moves with the draw. Its
+# middle path is exactly flat: only lemons trade there, and every lemon is worth
+# the same, so there is nothing left for a draw to vary.
 
 # %%
 # Peaches and lemons
@@ -393,7 +435,8 @@ fig.tight_layout()
 config = lemons.PEACH_MARKETS["two-prices"]
 print(f"a lemon is worth 0.4 and a peach 2.0, and {config['share']:.0%} are peaches")
 print()
-print(f"prices this market reproduces : {lemons.peaches_fixed_points(**config)}")
+prices = ", ".join(f"{price:.4f}" for price in lemons.peaches_fixed_points(**config))
+print(f"prices this market reproduces : {prices}")
 print(f"peaches trade only above      : {lemons.peach_share_for_trade():.4f}")
 print()
 for start in starts:
@@ -478,10 +521,12 @@ report(
 # response rather than a step in an order. What the bracket in that column reads
 # off is :meth:`~skagent.relevance.RelevanceGraph.crosses_instances`, beside
 # :meth:`~skagent.relevance.RelevanceGraph.plate`, which names the class and its
-# size -- ``Plate(entity='seller', size=20000)`` here. In the posted-price market the same decision relies on nothing, and
-# that is correct, because that period's payoff turns on the previous round's
-# price and within a round there is nothing to account for. The two blocks
-# differ only in where the payoff block sits.
+# size -- ``Plate(entity='seller', size=20000)`` here.
+#
+# In the posted-price market the same decision relies on nothing, and that is
+# correct, because that period's payoff turns on the previous round's price and
+# within a round there is nothing to account for. The two blocks differ only in
+# where the payoff block sits.
 #
 # One symbol cannot refer to another instance of itself, so that reliance is
 # derived on a split of the class -- one node for the seller being solved, one
