@@ -146,6 +146,13 @@ def clear_gallery_if_drawing_changed(app) -> None:
 
 
 def setup(app):
-    app.connect("builder-inited", clear_gallery_if_drawing_changed)
-    app.connect("builder-inited", draw_diagrams)
+    # Priority matters and is not a detail. sphinx-gallery generates the gallery
+    # from `builder-inited` at priority 500, and connects a second handler at
+    # 10; an extension listed after it therefore runs AFTER generation, and a
+    # clear at that point deletes the gallery that was just built -- which on a
+    # fresh checkout, where there is no fingerprint to match, leaves no
+    # `auto_examples/index` for the toctree to find. Running first is what makes
+    # the clear mean "start this build without the cache".
+    app.connect("builder-inited", clear_gallery_if_drawing_changed, priority=5)
+    app.connect("builder-inited", draw_diagrams, priority=5)
     return {"parallel_read_safe": True, "parallel_write_safe": True}
