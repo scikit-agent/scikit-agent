@@ -20,6 +20,14 @@ and this project adheres to
   by default, which costs precision where the numpy computation is exact in
   double.
 
+- A user guide page on the model diagram, `docs/user_guide/visualization.md`. It
+  is a legend: what each shape, color and box means, what is deliberately not
+  drawn, and where the drawing style is configured. Three diagrams of shipped
+  models illustrate it — every shape at once, an entity class with an
+  aggregation leaving it, and a two-agent game. The notation's two borrowed
+  conventions are named: multi-agent influence diagrams (Koller and Milch) for
+  the node shapes, and plate notation for entity classes.
+
 - `Block.payoff(vals, agent)`, an agent's payoff at a set of values: the sum of
   the reward symbols they own. It was written out three times -- in the sampled
   expectation's integrand, in the tabular solver and in the state-rule value
