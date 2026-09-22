@@ -566,6 +566,28 @@ class Block:
                 f"here are {sorted(owners)}"
             )
 
+    def payoff(self, vals, agent=None):
+        """What *agent* earns at *vals*: the sum of the reward symbols they own.
+
+        Parameters
+        ----------
+        vals : Mapping[str, Any]
+            Values for every variable the reward formulas depend on.
+        agent : str, optional
+            Whose payoff to take. An agent owning several reward symbols is
+            paid their sum, an additively decomposed utility being one payoff
+            written in parts. Omitted, every reward symbol in the block is
+            summed, which is one agent's payoff only where the block has one
+            agent.
+
+        Raises
+        ------
+        ValueError
+            If no reward in this block is attributed to *agent*.
+        """
+        self._require_paid_agent(agent)
+        return sum(self.calc_reward(vals, agent=agent).values())
+
     def get_control(self, control_sym):
         """The :class:`Control` declared at *control_sym*.
 
@@ -1106,7 +1128,7 @@ class DBlock(Block):
 
         def state_rule_value_function(pre, dr):
             vals = self.transition(pre, dr, screen=screen)
-            r = sum(self.calc_reward(vals, agent=agent).values())
+            r = self.payoff(vals, agent=agent)
             cv = continuation(*[vals[var] for var in param_names(continuation)])
 
             return r + cv

@@ -241,7 +241,7 @@ for decision, rule in policies.items():
 
 solved = block.transition(dict(solver.shocks), policies)
 for agent in sorted(set(block.reward.values())):
-    print(f"expected payoff, {agent:6s}: {solver.payoff(solved, agent).mean(): .4f}")
+    print(f"expected payoff, {agent:6s}: {block.payoff(solved, agent).mean(): .4f}")
 for sym in ["PT", "TS", "TDoc", "TDead", "BP"]:
     print(f"mean {sym:6s}: {np.mean(solved[sym]):.4f}")
 

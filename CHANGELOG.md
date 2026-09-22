@@ -20,6 +20,12 @@ and this project adheres to
   by default, which costs precision where the numpy computation is exact in
   double.
 
+- `Block.payoff(vals, agent)`, an agent's payoff at a set of values: the sum of
+  the reward symbols they own. It was written out three times -- in the sampled
+  expectation's integrand, in the tabular solver and in the state-rule value
+  function -- and only two of the three refused an agent the block does not pay,
+  so the third returned an empty sum as though it were zero.
+
 - `skagent.models.fisher` is registered in `BENCHMARK_MODELS` as `D-5`, so the
   Fisher two-period problem is reachable through the registry accessors like any
   other benchmark. Its closed form is the period-0 rule of a two-period problem
@@ -56,6 +62,10 @@ and this project adheres to
   before asking the oracle what the answer was.
 
 ### Removed
+
+- `TabularBestResponseSolver.payoff`. Use `Block.payoff`, which the solver now
+  calls; broadcasting the result over the sample axis is the caller's, as it
+  always was for everything else on that class.
 
 - Three unused things: `Grid.shape()`, `skagent.grid.torched()`, and
   `skagent.models.benchmarks.euler_equation_test`. The last was a stub that

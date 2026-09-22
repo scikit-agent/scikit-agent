@@ -162,18 +162,14 @@ class GroundedBlock:
             The expectation, beside the axis that was reduced to reach it.
         """
 
-        owners = set(self.block.reward.values())
-        if agent is not None and agent not in owners:
-            raise ValueError(
-                f"no reward in this block is attributed to agent {agent!r}, so "
-                f"its payoff is an empty sum rather than zero; the agents paid "
-                f"here are {sorted(owners)}"
-            )
+        # Eagerly, so an unpaid agent is refused before any shock is drawn
+        # rather than from inside the reduction.
+        self.block._require_paid_agent(agent)
 
         def integrand(shock_values):
             pre = {**self.calibration, **(states or {}), **shock_values}
             vals = self.block.transition(pre, policies)
-            return sum(self.block.calc_reward(vals, agent=agent).values())
+            return self.block.payoff(vals, agent=agent)
 
         return measure.reduce(self, integrand)
 

@@ -278,11 +278,6 @@ class TabularBestResponseSolver:
     def _vector(self, value):
         return np.broadcast_to(np.asarray(value, dtype=float), (self.shock_samples,))
 
-    def payoff(self, vals, agent):
-        """The sum of ``agent``'s utility nodes, per sample."""
-        owned = self.block.calc_reward(vals, agent=agent).values()
-        return self._vector(sum(owned))
-
     def conditional_payoffs(self, decision, policies):
         """Estimate ``decision``'s payoffs by information cell and action.
 
@@ -335,7 +330,7 @@ class TabularBestResponseSolver:
         for k, action in enumerate(self.actions):
             trial = dict(policies, **{decision: get_action_rule(action)})
             vals = self.block.transition(pre, trial, fix=upstream)
-            sample_payoff = self.payoff(vals, agent)
+            sample_payoff = self._vector(self.block.payoff(vals, agent))
             # Mean payoff within each information cell.
             payoff[:, k] = (
                 np.bincount(inverse, weights=sample_payoff, minlength=len(cells))

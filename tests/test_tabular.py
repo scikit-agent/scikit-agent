@@ -239,11 +239,26 @@ class TestPayoffs:
         }
         vals = block.transition(dict(tree_killer.shocks), policies)
 
-        alice = tree_killer.payoff(vals, "alice")
+        alice = block.payoff(vals, "alice")
         expected = np.asarray(vals["E"]) + np.asarray(vals["V"])
 
         assert np.allclose(alice, expected)
-        assert not np.allclose(alice, tree_killer.payoff(vals, "bob"))
+        assert not np.allclose(alice, block.payoff(vals, "bob"))
+
+    def test_an_agent_the_block_does_not_pay_is_refused(self, tree_killer):
+        """An empty sum is zero, which reads as an answer rather than a refusal."""
+        block = macid.tree_killer_block
+        vals = block.transition(
+            dict(tree_killer.shocks),
+            {
+                "PT": get_action_rule(1.0),
+                "TDoc": get_action_rule(0.0),
+                "BP": get_action_rule(1.0),
+            },
+        )
+
+        with pytest.raises(ValueError, match="no reward in this block"):
+            block.payoff(vals, "landlord")
 
     def test_conditional_payoffs_shape_and_support(self, tree_killer):
         """One expected payoff per information cell per candidate action."""
