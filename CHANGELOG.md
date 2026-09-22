@@ -62,6 +62,13 @@ and this project adheres to
 
 ### Changed
 
+- The documentation build redraws the user guide's model diagrams from the
+  shipped models on every build, and clears the gallery's cache when the code
+  that draws a diagram has changed. sphinx-gallery re-executes an example when
+  its source changes, so a library-only change used to leave every cached figure
+  alone: the build stayed clean and the pictures went old. The user guide's
+  figures are no longer kept in the source tree.
+
 - `skagent.models.fisher.analytical_policy` takes the arrival state `a` and
   derives cash-on-hand itself, where it previously took `m`. Every closed form
   in `skagent.models.benchmarks` is a function of the arrival states, deriving

@@ -163,6 +163,7 @@ uv.lock
 # Sphinx build artifacts
 docs/_build/
 docs/auto_examples/
+docs/user_guide/images/
 **/sg_execution_times.rst
 
 # Working design notes and TODOs. Untracked by intent: they are the project's

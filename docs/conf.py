@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import datetime
 import importlib.metadata
+import sys
+from pathlib import Path
 from typing import Any
+
+# Local extensions, in docs/_ext/.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "_ext"))
 
 project = "scikit-agent"
 copyright = f"{datetime.date.today().year}, scikit-agent Team"
@@ -18,6 +23,9 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_gallery.gen_gallery",
     "sphinx_design",
+    # Draws the user guide's model diagrams, and clears the gallery's cache
+    # when the code that draws a diagram has changed. See docs/_ext/.
+    "skagent_diagrams",
 ]
 
 # Sphinx-Gallery configuration
