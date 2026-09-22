@@ -137,7 +137,7 @@ rex.resource_extraction_block.display_formulas()
 # Step 3: Visualize the Resource Extraction Model
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-img, _ = rex.resource_extraction_block.display(rex.calibration)
+img, _ = rex.resource_extraction_block.display(rex.calibration, discount="DiscFac")
 
 plt.figure(figsize=(10, 8))
 plt.imshow(img)

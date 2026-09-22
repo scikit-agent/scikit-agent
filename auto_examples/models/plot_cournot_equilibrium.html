@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Resource Extraction Model" href="plot_resource_extraction.html"><link rel="prev" title="Incentives in Content Recommendation: Wanting Control Versus Having It" href="plot_incentives_2_content_recommendation.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Cournot: Solving for a Nash Equilibrium - scikit-agent 0.1.1.dev143+gd2ce20efb</title>
+        <title>Cournot: Solving for a Nash Equilibrium - scikit-agent 0.1.1.dev149+g464fa1d02</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev143+gd2ce20efb</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev149+g464fa1d02</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -201,6 +201,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/quickstart.html">Quickstart Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/visualization.html">Reading Model Diagrams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/solvers.html">Solvers Guide</a></li>
@@ -226,8 +227,8 @@
 <li class="toctree-l3"><a class="reference internal" href="plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_privacy_dp_tuning.html">Differential Privacy: Tuning a Parameter With a Causal Game</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
 </ul>
 </li>
 </ul>
@@ -435,6 +436,7 @@ Mathematical Principles of the Theory of Wealth</em>, Macmillan, 1897.</p>
 </span><span class="w">
 </span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">models</span><span class="nn">.</span><span class="nn">cournot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cournot</span><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">ground</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-ground sphx-glr-backref-type-py-class reference internal" href="../../api/blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><span class="n">GroundedBlock</span></a><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">simulation</span><span class="nn">.</span><span class="nn">monte_carlo</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-simulation-monte_carlo sphx-glr-backref-type-py-class reference internal" href="../../api/simulation.html#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><span class="n">Simulator</span></a><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">solver</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-class reference internal" href="../../api/algorithms.html#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><span class="n">ExactBestResponse</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-function reference internal" href="../../api/algorithms.html#skagent.solver.project" title="skagent.solver.project"><span class="n">project</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-function reference internal" href="../../api/algorithms.html#skagent.solver.solve_symmetric_equilibrium" title="skagent.solver.solve_symmetric_equilibrium"><span class="n">solve_symmetric_equilibrium</span></a><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-utils sphx-glr-backref-type-py-function reference internal" href="../../api/utils.html#skagent.utils.plot_block_diagram" title="skagent.utils.plot_block_diagram"><span class="n">plot_block_diagram</span></a><span class="w">
 </span><span class="w">
@@ -459,12 +461,80 @@ population model rather than a three-firm game written out three times.</p>
 </span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <img src="../../_images/sphx_glr_plot_cournot_equilibrium_001.png" srcset="../../_images/sphx_glr_plot_cournot_equilibrium_001.png" alt="Cournot: each firm's quantity feeds the average, which sets the price" class = "sphx-glr-single-img"/></section>
+<section id="two-calibrations-and-one-model">
+<h2>Two calibrations, and one model<a class="headerlink" href="#two-calibrations-and-one-model" title="Link to this heading">¶</a></h2>
+<p>The rest of this page works with
+<a class="reference internal" href="../../api/models.html#skagent.models.cournot.collusion_calibration" title="skagent.models.cournot.collusion_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">collusion_calibration()</span></code></a>, where every firm
+shares one cost and <span class="math notranslate nohighlight">\(N\)</span> is small enough to write out by hand. The
+module ships a second calibration,
+<a class="reference internal" href="../../api/models.html#skagent.models.cournot.heterogeneous_calibration" title="skagent.models.cournot.heterogeneous_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">heterogeneous_calibration()</span></code></a>, where each firm draws
+its own cost from <span class="math notranslate nohighlight">\(\mathrm{Uniform}[c_l, c_h]\)</span> and <span class="math notranslate nohighlight">\(N\)</span> is large. The
+two calibrations put the model’s two readings of <span class="math notranslate nohighlight">\(N\)</span>, noted above, to use.</p>
+<p>Under the supplied rule <span class="math notranslate nohighlight">\(q_i = (A - c_i)/(2b)\)</span>, and writing <span class="math notranslate nohighlight">\(m =
+E[c]\)</span> and <span class="math notranslate nohighlight">\(v = \mathrm{Var}(c)\)</span> for the mean and variance of the cost
+distribution, the heterogeneous market has closed forms for its average
+quantity, its price, and each firm’s expected profit:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[Q = \frac{A - m}{2b}, \qquad P = \frac{A + m}{2}, \qquad
+E[u] = \frac{(A - m)^2/2 + v}{2b}\]</div>
+</div>
+<p>Here <span class="math notranslate nohighlight">\(N\)</span> is a numerical knob: it does not appear in these formulas at
+all, and the simulated market only needs enough firms for its sample average
+to approach them. In <a class="reference internal" href="../../api/models.html#skagent.models.cournot.collusion_calibration" title="skagent.models.cournot.collusion_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">collusion_calibration()</span></code></a>, by
+contrast, <span class="math notranslate nohighlight">\(N\)</span> enters the best response directly, through the
+<span class="math notranslate nohighlight">\(-(N-1)/2\)</span> slope above, so changing it there asks a different question
+about the market rather than refining an approximate answer to the same one.</p>
+<p>The closed forms are also a check on what a claim about this market can hide.
+A claim about <span class="math notranslate nohighlight">\(Q\)</span> or <span class="math notranslate nohighlight">\(P\)</span> alone is satisfied by a population that
+has silently lost its cross-section, because a mean survives the collapse to a
+single degenerate cost: a thousand firms at the mean cost produce the same
+average and the same price as a thousand firms with costs spread around it.
+<span class="math notranslate nohighlight">\(E[u]\)</span> does not survive that collapse, because it carries the variance
+<span class="math notranslate nohighlight">\(v\)</span> of the cost distribution as well as its mean. That is why the
+comparison below checks <span class="math notranslate nohighlight">\(E[u]\)</span> rather than stopping at <span class="math notranslate nohighlight">\(Q\)</span> and
+<span class="math notranslate nohighlight">\(P\)</span>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">moments</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-models-cournot sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.cournot.analytic_moments" title="skagent.models.cournot.analytic_moments"><span class="n">cournot</span><span class="o">.</span><span class="n">analytic_moments</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-skagent-simulation-monte_carlo sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/simulation.html#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><span class="n">heterogeneous_market</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-simulation-monte_carlo sphx-glr-backref-type-py-class reference internal" href="../../api/simulation.html#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><span class="n">Simulator</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-skagent-models-cournot sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.cournot.heterogeneous_calibration" title="skagent.models.cournot.heterogeneous_calibration"><span class="n">cournot</span><span class="o">.</span><span class="n">heterogeneous_calibration</span></a><span class="p">(</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-skagent sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/blocks.html#skagent.block.RBlock" title="skagent.RBlock"><span class="n">cournot</span><span class="o">.</span><span class="n">cournot_block</span></a><span class="p">,</span><span class="w">
+</span>    <span class="p">{</span><span class="s2">&quot;</span><span class="s2">q</span><span class="s2">&quot;</span><span class="p">:</span> <a class="sphx-glr-backref-module-skagent-models-cournot sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.cournot.competitive_rule" title="skagent.models.cournot.competitive_rule"><span class="n">cournot</span><span class="o">.</span><span class="n">competitive_rule</span></a><span class="p">}</span><span class="p">,</span><span class="w">
+</span>    <span class="p">{</span><span class="p">}</span><span class="p">,</span><span class="w">
+</span>    <span class="n">sample_count</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span><span class="w">
+</span>    <span class="n">T_sim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w">
+</span>    <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-skagent-simulation-monte_carlo sphx-glr-backref-type-py-method reference internal" href="../../api/simulation.html#skagent.simulation.monte_carlo.Simulator.initialize_sim" title="skagent.simulation.monte_carlo.Simulator.initialize_sim"><span class="n">heterogeneous_market</span><span class="o">.</span><span class="n">initialize_sim</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-simulation-monte_carlo sphx-glr-backref-type-py-method reference internal" href="../../api/simulation.html#skagent.simulation.monte_carlo.Simulator.simulate" title="skagent.simulation.monte_carlo.Simulator.simulate"><span class="n">heterogeneous_market</span><span class="o">.</span><span class="n">simulate</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">'</span><span class="s1">'</span><span class="si">:</span><span class="s2">8s</span><span class="si">}</span><span class="si">{</span><span class="s1">'</span><span class="s1">simulated</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;12s</span><span class="si">}</span><span class="si">{</span><span class="s1">'</span><span class="s1">analytic</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;12s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">key</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">simulated</span></a> <span class="ow">in</span> <span class="p">(</span><span class="w">
+</span>    <span class="p">(</span><span class="s2">&quot;</span><span class="s2">Q</span><span class="s2">&quot;</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">Q</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="p">(</span><span class="s2">&quot;</span><span class="s2">P</span><span class="s2">&quot;</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">P</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="p">(</span><span class="s2">&quot;</span><span class="s2">E[u]</span><span class="s2">&quot;</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">u</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">key</span></a><span class="si">:</span><span class="s2">8s</span><span class="si">}</span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">simulated</span></a><span class="si">:</span><span class="s2">12.4f</span><span class="si">}</span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">moments</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">key</span></a><span class="p">]</span><span class="si">:</span><span class="s2">12.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>           simulated    analytic
+Q             3.0005      3.0000
+P             6.9995      7.0000
+E[u]          9.6653      9.6667
+</pre></div>
+</div>
+</section>
 <section id="three-profiles-and-why-the-firms-do-not-reach-the-one-they-prefer">
 <h2>Three profiles, and why the firms do not reach the one they prefer<a class="headerlink" href="#three-profiles-and-why-the-firms-do-not-reach-the-one-they-prefer" title="Link to this heading">¶</a></h2>
 <p>The model ships three hand-derived profiles. They are the prisoner’s dilemma
 in disguise, which is what makes the equilibrium worth computing rather than
 guessing, because the outcome the firms reach is not the outcome they would
 rank highest.</p>
+<p>Each profile is a fixed decision rule per firm
+(<a class="reference internal" href="../../api/models.html#skagent.models.cournot.profile_rules" title="skagent.models.cournot.profile_rules"><code class="xref py py-func docutils literal notranslate"><span class="pre">profile_rules()</span></code></a>), so a profile may hand
+different firms different rules. <code class="docutils literal notranslate"><span class="pre">one-defects</span></code> does exactly that: it gives
+the three firms three constant rules, two of which happen to be equal. No
+rule reads which firm it belongs to, and the market block itself is the same
+in all three profiles. The asymmetry is in the assignment of rules to firms,
+not in the model.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">quantities</span></a> <span class="ow">in</span> <span class="n">cournot</span><span class="o">.</span><span class="n">PROFILES</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="p">)</span><span class="p">:</span><span class="w">
 </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="si">:</span><span class="s2">16s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">quantities</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
 </span><span class="w">
@@ -625,7 +695,7 @@ exists because Cournot’s best response is linear; in general a damping
 factor is chosen to make the iteration a contraction, not to solve it
 instantly.</p>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.460 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.497 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-cournot-equilibrium-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/688f059154cae540aa95f535441d8b50/plot_cournot_equilibrium.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_cournot_equilibrium.ipynb</span></code></a></p>
@@ -712,6 +782,7 @@ instantly.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#the-model-as-a-graph">The model as a graph</a></li>
+<li><a class="reference internal" href="#two-calibrations-and-one-model">Two calibrations, and one model</a></li>
 <li><a class="reference internal" href="#three-profiles-and-why-the-firms-do-not-reach-the-one-they-prefer">Three profiles, and why the firms do not reach the one they prefer</a></li>
 <li><a class="reference internal" href="#projecting-the-population">Projecting the population</a></li>
 <li><a class="reference internal" href="#iterating-to-the-equilibrium">Iterating to the equilibrium</a></li>
@@ -727,7 +798,7 @@ instantly.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=db571881"></script>
+</div><script src="../../_static/documentation_options.js?v=eeaafc85"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -35,6 +35,8 @@ If you're new to scikit-agent, start here:
 Learn about the fundamental concepts and components:
 
 - {doc}`blocks` - Understanding model structure and building custom models
+- {doc}`visualization` - Reading a model's diagram: the shapes, the plates, and
+  what is not drawn
 - {doc}`simulation` - Monte Carlo simulation and analysis
 - {doc}`algorithms` - Solution methods for solving your models
 - {doc}`maliar` - Neural-network solution via the Maliar method
@@ -75,6 +77,7 @@ Parameters can be:
 installation
 quickstart
 blocks
+visualization
 simulation
 algorithms
 solvers

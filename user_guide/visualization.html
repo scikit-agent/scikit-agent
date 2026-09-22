@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Constraining an Optimization Problem" href="constraints.html"><link rel="prev" title="Solving Models with the Maliar Method" href="maliar.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Simulation Guide" href="simulation.html"><link rel="prev" title="Block Guide" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Environments Guide - scikit-agent 0.1.1.dev149+g464fa1d02</title>
+        <title>Reading Model Diagrams - scikit-agent 0.1.1.dev149+g464fa1d02</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -201,12 +201,12 @@
 <li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="blocks.html">Block Guide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="visualization.html">Reading Model Diagrams</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Reading Model Diagrams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solvers.html">Solvers Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="maliar.html">Solving Models with the Maliar Method</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Environments Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="environments.html">Environments Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constraints.html">Constraining an Optimization Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="benchmark_models.html">Benchmark Models</a></li>
 </ul>
@@ -272,12 +272,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/user_guide/environments.md?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/user_guide/visualization.md?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/user_guide/environments.md" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/user_guide/visualization.md" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -294,80 +294,193 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section class="tex2jax_ignore mathjax_ignore" id="environments-guide">
-<h1>Environments Guide<a class="headerlink" href="#environments-guide" title="Link to this heading">¶</a></h1>
-<p>This guide introduces <em>environments</em> — the adapters that let an external
-algorithm interact with a scikit-agent model one step at a time. They are the
-bridge between your model and the reinforcement-learning tools described in the
-<a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> guide.</p>
-<section id="why-environments">
-<h2>Why environments?<a class="headerlink" href="#why-environments" title="Link to this heading">¶</a></h2>
-<p>A <a class="reference internal" href="../api/bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a> describes a model: its shocks,
-dynamics, controls, and rewards. Many algorithms, though, expect to <em>drive</em> a
-model interactively — propose an action, see what reward and next state result,
-and repeat. An environment wraps your model in exactly that interactive loop, so
-you don’t have to wire up the stepping logic yourself.</p>
-<p>scikit-agent provides two, depending on who is doing the driving.</p>
-</section>
-<section id="environment-stepping-a-model-in-plain-python">
-<h2><code class="docutils literal notranslate"><span class="pre">Environment</span></code>: stepping a model in plain Python<a class="headerlink" href="#environment-stepping-a-model-in-plain-python" title="Link to this heading">¶</a></h2>
-<p><a class="reference internal" href="../api/environments.html#skagent.env.Environment" title="skagent.env.Environment"><code class="xref py py-class docutils literal notranslate"><span class="pre">Environment</span></code></a> advances a model one period at a time and
-hands back the full transition — the state, the action taken, the reward, the
-next state, the period’s discount factor, and the observation the policy saw.
-You supply a decision rule (a <code class="docutils literal notranslate"><span class="pre">{control:</span> <span class="pre">callable}</span></code> dict) and call <code class="docutils literal notranslate"><span class="pre">step</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uniform</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">d2_block</span><span class="p">,</span> <span class="n">d2_calibration</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.bellman</span><span class="w"> </span><span class="kn">import</span> <span class="n">BellmanPeriod</span>
-
-<span class="n">bp</span> <span class="o">=</span> <span class="n">BellmanPeriod</span><span class="p">(</span><span class="n">d2_block</span><span class="p">,</span> <span class="s2">"DiscFac"</span><span class="p">,</span> <span class="n">d2_calibration</span><span class="p">)</span>
-<span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)},</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-
-<span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-<span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">next_state</span><span class="p">,</span> <span class="n">discount</span><span class="p">,</span> <span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">({</span><span class="s2">"c"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span> <span class="o">/</span> <span class="mi">2</span><span class="p">})</span>
+          <section class="tex2jax_ignore mathjax_ignore" id="reading-model-diagrams">
+<h1>Reading Model Diagrams<a class="headerlink" href="#reading-model-diagrams" title="Link to this heading">¶</a></h1>
+<p>A block can draw itself as a diagram: nodes for its shocks, states, controls,
+rewards, and parameters, and edges for the structural equations that connect
+them. This page is a legend for that diagram. It explains what each shape,
+color, and box means, names the graphical conventions the notation borrows, and
+points to where the drawing style is configured. It does not walk through the
+visualizer’s code; for that, see <a class="reference internal" href="../api/analysis.html"><span class="doc">Model Analysis and Visualization</span></a>.</p>
+<section id="producing-a-diagram">
+<h2>Producing a Diagram<a class="headerlink" href="#producing-a-diagram" title="Link to this heading">¶</a></h2>
+<p>The usual way to see a diagram is from a notebook:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">block</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This is useful whenever you want direct control over the simulation loop — for
-custom analysis, or for algorithms that consume full transitions.</p>
-<section id="scoring-a-policy-with-rollouts">
-<h3>Scoring a policy with rollouts<a class="headerlink" href="#scoring-a-policy-with-rollouts" title="Link to this heading">¶</a></h3>
-<p>A common thing to do with an <code class="docutils literal notranslate"><span class="pre">Environment</span></code> is to <em>score</em> a decision rule by the
-total discounted reward it earns over a rollout. The helper
-<a class="reference internal" href="../api/environments.html#skagent.env.discounted_rollout_reward" title="skagent.env.discounted_rollout_reward"><code class="xref py py-func docutils literal notranslate"><span class="pre">discounted_rollout_reward()</span></code></a> does this for you:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">discounted_rollout_reward</span>
-
-<span class="n">total</span> <span class="o">=</span> <span class="n">discounted_rollout_reward</span><span class="p">(</span>
-    <span class="n">bp</span><span class="p">,</span>
-    <span class="p">{</span><span class="s2">"c"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span> <span class="o">/</span> <span class="mi">2</span><span class="p">},</span>  <span class="c1"># the decision rule to score</span>
-    <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)},</span>  <span class="c1"># initial state distribution</span>
-    <span class="n">steps</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
-    <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-<span class="p">)</span>
-</pre></div>
+<p><code class="docutils literal notranslate"><span class="pre">Block.visualize(calibration,</span> <span class="pre">title=None,</span> <span class="pre">discount=None)</span></code> returns the visualizer
+object instead of displaying it, which is useful when you want to inspect or
+further customize it. <code class="docutils literal notranslate"><span class="pre">title</span></code> defaults to the block’s name; pass <code class="docutils literal notranslate"><span class="pre">title=&quot;&quot;</span></code> if
+you are supplying your own caption.</p>
+<p>To render onto a matplotlib figure – for a script, or a documentation gallery
+– use
+<code class="docutils literal notranslate"><span class="pre">skagent.utils.plot_block_diagram(block,</span> <span class="pre">title=None,</span> <span class="pre">calibration=None,</span> <span class="pre">figsize=(9,</span> <span class="pre">7),</span> <span class="pre">discount=None)</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">calibration</span></code> argument is what tells the diagram which symbols are
+calibration parameters rather than dynamic variables, so it decides which shapes
+are drawn. <code class="docutils literal notranslate"><span class="pre">display</span></code> and <code class="docutils literal notranslate"><span class="pre">visualize</span></code> require it; <code class="docutils literal notranslate"><span class="pre">plot_block_diagram</span></code> treats it
+as empty when it is left out.</p>
+<p>If the block’s problem has a discount factor, pass its calibration symbol as
+<code class="docutils literal notranslate"><span class="pre">discount=</span></code>, so it is drawn as a hexagon rather than as an ordinary parameter. A
+block cannot work this out on its own – the discount variable is a choice made
+by the period built over the block, not a fact recorded on the block itself –
+so it has to be supplied. When you already have a <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code>, its
+<code class="docutils literal notranslate"><span class="pre">discount_variable</span></code> attribute is the value to pass.</p>
+</section>
+<section id="the-shape-vocabulary">
+<h2>The Shape Vocabulary<a class="headerlink" href="#the-shape-vocabulary" title="Link to this heading">¶</a></h2>
+<p>Every node in the diagram is one of six kinds, distinguished by shape:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Kind</p></th>
+<th class="head"><p>Shape</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Shock</p></td>
+<td><p>ellipse, double border</p></td>
+<td><p>drawn with two peripheries</p></td>
+</tr>
+<tr class="row-odd"><td><p>State / computed value</p></td>
+<td><p>ellipse</p></td>
+<td><p>the default shape</p></td>
+</tr>
+<tr class="row-even"><td><p>Control</p></td>
+<td><p>box</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>Reward</p></td>
+<td><p>diamond</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Discount factor</p></td>
+<td><p>hexagon</p></td>
+<td><p>reserved for the one discount-factor variable</p></td>
+</tr>
+<tr class="row-odd"><td><p>Calibration parameter</p></td>
+<td><p>name only, no border, no fill</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">plaintext</span></code></p></td>
+</tr>
+</tbody>
+</table>
 </div>
-<p>Running this for several policies (and averaging over many rollouts) is a simple
-way to compare how well different decision rules actually perform.</p>
+<p>Edges run from a variable’s inputs to the variable itself, so an edge is a
+causal dependency read directly off the block’s structural equations.</p>
+<p><img alt="Every shape at once: a consumption-saving block" src="../_images/diagram-shapes.svg" /></p>
+<p>Above, a consumption-saving block with every shape in it: <code class="docutils literal notranslate"><span class="pre">theta</span></code> is the shock,
+<code class="docutils literal notranslate"><span class="pre">c</span></code> the control, <code class="docutils literal notranslate"><span class="pre">u</span></code> the reward, <code class="docutils literal notranslate"><span class="pre">DiscFac</span></code> the discount factor, the bare names
+are calibration parameters, and the rest are computed values.</p>
+</section>
+<section id="color-dashing-and-layout">
+<h2>Color, Dashing, and Layout<a class="headerlink" href="#color-dashing-and-layout" title="Link to this heading">¶</a></h2>
+<p>Nodes are filled with a color per agent, so a multi-agent model shows at a
+glance which agent’s role owns which control and reward. The colors are
+generated by a sweep over hue rather than assigned by hand, so the same agent
+always gets the same color across a run but the color itself carries no meaning
+beyond “same agent” – do not read anything into which agent got which hue.</p>
+<p>A node whose name ends in <code class="docutils literal notranslate"><span class="pre">*</span></code>, drawn with a dashed outline, is an arrival value:
+the variable as it stood at the end of the previous period, entering this one as
+a lag. Edges leaving such a node are dashed too, and its tooltip is prefixed
+“Previous period “. A symbol the block reads but never assigns appears twice for
+this reason – once as the dashed <code class="docutils literal notranslate"><span class="pre">*</span></code> node its equations read, and once as a
+bare node for the current period, which this block does not assign. See
+<a class="reference internal" href="blocks.html"><span class="doc">Block Guide</span></a> for what an arrival state is in the block model itself.</p>
+<p>The graph lays out left to right, so causal flow within a period reads in the
+same direction as the equations that produced it.</p>
+</section>
+<section id="entity-classes-as-plates">
+<h2>Entity Classes as Plates<a class="headerlink" href="#entity-classes-as-plates" title="Link to this heading">¶</a></h2>
+<p>When a block’s variables belong to an entity class, the diagram draws a labelled
+box around them, one box per class, holding the class’s own variables and their
+edges. An edge that leaves the box is an aggregation – some axis-free equation
+reading out of the class, the kind of crossing described in <a class="reference internal" href="blocks.html"><span class="doc">Block Guide</span></a>.</p>
+<p><img alt="An entity class drawn as a plate, with an aggregation leaving it" src="../_images/diagram-plate.svg" /></p>
+<p>Above, a Cournot market: the <code class="docutils literal notranslate"><span class="pre">Firm</span></code> box holds the variables each firm has its
+own copy of, and the edge from <code class="docutils literal notranslate"><span class="pre">q</span></code> to <code class="docutils literal notranslate"><span class="pre">Q</span></code> leaves the box, which is the
+aggregation over the class. <code class="docutils literal notranslate"><span class="pre">P</span></code> is outside the box because there is one price,
+not one per firm, and it feeds back into every firm’s <code class="docutils literal notranslate"><span class="pre">u</span></code>.</p>
+<p>The box’s label is the class’s name only. It deliberately does not carry the
+class’s size. The diagram carries no other number from the calibration either,
+and putting one on this box alone would suggest the picture had been drawn for
+one particular calibration rather than for the model in general.</p>
+</section>
+<section id="what-is-not-drawn">
+<h2>What Is Not Drawn<a class="headerlink" href="#what-is-not-drawn" title="Link to this heading">¶</a></h2>
+<p>A calibration parameter that no equation in the block actually reads is left off
+the diagram. Such a parameter is usually an artifact of a calibration dictionary
+written for a whole family of blocks, where using one block still carries along
+parameters meant for the others; drawing it would add a node connected to
+nothing, which is not a fact about this block.</p>
+<p>Nothing else is dropped this way. An unread shock, state, control, or reward is
+not treated as an artifact – it is a defect in the model, and the diagram is
+exactly where it should be visible. Likewise, a variable named as the discount
+factor is always kept, even if no equation reads it, since it is still part of
+the problem being solved.</p>
+</section>
+<section id="precedent">
+<h2>Precedent<a class="headerlink" href="#precedent" title="Link to this heading">¶</a></h2>
+<p>The notation is not new. Two conventions are borrowed directly, and knowing
+where each one comes from tells you what you are allowed to read off the
+picture.</p>
+<section id="multi-agent-influence-diagrams">
+<h3>Multi-agent influence diagrams<a class="headerlink" href="#multi-agent-influence-diagrams" title="Link to this heading">¶</a></h3>
+<p>The shape vocabulary – decision, chance, and utility nodes drawn differently,
+connected by directed edges for causal dependence, with each agent’s nodes in
+their own color – is the multi-agent influence diagram of Koller and Milch,
+“Multi-Agent Influence Diagrams for Representing and Solving Games” (IJCAI-01;
+Games and Economic Behavior 45(1), 2003). That is where the notation comes from,
+and <code class="docutils literal notranslate"><span class="pre">skagent.models.macid</span></code> encodes several of the games from that literature
+directly, the tree-killer example among them.</p>
+<p>This is more than a borrowed drawing style: a block, read structurally, already
+has the form these diagrams describe, which is why the picture is faithful
+rather than illustrative. <code class="docutils literal notranslate"><span class="pre">skagent.influence</span></code> builds that structural reading –
+a structural causal influence model, after Everitt, Carey, Langlois, Ortega and
+Legg, “Agent Incentives: A Causal Perspective” (AAAI-21; arXiv:2102.01685),
+which is an influence diagram whose mechanisms are functions of their parents
+rather than conditional probability tables. A block’s dynamics are already
+written that way.</p>
+<p><img alt="A multi-agent influence diagram: two agents, in two colors" src="../_images/diagram-maid.svg" /></p>
+<p>Above, the tree-killer game. Each agent’s nodes carry their own color, so the
+two decision boxes belonging to one agent are distinguishable at a glance from
+the other’s, and each diamond is owned by whoever it pays.</p>
+</section>
+<section id="plate-notation-for-entity-classes">
+<h3>Plate notation, for entity classes<a class="headerlink" href="#plate-notation-for-entity-classes" title="Link to this heading">¶</a></h3>
+<p>The box drawn around an entity class is plate notation, the same device used in
+graphical-model tools such as PyMC and Pyro. A plate is a template: its meaning
+is the “ground” graph it expands to, one copy of every variable inside it per
+instance of the class, with an aggregating variable outside the plate taking all
+of those copies as parents. The compact box-and-edges drawing is that ground
+graph collapsed by exchangeability among the copies.</p>
+<p>scikit-agent calls these groupings entity classes rather than plates; it is the
+drawing convention, not the name, that is borrowed.</p>
 </section>
 </section>
-<section id="gymenv-a-gymnasium-environment-for-rl-libraries">
-<h2><code class="docutils literal notranslate"><span class="pre">GymEnv</span></code>: a gymnasium environment for RL libraries<a class="headerlink" href="#gymenv-a-gymnasium-environment-for-rl-libraries" title="Link to this heading">¶</a></h2>
-<p><a class="reference internal" href="../api/environments.html#skagent.env.GymEnv" title="skagent.env.GymEnv"><code class="xref py py-class docutils literal notranslate"><span class="pre">GymEnv</span></code></a> presents your model through the standard
-<a class="reference external" href="https://gymnasium.farama.org/">gymnasium</a> interface, so reinforcement-learning
-libraries can train on it directly. It is what
-<a class="reference internal" href="../api/algorithms.html#skagent.algos.sb3.PPOAgent" title="skagent.algos.sb3.PPOAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">skagent.algos.sb3.PPOAgent</span></code></a> uses under the hood; most users never need
-to construct it by hand.</p>
-<p>A couple of details worth knowing:</p>
+<section id="configuring-the-style">
+<h2>Configuring the Style<a class="headerlink" href="#configuring-the-style" title="Link to this heading">¶</a></h2>
+<p>The shapes, colors, and layout described above are not hard-coded. They live in
+<code class="docutils literal notranslate"><span class="pre">src/skagent/model_visualization_config.yaml</span></code>, shipped with the package. That
+file holds the shape assigned to each variable kind, the node and edge styles
+(including the double border on shocks and the dashed style for arrival values),
+the parameters of the color-generation sweep, and the layout settings such as
+left-to-right ranking and the plate label’s font size. To change how diagrams
+are drawn by default, edit that file.</p>
+</section>
+<section id="seeing-it-rendered">
+<h2>Seeing It Rendered<a class="headerlink" href="#seeing-it-rendered" title="Link to this heading">¶</a></h2>
+<p>The figures above are small models chosen to show one thing each. For diagrams
+of models being put to work, with the surrounding analysis, see the gallery:</p>
 <ul class="simple">
-<li><p><strong>Actions are normalised.</strong> The agent works with actions in <code class="docutils literal notranslate"><span class="pre">[-1,</span> <span class="pre">1]</span></code>, and
-<code class="docutils literal notranslate"><span class="pre">GymEnv</span></code> automatically rescales them to each control’s real bounds (for
-example, the borrowing constraint <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">≤</span> <span class="pre">m</span></code>) before applying them. Your model’s
-bounds are respected without any extra effort.</p></li>
-<li><p><strong>Single control, single agent.</strong> For now, <code class="docutils literal notranslate"><span class="pre">GymEnv</span></code> handles models with one
-control variable and one agent.</p></li>
+<li><p><a class="reference internal" href="../auto_examples/models/plot_cournot_equilibrium.html"><span class="doc">Cournot: Solving for a Nash Equilibrium</span></a> shows an entity class
+drawn as a plate, with an edge leaving it for the aggregation.</p></li>
+<li><p><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html"><span class="doc">Strategic Relevance: Solving the Tree Killer</span></a> shows a multi-agent
+influence diagram with two agents.</p></li>
+<li><p><a class="reference internal" href="../auto_examples/models/plot_lemons_adverse_selection.html"><span class="doc">Lemons: Adverse Selection, and Three Markets That Look Alike</span></a> shows a larger
+model that includes an entity class.</p></li>
 </ul>
-<p>If you are using PPO through <code class="docutils literal notranslate"><span class="pre">PPOAgent</span></code>, this all happens for you — see the
-<a class="reference internal" href="algorithms.html"><span class="doc">Algorithms Guide</span></a> guide to get started.</p>
+<p>For the class and function reference behind the diagram, see
+<a class="reference internal" href="../api/analysis.html"><span class="doc">Model Analysis and Visualization</span></a>.</p>
 </section>
 </section>
 
@@ -376,23 +489,23 @@ control variable and one agent.</p></li>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="constraints.html">
+          <a class="next-page" href="simulation.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Constraining an Optimization Problem</div>
+                <div class="title">Simulation Guide</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="maliar.html">
+          <a class="prev-page" href="blocks.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Solving Models with the Maliar Method</div>
+                <div class="title">Block Guide</div>
                 
               </div>
             </a>
@@ -433,13 +546,19 @@ control variable and one agent.</p></li>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Environments Guide</a><ul>
-<li><a class="reference internal" href="#why-environments">Why environments?</a></li>
-<li><a class="reference internal" href="#environment-stepping-a-model-in-plain-python"><code class="docutils literal notranslate"><span class="pre">Environment</span></code>: stepping a model in plain Python</a><ul>
-<li><a class="reference internal" href="#scoring-a-policy-with-rollouts">Scoring a policy with rollouts</a></li>
+<li><a class="reference internal" href="#">Reading Model Diagrams</a><ul>
+<li><a class="reference internal" href="#producing-a-diagram">Producing a Diagram</a></li>
+<li><a class="reference internal" href="#the-shape-vocabulary">The Shape Vocabulary</a></li>
+<li><a class="reference internal" href="#color-dashing-and-layout">Color, Dashing, and Layout</a></li>
+<li><a class="reference internal" href="#entity-classes-as-plates">Entity Classes as Plates</a></li>
+<li><a class="reference internal" href="#what-is-not-drawn">What Is Not Drawn</a></li>
+<li><a class="reference internal" href="#precedent">Precedent</a><ul>
+<li><a class="reference internal" href="#multi-agent-influence-diagrams">Multi-agent influence diagrams</a></li>
+<li><a class="reference internal" href="#plate-notation-for-entity-classes">Plate notation, for entity classes</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#gymenv-a-gymnasium-environment-for-rl-libraries"><code class="docutils literal notranslate"><span class="pre">GymEnv</span></code>: a gymnasium environment for RL libraries</a></li>
+<li><a class="reference internal" href="#configuring-the-style">Configuring the Style</a></li>
+<li><a class="reference internal" href="#seeing-it-rendered">Seeing It Rendered</a></li>
 </ul>
 </li>
 </ul>

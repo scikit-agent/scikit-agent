@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Benchmark Consumption Models" href="plot_benchmark_models.html"><link rel="prev" title="Incentives in Grade Prediction: Observing Versus Responding" href="plot_incentives_1_grade_prediction.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Strategic Relevance: Solving the Tree Killer - scikit-agent 0.1.1.dev143+gd2ce20efb</title>
+        <title>Strategic Relevance: Solving the Tree Killer - scikit-agent 0.1.1.dev149+g464fa1d02</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev143+gd2ce20efb</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev149+g464fa1d02</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -201,6 +201,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/quickstart.html">Quickstart Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/visualization.html">Reading Model Diagrams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/solvers.html">Solvers Guide</a></li>
@@ -226,8 +227,8 @@
 <li class="toctree-l3"><a class="reference internal" href="plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_privacy_dp_tuning.html">Differential Privacy: Tuning a Parameter With a Causal Game</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
 </ul>
 </li>
 </ul>
@@ -379,14 +380,14 @@ dynamics, in topological order:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-skagent-block sphx-glr-backref-type-py-method reference internal" href="../../api/blocks.html#skagent.block.Block.display_formulas" title="skagent.block.Block.display_formulas"><span class="n">block</span><span class="o">.</span><span class="n">display_formulas</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>PT = Control()
-TS = lambda PT, u_TS: (u_TS &lt; 0.1 + 0.7 * PT) * 1.0
+TS = (u_TS &lt; 0.1 + 0.7 * PT) * 1.0
 TDoc = Control(TS)
-TDead = lambda TS, TDoc, u_TDead: (u_TDead &lt; 0.1 + 0.7 * TS - 0.5 * TDoc
+TDead = u_TDead &lt; 0.1 + 0.7 * TS - 0.5 * TDoc
 BP = Control(PT, TDoc)
-E = lambda PT: -PT
-V = lambda TDead, BP: BP * (3.0 * TDead - 0.5
-Tree = lambda TDead: -TDead
-Cost = lambda TDoc: -0.2 * TDoc
+E = -PT
+V = BP * (3.0 * TDead - 0.5)
+Tree = -TDead
+Cost = -0.2 * TDoc
 </pre></div>
 </div>
 <p>Agent attribution is declared on the <code class="docutils literal notranslate"><span class="pre">Control</span></code> itself, for decisions, and in
@@ -678,7 +679,7 @@ information cells of <code class="docutils literal notranslate"><span class="pre
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" srcset="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" alt="Bob's best response, per information cell" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 5.955 seconds)</p>
+<img src="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" srcset="../../_images/sphx_glr_plot_tree_killer_relevance_004.png" alt="Bob's best response, per information cell" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.075 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-tree-killer-relevance-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/5fe208a5eb30622739ce37ebcdec9e9c/plot_tree_killer_relevance.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_tree_killer_relevance.ipynb</span></code></a></p>
@@ -777,7 +778,7 @@ information cells of <code class="docutils literal notranslate"><span class="pre
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=db571881"></script>
+</div><script src="../../_static/documentation_options.js?v=eeaafc85"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

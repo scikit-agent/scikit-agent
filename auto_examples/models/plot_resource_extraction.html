@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html"><link rel="prev" title="Cournot: Solving for a Nash Equilibrium" href="plot_cournot_equilibrium.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Resource Extraction Model - scikit-agent 0.1.1.dev143+gd2ce20efb</title>
+        <title>Resource Extraction Model - scikit-agent 0.1.1.dev149+g464fa1d02</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev143+gd2ce20efb</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev149+g464fa1d02</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -201,6 +201,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/quickstart.html">Quickstart Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/visualization.html">Reading Model Diagrams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../user_guide/solvers.html">Solvers Guide</a></li>
@@ -226,8 +227,8 @@
 <li class="toctree-l3"><a class="reference internal" href="plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
 <li class="toctree-l3"><a class="reference internal" href="plot_privacy_dp_tuning.html">Differential Privacy: Tuning a Parameter With a Causal Game</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
 </ul>
 </li>
 </ul>
@@ -425,16 +426,16 @@ and Management</em>, 6(4), 350-363.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-skagent-block sphx-glr-backref-type-py-method reference internal" href="../../api/blocks.html#skagent.block.Block.display_formulas" title="skagent.block.Block.display_formulas"><span class="n">rex</span><span class="o">.</span><span class="n">resource_extraction_block</span><span class="o">.</span><span class="n">display_formulas</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>u = Control(x)
-unit_cost = lambda x, c_0: c_0 / x
-profit = lambda u, p, unit_cost: (p - unit_cost) * u
-escapement = lambda x, u: x - u
-x = lambda escapement, r, epsilon: r * escapement * epsilon
+unit_cost = c_0 / x
+profit = (p - unit_cost) * u
+escapement = x - u
+x = r * escapement * epsilon
 </pre></div>
 </div>
 </section>
 <section id="step-3-visualize-the-resource-extraction-model">
 <h4>Step 3: Visualize the Resource Extraction Model<a class="headerlink" href="#step-3-visualize-the-resource-extraction-model" title="Link to this heading">¶</a></h4>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">img</span></a><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-block sphx-glr-backref-type-py-method reference internal" href="../../api/blocks.html#skagent.block.Block.display" title="skagent.block.Block.display"><span class="n">rex</span><span class="o">.</span><span class="n">resource_extraction_block</span><span class="o">.</span><span class="n">display</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">rex</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">)</span><span class="w">
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">img</span></a><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-block sphx-glr-backref-type-py-method reference internal" href="../../api/blocks.html#skagent.block.Block.display" title="skagent.block.Block.display"><span class="n">rex</span><span class="o">.</span><span class="n">resource_extraction_block</span><span class="o">.</span><span class="n">display</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">rex</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">,</span> <span class="n">discount</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">DiscFac</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
 </span><span class="w">
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">img</span></a><span class="p">)</span><span class="w">
@@ -574,7 +575,7 @@ recovers through natural growth.</p>
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../_images/sphx_glr_plot_resource_extraction_003.png" srcset="../../_images/sphx_glr_plot_resource_extraction_003.png" alt="Resource Stock Evolution Under Optimal Escapement Policy" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.454 seconds)</p>
+<img src="../../_images/sphx_glr_plot_resource_extraction_003.png" srcset="../../_images/sphx_glr_plot_resource_extraction_003.png" alt="Resource Stock Evolution Under Optimal Escapement Policy" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.485 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-resource-extraction-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/11efbeece77eafdb1045de1a479b94e2/plot_resource_extraction.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_resource_extraction.ipynb</span></code></a></p>
@@ -686,7 +687,7 @@ recovers through natural growth.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=db571881"></script>
+</div><script src="../../_static/documentation_options.js?v=eeaafc85"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

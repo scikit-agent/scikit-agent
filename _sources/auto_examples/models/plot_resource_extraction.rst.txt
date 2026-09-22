@@ -201,10 +201,10 @@ Step 2: Inspect the Resource Extraction Model
  .. code-block:: none
 
     u = Control(x)
-    unit_cost = lambda x, c_0: c_0 / x
-    profit = lambda u, p, unit_cost: (p - unit_cost) * u
-    escapement = lambda x, u: x - u
-    x = lambda escapement, r, epsilon: r * escapement * epsilon
+    unit_cost = c_0 / x
+    profit = (p - unit_cost) * u
+    escapement = x - u
+    x = r * escapement * epsilon
 
 
 
@@ -219,7 +219,7 @@ Step 3: Visualize the Resource Extraction Model
 .. code-block:: Python
 
 
-    img, _ = rex.resource_extraction_block.display(rex.calibration)
+    img, _ = rex.resource_extraction_block.display(rex.calibration, discount="DiscFac")
 
     plt.figure(figsize=(10, 8))
     plt.imshow(img)
@@ -442,7 +442,7 @@ recovers through natural growth.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.454 seconds)
+   **Total running time of the script:** (0 minutes 0.485 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_resource_extraction.py:

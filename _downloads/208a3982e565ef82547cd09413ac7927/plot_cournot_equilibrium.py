@@ -137,6 +137,7 @@ import numpy as np
 
 import skagent.models.cournot as cournot
 from skagent.ground import GroundedBlock
+from skagent.simulation.monte_carlo import Simulator
 from skagent.solver import ExactBestResponse, project, solve_symmetric_equilibrium
 from skagent.utils import plot_block_diagram
 
@@ -163,6 +164,65 @@ plot_block_diagram(
 )
 
 # %%
+# Two calibrations, and one model
+# =================================
+#
+# The rest of this page works with
+# :func:`~skagent.models.cournot.collusion_calibration`, where every firm
+# shares one cost and :math:`N` is small enough to write out by hand. The
+# module ships a second calibration,
+# :func:`~skagent.models.cournot.heterogeneous_calibration`, where each firm draws
+# its own cost from :math:`\mathrm{Uniform}[c_l, c_h]` and :math:`N` is large. The
+# two calibrations put the model's two readings of :math:`N`, noted above, to use.
+#
+# Under the supplied rule :math:`q_i = (A - c_i)/(2b)`, and writing :math:`m =
+# E[c]` and :math:`v = \mathrm{Var}(c)` for the mean and variance of the cost
+# distribution, the heterogeneous market has closed forms for its average
+# quantity, its price, and each firm's expected profit:
+#
+# .. math::
+#     Q = \frac{A - m}{2b}, \qquad P = \frac{A + m}{2}, \qquad
+#     E[u] = \frac{(A - m)^2/2 + v}{2b}
+#
+# Here :math:`N` is a numerical knob: it does not appear in these formulas at
+# all, and the simulated market only needs enough firms for its sample average
+# to approach them. In :func:`~skagent.models.cournot.collusion_calibration`, by
+# contrast, :math:`N` enters the best response directly, through the
+# :math:`-(N-1)/2` slope above, so changing it there asks a different question
+# about the market rather than refining an approximate answer to the same one.
+#
+# The closed forms are also a check on what a claim about this market can hide.
+# A claim about :math:`Q` or :math:`P` alone is satisfied by a population that
+# has silently lost its cross-section, because a mean survives the collapse to a
+# single degenerate cost: a thousand firms at the mean cost produce the same
+# average and the same price as a thousand firms with costs spread around it.
+# :math:`E[u]` does not survive that collapse, because it carries the variance
+# :math:`v` of the cost distribution as well as its mean. That is why the
+# comparison below checks :math:`E[u]` rather than stopping at :math:`Q` and
+# :math:`P`.
+
+moments = cournot.analytic_moments()
+heterogeneous_market = Simulator(
+    cournot.heterogeneous_calibration(),
+    cournot.cournot_block,
+    {"q": cournot.competitive_rule},
+    {},
+    sample_count=400,
+    T_sim=1,
+    seed=0,
+)
+heterogeneous_market.initialize_sim()
+history = heterogeneous_market.simulate()
+
+print(f"{'':8s}{'simulated':>12s}{'analytic':>12s}")
+for key, simulated in (
+    ("Q", history["Q"].mean()),
+    ("P", history["P"].mean()),
+    ("E[u]", history["u"].mean()),
+):
+    print(f"{key:8s}{simulated:12.4f}{moments[key]:12.4f}")
+
+# %%
 # Three profiles, and why the firms do not reach the one they prefer
 # ====================================================================
 #
@@ -170,6 +230,14 @@ plot_block_diagram(
 # in disguise, which is what makes the equilibrium worth computing rather than
 # guessing, because the outcome the firms reach is not the outcome they would
 # rank highest.
+#
+# Each profile is a fixed decision rule per firm
+# (:func:`~skagent.models.cournot.profile_rules`), so a profile may hand
+# different firms different rules. ``one-defects`` does exactly that: it gives
+# the three firms three constant rules, two of which happen to be equal. No
+# rule reads which firm it belongs to, and the market block itself is the same
+# in all three profiles. The asymmetry is in the assignment of rules to firms,
+# not in the model.
 
 for label, quantities in cournot.PROFILES.items():
     print(f"{label:16s} {quantities}")

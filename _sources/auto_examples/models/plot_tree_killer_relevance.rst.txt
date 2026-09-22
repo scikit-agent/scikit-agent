@@ -136,14 +136,14 @@ dynamics, in topological order:
  .. code-block:: none
 
     PT = Control()
-    TS = lambda PT, u_TS: (u_TS < 0.1 + 0.7 * PT) * 1.0
+    TS = (u_TS < 0.1 + 0.7 * PT) * 1.0
     TDoc = Control(TS)
-    TDead = lambda TS, TDoc, u_TDead: (u_TDead < 0.1 + 0.7 * TS - 0.5 * TDoc
+    TDead = u_TDead < 0.1 + 0.7 * TS - 0.5 * TDoc
     BP = Control(PT, TDoc)
-    E = lambda PT: -PT
-    V = lambda TDead, BP: BP * (3.0 * TDead - 0.5
-    Tree = lambda TDead: -TDead
-    Cost = lambda TDoc: -0.2 * TDoc
+    E = -PT
+    V = BP * (3.0 * TDead - 0.5)
+    Tree = -TDead
+    Cost = -0.2 * TDoc
 
 
 
@@ -670,7 +670,7 @@ information cells of ``TDoc``, and neither depends on anything Alice does.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 5.955 seconds)
+   **Total running time of the script:** (0 minutes 6.075 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_tree_killer_relevance.py:
