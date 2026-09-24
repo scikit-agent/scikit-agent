@@ -110,6 +110,14 @@ and this project adheres to
 
 ### Fixed
 
+- `BellmanEquationLoss` is the all-in-one objective of Maliar, Maliar and Winant
+  (2021, Definition 2.10, eq. 15): the product of the Bellman residuals, and of
+  the FOC residuals, at two independent next-period shock draws. It squared a
+  single draw, which adds the variance of the continuation value to the
+  objective, so in a stochastic model it scored the exact value function as
+  wrong. `EulerEquationLoss` already used the product. Both losses now draw the
+  second realization with one shared helper.
+
 - `Block.display_formulas` renders a lambda's body. It had been taking the
   source line from the first colon onwards, which on the usual
   `dynamics={"u": lambda ...}` is the dict key's colon, so the "formula" kept
