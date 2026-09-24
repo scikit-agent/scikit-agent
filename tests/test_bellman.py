@@ -849,6 +849,57 @@ class TestOnePassPerObjective(unittest.TestCase):
         self.assertEqual(passes["n"], 1)
 
 
+class TestOnePassPerGradient(unittest.TestCase):
+    """The marginal reward and the transition read one pass per control.
+
+    Differentiating the reward and the arrival states with respect to a
+    control asks about ONE forward computation at one point, so both read
+    one block pass. The residuals come out the same either way, so the pass
+    count is what has to be asserted; the residual tests are the numerical
+    guard. Each control's pre-decision state here is an arrival state, so the
+    envelope term doesn't need a pass of its own.
+    """
+
+    def _single(self):
+        _, bp = _make_consumption_savings_bp()
+        return (
+            bp,
+            lambda s, sh, p: {"consumption": 0.5 * s["wealth"]},
+            lambda s, sh, p: 10.0 * s["wealth"],
+            {"wealth": torch.tensor([2.0, 4.0])},
+            {
+                "income_0": torch.tensor([1.0, 1.0]),
+                "income_1": torch.tensor([1.2, 0.8]),
+            },
+        )
+
+    def _double(self):
+        _, bp = _make_multi_control_bp()
+        return (
+            bp,
+            lambda s, sh, p: {"c1": 0.2 * s["a"], "c2": 0.3 * s["a"]},
+            lambda s, sh, p: 10.0 * s["a"],
+            {"a": torch.tensor([2.0, 4.0])},
+            {},
+        )
+
+    def test_euler_residual_runs_one_plus_two_passes_per_control(self):
+        # One pass for the arrival states and discount factor, then per
+        # control one at t (reward and transition together) and one at t+1.
+        for n, case in ((1, self._single), (2, self._double)):
+            bp, df, _, states, shocks = case()
+            with count_calls(bp.block, "transition") as passes:
+                bellman.estimate_euler_residual(bp, df, states, shocks)
+            self.assertEqual(passes["n"], 1 + 2 * n, f"{n} control(s)")
+
+    def test_foc_residual_runs_one_plus_one_pass_per_control(self):
+        for n, case in ((1, self._single), (2, self._double)):
+            bp, df, vf, states, shocks = case()
+            with count_calls(bp.block, "transition") as passes:
+                bellman.estimate_bellman_foc_residual(bp, vf, df, states, shocks)
+            self.assertEqual(passes["n"], 1 + n, f"{n} control(s)")
+
+
 def _decomposed_and_fused_bps():
     """One payoff in two parts, and the same payoff written as one symbol.
 

@@ -35,7 +35,7 @@ control symbol; ``vf`` by agent name).
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import numpy as np
 import torch
@@ -444,6 +444,64 @@ class BellmanPeriod(GroundedBlock):
         post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
         return post
 
+    def grad_post_function(
+        self,
+        states: dict[str, Any],
+        controls: dict[str, Any],
+        wrt: dict[str, torch.Tensor],
+        symbols: Iterable[str],
+        *,
+        shocks: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        decision_rules: dict[str, Callable] | None = None,
+        create_graph: bool = False,
+    ) -> dict[str, dict[str, torch.Tensor]]:
+        """
+        Compute gradients of named ex post variables from one block pass.
+
+        Every symbol in *symbols* is read off the same :meth:`post_function`
+        result, so asking for reward and arrival-state gradients together costs
+        one pass over the block dynamics.
+
+        Parameters
+        ----------
+        states : dict[str, Any]
+            State variables.
+        controls : dict[str, Any]
+            Control variables.
+        wrt : dict[str, torch.Tensor]
+            Dictionary of variables to compute gradients with respect to.
+            Keys are variable names, values are tensors with requires_grad=True.
+        symbols : Iterable[str]
+            Names of the ex post variables to differentiate.
+        shocks : dict[str, Any] | None, optional
+            Shock variables (defaults to empty dict).
+        parameters : dict[str, Any] | None, optional
+            Model parameters (defaults to instance calibration).
+        decision_rules : dict[str, Callable] | None, optional
+            Decision rules of control variables that will _not_ be given to the function.
+        create_graph : bool, optional
+            If True, the graph of the derivative is constructed, allowing higher-order
+            derivatives and end-to-end training through the gradient computation.
+
+        Returns
+        -------
+        dict[str, dict[str, torch.Tensor]]
+            Nested dictionary of gradients for each symbol and variable:
+            {symbol: {var_name: gradient}}. The gradient is a zero tensor
+            when the symbol does not depend on the variable.
+        """
+        post = self.post_function(
+            states,
+            controls,
+            shocks=shocks,
+            parameters=parameters,
+            decision_rules=decision_rules,
+        )
+        return compute_gradients_for_tensors(
+            {sym: post[sym] for sym in symbols}, wrt, create_graph=create_graph
+        )
+
     def grad_reward_function(
         self,
         states: dict[str, Any],
@@ -487,23 +545,16 @@ class BellmanPeriod(GroundedBlock):
             {reward_sym: {var_name: gradient}}. The gradient is a zero tensor
             when the reward does not depend on the variable.
         """
-        shocks, decision_rules, parameters = self._resolve_inputs(
-            shocks, decision_rules, parameters
+        return self.grad_post_function(
+            states,
+            controls,
+            wrt,
+            self.get_reward_syms(agent),
+            shocks=shocks,
+            parameters=parameters,
+            decision_rules=decision_rules,
+            create_graph=create_graph,
         )
-
-        # Combine all variables for block evaluation
-        vals = parameters | states | shocks | controls
-
-        # Compute rewards using block transition
-        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
-        # Calls block.transition directly (rather than post_function) to keep
-        # the exact computation graph needed for autograd differentiation.
-
-        # Filter rewards by agent
-        rewards = {sym: post[sym] for sym in self.get_reward_syms(agent)}
-
-        # Use utility function to compute gradients
-        return compute_gradients_for_tensors(rewards, wrt, create_graph=create_graph)
 
     def grad_transition_function(
         self,
@@ -550,18 +601,15 @@ class BellmanPeriod(GroundedBlock):
             {state_sym: {var_name: gradient}}. The gradient is a zero tensor
             when the arrival state does not depend on the variable.
         """
-        # Use the existing transition_function method to compute next states
-        next_states = self.transition_function(
+        return self.grad_post_function(
             states,
             controls,
+            wrt,
+            self.arrival_states,
             shocks=shocks,
             parameters=parameters,
             decision_rules=decision_rules,
-        )
-
-        # Use utility function to compute gradients
-        return compute_gradients_for_tensors(
-            next_states, wrt, create_graph=create_graph
+            create_graph=create_graph,
         )
 
     def grad_pre_state_function(
@@ -1051,14 +1099,14 @@ def _euler_residual_single_control(
     c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
     c_t1, controls_t1_grad = _ensure_grad(controls_t_plus_1, control_sym)
 
-    # ∂u/∂c at period t
-    grads_t = bellman_period.grad_reward_function(
+    # ∂u/∂c and ∂s_{t+1}/∂c at period t, read off one block pass
+    grads_t = bellman_period.grad_post_function(
         states_t,
         controls_t_grad,
-        wrt={control_sym: c_t},
+        {control_sym: c_t},
+        [*reward_syms, *bellman_period.arrival_states],
         shocks=shocks_t,
         parameters=parameters,
-        agent=agent,
         create_graph=True,
     )
     # The payoff is the SUM of the agent's reward symbols, so the marginal is
@@ -1090,17 +1138,8 @@ def _euler_residual_single_control(
             f"'{control_sym}', or its gradient vanishes on the whole batch"
         )
 
-    # Transition gradients: ∂s_{t+1}/∂c_t for all arrival states.
-    trans_grads_nested = bellman_period.grad_transition_function(
-        states_t,
-        controls_t_grad,
-        wrt={control_sym: c_t},
-        shocks=shocks_t,
-        parameters=parameters,
-        create_graph=True,
-    )
     transition_gradients = {
-        state_sym: trans_grads_nested[state_sym][control_sym]
+        state_sym: grads_t[state_sym][control_sym]
         for state_sym in bellman_period.arrival_states
     }
 
@@ -1311,14 +1350,14 @@ def estimate_bellman_foc_residual(
     for control_sym in control_syms:
         c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
 
-        # u'(c_t) — marginal reward at period t
-        reward_grads = bellman_period.grad_reward_function(
-            states_t,
-            controls_t_grad,
-            wrt={control_sym: c_t},
-            shocks=shocks_t,
-            parameters=parameters,
-            agent=agent,
+        # One pass at the grad-tracking control yields both u'(c_t) and the
+        # next-period arrival states, whose graph still runs through c_t.
+        post_grad = bellman_period.post_function(
+            states_t, controls_t_grad, shocks=shocks_t, parameters=parameters
+        )
+        reward_grads = compute_gradients_for_tensors(
+            {sym: post_grad[sym] for sym in reward_syms},
+            {control_sym: c_t},
             create_graph=True,
         )
         mr_t = sum(reward_grads[sym][control_sym] for sym in reward_syms)
@@ -1329,16 +1368,11 @@ def estimate_bellman_foc_residual(
                 f"'{control_sym}', or its gradient vanishes on the whole batch"
             )
 
-        # s' = f(s, c, ε₀) — transition preserving autograd graph through c_t
-        next_states = bellman_period.transition_function(
-            states_t, controls_t_grad, shocks=shocks_t, parameters=parameters
-        )
-
-        # V(s', ε₁) — continuation value with second independent shock draw,
-        # evaluated on next-period arrival states
+        # V(s', ε₁), the continuation value with the second independent shock
+        # draw, evaluated on next-period arrival states
         v_next = bellman_period.compute_value(
             vf,
-            next_states,
+            bellman_period.select_arrival_states(post_grad),
             shocks=shocks_t_plus_1,
             parameters=parameters,
             agent=agent,
