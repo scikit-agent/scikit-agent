@@ -126,7 +126,8 @@ and this project adheres to
   control the continuation value does not depend on. A value callable that
   ignores the arrival states made it raise a `RuntimeError` from autograd,
   although its own comment already treated a missing dependence as a zero
-  gradient.
+  gradient. An infinite `dV/dc` now raises the `ValueError` a NaN one did, where
+  it had passed into the residual.
 
 - `Block.display_formulas` renders a lambda's body. It had been taking the
   source line from the first colon onwards, which on the usual

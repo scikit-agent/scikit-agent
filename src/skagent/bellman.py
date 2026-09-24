@@ -1355,9 +1355,9 @@ def estimate_bellman_foc_residual(
         dv_dc = compute_gradients_for_tensors(
             {"v": v_next}, {control_sym: c_t}, create_graph=True
         )["v"][control_sym]
-        if torch.any(torch.isnan(dv_dc)):
+        if not torch.isfinite(dv_dc).all():
             raise ValueError(
-                f"Autograd gradient dV/d{control_sym} is NaN. "
+                f"Autograd gradient dV/d{control_sym} contains NaN or Inf. "
                 "Check that vf is properly initialized and numerically stable."
             )
 
