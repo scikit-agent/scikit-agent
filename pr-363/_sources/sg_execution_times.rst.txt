@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**03:53.401** total execution time for 13 files **from all galleries**:
+**03:46.990** total execution time for 13 files **from all galleries**:
 
 .. container::
 
@@ -33,41 +33,41 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_sb3_ppo.py` (``../examples/algorithms/plot_sb3_ppo.py``)
-     - 02:16.073
+     - 02:14.338
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_maliar_training_loop.py` (``../examples/algorithms/plot_maliar_training_loop.py``)
-     - 00:44.815
+     - 00:41.810
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_train_against_known_solution.py` (``../examples/algorithms/plot_train_against_known_solution.py``)
-     - 00:34.991
+     - 00:33.101
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_tree_killer_relevance.py` (``../examples/models/plot_tree_killer_relevance.py``)
-     - 00:06.088
+     - 00:05.991
      - 0.0
    * - :ref:`sphx_glr_auto_examples_algorithms_plot_direct_block_solve.py` (``../examples/algorithms/plot_direct_block_solve.py``)
-     - 00:03.684
+     - 00:03.490
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_privacy_dp_tuning.py` (``../examples/models/plot_privacy_dp_tuning.py``)
-     - 00:02.377
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``../examples/models/plot_benchmark_models.py``)
-     - 00:01.074
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``../examples/models/plot_consumption_portfolio_model.py``)
-     - 00:00.994
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_lemons_adverse_selection.py` (``../examples/models/plot_lemons_adverse_selection.py``)
-     - 00:00.831
+     - 00:02.322
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_2_content_recommendation.py` (``../examples/models/plot_incentives_2_content_recommendation.py``)
-     - 00:00.775
+     - 00:01.558
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``../examples/models/plot_benchmark_models.py``)
+     - 00:01.014
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``../examples/models/plot_consumption_portfolio_model.py``)
+     - 00:00.950
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_lemons_adverse_selection.py` (``../examples/models/plot_lemons_adverse_selection.py``)
+     - 00:00.798
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_1_grade_prediction.py` (``../examples/models/plot_incentives_1_grade_prediction.py``)
-     - 00:00.677
+     - 00:00.641
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_cournot_equilibrium.py` (``../examples/models/plot_cournot_equilibrium.py``)
-     - 00:00.515
+     - 00:00.493
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``../examples/models/plot_resource_extraction.py``)
-     - 00:00.507
+     - 00:00.484
      - 0.0

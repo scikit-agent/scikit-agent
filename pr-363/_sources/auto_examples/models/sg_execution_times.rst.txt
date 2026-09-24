@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:13.837** total execution time for 9 files **from auto_examples/models**:
+**00:14.251** total execution time for 9 files **from auto_examples/models**:
 
 .. container::
 
@@ -33,29 +33,29 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_models_plot_tree_killer_relevance.py` (``plot_tree_killer_relevance.py``)
-     - 00:06.088
+     - 00:05.991
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_privacy_dp_tuning.py` (``plot_privacy_dp_tuning.py``)
-     - 00:02.377
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``plot_benchmark_models.py``)
-     - 00:01.074
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``plot_consumption_portfolio_model.py``)
-     - 00:00.994
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_lemons_adverse_selection.py` (``plot_lemons_adverse_selection.py``)
-     - 00:00.831
+     - 00:02.322
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_2_content_recommendation.py` (``plot_incentives_2_content_recommendation.py``)
-     - 00:00.775
+     - 00:01.558
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``plot_benchmark_models.py``)
+     - 00:01.014
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``plot_consumption_portfolio_model.py``)
+     - 00:00.950
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_lemons_adverse_selection.py` (``plot_lemons_adverse_selection.py``)
+     - 00:00.798
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_1_grade_prediction.py` (``plot_incentives_1_grade_prediction.py``)
-     - 00:00.677
+     - 00:00.641
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_cournot_equilibrium.py` (``plot_cournot_equilibrium.py``)
-     - 00:00.515
+     - 00:00.493
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``plot_resource_extraction.py``)
-     - 00:00.507
+     - 00:00.484
      - 0.0
