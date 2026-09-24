@@ -1,5 +1,6 @@
 import inspect
 import logging
+import math
 from skagent.block import normalize_bound
 from skagent.grid import Grid
 import torch
@@ -10,6 +11,62 @@ from skagent.utils import (
 from typing import Callable, Optional
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Hidden-layer activations a Net accepts by name. The identity maps to None,
+# which the forward pass skips.
+_ACTIVATIONS = {
+    "silu": torch.nn.functional.silu,
+    "relu": torch.nn.functional.relu,
+    "tanh": torch.nn.functional.tanh,
+    "sigmoid": torch.nn.functional.sigmoid,
+    "identity": None,
+}
+
+# Output transforms a Net accepts by name; see _apply_output_transform.
+_OUTPUT_TRANSFORMS = {
+    "sigmoid": torch.sigmoid,
+    "exp": torch.exp,
+    "tanh": torch.tanh,
+    "relu": torch.nn.functional.relu,
+    "softplus": torch.nn.functional.softplus,
+    "softmax": lambda x: torch.nn.functional.softmax(x, dim=-1),
+    "abs": torch.abs,
+    "square": lambda x: x**2,
+    "identity": lambda x: x,
+}
+
+
+def _activation_fn(activation):
+    """Resolve an activation name, callable, or None; None means the identity."""
+    if activation is None:
+        return None
+    if isinstance(activation, str) and activation in _ACTIVATIONS:
+        return _ACTIVATIONS[activation]
+    if callable(activation):
+        return activation
+    raise ValueError(f"Unsupported activation: {activation}")
+
+
+def _apply_output_transform(x, transform):
+    """Apply one output transform (a name, a callable, or None) to *x*."""
+    if transform is None:
+        return x
+    if isinstance(transform, str) and transform in _OUTPUT_TRANSFORMS:
+        return _OUTPUT_TRANSFORMS[transform](x)
+    if callable(transform):
+        return transform(x)
+    raise ValueError(f"Unknown single transform: {transform}")
+
+
+def _batch_length(*dicts):
+    """Number of samples in the first tensor or array found in *dicts*, else 1."""
+    for d in dicts:
+        for value in d.values():
+            if hasattr(value, "numel"):
+                return value.numel()
+            if hasattr(value, "size"):
+                return value.size
+    return 1
 
 
 class BellmanPeriodMixin:
@@ -33,9 +90,50 @@ class BellmanPeriodMixin:
         """Map states, shocks, and parameters to a controls dict.
 
         Implemented by each concrete network; declared here as the contract
-        that :meth:`get_decision_function` closes over.
+        that :meth:`get_decision_function` returns.
         """
         raise NotImplementedError
+
+    def _network_input(self, states_t, shocks_t, parameters):
+        """Map arrival states to the ``(n, len(iset))`` network input.
+
+        The control's information set is computed with
+        :meth:`~skagent.bellman.BellmanPeriod.compute_pre_state`. When it is
+        empty the network is a constant, and ``n`` comes from the states.
+        """
+        iset_dict = self.bellman_period.compute_pre_state(
+            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
+        )
+        return self._stack_information(
+            [iset_dict[isym].flatten() for isym in self.iset],
+            _batch_length(states_t, shocks_t or {}),
+        )
+
+    def _stack_information(self, information, length):
+        """Stack information-set columns into an ``(n, k)`` input on *device*.
+
+        An empty information set gives an ``(length, 0)`` input, so *length*
+        is required then.
+        """
+        if len(information) > 0:
+            return torch.stack(information).T.to(device)
+        if length is None:
+            raise ValueError(
+                "Must pass a tensor length for an empty information set "
+                f"(control '{self.control_sym}')."
+            )
+        return torch.empty(length, 0, device=device)
+
+    def _setup_bounds(self):
+        """Vectorize the control's upper and lower bounds over the iset columns."""
+        self.upper_bound = self.cobj.upper_bound
+        self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
+            self.upper_bound, "Upper bound"
+        )
+        self.lower_bound = self.cobj.lower_bound
+        self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
+            self.lower_bound, "Lower bound"
+        )
 
     def _init_bellman_period(self, bellman_period, control_sym=None):
         """
@@ -124,12 +222,8 @@ class BellmanPeriodMixin:
         return ub - torch.nn.functional.softplus(x1)
 
     def get_decision_function(self):
-        """Return a closure ``(states, shocks, parameters) -> controls dict``."""
-
-        def df(states_t, shocks_t, parameters):
-            return self.decision_function(states_t, shocks_t, parameters)
-
-        return df
+        """Return a callable ``(states, shocks, parameters) -> controls dict``."""
+        return self.decision_function
 
 
 ##########
@@ -193,21 +287,11 @@ class Net(torch.nn.Module):
         self.n_layers = n_layers
         self.transform = transform
         self.init_seed = init_seed
-        self.copy_weights_from = copy_weights_from
+        # copy_weights_from is used below but never stored: assigning a Module
+        # to an attribute registers it as a submodule, and its parameters
+        # would then count as this network's.
 
-        # Set activation function(s) and track which are identity for performance
-        if isinstance(activation, list):
-            if len(activation) != n_layers:
-                raise ValueError(
-                    f"Number of activations ({len(activation)}) must match "
-                    f"number of layers ({n_layers})"
-                )
-            self.activations = [self._get_activation_fn(act) for act in activation]
-            self.activation_is_identity = [self._is_identity(act) for act in activation]
-        else:
-            # Single activation applied to all layers
-            self.activations = [self._get_activation_fn(activation)] * n_layers
-            self.activation_is_identity = [self._is_identity(activation)] * n_layers
+        self._set_activations(activation, n_layers)
 
         # Build network layers
         self.layers = torch.nn.ModuleList()
@@ -219,14 +303,45 @@ class Net(torch.nn.Module):
         for _ in range(n_layers - 1):
             self.layers.append(torch.nn.Linear(width, width))
 
-        # Output layer
+        # Output layer, plus any heads a subclass adds before the weights are
+        # drawn, so a seeded initialisation covers them too
         self.output = torch.nn.Linear(width, n_outputs)
+        self._add_heads(width)
 
         # Initialize weights first (before device placement)
+        self._init_weights(init_seed)
+
+        # Copy weights AFTER initialization if requested
+        if copy_weights_from is not None:
+            self._copy_weights_from_network(copy_weights_from)
+
+        # Move to device for backward compatibility (after all initialization)
+        self.to(device)
+
+    def _add_heads(self, width):
+        """Add output layers beyond ``self.output``; none by default."""
+
+    def _set_activations(self, activation, n_layers):
+        """Set the per-layer activations and record which are the identity."""
+        if not isinstance(activation, list):
+            # Single activation applied to all layers
+            activation = [activation] * n_layers
+        if len(activation) != n_layers:
+            raise ValueError(
+                f"Number of activations ({len(activation)}) must match "
+                f"number of layers ({n_layers})"
+            )
+        self.activations = [_activation_fn(act) for act in activation]
+        self.activation_is_identity = [fn is None for fn in self.activations]
+
+    def _init_weights(self, init_seed):
+        """Draw the initial weights, under *init_seed* if one is given.
+
+        The global RNG state is restored afterwards, so seeding one network's
+        initialisation leaves every later draw where it would have been.
+        """
         if init_seed is not None:
-            # Save current random state
             current_state = torch.get_rng_state()
-            # Set seed for initialization
             torch.manual_seed(init_seed)
 
         # Custom weight initialisation to match MMW notebook (normal std=0.05)
@@ -237,15 +352,7 @@ class Net(torch.nn.Module):
                     torch.nn.init.zeros_(m.bias)
 
         if init_seed is not None:
-            # Restore previous random state
             torch.set_rng_state(current_state)
-
-        # Copy weights AFTER initialization if requested
-        if copy_weights_from is not None:
-            self._copy_weights_from_network(copy_weights_from)
-
-        # Move to device for backward compatibility (after all initialization)
-        self.to(device)
 
     def _copy_weights_from_network(self, source_network):
         """Copy weights from another network with compatible architecture."""
@@ -265,100 +372,45 @@ class Net(torch.nn.Module):
                     )
                 target_param.copy_(source_param)
 
-    def _get_activation_fn(self, activation):
-        """Get activation function from string name, callable, or None."""
-        if activation == "silu":
-            return torch.nn.functional.silu
-        elif activation == "relu":
-            return torch.nn.functional.relu
-        elif activation == "tanh":
-            return torch.nn.functional.tanh
-        elif activation == "sigmoid":
-            return torch.nn.functional.sigmoid
-        elif activation == "identity" or activation is None:
-            return None  # Will be skipped in forward pass for performance
-        elif callable(activation):
-            return activation
-        else:
-            raise ValueError(f"Unsupported activation: {activation}")
-
-    def _is_identity(self, activation):
-        """Check if activation is identity/None for performance optimization."""
-        return activation == "identity" or activation is None
-
     @property
     def device(self):
         """Device property for backward compatibility."""
         return next(self.parameters()).device
 
-    def forward(self, x):
-        # Forward through hidden layers with layer-specific activations
-        for i, layer in enumerate(self.layers):
+    def _hidden(self, x):
+        """Run the hidden layers, skipping identity activations."""
+        for layer, activation in zip(self.layers, self.activations):
             x = layer(x)
-            # Skip identity activations for performance
-            if not self.activation_is_identity[i]:
-                x = self.activations[i](x)
-
-        # Output layer
-        x = self.output(x)
-
-        # Apply output transformation if specified
-        if self.transform is not None:
-            x = self._apply_transform(x)
-
+            if activation is not None:
+                x = activation(x)
         return x
+
+    def _output_head(self, h):
+        """Apply the output layer and any output transform to hidden state *h*."""
+        return self._apply_transform(self.output(h))
+
+    def forward(self, x):
+        return self._output_head(self._hidden(x))
 
     def _apply_transform(self, x):
         """Apply output transformation based on configuration."""
-        if isinstance(self.transform, list):
-            # List of transforms: apply each transform to corresponding output
-            if len(self.transform) != x.shape[-1]:
-                raise ValueError(
-                    f"Number of transforms ({len(self.transform)}) must match "
-                    f"number of outputs ({x.shape[-1]})"
-                )
+        if not isinstance(self.transform, list):
+            # Single transform (or None) applied to all outputs
+            return _apply_output_transform(x, self.transform)
 
-            transformed_outputs = []
-            for i, transform in enumerate(self.transform):
-                output_i = x[..., i]
-                transformed_outputs.append(
-                    self._apply_single_transform(output_i, transform)
-                )
-
-            return torch.stack(transformed_outputs, dim=-1)
-
-        elif self.transform is None:
-            # No transformation
-            return x
-
-        else:
-            # Single transform applied to all outputs (string or callable)
-            return self._apply_single_transform(x, self.transform)
-
-    def _apply_single_transform(self, x, transform):
-        """Apply a single transformation to a tensor."""
-        if transform == "sigmoid":
-            return torch.sigmoid(x)
-        elif transform == "exp":
-            return torch.exp(x)
-        elif transform == "tanh":
-            return torch.tanh(x)
-        elif transform == "relu":
-            return torch.nn.functional.relu(x)
-        elif transform == "softplus":
-            return torch.nn.functional.softplus(x)
-        elif transform == "softmax":
-            return torch.nn.functional.softmax(x, dim=-1)
-        elif transform == "abs":
-            return torch.abs(x)
-        elif transform == "square":
-            return x**2
-        elif transform == "identity" or transform is None:
-            return x
-        elif callable(transform):
-            return transform(x)
-        else:
-            raise ValueError(f"Unknown single transform: {transform}")
+        # List of transforms: apply each transform to corresponding output
+        if len(self.transform) != x.shape[-1]:
+            raise ValueError(
+                f"Number of transforms ({len(self.transform)}) must match "
+                f"number of outputs ({x.shape[-1]})"
+            )
+        return torch.stack(
+            [
+                _apply_output_transform(x[..., i], transform)
+                for i, transform in enumerate(self.transform)
+            ],
+            dim=-1,
+        )
 
 
 class BlockPolicyNet(BellmanPeriodMixin, Net):
@@ -398,19 +450,9 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         self._init_bellman_period(bellman_period, control_sym)
         self.apply_open_bounds = apply_open_bounds
 
-        ## assess whether/how the control is bounded
-        # this will be more challenging with multiple controls.
-        # If not None, these will be _functions_.
-        # If it is bounded, set up the vectorized version of the bound
-        # This will be used directly in the forward pass of the network.
-        self.upper_bound = self.cobj.upper_bound
-        self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
-            self.upper_bound, "Upper bound"
-        )
-        self.lower_bound = self.cobj.lower_bound
-        self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
-            self.lower_bound, "Lower bound"
-        )
+        # Vectorize the control's bounds over the information-set columns;
+        # the forward pass scales the output into them.
+        self._setup_bounds()
 
         super().__init__(n_inputs=len(self.iset), n_outputs=1, width=width, **kwargs)
 
@@ -437,27 +479,16 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         decisions - dict
             symbols : values
         """
-        iset_dict = self.bellman_period.compute_pre_state(
-            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
-        )
-        # Stack iset values as rows, then transpose to shape (n_samples, n_iset)
-        # for batch matrix operations.
-        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
+        x = self._network_input(states_t, shocks_t, parameters)
+        return {self.control_sym: self._policy(x).flatten()}
 
-        def get_tensor_size(d):
-            for value in d.values():
-                if hasattr(value, "numel"):  # PyTorch tensor
-                    return value.numel()
-                elif hasattr(value, "size"):  # NumPy array or other array-like
-                    return value.size
-            return 1  # No tensors found
+    def _bounded_policy(self, h, x):
+        """Policy output from hidden state *h*, scaled into the bounds at input *x*."""
+        return self._apply_open_bounds(self._output_head(h), x)
 
-        output = self.get_decision_rule(length=get_tensor_size(iset_dict))[
-            self.control_sym
-        ](*iset_vals)
-
-        decisions = {self.control_sym: output}
-        return decisions
+    def _policy(self, x):
+        """The policy at network input *x*; subclasses with more heads select it."""
+        return self(x)
 
     def forward(self, x):
         """
@@ -465,8 +496,7 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         but adds on a normalization layer appropriate to the
         bounds of the decision rule.
         """
-        x1 = super().forward(x)
-        return self._apply_open_bounds(x1, x)
+        return self._bounded_policy(self._hidden(x), x)
 
     def get_core_function(self, length=None):
         return self.get_decision_rule(length=length)
@@ -474,37 +504,15 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
     def get_decision_rule(self, length=None):
         """
         Returns the decision rule corresponding to this neural network.
+
+        The rule takes the information-set values as positional arguments and
+        returns the control values. For an empty information set, *length* is
+        the number of samples to return.
         """
 
         def decision_rule(*information):
-            """
-            A decision rule positional arguments (reflecting the information set)
-            values to control values.
-
-            Parameters
-            ----------
-            information: *args
-                values arrays
-
-            Returns
-            -------
-
-            decisions - array
-            """
-            if len(information) > 0:
-                input_tensor = torch.stack(information).T
-                input_tensor = input_tensor.to(device)
-            else:
-                batch_size = length
-
-                if batch_size is None:
-                    raise Exception(
-                        "You must pass a tensor length when creating a decision rule"
-                        " with an empty information set."
-                    )
-                input_tensor = torch.empty(batch_size, 0, device=device)
-
-            return self(input_tensor).flatten()  # application of network
+            x = self._stack_information(information, length)
+            return self._policy(x).flatten()
 
         return {self.control_sym: decision_rule}
 
@@ -551,37 +559,28 @@ class BlockValueNet(BellmanPeriodMixin, Net):
         torch.Tensor
             Flattened value estimates, one per input row.
         """
-        if shocks_t is None:
-            shocks_t = {}
-        iset_dict = self.bellman_period.compute_pre_state(
-            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
-        )
-        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
-        input_tensor = torch.stack(iset_vals).T.to(device)
-        return self(input_tensor).flatten()
+        return self(self._network_input(states_t, shocks_t, parameters)).flatten()
 
     def get_value_function(self):
         """Return a callable ``(states, shocks, parameters) -> value`` tensor."""
-
-        def vf(states_t, shocks_t=None, parameters=None):
-            return self.value_function(
-                states_t, shocks_t if shocks_t is not None else {}, parameters
-            )
-
-        return vf
+        return self.value_function
 
     def get_core_function(self, length=None):
         """Return the value function (the trainable core for this net)."""
         return self.get_value_function()
 
 
-class BlockPolicyValueNet(BellmanPeriodMixin, Net):
+class BlockPolicyValueNet(BlockPolicyNet):
     """
     Single neural network with shared backbone for both policy and value.
 
+    A :class:`BlockPolicyNet` with a second, unconstrained output head; the
+    policy interface (decision function, decision rule, core function) is
+    inherited unchanged and reads the policy head.
+
     Architecture: shared hidden layers → two output heads:
-    - **Policy head** — bounded output (sigmoid-scaled to satisfy constraints)
-    - **Value head** — unconstrained scalar output
+    - **Policy head**: bounded output (sigmoid-scaled to satisfy constraints)
+    - **Value head**: unconstrained scalar output
 
     Sharing the backbone means one optimizer updates all weights
     simultaneously, and the value head anchors the control *level* that
@@ -602,39 +601,11 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
         Passed to :class:`Net` (activation, n_layers, init_seed, etc.).
     """
 
-    def __init__(
-        self,
-        bellman_period,
-        control_sym=None,
-        apply_open_bounds=True,
-        width=32,
-        **kwargs,
-    ):
-        self._init_bellman_period(bellman_period, control_sym)
-        self.apply_open_bounds = apply_open_bounds
-
-        # Bounds setup (uses _setup_bound from BellmanPeriodMixin)
-        self.upper_bound = self.cobj.upper_bound
-        self.upper_bound_vec_func, self.upper_bound_param_to_column = self._setup_bound(
-            self.upper_bound, "Upper bound"
-        )
-        self.lower_bound = self.cobj.lower_bound
-        self.lower_bound_vec_func, self.lower_bound_param_to_column = self._setup_bound(
-            self.lower_bound, "Lower bound"
-        )
-
-        # Net: shared backbone with 1 output (policy head)
-        super().__init__(n_inputs=len(self.iset), n_outputs=1, width=width, **kwargs)
-
-        # Value head: separate Linear from the shared backbone
+    def _add_heads(self, width):
+        # Value head: a second Linear on the shared backbone, drawn with the
+        # rest of the weights so init_seed fixes it too
         self.value_output = torch.nn.Linear(width, 1)
-        torch.nn.init.normal_(self.value_output.weight, mean=0.0, std=0.05)
-        torch.nn.init.zeros_(self.value_output.bias)
-        self.value_output.to(device)
 
-    # ------------------------------------------------------------------
-    # Forward
-    # ------------------------------------------------------------------
     def forward(self, x) -> tuple[torch.Tensor, torch.Tensor]:
         """Run shared backbone, then policy head (bounded) + value head.
 
@@ -642,85 +613,11 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
         into the control's open bounds; the value tensor is unconstrained.
         Both have shape ``(n, 1)``.
         """
-        x_input = x
+        h = self._hidden(x)
+        return self._bounded_policy(h, x), self.value_output(h)
 
-        # Shared hidden layers
-        for i, layer in enumerate(self.layers):
-            x = layer(x)
-            if not self.activation_is_identity[i]:
-                x = self.activations[i](x)
-
-        # Policy head (uses Net's output layer); bounds logic shared with
-        # BlockPolicyNet via BellmanPeriodMixin._apply_open_bounds.
-        policy_raw = self.output(x)
-        if self.transform is not None:
-            policy_raw = self._apply_transform(policy_raw)
-        policy = self._apply_open_bounds(policy_raw, x_input)
-
-        # Value head (unconstrained)
-        value = self.value_output(x)
-
-        return policy, value
-
-    # ------------------------------------------------------------------
-    # Policy interface (compatible with BlockPolicyNet)
-    # ------------------------------------------------------------------
-    def decision_function(self, states_t, shocks_t, parameters):
-        """Map states, shocks, and parameters to a controls dict.
-
-        Parameters
-        ----------
-        states_t : dict
-            Arrival state values, ``symbol -> tensor``.
-        shocks_t : dict or None
-            Shock values, ``symbol -> tensor`` (``None`` is treated as ``{}``).
-        parameters : dict
-            Model parameters, ``symbol -> value``.
-
-        Returns
-        -------
-        dict
-            ``{control_sym: tensor}`` of policy-head outputs. The arrival
-            states are mapped to the control's information set via
-            :meth:`~skagent.bellman.BellmanPeriod.compute_pre_state` before
-            the network is evaluated.
-        """
-        if shocks_t is None:
-            shocks_t = {}
-        iset_dict = self.bellman_period.compute_pre_state(
-            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
-        )
-        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
-
-        def get_tensor_size(d):
-            for value in d.values():
-                if hasattr(value, "numel"):
-                    return value.numel()
-                elif hasattr(value, "size"):
-                    return value.size
-            return 1
-
-        dr = self.get_decision_rule(length=get_tensor_size(iset_dict))
-        output = dr[self.control_sym](*iset_vals)
-        return {self.control_sym: output}
-
-    def get_decision_rule(self, length=None):
-        """Decision rule returning only the policy output."""
-
-        def decision_rule(*information):
-            if len(information) > 0:
-                input_tensor = torch.stack(information).T.to(device)
-            else:
-                if length is None:
-                    raise ValueError(
-                        "Must pass tensor length for empty information set in "
-                        f"BlockPolicyValueNet.get_decision_rule for control '{self.control_sym}'."
-                    )
-                input_tensor = torch.empty(length, 0, device=device)
-            policy, _value = self(input_tensor)
-            return policy.flatten()
-
-        return {self.control_sym: decision_rule}
+    def _policy(self, x):
+        return self(x)[0]
 
     # ------------------------------------------------------------------
     # Value interface
@@ -749,32 +646,12 @@ class BlockPolicyValueNet(BellmanPeriodMixin, Net):
         torch.Tensor
             Flattened value estimates, one per input row.
         """
-        if shocks_t is None:
-            shocks_t = {}
-        iset_dict = self.bellman_period.compute_pre_state(
-            self.control_sym, states_t, shocks=shocks_t, parameters=parameters
-        )
-        iset_vals = [iset_dict[isym].flatten() for isym in self.iset]
-        input_tensor = torch.stack(iset_vals).T.to(device)
-        _policy, value = self(input_tensor)
-        return value.flatten()
+        x = self._network_input(states_t, shocks_t, parameters)
+        return self(x)[1].flatten()
 
     def get_value_function(self):
-        def vf(states_t, shocks_t=None, parameters=None):
-            return self.value_function(
-                states_t,
-                shocks_t if shocks_t is not None else {},
-                parameters,
-            )
-
-        return vf
-
-    # ------------------------------------------------------------------
-    # Core function (for train_block_nn)
-    # ------------------------------------------------------------------
-    def get_core_function(self, length=None):
-        """Return decision rules (policy head) for use with train_block_nn."""
-        return self.get_decision_rule(length=length)
+        """Return a callable ``(states, shocks, parameters) -> value`` tensor."""
+        return self.value_function
 
     def get_policy_and_value_functions(self, length=None):
         """Return both policy decision rules and value function."""
@@ -797,9 +674,16 @@ def aggregate_net_loss(inputs: Grid, df, loss_function):
             "loss_function must return a torch.Tensor of per-sample losses, "
             f"got {type(losses).__name__}."
         )
-    if losses.device != device:
-        losses = losses.to(device)
-    return losses.mean()
+    return losses.to(device).mean()
+
+
+def _validate_train_args(epochs, lr, grad_clip):
+    """Validate the scalar arguments of :func:`train_block_nn`."""
+    require_positive_integer("epochs", epochs)
+    if lr <= 0:
+        raise ValueError(f"lr must be > 0, got {lr}")
+    if grad_clip is not None and grad_clip <= 0:
+        raise ValueError(f"grad_clip must be > 0 or None, got {grad_clip}")
 
 
 def train_block_nn(
@@ -841,7 +725,8 @@ def train_block_nn(
     loss_function : Callable
         Loss function ``(decision_function, input_grid) -> loss_tensor``.
     epochs : int, optional
-        Number of training epochs (default 50).
+        Number of training epochs (default 50). Any integer type is accepted,
+        numpy integers included.
     lr : float, optional
         Learning rate for Adam optimizer (default 0.01).
     optimizer : torch.optim.Optimizer or None, optional
@@ -861,11 +746,7 @@ def train_block_nn(
         was supplied; returning it always lets callers warm-start a later
         call by threading it back in.
     """
-    require_positive_integer("epochs", epochs)
-    if lr <= 0:
-        raise ValueError(f"lr must be > 0, got {lr}")
-    if grad_clip is not None and grad_clip <= 0:
-        raise ValueError(f"grad_clip must be > 0 or None, got {grad_clip}")
+    _validate_train_args(epochs, lr, grad_clip)
 
     if optimizer is None:
         optimizer = torch.optim.Adam(block_policy_nn.parameters(), lr=lr)
@@ -873,16 +754,17 @@ def train_block_nn(
     # NaN sentinel (overwritten on the first epoch; epochs >= 1 is validated
     # above). Typing it as float keeps the return contract free of None.
     final_loss = float("nan")
+    # The core function reads the network's current weights on every call, so
+    # one built before the loop serves every epoch.
+    core_function = block_policy_nn.get_core_function(length=inputs.n())
     for epoch in range(epochs):
         optimizer.zero_grad()
-        loss = aggregate_net_loss(
-            inputs, block_policy_nn.get_core_function(length=inputs.n()), loss_function
-        )
+        loss = aggregate_net_loss(inputs, core_function, loss_function)
         # Check finiteness BEFORE backward/step: a non-finite loss means
         # training diverged; stopping here keeps the last finite weights instead
         # of applying NaN/Inf gradients. final_loss is already synced (free).
         final_loss = loss.item()
-        if final_loss != final_loss or final_loss in (float("inf"), float("-inf")):
+        if not math.isfinite(final_loss):
             logging.warning(
                 "Non-finite loss (%s) at epoch %d; stopping training early.",
                 final_loss,
