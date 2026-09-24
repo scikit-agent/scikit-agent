@@ -144,6 +144,11 @@ and this project adheres to
   `epochs_per_iteration` and passes it through, so a count read off a numpy
   array cleared the loop's check and then failed inside the first iteration.
 
+- `loss.static_reward` called without `parameters` evaluates the period's
+  calibration. It had defaulted `parameters` to an empty dict, which every
+  `BellmanPeriod` method takes as supplied, so a reward reading a calibrated
+  parameter raised a `KeyError`.
+
 - A policy or value network for a control with an empty information set returns
   one value per state, taking the batch size from the states. `BlockPolicyNet`
   and `BlockPolicyValueNet` returned a single value whatever the batch, while
