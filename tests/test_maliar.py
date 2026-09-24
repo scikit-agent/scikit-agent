@@ -1161,7 +1161,7 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
         max_rel_error = rel_error.max().item()
 
         # The binding constraint anchors the level, so Euler + Fischer-Burmeister
-        # matches VFI to well under 1% on average; the pointwise max sits at the
+        # matches VFI to well under 1% on average; the pointwise max is at the
         # constraint kink and is held to a looser but still tight bound.
         self.assertLess(
             mean_rel_error,
