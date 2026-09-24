@@ -1767,14 +1767,14 @@ class TestCheckConvergence(unittest.TestCase):
     def test_param_convergence(self):
         """Convergence when parameter diff < tolerance."""
         params = torch.tensor([1.0, 2.0])
-        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+        pdiff, ldiff, pc, lc = maliar._check_convergence(
             params,
             params,
             tolerance=1e-6,
             prev_loss=None,
             current_loss=0.1,
         )
-        self.assertTrue(converged)
+        self.assertTrue(pc or lc)
         self.assertTrue(pc)
         self.assertFalse(lc)
         self.assertAlmostEqual(pdiff, 0.0)
@@ -1784,14 +1784,14 @@ class TestCheckConvergence(unittest.TestCase):
         """Convergence when loss diff < tolerance."""
         p1 = torch.tensor([1.0])
         p2 = torch.tensor([2.0])
-        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+        pdiff, ldiff, pc, lc = maliar._check_convergence(
             p1,
             p2,
             tolerance=1e-6,
             prev_loss=0.5,
             current_loss=0.5,
         )
-        self.assertTrue(converged)
+        self.assertTrue(pc or lc)
         self.assertFalse(pc)
         self.assertTrue(lc)
         self.assertAlmostEqual(ldiff, 0.0)
@@ -1800,14 +1800,14 @@ class TestCheckConvergence(unittest.TestCase):
         """No convergence when both diffs exceed tolerance."""
         p1 = torch.tensor([1.0])
         p2 = torch.tensor([2.0])
-        converged, pdiff, ldiff, pc, lc = maliar._check_convergence(
+        pdiff, ldiff, pc, lc = maliar._check_convergence(
             p1,
             p2,
             tolerance=1e-6,
             prev_loss=1.0,
             current_loss=0.5,
         )
-        self.assertFalse(converged)
+        self.assertFalse(pc or lc)
         self.assertFalse(pc)
         self.assertFalse(lc)
 
@@ -1834,7 +1834,6 @@ class TestLogIteration(unittest.TestCase):
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(
-                converged=True,
                 iteration=2,
                 param_diff=1e-7,
                 loss_diff=0.5,
@@ -1851,7 +1850,6 @@ class TestLogIteration(unittest.TestCase):
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(
-                converged=True,
                 iteration=1,
                 param_diff=0.5,
                 loss_diff=1e-8,
@@ -1867,7 +1865,6 @@ class TestLogIteration(unittest.TestCase):
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(
-                converged=False,
                 iteration=0,
                 param_diff=1e-3,
                 loss_diff=None,
@@ -1880,7 +1877,6 @@ class TestLogIteration(unittest.TestCase):
 
         with self.assertLogs(level=logging.INFO) as cm:
             maliar._log_iteration(
-                converged=True,
                 iteration=3,
                 param_diff=1e-8,
                 loss_diff=1e-9,

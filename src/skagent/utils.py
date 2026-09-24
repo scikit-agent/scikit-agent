@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+import numbers
 from functools import lru_cache
 import matplotlib.pyplot as plt
 import numpy as np
@@ -211,6 +212,25 @@ def fischer_burmeister(
     if eps <= 0:
         raise ValueError(f"eps must be > 0, got {eps}")
     return a + h - torch.sqrt(a**2 + h**2 + eps)
+
+
+def require_positive_integer(name: str, val) -> None:
+    """Raise unless *val* is an integer of at least one.
+
+    ``numbers.Integral`` accepts Python int and numpy integers (e.g.
+    ``np.int64`` from array indexing), which a bare ``int`` check rejects.
+
+    Raises
+    ------
+    TypeError
+        If *val* is not an integer.
+    ValueError
+        If *val* is less than one.
+    """
+    if not isinstance(val, numbers.Integral):
+        raise TypeError(f"{name} must be an integer, got {type(val).__name__}")
+    if val < 1:
+        raise ValueError(f"{name} must be >= 1, got {val}")
 
 
 def tracked(t: torch.Tensor) -> torch.Tensor:
