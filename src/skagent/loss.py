@@ -47,7 +47,7 @@ def static_reward(
     shocks : dict, optional
         Shock variable values.
     parameters : dict, optional
-        Calibration parameters.
+        Calibration parameters (defaults to the period's calibration).
     agent : str or None, optional
         Name of reference agent for rewards. When omitted, every reward symbol
         in the block is summed, which is one agent's payoff only if the block
@@ -59,18 +59,9 @@ def static_reward(
     ValueError
         If any reward symbol in scope is NaN.
     """
-    if shocks is None:
-        shocks = {}
-    if parameters is None:
-        parameters = {}
-    if callable(dr):
-        controls = dr(states, shocks, parameters)
-    else:
-        controls = bellman_period.decision_function(
-            states, shocks=shocks, parameters=parameters, decision_rules=dr
-        )
-
-    reward_syms = bellman_period.get_reward_syms(agent)
+    controls = bellman_period.compute_controls(
+        dr, states, shocks=shocks, parameters=parameters
+    )
 
     reward = bellman_period.reward_function(
         states,
@@ -82,10 +73,10 @@ def static_reward(
     )
 
     total_reward = 0
-    for rsym in reward_syms:
-        if any_nan(reward[rsym]):
+    for rsym, value in reward.items():
+        if any_nan(value):
             raise ValueError(f"Calculated reward {rsym} is NaN: {reward}")
-        total_reward = total_reward + reward[rsym]
+        total_reward = total_reward + value
 
     return total_reward
 
@@ -161,7 +152,7 @@ class CustomLoss:
         return -neg_loss
 
 
-class StaticRewardLoss:
+class StaticRewardLoss(CustomLoss):
     """
     A loss function that computes the negative reward for a block,
     assuming it is executed just once (a non-dynamic model)
@@ -182,37 +173,7 @@ class StaticRewardLoss:
     """
 
     def __init__(self, bellman_period, *, agent=None, other_dr=None):
-        self.bellman_period = bellman_period
-        self.parameters = bellman_period.calibration
-        self.arrival_variables = self.bellman_period.arrival_states
-        self.other_dr = other_dr if other_dr is not None else {}
-        self.agent = agent
-
-    def __call__(self, dr, input_grid: Grid):
-        """*dr* maps each control symbol to a decision RULE -- a function over
-        that control's information set -- and is merged over *other_dr*. A
-        decision FUNCTION, which takes the arrival states, shocks and
-        calibration in total, is not accepted here: there is nothing to merge
-        one into.
-        """
-        states, shock_vals, fresh_dr = _prepare_loss_inputs(
-            self.bellman_period,
-            input_grid,
-            self.arrival_variables,
-            self.other_dr,
-            dr,
-        )
-
-        r = static_reward(
-            self.bellman_period,
-            fresh_dr,
-            states,
-            parameters=self.parameters,
-            agent=self.agent,
-            shocks=shock_vals,
-            ## Handle multiple decision rules?
-        )
-        return -r
+        super().__init__(static_reward, bellman_period, agent=agent, other_dr=other_dr)
 
 
 class EstimatedDiscountedLifetimeRewardLoss:
@@ -242,26 +203,16 @@ class EstimatedDiscountedLifetimeRewardLoss:
         self.agent = agent
 
     def __call__(self, df: Callable, input_grid: Grid):
-        # convoluted
-        shock_vars = self.bellman_period.get_shocks()
-        big_t_shock_syms = sum(
-            [
-                [f"{sym}_{t}" for sym in list(shock_vars.keys())]
-                for t in range(self.big_t)
-            ],
-            [],
-        )
         # TODO: codify this encoding and decoding of the grid into a separate object
         # It is specifically the EDLR loss function that requires big_t of the shocks.
         # other AiO loss functions use 2 copies of the shocks only.
 
-        # includes the values of state_0 variables, and shocks.
+        # includes the values of state_0 variables, and shocks {sym}_{t}.
         given_vals = input_grid.to_dict()
 
-        shock_vals = {sym: given_vals[sym] for sym in big_t_shock_syms}
         shocks_by_t = {
-            sym: torch.stack([shock_vals[f"{sym}_{t}"] for t in range(self.big_t)])
-            for sym in shock_vars
+            sym: torch.stack([given_vals[f"{sym}_{t}"] for t in range(self.big_t)])
+            for sym in self.bellman_period.get_shocks()
         }
 
         edlr = estimate_discounted_lifetime_reward(
@@ -345,7 +296,10 @@ class _EquationLossBase(ABC):
             Combined shock dict with keys ``{sym}_0`` and ``{sym}_1``.
         """
         given_vals = input_grid.to_dict()
+        return self._arrival_states_from(given_vals), self._shocks_from(given_vals)
 
+    def _arrival_states_from(self, given_vals: dict[str, Any]) -> dict[str, Any]:
+        """Select the arrival states from *given_vals*, raising if any is missing."""
         missing_states = [
             sym for sym in self.arrival_variables if sym not in given_vals
         ]
@@ -354,10 +308,10 @@ class _EquationLossBase(ABC):
                 f"Missing arrival state variable(s) {missing_states} in input_grid. "
                 f"Expected: {sorted(self.arrival_variables)}."
             )
-        states_t = {sym: given_vals[sym] for sym in self.arrival_variables}
+        return {sym: given_vals[sym] for sym in self.arrival_variables}
 
-        # Build the combined shock dict — let _extract_period_shocks validate
-        # and produce informative error messages for missing keys
+    def _shocks_from(self, given_vals: dict[str, Any]) -> dict[str, Any]:
+        """Select both realizations of every shock, keyed ``{sym}_0``/``{sym}_1``."""
         shock_keys = [f"{sym}_{i}" for sym in self.shock_syms for i in (0, 1)]
         missing_shocks = [k for k in shock_keys if k not in given_vals]
         if missing_shocks:
@@ -366,9 +320,7 @@ class _EquationLossBase(ABC):
                 f"Expected two independent realizations per shock: "
                 f"{shock_keys}."
             )
-        shocks = {k: given_vals[k] for k in shock_keys}
-
-        return states_t, shocks
+        return {k: given_vals[k] for k in shock_keys}
 
 
 class BellmanEquationLoss(_EquationLossBase):
@@ -389,10 +341,11 @@ class BellmanEquationLoss(_EquationLossBase):
         The model block containing dynamics, rewards, and shocks
     value_function : callable
         A value function that takes state variables and returns value estimates
-    parameters : dict, optional
-        Model parameters for calibration
     agent : str, optional
         Agent identifier for rewards
+    foc_weight : float, optional
+        Weight on the squared first-order-condition residual added to the loss
+        (default 0.0, which leaves the FOC term out).
     """
 
     def __init__(
@@ -482,9 +435,10 @@ def _complementarity_residual(f, slack_lower, slack_upper):
 
     Returns
     -------
-    torch.Tensor or None
-        The complementarity residual, or ``None`` when the control has neither
-        bound (the caller then uses the one-sided relu fallback).
+    torch.Tensor
+        The complementarity residual. A control with neither bound gets the
+        one-sided fallback ``relu(-f)``, which penalizes only violations of
+        ``f >= 0``.
     """
     if slack_upper is not None and slack_lower is not None:
         inner = fischer_burmeister(slack_lower, -f)
@@ -493,7 +447,12 @@ def _complementarity_residual(f, slack_lower, slack_upper):
         return fischer_burmeister(f, slack_upper)
     if slack_lower is not None:
         return fischer_burmeister(-f, slack_lower)
-    return None
+    return torch.relu(-f)
+
+
+def _call_bound(bound: Callable, param_names: list[str], pre_state: dict) -> Any:
+    """Evaluate a control bound on the pre-state variables it names."""
+    return bound(**{k: pre_state[k] for k in param_names if k in pre_state})
 
 
 class EulerEquationLoss(_EquationLossBase):
@@ -550,21 +509,19 @@ class EulerEquationLoss(_EquationLossBase):
     ----------
     bellman_period : BellmanPeriod
         The model block containing dynamics, rewards, and shocks.
-    parameters : dict, optional
-        Model parameters for calibration.
     agent : str, optional
         Agent identifier for rewards.
     weight : float, optional
         Exogenous weight for combining multiple optimality conditions (default: 1.0).
         This corresponds to the vector :math:`v` in equation (12) of the paper.
     constrained : bool, optional
-        If True, use Fischer-Burmeister or one-sided loss for upper-bound
-        constrained controls (default: False).
+        If True, turn each control's declared bounds, lower, upper or both,
+        into the Fischer-Burmeister residual above (default: False).
 
     Examples
     --------
     >>> bp = BellmanPeriod(block, "beta", calibration={"R": 1.04, "beta": 0.95})
-    >>> loss_fn = EulerEquationLoss(bp, parameters={"R": 1.04, "beta": 0.95})
+    >>> loss_fn = EulerEquationLoss(bp)
     """
 
     def __init__(
@@ -586,18 +543,14 @@ class EulerEquationLoss(_EquationLossBase):
         self._upper_bound_params: dict[str, list[str]] = {}
         self._lower_bound_params: dict[str, list[str]] = {}
         if self.constrained:
-            for sym, rule in bellman_period.block.dynamics.items():
-                if not hasattr(rule, "iset"):
-                    continue
-                ub = getattr(rule, "upper_bound", None)
-                if ub is not None:
+            for sym, control in bellman_period.get_controls().items():
+                if control.upper_bound is not None:
                     self._upper_bound_params[sym] = list(
-                        inspect.signature(ub).parameters
+                        inspect.signature(control.upper_bound).parameters
                     )
-                lb = getattr(rule, "lower_bound", None)
-                if lb is not None:
+                if control.lower_bound is not None:
                     self._lower_bound_params[sym] = list(
-                        inspect.signature(lb).parameters
+                        inspect.signature(control.lower_bound).parameters
                     )
             if not self._upper_bound_params and not self._lower_bound_params:
                 logger.warning(
@@ -610,50 +563,35 @@ class EulerEquationLoss(_EquationLossBase):
                     "the Fischer-Burmeister formulation."
                 )
 
-    def _compute_slack(
+    def _slacks(
         self, control_sym: str, controls_t: dict, states_t: dict, shocks_t: dict
-    ) -> torch.Tensor | None:
-        """Compute upper-bound slack ``upper_bound - control_value``.
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+        """Return the lower and upper slacks ``x - lb`` and ``ub - x``.
 
-        Returns ``None`` if the control has no upper bound defined. This
-        helper currently handles only the upper-bound side of the
-        complementarity condition; see the class-level docstring for the
-        scope rationale and the lower-bound follow-up.
+        Either is ``None`` when the control has no bound on that side. Both
+        bounds read one pre-decision state, computed once.
         """
-        param_names = self._upper_bound_params.get(control_sym)
-        if param_names is None:
-            return None
+        lower_params = self._lower_bound_params.get(control_sym)
+        upper_params = self._upper_bound_params.get(control_sym)
+        if lower_params is None and upper_params is None:
+            return None, None
 
         control_obj = self.bellman_period.block.dynamics[control_sym]
         pre_state = self.bellman_period.compute_pre_state(
             control_sym, states_t, shocks=shocks_t, parameters=self.parameters
         )
-        ub_args = {k: pre_state[k] for k in param_names if k in pre_state}
-        ub_value = control_obj.upper_bound(**ub_args)
-
-        return ub_value - controls_t[control_sym]
-
-    def _compute_lower_slack(
-        self, control_sym: str, controls_t: dict, states_t: dict, shocks_t: dict
-    ) -> torch.Tensor | None:
-        """Compute lower-bound slack ``control_value - lower_bound``.
-
-        Returns ``None`` if the control has no lower bound defined. Mirrors
-        :meth:`_compute_slack` (the upper-bound side); together they supply the
-        two slacks of the bilateral complementarity condition.
-        """
-        param_names = self._lower_bound_params.get(control_sym)
-        if param_names is None:
-            return None
-
-        control_obj = self.bellman_period.block.dynamics[control_sym]
-        pre_state = self.bellman_period.compute_pre_state(
-            control_sym, states_t, shocks=shocks_t, parameters=self.parameters
-        )
-        lb_args = {k: pre_state[k] for k in param_names if k in pre_state}
-        lb_value = control_obj.lower_bound(**lb_args)
-
-        return controls_t[control_sym] - lb_value
+        x = controls_t[control_sym]
+        slack_lower = None
+        if lower_params is not None:
+            slack_lower = x - _call_bound(
+                control_obj.lower_bound, lower_params, pre_state
+            )
+        slack_upper = None
+        if upper_params is not None:
+            slack_upper = (
+                _call_bound(control_obj.upper_bound, upper_params, pre_state) - x
+            )
+        return slack_lower, slack_upper
 
     def _aio_residual_pair(self, df: Callable, states_t: dict, shocks: dict):
         """Two Euler residuals sharing the current control, at two independent
@@ -668,20 +606,19 @@ class EulerEquationLoss(_EquationLossBase):
 
         Returns ``(res_a, res_b, controls_t, shocks_t)``.
         """
-        shocks_t, shocks_next_a = _extract_period_shocks(self.bellman_period, shocks)
+        # The input grid's draws are the first factor's shocks as given.
+        shocks_t, _ = _extract_period_shocks(self.bellman_period, shocks)
         # Current control: computed once and shared by both factors so the
         # all-in-one product cancels the cross terms to (E[f])**2.
         controls_t = self.bellman_period.compute_controls(
             df, states_t, shocks=shocks_t, parameters=self.parameters
         )
-        shocks_a = {f"{s}_0": shocks_t[s] for s in shocks_t}
-        shocks_a.update({f"{s}_1": shocks_next_a[s] for s in shocks_next_a})
-        shocks_b = self._redraw_next_shocks(states_t, shocks_a)
+        shocks_b = self._redraw_next_shocks(states_t, shocks)
         res_a = estimate_euler_residual(
             self.bellman_period,
             df,
             states_t,
-            shocks_a,
+            shocks,
             self.parameters,
             self.agent,
             controls_t=controls_t,
@@ -714,16 +651,16 @@ class EulerEquationLoss(_EquationLossBase):
         Returns
         -------
         torch.Tensor
-            Weighted squared Euler equation residual.
-            The residual is computed using two independent shock realizations
-            via the AiO expectation operator, then squared and weighted.
+            Weighted all-in-one estimate of the squared expected Euler
+            residual, summed over controls.
 
         Notes
         -----
-        The residual f is computed using two independent shock realizations:
-        ε₀ for transitions from t to t+1, and ε₁ for transitions from t+1
-        to t+2 (following Maliar et al. 2021, Definition 2.7). The loss is
-        the squared residual, L = f(ε₀, ε₁)².
+        Each residual f is computed with ε₀ for transitions from t to t+1 and
+        an independent ε₁ for transitions from t+1 to t+2 (Maliar et al. 2021,
+        Definition 2.7). The loss is the product of two such residuals that
+        share ε₀ and draw ε₁ independently, L = f(ε₀, ε₁ᵃ) f(ε₀, ε₁ᵇ), whose
+        expectation is the squared expected residual.
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
 
@@ -736,25 +673,10 @@ class EulerEquationLoss(_EquationLossBase):
         if self.constrained:
             total = 0.0
             for ctrl_sym in res_a:
-                slack_upper = self._compute_slack(
-                    ctrl_sym, controls_t, states_t, shocks_t
-                )
-                slack_lower = self._compute_lower_slack(
-                    ctrl_sym, controls_t, states_t, shocks_t
-                )
-                rho_a = _complementarity_residual(
-                    res_a[ctrl_sym], slack_lower, slack_upper
-                )
-                if rho_a is None:
-                    # No bound on this control: one-sided penalty on f >= 0.
-                    total = total + torch.relu(-res_a[ctrl_sym]) * torch.relu(
-                        -res_b[ctrl_sym]
-                    )
-                else:
-                    rho_b = _complementarity_residual(
-                        res_b[ctrl_sym], slack_lower, slack_upper
-                    )
-                    total = total + rho_a * rho_b
+                slacks = self._slacks(ctrl_sym, controls_t, states_t, shocks_t)
+                total = total + _complementarity_residual(
+                    res_a[ctrl_sym], *slacks
+                ) * _complementarity_residual(res_b[ctrl_sym], *slacks)
             return self.weight * total
 
         # Unconstrained loss: mean of the product estimates (E[f])**2.
