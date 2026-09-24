@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:14.030** total execution time for 9 files **from auto_examples/models**:
+**00:12.956** total execution time for 9 files **from auto_examples/models**:
 
 .. container::
 
@@ -33,29 +33,29 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_models_plot_tree_killer_relevance.py` (``plot_tree_killer_relevance.py``)
-     - 00:06.131
+     - 00:05.968
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_privacy_dp_tuning.py` (``plot_privacy_dp_tuning.py``)
-     - 00:02.438
+     - 00:02.065
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``plot_benchmark_models.py``)
-     - 00:01.127
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``plot_consumption_portfolio_model.py``)
      - 00:00.975
      - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``plot_consumption_portfolio_model.py``)
+     - 00:00.882
+     - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_lemons_adverse_selection.py` (``plot_lemons_adverse_selection.py``)
-     - 00:00.862
+     - 00:00.788
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_2_content_recommendation.py` (``plot_incentives_2_content_recommendation.py``)
-     - 00:00.804
+     - 00:00.750
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_1_grade_prediction.py` (``plot_incentives_1_grade_prediction.py``)
-     - 00:00.678
+     - 00:00.606
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_cournot_equilibrium.py` (``plot_cournot_equilibrium.py``)
-     - 00:00.511
+     - 00:00.468
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``plot_resource_extraction.py``)
-     - 00:00.505
+     - 00:00.455
      - 0.0
