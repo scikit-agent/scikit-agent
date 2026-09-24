@@ -67,6 +67,11 @@ and this project adheres to
   `skagent.utils.require_positive_integer`. A count below one still raises
   `ValueError`.
 
+- `BlockPolicyValueNet` draws its value head inside the network's weight
+  initialisation, which changes the random stream an unseeded network is drawn
+  from. The U-2 gallery example now reaches 1.11% mean relative error where it
+  reached 0.98%, both about one percent.
+
 - The documentation build redraws the user guide's model diagrams from the
   shipped models on every build, and clears the gallery's cache when the code
   that draws a diagram has changed. sphinx-gallery re-executes an example when
@@ -138,6 +143,17 @@ and this project adheres to
   Python `int`, while `maliar_training_loop` accepts any integer type for
   `epochs_per_iteration` and passes it through, so a count read off a numpy
   array cleared the loop's check and then failed inside the first iteration.
+
+- A policy or value network for a control with an empty information set returns
+  one value per state, taking the batch size from the states. `BlockPolicyNet`
+  and `BlockPolicyValueNet` returned a single value whatever the batch, while
+  both value functions raised on stacking no columns.
+- `Net(copy_weights_from=source)` copies the source's weights. Storing the
+  source as an attribute registered it as a submodule, so the new network
+  counted the source's parameters as its own and every copy raised.
+- `BlockPolicyValueNet(init_seed=...)` fixes the value head as well as the
+  backbone and policy head. The value head was drawn after the seeded
+  initialisation, from the global random state.
 
 - `Block.display_formulas` renders a lambda's body. It had been taking the
   source line from the first colon onwards, which on the usual
