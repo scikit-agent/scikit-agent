@@ -34,14 +34,13 @@ control symbol; ``vf`` by agent name).
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import numpy as np
 import torch
 
 from skagent.ground import GroundedBlock
-from skagent.utils import any_nan, compute_gradients_for_tensors
+from skagent.utils import any_nan, compute_gradients_for_tensors, tracked
 
 if TYPE_CHECKING:
     from skagent.block import Block
@@ -51,8 +50,8 @@ class BellmanPeriod(GroundedBlock):
     """
     A class representing a period of a Bellman or Dynamic Stochastic Optimization Problem.
 
-    A :class:`~skagent.ground.GroundedBlock` -- a block read against a
-    calibration -- that additionally carries a discount factor, arrival states
+    A :class:`~skagent.ground.GroundedBlock` (a block read against a
+    calibration) that additionally carries a discount factor, arrival states
     and decision rules, and provides methods for computing transitions,
     decisions, rewards, and their gradients.
 
@@ -186,8 +185,7 @@ class BellmanPeriod(GroundedBlock):
         produce them.
         """
         iset = self.block.dynamics[control_sym].iset
-        shocks = shocks if shocks is not None else {}
-        params = parameters if parameters is not None else self.calibration
+        shocks, _, params = self._resolve_inputs(shocks, None, parameters)
         vals = params | states | shocks
 
         if all(isym in vals for isym in iset):
@@ -233,8 +231,7 @@ class BellmanPeriod(GroundedBlock):
         TypeError
             If *df* is neither callable nor a dict.
         """
-        shocks = shocks if shocks is not None else {}
-        params = parameters if parameters is not None else self.calibration
+        shocks, _, params = self._resolve_inputs(shocks, None, parameters)
 
         if callable(df):
             return df(states, shocks, params)
@@ -265,8 +262,7 @@ class BellmanPeriod(GroundedBlock):
         arrival states; any pre-decision (iset) computation it needs is
         the callable's responsibility.
         """
-        shocks = shocks if shocks is not None else {}
-        params = parameters if parameters is not None else self.calibration
+        shocks, _, params = self._resolve_inputs(shocks, None, parameters)
 
         if callable(vf):
             return vf(states, shocks, params)
@@ -309,7 +305,7 @@ class BellmanPeriod(GroundedBlock):
         parameters : dict[str, Any] | None, optional
             Model parameters (defaults to instance calibration).
         decision_rules : dict[str, Callable] | None, optional
-            Decision rules (defaults to instance decision_rules).
+            Decision rules (defaults to empty dict).
 
         Returns
         -------
@@ -345,7 +341,7 @@ class BellmanPeriod(GroundedBlock):
         parameters : dict[str, Any] | None, optional
             Model parameters (defaults to instance calibration).
         decision_rules : dict[str, Callable] | None, optional
-            Decision rules (defaults to instance decision_rules).
+            Decision rules (defaults to empty dict).
 
         Returns
         -------
@@ -386,7 +382,7 @@ class BellmanPeriod(GroundedBlock):
         agent : str | None, optional
             If specified, only return rewards for this agent.
         decision_rules : dict[str, Callable] | None, optional
-            Decision rules (defaults to instance decision_rules).
+            Decision rules (defaults to empty dict).
 
         Returns
         -------
@@ -429,7 +425,7 @@ class BellmanPeriod(GroundedBlock):
         agent : str | None, optional
             Agent identifier (currently unused, reserved for future use).
         decision_rules : dict[str, Callable] | None, optional
-            Decision rules (defaults to instance decision_rules).
+            Decision rules (defaults to empty dict).
 
         Returns
         -------
@@ -762,18 +758,13 @@ def _extract_period_shocks(
     """
     shock_syms = list(bellman_period.get_shocks())
     for sym in shock_syms:
-        if f"{sym}_0" not in shocks:
-            raise KeyError(
-                f"Missing shock '{sym}_0' in shocks dict. For models with shocks, "
-                f"provide two independent realizations: '{sym}_0' (period t) "
-                f"and '{sym}_1' (period t+1)."
-            )
-        if f"{sym}_1" not in shocks:
-            raise KeyError(
-                f"Missing shock '{sym}_1' in shocks dict. For models with shocks, "
-                f"provide two independent realizations: '{sym}_0' (period t) "
-                f"and '{sym}_1' (period t+1)."
-            )
+        for key in (f"{sym}_0", f"{sym}_1"):
+            if key not in shocks:
+                raise KeyError(
+                    f"Missing shock '{key}' in shocks dict. For models with "
+                    f"shocks, provide two independent realizations: '{sym}_0' "
+                    f"(period t) and '{sym}_1' (period t+1)."
+                )
     shocks_t = {sym: shocks[f"{sym}_0"] for sym in shock_syms}
     shocks_t_plus_1 = {sym: shocks[f"{sym}_1"] for sym in shock_syms}
     return shocks_t, shocks_t_plus_1
@@ -796,9 +787,30 @@ def _ensure_grad(
             f"Control '{sym}' must be a torch.Tensor for gradient computation, "
             f"got {type(c).__name__}"
         )
-    if not c.requires_grad:
-        c = c.detach().requires_grad_(True)
+    c = tracked(c)
     return c, {**controls, sym: c}
+
+
+def _payoff_marginal(
+    grads: dict[str, dict[str, torch.Tensor]],
+    reward_syms: list[str],
+    control_sym: str,
+    where: str = "",
+) -> torch.Tensor:
+    """Sum the reward symbols' marginals in *control_sym*; refuse an all-zero sum.
+
+    The payoff is the SUM of the agent's reward symbols, so its marginal is the
+    sum of theirs. The test is on that sum, since a decomposed utility may have
+    a part that does not depend on the control.
+    """
+    marginal = sum(grads[sym][control_sym] for sym in reward_syms)
+    if not torch.any(marginal != 0):
+        raise ValueError(
+            f"Marginal reward{where} is zero at every sample point: the payoff "
+            f"{reward_syms} is structurally independent of control "
+            f"'{control_sym}', or its gradient vanishes on the whole batch"
+        )
+    return marginal
 
 
 def estimate_discounted_lifetime_reward(
@@ -833,7 +845,7 @@ def estimate_discounted_lifetime_reward(
         time period. The first axis must have length ``big_t``; remaining
         axes are batch dimensions (e.g., shape ``(big_t, n_samples)``).
     parameters : dict[str, Any] | None, optional
-        Calibration parameters (defaults to empty dict).
+        Calibration parameters (defaults to the period's calibration).
     agent : str | None, optional
         Name of reference agent for rewards. If None, all rewards are summed.
 
@@ -929,7 +941,7 @@ def estimate_bellman_residual(
         - {shock_sym}_0: period t shocks (for immediate reward and transitions)
         - {shock_sym}_1: period t+1 shocks (for continuation value evaluation)
     parameters : dict[str, Any] | None, optional
-        Model parameters for calibration (defaults to empty dict).
+        Model parameters for calibration (defaults to the period's calibration).
     agent : str | None, optional
         Agent identifier for rewards.
 
@@ -958,7 +970,7 @@ def estimate_bellman_residual(
 
     reward_syms = bellman_period.get_reward_syms(agent)
 
-    # V(s_t) — value at the period-t arrival state
+    # V(s_t), the value at the period-t arrival state
     current_values = bellman_period.compute_value(
         vf, states_t, shocks=shocks_t, parameters=parameters, agent=agent
     )
@@ -977,7 +989,7 @@ def estimate_bellman_residual(
     discount_factor = bellman_period.resolve_discount_factor(post)
     next_states = bellman_period.select_arrival_states(post)
 
-    # V(s_{t+1}) — continuation value at the next-period arrival state
+    # V(s_{t+1}), the continuation value at the next-period arrival state,
     # using the second independent shock draw
     continuation_values = bellman_period.compute_value(
         vf,
@@ -993,9 +1005,7 @@ def estimate_bellman_residual(
     # Return residual: V(s) - [u(s,c,ε) + β V(s')]
     bellman_residual = current_values - bellman_rhs
 
-    if torch.any(torch.isnan(bellman_residual)) or torch.any(
-        torch.isinf(bellman_residual)
-    ):
+    if not torch.isfinite(bellman_residual).all():
         # Provide detailed diagnostics to help locate the source
         def _range_str(t):
             if not isinstance(t, torch.Tensor):
@@ -1030,7 +1040,7 @@ def _chain_rule_return_factor(
 
     Raises ``ValueError`` if no chain-rule path contributes.
     """
-    if torch.any(torch.isnan(like)) or torch.any(torch.isinf(like)):
+    if not torch.isfinite(like).all():
         raise ValueError(
             f"Euler residual: marginal_reward_t1 contains NaN or Inf for "
             f"control '{control_sym}'. Cannot compute chain-rule return factor."
@@ -1046,21 +1056,11 @@ def _chain_rule_return_factor(
             # 0 * Inf = NaN from an ill-conditioned pre-state factor.
             continue
         for state_grads in pre_state_gradients.values():
-            # .get guards arrival states absent from the wrt dict
-            pre_state_grad = state_grads.get(state_sym)
-            if pre_state_grad is not None:
-                total = total + pre_state_grad * trans_grad
+            total = total + state_grads[state_sym] * trans_grad
 
-    if torch.any(torch.isnan(total)):
+    if not torch.isfinite(total).all():
         raise ValueError(
-            f"Euler residual: return_factor_sum contains NaN for "
-            f"control '{control_sym}'. This indicates ill-conditioned "
-            "transition or pre-state gradients. Check block dynamics for "
-            "numerical stability."
-        )
-    if torch.any(torch.isinf(total)):
-        raise ValueError(
-            f"Euler residual: return_factor_sum contains Inf for "
+            f"Euler residual: return_factor_sum contains NaN or Inf for "
             f"control '{control_sym}'. This indicates ill-conditioned "
             "transition or pre-state gradients. Check block dynamics for "
             "numerical stability."
@@ -1108,16 +1108,9 @@ def _euler_residual_single_control(
         parameters=parameters,
         create_graph=True,
     )
-    # The payoff is the SUM of the agent's reward symbols, so the marginal is
-    # the sum of their marginals -- and the test below is on that sum, since a
-    # decomposed utility may have a part that does not depend on this control.
-    marginal_reward_t = sum(grads_t[sym][control_sym] for sym in reward_syms)
-    if not torch.any(marginal_reward_t != 0):
-        raise ValueError(
-            f"Marginal reward at period t is zero at every sample point: the "
-            f"payoff {reward_syms} is structurally independent of control "
-            f"'{control_sym}', or its gradient vanishes on the whole batch"
-        )
+    marginal_reward_t = _payoff_marginal(
+        grads_t, reward_syms, control_sym, " at period t"
+    )
 
     # ∂u/∂c at period t+1
     grads_t1 = bellman_period.grad_post_function(
@@ -1129,13 +1122,9 @@ def _euler_residual_single_control(
         parameters=parameters,
         create_graph=True,
     )
-    marginal_reward_t1 = sum(grads_t1[sym][control_sym] for sym in reward_syms)
-    if not torch.any(marginal_reward_t1 != 0):
-        raise ValueError(
-            f"Marginal reward at period t+1 is zero at every sample point: the "
-            f"payoff {reward_syms} is structurally independent of control "
-            f"'{control_sym}', or its gradient vanishes on the whole batch"
-        )
+    marginal_reward_t1 = _payoff_marginal(
+        grads_t1, reward_syms, control_sym, " at period t+1"
+    )
 
     transition_gradients = {
         state_sym: grads_t[state_sym][control_sym]
@@ -1143,11 +1132,7 @@ def _euler_residual_single_control(
     }
 
     # Pre-state gradients: ∂m'/∂s' (envelope condition).
-    states_t1_grad = {
-        sym: s if s.requires_grad else s.detach().requires_grad_(True)
-        for sym, s in states_t_plus_1.items()
-        if sym in bellman_period.arrival_states
-    }
+    states_t1_grad = {sym: tracked(s) for sym, s in states_t_plus_1.items()}
 
     pre_state_gradients = bellman_period.grad_pre_state_function(
         states_t1_grad,
@@ -1243,7 +1228,7 @@ def estimate_euler_residual(
     )
     states_t_plus_1 = bellman_period.select_arrival_states(post)
 
-    # Period-(t+1) controls (second independent shock draw — AiO)
+    # Period-(t+1) controls (second independent shock draw, AiO)
     controls_t_plus_1 = bellman_period.compute_controls(
         df, states_t_plus_1, shocks=shocks_t_plus_1, parameters=parameters
     )
@@ -1353,13 +1338,7 @@ def estimate_bellman_foc_residual(
             {control_sym: c_t},
             create_graph=True,
         )
-        mr_t = sum(reward_grads[sym][control_sym] for sym in reward_syms)
-        if not torch.any(mr_t != 0):
-            raise ValueError(
-                f"Marginal reward is zero at every sample point: the payoff "
-                f"{reward_syms} is structurally independent of control "
-                f"'{control_sym}', or its gradient vanishes on the whole batch"
-            )
+        mr_t = _payoff_marginal(reward_grads, reward_syms, control_sym)
 
         # V(s', ε₁), the continuation value with the second independent shock
         # draw, evaluated on next-period arrival states
@@ -1371,25 +1350,11 @@ def estimate_bellman_foc_residual(
             agent=agent,
         )
 
-        # ∂V/∂c via autograd chain rule: ∂V/∂s' * ∂s'/∂c
-        dv_dc = torch.autograd.grad(
-            v_next.sum(),
-            c_t,
-            create_graph=True,
-            retain_graph=True,
-            allow_unused=True,
-        )[0]
-
-        if dv_dc is None:
-            # Continuation value has no differentiable dependence on this
-            # control; with allow_unused=True this is a legitimate outcome
-            # for multi-control models where only some controls affect V(s').
-            # Treat it as a zero gradient and continue.
-            logging.debug(
-                "Autograd returned None for dV/d%s — treating as zero gradient.",
-                control_sym,
-            )
-            dv_dc = torch.zeros_like(c_t)
+        # ∂V/∂c via autograd chain rule: ∂V/∂s' * ∂s'/∂c. A control that V(s')
+        # does not depend on, as in a multi-control model, gets a zero.
+        dv_dc = compute_gradients_for_tensors(
+            {"v": v_next}, {control_sym: c_t}, create_graph=True
+        )["v"][control_sym]
         if torch.any(torch.isnan(dv_dc)):
             raise ValueError(
                 f"Autograd gradient dV/d{control_sym} is NaN. "
