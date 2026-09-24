@@ -1089,7 +1089,6 @@ def _euler_residual_single_control(
     shocks_t: dict[str, Any],
     shocks_t_plus_1: dict[str, Any],
     parameters: dict[str, Any] | None,
-    agent: str | None,
 ) -> torch.Tensor:
     """Compute the Euler residual for a single control variable.
 
@@ -1121,13 +1120,13 @@ def _euler_residual_single_control(
         )
 
     # ∂u/∂c at period t+1
-    grads_t1 = bellman_period.grad_reward_function(
+    grads_t1 = bellman_period.grad_post_function(
         states_t_plus_1,
         controls_t1_grad,
-        wrt={control_sym: c_t1},
+        {control_sym: c_t1},
+        reward_syms,
         shocks=shocks_t_plus_1,
         parameters=parameters,
-        agent=agent,
         create_graph=True,
     )
     marginal_reward_t1 = sum(grads_t1[sym][control_sym] for sym in reward_syms)
@@ -1270,7 +1269,6 @@ def estimate_euler_residual(
             shocks_t,
             shocks_t_plus_1,
             parameters,
-            agent,
         )
 
     return residuals
@@ -1339,22 +1337,17 @@ def estimate_bellman_foc_residual(
     controls_t = bellman_period.compute_controls(
         df, states_t, shocks=shocks_t, parameters=parameters
     )
-    control_syms = list(controls_t)
-
-    post = bellman_period.post_function(
-        states_t, controls_t, shocks=shocks_t, parameters=parameters
-    )
-    discount_factor = bellman_period.resolve_discount_factor(post)
-
     residuals = {}
-    for control_sym in control_syms:
+    for control_sym in controls_t:
         c_t, controls_t_grad = _ensure_grad(controls_t, control_sym)
 
-        # One pass at the grad-tracking control yields both u'(c_t) and the
-        # next-period arrival states, whose graph still runs through c_t.
+        # One pass at the grad-tracking control yields u'(c_t), the discount
+        # factor, and the next-period arrival states, whose graph still runs
+        # through c_t.
         post_grad = bellman_period.post_function(
             states_t, controls_t_grad, shocks=shocks_t, parameters=parameters
         )
+        discount_factor = bellman_period.resolve_discount_factor(post_grad)
         reward_grads = compute_gradients_for_tensors(
             {sym: post_grad[sym] for sym in reward_syms},
             {control_sym: c_t},

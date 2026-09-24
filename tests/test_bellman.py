@@ -892,12 +892,14 @@ class TestOnePassPerGradient(unittest.TestCase):
                 bellman.estimate_euler_residual(bp, df, states, shocks)
             self.assertEqual(passes["n"], 1 + 2 * n, f"{n} control(s)")
 
-    def test_foc_residual_runs_one_plus_one_pass_per_control(self):
+    def test_foc_residual_runs_one_pass_per_control(self):
+        # The per-control pass also carries the discount factor, so the FOC
+        # residual runs nothing before the loop over controls.
         for n, case in ((1, self._single), (2, self._double)):
             bp, df, vf, states, shocks = case()
             with count_calls(bp.block, "transition") as passes:
                 bellman.estimate_bellman_foc_residual(bp, vf, df, states, shocks)
-            self.assertEqual(passes["n"], 1 + n, f"{n} control(s)")
+            self.assertEqual(passes["n"], n, f"{n} control(s)")
 
 
 def _decomposed_and_fused_bps():
