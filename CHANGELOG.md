@@ -118,6 +118,10 @@ and this project adheres to
   wrong. `EulerEquationLoss` already used the product. Both losses now draw the
   second realization with one shared helper.
 
+- The Euler and Bellman losses' second shock draw works for a period with no
+  arrival states, where it raised `StopIteration`, and for an aggregate shock,
+  whose single draw it could not convert. The batch shares the aggregate draw.
+
 - `Block.display_formulas` renders a lambda's body. It had been taking the
   source line from the first colon onwards, which on the usual
   `dynamics={"u": lambda ...}` is the dict key's colon, so the "formula" kept

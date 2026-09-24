@@ -5,6 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
+import numpy as np
 import torch
 
 from skagent.bellman import (
@@ -317,11 +318,19 @@ class _EquationLossBase(ABC):
         The input grid supplies the first next-period draw; the all-in-one
         operator (MMW 2021, Def. 2.7) multiplies residuals at two independent
         ones. For a deterministic model there is nothing to draw, and the two
-        coincide.
+        coincide. The batch comes from the states, or from the grid's shocks
+        when the period has no arrival states; an aggregate shock draws one
+        value, which the whole batch shares.
         """
-        template = next(iter(states_t.values()))
-        draws = self.bellman_period.draw_shocks(template.shape[0])
-        return shocks | {f"{s}_1": reconcile(template, v) for s, v in draws.items()}
+        template = next(iter({**states_t, **shocks}.values()), None)
+        if template is None:
+            return shocks
+        n = template.shape[0]
+        draws = self.bellman_period.draw_shocks(n)
+        return shocks | {
+            f"{s}_1": reconcile(template, np.full(n, v) if np.ndim(v) == 0 else v)
+            for s, v in draws.items()
+        }
 
     def _extract_states_and_shocks(
         self, input_grid: Grid

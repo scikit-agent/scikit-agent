@@ -305,8 +305,9 @@ class TestBellmanLossIsAllInOne(unittest.TestCase):
         )
 
     def _mean_loss(self, vf, foc_weight=0.0):
-        torch.manual_seed(TEST_SEED + 1)  # fixes the loss's own second draw
-        loss_fn = BellmanEquationLoss(self.bp, value_function=vf, foc_weight=foc_weight)
+        # The loss's own second draw comes from the period's NumPy generator.
+        bp = self.bp.with_rng(np.random.default_rng(TEST_SEED + 1))
+        loss_fn = BellmanEquationLoss(bp, value_function=vf, foc_weight=foc_weight)
         return loss_fn(self.df, self.grid).mean().item()
 
     def test_bellman_term_vanishes_in_expectation_at_the_solution(self):
@@ -323,3 +324,46 @@ class TestBellmanLossIsAllInOne(unittest.TestCase):
         foc_part = self._mean_loss(vf, foc_weight=1.0) - self._mean_loss(vf)
         # Standard error of the product mean is about 1.5 / sqrt(n), about 0.011.
         self.assertLess(abs(foc_part - 1.0), 0.1, foc_part)
+
+    def test_second_draw_is_reproducible(self):
+        vf = lambda s, sh, p: s["a"] + sh["y"]  # noqa: E731
+        self.assertEqual(self._mean_loss(vf), self._mean_loss(vf))
+
+
+class TestSecondDrawBatch(unittest.TestCase):
+    """The loss's second next-period draw matches the grid's batch."""
+
+    n = 8
+
+    def _loss(self, shock, dynamics, states):
+        blk = block.DBlock(
+            name="redraw", shocks={"y": shock}, dynamics=dynamics, reward={"u": "a"}
+        )
+        bp = bellman.BellmanPeriod(blk, "beta", {"beta": 0.9})
+        values = {"y_0": torch.randn(self.n), "y_1": torch.randn(self.n)}
+        loss_fn = BellmanEquationLoss(bp, value_function=lambda s, sh, p: sh["y"])
+        return loss_fn(
+            lambda s, sh, p: {"c": sh["y"]}, grid.Grid.from_dict(states | values)
+        )
+
+    def test_period_without_arrival_states(self):
+        loss = self._loss(
+            Normal(mu=0.0, sigma=1.0),
+            {"c": block.Control(["y"], agent="a"), "u": lambda c: c},
+            {},
+        )
+        self.assertEqual(loss.shape, (self.n,))
+
+    def test_aggregate_shock(self):
+        loss = self._loss(
+            block.Aggregate(Normal(mu=0.0, sigma=1.0)),
+            {
+                "m": lambda a, y: a + y,
+                "c": block.Control(["m"], agent="a"),
+                "a": lambda m, c: m - c,
+                "u": lambda c: c,
+            },
+            {"a": torch.rand(self.n)},
+        )
+        self.assertEqual(loss.shape, (self.n,))
+        self.assertTrue(torch.all(torch.isfinite(loss)))
