@@ -1,0 +1,814 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Lemons: Adverse Selection, and Three Markets That Look Alike" href="plot_lemons_adverse_selection.html"><link rel="prev" title="Benchmark Consumption Models" href="plot_benchmark_models.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Differential Privacy: Tuning a Parameter With a Causal Game - scikit-agent 0.1.1.dev155+g76104f011</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=83e65f8c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev155+g76104f011</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/blocks.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/visualization.html">Reading Model Diagrams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/simulation.html">Simulation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/solvers.html">Solvers Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/environments.html">Environments Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/benchmark_models.html">Benchmark Models</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_direct_block_solve.html">Solving a Block Directly (Non-Recurring)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Models</a><input aria-label="Toggle navigation of Models" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_resource_extraction.html">Resource Extraction Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_benchmark_models.html">Benchmark Consumption Models</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Differential Privacy: Tuning a Parameter With a Causal Game</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/bellman.html">Bellman Periods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/algorithms.html">Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/analysis.html">Model Analysis and Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../community/roadmap.html">Roadmap</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecosystem/index.html">Ecosystem</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/auto_examples/models/plot_privacy_dp_tuning.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/auto_examples/models/plot_privacy_dp_tuning.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-models-plot-privacy-dp-tuning-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="differential-privacy-tuning-a-parameter-with-a-causal-game">
+<span id="sphx-glr-auto-examples-models-plot-privacy-dp-tuning-py"></span><h1>Differential Privacy: Tuning a Parameter With a Causal Game<a class="headerlink" href="#differential-privacy-tuning-a-parameter-with-a-causal-game" title="Link to this heading">¶</a></h1>
+<p>A public-health analyst wants to know how common a stigmatised condition is. It
+can only find out by asking people, and people who answer pay a privacy cost for
+doing so. The analyst can promise differential privacy, which lowers that cost
+and brings more people in – but the noise the promise is made of is exactly what
+makes the answer less accurate.</p>
+<p>So how much noise should the mechanism add? That is not a question anyone in the
+system can answer for themselves. The subjects respond to whatever noise scale
+they are offered, the analyst estimates from whatever reports arrive, and the
+noise scale is chosen by a <strong>designer</strong> above both, who has to weigh one party’s
+privacy against the other’s accuracy. This page tunes that parameter, following
+Benthall and Cummings (2026) <a class="footnote-reference brackets" href="#id2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
+<section id="what-is-on-this-page">
+<h2>What is on this page<a class="headerlink" href="#what-is-on-this-page" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>the model, as a causal game with two agent roles,</p></li>
+<li><p>the <strong>subjects’</strong> decision, solved rather than assumed,</p></li>
+<li><p>the <strong>analyst’s</strong> accuracy, against its closed form, in both trust models,</p></li>
+<li><p>the <strong>designer’s</strong> sweep, which is the mechanism being designed.</p></li>
+</ol>
+</section>
+<section id="the-model">
+<h2>The model<a class="headerlink" href="#the-model" title="Link to this heading">¶</a></h2>
+<p>A population statistic <span class="math notranslate nohighlight">\(a\)</span> is what the analyst wants. Subject <span class="math notranslate nohighlight">\(i\)</span>
+holds <span class="math notranslate nohighlight">\(b_i = a + \zeta_i\)</span>, its own value, and <span class="math notranslate nohighlight">\(p_i\)</span>, how much it
+minds sharing. It decides <span class="math notranslate nohighlight">\(c_i \in \{0, 1\}\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u_i = c_i \left(q - \frac{p_i}{\sigma}\right), \qquad
+f = \frac{\sum_i c_i d_i}{\sum_i c_i}, \qquad
+g = -(f - a)^2\]</div>
+</div>
+<p>Sharing is worth <span class="math notranslate nohighlight">\(q\)</span> and costs <span class="math notranslate nohighlight">\(p_i/\sigma\)</span>, so a larger noise scale
+<span class="math notranslate nohighlight">\(\sigma\)</span> makes sharing cheaper. The analyst averages the reports it
+received; its payoff is the negative squared error of that estimate.</p>
+<p>Where the noise goes is the difference between the two <strong>trust models</strong>, and it
+is the whole difference:</p>
+<ul class="simple">
+<li><p><strong>local</strong>: every subject privatises its own report, <span class="math notranslate nohighlight">\(d_i = b_i + \gamma_i\)</span>
+with one draw each. Nobody has to be trusted, and the noise is averaged down
+along with everything else.</p></li>
+<li><p><strong>central</strong>: subjects report <span class="math notranslate nohighlight">\(d_i = b_i\)</span> to an analyst they trust, which
+adds a single <span class="math notranslate nohighlight">\(\gamma\)</span> to the estimate it publishes. The noise is <em>not</em>
+averaged down, so it costs the same at any population size.</p></li>
+</ul>
+<p>Both decisions have closed forms, which is what makes this model an oracle: a
+subject shares iff <span class="math notranslate nohighlight">\(p_i &lt; q\sigma\)</span>, and the analyst’s estimate is the
+empirical mean of the reports, which is the minimum-variance unbiased estimator
+of <span class="math notranslate nohighlight">\(a\)</span>.</p>
+<section id="references">
+<h3>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h3>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id2" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Benthall, S. and Cummings, R. (2026). “Principled Differential Privacy
+Parameter Tuning with Causal Games.” <em>FAccT ‘26</em>.
+<a class="reference external" href="https://doi.org/10.1145/3805689.3806530">https://doi.org/10.1145/3805689.3806530</a></p>
+</aside>
+</aside>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="nn">.</span><span class="nn">pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="w">
+</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">models</span><span class="nn">.</span><span class="nn">privacy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">privacy</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">ground</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-ground sphx-glr-backref-type-py-class reference internal" href="../../api/blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><span class="n">GroundedBlock</span></a><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">simulation</span><span class="nn">.</span><span class="nn">monte_carlo</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-simulation-monte_carlo sphx-glr-backref-type-py-class reference internal" href="../../api/simulation.html#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><span class="n">Simulator</span></a><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">solver</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-class reference internal" href="../../api/algorithms.html#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><span class="n">ExactBestResponse</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-function reference internal" href="../../api/algorithms.html#skagent.solver.project" title="skagent.solver.project"><span class="n">project</span></a><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">skagent</span><span class="nn">.</span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-skagent-utils sphx-glr-backref-type-py-function reference internal" href="../../api/utils.html#skagent.utils.plot_block_diagram" title="skagent.utils.plot_block_diagram"><span class="n">plot_block_diagram</span></a><span class="w">
+</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">SUBJECTS</span></a> <span class="o">=</span> <span class="mi">1000</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">PLAYS</span></a> <span class="o">=</span> <span class="mi">400</span><span class="w">
+</span><span class="w">
+</span><span class="c1"># Colours chosen for colour-vision deficiency: blue, vermilion, bluish green.</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">SERIES</span></a> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="s2">#0072B2</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">#D55E00</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">#009E73</span><span class="s2">&quot;</span><span class="p">]</span><span class="w">
+</span><span class="w">
+</span><span class="w">
+</span><span class="k">def</span><span class="w"> </span><span class="nf">style</span><span class="p">(</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a><span class="p">,</span> <span class="n">xlabel</span><span class="p">,</span> <span class="n">ylabel</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="sd">&quot;&quot;&quot;Recessive axes and grid, so the data is the only strong thing drawn.&quot;&quot;&quot;</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_xlabel.html#matplotlib.axes.Axes.set_xlabel" title="matplotlib.axes.Axes.set_xlabel"><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span></a><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_ylabel.html#matplotlib.axes.Axes.set_ylabel" title="matplotlib.axes.Axes.set_ylabel"><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span></a><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid"><span class="n">ax</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span><span class="w">
+</span>    <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;</span><span class="s2">top</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">right</span><span class="s2">&quot;</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-matplotlib-spines sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/spines_api.html#matplotlib.spines.Spines" title="matplotlib.spines.Spines"><span class="n">ax</span><span class="o">.</span><span class="n">spines</span></a><span class="p">[</span><span class="n">side</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span><span class="w">
+</span>    <span class="k">return</span> <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a><span class="w">
+</span><span class="w">
+</span><span class="w">
+</span><span class="k">def</span><span class="w"> </span><span class="nf">play</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">calibration</span></a><span class="p">,</span> <span class="n">rules</span><span class="p">,</span> <span class="n">plays</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">PLAYS</span></a><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="sd">&quot;&quot;&quot;Play *block* *plays* times over, and return every symbol's history.&quot;&quot;&quot;</span><span class="w">
+</span>    <span class="n">sim</span> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-simulation-monte_carlo sphx-glr-backref-type-py-class reference internal" href="../../api/simulation.html#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><span class="n">Simulator</span></a><span class="p">(</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">calibration</span></a><span class="p">,</span> <span class="n">block</span><span class="p">,</span> <span class="n">rules</span><span class="p">,</span> <span class="p">{</span><span class="p">}</span><span class="p">,</span> <span class="n">sample_count</span><span class="o">=</span><span class="n">plays</span><span class="p">,</span> <span class="n">T_sim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="w">
+</span>    <span class="p">)</span><span class="w">
+</span>    <span class="n">sim</span><span class="o">.</span><span class="n">initialize_sim</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span>    <span class="k">return</span> <span class="p">{</span><span class="n">sym</span><span class="p">:</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.asarray.html#numpy.asarray" title="numpy.asarray"><span class="n">np</span><span class="o">.</span><span class="n">asarray</span></a><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">sym</span><span class="p">,</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="p">)</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+</section>
+</section>
+<section id="the-two-games">
+<h2>The two games<a class="headerlink" href="#the-two-games" title="Link to this heading">¶</a></h2>
+<p>Two agent roles over one model. The <strong>subjects</strong> are an entity class, so the
+box in each diagram below is a thousand of them: each draws its own data
+<code class="docutils literal notranslate"><span class="pre">b</span></code> and its own privacy concern <code class="docutils literal notranslate"><span class="pre">p</span></code>, each decides <code class="docutils literal notranslate"><span class="pre">c</span></code>, and each is paid
+its own utility <code class="docutils literal notranslate"><span class="pre">u</span></code>. The <strong>analyst</strong> is drawn outside the box, because there
+is one of it, and the edge that leaves the box is the reduction that turns a
+thousand reports <code class="docutils literal notranslate"><span class="pre">d</span></code> into one estimate <code class="docutils literal notranslate"><span class="pre">f</span></code>.</p>
+<p>First the <strong>local</strong> game, where each subject privatises its own report. The
+noise <code class="docutils literal notranslate"><span class="pre">gamma</span></code> is drawn inside the box – one draw per subject – and it
+enters the report, so what leaves the class is already private.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">calibration</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><span class="n">privacy</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">SUBJECTS</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-skagent-utils sphx-glr-backref-type-py-function reference internal" href="../../api/utils.html#skagent.utils.plot_block_diagram" title="skagent.utils.plot_block_diagram"><span class="n">plot_block_diagram</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-skagent sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/blocks.html#skagent.block.RBlock" title="skagent.RBlock"><span class="n">privacy</span><span class="o">.</span><span class="n">local_block</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Local model: each subject privatises its own report</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">calibration</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">calibration</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../_images/sphx_glr_plot_privacy_dp_tuning_001.png" srcset="../../_images/sphx_glr_plot_privacy_dp_tuning_001.png" alt="Local model: each subject privatises its own report" class = "sphx-glr-single-img"/><p>Then the <strong>central</strong> game, where the subjects report their data as it is to an
+analyst they trust. Two things move, and they are the only two: <code class="docutils literal notranslate"><span class="pre">gamma</span></code> is
+now drawn <em>outside</em> the box, since one draw serves the whole population, and
+it enters after the estimate rather than before it – the published estimate
+<code class="docutils literal notranslate"><span class="pre">f_dp</span></code> is what accuracy is measured on.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-skagent-utils sphx-glr-backref-type-py-function reference internal" href="../../api/utils.html#skagent.utils.plot_block_diagram" title="skagent.utils.plot_block_diagram"><span class="n">plot_block_diagram</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-skagent sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/blocks.html#skagent.block.RBlock" title="skagent.RBlock"><span class="n">privacy</span><span class="o">.</span><span class="n">central_block</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Central model: the analyst privatises the estimate</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">calibration</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">calibration</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../_images/sphx_glr_plot_privacy_dp_tuning_002.png" srcset="../../_images/sphx_glr_plot_privacy_dp_tuning_002.png" alt="Central model: the analyst privatises the estimate" class = "sphx-glr-single-img"/></section>
+<section id="what-a-subject-decides-and-what-the-library-finds">
+<h2>What a subject decides, and what the library finds<a class="headerlink" href="#what-a-subject-decides-and-what-the-library-finds" title="Link to this heading">¶</a></h2>
+<p>The subject’s utility is <em>linear</em> in its decision, so the best response is at a
+vertex: share whenever the benefit covers the concern, and never otherwise.
+That is the paper’s threshold rule, and it means a continuous control on
+<code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code> is not an approximation of the binary decision here – a solver on
+the relaxed control returns the exact rule.</p>
+<p>So this is worth doing rather than assuming. The <strong>local</strong> population is
+projected onto one subject and the rest of its class, and an exact backup
+solves that subject’s decision. Nothing here turns on the trust model: the
+subject’s utility reads its own concern and the noise scale, and neither the
+reports nor the estimate enter it, so the same rule solves the central game.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">SIGMA</span></a> <span class="o">=</span> <span class="mf">1.0</span><span class="w">
+</span><a class="sphx-glr-backref-module-skagent-ground sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><span class="n">projected</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-function reference internal" href="../../api/algorithms.html#skagent.solver.project" title="skagent.solver.project"><span class="n">project</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-skagent-ground sphx-glr-backref-type-py-class reference internal" href="../../api/blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><span class="n">GroundedBlock</span></a><span class="p">(</span><a class="sphx-glr-backref-module-skagent sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/blocks.html#skagent.block.RBlock" title="skagent.RBlock"><span class="n">privacy</span><span class="o">.</span><span class="n">local_block</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><span class="n">privacy</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">SIGMA</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><span class="mi">20</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">concerns</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/algorithms.html#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><span class="n">method</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-class reference internal" href="../../api/algorithms.html#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><span class="n">ExactBestResponse</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-skagent-ground sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><span class="n">projected</span></a><span class="p">,</span><span class="w">
+</span>    <span class="p">{</span><span class="s2">&quot;</span><span class="s2">p_actor</span><span class="s2">&quot;</span><span class="p">:</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">concerns</span></a><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">b_actor</span><span class="s2">&quot;</span><span class="p">:</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span><span class="p">)</span><span class="p">}</span><span class="p">,</span><span class="w">
+</span>    <span class="n">scope</span><span class="o">=</span><span class="p">{</span><span class="w">
+</span>        <span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">projected</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">,</span><span class="w">
+</span>        <span class="s2">&quot;</span><span class="s2">a</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span><span class="w">
+</span>        <span class="s2">&quot;</span><span class="s2">zeta_actor</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span><span class="w">
+</span>        <span class="s2">&quot;</span><span class="s2">zeta_other</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span><span class="w">
+</span>        <span class="s2">&quot;</span><span class="s2">p_other</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span><span class="w">
+</span>        <span class="s2">&quot;</span><span class="s2">gamma_actor</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span><span class="w">
+</span>        <span class="s2">&quot;</span><span class="s2">gamma_other</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span><span class="w">
+</span>    <span class="p">}</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="n">solved</span> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-solver sphx-glr-backref-type-py-method reference internal" href="../../api/algorithms.html#skagent.solver.ExactBestResponse.best_response" title="skagent.solver.ExactBestResponse.best_response"><span class="n">method</span><span class="o">.</span><span class="n">best_response</span></a><span class="p">(</span><span class="w">
+</span>    <span class="s2">&quot;</span><span class="s2">c_actor</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="p">{</span><span class="s2">&quot;</span><span class="s2">c_other</span><span class="s2">&quot;</span><span class="p">:</span> <a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.sharing_rule" title="skagent.models.privacy.sharing_rule"><span class="n">privacy</span><span class="o">.</span><span class="n">sharing_rule</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">SIGMA</span></a><span class="p">)</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">f</span><span class="s2">&quot;</span><span class="p">:</span> <a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.analyst_rule" title="skagent.models.privacy.analyst_rule"><span class="n">privacy</span><span class="o">.</span><span class="n">analyst_rule</span></a><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span><span class="p">}</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">'</span><span class="s1">privacy concern</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;16</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="s1">'</span><span class="s1">solved</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="s1">'</span><span class="s1">closed form</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">concern</span></a> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">concerns</span></a><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">found</span></a> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ravel.html#numpy.ravel" title="numpy.ravel"><span class="n">np</span><span class="o">.</span><span class="n">ravel</span></a><span class="p">(</span><span class="n">solved</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">concern</span></a><span class="p">)</span><span class="p">)</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">closed</span></a> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.sharing_rule" title="skagent.models.privacy.sharing_rule"><span class="n">privacy</span><span class="o">.</span><span class="n">sharing_rule</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">SIGMA</span></a><span class="p">)</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">concern</span></a><span class="p">)</span><span class="p">)</span><span class="w">
+</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">concern</span></a><span class="si">:</span><span class="s2">16.2f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">found</span></a><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">closed</span></a><span class="si">:</span><span class="s2">12.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>privacy concern    solved   closed form
+          -2.00      1.00             1
+          -1.50      1.00             1
+          -1.00      1.00             1
+          -0.50      1.00             1
+           0.00      1.00             1
+           0.50      1.00             1
+           1.00      0.50             0
+           1.50      0.00             0
+           2.00      0.00             0
+</pre></div>
+</div>
+<p>The two agree everywhere except at <span class="math notranslate nohighlight">\(p_i = q\sigma\)</span>, where the benefit
+exactly covers the concern. There the subject is indifferent – every action is
+optimal – and the closed form breaks the tie towards not sharing while the
+solver does not break it at all.</p>
+<p>The solved rule is also flat in <code class="docutils literal notranslate"><span class="pre">b</span></code>, the subject’s own data, which it
+observes and could act on. That it does not is what makes the sharing decision
+leak nothing about what is being measured, and it is the assumption the whole
+estimator rests on. The last section takes it away.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="s2">&quot;</span><span class="s2">solved rule at two values of the subject</span><span class="s2">'</span><span class="s2">s own data: </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ravel.html#numpy.ravel" title="numpy.ravel"><span class="n">np</span><span class="o">.</span><span class="n">ravel</span></a><span class="p">(</span><span class="n">solved</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">)</span><span class="p">)</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ravel.html#numpy.ravel" title="numpy.ravel"><span class="n">np</span><span class="o">.</span><span class="n">ravel</span></a><span class="p">(</span><span class="n">solved</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">)</span><span class="p">)</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>solved rule at two values of the subject's own data: 1.00 1.00
+</pre></div>
+</div>
+<p>And the population plays it as declared: the fraction who share is the concern
+distribution evaluated at the benefit of sharing, and the estimate that comes
+out is unbiased.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><span class="n">privacy</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">SIGMA</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">SUBJECTS</span></a><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a> <span class="o">=</span> <span class="n">play</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-skagent sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../api/blocks.html#skagent.block.RBlock" title="skagent.RBlock"><span class="n">privacy</span><span class="o">.</span><span class="n">local_block</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a><span class="p">,</span><span class="w">
+</span>    <span class="p">{</span><span class="s2">&quot;</span><span class="s2">c</span><span class="s2">&quot;</span><span class="p">:</span> <a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.sharing_rule" title="skagent.models.privacy.sharing_rule"><span class="n">privacy</span><span class="o">.</span><span class="n">sharing_rule</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">SIGMA</span></a><span class="p">)</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">f</span><span class="s2">&quot;</span><span class="p">:</span> <a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.analyst_rule" title="skagent.models.privacy.analyst_rule"><span class="n">privacy</span><span class="o">.</span><span class="n">analyst_rule</span></a><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span><span class="p">}</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">shared:   </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">c</span><span class="s1">'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> simulated</span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">   </span><span class="si">{</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.share_probability" title="skagent.models.privacy.share_probability"><span class="n">privacy</span><span class="o">.</span><span class="n">share_probability</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">SIGMA</span></a><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> closed form</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">estimate: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">f</span><span class="s1">'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">history</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">a</span><span class="s1">'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="p">)</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2"> bias</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>shared:   0.841 simulated   0.841 closed form
+estimate: -0.0013 bias
+</pre></div>
+</div>
+</section>
+<section id="what-the-analyst-gets-the-local-model">
+<h2>What the analyst gets: the local model<a class="headerlink" href="#what-the-analyst-gets-the-local-model" title="Link to this heading">¶</a></h2>
+<p>The error of the estimate is a variance divided by the number of reports, and
+both of those move with <span class="math notranslate nohighlight">\(\sigma\)</span>. More noise means a noisier report and
+more reports. Locally the first effect wins almost immediately, so accuracy
+falls in the noise scale – but not from zero, and that is the paper’s first
+result: an accuracy-maximising designer asks for <strong>some</strong> noise, because the
+subjects it brings in are worth more than the noise costs.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">1e-4</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure"><span class="n">fig</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">SERIES</span></a><span class="p">,</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">)</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a> <span class="o">=</span> <span class="p">[</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.local_error" title="skagent.models.privacy.local_error"><span class="n">privacy</span><span class="o">.</span><span class="n">local_error</span></a><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">SUBJECTS</span></a><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">]</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a><span class="p">,</span> <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="o">=</span><span class="sa">rf</span><span class="s2">&quot;</span><span class="s2">$</span><span class="s2">\</span><span class="s2">Delta$ = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.annotate.html#matplotlib.axes.Axes.annotate" title="matplotlib.axes.Axes.annotate"><span class="n">ax</span><span class="o">.</span><span class="n">annotate</span></a><span class="p">(</span><span class="w">
+</span>        <span class="sa">rf</span><span class="s2">&quot;</span><span class="s2">$</span><span class="s2">\</span><span class="s2">Delta$ = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">offset points</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span><span class="w">
+</span>        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">center</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span><span class="w">
+</span>    <span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">[</span><span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmin.html#numpy.argmin" title="numpy.argmin"><span class="n">np</span><span class="o">.</span><span class="n">argmin</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a><span class="p">)</span><span class="p">)</span><span class="p">]</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><span class="p">[</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="p">]</span><span class="p">,</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a><span class="p">)</span><span class="p">]</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">o</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title"><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Local model: the analyst</span><span class="s2">'</span><span class="s2">s expected squared error</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.legend.html#matplotlib.axes.Axes.legend" title="matplotlib.axes.Axes.legend"><span class="n">ax</span><span class="o">.</span><span class="n">legend</span></a><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">upper left</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="n">style</span><span class="p">(</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="s2">noise scale $</span><span class="s2">\</span><span class="s2">sigma$</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="s2">$E[-g]$</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.tight_layout.html#matplotlib.figure.Figure.tight_layout" title="matplotlib.figure.Figure.tight_layout"><span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a> <span class="ow">in</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a> <span class="o">=</span> <span class="p">[</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.local_error" title="skagent.models.privacy.local_error"><span class="n">privacy</span><span class="o">.</span><span class="n">local_error</span></a><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">SUBJECTS</span></a><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">]</span><span class="w">
+</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">delta = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">spread</span></a><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">: best noise scale </span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">[</span><span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmin.html#numpy.argmin" title="numpy.argmin"><span class="n">np</span><span class="o">.</span><span class="n">argmin</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a><span class="p">)</span><span class="p">)</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../_images/sphx_glr_plot_privacy_dp_tuning_003.png" srcset="../../_images/sphx_glr_plot_privacy_dp_tuning_003.png" alt="Local model: the analyst's expected squared error" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>delta = 1: best noise scale 0.030
+delta = 2: best noise scale 0.131
+delta = 3: best noise scale 0.261
+</pre></div>
+</div>
+<p>The dot on each curve is that interior optimum. It moves right as the data
+spread <span class="math notranslate nohighlight">\(\Delta\)</span> grows: the wider the variation being estimated, the more
+an extra report is worth and the more noise is worth paying for it.</p>
+</section>
+<section id="the-central-model-where-the-noise-is-not-averaged-down">
+<h2>The central model, where the noise is not averaged down<a class="headerlink" href="#the-central-model-where-the-noise-is-not-averaged-down" title="Link to this heading">¶</a></h2>
+<p>Centrally the analyst is trusted with the raw data and adds one draw of noise
+to the estimate. That noise is not divided by anything, so it enters the error
+as <span class="math notranslate nohighlight">\(\sigma^2\)</span> whatever the population size – and the optimum is
+therefore three orders of magnitude smaller than the local one.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">1e-5</span><span class="p">,</span> <span class="mf">4e-3</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="c1"># One panel per population rather than one axis for both: the two errors differ</span><span class="w">
+</span><span class="c1"># in level by more than either varies over the whole range of sigma, so drawn</span><span class="w">
+</span><span class="c1"># together each curve reads as flat and the optimum this figure is about</span><span class="w">
+</span><span class="c1"># disappears.</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure"><span class="n">fig</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">9.5</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">)</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">SERIES</span></a><span class="p">,</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.central_error" title="skagent.models.privacy.central_error"><span class="n">privacy</span><span class="o">.</span><span class="n">central_error</span></a><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">]</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">[</span><span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmin.html#numpy.argmin" title="numpy.argmin"><span class="n">np</span><span class="o">.</span><span class="n">argmin</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a><span class="p">)</span><span class="p">)</span><span class="p">]</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a> <span class="o">*</span> <span class="mf">1e3</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a> <span class="o">*</span> <span class="mf">1e3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><span class="p">[</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a> <span class="o">*</span> <span class="mf">1e3</span><span class="p">]</span><span class="p">,</span> <span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span><span class="o">.</span><span class="n">min</span></a><span class="p">(</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">]</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">o</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="numpy.bool"><span class="n">outer</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a> <span class="o">&gt;</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.annotate.html#matplotlib.axes.Axes.annotate" title="matplotlib.axes.Axes.annotate"><span class="n">ax</span><span class="o">.</span><span class="n">annotate</span></a><span class="p">(</span><span class="w">
+</span>        <span class="sa">rf</span><span class="s2">&quot;</span><span class="s2">$</span><span class="s2">\</span><span class="s2">sigma^</span><span class="s2">\</span><span class="s2">ast$ = </span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a> <span class="o">*</span> <span class="mf">1e3</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span><span class="o">.</span><span class="n">min</span></a><span class="p">(</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span> <span class="k">if</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="numpy.bool"><span class="n">outer</span></a> <span class="k">else</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">offset points</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">right</span><span class="s2">&quot;</span> <span class="k">if</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="numpy.bool"><span class="n">outer</span></a> <span class="k">else</span> <span class="s2">&quot;</span><span class="s2">left</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span><span class="w">
+</span>        <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span><span class="w">
+</span>    <span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title"><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">n = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="si">}</span><span class="s2"> subjects</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span><span class="w">
+</span>    <span class="n">style</span><span class="p">(</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="s2">noise scale $</span><span class="s2">\</span><span class="s2">sigma </span><span class="s2">\</span><span class="s2">times 10^</span><span class="si">{3}</span><span class="s2">$</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="s2">$E[-g] </span><span class="s2">\</span><span class="s2">times 10^</span><span class="si">{3}</span><span class="s2">$</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.suptitle.html#matplotlib.figure.Figure.suptitle" title="matplotlib.figure.Figure.suptitle"><span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span></a><span class="p">(</span><span class="w">
+</span>    <span class="s2">&quot;</span><span class="s2">Central model: the same error, with the noise added once</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.0</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.tight_layout.html#matplotlib.figure.Figure.tight_layout" title="matplotlib.figure.Figure.tight_layout"><span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a> <span class="ow">in</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a> <span class="o">=</span> <span class="p">[</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.central_error" title="skagent.models.privacy.central_error"><span class="n">privacy</span><span class="o">.</span><span class="n">central_error</span></a><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">]</span><span class="w">
+</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">n = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="si">:</span><span class="s2">5d</span><span class="si">}</span><span class="s2">: best noise scale </span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">[</span><span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmin.html#numpy.argmin" title="numpy.argmin"><span class="n">np</span><span class="o">.</span><span class="n">argmin</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">error</span></a><span class="p">)</span><span class="p">)</span><span class="p">]</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../_images/sphx_glr_plot_privacy_dp_tuning_004.png" srcset="../../_images/sphx_glr_plot_privacy_dp_tuning_004.png" alt="Central model: the same error, with the noise added once, n = 200 subjects, n = 1000 subjects" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>n =   200: best noise scale 0.00303
+n =  1000: best noise scale 0.00060
+</pre></div>
+</div>
+<p>The two curves say something the local model cannot: <strong>how many subjects there
+are changes the answer</strong>. Locally, the mechanism’s noise and the variation
+being estimated are both divided by the number of reports, so the trade
+between them is the same in a small population as in a large one. Centrally
+only the variation is divided, so a larger population has less to gain from
+buying participation and the designer asks for less noise.</p>
+</section>
+<section id="the-designer-s-problem">
+<h2>The designer’s problem<a class="headerlink" href="#the-designer-s-problem" title="Link to this heading">¶</a></h2>
+<p>Accuracy is not the only thing at stake: the subjects have preferences over the
+same parameter, and they want it larger. A designer that weighs both maximises
+an objective of its own,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[h(\sigma) = \mathbb{E}[g] + \mathbb{E}[u_i],\]</div>
+</div>
+<p>under a bounded subject utility – <span class="math notranslate nohighlight">\(u_i = c_i(1 - e^{p_i}/(1 + \sigma))\)</span>,
+the paper’s own example, where the privacy cost is lognormal and more noise
+always helps. The accuracy term is the <strong>local</strong> model’s, as in the paper, so
+this is the local architecture throughout. The two terms pull in opposite
+directions, so the maximum is interior: neither no privacy nor unlimited noise.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">objective</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.designer_objective" title="skagent.models.privacy.designer_objective"><span class="n">privacy</span><span class="o">.</span><span class="n">designer_objective</span></a><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">SUBJECTS</span></a><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">welfare</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.bounded_subject_utility" title="skagent.models.privacy.bounded_subject_utility"><span class="n">privacy</span><span class="o">.</span><span class="n">bounded_subject_utility</span></a><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">accuracy</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">objective</span></a> <span class="o">-</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">welfare</span></a><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">[</span><span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html#numpy.argmax" title="numpy.argmax"><span class="n">np</span><span class="o">.</span><span class="n">argmax</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">objective</span></a><span class="p">)</span><span class="p">)</span><span class="p">]</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure"><span class="n">fig</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">values</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">SERIES</span></a><span class="p">,</span><span class="w">
+</span>    <span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">objective</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">welfare</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">accuracy</span></a><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="p">(</span><span class="s2">&quot;</span><span class="s2">$h$, the designer</span><span class="s2">'</span><span class="s2">s objective</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">$E[u_i]$, a subject</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">$E[g]$, the analyst</span><span class="s2">&quot;</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">values</span></a><span class="p">,</span> <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">colour</span></a><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.axvline.html#matplotlib.axes.Axes.axvline" title="matplotlib.axes.Axes.axvline"><span class="n">ax</span><span class="o">.</span><span class="n">axvline</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#555555</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">:</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="c1"># The dot is on `h` rather than on either term it is made of: what the designer</span><span class="w">
+</span><span class="c1"># maximizes is the sum, and the peak is flat enough that the eye needs telling</span><span class="w">
+</span><span class="c1"># where it is.</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><span class="p">[</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="p">]</span><span class="p">,</span> <span class="p">[</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">objective</span></a><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="p">)</span><span class="p">]</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">o</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">SERIES</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.annotate.html#matplotlib.axes.Axes.annotate" title="matplotlib.axes.Axes.annotate"><span class="n">ax</span><span class="o">.</span><span class="n">annotate</span></a><span class="p">(</span><span class="w">
+</span>    <span class="sa">rf</span><span class="s2">&quot;</span><span class="s2">$</span><span class="s2">\</span><span class="s2">sigma^</span><span class="s2">\</span><span class="s2">ast$ = </span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">objective</span></a><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">offset points</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title"><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Local model: what the designer is choosing between</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.legend.html#matplotlib.axes.Axes.legend" title="matplotlib.axes.Axes.legend"><span class="n">ax</span><span class="o">.</span><span class="n">legend</span></a><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">upper left</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="n">style</span><span class="p">(</span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes"><span class="n">ax</span></a><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="s2">noise scale $</span><span class="s2">\</span><span class="s2">sigma$</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">expected payoff</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.tight_layout.html#matplotlib.figure.Figure.tight_layout" title="matplotlib.figure.Figure.tight_layout"><span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">designer</span><span class="s2">'</span><span class="s2">s choice: sigma = </span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">  privacy guarantee: epsilon = </span><span class="si">{</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.privacy_epsilon" title="skagent.models.privacy.privacy_epsilon"><span class="n">privacy</span><span class="o">.</span><span class="n">privacy_epsilon</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">  subjects sharing:  </span><span class="si">{</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.bounded_share_probability" title="skagent.models.privacy.bounded_share_probability"><span class="n">privacy</span><span class="o">.</span><span class="n">bounded_share_probability</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">best</span></a><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../_images/sphx_glr_plot_privacy_dp_tuning_005.png" srcset="../../_images/sphx_glr_plot_privacy_dp_tuning_005.png" alt="Local model: what the designer is choosing between" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>designer's choice: sigma = 8.37
+  privacy guarantee: epsilon = 0.579
+  subjects sharing:  0.987
+</pre></div>
+</div>
+<p>That number is the point of the exercise: it is a <strong>noise scale chosen from the
+purposes of the system</strong>, and it implies a privacy parameter rather than being
+handed one. The differential-privacy literature usually treats
+<span class="math notranslate nohighlight">\(\epsilon\)</span> as a knob to be set by convention; here it comes out of the
+trade the designer has actually made.</p>
+<p>The choice is not robust to the population size, and it should not be – the
+designer’s problem genuinely depends on it:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">'</span><span class="s1">subjects</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;10</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="s1">'</span><span class="s1">best sigma</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;11</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="s1">'</span><span class="s1">epsilon</span><span class="s1">'</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a> <span class="ow">in</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">values</span></a> <span class="o">=</span> <span class="p">[</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.designer_objective" title="skagent.models.privacy.designer_objective"><span class="n">privacy</span><span class="o">.</span><span class="n">designer_objective</span></a><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">]</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">choice</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise</span></a><span class="p">[</span><span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html#numpy.argmax" title="numpy.argmax"><span class="n">np</span><span class="o">.</span><span class="n">argmax</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">values</span></a><span class="p">)</span><span class="p">)</span><span class="p">]</span><span class="w">
+</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">size</span></a><span class="si">:</span><span class="s2">10d</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">choice</span></a><span class="si">:</span><span class="s2">11.2f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><a class="sphx-glr-backref-module-skagent-models-privacy sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.privacy.privacy_epsilon" title="skagent.models.privacy.privacy_epsilon"><span class="n">privacy</span><span class="o">.</span><span class="n">privacy_epsilon</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float64" title="numpy.float64"><span class="n">choice</span></a><span class="p">)</span><span class="si">:</span><span class="s2">8.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>subjects   best sigma   epsilon
+     100         3.12     1.552
+     250         4.75     1.019
+    1000         8.37     0.579
+    5000        15.20     0.319
+</pre></div>
+</div>
+</section>
+<section id="what-was-supplied-and-what-was-found">
+<h2>What was supplied and what was found<a class="headerlink" href="#what-was-supplied-and-what-was-found" title="Link to this heading">¶</a></h2>
+<p>The subjects’ rule was <strong>found</strong>: an exact backup on the projected block
+returns the paper’s threshold, and its flatness in the subject’s own data is a
+result rather than an assumption.</p>
+<p>The analyst’s rule was <strong>supplied</strong>, because its information set is the whole
+subject class and a rule over a class needs a permutation-invariant policy that
+this library does not yet have. The paper supplies it in closed form, and
+proves it optimal, so nothing is being approximated here – but it is worth
+knowing which of the two rules on this page the library produced.</p>
+<p>The designer’s sweep is a loop over equilibria written here rather than in the
+library: it is neither a solution concept nor a method, and one instance of it
+is not yet an interface.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 2.360 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-privacy-dp-tuning-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/144f3b2be13d4b8e3783ac8bb02f11be/plot_privacy_dp_tuning.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_privacy_dp_tuning.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/25b9f1222312abd8b660a52218583f5a/plot_privacy_dp_tuning.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_privacy_dp_tuning.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/4caaa224667faa05defcdcd8d2d6ac4d/plot_privacy_dp_tuning.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_privacy_dp_tuning.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="plot_lemons_adverse_selection.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Lemons: Adverse Selection, and Three Markets That Look Alike</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="plot_benchmark_models.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Benchmark Consumption Models</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, scikit-agent Team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link " href="https://github.com/scikit-agent/scikit-agent" aria-label="GitHub">
+                <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+                </svg>
+            </a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Differential Privacy: Tuning a Parameter With a Causal Game</a><ul>
+<li><a class="reference internal" href="#what-is-on-this-page">What is on this page</a></li>
+<li><a class="reference internal" href="#the-model">The model</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-two-games">The two games</a></li>
+<li><a class="reference internal" href="#what-a-subject-decides-and-what-the-library-finds">What a subject decides, and what the library finds</a></li>
+<li><a class="reference internal" href="#what-the-analyst-gets-the-local-model">What the analyst gets: the local model</a></li>
+<li><a class="reference internal" href="#the-central-model-where-the-noise-is-not-averaged-down">The central model, where the noise is not averaged down</a></li>
+<li><a class="reference internal" href="#the-designer-s-problem">The designer’s problem</a></li>
+<li><a class="reference internal" href="#what-was-supplied-and-what-was-found">What was supplied and what was found</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=a57efd70"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"tex": {"packages": {"[+]": ["amsmath", "amssymb"]}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    </body>
+</html>

@@ -1,0 +1,167 @@
+# Models
+
+The `skagent.models` subpackage contains predefined economic models. For a
+narrative overview of the benchmark registry and how to call it, see the
+{doc}`../user_guide/benchmark_models` guide; for runnable, plotted walkthroughs
+see the {doc}`../auto_examples/index`.
+
+## Consumer Models
+
+```{eval-rst}
+.. automodule:: skagent.models.consumer
+   :members:
+```
+
+## Benchmark Registry
+
+The benchmark registry catalogues discrete-time dynamic programming problems
+with known closed-form policies (plus a few that are kept for numerical
+validation). Its public helpers and analytical-policy functions are listed
+below.
+
+```{eval-rst}
+.. automodule:: skagent.models.benchmarks
+   :no-members:
+```
+
+### Registry access
+
+```{eval-rst}
+.. autofunction:: skagent.models.benchmarks.list_benchmark_models
+.. autofunction:: skagent.models.benchmarks.get_benchmark_model
+.. autofunction:: skagent.models.benchmarks.get_benchmark_calibration
+.. autofunction:: skagent.models.benchmarks.get_analytical_policy
+.. autofunction:: skagent.models.benchmarks.has_analytical_policy
+.. autofunction:: skagent.models.benchmarks.get_reference_policy
+.. autofunction:: skagent.models.benchmarks.get_test_states
+.. autofunction:: skagent.models.benchmarks.get_custom_validation
+```
+
+### Validation
+
+```{eval-rst}
+.. autofunction:: skagent.models.benchmarks.validate_analytical_solution
+.. autofunction:: skagent.models.benchmarks.get_analytical_lifetime_reward
+```
+
+### Analytical policies
+
+```{eval-rst}
+.. autofunction:: skagent.models.benchmarks.d1_analytical_policy
+.. autofunction:: skagent.models.benchmarks.d2_analytical_policy
+.. autofunction:: skagent.models.benchmarks.d3_analytical_policy
+.. autofunction:: skagent.models.benchmarks.u1_analytical_policy
+.. autofunction:: skagent.models.benchmarks.u2_analytical_policy
+.. autofunction:: skagent.models.benchmarks.crra_utility
+```
+
+## Fisher Two-Period Model
+
+```{eval-rst}
+.. automodule:: skagent.models.fisher
+   :members:
+```
+
+## Perfect Foresight Models
+
+```{eval-rst}
+.. automodule:: skagent.models.perfect_foresight
+   :members:
+```
+
+## Perfect Foresight Models (Normalized)
+
+```{eval-rst}
+.. automodule:: skagent.models.perfect_foresight_normalized
+   :members:
+```
+
+## Resource Extraction
+
+```{eval-rst}
+.. automodule:: skagent.models.resource_extraction
+   :members:
+```
+
+## Cournot
+
+Quantity competition among several firms: the smallest model with an entity
+class, an agent role and an aggregation. Its decision profiles are supplied
+rather than solved for, since the model has a crossing.
+
+```{eval-rst}
+.. automodule:: skagent.models.cournot
+   :members:
+```
+
+## Lemons
+
+Akerlof's market for adverse selection, at the paper's own numbers: sellers know
+what they hold and buyers can price only the average of what is offered, so the
+better cars leave the market first. Eight leaf blocks compose into several
+markets, which differ in when the price is set -- anticipated by the sellers,
+posted from the round before, or committed to by a buyer -- and in whether
+quality is a spread or Akerlof's two types. All of them have an acyclic
+relevance graph, and only some can be solved a decision at a time.
+
+```{eval-rst}
+.. automodule:: skagent.models.lemons
+   :members:
+```
+
+## Aiyagari
+
+Many households saving out of labour income, whose average assets are the
+economy's capital and therefore set the interest rate and wage they all face.
+Under a fixed savings rate the aggregate has a closed form, so the model checks
+the arithmetic of a dynamic path through an entity class rather than only its
+shape.
+
+```{eval-rst}
+.. automodule:: skagent.models.aiyagari
+   :members:
+```
+
+## Differential Privacy
+
+Benthall and Cummings' two causal games for tuning a differential-privacy
+parameter: data subjects decide whether to share, an analyst estimates a
+population mean from the reports that arrive, and a designer above both chooses
+how much noise the mechanism adds. The two games are the local and central trust
+models, which differ only in whether each subject privatizes its own report or
+the analyst privatizes the estimate. Both agents' equilibrium rules have closed
+forms, so the model is an oracle for the machinery that finds them: an exact
+backup returns the subjects' threshold rule exactly, while the analyst's
+estimator, whose information set is the whole class, is supplied.
+
+```{eval-rst}
+.. automodule:: skagent.models.privacy
+   :members:
+```
+
+## Multi-Agent Influence Diagrams (MAIDs)
+
+Game-theoretic influence diagrams from the literature, encoded to illustrate
+strategic-relevance analysis (`Block.relevance_graph` / `Block.relies_on`).
+These are not solved for a policy; only their graphical structure is used.
+
+```{eval-rst}
+.. automodule:: skagent.models.macid
+   :members:
+```
+
+## AI-safety influence diagrams
+
+Influence diagrams from the AI-safety literature, encoded to exercise the
+graphical criteria in `skagent.relevance`. Like the MAIDs above, these are used
+for their structure rather than solved for a policy.
+
+```{eval-rst}
+.. automodule:: skagent.models.safety
+   :members:
+```
+
+```{eval-rst}
+.. automodule:: skagent.models.safety.incentives
+   :members:
+```
