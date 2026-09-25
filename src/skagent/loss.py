@@ -3,11 +3,13 @@ from __future__ import annotations
 import inspect
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
+import numpy as np
 import torch
 
 from skagent.bellman import (
+    BellmanPeriod,
     _extract_period_shocks,
     estimate_bellman_foc_residual,
     estimate_bellman_residual,
@@ -16,9 +18,6 @@ from skagent.bellman import (
 )
 from skagent.grid import Grid
 from skagent.utils import any_nan, fischer_burmeister, reconcile
-
-if TYPE_CHECKING:
-    from skagent.bellman import BellmanPeriod
 
 logger = logging.getLogger(__name__)
 
@@ -292,9 +291,7 @@ class _EquationLossBase(ABC):
         *,
         agent: str | None = None,
     ) -> None:
-        from skagent.bellman import BellmanPeriod as _BellmanPeriod
-
-        if not isinstance(bellman_period, _BellmanPeriod):
+        if not isinstance(bellman_period, BellmanPeriod):
             raise TypeError(
                 f"bellman_period must be a BellmanPeriod, "
                 f"got {type(bellman_period).__name__}"
@@ -314,6 +311,26 @@ class _EquationLossBase(ABC):
 
     @abstractmethod
     def __call__(self, df: Callable, input_grid: Grid) -> torch.Tensor: ...
+
+    def _redraw_next_shocks(self, states_t: dict, shocks: dict) -> dict:
+        """Return *shocks* with an independent second draw of the ``{sym}_1`` keys.
+
+        The input grid supplies the first next-period draw; the all-in-one
+        operator (MMW 2021, Def. 2.7) multiplies residuals at two independent
+        ones. For a deterministic model there is nothing to draw, and the two
+        coincide. The batch comes from the states, or from the grid's shocks
+        when the period has no arrival states; an aggregate shock draws one
+        value, which the whole batch shares.
+        """
+        template = next(iter({**states_t, **shocks}.values()), None)
+        if template is None:
+            return shocks
+        n = template.shape[0]
+        draws = self.bellman_period.draw_shocks(n)
+        return shocks | {
+            f"{s}_1": reconcile(template, np.full(n, v) if np.ndim(v) == 0 else v)
+            for s, v in draws.items()
+        }
 
     def _extract_states_and_shocks(
         self, input_grid: Grid
@@ -413,33 +430,29 @@ class BellmanEquationLoss(_EquationLossBase):
         Returns
         -------
         torch.Tensor
-            Bellman equation residual loss (squared)
+            All-in-one estimate of the squared expected Bellman residual, plus
+            ``foc_weight`` times that of the FOC residuals: each is the product
+            of the residuals at the grid's next-period draw and at a second,
+            independent one (MMW 2021, Definition 2.10, eq. 15). Squaring one
+            draw would add the variance of the continuation value to the
+            objective.
         """
         states_t, shocks = self._extract_states_and_shocks(input_grid)
+        draws = (shocks, self._redraw_next_shocks(states_t, shocks))
+        args = (self.bellman_period, self.value_function, df, states_t)
 
-        bellman_residual = estimate_bellman_residual(
-            self.bellman_period,
-            self.value_function,
-            df,
-            states_t,
-            shocks,
-            self.parameters,
-            self.agent,
+        res_a, res_b = (
+            estimate_bellman_residual(*args, s, self.parameters, self.agent)
+            for s in draws
         )
-
-        loss = bellman_residual**2
+        loss = res_a * res_b
 
         if self.foc_weight > 0:
-            foc_residuals = estimate_bellman_foc_residual(
-                self.bellman_period,
-                self.value_function,
-                df,
-                states_t,
-                shocks,
-                self.parameters,
-                self.agent,
+            foc_a, foc_b = (
+                estimate_bellman_foc_residual(*args, s, self.parameters, self.agent)
+                for s in draws
             )
-            foc_loss = sum((r**2 for r in foc_residuals.values()), 0.0)
+            foc_loss = sum((foc_a[c] * foc_b[c] for c in foc_a), 0.0)
             loss = loss + self.foc_weight * foc_loss
 
         return loss
@@ -661,19 +674,9 @@ class EulerEquationLoss(_EquationLossBase):
         controls_t = self.bellman_period.compute_controls(
             df, states_t, shocks=shocks_t, parameters=self.parameters
         )
-        # Second, independent next-period shock draw (the input grid supplies
-        # the first). For deterministic models this is empty and the two
-        # residuals coincide.
-        template = next(iter(states_t.values()))
-        n = template.shape[0]
-        shocks_next_b = {
-            sym: reconcile(template, val)
-            for sym, val in self.bellman_period.draw_shocks(n).items()
-        }
         shocks_a = {f"{s}_0": shocks_t[s] for s in shocks_t}
         shocks_a.update({f"{s}_1": shocks_next_a[s] for s in shocks_next_a})
-        shocks_b = {f"{s}_0": shocks_t[s] for s in shocks_t}
-        shocks_b.update({f"{s}_1": shocks_next_b[s] for s in shocks_next_b})
+        shocks_b = self._redraw_next_shocks(states_t, shocks_a)
         res_a = estimate_euler_residual(
             self.bellman_period,
             df,
