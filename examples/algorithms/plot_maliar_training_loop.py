@@ -5,8 +5,8 @@ The Maliar Training Loop on a Model With No Closed-Form Solution
 
 The full Maliar, Maliar, and Winant (2021) algorithm, run on a model that has no
 closed-form solution: Carroll's buffer-stock consumption problem, benchmark U-3.
-Solving such models is why the neural-network method exists, so this is the
-honest setting to show it in.
+Solving such models is why the neural-network method exists, so this page
+demonstrates it in that setting.
 
 The companion example trains a network on a *fixed* grid and checks it against a
 closed-form policy. This one runs the loop itself,

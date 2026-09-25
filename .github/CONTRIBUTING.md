@@ -80,7 +80,7 @@ uv run --no-sync python -m sphinx -b html -W --keep-going docs docs/_build
 To build and serve them with live reload while you edit:
 
 ```bash
-uv run --no-sync sphinx-autobuild docs docs/_build/html
+uv run --no-sync sphinx-autobuild docs docs/_build
 ```
 
 # Building an SDist and wheel

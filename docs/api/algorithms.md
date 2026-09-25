@@ -76,7 +76,8 @@ games are not supported.
 
 ## Maliar-Style Algorithms
 
-Neural network-based solution methods following Maliar et al.
+This module provides neural network-based solution methods following Maliar et
+al.
 
 ```{eval-rst}
 .. automodule:: skagent.algos.maliar
@@ -85,10 +86,10 @@ Neural network-based solution methods following Maliar et al.
 
 ## Reinforcement Learning (Stable-Baselines3)
 
-Proximal Policy Optimization (PPO) for `BellmanPeriod` models, via a
-[Stable-Baselines3](https://stable-baselines3.readthedocs.io/) backend. The
-agent wraps a model in a gymnasium environment (see {doc}`environments`), trains
-PPO, and emits a standard skagent decision rule.
+This module provides Proximal Policy Optimization (PPO) for `BellmanPeriod`
+models, via a [Stable-Baselines3](https://stable-baselines3.readthedocs.io/)
+backend. The agent wraps a model in a gymnasium environment (see
+{doc}`environments`), trains PPO, and emits a standard skagent decision rule.
 
 ```{eval-rst}
 .. automodule:: skagent.algos.sb3
@@ -97,8 +98,8 @@ PPO, and emits a standard skagent decision rule.
 
 ## Loss Functions
 
-Objective functions passed to {func}`skagent.ann.train_block_nn`. The
-reward-based losses ({class}`~skagent.loss.StaticRewardLoss`,
+These are the objective functions passed to {func}`skagent.ann.train_block_nn`.
+The reward-based losses ({class}`~skagent.loss.StaticRewardLoss`,
 {class}`~skagent.loss.EstimatedDiscountedLifetimeRewardLoss`) solve a block
 directly for the non-recurring case; the equation-residual losses
 ({class}`~skagent.loss.BellmanEquationLoss`,
@@ -109,7 +110,7 @@ See {doc}`loss` for the full reference.
 
 ### Net
 
-Base neural network class with device management.
+`Net` is the base neural network class, with device management.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.Net
@@ -120,7 +121,8 @@ Base neural network class with device management.
 
 ### BlockPolicyNet
 
-Specialized neural network for policy functions in economic models.
+`BlockPolicyNet` is a specialized neural network for policy functions in
+economic models.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.BlockPolicyNet
@@ -131,7 +133,8 @@ Specialized neural network for policy functions in economic models.
 
 ### BlockValueNet
 
-A neural network for value functions in dynamic programming problems.
+`BlockValueNet` is a neural network for value functions in dynamic programming
+problems.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.BlockValueNet
@@ -142,8 +145,8 @@ A neural network for value functions in dynamic programming problems.
 
 ### BlockPolicyValueNet
 
-A shared-backbone neural network that jointly represents the policy and value
-functions.
+`BlockPolicyValueNet` is a shared-backbone neural network that jointly
+represents the policy and value functions.
 
 ```{eval-rst}
 .. autoclass:: skagent.ann.BlockPolicyValueNet

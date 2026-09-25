@@ -70,7 +70,7 @@ to construct it by hand.
 
 A couple of details worth knowing:
 
-- **Actions are normalised.** The agent works with actions in `[-1, 1]`, and
+- **Actions are normalized.** The agent works with actions in `[-1, 1]`, and
   `GymEnv` automatically rescales them to each control's real bounds (for
   example, the borrowing constraint `c ≤ m`) before applying them. Your model's
   bounds are respected without any extra effort.

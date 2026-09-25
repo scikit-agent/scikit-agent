@@ -79,7 +79,7 @@ same direction as the equations that produced it.
 
 ## Entity Classes as Plates
 
-When a block's variables belong to an entity class, the diagram draws a labelled
+When a block's variables belong to an entity class, the diagram draws a labeled
 box around them, one box per class, holding the class's own variables and their
 edges. An edge that leaves the box is an aggregation -- some axis-free equation
 reading out of the class, the kind of crossing described in {doc}`blocks`.
@@ -130,7 +130,7 @@ This is more than a borrowed drawing style: a block, read structurally, already
 has the form these diagrams describe, which is why the picture is faithful
 rather than illustrative. `skagent.influence` builds that structural reading --
 a structural causal influence model, after Everitt, Carey, Langlois, Ortega and
-Legg, "Agent Incentives: A Causal Perspective" (AAAI-21; arXiv:2102.01685),
+Legg, "Agent Incentives: A Causal Perspective" (AAAI-21; {arxiv}`2102.01685`),
 which is an influence diagram whose mechanisms are functions of their parents
 rather than conditional probability tables. A block's dynamics are already
 written that way.

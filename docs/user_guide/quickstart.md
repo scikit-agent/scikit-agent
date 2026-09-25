@@ -243,4 +243,5 @@ For a reusable rule you can hand to the simulator, call
 - **`Grid`s** discretize the states to solve or evaluate over.
 - **Simulators** generate synthetic data from a model and its decision rules.
 
-You're now ready to build and solve more sophisticated models with scikit-agent!
+From here, the guides above cover building and solving more sophisticated models
+with scikit-agent.

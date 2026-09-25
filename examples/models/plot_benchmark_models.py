@@ -11,23 +11,22 @@ Consumption economics asks how a household should split each period's resources
 between spending now and saving for later, and the policies in this registry are
 the classic answers. Reading from top to bottom:
 
-#. **Finite horizons fade.** Once the distance to the terminal date
-   :math:`T - t` is large, the finite-horizon rule is indistinguishable from
-   the infinite-horizon one.
-#. **Mortality erodes patience.** A survival probability below one acts like
-   extra impatience: it scales the discount factor and pushes up the marginal
-   propensity to consume (MPC), the fraction of an extra dollar of wealth that
-   is spent rather than saved.
-#. **Consumption is a martingale.** Under :math:`\beta R = 1`, the *change* in
-   consumption is the fundamental object, not its level. Income shocks of
+#. Once the distance to the terminal date :math:`T - t` is large, the
+   finite-horizon rule is indistinguishable from the infinite-horizon one.
+#. A survival probability below one acts like extra impatience: it scales
+   the discount factor and pushes up the marginal propensity to consume
+   (MPC), the fraction of an extra dollar of wealth that is spent rather than
+   saved.
+#. Under :math:`\beta R = 1`, consumption is a martingale, so the change in
+   consumption is the fundamental object rather than its level. Income shocks of
    standard deviation :math:`\sigma_\eta` produce consumption changes of
    standard deviation :math:`(r/R)\,\sigma_\eta` only, a factor of
    :math:`R/r \approx 34` smaller at this calibration.
-#. **Normalization collapses the state.** Dividing every level variable by
-   permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
-   what makes neural-network solvers practical for richer models.
-#. **Closed forms run out.** When no normalization saves you, the model has no
-   closed-form policy, and the registry keeps it around for limit-checking.
+#. Dividing every level variable by permanent income turns a 2-D Bellman
+   problem into a 1-D one, collapsing the state. This trick is what makes
+   neural-network solvers practical for richer models.
+#. When no normalization saves you, the model has no closed-form policy, and
+   the registry keeps it around for limit-checking.
 
 The short registry keys in the code and figure labels below (``D-1`` through
 ``U-3``) are internal identifiers; the section titles give the names the models
@@ -280,11 +279,11 @@ fig.tight_layout()
 #
 #     c_t = \frac{r}{R}\,(m_t + H), \qquad H = \frac{\mathbb{E}_t\, y}{r}.
 #
-# **Lesson:** Hall's contribution wasn't the level of consumption. It was
+# **Lesson:** Hall's contribution is not about the level of consumption. It is
 # the prediction that, under :math:`\beta R = 1`, consumption changes are
 # unforecastable from period-:math:`t` information, and that the standard
-# deviation of those changes is *much smaller* than the standard deviation
-# of income.
+# deviation of those changes is much smaller than the standard deviation of
+# income.
 #
 # We simulate U-1 forward with 1000 agents under the analytical policy. The
 # left panel shows one agent's income (volatile, mean-reverting) against

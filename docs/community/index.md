@@ -1,31 +1,24 @@
 # Community Guide
 
-## Roadmap
-
-We have big plans for `scikit-agent`. Check out our roadmap of future features!
-
-```{toctree}
-:maxdepth: 2
-
-roadmap
-```
-
 ## Contributor Guidelines
 
 ### Public repository and issue tracker
 
 `scikit-agent` is an open source project. Our repository and issue tracker are
-on [github](https://github.com/scikit-agent/scikit-agent).
+on [GitHub](https://github.com/scikit-agent/scikit-agent).
 
-### Precommit hooks
+### Pre-commit hooks
 
 We have many default pre-commit hooks for standardizing code format.
 
 ### Examples and Documentation
 
-Material in the `examples/` directory is built using Sphinx into documentation
-in `docs/auto_examples`. Please keep the built documentation synced with the raw
-source material.
+Material in the `examples/` directory is built by Sphinx into the gallery under
+`docs/auto_examples`. That output is generated on every build and is not in the
+repository, so change an example at its source rather than in the built page.
+
+scikit-agent follows scikit-learn's documentation guidelines. See
+{doc}`documentation` for the details.
 
 ### Pull requests
 
@@ -120,3 +113,27 @@ appearance, body size, race, or religion. We do not tolerate harassment of
 community members in any form.
 
 Thank you for helping make this a welcoming, friendly community for all.
+
+## Documentation Style
+
+scikit-agent follows scikit-learn's documentation guidelines. The style guide
+covers the docstring format, the conventions for each kind of page, the
+terminology the documentation shares, and how to build and check the docs. It is
+reference material rather than something to read through before contributing.
+
+```{toctree}
+:maxdepth: 1
+
+documentation
+```
+
+## Roadmap
+
+`scikit-agent` has an ambitious roadmap for future releases, summarized on the
+following page.
+
+```{toctree}
+:maxdepth: 2
+
+roadmap
+```
