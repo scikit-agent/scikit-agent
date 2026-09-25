@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import logging
 from functools import lru_cache
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -212,6 +213,15 @@ def fischer_burmeister(
     return a + h - torch.sqrt(a**2 + h**2 + eps)
 
 
+def tracked(t: torch.Tensor) -> torch.Tensor:
+    """Return *t* if it tracks gradients, else a detached copy that does.
+
+    The copy is a new leaf, so it can stand in a ``wrt`` dict of
+    :func:`compute_gradients_for_tensors`.
+    """
+    return t if t.requires_grad else t.detach().requires_grad_(True)
+
+
 def compute_gradients_for_tensors(
     tensors_dict: dict[str, torch.Tensor],
     wrt: dict[str, torch.Tensor],
@@ -322,8 +332,6 @@ def plot_block_diagram(
         The calibration symbol serving as the discount factor, passed to
         :meth:`~skagent.block.Block.visualize`.
     """
-    import matplotlib.pyplot as plt
-
     img, _ = block.visualize(
         {} if calibration is None else calibration,
         title="",  # the figure's title is set below; the graph carries no second one

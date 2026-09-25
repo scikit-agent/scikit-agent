@@ -623,6 +623,42 @@ class TestEstimateBellmanFocResidual(unittest.TestCase):
     def setUp(self):
         self.block, self.bp = _make_consumption_savings_bp()
 
+    def test_value_independent_of_the_control_contributes_zero(self):
+        # With V(s') flat in the arrival state, dV/dc = 0 and the FOC residual
+        # is the marginal reward alone: u'(c) = 1/(c + 1e-8) for u = log(c).
+        def flat_value(states, shocks, params):
+            return torch.full_like(states["wealth"], 3.0)
+
+        def df(states, shocks, params):
+            return {"consumption": 0.5 * states["wealth"]}
+
+        states_t = {"wealth": torch.tensor([2.0, 4.0])}
+        shocks = {
+            "income_0": torch.tensor([1.0, 1.0]),
+            "income_1": torch.tensor([1.2, 0.8]),
+        }
+        residual = bellman.estimate_bellman_foc_residual(
+            self.bp, flat_value, df, states_t, shocks
+        )["consumption"]
+
+        expected = 1.0 / (torch.tensor([1.0, 2.0]) + 1e-8)
+        self.assertTrue(torch.allclose(residual, expected), residual)
+
+    def test_infinite_value_derivative_raises(self):
+        # sqrt(w - w) is 0 with an infinite derivative, so dV/dc is -inf.
+        def value(states, shocks, params):
+            w = states["wealth"]
+            return torch.sqrt(w - w.detach())
+
+        def df(states, shocks, params):
+            return {"consumption": 0.5 * states["wealth"]}
+
+        shocks = {"income_0": torch.ones(2), "income_1": torch.ones(2)}
+        with self.assertRaisesRegex(ValueError, "NaN or Inf"):
+            bellman.estimate_bellman_foc_residual(
+                self.bp, value, df, {"wealth": torch.tensor([2.0, 4.0])}, shocks
+            )
+
     def test_returns_finite_tensor_with_correct_shape(self):
         """FOC residual should match batch size and change with different policies."""
 
