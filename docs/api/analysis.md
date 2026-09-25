@@ -61,7 +61,8 @@ reliance holds across that class's instances rather than within one.
 The same substrate answers a third question, about a node that is neither a
 decision nor a shock: what one decision stands to gain from it, or does to it.
 These are the four criteria of Everitt, Carey, Langlois, Ortega & Legg, "Agent
-Incentives: A Causal Perspective" (AAAI-21; {arxiv}`2102.01685`) --
+Incentives: A Causal Perspective" (AAAI-21, 35(13):11487-11495;
+{arxiv}`2102.01685`) --
 
 - {func}`~skagent.relevance.admits_voi`: would observing the node raise the
   achievable payoff?

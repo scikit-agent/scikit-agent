@@ -13,9 +13,9 @@ We have many default pre-commit hooks for standardizing code format.
 
 ### Examples and Documentation
 
-Material in the `examples/` directory is built using Sphinx into documentation
-in `docs/auto_examples`. Please keep the built documentation synced with the raw
-source material.
+Material in the `examples/` directory is built by Sphinx into the gallery under
+`docs/auto_examples`. That output is generated on every build and is not in the
+repository, so change an example at its source rather than in the built page.
 
 scikit-agent follows scikit-learn's documentation guidelines. See
 {doc}`documentation` for the details.
