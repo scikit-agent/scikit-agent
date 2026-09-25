@@ -13,7 +13,6 @@ by the skagent Block system.
 from __future__ import annotations
 
 import logging
-import numbers
 from typing import TYPE_CHECKING, Callable, Optional
 
 import torch
@@ -106,10 +105,7 @@ def simulate_forward(
             raise ValueError("states_t cannot be an empty dict")
         n = len(states_t[next(iter(states_t.keys()))])
 
-    if big_t == 0:
-        return states_t
-
-    for t in range(big_t):
+    for _ in range(big_t):
         shocks_t = bellman_period.draw_shocks(n)
 
         # Reconcile shock dimensions with state dimensions (see Grid.from_dict())
@@ -152,19 +148,14 @@ def _validate_training_inputs(
             "parameters cannot be None; pass an empty dict if no parameters are needed"
         )
 
-    for name, val, lo in [
-        ("max_iterations", max_iterations, 1),
-        ("shock_copies", shock_copies, 1),
-        ("simulation_steps", simulation_steps, 1),
-        ("network_width", network_width, 1),
-        ("epochs_per_iteration", epochs_per_iteration, 1),
+    for name, val in [
+        ("max_iterations", max_iterations),
+        ("shock_copies", shock_copies),
+        ("simulation_steps", simulation_steps),
+        ("network_width", network_width),
+        ("epochs_per_iteration", epochs_per_iteration),
     ]:
-        # numbers.Integral accepts Python int and numpy integers (e.g.
-        # np.int64 from array indexing), which a bare ``int`` check rejects.
-        if not isinstance(val, numbers.Integral):
-            raise TypeError(f"{name} must be an integer, got {type(val).__name__}")
-        if val < lo:
-            raise ValueError(f"{name} must be >= {lo}, got {val}")
+        utils.require_positive_integer(name, val)
     if tolerance <= 0:
         raise ValueError(f"tolerance must be > 0, got {tolerance}")
     if lr <= 0:
@@ -198,7 +189,8 @@ def _check_convergence(prev_params, curr_params, tolerance, prev_loss, current_l
     Returns
     -------
     tuple
-        ``(converged, param_diff, loss_diff, param_converged, loss_converged)``.
+        ``(param_diff, loss_diff, param_converged, loss_converged)``; the
+        loop has converged when either flag is set.
     """
     if current_loss is not None and not isinstance(current_loss, (int, float)):
         raise TypeError(
@@ -215,17 +207,10 @@ def _check_convergence(prev_params, curr_params, tolerance, prev_loss, current_l
         loss_diff = abs(current_loss - prev_loss)
         loss_converged = loss_diff < tolerance
 
-    return (
-        param_converged or loss_converged,
-        param_diff,
-        loss_diff,
-        param_converged,
-        loss_converged,
-    )
+    return param_diff, loss_diff, param_converged, loss_converged
 
 
 def _log_iteration(
-    converged,
     iteration,
     param_diff,
     loss_diff,
@@ -234,13 +219,13 @@ def _log_iteration(
     loss_converged=False,
 ):
     """Emit a single log line for the current iteration."""
-    if converged:
+    if param_converged or loss_converged:
         reasons = []
         if param_converged:
             reasons.append(f"parameters (diff={param_diff:.2e})")
         if loss_converged:
             reasons.append(f"loss (diff={loss_diff:.2e})")
-        reason_str = ", ".join(reasons) if reasons else "unknown criterion"
+        reason_str = ", ".join(reasons)
         logging.info(f"Converged after {iteration + 1} iterations by {reason_str}")
     else:
         msg = f"Iteration {iteration + 1}: param_diff={param_diff:.2e}"
@@ -342,9 +327,11 @@ def maliar_training_loop(
     ValueError
         If max_iterations < 1, tolerance <= 0, shock_copies < 1,
         simulation_steps < 1, network_width < 1, epochs_per_iteration < 1,
-        or states_0_n contains no states.
+        lr <= 0, or states_0_n contains no states.
     TypeError
-        If bellman_period is None or loss_function is not callable.
+        If bellman_period or parameters is None, loss_function is not
+        callable, a count argument is not an integer, or states_0_n is not a
+        Grid.
     """
     _validate_training_inputs(
         bellman_period,
@@ -382,18 +369,15 @@ def maliar_training_loop(
         )
 
         curr_params = utils.extract_parameters(bpn)
-        converged, param_diff, loss_diff, param_converged, loss_converged = (
-            _check_convergence(
-                prev_params,
-                curr_params,
-                tolerance,
-                prev_loss,
-                current_loss,
-            )
+        param_diff, loss_diff, param_converged, loss_converged = _check_convergence(
+            prev_params,
+            curr_params,
+            tolerance,
+            prev_loss,
+            current_loss,
         )
 
         _log_iteration(
-            converged,
             iteration,
             param_diff,
             loss_diff,
@@ -403,7 +387,7 @@ def maliar_training_loop(
         )
         prev_loss = current_loss
 
-        if converged:
+        if param_converged or loss_converged:
             break
 
         next_states = simulate_forward(

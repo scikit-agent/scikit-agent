@@ -3,7 +3,10 @@ import logging
 from skagent.block import normalize_bound
 from skagent.grid import Grid
 import torch
-from skagent.utils import create_vectorized_function_wrapper_with_mapping
+from skagent.utils import (
+    create_vectorized_function_wrapper_with_mapping,
+    require_positive_integer,
+)
 from typing import Callable, Optional
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -858,8 +861,7 @@ def train_block_nn(
         was supplied; returning it always lets callers warm-start a later
         call by threading it back in.
     """
-    if not isinstance(epochs, int) or epochs < 1:
-        raise ValueError(f"epochs must be a positive integer, got {epochs!r}")
+    require_positive_integer("epochs", epochs)
     if lr <= 0:
         raise ValueError(f"lr must be > 0, got {lr}")
     if grad_clip is not None and grad_clip <= 0:
