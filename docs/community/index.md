@@ -1,15 +1,5 @@
 # Community Guide
 
-## Roadmap
-
-We have big plans for `scikit-agent`. Check out our roadmap of future features!
-
-```{toctree}
-:maxdepth: 2
-
-roadmap
-```
-
 ## Contributor Guidelines
 
 ### Public repository and issue tracker
@@ -26,6 +16,9 @@ We have many default pre-commit hooks for standardizing code format.
 Material in the `examples/` directory is built using Sphinx into documentation
 in `docs/auto_examples`. Please keep the built documentation synced with the raw
 source material.
+
+scikit-agent follows scikit-learn's documentation guidelines. The style guide at
+the end of this page has the details.
 
 ### Pull requests
 
@@ -120,3 +113,26 @@ appearance, body size, race, or religion. We do not tolerate harassment of
 community members in any form.
 
 Thank you for helping make this a welcoming, friendly community for all.
+
+## Documentation Style
+
+scikit-agent follows scikit-learn's documentation guidelines. The style guide
+covers the docstring format, the conventions for each kind of page, the
+terminology the documentation shares, and how to build and check the docs. It is
+reference material rather than something to read through before contributing.
+
+```{toctree}
+:maxdepth: 1
+
+documentation
+```
+
+## Roadmap
+
+We have big plans for `scikit-agent`. Check out our roadmap of future features!
+
+```{toctree}
+:maxdepth: 2
+
+roadmap
+```
