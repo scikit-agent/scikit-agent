@@ -539,6 +539,14 @@ and this project adheres to
   those projections of `post_function`. Answers are unchanged; the lifetime
   reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
   about 1.3x.
+- The Euler and Bellman FOC residuals read a control's marginal reward and its
+  effect on the next-period arrival states off one block pass instead of two.
+  `BellmanPeriod.grad_post_function` differentiates a list of ex post variables
+  from a single pass, and `grad_reward_function` and `grad_transition_function`
+  are its projections onto the reward symbols and the arrival states. For `n`
+  controls the Euler residual runs `1 + 2n` passes where it ran `1 + 3n`. The
+  FOC residual runs `n` where it ran `1 + 2n`, reading the discount factor off
+  the same per-control pass. Answers are unchanged.
 - Preparing loss inputs no longer rebuilds a `Grid`'s dict once per shock; it
   indexes the dict it has already built. Answers are unchanged.
 - Block dynamics no longer call `inspect.signature` once per variable per pass.
