@@ -33,9 +33,17 @@ references include:
 - Axtell, R.L. and Farmer, J.D., 2025. Agent-based modeling in economics and
   finance: Past, present, and future. Journal of Economic Literature, 63(1),
   pp.197-287.
+- Carroll, C.D., 2001. A theory of the consumption function, with and without
+  liquidity constraints. Journal of Economic perspectives, 15(3), pp.23-45.
+- Everitt, T., Carey, R., Langlois, E.D., Ortega, P.A. and Legg, S., 2021, May.
+  Agent incentives: A causal perspective. In Proceedings of the AAAI conference
+  on artificial intelligence (Vol. 35, No. 13, pp. 11487-11495).
 - Hammond, L., Fox, J., Everitt, T., Carey, R., Abate, A. and Wooldridge,
   M., 2023. Reasoning about causality in games. Artificial Intelligence, 320,
   p.103919.
+- Koller, D. and Milch, B., 2003. Multi-agent influence diagrams for
+  representing and solving games. Games and economic behavior, 45(1),
+  pp.181-221.
 - Maliar, L., Maliar, S. and Winant, P., 2021. Deep learning for solving dynamic
   economic models. Journal of Monetary Economics, 122, pp.76-101.
 
