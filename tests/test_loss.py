@@ -95,6 +95,16 @@ class TestStaticReward(unittest.TestCase):
         # u = 6, v = 7. Taking the first symbol alone would give 6.
         self.assertEqual(reward, 13.0)
 
+    def test_omitted_parameters_default_to_the_calibration(self):
+        blk = block.DBlock(
+            name="calibrated",
+            dynamics={"c": block.Control([], agent="a"), "u": lambda c, k: k * c},
+            reward={"u": "a"},
+        )
+        period = bellman.BellmanPeriod(blk, None, {"k": 2.0})
+
+        self.assertEqual(static_reward(period, {"c": lambda: 3.0}, {}), 6.0)
+
     def test_naming_the_agent_gives_the_same_sum(self):
         reward = static_reward(two_reward_period(), {"c": lambda: 3.0}, {}, agent="a")
 
