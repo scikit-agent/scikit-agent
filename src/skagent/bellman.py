@@ -217,7 +217,7 @@ class BellmanPeriod(GroundedBlock):
             A callable decision function, or a dict of decision rules passed
             through to ``decision_function``.
         states : dict[str, Any]
-            Current state variables.
+            Current state values.
         shocks : dict[str, Any] | None, optional
             Current shock realizations (defaults to empty dict).
         parameters : dict[str, Any] | None, optional
@@ -301,7 +301,7 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            Current state variables.
+            Current state values.
         controls : dict[str, Any]
             Current control variable values.
         shocks : dict[str, Any] | None, optional
@@ -339,7 +339,7 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            Current state variables.
+            Current state values.
         shocks : dict[str, Any] | None, optional
             Current shock realizations (defaults to empty dict).
         parameters : dict[str, Any] | None, optional
@@ -376,7 +376,7 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            Current state variables.
+            Current state values.
         controls : dict[str, Any]
             Current control variable values.
         shocks : dict[str, Any] | None, optional
@@ -419,7 +419,7 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            Current state variables.
+            Current state values.
         controls : dict[str, Any]
             Current control variable values.
         shocks : dict[str, Any] | None, optional
@@ -466,16 +466,16 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            State variables.
+            State values.
         controls : dict[str, Any]
-            Control variables.
+            Control values.
         wrt : dict[str, torch.Tensor]
             Dictionary of variables to compute gradients with respect to.
             Keys are variable names, values are tensors with requires_grad=True.
         symbols : Iterable[str]
             Names of the ex post variables to differentiate.
         shocks : dict[str, Any] | None, optional
-            Shock variables (defaults to empty dict).
+            Shock values (defaults to empty dict).
         parameters : dict[str, Any] | None, optional
             Model parameters (defaults to instance calibration).
         decision_rules : dict[str, Callable] | None, optional
@@ -520,14 +520,14 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            State variables.
+            State values.
         controls : dict[str, Any]
-            Control variables.
+            Control values.
         wrt : dict[str, torch.Tensor]
             Dictionary of variables to compute gradients with respect to.
             Keys are variable names, values are tensors with requires_grad=True.
         shocks : dict[str, Any] | None, optional
-            Shock variables (defaults to empty dict).
+            Shock values (defaults to empty dict).
         parameters : dict[str, Any] | None, optional
             Model parameters (defaults to instance calibration).
         agent : str | None, optional
@@ -578,14 +578,14 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            State variables.
+            State values.
         controls : dict[str, Any]
-            Control variables.
+            Control values.
         wrt : dict[str, torch.Tensor]
             Dictionary of variables to compute gradients with respect to.
             Keys are variable names, values are tensors with requires_grad=True.
         shocks : dict[str, Any] | None, optional
-            Shock variables (defaults to empty dict).
+            Shock values (defaults to empty dict).
         parameters : dict[str, Any] | None, optional
             Model parameters (defaults to instance calibration).
         decision_rules : dict[str, Callable] | None, optional
@@ -645,12 +645,12 @@ class BellmanPeriod(GroundedBlock):
         Parameters
         ----------
         states : dict[str, Any]
-            Arrival state variables (with requires_grad=True for gradient computation).
+            Arrival state values (with requires_grad=True for gradient computation).
         wrt : dict[str, torch.Tensor]
             Dictionary of arrival states to compute gradients with respect to.
             Keys are variable names, values are tensors with requires_grad=True.
         shocks : dict[str, Any] | None, optional
-            Shock variables (defaults to empty dict).
+            Shock values (defaults to empty dict).
         parameters : dict[str, Any] | None, optional
             Model parameters (defaults to instance calibration).
         control_sym : str | None, optional
@@ -923,7 +923,7 @@ def estimate_bellman_residual(
         on arrival states, or a dict of decision rules keyed by control
         symbol (callables on the iset).
     states_t : dict[str, Any]
-        Current arrival state variables.
+        Current arrival state values.
     shocks : dict[str, Any]
         Shock realizations for both periods:
         - {shock_sym}_0: period t shocks (for immediate reward and transitions)
@@ -1209,7 +1209,7 @@ def estimate_euler_residual(
     df : dict[str, Callable] | Callable
         Decision function or dict of decision rules.
     states_t : dict[str, Any]
-        Current state variables (arrival states).
+        Current state values (arrival states).
     shocks : dict[str, Any]
         Shock realizations for both periods (``{sym}_0`` and ``{sym}_1``).
     parameters : dict[str, Any] | None, optional
@@ -1318,7 +1318,7 @@ def estimate_bellman_foc_residual(
     df : dict[str, Callable] | Callable
         Decision callable on arrival states, or dict of decision rules.
     states_t : dict[str, Any]
-        Current arrival state variables.
+        Current arrival state values.
     shocks : dict[str, Any]
         Shock realizations with ``{sym}_0`` and ``{sym}_1`` keys.
     parameters : dict[str, Any] | None, optional
