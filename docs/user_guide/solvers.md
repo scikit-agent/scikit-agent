@@ -43,7 +43,7 @@ to start from, before anything has been solved.
 
 {py:func}`~skagent.solver.solve_in_order` solves the decisions you name, in the
 order you name them. Repeating a symbol schedules a further pass over that
-decision, once its neighbours have moved.
+decision, once its neighbors have moved.
 
 ```python
 import skagent.block as block
@@ -141,8 +141,8 @@ info["converged"]  # True; False would mean it did not settle, not a fallback an
 rule(np.array([4.0]))  # 4.5, the Cournot-Nash quantity for three firms
 ```
 
-**Damping is not optional here, and it is not a speed control.** Each round
-moves the rule only a fraction `L` of the way toward the best response:
+Damping is not optional here, and it is not a speed control. Each round moves
+the rule only a fraction `L` of the way toward the best response:
 
 ```
 next = (1 - L) * current + L * best_response(current)

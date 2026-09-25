@@ -11,7 +11,7 @@ future use.
 This example implements the classic model from Reed (1979) [1]_, which shows that
 under multiplicative environmental shocks and stock-dependent harvesting costs,
 the optimal policy has a simple "constant escapement" form. The optimal
-escapement level can be computed analytically, making this an excellent benchmark
+escapement level can be computed analytically, making this a useful benchmark
 for testing reinforcement learning algorithms.
 
 Model Structure
@@ -162,8 +162,9 @@ plt.tight_layout()
 #
 #     S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}
 #
-# This analytical solution makes the model ideal for validating reinforcement
-# learning algorithms—we can compare learned policies against the known optimum.
+# This analytical solution makes the model well suited to validating
+# reinforcement learning algorithms—we can compare learned policies against
+# the known optimum.
 #
 
 dr_u, _ = rex.make_optimal_decision_rule(rex.calibration)

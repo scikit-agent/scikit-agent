@@ -10,9 +10,9 @@ models.
 
 ### Simulator
 
-The base Monte Carlo simulation engine. It makes no assumptions about aging or
-mortality; demographic features are expressed declaratively as blocks (see the
-mortality example below).
+`Simulator` is the base Monte Carlo simulation engine. It makes no assumptions
+about aging or mortality; demographic features are expressed declaratively as
+blocks (see the mortality example below).
 
 ```{eval-rst}
 .. autoclass:: skagent.simulation.monte_carlo.Simulator

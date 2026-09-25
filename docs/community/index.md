@@ -5,9 +5,9 @@
 ### Public repository and issue tracker
 
 `scikit-agent` is an open source project. Our repository and issue tracker are
-on [github](https://github.com/scikit-agent/scikit-agent).
+on [GitHub](https://github.com/scikit-agent/scikit-agent).
 
-### Precommit hooks
+### Pre-commit hooks
 
 We have many default pre-commit hooks for standardizing code format.
 
@@ -17,8 +17,8 @@ Material in the `examples/` directory is built using Sphinx into documentation
 in `docs/auto_examples`. Please keep the built documentation synced with the raw
 source material.
 
-scikit-agent follows scikit-learn's documentation guidelines. The style guide at
-the end of this page has the details.
+scikit-agent follows scikit-learn's documentation guidelines. See
+{doc}`documentation` for the details.
 
 ### Pull requests
 
@@ -129,7 +129,8 @@ documentation
 
 ## Roadmap
 
-We have big plans for `scikit-agent`. Check out our roadmap of future features!
+`scikit-agent` has an ambitious roadmap for future releases, summarized on the
+following page.
 
 ```{toctree}
 :maxdepth: 2

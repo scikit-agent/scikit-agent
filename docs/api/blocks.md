@@ -6,8 +6,8 @@ This section contains the API documentation for model building blocks.
 
 ### Block
 
-Base class for all blocks. Provides shared analysis methods, including
-strategic-relevance analysis (`relevance_graph`, `relies_on`).
+`Block` is the base class for all blocks. It provides shared analysis methods,
+including strategic-relevance analysis (`relevance_graph`, `relies_on`).
 
 ```{eval-rst}
 .. autoclass:: skagent.block.Block
@@ -36,9 +36,10 @@ strategic-relevance analysis (`relevance_graph`, `relies_on`).
 
 ### GroundedBlock
 
-A block together with the calibration and generator it is read against. A block
-is calibration-independent, so a block alone does not fix its shocks; this pair
-does, and is what solvers, simulators and environments are handed.
+`GroundedBlock` pairs a block together with the calibration and generator it is
+read against. A block is calibration-independent, so a block alone does not fix
+its shocks; this pair does, and is what solvers, simulators and environments are
+handed.
 
 ```{eval-rst}
 .. autoclass:: skagent.ground.GroundedBlock
@@ -49,10 +50,10 @@ does, and is what solvers, simulators and environments are handed.
 
 ### Measures
 
-What a payoff expectation is reduced over. A profile's worth is asked for with
-one of these, since a sampled estimate and one taken over a discretization carry
-different error and a caller holding a number to a tolerance has to know which
-it has.
+A measure is what a payoff expectation is reduced over. A profile's worth is
+asked for with one of these, since a sampled estimate and one taken over a
+discretization carry different error and a caller holding a number to a
+tolerance has to know which it has.
 
 ```{eval-rst}
 .. autoclass:: skagent.ground.Measure

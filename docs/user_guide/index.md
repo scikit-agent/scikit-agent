@@ -1,27 +1,19 @@
 # User Guide
 
-Welcome to the scikit-agent user guide! This comprehensive guide will help you
-get started with building, solving, and simulating economic models using
+This guide covers how to build, solve, and simulate economic models with
 scikit-agent.
 
 ## What is scikit-agent?
 
 scikit-agent is a Python package for agent-based economic modeling that follows
-scikit-learn conventions. It provides:
-
-**🧱 Modular Architecture**: Build models using composable "blocks" that
-represent different stages or aspects of economic behavior.
-
-**🔬 Multiple Solution Methods**: Choose from value function iteration, neural
-networks, and other modern computational approaches. For a model with several
-decisions or several agents, combine one of these methods with a schedule that
-decides when each decision is solved.
-
-**📊 Rich Simulation Tools**: Generate synthetic data with powerful Monte Carlo
-simulators that handle heterogeneity, aging, and complex dynamics.
-
-**🐍 Pythonic API**: Familiar patterns for Python users with clear, readable
-code.
+scikit-learn conventions. Models are built from composable blocks, each
+representing a stage or aspect of economic behavior. Several solution methods
+are available, including value function iteration and neural-network methods;
+for a model with several decisions or several agents, one of these methods
+combines with a schedule that decides when each decision is solved. Monte Carlo
+simulators generate synthetic panel data from a model and its decision rules,
+handling heterogeneity, aging, and other complex dynamics. The API follows
+familiar Python conventions throughout.
 
 ## Getting Started
 
@@ -98,17 +90,10 @@ benchmark_models
 
 ## Contributing
 
-scikit-agent is an open-source project and welcomes contributions! Whether
-you're:
-
-- Reporting bugs
-- Suggesting new features
-- Contributing code
-- Improving documentation
-- Sharing examples
-
-See our contribution guidelines in the repository for how to get involved.
+scikit-agent is an open-source project and welcomes contributions, including bug
+reports, new features, code, documentation, and examples. See our contribution
+guidelines in the repository for how to get involved.
 
 ---
 
-_Ready to get started? Head to the {doc}`quickstart` guide!_
+Head to the {doc}`quickstart` guide to get started.
