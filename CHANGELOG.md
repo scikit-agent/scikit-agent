@@ -451,6 +451,9 @@ and this project adheres to
 - Continuous one-shot and iterated Prisoner's Dilemma blocks, including
   per-player utilities, memory-one repeated-game state, strategic-relevance
   coverage, solver-boundary tests, and multi-period simulation tests.
+- Opt-in probability-based binary controls via `Control(..., randomizes=True)`;
+  simulation realizes policy probabilities with seeded `u_<control>` uniform
+  shocks while retaining the probability-valued policy itself.
 - `solve_in_relevance_order` can iterate simultaneous best responses for cyclic
   relevance components, returning pure-strategy fixed points and raising on
   non-convergence within a configurable iteration limit and tolerance.
