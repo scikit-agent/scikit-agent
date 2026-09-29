@@ -62,6 +62,11 @@ and this project adheres to
 
 ### Changed
 
+- `ann.train_block_nn` raises `TypeError` for a non-integer `epochs`, as
+  `maliar_training_loop` does for its counts, since both now check with
+  `skagent.utils.require_positive_integer`. A count below one still raises
+  `ValueError`.
+
 - The documentation build redraws the user guide's model diagrams from the
   shipped models on every build, and clears the gallery's cache when the code
   that draws a diagram has changed. sphinx-gallery re-executes an example when
@@ -128,6 +133,11 @@ and this project adheres to
   although its own comment already treated a missing dependence as a zero
   gradient. An infinite `dV/dc` now raises the `ValueError` a NaN one did, where
   it had passed into the residual.
+
+- `ann.train_block_nn` accepts a numpy integer for `epochs`. It had required a
+  Python `int`, while `maliar_training_loop` accepts any integer type for
+  `epochs_per_iteration` and passes it through, so a count read off a numpy
+  array cleared the loop's check and then failed inside the first iteration.
 
 - `Block.display_formulas` renders a lambda's body. It had been taking the
   source line from the first colon onwards, which on the usual

@@ -503,6 +503,17 @@ class TestTrainBlockNNValidation(unittest.TestCase):
         with self.assertRaises(ValueError):
             ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, epochs=-1)
 
+    def test_numpy_integer_epochs_train(self):
+        # maliar_training_loop accepts any numbers.Integral for
+        # epochs_per_iteration and passes it straight through, so a count read
+        # off a numpy array has to be a valid epoch count here as well.
+        before = [p.detach().clone() for p in self.bpn.parameters()]
+        ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, epochs=np.int64(2))
+        moved = any(
+            not torch.equal(b, p) for b, p in zip(before, self.bpn.parameters())
+        )
+        self.assertTrue(moved, "two epochs of training left every parameter fixed")
+
     def test_zero_lr_raises(self):
         with self.assertRaises(ValueError, msg="lr must be > 0"):
             ann.train_block_nn(self.bpn, self.inputs, self.loss_fn, lr=0.0)
