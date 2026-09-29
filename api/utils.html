@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Community Guide" href="../community/index.html"><link rel="prev" title="Model Analysis and Visualization" href="analysis.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Utils - scikit-agent 0.1.1.dev159+g7ad645869</title>
+        <title>Utils - scikit-agent 0.1.1.dev165+g394f4feca</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev159+g7ad645869</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev165+g394f4feca</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -492,6 +492,28 @@ the object type and shape of vec_a.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="skagent.utils.require_positive_integer">
+<span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">require_positive_integer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.require_positive_integer" title="Link to this definition">¶</a></dt>
+<dd><p>Raise unless <em>val</em> is an integer of at least one.</p>
+<p><code class="docutils literal notranslate"><span class="pre">numbers.Integral</span></code> accepts Python int and numpy integers (e.g.
+<code class="docutils literal notranslate"><span class="pre">np.int64</span></code> from array indexing), which a bare <code class="docutils literal notranslate"><span class="pre">int</span></code> check rejects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.14)"><strong>TypeError</strong></a> – If <em>val</em> is not an integer.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>val</em> is less than one.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="skagent.utils.takes_arguments">
 <span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">takes_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fun</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.takes_arguments" title="Link to this definition">¶</a></dt>
 <dd><p>Whether <code class="docutils literal notranslate"><span class="pre">fun</span></code> accepts at least one argument.</p>
@@ -506,6 +528,22 @@ would miss every time.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.utils.tracked">
+<span class="sig-prename descclassname"><span class="pre">skagent.utils.</span></span><span class="sig-name descname"><span class="pre">tracked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.utils.tracked" title="Link to this definition">¶</a></dt>
+<dd><p>Return <em>t</em> if it tracks gradients, else a detached copy that does.</p>
+<p>The copy is a new leaf, so it can stand in a <code class="docutils literal notranslate"><span class="pre">wrt</span></code> dict of
+<a class="reference internal" href="#skagent.utils.compute_gradients_for_tensors" title="skagent.utils.compute_gradients_for_tensors"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_gradients_for_tensors()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -626,7 +664,9 @@ for occasionally binding constraints in loss functions:</p>
 <li><a class="reference internal" href="#skagent.utils.param_names"><code class="docutils literal notranslate"><span class="pre">param_names()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.plot_block_diagram"><code class="docutils literal notranslate"><span class="pre">plot_block_diagram()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.reconcile"><code class="docutils literal notranslate"><span class="pre">reconcile()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.utils.require_positive_integer"><code class="docutils literal notranslate"><span class="pre">require_positive_integer()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.utils.takes_arguments"><code class="docutils literal notranslate"><span class="pre">takes_arguments()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.utils.tracked"><code class="docutils literal notranslate"><span class="pre">tracked()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#example-usage">Example Usage</a><ul>
@@ -645,7 +685,7 @@ for occasionally binding constraints in loss functions:</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=5e38471d"></script>
+</div><script src="../_static/documentation_options.js?v=7df42eab"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
