@@ -71,306 +71,6 @@ and this project adheres to
   subjects' rule solved rather than assumed, the paper's error curves, and the
   designer's sweep with the privacy guarantee it implies.
 
-### Changed
-
-- `ann.train_block_nn` raises `TypeError` for a non-integer `epochs`, as
-  `maliar_training_loop` does for its counts, since both now check with
-  `skagent.utils.require_positive_integer`. A count below one still raises
-  `ValueError`.
-
-- `BlockPolicyValueNet` draws its value head inside the network's weight
-  initialisation, which changes the random stream an unseeded network is drawn
-  from. The U-2 gallery example now reaches 1.11% mean relative error where it
-  reached 0.98%, both about one percent.
-
-- The documentation build redraws the user guide's model diagrams from the
-  shipped models on every build, and clears the gallery's cache when the code
-  that draws a diagram has changed. sphinx-gallery re-executes an example when
-  its source changes, so a library-only change used to leave every cached figure
-  alone: the build stayed clean and the pictures went old. The user guide's
-  figures are no longer kept in the source tree.
-
-- `skagent.models.fisher.analytical_policy` takes the arrival state `a` and
-  derives cash-on-hand itself, where it previously took `m`. Every closed form
-  in `skagent.models.benchmarks` is a function of the arrival states, deriving
-  any information set it needs from them, and this one was a function of the
-  information set instead -- so a caller solving the block on `a` had to convert
-  before asking the oracle what the answer was.
-
-### Removed
-
-- `TabularBestResponseSolver.payoff`. Use `Block.payoff`, which the solver now
-  calls; broadcasting the result over the sample axis is the caller's, as it
-  always was for everything else on that class.
-
-- Three unused things: `Grid.shape()`, `skagent.grid.torched()`, and
-  `skagent.models.benchmarks.euler_equation_test`. The last was a stub that
-  tested nothing — it answered `NOT_IMPLEMENTED` for every model and `SKIPPED`
-  for the one perfect-foresight case — so the missing check it stood in for is
-  now recorded beside U-3's registration instead of reported as a result.
-
-- The deprecated `agent_count` argument to `Simulator` and `samples` argument to
-  `TabularBestResponseSolver`. Both named the wrong axis, both have said so
-  under a warning since the arguments that replaced them landed, and the warning
-  did not hold: new code was still being written in the deprecated spelling.
-  Pass `sample_count` and `shock_samples`.
-
-- `skagent.solver.solve_multiple_controls` has been replaced by
-  `solve_in_order(method, order)`, which takes a method object. The old function
-  fused a schedule with a method: the caller's `control_order` was the schedule,
-  and the rest of the function was a policy network per control. Now that the
-  two are separate, the same order can drive a tabular solver or an exact backup
-  and not only a network. The deprecated `calibration` argument goes with it.
-  Removing the function also removes two defects. It returned untrained networks
-  for the controls the caller left out of the order, and those networks were
-  callable, numeric and indistinguishable from a solved rule; a starting profile
-  is now a constant per control, so an unsolved decision is visibly provisional.
-  It also derived no order of its own, so a repeated symbol amounted to an
-  iterated best response with no convergence test. `solve_in_order` says as much
-  and points to a schedule that does test for convergence.
-
-### Fixed
-
-- `BellmanEquationLoss` is the all-in-one objective of Maliar, Maliar and Winant
-  (2021, Definition 2.10, eq. 15): the product of the Bellman residuals, and of
-  the FOC residuals, at two independent next-period shock draws. It squared a
-  single draw, which adds the variance of the continuation value to the
-  objective, so in a stochastic model it scored the exact value function as
-  wrong. `EulerEquationLoss` already used the product. Both losses now draw the
-  second realization with one shared helper.
-
-- The Euler and Bellman losses' second shock draw works for a period with no
-  arrival states, where it raised `StopIteration`, and for an aggregate shock,
-  whose single draw it could not convert. The batch shares the aggregate draw.
-
-- `estimate_bellman_foc_residual` returns the marginal reward alone for a
-  control the continuation value does not depend on. A value callable that
-  ignores the arrival states made it raise a `RuntimeError` from autograd,
-  although its own comment already treated a missing dependence as a zero
-  gradient. An infinite `dV/dc` now raises the `ValueError` a NaN one did, where
-  it had passed into the residual.
-
-- `ann.train_block_nn` accepts a numpy integer for `epochs`. It had required a
-  Python `int`, while `maliar_training_loop` accepts any integer type for
-  `epochs_per_iteration` and passes it through, so a count read off a numpy
-  array cleared the loop's check and then failed inside the first iteration.
-
-- `loss.static_reward` called without `parameters` evaluates the period's
-  calibration. It had defaulted `parameters` to an empty dict, which every
-  `BellmanPeriod` method takes as supplied, so a reward reading a calibrated
-  parameter raised a `KeyError`.
-
-- A policy or value network for a control with an empty information set returns
-  one value per state, taking the batch size from the states. `BlockPolicyNet`
-  and `BlockPolicyValueNet` returned a single value whatever the batch, while
-  both value functions raised on stacking no columns.
-- `Net(copy_weights_from=source)` copies the source's weights. Storing the
-  source as an attribute registered it as a submodule, so the new network
-  counted the source's parameters as its own and every copy raised.
-- `BlockPolicyValueNet(init_seed=...)` fixes the value head as well as the
-  backbone and policy head. The value head was drawn after the seeded
-  initialisation, from the global random state.
-
-- `Block.display_formulas` renders a lambda's body. It had been taking the
-  source line from the first colon onwards, which on the usual
-  `dynamics={"u": lambda ...}` is the dict key's colon, so the "formula" kept
-  the whole `lambda ...:` prefix, and trailing punctuation was trimmed by
-  stripping characters, which cannot tell the dict's closing brace from a
-  parenthesis the body ends with. The fragment is parsed now. 138 of the 147
-  equations in the shipped models are affected.
-
-- The lemons gallery page prints its fixed points to four places rather than
-  raw, marks the steps in its clearing maps with the open and filled circles
-  that say which value the market clears at, and draws each market's closed-form
-  price behind its simulated paths, so a path that wobbles is visibly wobbling
-  around the right answer rather than doing something unexplained.
-
-- The resource-extraction gallery page drew a discounted problem without its
-  discount factor. `DiscFac` is the block's one unread parameter, so the figure
-  dropped it the way it drops any unread parameter; passing `discount=` draws it
-  as the hexagon instead.
-
-- `skagent.solver.project` no longer raises `TypeError` on a decision that reads
-  out of the entity class it is splitting. Such a control is copied as the
-  author wrote it: the joins the projection synthesizes are what its information
-  set names, so it reads the reassembled class. It was being handed to the
-  per-instance wrapper written for equations, which asks a `Control` for
-  parameter names it does not have.
-
-- The simulator refuses an arrival state that is an entity attribute but does
-  not carry that entity's axis. Each instance's state next period has to be its
-  own; a value standing for the whole class replaces the cross-section with a
-  single number and leaves every aggregate of it unchanged, so the model goes on
-  producing the same path and nothing downstream can report it. An ordinary
-  per-instance equation may still return one value and broadcast.
-
-- An agent that owns several reward symbols is paid their sum everywhere, not
-  the first symbol declared.
-  `Block.get_state_rule_value_function_from_continuation` took
-  `calc_reward(vals).values()[0]`, and the three residual builders in
-  `skagent.bellman` took `get_reward_sym`, the first symbol matching the agent.
-  An additively decomposed utility -- the Tree Killer benchmark's Alice, paid
-  `E + V` -- was therefore valued at one of its parts, and a part that does not
-  move with the control made the Euler and FOC builders refuse the model as
-  having a reward structurally independent of the decision. The value functions
-  also take an `agent` now, and refuse one the block does not pay rather than
-  returning the empty sum. `BellmanPeriod.get_reward_sym` is removed;
-  `get_reward_syms` is what every caller wanted.
-
-- The `rng` argument to `draw_shocks` reaches the distributions a shock draws
-  through, so seeding at the draw is reproducible. It set the generator on the
-  shock itself and stopped there, and an `IndexDistribution` draws through one
-  child per condition while a `TimeVaryingDiscreteDistribution` has no generator
-  of its own -- so on either, passing a seed silently changed nothing. Seeding
-  now recurses, through `skagent.distributions.set_rng`, which is also what
-  `Simulator` and `GroundedBlock` have always used; the library had two seeding
-  paths that disagreed and now has one. `Environment` and `GymEnv` seed at the
-  draw and were the reachable consumers.
-
-- A VFI decision rule whose grid gives an information-set variable a single
-  point is now constant along that variable, instead of returning NaN. One point
-  fixes a level and says nothing about a slope, so interpolating along the axis
-  divided by a zero spread. The NaN reached only the scalar calling path, so the
-  same rule answered correctly when handed arrays.
-
-- `Block.relevance_graph` answers on a projected block again. A projection
-  declares the class beside the rest of itself, so it declares two, and the
-  expansion step refused it as a model of several classes. An expansion is now
-  read as it stands: the two sides are distinct symbols there, so the reliance
-  between them is an ordinary pair of edges rather than a self-loop to derive.
-
-- The NaN guard on a reward looks at the value rather than at the container it
-  arrives in. It was spelled as a pair of `isinstance` checks against
-  `torch.Tensor` and `np.ndarray`, and a Python float or a numpy scalar is
-  neither, so `float("nan")` and `np.float64("nan")` passed it silently. That
-  made the guard a property of the shapes a model happens to produce: the
-  shipped models return one reward per grid point, so they were checked, and a
-  mechanism returning a single number was not. Both sites now share
-  `skagent.utils.any_nan` -- the static reward in `skagent.loss` and the
-  lifetime-reward loop in `skagent.bellman`.
-
-- Composing two blocks that declare the same symbol raises instead of keeping
-  the later one. Every merged view of a composed block is a dict built in block
-  order, so the earlier declaration was dropped without a trace: its equation
-  never ran, and whatever read the symbol read something else. Where the
-  sub-blocks carry entity classes the loss was larger than the symbol -- a class
-  whose only variable was overwritten was not reported at all, so the model had
-  one fewer population than it declared. No shipped model or projected block
-  repeats a symbol, which is what makes this a refusal rather than a
-  deprecation.
-
-- `ExactBestResponse.rule_distance` compares two rules over a shock that is
-  neither a state-grid axis nor pinned in scope, using the shock's own
-  discretization nodes -- the points the backup integrates it over. A rival's
-  private draw is such a symbol: it has no single value to compare at and no
-  axis to vary along, and it raised `KeyError` before. Pinning it in scope was
-  the only way to run a projected solve, and pinning is what stops the backup
-  integrating it, so the schedule was forced onto the one path that conditions
-  the decision on a realization the decider cannot see. On Cournot with private
-  costs uniform on `[2, 6]` at three firms, the integrated solve reproduces the
-  Bayesian-Nash rule exactly where the pinned one is wrong by 0.75 at the ends
-  of the cost range -- it recovers the level and not the slope.
-
-- `consumer.yaml`'s `portfolio choice` block declares its dynamics. `dynamics`
-  was indented one level too deep, so it was a key of `shocks` and the block had
-  no share and no return. The malformed version is kept as the fixture
-  `validate_block` is tested against.
-
-- `Block.relevance_graph` finds a decision's reliance on the other instances of
-  its own entity class and reports it on the class's own symbol, as a self-loop.
-  Cournot's three interdependent firms were reported as one decision with no
-  edges, so the model read as one firm deciding alone. One symbol cannot refer
-  to another instance of itself, so the criterion now runs on a split of the
-  class -- `solver.project`'s -- and the projected names are read back. A class
-  of one keeps its edgeless report, and a class the calibration does not size
-  raises instead of being answered as though it held one instance.
-- A `RelevanceGraph` says what a self-loop means instead of leaving it to the
-  shape: `plate(decision)` gives the `Plate` -- the entity class and its size --
-  that the decision is one rule per instance of, and `crosses_instances` says
-  whether a reliance holds across that class's instances. `draw()` puts a plated
-  decision in a labelled box, as the model diagram does, so the loop inside it
-  reads as one instance relying on the others.
-- `solve_in_relevance_order` refuses a decision that relies on itself, naming
-  `project` and `solve_symmetric_equilibrium`. A component's member count is not
-  on its own the cyclicity test: such a decision is a component of one, and one
-  pass returns a rule inconsistent with the aggregate that rule induces.
-
-### Changed
-
-- `skagent.solver.project` keeps the rest of the class a population. The others
-  are now an entity class of their own, named for the original and sized one
-  short of it, and a rejoined symbol carries the author's own class at the
-  author's own size. Before, every symbol of the projected block was axis-free:
-  the rivals were one value broadcast to `N - 1`, so rivals drawing private
-  types could not differ from one another, and the block reported no aggregation
-  at all. On Akerlof's market that mattered rather than being untidy -- the
-  clearing price is a ratio of sums over the sellers who sold, so under the
-  equilibrium threshold rule one representative rival either sells or does not,
-  and the projected market was either everybody or nobody. Simulated at four
-  hundred sellers it now clears where the population's own fixed point is. The
-  transform still never inspects the reduction, and the join still broadcasts a
-  rule that is constant, which is exact.
-
-- The equation `project` synthesizes to rejoin an entity axis puts that axis
-  LAST, on both backends, which is the convention the aggregating equation was
-  already read under. It disagreed with itself before: handed a batch, the numpy
-  path concatenated the samples and the rivals into one flat axis, and handed a
-  genuine spread of rivals, the torch path read them as samples and returned one
-  market per rival instead of one market. Both are wrong answers that stay
-  plausible downstream, since a population of the wrong size still averages to a
-  number. A rival value that is constant, or one per sample, is broadcast across
-  the class, which is exact where a rule is constant across it; a value that
-  already carries the entity axis is used as it is. The one shape that reads
-  both ways -- as many samples as rivals -- raises and asks for an explicit
-  entity axis.
-
-- `vfi.solve_step` refuses a block on the hazard rather than on the declaration.
-  It raised for any entity class at all; it now raises when a decision it
-  optimizes or an axis it grids is itself one value per member of a class, which
-  is the confusion its leading axis can actually cause. A block that carries a
-  population whose axis an equation reassembles -- what `project` returns -- is
-  no longer refused.
-
-- A model diagram draws an entity class as a plate: a box around the symbols the
-  class declares per instance, labelled with the class. The box names the class
-  and not how many instances it has, since no other value from the calibration
-  reaches the figure and a number on one box reads as though the whole diagram
-  were drawn for that calibration. `ModelAnalyzer` still reports the size, and
-  `RelevanceGraph.plate` still returns it. `ModelAnalyzer` reads the class from
-  the block tree's declarations rather than inferring one per agent role, so a
-  model with several agents and one of each is no longer boxed as though it had
-  a population of them, and the equation that reads out of a class is visibly
-  the one crossing the box.
-- A model diagram no longer draws a calibration parameter that no equation
-  reads. A calibration written for a family of blocks carries the other blocks'
-  parameters, which arrived on the diagram as nodes joined to nothing: seven of
-  the nineteen in the consumption-saving figure. Only parameters are dropped, so
-  an unread shock, state, control or reward stays visible.
-- The shapes: a shock is a double-bordered ellipse rather than a triangle, a
-  calibration parameter is unbordered, and the hexagon now means the discount
-  factor. `Block.visualize`, `Block.display` and `utils.plot_block_diagram` take
-  `discount`, since a block does not know which of its parameters a period
-  discounts by, and that variable is drawn even though no equation reads it.
-- `Block.visualize` takes a `title`, and `utils.plot_block_diagram` passes an
-  empty one, so a figure carries its caption once instead of also carrying the
-  block's name.
-- A symbol the model assigns is no longer read as a parameter just because the
-  calibration holds a value for it. In the consumption-portfolio model `b` reads
-  the `R` that the portfolio block assigns later in the period, which is last
-  period's `R`, and the calibration's entry is that symbol's first-period
-  arrival value. The dependency is now classified as lagged, which is what the
-  simulator has always done with it, and the diagram reads left to right instead
-  of drawing the period's first equation at its right-hand end.
-- `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
-  over the relevance graph has moved out to
-  `skagent.solver.solve_in_relevance_order`. The module is now named for its
-  algorithm, as the rest of `algos` is, and it holds only the tabulated payoff
-  table. Deciding when each decision is solved is a schedule's job, and the same
-  schedule now serves any method. What was `solver.solve()` is now
-  `solve_in_relevance_order(solver)`.
-
-### Added
-
 - `GroundedBlock.expected_payoff(policies, measure)`, what a policy profile is
   worth. The library could find an optimal policy four ways and could not say
   what a given one achieved. The measure is required and is a `Measure`, which
@@ -545,6 +245,102 @@ and this project adheres to
 
 ### Changed
 
+- `ann.train_block_nn` raises `TypeError` for a non-integer `epochs`, as
+  `maliar_training_loop` does for its counts, since both now check with
+  `skagent.utils.require_positive_integer`. A count below one still raises
+  `ValueError`.
+
+- `BlockPolicyValueNet` draws its value head inside the network's weight
+  initialisation, which changes the random stream an unseeded network is drawn
+  from. The U-2 gallery example now reaches 1.11% mean relative error where it
+  reached 0.98%, both about one percent.
+
+- The documentation build redraws the user guide's model diagrams from the
+  shipped models on every build, and clears the gallery's cache when the code
+  that draws a diagram has changed. sphinx-gallery re-executes an example when
+  its source changes, so a library-only change used to leave every cached figure
+  alone: the build stayed clean and the pictures went old. The user guide's
+  figures are no longer kept in the source tree.
+
+- `skagent.models.fisher.analytical_policy` takes the arrival state `a` and
+  derives cash-on-hand itself, where it previously took `m`. Every closed form
+  in `skagent.models.benchmarks` is a function of the arrival states, deriving
+  any information set it needs from them, and this one was a function of the
+  information set instead -- so a caller solving the block on `a` had to convert
+  before asking the oracle what the answer was.
+
+- `skagent.solver.project` keeps the rest of the class a population. The others
+  are now an entity class of their own, named for the original and sized one
+  short of it, and a rejoined symbol carries the author's own class at the
+  author's own size. Before, every symbol of the projected block was axis-free:
+  the rivals were one value broadcast to `N - 1`, so rivals drawing private
+  types could not differ from one another, and the block reported no aggregation
+  at all. On Akerlof's market that mattered rather than being untidy -- the
+  clearing price is a ratio of sums over the sellers who sold, so under the
+  equilibrium threshold rule one representative rival either sells or does not,
+  and the projected market was either everybody or nobody. Simulated at four
+  hundred sellers it now clears where the population's own fixed point is. The
+  transform still never inspects the reduction, and the join still broadcasts a
+  rule that is constant, which is exact.
+
+- The equation `project` synthesizes to rejoin an entity axis puts that axis
+  LAST, on both backends, which is the convention the aggregating equation was
+  already read under. It disagreed with itself before: handed a batch, the numpy
+  path concatenated the samples and the rivals into one flat axis, and handed a
+  genuine spread of rivals, the torch path read them as samples and returned one
+  market per rival instead of one market. Both are wrong answers that stay
+  plausible downstream, since a population of the wrong size still averages to a
+  number. A rival value that is constant, or one per sample, is broadcast across
+  the class, which is exact where a rule is constant across it; a value that
+  already carries the entity axis is used as it is. The one shape that reads
+  both ways -- as many samples as rivals -- raises and asks for an explicit
+  entity axis.
+
+- `vfi.solve_step` refuses a block on the hazard rather than on the declaration.
+  It raised for any entity class at all; it now raises when a decision it
+  optimizes or an axis it grids is itself one value per member of a class, which
+  is the confusion its leading axis can actually cause. A block that carries a
+  population whose axis an equation reassembles -- what `project` returns -- is
+  no longer refused.
+
+- A model diagram draws an entity class as a plate: a box around the symbols the
+  class declares per instance, labelled with the class. The box names the class
+  and not how many instances it has, since no other value from the calibration
+  reaches the figure and a number on one box reads as though the whole diagram
+  were drawn for that calibration. `ModelAnalyzer` still reports the size, and
+  `RelevanceGraph.plate` still returns it. `ModelAnalyzer` reads the class from
+  the block tree's declarations rather than inferring one per agent role, so a
+  model with several agents and one of each is no longer boxed as though it had
+  a population of them, and the equation that reads out of a class is visibly
+  the one crossing the box.
+- A model diagram no longer draws a calibration parameter that no equation
+  reads. A calibration written for a family of blocks carries the other blocks'
+  parameters, which arrived on the diagram as nodes joined to nothing: seven of
+  the nineteen in the consumption-saving figure. Only parameters are dropped, so
+  an unread shock, state, control or reward stays visible.
+- The shapes: a shock is a double-bordered ellipse rather than a triangle, a
+  calibration parameter is unbordered, and the hexagon now means the discount
+  factor. `Block.visualize`, `Block.display` and `utils.plot_block_diagram` take
+  `discount`, since a block does not know which of its parameters a period
+  discounts by, and that variable is drawn even though no equation reads it.
+- `Block.visualize` takes a `title`, and `utils.plot_block_diagram` passes an
+  empty one, so a figure carries its caption once instead of also carrying the
+  block's name.
+- A symbol the model assigns is no longer read as a parameter just because the
+  calibration holds a value for it. In the consumption-portfolio model `b` reads
+  the `R` that the portfolio block assigns later in the period, which is last
+  period's `R`, and the calibration's entry is that symbol's first-period
+  arrival value. The dependency is now classified as lagged, which is what the
+  simulator has always done with it, and the diagram reads left to right instead
+  of drawing the period's first equation at its right-hand end.
+- `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
+  over the relevance graph has moved out to
+  `skagent.solver.solve_in_relevance_order`. The module is now named for its
+  algorithm, as the rest of `algos` is, and it holds only the tabulated payoff
+  table. Deciding when each decision is solved is a schedule's job, and the same
+  schedule now serves any method. What was `solver.solve()` is now
+  `solve_in_relevance_order(solver)`.
+
 - `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
   an entity class, naming the classes and which leading axis a reduction over
   the entity axis would be taken over instead -- the shock sample for the
@@ -581,7 +377,7 @@ and this project adheres to
   `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
   was a population: `sample_count` counts independent trajectories, and
   `shock_samples` counts realizations of the block's shocks. The old names are
-  accepted for this release under a `DeprecationWarning`.
+  no longer accepted.
 - `solve_bellman` refuses a period with no arrival states, which is not a
   dynamic problem and has no fixed point to seek; the error names the static
   solvers. Its non-convergence warning no longer asserts a failure, since
@@ -618,6 +414,30 @@ and this project adheres to
 
 ### Removed
 
+- `TabularBestResponseSolver.payoff`. Use `Block.payoff`, which the solver now
+  calls; broadcasting the result over the sample axis is the caller's, as it
+  always was for everything else on that class.
+
+- Three unused things: `Grid.shape()`, `skagent.grid.torched()`, and
+  `skagent.models.benchmarks.euler_equation_test`. The last was a stub that
+  tested nothing — it answered `NOT_IMPLEMENTED` for every model and `SKIPPED`
+  for the one perfect-foresight case — so the missing check it stood in for is
+  now recorded beside U-3's registration instead of reported as a result.
+
+- `skagent.solver.solve_multiple_controls` has been replaced by
+  `solve_in_order(method, order)`, which takes a method object. The old function
+  fused a schedule with a method: the caller's `control_order` was the schedule,
+  and the rest of the function was a policy network per control. Now that the
+  two are separate, the same order can drive a tabular solver or an exact backup
+  and not only a network. The deprecated `calibration` argument goes with it.
+  Removing the function also removes two defects. It returned untrained networks
+  for the controls the caller left out of the order, and those networks were
+  callable, numeric and indistinguishable from a solved rule; a starting profile
+  is now a constant per control, so an unsolved decision is visibly provisional.
+  It also derived no order of its own, so a repeated symbol amounted to an
+  iterated best response with no convergence test. `solve_in_order` says as much
+  and points to a schedule that does test for convergence.
+
 - `vfi.solve`, the legacy value-backup entry point. `vfi.solve_step` replaces
   it: it carries an explicit discount factor rather than folding one into the
   continuation, and returns the value and policy as grids over the state grid
@@ -625,6 +445,170 @@ and this project adheres to
   its scope; `DBlock.get_arrival_value_function` still evaluates one.
 
 ### Fixed
+
+- `BellmanEquationLoss` is the all-in-one objective of Maliar, Maliar and Winant
+  (2021, Definition 2.10, eq. 15): the product of the Bellman residuals, and of
+  the FOC residuals, at two independent next-period shock draws. It squared a
+  single draw, which adds the variance of the continuation value to the
+  objective, so in a stochastic model it scored the exact value function as
+  wrong. `EulerEquationLoss` already used the product. Both losses now draw the
+  second realization with one shared helper.
+
+- The Euler and Bellman losses' second shock draw works for a period with no
+  arrival states, where it raised `StopIteration`, and for an aggregate shock,
+  whose single draw it could not convert. The batch shares the aggregate draw.
+
+- `estimate_bellman_foc_residual` returns the marginal reward alone for a
+  control the continuation value does not depend on. A value callable that
+  ignores the arrival states made it raise a `RuntimeError` from autograd,
+  although its own comment already treated a missing dependence as a zero
+  gradient. An infinite `dV/dc` now raises the `ValueError` a NaN one did, where
+  it had passed into the residual.
+
+- `ann.train_block_nn` accepts a numpy integer for `epochs`. It had required a
+  Python `int`, while `maliar_training_loop` accepts any integer type for
+  `epochs_per_iteration` and passes it through, so a count read off a numpy
+  array cleared the loop's check and then failed inside the first iteration.
+
+- `loss.static_reward` called without `parameters` evaluates the period's
+  calibration. It had defaulted `parameters` to an empty dict, which every
+  `BellmanPeriod` method takes as supplied, so a reward reading a calibrated
+  parameter raised a `KeyError`.
+
+- A policy or value network for a control with an empty information set returns
+  one value per state, taking the batch size from the states. `BlockPolicyNet`
+  and `BlockPolicyValueNet` returned a single value whatever the batch, while
+  both value functions raised on stacking no columns.
+- `Net(copy_weights_from=source)` copies the source's weights. Storing the
+  source as an attribute registered it as a submodule, so the new network
+  counted the source's parameters as its own and every copy raised.
+- `BlockPolicyValueNet(init_seed=...)` fixes the value head as well as the
+  backbone and policy head. The value head was drawn after the seeded
+  initialisation, from the global random state.
+
+- `Block.display_formulas` renders a lambda's body. It had been taking the
+  source line from the first colon onwards, which on the usual
+  `dynamics={"u": lambda ...}` is the dict key's colon, so the "formula" kept
+  the whole `lambda ...:` prefix, and trailing punctuation was trimmed by
+  stripping characters, which cannot tell the dict's closing brace from a
+  parenthesis the body ends with. The fragment is parsed now. 138 of the 147
+  equations in the shipped models are affected.
+
+- The lemons gallery page prints its fixed points to four places rather than
+  raw, marks the steps in its clearing maps with the open and filled circles
+  that say which value the market clears at, and draws each market's closed-form
+  price behind its simulated paths, so a path that wobbles is visibly wobbling
+  around the right answer rather than doing something unexplained.
+
+- The resource-extraction gallery page drew a discounted problem without its
+  discount factor. `DiscFac` is the block's one unread parameter, so the figure
+  dropped it the way it drops any unread parameter; passing `discount=` draws it
+  as the hexagon instead.
+
+- `skagent.solver.project` no longer raises `TypeError` on a decision that reads
+  out of the entity class it is splitting. Such a control is copied as the
+  author wrote it: the joins the projection synthesizes are what its information
+  set names, so it reads the reassembled class. It was being handed to the
+  per-instance wrapper written for equations, which asks a `Control` for
+  parameter names it does not have.
+
+- The simulator refuses an arrival state that is an entity attribute but does
+  not carry that entity's axis. Each instance's state next period has to be its
+  own; a value standing for the whole class replaces the cross-section with a
+  single number and leaves every aggregate of it unchanged, so the model goes on
+  producing the same path and nothing downstream can report it. An ordinary
+  per-instance equation may still return one value and broadcast.
+
+- An agent that owns several reward symbols is paid their sum everywhere, not
+  the first symbol declared.
+  `Block.get_state_rule_value_function_from_continuation` took
+  `calc_reward(vals).values()[0]`, and the three residual builders in
+  `skagent.bellman` took `get_reward_sym`, the first symbol matching the agent.
+  An additively decomposed utility -- the Tree Killer benchmark's Alice, paid
+  `E + V` -- was therefore valued at one of its parts, and a part that does not
+  move with the control made the Euler and FOC builders refuse the model as
+  having a reward structurally independent of the decision. The value functions
+  also take an `agent` now, and refuse one the block does not pay rather than
+  returning the empty sum. `BellmanPeriod.get_reward_sym` is removed;
+  `get_reward_syms` is what every caller wanted.
+
+- The `rng` argument to `draw_shocks` reaches the distributions a shock draws
+  through, so seeding at the draw is reproducible. It set the generator on the
+  shock itself and stopped there, and an `IndexDistribution` draws through one
+  child per condition while a `TimeVaryingDiscreteDistribution` has no generator
+  of its own -- so on either, passing a seed silently changed nothing. Seeding
+  now recurses, through `skagent.distributions.set_rng`, which is also what
+  `Simulator` and `GroundedBlock` have always used; the library had two seeding
+  paths that disagreed and now has one. `Environment` and `GymEnv` seed at the
+  draw and were the reachable consumers.
+
+- A VFI decision rule whose grid gives an information-set variable a single
+  point is now constant along that variable, instead of returning NaN. One point
+  fixes a level and says nothing about a slope, so interpolating along the axis
+  divided by a zero spread. The NaN reached only the scalar calling path, so the
+  same rule answered correctly when handed arrays.
+
+- `Block.relevance_graph` answers on a projected block again. A projection
+  declares the class beside the rest of itself, so it declares two, and the
+  expansion step refused it as a model of several classes. An expansion is now
+  read as it stands: the two sides are distinct symbols there, so the reliance
+  between them is an ordinary pair of edges rather than a self-loop to derive.
+
+- The NaN guard on a reward looks at the value rather than at the container it
+  arrives in. It was spelled as a pair of `isinstance` checks against
+  `torch.Tensor` and `np.ndarray`, and a Python float or a numpy scalar is
+  neither, so `float("nan")` and `np.float64("nan")` passed it silently. That
+  made the guard a property of the shapes a model happens to produce: the
+  shipped models return one reward per grid point, so they were checked, and a
+  mechanism returning a single number was not. Both sites now share
+  `skagent.utils.any_nan` -- the static reward in `skagent.loss` and the
+  lifetime-reward loop in `skagent.bellman`.
+
+- Composing two blocks that declare the same symbol raises instead of keeping
+  the later one. Every merged view of a composed block is a dict built in block
+  order, so the earlier declaration was dropped without a trace: its equation
+  never ran, and whatever read the symbol read something else. Where the
+  sub-blocks carry entity classes the loss was larger than the symbol -- a class
+  whose only variable was overwritten was not reported at all, so the model had
+  one fewer population than it declared. No shipped model or projected block
+  repeats a symbol, which is what makes this a refusal rather than a
+  deprecation.
+
+- `ExactBestResponse.rule_distance` compares two rules over a shock that is
+  neither a state-grid axis nor pinned in scope, using the shock's own
+  discretization nodes -- the points the backup integrates it over. A rival's
+  private draw is such a symbol: it has no single value to compare at and no
+  axis to vary along, and it raised `KeyError` before. Pinning it in scope was
+  the only way to run a projected solve, and pinning is what stops the backup
+  integrating it, so the schedule was forced onto the one path that conditions
+  the decision on a realization the decider cannot see. On Cournot with private
+  costs uniform on `[2, 6]` at three firms, the integrated solve reproduces the
+  Bayesian-Nash rule exactly where the pinned one is wrong by 0.75 at the ends
+  of the cost range -- it recovers the level and not the slope.
+
+- `consumer.yaml`'s `portfolio choice` block declares its dynamics. `dynamics`
+  was indented one level too deep, so it was a key of `shocks` and the block had
+  no share and no return. The malformed version is kept as the fixture
+  `validate_block` is tested against.
+
+- `Block.relevance_graph` finds a decision's reliance on the other instances of
+  its own entity class and reports it on the class's own symbol, as a self-loop.
+  Cournot's three interdependent firms were reported as one decision with no
+  edges, so the model read as one firm deciding alone. One symbol cannot refer
+  to another instance of itself, so the criterion now runs on a split of the
+  class -- `solver.project`'s -- and the projected names are read back. A class
+  of one keeps its edgeless report, and a class the calibration does not size
+  raises instead of being answered as though it held one instance.
+- A `RelevanceGraph` says what a self-loop means instead of leaving it to the
+  shape: `plate(decision)` gives the `Plate` -- the entity class and its size --
+  that the decision is one rule per instance of, and `crosses_instances` says
+  whether a reliance holds across that class's instances. `draw()` puts a plated
+  decision in a labelled box, as the model diagram does, so the loop inside it
+  reads as one instance relying on the others.
+- `solve_in_relevance_order` refuses a decision that relies on itself, naming
+  `project` and `solve_symmetric_equilibrium`. A component's member count is not
+  on its own the cyclicity test: such a decision is a component of one, and one
+  pass returns a rule inconsistent with the aggregate that rule induces.
 
 - `RBlock.get_controls` returned a list of symbols where `Block.get_controls`
   returns a mapping from symbol to `Control`, so the accessor's type depended on
