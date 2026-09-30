@@ -537,3 +537,61 @@ class TestTrainBlockNNValidation(unittest.TestCase):
         self.assertTrue(
             np.isfinite(loss), "grad_clip=None run produced a non-finite loss"
         )
+
+
+class TestEmptyInformationSet(unittest.TestCase):
+    """A control that observes nothing gets one value per state, all equal.
+
+    With an empty information set the network is a constant, so the batch
+    size has to come from the states it is evaluated at.
+    """
+
+    def setUp(self):
+        torch.manual_seed(TEST_SEED)
+        block = DBlock(
+            name="empty_iset",
+            dynamics={
+                "c": Control([], lower_bound=0.0, upper_bound=1.0, agent="a"),
+                "a": lambda a, c: a - c,
+                "u": lambda c: torch.log(c),
+            },
+            reward={"u": "a"},
+        )
+        self.bp = bellman.BellmanPeriod(block, "beta", {"beta": 0.9})
+        self.states = {"a": torch.linspace(1.0, 5.0, 5, device=device)}
+
+    def _assert_constant_batch(self, values):
+        self.assertEqual(values.shape, (5,))
+        self.assertTrue(torch.all(values == values[0]), values)
+
+    def test_policy_net_decision(self):
+        net = ann.BlockPolicyNet(self.bp, width=8)
+        self._assert_constant_batch(net.decision_function(self.states, {}, {})["c"])
+
+    def test_value_net_value(self):
+        net = ann.BlockValueNet(self.bp, width=8)
+        self._assert_constant_batch(net.value_function(self.states, {}, {}))
+
+    def test_policy_value_net_decision_and_value(self):
+        net = ann.BlockPolicyValueNet(self.bp, width=8)
+        self._assert_constant_batch(net.decision_function(self.states, {}, {})["c"])
+        self._assert_constant_batch(net.value_function(self.states, {}, {}))
+
+
+class TestNetInitialisation(unittest.TestCase):
+    """Seeded and copied initial weights reproduce the network they name."""
+
+    def test_copy_weights_from_reproduces_the_source(self):
+        source = ann.Net(n_inputs=2, n_outputs=1, width=8, init_seed=1)
+        copy = ann.Net(n_inputs=2, n_outputs=1, width=8, copy_weights_from=source)
+        x = torch.randn(4, 2, device=device)
+        self.assertTrue(torch.equal(copy(x), source(x)))
+        self.assertEqual(len(list(copy.parameters())), len(list(source.parameters())))
+
+    def test_policy_value_net_seed_fixes_the_value_head(self):
+        bp = case_0["bp"]
+        first = ann.BlockPolicyValueNet(bp, width=8, init_seed=3)
+        torch.randn(100)  # move the global RNG between the two constructions
+        second = ann.BlockPolicyValueNet(bp, width=8, init_seed=3)
+        for a, b in zip(first.parameters(), second.parameters()):
+            self.assertTrue(torch.equal(a, b))

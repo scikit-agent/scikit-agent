@@ -203,7 +203,7 @@ print(f"Final training loss: {final_loss:.3e}")
 #
 # At the deepest snapshot we report the pointwise relative error against the
 # closed-form policy. With re-sampled training and the value head anchoring the
-# level, the mean relative error falls to about one percent (here 0.98%), an
+# level, the mean relative error falls to about one percent (printed below), an
 # order of magnitude tighter than the several-percent floor of Euler-only
 # training on this unconstrained model.
 
