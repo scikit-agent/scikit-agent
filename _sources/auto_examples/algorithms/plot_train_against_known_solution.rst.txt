@@ -280,7 +280,7 @@ snapshotting only observes training, it does not perturb it.
 
  .. code-block:: none
 
-    Final training loss: 3.487e-06
+    Final training loss: 5.050e-06
 
 
 
@@ -292,7 +292,7 @@ Step 5: Compare the deepest-trained policy to the analytical solution
 
 At the deepest snapshot we report the pointwise relative error against the
 closed-form policy. With re-sampled training and the value head anchoring the
-level, the mean relative error falls to about one percent (here 0.98%), an
+level, the mean relative error falls to about one percent (printed below), an
 order of magnitude tighter than the several-percent floor of Euler-only
 training on this unconstrained model.
 
@@ -321,8 +321,8 @@ training on this unconstrained model.
 
  .. code-block:: none
 
-    Mean relative error:  0.98%
-    Max  relative error:  1.82%
+    Mean relative error:  1.08%
+    Max  relative error:  2.10%
 
 
 
@@ -387,7 +387,7 @@ The lower panel shows the pointwise relative error at the deepest snapshot.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 32.868 seconds)
+   **Total running time of the script:** (0 minutes 35.277 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_train_against_known_solution.py:
