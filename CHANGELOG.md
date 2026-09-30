@@ -8,6 +8,36 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-30
+
+### Breaking changes
+
+Code written against 0.1.0 needs these changes. Each is described in full under
+Changed or Removed below.
+
+- `skagent.algos.best_response` is now `skagent.algos.tabular`, and
+  `TabularBestResponseSolver.solve()` is now
+  `skagent.solver.solve_in_relevance_order(solver)`.
+- `TabularBestResponseSolver` takes a `GroundedBlock` in place of a block and a
+  calibration, and `shock_samples` in place of `samples`. Its `payoff` method is
+  removed in favor of `Block.payoff`.
+- `skagent.solver.solve_multiple_controls` is removed in favor of
+  `solve_in_order(method, order)`.
+- `vfi.bellman_step` is now `vfi.solve_step`, `vfi.solve` is removed, and
+  `vfi.Grid` is now `vfi.AxisSpec`.
+- `BellmanPeriod` no longer takes `decision_rules`; pass them per call.
+  `BellmanPeriod.get_reward_sym` is removed in favor of `get_reward_syms`.
+- The losses in `skagent.loss` no longer take `parameters`, take their other
+  arguments by keyword, and `CustomLoss` takes a `BellmanPeriod` rather than a
+  block.
+- `maliar.generate_givens_from_states` takes a `BellmanPeriod` rather than a
+  block.
+- `Simulator` takes `sample_count` in place of `agent_count`.
+- A control in a YAML model declares its information set as `iset` rather than
+  `info`.
+- `Grid.shape()`, `skagent.grid.torched()` and
+  `skagent.models.benchmarks.euler_equation_test` are removed.
+
 ### Added
 
 - `docs/community/documentation.md`, the documentation standard: scikit-agent
@@ -71,6 +101,175 @@ and this project adheres to
   subjects' rule solved rather than assumed, the paper's error curves, and the
   designer's sweep with the privacy guarantee it implies.
 
+- `GroundedBlock.expected_payoff(policies, measure)`, what a policy profile is
+  worth. The library could find an optimal policy four ways and could not say
+  what a given one achieved. The measure is required and is a `Measure`, which
+  carries its own configuration: `Sampled(n, rng=...)` reduces draws of the
+  block's shocks, `Discretized(disc_params)` reduces the nodes of a
+  discretization. The two carry different error, so the axis reduced and its
+  size travel back with the number as an `ExpectedPayoff`.
+
+- `skagent.parser.validate_block` refuses a block document whose keys are not a
+  block's keys. A section indented one level too deep is valid YAML -- it
+  becomes a variable of the section above it -- so the block loses that whole
+  section and gains a symbol nothing declared, and nothing downstream can tell
+  that apart from a block that never had one. A document holding `blocks` has
+  its sub-blocks validated too.
+
+- `skagent.models.aiyagari`, many households saving out of labour income whose
+  average assets are the economy's capital, which sets the interest rate and
+  wage they all face. The market block is declared before the households, so
+  capital is read off the assets they arrived with and simulating T periods runs
+  T rounds of the aggregate's law of motion. Under a fixed savings rate that law
+  has a closed form, `capital_map`, whose fixed point is `stationary_capital`.
+  The map is increasing and concave through the origin, so the aggregate
+  converges to that point monotonically from any starting capital. The model
+  therefore checks the arithmetic of a dynamic path through an entity class and
+  not only its shape: once the realized average labour endowment is added back,
+  every simulated period matches the closed form to rounding error. At a
+  thousand households over two hundred periods the aggregate ends within 3% of
+  its analytic stationary point; the remaining gap is sampling noise in the
+  cross-sectional mean, about 1.2% across seeds. Capital depreciates, so the
+  interest rate is a marginal product net of depreciation as in the paper, and
+  the capital-output ratio is `s / (1 - s(1 - delta))` rather than the
+  `s / (1 - s)` of an economy whose capital lasts forever. `savings_rate_for`
+  inverts the relationship, since cash on hand includes a household's whole
+  asset position and a savings rate here is not the textbook fraction of income.
+
+- `skagent.models.lemons`, Akerlof's market for adverse selection, at the
+  paper's own numbers: quality uniform on `[0, 2]` and buyers who value a car at
+  three halves of what its owner does, so `lemons_calibration()` with no
+  arguments is the model of the paper's section II and its answer is the
+  paper's. The module is eight leaf blocks -- two quality distributions, two
+  seller decisions, a seller payoff, the market, and a buyer's bid and surplus
+  -- and each version of the market is a different composition of them, so no
+  equation is written twice. Where the payoff block sits says which price a
+  seller is paid at, and where the market block sits says whether the price is
+  known when the seller decides, so declaration order is the whole of the
+  timing. In `lemons_block` the sellers anticipate the price their own supply
+  induces, and the equilibrium is a fixed point in rules that a solver has to
+  find; in `naive_lemons_block` they respond to a price already posted, so
+  simulating T periods runs T rounds of the clearing map; in `monopsony_block` a
+  buyer commits to the price before supply, and the model is a single backward
+  induction. All three have an acyclic relevance graph, and only one of them can
+  be solved a decision at a time.
+- `examples/models/plot_lemons_adverse_selection.py`, a gallery page for the
+  lemons market. It plots each market's clearing map against the 45-degree line
+  to show which prices reproduce themselves, simulates the walk down to each of
+  them, and asks the relevance graph which of the four markets can be solved one
+  decision at a time. The graph gives the same answer for three of them, and for
+  one of those it is wrong; projecting the seller class separates all four.
+- `peaches_block` and `naive_peaches_block`, the same market with Akerlof's
+  automobiles in place of a spread of quality: a car is a peach or a lemon and
+  nothing between. A uniform range makes the clearing map exactly linear, so the
+  only prices it can reproduce are no trade, a corner, or every price at once.
+  Two types give a market in lemons alone at a price that does not depend on
+  what a peach is worth, and, where peaches are common enough, a second price at
+  which everything trades. Which one a market reaches depends on where it
+  starts. `peach_share_for_trade` is the share of peaches below which no price a
+  buyer will pay is enough to bring one out.
+- The clearing price is a weighted mean rather than a mean over the items that
+  sold, so it carries no boolean index, no branch on the data and no dynamic
+  shape. It differentiates and batches under `torch` where a masked mean
+  refuses, and where the sell decision is 0 or 1 the two agree exactly.
+- `skagent.solver.project` splits a population model's entity class into the
+  instance being solved and the others, and `solve_symmetric_equilibrium` solves
+  that instance's decision against the others' current rule, swaps the solved
+  rule in as the others' rule, and repeats until the rule stops moving. The
+  projection copies each per-instance equation once per side and synthesizes
+  exactly one equation, which concatenates the two sides back into the original
+  symbol; the aggregating equation is then copied verbatim and reads that
+  symbol. The transform therefore reassembles the entity axis without inspecting
+  the reduction, so a mean, a sum, a maximum and a masked mean all project
+  alike. Only symmetric equilibria are supported, since the other instances
+  share a single rule.
+- `skagent.solver.NeuralBestResponse` and `ExactBestResponse` are two method
+  objects that a schedule accepts interchangeably. Each one carries its own
+  construction configuration beside its algorithm -- a training panel and an
+  epoch count for the first, a state grid and a continuation for the second --
+  so the schedule keeps only the damping, the residual and the swap. Both reach
+  the Cournot-Nash quantity at two, three and four firms.
+- `docs/user_guide/solvers.md` explains how a method pairs with a schedule, how
+  to choose among the three schedules, and what projecting a population does.
+- `examples/models/plot_cournot_equilibrium.py` diagrams the Cournot model and
+  its projection, iterates best responses to the Nash quantity at two, three and
+  four firms, and watches the undamped iteration cycle and then diverge.
+- `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
+  composed block executes its own dynamics and computes its own rewards. Both
+  read the merged dynamics, so an `RBlock` behaves as a leaf block does; every
+  multi-agent and entity model is an `RBlock`, and no solver could run one.
+  `RBlock.dynamics` is a merged property alongside the existing `RBlock.reward`,
+  since consumers reach for that attribute directly.
+- `Block.get_control`, the `Control` declared at a symbol, raising when the
+  symbol is not a control. The tabular solver and `GymEnv` each carried their
+  own copy of that check; both now resolve through it.
+- `Block.deciding_agent`, the agent whose payoff a control maximizes: read off
+  the control's attribution and checked against the block's reward owners, so a
+  solver is never left to guess. `TabularBestResponseSolver` and
+  `solve_multiple_controls` both resolve through it.
+- `skagent.block.Entity`, and an `entity` field on `DBlock` and `RBlock`. A
+  variable defined in a block carrying an entity is an attribute of that entity
+  class; one defined in a block carrying none is axis-free. An entity has a name
+  and no size: how many instances exist is read from the calibration, under a
+  key equal to the entity's name.
+- `Block.signatures`, `Block.entities`, `Block.crossings` and
+  `Block.agent_populations`, all derived from one walk of the block tree.
+  `crossings` reports the equations that read out of an entity class, with the
+  axes to reduce and the axes to broadcast.
+- `skagent.models.cournot`: quantity competition among firms, the smallest model
+  with an entity class, an agent role and an aggregation. Ships two calibrations
+  -- many firms with heterogeneous costs, whose expected profit carries the
+  variance of costs, and three identical firms with the Nash, joint-monopoly and
+  single-defector profiles. The profiles are supplied, not found.
+- `Simulator` allocates and records per-instance variables on their entity axes.
+  A variable's history is `(T_sim, sample_count)` when axis-free and
+  `(T_sim, sample_count, size)` when it is an attribute of a class with `size`
+  instances; a block declaring no entity keeps the `(T_sim, sample_count)`
+  histories it already had. Shapes are validated each period, and a non-finite
+  value entering a reduction raises rather than becoming every instance's.
+- Continuous one-shot and iterated Prisoner's Dilemma blocks, including
+  per-player utilities, memory-one repeated-game state, strategic-relevance
+  coverage, solver-boundary tests, and multi-period simulation tests.
+- `solve_in_relevance_order` can iterate simultaneous best responses for cyclic
+  relevance components, returning pure-strategy fixed points and raising on
+  non-convergence within a configurable iteration limit and tolerance.
+- `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
+  density each backend already provides.
+- `skagent.relevance` gains the four single-decision incentive criteria of
+  Everitt et al. (AAAI-21): `admits_voi`, `admits_ri`, `admits_voc` and
+  `admits_ici`, with the `is_requisite` test and `minimal_reduction` they rest
+  on. Out-of-domain and multi-decision queries raise rather than answer.
+- `SCIM.with_edge` and `SCIM.without_edges`, the transforms those criteria are
+  posed over, and `SCIM.utilities`, the utilities an agent owns whether or not
+  its decision reaches them.
+- `skagent.models.safety`, a package for influence diagrams from the AI-safety
+  literature, opening with `incentives.py`: the grade-prediction and
+  content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
+  paired with the redesign that drops an incentive, plus `print_incentive_table`
+  and `draw_shocks` for reading them.
+- `skagent.ground.GroundedBlock`: a block together with the calibration and
+  generator it is read against, owning the resolution of the block's shock
+  declarations -- seeded whether a shock is declared as a `(class, arguments)`
+  pair or as a distribution instance. `BellmanPeriod` is one, plus a discount
+  factor, arrival states and decision rules.
+- `GroundedBlock.with_rng`, which returns a copy of the pair drawing from a new
+  generator. `Simulator` uses it to restart its sample path; the original keeps
+  its own, since the two share no distribution.
+- `BellmanPeriod.select_arrival_states`, which names the projection from an ex
+  post result to the next-period arrival states.
+- `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
+  matplotlib figure rather than into a notebook.
+- `skagent.models.fisher` is usable: its calibration was malformed (`CRRA` a
+  tuple, `y` a list), so evaluating its reward raised `TypeError`. The control
+  gained bounds, and the module gained `analytical_policy` for the two-period
+  closed form.
+- Two gallery examples reading incentives off those diagrams:
+  `examples/models/plot_incentives_1_grade_prediction.py`, where value of
+  information and the response incentive separate, and
+  `plot_incentives_2_content_recommendation.py`, where the two control criteria
+  do. Each shows only the pair of criteria it develops, then checks those
+  readings numerically against the mechanisms.
+
 ### Changed
 
 - `ann.train_block_nn` raises `TypeError` for a non-integer `epochs`, as
@@ -97,6 +296,161 @@ and this project adheres to
   information set instead -- so a caller solving the block on `a` had to convert
   before asking the oracle what the answer was.
 
+- `skagent.solver.project` keeps the rest of the class a population. The others
+  are now an entity class of their own, named for the original and sized one
+  short of it, and a rejoined symbol carries the author's own class at the
+  author's own size. Before, every symbol of the projected block was axis-free:
+  the rivals were one value broadcast to `N - 1`, so rivals drawing private
+  types could not differ from one another, and the block reported no aggregation
+  at all. On Akerlof's market that mattered rather than being untidy -- the
+  clearing price is a ratio of sums over the sellers who sold, so under the
+  equilibrium threshold rule one representative rival either sells or does not,
+  and the projected market was either everybody or nobody. Simulated at four
+  hundred sellers it now clears where the population's own fixed point is. The
+  transform still never inspects the reduction, and the join still broadcasts a
+  rule that is constant, which is exact.
+
+- The equation `project` synthesizes to rejoin an entity axis puts that axis
+  LAST, on both backends, which is the convention the aggregating equation was
+  already read under. It disagreed with itself before: handed a batch, the numpy
+  path concatenated the samples and the rivals into one flat axis, and handed a
+  genuine spread of rivals, the torch path read them as samples and returned one
+  market per rival instead of one market. Both are wrong answers that stay
+  plausible downstream, since a population of the wrong size still averages to a
+  number. A rival value that is constant, or one per sample, is broadcast across
+  the class, which is exact where a rule is constant across it; a value that
+  already carries the entity axis is used as it is. The one shape that reads
+  both ways -- as many samples as rivals -- raises and asks for an explicit
+  entity axis.
+
+- `vfi.solve_step` refuses a block on the hazard rather than on the declaration.
+  It raised for any entity class at all; it now raises when a decision it
+  optimizes or an axis it grids is itself one value per member of a class, which
+  is the confusion its leading axis can actually cause. A block that carries a
+  population whose axis an equation reassembles -- what `project` returns -- is
+  no longer refused.
+
+- A model diagram draws an entity class as a plate: a box around the symbols the
+  class declares per instance, labelled with the class. The box names the class
+  and not how many instances it has, since no other value from the calibration
+  reaches the figure and a number on one box reads as though the whole diagram
+  were drawn for that calibration. `ModelAnalyzer` still reports the size, and
+  `RelevanceGraph.plate` still returns it. `ModelAnalyzer` reads the class from
+  the block tree's declarations rather than inferring one per agent role, so a
+  model with several agents and one of each is no longer boxed as though it had
+  a population of them, and the equation that reads out of a class is visibly
+  the one crossing the box.
+- A model diagram no longer draws a calibration parameter that no equation
+  reads. A calibration written for a family of blocks carries the other blocks'
+  parameters, which arrived on the diagram as nodes joined to nothing: seven of
+  the nineteen in the consumption-saving figure. Only parameters are dropped, so
+  an unread shock, state, control or reward stays visible.
+- The shapes: a shock is a double-bordered ellipse rather than a triangle, a
+  calibration parameter is unbordered, and the hexagon now means the discount
+  factor. `Block.visualize`, `Block.display` and `utils.plot_block_diagram` take
+  `discount`, since a block does not know which of its parameters a period
+  discounts by, and that variable is drawn even though no equation reads it.
+- `Block.visualize` takes a `title`, and `utils.plot_block_diagram` passes an
+  empty one, so a figure carries its caption once instead of also carrying the
+  block's name.
+- A symbol the model assigns is no longer read as a parameter just because the
+  calibration holds a value for it. In the consumption-portfolio model `b` reads
+  the `R` that the portfolio block assigns later in the period, which is last
+  period's `R`, and the calibration's entry is that symbol's first-period
+  arrival value. The dependency is now classified as lagged, which is what the
+  simulator has always done with it, and the diagram reads left to right instead
+  of drawing the period's first equation at its right-hand end.
+- `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
+  over the relevance graph has moved out to
+  `skagent.solver.solve_in_relevance_order`. The module is now named for its
+  algorithm, as the rest of `algos` is, and it holds only the tabulated payoff
+  table. Deciding when each decision is solved is a schedule's job, and the same
+  schedule now serves any method. What was `solver.solve()` is now
+  `solve_in_relevance_order(solver)`.
+
+- Every loss in `skagent.loss` now takes the same shape:
+  `Loss(bellman_period, *, agent=None, ...)`, with loss-specific arguments
+  keyword-only. `parameters` is gone from all six: the period already carries
+  the calibration a loss is evaluated at, and passing it separately let the two
+  disagree. `CustomLoss` takes a period rather than a block, like its siblings.
+  Previously the six disagreed on argument order and on whether `parameters` was
+  required, optional or absent. What `__call__` takes still differs, and
+  deliberately: `CustomLoss` and `StaticRewardLoss` require a mapping from
+  control symbol to decision rule, because they merge it over `other_dr`, while
+  the other four also accept a whole-period decision function.
+- `EstimatedDiscountedLifetimeRewardLoss` takes the agent whose discounted
+  payoff it maximizes, as the other losses do. It previously summed the reward
+  symbols of every agent, so a two-player game trained through it optimized a
+  planner's objective and no player's. `big_t` is now keyword-only.
+- `maliar.generate_givens_from_states` takes a `BellmanPeriod` where it took a
+  block.
+
+- `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
+  an entity class, naming the classes and which leading axis a reduction over
+  the entity axis would be taken over instead -- the shock sample for the
+  former, the state grid for the latter. Neither has an equilibrium concept, so
+  on a model whose price or aggregate is a reduction over instances they would
+  return a plausible number for a different model: solving Cournot at three
+  firms this way gives each firm the joint-monopoly quantity rather than the
+  Nash one. The refusal is deliberately broad -- any declared entity class, not
+  only a detected reduction -- and will narrow once the detection mechanism is
+  settled. Solving these models is the point, so the refusal is temporary; the
+  condition for lifting it is recorded where the check is made.
+
+- `vfi.bellman_step` is now `vfi.solve_step`. It applies to static and dynamic
+  periods alike, so it is no longer named for Bellman; `solve_bellman`, which
+  iterates it to a fixed point, keeps its name.
+- `BellmanPeriod` takes `discount_variable=None` for a static period, where
+  nothing is discounted; `resolve_discount_factor` then returns `1.0`. Passing a
+  name that the post-transition output lacks still raises.
+- `BellmanPeriod` no longer takes `decision_rules`. Rules for the controls not
+  being optimized are passed per call, which `post_function` and the loss and
+  environment modules already did; `solve_step` takes them too.
+- `TabularBestResponseSolver` takes a `GroundedBlock` instead of a block and a
+  calibration. It was already building one internally to draw its shocks.
+- A shock argument referring to a symbol the scope does not assign now raises a
+  `KeyError` naming the shock and the argument, not just the symbol.
+- A control in a document declares its information set as `iset`, the name the
+  Python constructor uses, rather than `info`.
+- `Simulator.agent_count` is now `sample_count`, and
+  `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
+  was a population: `sample_count` counts independent trajectories, and
+  `shock_samples` counts realizations of the block's shocks. The old names are
+  no longer accepted.
+- `solve_bellman` refuses a period with no arrival states, which is not a
+  dynamic problem and has no fixed point to seek; the error names the static
+  solvers. Its non-convergence warning no longer asserts a failure, since
+  reaching `max_iter` is the expected outcome at a finite horizon set that way.
+- `skagent.algos.vfi`'s local `Grid` alias is now `AxisSpec`, so it no longer
+  shares a name with the unrelated `skagent.grid.Grid`. It is the `state_grid`
+  parameter type of `solve_step` and `solve_bellman`.
+- Every gallery page now opens with a short, page-specific summary, so the
+  gallery's hover text distinguishes the examples instead of repeating shared
+  framing, and each page that draws a model diagram uses it as its thumbnail.
+- A Bellman objective runs the block dynamics once per evaluation instead of two
+  or three times: `vfi.solve_step`, `estimate_discounted_lifetime_reward`,
+  `estimate_bellman_residual` and `estimate_euler_residual` now read the reward
+  symbols, the discount factor and the next-period arrival states off a single
+  ex post result, and `reward_function` and `transition_function` are defined as
+  those projections of `post_function`. Answers are unchanged; the lifetime
+  reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
+  about 1.3x.
+- The Euler and Bellman FOC residuals read a control's marginal reward and its
+  effect on the next-period arrival states off one block pass instead of two.
+  `BellmanPeriod.grad_post_function` differentiates a list of ex post variables
+  from a single pass, and `grad_reward_function` and `grad_transition_function`
+  are its projections onto the reward symbols and the arrival states. For `n`
+  controls the Euler residual runs `1 + 2n` passes where it ran `1 + 3n`. The
+  FOC residual runs `n` where it ran `1 + 2n`, reading the discount factor off
+  the same per-control pass. Answers are unchanged.
+- Preparing loss inputs no longer rebuilds a `Grid`'s dict once per shock; it
+  indexes the dict it has already built. Answers are unchanged.
+- Block dynamics no longer call `inspect.signature` once per variable per pass.
+  `skagent.utils.param_names` memoizes a function's parameter names, and
+  `takes_arguments` reads a decision rule's arity off its code object. Answers
+  are unchanged; a block transition is about 3x faster, and value function
+  iteration on the D-4 benchmark about 1.5x.
+
 ### Removed
 
 - `TabularBestResponseSolver.payoff`. Use `Block.payoff`, which the solver now
@@ -109,25 +463,25 @@ and this project adheres to
   for the one perfect-foresight case — so the missing check it stood in for is
   now recorded beside U-3's registration instead of reported as a result.
 
-- The deprecated `agent_count` argument to `Simulator` and `samples` argument to
-  `TabularBestResponseSolver`. Both named the wrong axis, both have said so
-  under a warning since the arguments that replaced them landed, and the warning
-  did not hold: new code was still being written in the deprecated spelling.
-  Pass `sample_count` and `shock_samples`.
-
 - `skagent.solver.solve_multiple_controls` has been replaced by
   `solve_in_order(method, order)`, which takes a method object. The old function
   fused a schedule with a method: the caller's `control_order` was the schedule,
   and the rest of the function was a policy network per control. Now that the
   two are separate, the same order can drive a tabular solver or an exact backup
-  and not only a network. The deprecated `calibration` argument goes with it.
-  Removing the function also removes two defects. It returned untrained networks
-  for the controls the caller left out of the order, and those networks were
-  callable, numeric and indistinguishable from a solved rule; a starting profile
-  is now a constant per control, so an unsolved decision is visibly provisional.
-  It also derived no order of its own, so a repeated symbol amounted to an
-  iterated best response with no convergence test. `solve_in_order` says as much
-  and points to a schedule that does test for convergence.
+  and not only a network. Removing the function also removes two defects. It
+  returned untrained networks for the controls the caller left out of the order,
+  and those networks were callable, numeric and indistinguishable from a solved
+  rule; a starting profile is now a constant per control, so an unsolved
+  decision is visibly provisional. It also derived no order of its own, so a
+  repeated symbol amounted to an iterated best response with no convergence
+  test. `solve_in_order` says as much and points to a schedule that does test
+  for convergence.
+
+- `vfi.solve`, the legacy value-backup entry point. `vfi.solve_step` replaces
+  it: it carries an explicit discount factor rather than folding one into the
+  continuation, and returns the value and policy as grids over the state grid
+  rather than as dict-taking callables. A block with no control at all is out of
+  its scope; `DBlock.get_arrival_value_function` still evaluates one.
 
 ### Fixed
 
@@ -294,337 +648,6 @@ and this project adheres to
   `project` and `solve_symmetric_equilibrium`. A component's member count is not
   on its own the cyclicity test: such a decision is a component of one, and one
   pass returns a rule inconsistent with the aggregate that rule induces.
-
-### Changed
-
-- `skagent.solver.project` keeps the rest of the class a population. The others
-  are now an entity class of their own, named for the original and sized one
-  short of it, and a rejoined symbol carries the author's own class at the
-  author's own size. Before, every symbol of the projected block was axis-free:
-  the rivals were one value broadcast to `N - 1`, so rivals drawing private
-  types could not differ from one another, and the block reported no aggregation
-  at all. On Akerlof's market that mattered rather than being untidy -- the
-  clearing price is a ratio of sums over the sellers who sold, so under the
-  equilibrium threshold rule one representative rival either sells or does not,
-  and the projected market was either everybody or nobody. Simulated at four
-  hundred sellers it now clears where the population's own fixed point is. The
-  transform still never inspects the reduction, and the join still broadcasts a
-  rule that is constant, which is exact.
-
-- The equation `project` synthesizes to rejoin an entity axis puts that axis
-  LAST, on both backends, which is the convention the aggregating equation was
-  already read under. It disagreed with itself before: handed a batch, the numpy
-  path concatenated the samples and the rivals into one flat axis, and handed a
-  genuine spread of rivals, the torch path read them as samples and returned one
-  market per rival instead of one market. Both are wrong answers that stay
-  plausible downstream, since a population of the wrong size still averages to a
-  number. A rival value that is constant, or one per sample, is broadcast across
-  the class, which is exact where a rule is constant across it; a value that
-  already carries the entity axis is used as it is. The one shape that reads
-  both ways -- as many samples as rivals -- raises and asks for an explicit
-  entity axis.
-
-- `vfi.solve_step` refuses a block on the hazard rather than on the declaration.
-  It raised for any entity class at all; it now raises when a decision it
-  optimizes or an axis it grids is itself one value per member of a class, which
-  is the confusion its leading axis can actually cause. A block that carries a
-  population whose axis an equation reassembles -- what `project` returns -- is
-  no longer refused.
-
-- A model diagram draws an entity class as a plate: a box around the symbols the
-  class declares per instance, labelled with the class. The box names the class
-  and not how many instances it has, since no other value from the calibration
-  reaches the figure and a number on one box reads as though the whole diagram
-  were drawn for that calibration. `ModelAnalyzer` still reports the size, and
-  `RelevanceGraph.plate` still returns it. `ModelAnalyzer` reads the class from
-  the block tree's declarations rather than inferring one per agent role, so a
-  model with several agents and one of each is no longer boxed as though it had
-  a population of them, and the equation that reads out of a class is visibly
-  the one crossing the box.
-- A model diagram no longer draws a calibration parameter that no equation
-  reads. A calibration written for a family of blocks carries the other blocks'
-  parameters, which arrived on the diagram as nodes joined to nothing: seven of
-  the nineteen in the consumption-saving figure. Only parameters are dropped, so
-  an unread shock, state, control or reward stays visible.
-- The shapes: a shock is a double-bordered ellipse rather than a triangle, a
-  calibration parameter is unbordered, and the hexagon now means the discount
-  factor. `Block.visualize`, `Block.display` and `utils.plot_block_diagram` take
-  `discount`, since a block does not know which of its parameters a period
-  discounts by, and that variable is drawn even though no equation reads it.
-- `Block.visualize` takes a `title`, and `utils.plot_block_diagram` passes an
-  empty one, so a figure carries its caption once instead of also carrying the
-  block's name.
-- A symbol the model assigns is no longer read as a parameter just because the
-  calibration holds a value for it. In the consumption-portfolio model `b` reads
-  the `R` that the portfolio block assigns later in the period, which is last
-  period's `R`, and the calibration's entry is that symbol's first-period
-  arrival value. The dependency is now classified as lagged, which is what the
-  simulator has always done with it, and the diagram reads left to right instead
-  of drawing the period's first equation at its right-hand end.
-- `skagent.algos.best_response` is now `skagent.algos.tabular`, and its sweep
-  over the relevance graph has moved out to
-  `skagent.solver.solve_in_relevance_order`. The module is now named for its
-  algorithm, as the rest of `algos` is, and it holds only the tabulated payoff
-  table. Deciding when each decision is solved is a schedule's job, and the same
-  schedule now serves any method. What was `solver.solve()` is now
-  `solve_in_relevance_order(solver)`.
-
-### Added
-
-- `GroundedBlock.expected_payoff(policies, measure)`, what a policy profile is
-  worth. The library could find an optimal policy four ways and could not say
-  what a given one achieved. The measure is required and is a `Measure`, which
-  carries its own configuration: `Sampled(n, rng=...)` reduces draws of the
-  block's shocks, `Discretized(disc_params)` reduces the nodes of a
-  discretization. The two carry different error, so the axis reduced and its
-  size travel back with the number as an `ExpectedPayoff`.
-
-- `skagent.parser.validate_block` refuses a block document whose keys are not a
-  block's keys. A section indented one level too deep is valid YAML -- it
-  becomes a variable of the section above it -- so the block loses that whole
-  section and gains a symbol nothing declared, and nothing downstream can tell
-  that apart from a block that never had one. A document holding `blocks` has
-  its sub-blocks validated too.
-
-- `skagent.models.aiyagari`, many households saving out of labour income whose
-  average assets are the economy's capital, which sets the interest rate and
-  wage they all face. The market block is declared before the households, so
-  capital is read off the assets they arrived with and simulating T periods runs
-  T rounds of the aggregate's law of motion. Under a fixed savings rate that law
-  has a closed form, `capital_map`, whose fixed point is `stationary_capital`.
-  The map is increasing and concave through the origin, so the aggregate
-  converges to that point monotonically from any starting capital. The model
-  therefore checks the arithmetic of a dynamic path through an entity class and
-  not only its shape: once the realized average labour endowment is added back,
-  every simulated period matches the closed form to rounding error. At a
-  thousand households over two hundred periods the aggregate ends within 3% of
-  its analytic stationary point; the remaining gap is sampling noise in the
-  cross-sectional mean, about 1.2% across seeds. Capital depreciates, so the
-  interest rate is a marginal product net of depreciation as in the paper, and
-  the capital-output ratio is `s / (1 - s(1 - delta))` rather than the
-  `s / (1 - s)` of an economy whose capital lasts forever. `savings_rate_for`
-  inverts the relationship, since cash on hand includes a household's whole
-  asset position and a savings rate here is not the textbook fraction of income.
-
-- `skagent.models.lemons`, Akerlof's market for adverse selection, at the
-  paper's own numbers: quality uniform on `[0, 2]` and buyers who value a car at
-  three halves of what its owner does, so `lemons_calibration()` with no
-  arguments is the model of the paper's section II and its answer is the
-  paper's. The module is eight leaf blocks -- two quality distributions, two
-  seller decisions, a seller payoff, the market, and a buyer's bid and surplus
-  -- and each version of the market is a different composition of them, so no
-  equation is written twice. Where the payoff block sits says which price a
-  seller is paid at, and where the market block sits says whether the price is
-  known when the seller decides, so declaration order is the whole of the
-  timing. In `lemons_block` the sellers anticipate the price their own supply
-  induces, and the equilibrium is a fixed point in rules that a solver has to
-  find; in `naive_lemons_block` they respond to a price already posted, so
-  simulating T periods runs T rounds of the clearing map; in `monopsony_block` a
-  buyer commits to the price before supply, and the model is a single backward
-  induction. All three have an acyclic relevance graph, and only one of them can
-  be solved a decision at a time.
-- `examples/models/plot_lemons_adverse_selection.py`, a gallery page for the
-  lemons market. It plots each market's clearing map against the 45-degree line
-  to show which prices reproduce themselves, simulates the walk down to each of
-  them, and asks the relevance graph which of the four markets can be solved one
-  decision at a time. The graph gives the same answer for three of them, and for
-  one of those it is wrong; projecting the seller class separates all four.
-- `peaches_block` and `naive_peaches_block`, the same market with Akerlof's
-  automobiles in place of a spread of quality: a car is a peach or a lemon and
-  nothing between. A uniform range makes the clearing map exactly linear, so the
-  only prices it can reproduce are no trade, a corner, or every price at once.
-  Two types give a market in lemons alone at a price that does not depend on
-  what a peach is worth, and, where peaches are common enough, a second price at
-  which everything trades. Which one a market reaches depends on where it
-  starts. `peach_share_for_trade` is the share of peaches below which no price a
-  buyer will pay is enough to bring one out.
-- The clearing price is a weighted mean rather than a mean over the items that
-  sold, so it carries no boolean index, no branch on the data and no dynamic
-  shape. It differentiates and batches under `torch` where a masked mean
-  refuses, and where the sell decision is 0 or 1 the two agree exactly.
-- `skagent.solver.project` splits a population model's entity class into the
-  instance being solved and the others, and `solve_symmetric_equilibrium` solves
-  that instance's decision against the others' current rule, swaps the solved
-  rule in as the others' rule, and repeats until the rule stops moving. The
-  projection copies each per-instance equation once per side and synthesizes
-  exactly one equation, which concatenates the two sides back into the original
-  symbol; the aggregating equation is then copied verbatim and reads that
-  symbol. The transform therefore reassembles the entity axis without inspecting
-  the reduction, so a mean, a sum, a maximum and a masked mean all project
-  alike. Only symmetric equilibria are supported, since the other instances
-  share a single rule.
-- `skagent.solver.NeuralBestResponse` and `ExactBestResponse` are two method
-  objects that a schedule accepts interchangeably. Each one carries its own
-  construction configuration beside its algorithm -- a training panel and an
-  epoch count for the first, a state grid and a continuation for the second --
-  so the schedule keeps only the damping, the residual and the swap. Both reach
-  the Cournot-Nash quantity at two, three and four firms.
-- `docs/user_guide/solvers.md` explains how a method pairs with a schedule, how
-  to choose among the three schedules, and what projecting a population does.
-- `examples/models/plot_cournot_equilibrium.py` diagrams the Cournot model and
-  its projection, iterates best responses to the Nash quantity at two, three and
-  four firms, and watches the undamped iteration cycle and then diverge.
-- `Block.transition` and `Block.calc_reward`, moved up from `DBlock`, so a
-  composed block executes its own dynamics and computes its own rewards. Both
-  read the merged dynamics, so an `RBlock` behaves as a leaf block does; every
-  multi-agent and entity model is an `RBlock`, and no solver could run one.
-  `RBlock.dynamics` is a merged property alongside the existing `RBlock.reward`,
-  since consumers reach for that attribute directly.
-- `Block.get_control`, the `Control` declared at a symbol, raising when the
-  symbol is not a control. The tabular solver and `GymEnv` each carried their
-  own copy of that check; both now resolve through it.
-- `Block.deciding_agent`, the agent whose payoff a control maximizes: read off
-  the control's attribution and checked against the block's reward owners, so a
-  solver is never left to guess. `TabularBestResponseSolver` and
-  `solve_multiple_controls` both resolve through it.
-- `skagent.block.Entity`, and an `entity` field on `DBlock` and `RBlock`. A
-  variable defined in a block carrying an entity is an attribute of that entity
-  class; one defined in a block carrying none is axis-free. An entity has a name
-  and no size: how many instances exist is read from the calibration, under a
-  key equal to the entity's name.
-- `Block.signatures`, `Block.entities`, `Block.crossings` and
-  `Block.agent_populations`, all derived from one walk of the block tree.
-  `crossings` reports the equations that read out of an entity class, with the
-  axes to reduce and the axes to broadcast.
-- `skagent.models.cournot`: quantity competition among firms, the smallest model
-  with an entity class, an agent role and an aggregation. Ships two calibrations
-  -- many firms with heterogeneous costs, whose expected profit carries the
-  variance of costs, and three identical firms with the Nash, joint-monopoly and
-  single-defector profiles. The profiles are supplied, not found.
-- `Simulator` allocates and records per-instance variables on their entity axes.
-  A variable's history is `(T_sim, sample_count)` when axis-free and
-  `(T_sim, sample_count, size)` when it is an attribute of a class with `size`
-  instances; a block declaring no entity keeps the `(T_sim, sample_count)`
-  histories it already had. Shapes are validated each period, and a non-finite
-  value entering a reduction raises rather than becoming every instance's.
-- Continuous one-shot and iterated Prisoner's Dilemma blocks, including
-  per-player utilities, memory-one repeated-game state, strategic-relevance
-  coverage, solver-boundary tests, and multi-period simulation tests.
-- `solve_in_relevance_order` can iterate simultaneous best responses for cyclic
-  relevance components, returning pure-strategy fixed points and raising on
-  non-convergence within a configurable iteration limit and tolerance.
-- `Distribution.icdf` and `Distribution.log_prob`, the quantile function and log
-  density each backend already provides.
-- `skagent.relevance` gains the four single-decision incentive criteria of
-  Everitt et al. (AAAI-21): `admits_voi`, `admits_ri`, `admits_voc` and
-  `admits_ici`, with the `is_requisite` test and `minimal_reduction` they rest
-  on. Out-of-domain and multi-decision queries raise rather than answer.
-- `SCIM.with_edge` and `SCIM.without_edges`, the transforms those criteria are
-  posed over, and `SCIM.utilities`, the utilities an agent owns whether or not
-  its decision reaches them.
-- `skagent.models.safety`, a package for influence diagrams from the AI-safety
-  literature, opening with `incentives.py`: the grade-prediction and
-  content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
-  paired with the redesign that drops an incentive.
-- `examples/models/plot_incentive_criteria.py`: computes all four criteria for
-  every node of those four diagrams, then confirms the response incentive, the
-  value of information and the control incentive numerically against the
-  mechanisms.
-- `skagent.ground.GroundedBlock`: a block together with the calibration and
-  generator it is read against, owning the resolution of the block's shock
-  declarations -- seeded whether a shock is declared as a `(class, arguments)`
-  pair or as a distribution instance. `BellmanPeriod` is one, plus a discount
-  factor, arrival states and decision rules.
-- `GroundedBlock.with_rng`, which returns a copy of the pair drawing from a new
-  generator. `Simulator` uses it to restart its sample path; the original keeps
-  its own, since the two share no distribution.
-- `BellmanPeriod.select_arrival_states`, which names the projection from an ex
-  post result to the next-period arrival states.
-- `skagent.utils.plot_block_diagram`, which draws a block's model diagram onto a
-  matplotlib figure rather than into a notebook.
-- `skagent.models.fisher` is usable: its calibration was malformed (`CRRA` a
-  tuple, `y` a list), so evaluating its reward raised `TypeError`. The control
-  gained bounds, and the module gained `analytical_policy` for the two-period
-  closed form.
-- Two gallery examples reading incentives off those diagrams:
-  `examples/models/plot_incentives_1_grade_prediction.py`, where value of
-  information and the response incentive separate, and
-  `plot_incentives_2_content_recommendation.py`, where the two control criteria
-  do. Each shows only the pair of criteria it develops, then checks those
-  readings numerically against the mechanisms.
-
-### Changed
-
-- `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
-  an entity class, naming the classes and which leading axis a reduction over
-  the entity axis would be taken over instead -- the shock sample for the
-  former, the state grid for the latter. Neither has an equilibrium concept, so
-  on a model whose price or aggregate is a reduction over instances they would
-  return a plausible number for a different model: solving Cournot at three
-  firms this way gives each firm the joint-monopoly quantity rather than the
-  Nash one. The refusal is deliberately broad -- any declared entity class, not
-  only a detected reduction -- and will narrow once the detection mechanism is
-  settled. Solving these models is the point, so the refusal is temporary; the
-  condition for lifting it is recorded where the check is made.
-
-- `vfi.bellman_step` is now `vfi.solve_step`. It applies to static and dynamic
-  periods alike, so it is no longer named for Bellman; `solve_bellman`, which
-  iterates it to a fixed point, keeps its name.
-- `BellmanPeriod` takes `discount_variable=None` for a static period, where
-  nothing is discounted; `resolve_discount_factor` then returns `1.0`. Passing a
-  name that the post-transition output lacks still raises.
-- `BellmanPeriod` no longer takes `decision_rules`. Rules for the controls not
-  being optimized are passed per call, which `post_function` and the loss and
-  environment modules already did; `solve_step` takes them too.
-- `TabularBestResponseSolver` takes a `GroundedBlock` instead of a block and a
-  calibration. It was already building one internally to draw its shocks.
-- A shock argument referring to a symbol the scope does not assign now raises a
-  `KeyError` naming the shock and the argument, not just the symbol.
-- `solve_multiple_controls` takes its calibration from the period it is given.
-  The separate `calibration` argument is deprecated: nothing checked that it
-  agreed with the period's, so a caller could evaluate a period's losses at
-  parameters the period was not built with. Passing one that disagrees now
-  raises.
-- A control in a document declares its information set as `iset`, the name the
-  Python constructor uses, rather than `info`.
-- `Simulator.agent_count` is now `sample_count`, and
-  `TabularBestResponseSolver`'s `samples` is now `shock_samples`. Neither axis
-  was a population: `sample_count` counts independent trajectories, and
-  `shock_samples` counts realizations of the block's shocks. The old names are
-  accepted for this release under a `DeprecationWarning`.
-- `solve_bellman` refuses a period with no arrival states, which is not a
-  dynamic problem and has no fixed point to seek; the error names the static
-  solvers. Its non-convergence warning no longer asserts a failure, since
-  reaching `max_iter` is the expected outcome at a finite horizon set that way.
-- `skagent.algos.vfi`'s local `Grid` alias is now `AxisSpec`, so it no longer
-  shares a name with the unrelated `skagent.grid.Grid`. It is the `state_grid`
-  parameter type of `solve`, `bellman_step` and `solve_bellman`.
-- Every gallery page now opens with a short, page-specific summary, so the
-  gallery's hover text distinguishes the examples instead of repeating shared
-  framing, and each page that draws a model diagram uses it as its thumbnail.
-- A Bellman objective runs the block dynamics once per evaluation instead of two
-  or three times: `vfi.bellman_step`, `estimate_discounted_lifetime_reward`,
-  `estimate_bellman_residual` and `estimate_euler_residual` now read the reward
-  symbols, the discount factor and the next-period arrival states off a single
-  ex post result, and `reward_function` and `transition_function` are defined as
-  those projections of `post_function`. Answers are unchanged; the lifetime
-  reward and Bellman residual losses are about 2x faster and a D-4 VFI solve
-  about 1.3x.
-- The Euler and Bellman FOC residuals read a control's marginal reward and its
-  effect on the next-period arrival states off one block pass instead of two.
-  `BellmanPeriod.grad_post_function` differentiates a list of ex post variables
-  from a single pass, and `grad_reward_function` and `grad_transition_function`
-  are its projections onto the reward symbols and the arrival states. For `n`
-  controls the Euler residual runs `1 + 2n` passes where it ran `1 + 3n`. The
-  FOC residual runs `n` where it ran `1 + 2n`, reading the discount factor off
-  the same per-control pass. Answers are unchanged.
-- Preparing loss inputs no longer rebuilds a `Grid`'s dict once per shock; it
-  indexes the dict it has already built. Answers are unchanged.
-- Block dynamics no longer call `inspect.signature` once per variable per pass.
-  `skagent.utils.param_names` memoizes a function's parameter names, and
-  `takes_arguments` reads a decision rule's arity off its code object. Answers
-  are unchanged; a block transition is about 3x faster, and value function
-  iteration on the D-4 benchmark about 1.5x.
-
-### Removed
-
-- `vfi.solve`, the legacy value-backup entry point. `vfi.solve_step` replaces
-  it: it carries an explicit discount factor rather than folding one into the
-  continuation, and returns the value and policy as grids over the state grid
-  rather than as dict-taking callables. A block with no control at all is out of
-  its scope; `DBlock.get_arrival_value_function` still evaluates one.
-
-### Fixed
 
 - `RBlock.get_controls` returned a list of symbols where `Block.get_controls`
   returns a mapping from symbol to `Control`, so the accessor's type depended on
@@ -1116,5 +1139,6 @@ First release.
 
 ...
 
-[Unreleased]: https://github.com/scikit-agent/scikit-agent/compare/v0.1.0...main
+[Unreleased]: https://github.com/scikit-agent/scikit-agent/compare/v0.2.0...main
+[0.2.0]: https://github.com/scikit-agent/scikit-agent/releases/tag/v0.2.0
 [0.1.0]: https://github.com/scikit-agent/scikit-agent/releases/tag/v0.1.0
