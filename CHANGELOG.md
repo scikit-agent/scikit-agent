@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-30
+
 ### Added
 
 - `docs/community/documentation.md`, the documentation standard: scikit-agent
@@ -1100,5 +1102,6 @@ First release.
 
 ...
 
-[Unreleased]: https://github.com/scikit-agent/scikit-agent/compare/v0.1.0...main
+[Unreleased]: https://github.com/scikit-agent/scikit-agent/compare/v0.2.0...main
+[0.2.0]: https://github.com/scikit-agent/scikit-agent/releases/tag/v0.2.0
 [0.1.0]: https://github.com/scikit-agent/scikit-agent/releases/tag/v0.1.0
