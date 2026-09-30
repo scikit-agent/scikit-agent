@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Reading Model Diagrams" href="visualization.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.1.1.dev172+gf7101dc34</title>
+        <title>Block Guide - scikit-agent 0.1.1.dev178+g643c35685</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev172+gf7101dc34</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev178+g643c35685</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -248,6 +248,7 @@
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../community/documentation.html">Writing Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
@@ -306,8 +307,8 @@ use predefined models.</p>
 <p>scikit-agent uses a “block” architecture where models are composed of building
 blocks:</p>
 <ul class="simple">
-<li><p><strong>DBlock (Dynamic Block)</strong>: Represents a structured environment in which
-agents act</p></li>
+<li><p><strong>DBlock (Dynamic Block)</strong>: One period of model behavior: its shocks,
+dynamics, controls, and rewards</p></li>
 <li><p><strong>RBlock (Recursive Block)</strong>: Combines multiple blocks into a more complex
 block</p></li>
 <li><p><strong>BellmanPeriod</strong>: Wraps a block (it is not itself a <code class="docutils literal notranslate"><span class="pre">Block</span></code>) together with a
@@ -568,7 +569,7 @@ market price – is an ordinary broadcast and needs nothing:</p>
 samples. Where a model has no crossing, running it over many parallel copies is
 Monte Carlo replication: the copies do not interact. Where it has one, the
 copies interact through the aggregate and are a population inside one run.</p>
-<p>Because a solver treats each state variable as an axis to optimise over point by
+<p>Because a solver treats each state variable as an axis to optimize over point by
 point, and a crossing is not that, blocks with crossings are refused by the
 value-function solvers. Simulating them forward under supplied decision rules is
 fully supported.</p>
@@ -789,9 +790,6 @@ the <em>arrival</em> durable stock <code class="docutils literal notranslate"><s
 and so measures services from the <em>post-investment</em> stock. Moving <code class="docutils literal notranslate"><span class="pre">c_d</span></code> above
 the <code class="docutils literal notranslate"><span class="pre">d</span></code> equation would make this period’s utility depend on last period’s stock
 instead.</p>
-<p>This guide provides the foundation for building and working with economic models
-in scikit-agent. The block-based architecture provides flexibility while
-maintaining clear economic interpretation.</p>
 </section>
 </section>
 </section>
@@ -908,7 +906,7 @@ maintaining clear economic interpretation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=ba45c4b4"></script>
+</div><script src="../_static/documentation_options.js?v=2d5b3566"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Consumption-Saving-Portfolio Model" href="plot_consumption_portfolio_model.html"><link rel="prev" title="Cournot: Solving for a Nash Equilibrium" href="plot_cournot_equilibrium.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Resource Extraction Model - scikit-agent 0.1.1.dev172+gf7101dc34</title>
+        <title>Resource Extraction Model - scikit-agent 0.1.1.dev178+g643c35685</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev172+gf7101dc34</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev178+g643c35685</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -248,6 +248,7 @@
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../community/documentation.html">Writing Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
@@ -308,7 +309,7 @@ future use.</p>
 <p>This example implements the classic model from Reed (1979) <a class="footnote-reference brackets" href="#id3" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>, which shows that
 under multiplicative environmental shocks and stock-dependent harvesting costs,
 the optimal policy has a simple “constant escapement” form. The optimal
-escapement level can be computed analytically, making this an excellent benchmark
+escapement level can be computed analytically, making this a useful benchmark
 for testing reinforcement learning algorithms.</p>
 <section id="model-structure">
 <h2>Model Structure<a class="headerlink" href="#model-structure" title="Link to this heading">¶</a></h2>
@@ -459,8 +460,9 @@ x = r * escapement * epsilon
 <div class="math notranslate nohighlight">
 \[S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}\]</div>
 </div>
-<p>This analytical solution makes the model ideal for validating reinforcement
-learning algorithms—we can compare learned policies against the known optimum.</p>
+<p>This analytical solution makes the model well suited to validating
+reinforcement learning algorithms—we can compare learned policies against
+the known optimum.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">dr_u</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <a class="sphx-glr-backref-module-skagent-models-resource_extraction sphx-glr-backref-type-py-function reference internal" href="../../api/models.html#skagent.models.resource_extraction.make_optimal_decision_rule" title="skagent.models.resource_extraction.make_optimal_decision_rule"><span class="n">rex</span><span class="o">.</span><span class="n">make_optimal_decision_rule</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">rex</span><span class="o">.</span><span class="n">calibration</span></a><span class="p">)</span><span class="w">
 </span><span class="w">
 </span><span class="c1"># Compute S* for display</span><span class="w">
@@ -575,7 +577,7 @@ recovers through natural growth.</p>
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../_images/sphx_glr_plot_resource_extraction_003.png" srcset="../../_images/sphx_glr_plot_resource_extraction_003.png" alt="Resource Stock Evolution Under Optimal Escapement Policy" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.496 seconds)</p>
+<img src="../../_images/sphx_glr_plot_resource_extraction_003.png" srcset="../../_images/sphx_glr_plot_resource_extraction_003.png" alt="Resource Stock Evolution Under Optimal Escapement Policy" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.518 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-resource-extraction-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/11efbeece77eafdb1045de1a479b94e2/plot_resource_extraction.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_resource_extraction.ipynb</span></code></a></p>
@@ -687,7 +689,7 @@ recovers through natural growth.</p>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=ba45c4b4"></script>
+</div><script src="../../_static/documentation_options.js?v=2d5b3566"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

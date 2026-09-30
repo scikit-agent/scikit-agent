@@ -60,7 +60,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="The full Maliar, Maliar, and Winant (2021) algorithm, run on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem, benchmark U-3. Solving such models is why the neural-network method exists, so this is the honest setting to show it in.">
+    <div class="sphx-glr-thumbcontainer" tooltip="The full Maliar, Maliar, and Winant (2021) algorithm, run on a model that has no closed-form solution: Carroll&#x27;s buffer-stock consumption problem, benchmark U-3. Solving such models is why the neural-network method exists, so this page demonstrates it in that setting.">
 
 .. only:: html
 
@@ -77,7 +77,7 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example shows how to solve a scikit-agent model with Proximal Policy Optimization (PPO), a deep reinforcement-learning algorithm.">
+    <div class="sphx-glr-thumbcontainer" tooltip="D-4 is a deterministic, impatient CRRA consumption-savings problem with a binding borrowing constraint c_t \leq m_t (no borrowing). Unlike the perfect-foresight D-2 model, D-4 has no closed-form solution, because the binding constraint kinks the consumption function, so we validate the learned policy against a numerical value-function-iteration (VFI) reference instead. No model-specific structure is available here for a solver to exploit, which is why this benchmark is a fair test of a general-purpose method.">
 
 .. only:: html
 

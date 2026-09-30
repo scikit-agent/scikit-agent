@@ -30,7 +30,7 @@ future use.
 This example implements the classic model from Reed (1979) [1]_, which shows that
 under multiplicative environmental shocks and stock-dependent harvesting costs,
 the optimal policy has a simple "constant escapement" form. The optimal
-escapement level can be computed analytically, making this an excellent benchmark
+escapement level can be computed analytically, making this a useful benchmark
 for testing reinforcement learning algorithms.
 
 Model Structure
@@ -244,7 +244,7 @@ Step 3: Visualize the Resource Extraction Model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 148-168
+.. GENERATED FROM PYTHON SOURCE LINES 148-169
 
 Step 4: Compute Optimal Escapement Policy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -263,11 +263,12 @@ The optimal escapement can be computed analytically:
 
     S^* = \frac{c_0 (1 - \delta)}{p (1 - \delta r)}
 
-This analytical solution makes the model ideal for validating reinforcement
-learning algorithms—we can compare learned policies against the known optimum.
+This analytical solution makes the model well suited to validating
+reinforcement learning algorithms—we can compare learned policies against
+the known optimum.
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 168-201
+.. GENERATED FROM PYTHON SOURCE LINES 169-202
 
 .. code-block:: Python
 
@@ -324,12 +325,12 @@ learning algorithms—we can compare learned policies against the known optimum.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 202-204
+.. GENERATED FROM PYTHON SOURCE LINES 203-205
 
 Step 5: Run Monte Carlo Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 204-228
+.. GENERATED FROM PYTHON SOURCE LINES 205-229
 
 .. code-block:: Python
 
@@ -372,7 +373,7 @@ Step 5: Run Monte Carlo Simulation
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 229-237
+.. GENERATED FROM PYTHON SOURCE LINES 230-238
 
 Step 6: Plot Simulation Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -383,7 +384,7 @@ environmental shocks. When stock exceeds :math:`S^*`, the surplus is harvested;
 when shocks drive stock below :math:`S^*`, no harvest occurs and the stock
 recovers through natural growth.
 
-.. GENERATED FROM PYTHON SOURCE LINES 237-277
+.. GENERATED FROM PYTHON SOURCE LINES 238-278
 
 .. code-block:: Python
 
@@ -442,7 +443,7 @@ recovers through natural growth.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.496 seconds)
+   **Total running time of the script:** (0 minutes 0.518 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_resource_extraction.py:

@@ -30,23 +30,22 @@ Consumption economics asks how a household should split each period's resources
 between spending now and saving for later, and the policies in this registry are
 the classic answers. Reading from top to bottom:
 
-#. **Finite horizons fade.** Once the distance to the terminal date
-   :math:`T - t` is large, the finite-horizon rule is indistinguishable from
-   the infinite-horizon one.
-#. **Mortality erodes patience.** A survival probability below one acts like
-   extra impatience: it scales the discount factor and pushes up the marginal
-   propensity to consume (MPC), the fraction of an extra dollar of wealth that
-   is spent rather than saved.
-#. **Consumption is a martingale.** Under :math:`\beta R = 1`, the *change* in
-   consumption is the fundamental object, not its level. Income shocks of
+#. Once the distance to the terminal date :math:`T - t` is large, the
+   finite-horizon rule is indistinguishable from the infinite-horizon one.
+#. A survival probability below one acts like extra impatience: it scales
+   the discount factor and pushes up the marginal propensity to consume
+   (MPC), the fraction of an extra dollar of wealth that is spent rather than
+   saved.
+#. Under :math:`\beta R = 1`, consumption is a martingale, so the change in
+   consumption is the fundamental object rather than its level. Income shocks of
    standard deviation :math:`\sigma_\eta` produce consumption changes of
    standard deviation :math:`(r/R)\,\sigma_\eta` only, a factor of
    :math:`R/r \approx 34` smaller at this calibration.
-#. **Normalization collapses the state.** Dividing every level variable by
-   permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
-   what makes neural-network solvers practical for richer models.
-#. **Closed forms run out.** When no normalization saves you, the model has no
-   closed-form policy, and the registry keeps it around for limit-checking.
+#. Dividing every level variable by permanent income turns a 2-D Bellman
+   problem into a 1-D one, collapsing the state. This trick is what makes
+   neural-network solvers practical for richer models.
+#. When no normalization saves you, the model has no closed-form policy, and
+   the registry keeps it around for limit-checking.
 
 The short registry keys in the code and figure labels below (``D-1`` through
 ``U-3``) are internal identifiers; the section titles give the names the models
@@ -97,7 +96,7 @@ References
 * Carroll, C.D. (2024). *Solution Methods for Solving Microeconomic Dynamic
   Stochastic Optimization Problems*. https://llorracc.github.io/SolvingMicroDSOPs/
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-96
+.. GENERATED FROM PYTHON SOURCE LINES 81-95
 
 .. code-block:: Python
 
@@ -122,7 +121,7 @@ References
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 97-114
+.. GENERATED FROM PYTHON SOURCE LINES 96-113
 
 Step 1: What's in the Registry
 ------------------------------
@@ -142,7 +141,7 @@ distinction is queried with
 :py:func:`~skagent.models.benchmarks.has_analytical_policy` rather than
 re-derived here.
 
-.. GENERATED FROM PYTHON SOURCE LINES 114-122
+.. GENERATED FROM PYTHON SOURCE LINES 113-121
 
 .. code-block:: Python
 
@@ -174,7 +173,7 @@ re-derived here.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 123-150
+.. GENERATED FROM PYTHON SOURCE LINES 122-149
 
 Step 2: Finite Horizons Fade Away (D-1 → D-2)
 ---------------------------------------------
@@ -204,7 +203,7 @@ horizon and decays geometrically as :math:`T - t \to \infty`. Holding
 wealth fixed at :math:`W = 5` and sweeping :math:`T`, the gap is already
 below 1% of the limit by :math:`T = 30`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 150-188
+.. GENERATED FROM PYTHON SOURCE LINES 149-187
 
 .. code-block:: Python
 
@@ -258,7 +257,7 @@ below 1% of the limit by :math:`T = 30`.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 189-229
+.. GENERATED FROM PYTHON SOURCE LINES 188-228
 
 Step 3: Mortality Erodes Patience (D-3)
 ---------------------------------------
@@ -301,7 +300,7 @@ is around :math:`s = 0.999`, which is essentially indistinguishable from
 the no-mortality limit at this scale, but life-cycle models that
 aggregate over many decades pick up a measurable mortality wedge.
 
-.. GENERATED FROM PYTHON SOURCE LINES 229-261
+.. GENERATED FROM PYTHON SOURCE LINES 228-260
 
 .. code-block:: Python
 
@@ -349,7 +348,7 @@ aggregate over many decades pick up a measurable mortality wedge.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 262-300
+.. GENERATED FROM PYTHON SOURCE LINES 261-299
 
 Step 4: Hall's Martingale (U-1)
 -------------------------------
@@ -372,11 +371,11 @@ permanent-income annuity rule
 
     c_t = \frac{r}{R}\,(m_t + H), \qquad H = \frac{\mathbb{E}_t\, y}{r}.
 
-**Lesson:** Hall's contribution wasn't the level of consumption. It was
+**Lesson:** Hall's contribution is not about the level of consumption. It is
 the prediction that, under :math:`\beta R = 1`, consumption changes are
 unforecastable from period-:math:`t` information, and that the standard
-deviation of those changes is *much smaller* than the standard deviation
-of income.
+deviation of those changes is much smaller than the standard deviation of
+income.
 
 We simulate U-1 forward with 1000 agents under the analytical policy. The
 left panel shows one agent's income (volatile, mean-reverting) against
@@ -390,7 +389,7 @@ while :math:`\eta_t` spreads out by a factor of about :math:`R/r \approx
 saving for consumption volatility. Empirical PIH tests are precisely
 tests of whether this picture survives in real data.
 
-.. GENERATED FROM PYTHON SOURCE LINES 300-380
+.. GENERATED FROM PYTHON SOURCE LINES 299-379
 
 .. code-block:: Python
 
@@ -486,7 +485,7 @@ tests of whether this picture survives in real data.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 381-415
+.. GENERATED FROM PYTHON SOURCE LINES 380-414
 
 Step 5: Normalization Collapses the State Space (U-2)
 -----------------------------------------------------
@@ -523,7 +522,7 @@ onto the single curve :math:`c = (1-\beta)(m + 1/r)`. The four
 line-styles all trace the same curve; the visual coincidence is the
 state-space collapse.
 
-.. GENERATED FROM PYTHON SOURCE LINES 415-448
+.. GENERATED FROM PYTHON SOURCE LINES 414-447
 
 .. code-block:: Python
 
@@ -572,7 +571,7 @@ state-space collapse.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 449-480
+.. GENERATED FROM PYTHON SOURCE LINES 448-479
 
 Step 6: When the Closed Form Breaks (U-3)
 -----------------------------------------
@@ -606,7 +605,7 @@ and approaches D-2's :math:`\kappa` only as :math:`m \to \infty`.
 Neither bend nor approach has a closed form, which is exactly why U-3
 is in the registry as ``"numerical only"``.
 
-.. GENERATED FROM PYTHON SOURCE LINES 480-531
+.. GENERATED FROM PYTHON SOURCE LINES 479-530
 
 .. code-block:: Python
 
@@ -680,7 +679,7 @@ is in the registry as ``"numerical only"``.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 532-543
+.. GENERATED FROM PYTHON SOURCE LINES 531-542
 
 Where to Read Next
 ------------------
@@ -694,7 +693,7 @@ Where to Read Next
 - The other examples in this gallery wire benchmark blocks into Monte
   Carlo simulators and reinforcement learning loops.
 
-.. GENERATED FROM PYTHON SOURCE LINES 543-545
+.. GENERATED FROM PYTHON SOURCE LINES 542-544
 
 .. code-block:: Python
 
@@ -710,7 +709,7 @@ Where to Read Next
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.040 seconds)
+   **Total running time of the script:** (0 minutes 1.128 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_benchmark_models.py:

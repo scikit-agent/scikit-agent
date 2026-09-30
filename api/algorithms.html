@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.1.1.dev172+gf7101dc34</title>
+        <title>Algorithms - scikit-agent 0.1.1.dev178+g643c35685</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev172+gf7101dc34</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.1.1.dev178+g643c35685</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -248,6 +248,7 @@
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../community/documentation.html">Writing Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
@@ -1338,7 +1339,8 @@ points is wanted, use <a class="reference internal" href="#skagent.algos.vfi.ar_
 </section>
 <section id="maliar-style-algorithms">
 <h2>Maliar-Style Algorithms<a class="headerlink" href="#maliar-style-algorithms" title="Link to this heading">¶</a></h2>
-<p>Neural network-based solution methods following Maliar et al.</p>
+<p>This module provides neural network-based solution methods following Maliar et
+al.</p>
 <p id="module-skagent.algos.maliar">Tools for the implementation of the Maliar, Maliar, and Winant (JME ‘21) method.</p>
 <p>This method relies on a simpler problem representation than that elaborated
 by the skagent Block system.</p>
@@ -1474,10 +1476,10 @@ initial states unchanged.</p></li>
 </section>
 <section id="reinforcement-learning-stable-baselines3">
 <h2>Reinforcement Learning (Stable-Baselines3)<a class="headerlink" href="#reinforcement-learning-stable-baselines3" title="Link to this heading">¶</a></h2>
-<p>Proximal Policy Optimization (PPO) for <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> models, via a
-<a class="reference external" href="https://stable-baselines3.readthedocs.io/">Stable-Baselines3</a> backend. The
-agent wraps a model in a gymnasium environment (see <a class="reference internal" href="environments.html"><span class="doc">Environments</span></a>), trains
-PPO, and emits a standard skagent decision rule.</p>
+<p>This module provides Proximal Policy Optimization (PPO) for <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code>
+models, via a <a class="reference external" href="https://stable-baselines3.readthedocs.io/">Stable-Baselines3</a>
+backend. The agent wraps a model in a gymnasium environment (see
+<a class="reference internal" href="environments.html"><span class="doc">Environments</span></a>), trains PPO, and emits a standard skagent decision rule.</p>
 <p id="module-skagent.algos.sb3">Stable Baselines3 wrappers for <a class="reference internal" href="bellman.html#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a> models.</p>
 <p>Provides <a class="reference internal" href="#skagent.algos.sb3.PPOAgent" title="skagent.algos.sb3.PPOAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">PPOAgent</span></code></a>, a thin wrapper around SB3’s PPO that:</p>
 <ul class="simple">
@@ -1671,8 +1673,8 @@ depend on training state.</p>
 </section>
 <section id="loss-functions">
 <h2>Loss Functions<a class="headerlink" href="#loss-functions" title="Link to this heading">¶</a></h2>
-<p>Objective functions passed to <a class="reference internal" href="#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.ann.train_block_nn()</span></code></a>. The
-reward-based losses (<a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code></a>,
+<p>These are the objective functions passed to <a class="reference internal" href="#skagent.ann.train_block_nn" title="skagent.ann.train_block_nn"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.ann.train_block_nn()</span></code></a>.
+The reward-based losses (<a class="reference internal" href="loss.html#skagent.loss.StaticRewardLoss" title="skagent.loss.StaticRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticRewardLoss</span></code></a>,
 <a class="reference internal" href="loss.html#skagent.loss.EstimatedDiscountedLifetimeRewardLoss" title="skagent.loss.EstimatedDiscountedLifetimeRewardLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">EstimatedDiscountedLifetimeRewardLoss</span></code></a>) solve a block
 directly for the non-recurring case; the equation-residual losses
 (<a class="reference internal" href="loss.html#skagent.loss.BellmanEquationLoss" title="skagent.loss.BellmanEquationLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanEquationLoss</span></code></a>,
@@ -1683,7 +1685,7 @@ See <a class="reference internal" href="loss.html"><span class="doc">Loss Functi
 <h2>Neural Network Components<a class="headerlink" href="#neural-network-components" title="Link to this heading">¶</a></h2>
 <section id="net">
 <h3>Net<a class="headerlink" href="#net" title="Link to this heading">¶</a></h3>
-<p>Base neural network class with device management.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Net</span></code> is the base neural network class, with device management.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.ann.Net">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">Net</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'silu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_weights_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.Net" title="Link to this definition">¶</a></dt>
@@ -1740,7 +1742,8 @@ registered hooks while the latter silently ignores them.</p>
 </section>
 <section id="blockpolicynet">
 <h3>BlockPolicyNet<a class="headerlink" href="#blockpolicynet" title="Link to this heading">¶</a></h3>
-<p>Specialized neural network for policy functions in economic models.</p>
+<p><code class="docutils literal notranslate"><span class="pre">BlockPolicyNet</span></code> is a specialized neural network for policy functions in
+economic models.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.ann.BlockPolicyNet">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">BlockPolicyNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_open_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyNet" title="Link to this definition">¶</a></dt>
@@ -1814,7 +1817,8 @@ the number of samples to return.</p>
 </section>
 <section id="blockvaluenet">
 <h3>BlockValueNet<a class="headerlink" href="#blockvaluenet" title="Link to this heading">¶</a></h3>
-<p>A neural network for value functions in dynamic programming problems.</p>
+<p><code class="docutils literal notranslate"><span class="pre">BlockValueNet</span></code> is a neural network for value functions in dynamic programming
+problems.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.ann.BlockValueNet">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">BlockValueNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockValueNet" title="Link to this definition">¶</a></dt>
@@ -1873,8 +1877,8 @@ the control’s information set via
 </section>
 <section id="blockpolicyvaluenet">
 <h3>BlockPolicyValueNet<a class="headerlink" href="#blockpolicyvaluenet" title="Link to this heading">¶</a></h3>
-<p>A shared-backbone neural network that jointly represents the policy and value
-functions.</p>
+<p><code class="docutils literal notranslate"><span class="pre">BlockPolicyValueNet</span></code> is a shared-backbone neural network that jointly
+represents the policy and value functions.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.ann.BlockPolicyValueNet">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.ann.</span></span><span class="sig-name descname"><span class="pre">BlockPolicyValueNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bellman_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_open_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.ann.BlockPolicyValueNet" title="Link to this definition">¶</a></dt>
@@ -2628,7 +2632,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=ba45c4b4"></script>
+</div><script src="../_static/documentation_options.js?v=2d5b3566"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

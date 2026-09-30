@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Differential Privacy: Tuning a Parameter With a Causal Game" href="plot_privacy_dp_tuning.html"><link rel="prev" title="Strategic Relevance: Solving the Tree Killer" href="plot_tree_killer_relevance.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Benchmark Consumption Models - scikit-agent 0.1.1.dev172+gf7101dc34</title>
+        <title>Benchmark Consumption Models - scikit-agent 0.1.1.dev178+g643c35685</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev172+gf7101dc34</div></a>
+      <a href="../../index.html"><div class="brand">scikit-agent 0.1.1.dev178+g643c35685</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -248,6 +248,7 @@
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../community/index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../community/documentation.html">Writing Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../community/roadmap.html">Roadmap</a></li>
 </ul>
 </li>
@@ -308,23 +309,22 @@ each teaching a fact the previous ones could not.</p>
 between spending now and saving for later, and the policies in this registry are
 the classic answers. Reading from top to bottom:</p>
 <ol class="arabic simple">
-<li><p><strong>Finite horizons fade.</strong> Once the distance to the terminal date
-<span class="math notranslate nohighlight">\(T - t\)</span> is large, the finite-horizon rule is indistinguishable from
-the infinite-horizon one.</p></li>
-<li><p><strong>Mortality erodes patience.</strong> A survival probability below one acts like
-extra impatience: it scales the discount factor and pushes up the marginal
-propensity to consume (MPC), the fraction of an extra dollar of wealth that
-is spent rather than saved.</p></li>
-<li><p><strong>Consumption is a martingale.</strong> Under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, the <em>change</em> in
-consumption is the fundamental object, not its level. Income shocks of
+<li><p>Once the distance to the terminal date <span class="math notranslate nohighlight">\(T - t\)</span> is large, the
+finite-horizon rule is indistinguishable from the infinite-horizon one.</p></li>
+<li><p>A survival probability below one acts like extra impatience: it scales
+the discount factor and pushes up the marginal propensity to consume
+(MPC), the fraction of an extra dollar of wealth that is spent rather than
+saved.</p></li>
+<li><p>Under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, consumption is a martingale, so the change in
+consumption is the fundamental object rather than its level. Income shocks of
 standard deviation <span class="math notranslate nohighlight">\(\sigma_\eta\)</span> produce consumption changes of
 standard deviation <span class="math notranslate nohighlight">\((r/R)\,\sigma_\eta\)</span> only, a factor of
 <span class="math notranslate nohighlight">\(R/r \approx 34\)</span> smaller at this calibration.</p></li>
-<li><p><strong>Normalization collapses the state.</strong> Dividing every level variable by
-permanent income turns a 2-D Bellman problem into a 1-D one. This trick is
-what makes neural-network solvers practical for richer models.</p></li>
-<li><p><strong>Closed forms run out.</strong> When no normalization saves you, the model has no
-closed-form policy, and the registry keeps it around for limit-checking.</p></li>
+<li><p>Dividing every level variable by permanent income turns a 2-D Bellman
+problem into a 1-D one, collapsing the state. This trick is what makes
+neural-network solvers practical for richer models.</p></li>
+<li><p>When no normalization saves you, the model has no closed-form policy, and
+the registry keeps it around for limit-checking.</p></li>
 </ol>
 <p>The short registry keys in the code and figure labels below (<code class="docutils literal notranslate"><span class="pre">D-1</span></code> through
 <code class="docutils literal notranslate"><span class="pre">U-3</span></code>) are internal identifiers; the section titles give the names the models
@@ -562,11 +562,11 @@ permanent-income annuity rule</p>
 <div class="math notranslate nohighlight">
 \[c_t = \frac{r}{R}\,(m_t + H), \qquad H = \frac{\mathbb{E}_t\, y}{r}.\]</div>
 </div>
-<p><strong>Lesson:</strong> Hall’s contribution wasn’t the level of consumption. It was
+<p><strong>Lesson:</strong> Hall’s contribution is not about the level of consumption. It is
 the prediction that, under <span class="math notranslate nohighlight">\(\beta R = 1\)</span>, consumption changes are
 unforecastable from period-<span class="math notranslate nohighlight">\(t\)</span> information, and that the standard
-deviation of those changes is <em>much smaller</em> than the standard deviation
-of income.</p>
+deviation of those changes is much smaller than the standard deviation of
+income.</p>
 <p>We simulate U-1 forward with 1000 agents under the analytical policy. The
 left panel shows one agent’s income (volatile, mean-reverting) against
 her consumption (smooth, slowly drifting): the textbook image of
@@ -818,7 +818,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
 </ul>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.040 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.128 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-models-plot-benchmark-models-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/2cc3c98062c3edf3537ea32dc3909b7c/plot_benchmark_models.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_benchmark_models.ipynb</span></code></a></p>
@@ -920,7 +920,7 @@ Carlo simulators and reinforcement learning loops.</p></li>
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=ba45c4b4"></script>
+</div><script src="../../_static/documentation_options.js?v=2d5b3566"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

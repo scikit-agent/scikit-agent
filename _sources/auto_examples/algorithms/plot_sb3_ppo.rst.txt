@@ -22,24 +22,23 @@
 PPO via Stable-Baselines3 on the D-4 Benchmark
 ##############################################
 
-This example shows how to solve a scikit-agent model with **Proximal Policy
-Optimization (PPO)**, a deep reinforcement-learning algorithm.
+D-4 is a deterministic, impatient CRRA consumption-savings problem with a
+binding borrowing constraint :math:`c_t \leq m_t` (no borrowing). Unlike the
+perfect-foresight D-2 model, D-4 has no closed-form solution, because the
+binding constraint kinks the consumption function, so we validate the
+learned policy against a numerical value-function-iteration (VFI) reference
+instead. No model-specific structure is available here for a solver to
+exploit, which is why this benchmark is a fair test of a general-purpose
+method.
 
-Rather than re-implementing PPO, scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod`
-in a `gymnasium <https://gymnasium.farama.org/>`_ environment and hands it to
-the robust PPO implementation in
-`Stable-Baselines3 <https://stable-baselines3.readthedocs.io/>`_ (SB3). The
+This example solves it with Proximal Policy Optimization (PPO), a deep
+reinforcement-learning algorithm. Rather than re-implementing PPO,
+scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod` in a `gymnasium
+<https://gymnasium.farama.org/>`_ environment and hands it to the PPO
+implementation in `Stable-Baselines3
+<https://stable-baselines3.readthedocs.io/>`_ (SB3). The
 :class:`~skagent.algos.sb3.PPOAgent` class manages this wrapping, trains the
 agent, and emits a standard scikit-agent decision rule.
-
-We test it on the **D-4 benchmark**: a deterministic, impatient CRRA
-consumption-savings problem with a **binding borrowing constraint**
-:math:`c_t \leq m_t` (no borrowing). Unlike the perfect-foresight D-2 model,
-D-4 has **no closed-form solution** — the binding constraint kinks the
-consumption function — so we validate the learned policy against a numerical
-**value-function-iteration (VFI) reference**. This is precisely the setting
-where a general-purpose RL solver earns its keep: no model-specific structure
-is available to exploit.
 
 Model Structure
 ===============
@@ -47,7 +46,7 @@ Model Structure
 - **State variable**: :math:`a_t` — assets carried into period :math:`t`.
 - **Information variable**: :math:`m_t = a_t R + y` — cash-on-hand.
 - **Control variable**: :math:`c_t` — consumption, bounded by the borrowing
-  constraint :math:`10^{-3} \leq c_t \leq m_t`. The agent **cannot** borrow, so
+  constraint :math:`10^{-3} \leq c_t \leq m_t`. The agent cannot borrow, so
   consumption can never exceed cash-on-hand.
 
 The agent maximizes expected discounted CRRA utility,
@@ -62,17 +61,17 @@ The agent maximizes expected discounted CRRA utility,
 Why No Closed Form
 ==================
 
-D-4 is calibrated to be **impatient**: :math:`\beta R = 0.9568 < 1`, so the
+D-4 is calibrated to be impatient: :math:`\beta R = 0.9568 < 1`, so the
 agent would like to front-load consumption and borrow against future income —
 but the constraint :math:`c_t \leq m_t` forbids it. The constraint therefore
-**binds** at low wealth, where the agent consumes all its cash-on-hand
+binds at low wealth, where the agent consumes all its cash-on-hand
 (:math:`c_t = m_t`), and only slackens at higher wealth. This kink rules out the
 linear-in-wealth closed form that D-2 enjoys, so there is no analytical policy
 to compare against.
 
 Instead we use :func:`skagent.models.benchmarks.d4_vfi_reference_policy`, an
 independent numerical oracle that solves the model by value-function iteration
-on a dense cash-on-hand grid. Because it is expensive, we solve it **once** up
+on a dense cash-on-hand grid. Because it is expensive, we solve it once up
 front and interpolate the resulting policy wherever we need it below.
 
 .. note::
@@ -82,7 +81,7 @@ front and interpolate the resulting policy wherever we need it below.
     discounting out of the box, so models with a non-constant discount variable
     are not yet supported by this path.
 
-.. GENERATED FROM PYTHON SOURCE LINES 66-81
+.. GENERATED FROM PYTHON SOURCE LINES 65-80
 
 .. code-block:: Python
 
@@ -108,7 +107,7 @@ front and interpolate the resulting policy wherever we need it below.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-87
+.. GENERATED FROM PYTHON SOURCE LINES 81-86
 
 Configuration
 =============
@@ -116,7 +115,7 @@ Configuration
 We snapshot the learned consumption function at a few cumulative
 training-timestep counts so we can watch PPO close in on the optimum.
 
-.. GENERATED FROM PYTHON SOURCE LINES 87-101
+.. GENERATED FROM PYTHON SOURCE LINES 86-100
 
 .. code-block:: Python
 
@@ -152,20 +151,20 @@ training-timestep counts so we can watch PPO close in on the optimum.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 102-112
+.. GENERATED FROM PYTHON SOURCE LINES 101-111
 
 The VFI Reference Policy
 ========================
 
 Because D-4 has no closed form, we solve it numerically with
 :func:`skagent.models.benchmarks.d4_vfi_reference_policy`. Each call runs a
-full value-function iteration, so we evaluate it **once** on a dense
+full value-function iteration, so we evaluate it once on a dense
 cash-on-hand grid and wrap the result in a cheap interpolant. This same
 reference policy serves both the grid comparison and the rollouts below. The
 VFI oracle is keyed on the arrival state :math:`a`, so we invert
 :math:`m = aR + y` to query it on a grid of cash-on-hand values.
 
-.. GENERATED FROM PYTHON SOURCE LINES 112-135
+.. GENERATED FROM PYTHON SOURCE LINES 111-134
 
 .. code-block:: Python
 
@@ -199,7 +198,7 @@ VFI oracle is keyed on the arrival state :math:`a`, so we invert
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 136-144
+.. GENERATED FROM PYTHON SOURCE LINES 135-143
 
 Build the Environment and Agent
 ===============================
@@ -210,7 +209,7 @@ environment and sets up SB3's PPO; the discount factor ``gamma`` defaults to
 the model's ``DiscFac``. We sample initial assets uniformly so the agent sees
 a range of starting states during training.
 
-.. GENERATED FROM PYTHON SOURCE LINES 144-161
+.. GENERATED FROM PYTHON SOURCE LINES 143-160
 
 .. code-block:: Python
 
@@ -238,7 +237,7 @@ a range of starting states during training.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 162-170
+.. GENERATED FROM PYTHON SOURCE LINES 161-169
 
 Train PPO Incrementally
 =======================
@@ -249,7 +248,7 @@ internal step counter (and learning-rate schedule) continuous across
 successive ``learn`` calls. The snapshots are unaffected by later training, so
 we can compare each one's policy and rollout performance afterwards.
 
-.. GENERATED FROM PYTHON SOURCE LINES 170-188
+.. GENERATED FROM PYTHON SOURCE LINES 169-187
 
 .. code-block:: Python
 
@@ -286,7 +285,7 @@ we can compare each one's policy and rollout performance afterwards.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 189-196
+.. GENERATED FROM PYTHON SOURCE LINES 188-195
 
 Compare Against the VFI Reference
 =================================
@@ -296,7 +295,7 @@ cash-on-hand the borrowing constraint binds and the reference tracks the
 :math:`c = m` line (the agent consumes everything); at higher wealth the
 constraint slackens and consumption falls below :math:`m` as the agent saves.
 
-.. GENERATED FROM PYTHON SOURCE LINES 196-208
+.. GENERATED FROM PYTHON SOURCE LINES 195-207
 
 .. code-block:: Python
 
@@ -329,7 +328,7 @@ constraint slackens and consumption falls below :math:`m` as the agent saves.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 209-215
+.. GENERATED FROM PYTHON SOURCE LINES 208-214
 
 Visualize the Results
 =====================
@@ -338,7 +337,7 @@ The left panel shows the learned consumption function at each checkpoint
 converging toward the VFI reference. The right panel shows the undiscounted
 episode reward over training, with a rolling mean to highlight the trend.
 
-.. GENERATED FROM PYTHON SOURCE LINES 215-253
+.. GENERATED FROM PYTHON SOURCE LINES 214-252
 
 .. code-block:: Python
 
@@ -392,7 +391,7 @@ episode reward over training, with a rolling mean to highlight the trend.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 254-261
+.. GENERATED FROM PYTHON SOURCE LINES 253-260
 
 Discounted-Reward Monte-Carlo Comparison
 ========================================
@@ -402,7 +401,7 @@ rollouts, comparing all three checkpoints against the VFI reference. Each
 checkpoint's frozen snapshot exposes a ``decision_rule`` directly, so the
 rollouts use the exact trained policies — no reconstruction needed.
 
-.. GENERATED FROM PYTHON SOURCE LINES 261-284
+.. GENERATED FROM PYTHON SOURCE LINES 260-283
 
 .. code-block:: Python
 
@@ -446,13 +445,13 @@ rollouts use the exact trained policies — no reconstruction needed.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 285-288
+.. GENERATED FROM PYTHON SOURCE LINES 284-287
 
 The boxplots summarize the distribution of discounted returns for each policy.
 As training progresses, the PPO return distribution shifts toward the
 VFI-reference benchmark on the right.
 
-.. GENERATED FROM PYTHON SOURCE LINES 288-300
+.. GENERATED FROM PYTHON SOURCE LINES 287-299
 
 .. code-block:: Python
 
@@ -480,23 +479,23 @@ VFI-reference benchmark on the right.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 301-311
+.. GENERATED FROM PYTHON SOURCE LINES 300-310
 
 Takeaways
 =========
 
-PPO learns a consumption policy that tracks the VFI reference reasonably well
-— hugging the ``c = m`` borrowing constraint at low wealth and saving at high
-wealth — and the gap in discounted return shrinks across checkpoints, even
-though no model-specific structure was supplied to the solver. D-4 has no
-closed-form solution, so this is exactly the regime where the SB3 integration
-is most useful: a general-purpose baseline for models an analytical method
-cannot reach.
+PPO learns a consumption policy that tracks the VFI reference reasonably
+well: it hugs the ``c = m`` borrowing constraint at low wealth, saves at
+high wealth, and the gap in discounted return to the reference shrinks
+across checkpoints, even though no model-specific structure was supplied to
+the solver. D-4 has no closed-form solution, so this is the setting where
+the SB3 integration is useful: a general-purpose baseline for models an
+analytical method cannot reach.
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 15.566 seconds)
+   **Total running time of the script:** (2 minutes 16.412 seconds)
 
 
 .. _sphx_glr_download_auto_examples_algorithms_plot_sb3_ppo.py:
