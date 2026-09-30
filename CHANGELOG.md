@@ -10,6 +10,34 @@ and this project adheres to
 
 ## [0.2.0] - 2026-09-30
 
+### Breaking changes
+
+Code written against 0.1.0 needs these changes. Each is described in full under
+Changed or Removed below.
+
+- `skagent.algos.best_response` is now `skagent.algos.tabular`, and
+  `TabularBestResponseSolver.solve()` is now
+  `skagent.solver.solve_in_relevance_order(solver)`.
+- `TabularBestResponseSolver` takes a `GroundedBlock` in place of a block and a
+  calibration, and `shock_samples` in place of `samples`. Its `payoff` method is
+  removed in favor of `Block.payoff`.
+- `skagent.solver.solve_multiple_controls` is removed in favor of
+  `solve_in_order(method, order)`.
+- `vfi.bellman_step` is now `vfi.solve_step`, `vfi.solve` is removed, and
+  `vfi.Grid` is now `vfi.AxisSpec`.
+- `BellmanPeriod` no longer takes `decision_rules`; pass them per call.
+  `BellmanPeriod.get_reward_sym` is removed in favor of `get_reward_syms`.
+- The losses in `skagent.loss` no longer take `parameters`, take their other
+  arguments by keyword, and `CustomLoss` takes a `BellmanPeriod` rather than a
+  block.
+- `maliar.generate_givens_from_states` takes a `BellmanPeriod` rather than a
+  block.
+- `Simulator` takes `sample_count` in place of `agent_count`.
+- A control in a YAML model declares its information set as `iset` rather than
+  `info`.
+- `Grid.shape()`, `skagent.grid.torched()` and
+  `skagent.models.benchmarks.euler_equation_test` are removed.
+
 ### Added
 
 - `docs/community/documentation.md`, the documentation standard: scikit-agent
@@ -217,11 +245,8 @@ and this project adheres to
 - `skagent.models.safety`, a package for influence diagrams from the AI-safety
   literature, opening with `incentives.py`: the grade-prediction and
   content-recommendation diagrams of Everitt et al. (Figs. 3a, 3b, 4a, 4b), each
-  paired with the redesign that drops an incentive.
-- `examples/models/plot_incentive_criteria.py`: computes all four criteria for
-  every node of those four diagrams, then confirms the response incentive, the
-  value of information and the control incentive numerically against the
-  mechanisms.
+  paired with the redesign that drops an incentive, plus `print_incentive_table`
+  and `draw_shocks` for reading them.
 - `skagent.ground.GroundedBlock`: a block together with the calibration and
   generator it is read against, owning the resolution of the block's shock
   declarations -- seeded whether a shock is declared as a `(class, arguments)`
@@ -343,6 +368,23 @@ and this project adheres to
   schedule now serves any method. What was `solver.solve()` is now
   `solve_in_relevance_order(solver)`.
 
+- Every loss in `skagent.loss` now takes the same shape:
+  `Loss(bellman_period, *, agent=None, ...)`, with loss-specific arguments
+  keyword-only. `parameters` is gone from all six: the period already carries
+  the calibration a loss is evaluated at, and passing it separately let the two
+  disagree. `CustomLoss` takes a period rather than a block, like its siblings.
+  Previously the six disagreed on argument order and on whether `parameters` was
+  required, optional or absent. What `__call__` takes still differs, and
+  deliberately: `CustomLoss` and `StaticRewardLoss` require a mapping from
+  control symbol to decision rule, because they merge it over `other_dr`, while
+  the other four also accept a whole-period decision function.
+- `EstimatedDiscountedLifetimeRewardLoss` takes the agent whose discounted
+  payoff it maximizes, as the other losses do. It previously summed the reward
+  symbols of every agent, so a two-player game trained through it optimized a
+  planner's objective and no player's. `big_t` is now keyword-only.
+- `maliar.generate_givens_from_states` takes a `BellmanPeriod` where it took a
+  block.
+
 - `TabularBestResponseSolver` and `vfi.solve_step` refuse a block that declares
   an entity class, naming the classes and which leading axis a reduction over
   the entity axis would be taken over instead -- the shock sample for the
@@ -368,11 +410,6 @@ and this project adheres to
   calibration. It was already building one internally to draw its shocks.
 - A shock argument referring to a symbol the scope does not assign now raises a
   `KeyError` naming the shock and the argument, not just the symbol.
-- `solve_multiple_controls` takes its calibration from the period it is given.
-  The separate `calibration` argument is deprecated: nothing checked that it
-  agreed with the period's, so a caller could evaluate a period's losses at
-  parameters the period was not built with. Passing one that disagrees now
-  raises.
 - A control in a document declares its information set as `iset`, the name the
   Python constructor uses, rather than `info`.
 - `Simulator.agent_count` is now `sample_count`, and
@@ -386,12 +423,12 @@ and this project adheres to
   reaching `max_iter` is the expected outcome at a finite horizon set that way.
 - `skagent.algos.vfi`'s local `Grid` alias is now `AxisSpec`, so it no longer
   shares a name with the unrelated `skagent.grid.Grid`. It is the `state_grid`
-  parameter type of `solve`, `bellman_step` and `solve_bellman`.
+  parameter type of `solve_step` and `solve_bellman`.
 - Every gallery page now opens with a short, page-specific summary, so the
   gallery's hover text distinguishes the examples instead of repeating shared
   framing, and each page that draws a model diagram uses it as its thumbnail.
 - A Bellman objective runs the block dynamics once per evaluation instead of two
-  or three times: `vfi.bellman_step`, `estimate_discounted_lifetime_reward`,
+  or three times: `vfi.solve_step`, `estimate_discounted_lifetime_reward`,
   `estimate_bellman_residual` and `estimate_euler_residual` now read the reward
   symbols, the discount factor and the next-period arrival states off a single
   ex post result, and `reward_function` and `transition_function` are defined as
@@ -431,14 +468,14 @@ and this project adheres to
   fused a schedule with a method: the caller's `control_order` was the schedule,
   and the rest of the function was a policy network per control. Now that the
   two are separate, the same order can drive a tabular solver or an exact backup
-  and not only a network. The deprecated `calibration` argument goes with it.
-  Removing the function also removes two defects. It returned untrained networks
-  for the controls the caller left out of the order, and those networks were
-  callable, numeric and indistinguishable from a solved rule; a starting profile
-  is now a constant per control, so an unsolved decision is visibly provisional.
-  It also derived no order of its own, so a repeated symbol amounted to an
-  iterated best response with no convergence test. `solve_in_order` says as much
-  and points to a schedule that does test for convergence.
+  and not only a network. Removing the function also removes two defects. It
+  returned untrained networks for the controls the caller left out of the order,
+  and those networks were callable, numeric and indistinguishable from a solved
+  rule; a starting profile is now a constant per control, so an unsolved
+  decision is visibly provisional. It also derived no order of its own, so a
+  repeated symbol amounted to an iterated best response with no convergence
+  test. `solve_in_order` says as much and points to a schedule that does test
+  for convergence.
 
 - `vfi.solve`, the legacy value-backup entry point. `vfi.solve_step` replaces
   it: it carries an explicit discount factor rather than folding one into the
