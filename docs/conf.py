@@ -17,6 +17,7 @@ version = release = importlib.metadata.version("scikit_agent")
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
+    "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
@@ -87,6 +88,12 @@ myst_enable_extensions = [
     "tasklist",
     "amsmath",
 ]
+
+# Cite a work by its identifier: :arxiv:`2106.03958`, :doi:`10.1016/j.jedc.2021`.
+extlinks = {
+    "arxiv": ("https://arxiv.org/abs/%s", "arXiv:%s"),
+    "doi": ("https://doi.org/%s", "DOI:%s"),
+}
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),

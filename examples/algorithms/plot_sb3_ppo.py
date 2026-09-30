@@ -3,24 +3,23 @@ r"""
 PPO via Stable-Baselines3 on the D-4 Benchmark
 ##############################################
 
-This example shows how to solve a scikit-agent model with **Proximal Policy
-Optimization (PPO)**, a deep reinforcement-learning algorithm.
+D-4 is a deterministic, impatient CRRA consumption-savings problem with a
+binding borrowing constraint :math:`c_t \leq m_t` (no borrowing). Unlike the
+perfect-foresight D-2 model, D-4 has no closed-form solution, because the
+binding constraint kinks the consumption function, so we validate the
+learned policy against a numerical value-function-iteration (VFI) reference
+instead. No model-specific structure is available here for a solver to
+exploit, which is why this benchmark is a fair test of a general-purpose
+method.
 
-Rather than re-implementing PPO, scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod`
-in a `gymnasium <https://gymnasium.farama.org/>`_ environment and hands it to
-the robust PPO implementation in
-`Stable-Baselines3 <https://stable-baselines3.readthedocs.io/>`_ (SB3). The
+This example solves it with Proximal Policy Optimization (PPO), a deep
+reinforcement-learning algorithm. Rather than re-implementing PPO,
+scikit-agent wraps a :class:`~skagent.bellman.BellmanPeriod` in a `gymnasium
+<https://gymnasium.farama.org/>`_ environment and hands it to the PPO
+implementation in `Stable-Baselines3
+<https://stable-baselines3.readthedocs.io/>`_ (SB3). The
 :class:`~skagent.algos.sb3.PPOAgent` class manages this wrapping, trains the
 agent, and emits a standard scikit-agent decision rule.
-
-We test it on the **D-4 benchmark**: a deterministic, impatient CRRA
-consumption-savings problem with a **binding borrowing constraint**
-:math:`c_t \leq m_t` (no borrowing). Unlike the perfect-foresight D-2 model,
-D-4 has **no closed-form solution** — the binding constraint kinks the
-consumption function — so we validate the learned policy against a numerical
-**value-function-iteration (VFI) reference**. This is precisely the setting
-where a general-purpose RL solver earns its keep: no model-specific structure
-is available to exploit.
 
 Model Structure
 ===============
@@ -28,7 +27,7 @@ Model Structure
 - **State variable**: :math:`a_t` — assets carried into period :math:`t`.
 - **Information variable**: :math:`m_t = a_t R + y` — cash-on-hand.
 - **Control variable**: :math:`c_t` — consumption, bounded by the borrowing
-  constraint :math:`10^{-3} \leq c_t \leq m_t`. The agent **cannot** borrow, so
+  constraint :math:`10^{-3} \leq c_t \leq m_t`. The agent cannot borrow, so
   consumption can never exceed cash-on-hand.
 
 The agent maximizes expected discounted CRRA utility,
@@ -43,17 +42,17 @@ The agent maximizes expected discounted CRRA utility,
 Why No Closed Form
 ==================
 
-D-4 is calibrated to be **impatient**: :math:`\beta R = 0.9568 < 1`, so the
+D-4 is calibrated to be impatient: :math:`\beta R = 0.9568 < 1`, so the
 agent would like to front-load consumption and borrow against future income —
 but the constraint :math:`c_t \leq m_t` forbids it. The constraint therefore
-**binds** at low wealth, where the agent consumes all its cash-on-hand
+binds at low wealth, where the agent consumes all its cash-on-hand
 (:math:`c_t = m_t`), and only slackens at higher wealth. This kink rules out the
 linear-in-wealth closed form that D-2 enjoys, so there is no analytical policy
 to compare against.
 
 Instead we use :func:`skagent.models.benchmarks.d4_vfi_reference_policy`, an
 independent numerical oracle that solves the model by value-function iteration
-on a dense cash-on-hand grid. Because it is expensive, we solve it **once** up
+on a dense cash-on-hand grid. Because it is expensive, we solve it once up
 front and interpolate the resulting policy wherever we need it below.
 
 .. note::
@@ -104,7 +103,7 @@ for param, value in d4_calibration.items():
 #
 # Because D-4 has no closed form, we solve it numerically with
 # :func:`skagent.models.benchmarks.d4_vfi_reference_policy`. Each call runs a
-# full value-function iteration, so we evaluate it **once** on a dense
+# full value-function iteration, so we evaluate it once on a dense
 # cash-on-hand grid and wrap the result in a cheap interpolant. This same
 # reference policy serves both the grid comparison and the rollouts below. The
 # VFI oracle is keyed on the arrival state :math:`a`, so we invert
@@ -301,10 +300,10 @@ plt.show()
 # Takeaways
 # =========
 #
-# PPO learns a consumption policy that tracks the VFI reference reasonably well
-# — hugging the ``c = m`` borrowing constraint at low wealth and saving at high
-# wealth — and the gap in discounted return shrinks across checkpoints, even
-# though no model-specific structure was supplied to the solver. D-4 has no
-# closed-form solution, so this is exactly the regime where the SB3 integration
-# is most useful: a general-purpose baseline for models an analytical method
-# cannot reach.
+# PPO learns a consumption policy that tracks the VFI reference reasonably
+# well: it hugs the ``c = m`` borrowing constraint at low wealth, saves at
+# high wealth, and the gap in discounted return to the reference shrinks
+# across checkpoints, even though no model-specific structure was supplied to
+# the solver. D-4 has no closed-form solution, so this is the setting where
+# the SB3 integration is useful: a general-purpose baseline for models an
+# analytical method cannot reach.

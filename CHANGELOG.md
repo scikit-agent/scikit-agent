@@ -10,6 +10,17 @@ and this project adheres to
 
 ### Added
 
+- `docs/community/documentation.md`, the documentation standard: scikit-agent
+  adopts scikit-learn's documentation guidelines. The page carries the docstring
+  format, the page and example conventions, a terminology table with one
+  definition per object, and the places this project's toolchain differs.
+  `:arxiv:` and `:doi:` roles are configured so references can be cited by
+  identifier.
+
+- `AGENTS.md`, for AI coding assistants: the commands, the gotchas and a pointer
+  to the project's AI policy. It carries no rules of its own, so there is
+  nothing in it to drift from the contributor documents.
+
 - `skagent.algos.vfi.numpy_decision_rule`, the mirror of `tensor_decision_rule`:
   it wraps a decision rule built in torch so the numpy-space machinery can call
   it. A torch rule stacks its arguments into a tensor, so it rejects numpy and

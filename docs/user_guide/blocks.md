@@ -11,8 +11,8 @@ use predefined models.
 scikit-agent uses a "block" architecture where models are composed of building
 blocks:
 
-- **DBlock (Dynamic Block)**: Represents a structured environment in which
-  agents act
+- **DBlock (Dynamic Block)**: One period of model behavior: its shocks,
+  dynamics, controls, and rewards
 - **RBlock (Recursive Block)**: Combines multiple blocks into a more complex
   block
 - **BellmanPeriod**: Wraps a block (it is not itself a `Block`) together with a
@@ -300,7 +300,7 @@ samples. Where a model has no crossing, running it over many parallel copies is
 Monte Carlo replication: the copies do not interact. Where it has one, the
 copies interact through the aggregate and are a population inside one run.
 
-Because a solver treats each state variable as an axis to optimise over point by
+Because a solver treats each state variable as an axis to optimize over point by
 point, and a crossing is not that, blocks with crossings are refused by the
 value-function solvers. Simulating them forward under supplied decision rules is
 fully supported.
@@ -534,7 +534,3 @@ the _arrival_ durable stock `d`, while `c_d` is declared after the stock updates
 and so measures services from the _post-investment_ stock. Moving `c_d` above
 the `d` equation would make this period's utility depend on last period's stock
 instead.
-
-This guide provides the foundation for building and working with economic models
-in scikit-agent. The block-based architecture provides flexibility while
-maintaining clear economic interpretation.

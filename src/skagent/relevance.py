@@ -30,7 +30,7 @@ see :data:`OBSERVED`, :data:`HIDDEN` and :data:`MIXED`.
 
 **A node that is neither** -- the four *incentive criteria* of Everitt, Carey,
 Langlois, Ortega & Legg, "Agent Incentives: A Causal Perspective" (AAAI-21,
-35(13):11487-11495; arXiv:2102.01685), which ask what one decision stands to
+35(13):11487-11495; :arxiv:`2102.01685`), which ask what one decision stands to
 gain from a variable, or does to it:
 
   - :func:`admits_voi` (Def. 8, Thm. 9) -- would observing X raise the

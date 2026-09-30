@@ -25,7 +25,7 @@ environments and plan to do so in future releases.
   structures, such as markets.
 - **Multiple agent roles**. We will support models with agents varying widely in
   roles, including different reward and control spaces.
-- **Strategic equilibrium solvers**. Efficiently solving for strategic
+- **Strategic equilibrium solvers**. We will efficiently solve for strategic
   equilibrium between multiple agents.
 
 As we expand the classes of models that `scikit-agent` can handle, we will also

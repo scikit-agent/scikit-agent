@@ -10,7 +10,7 @@ vocabulary and the traversal engine every criterion over it needs.
 
 The name is Def. 4 of Everitt, Carey, Langlois, Ortega & Legg, "Agent
 Incentives: A Causal Perspective" (AAAI-21, 35(13):11487-11495;
-arXiv:2102.01685), where a *structural causal influence model* is an influence
+:arxiv:`2102.01685`), where a *structural causal influence model* is an influence
 diagram whose mechanisms are structural functions of their parents rather than
 conditional probability tables. That is the form a block already takes.
 
