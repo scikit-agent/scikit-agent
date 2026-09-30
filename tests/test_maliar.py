@@ -1161,7 +1161,7 @@ class TestD4ConstrainedEulerVFI(unittest.TestCase):
         max_rel_error = rel_error.max().item()
 
         # The binding constraint anchors the level, so Euler + Fischer-Burmeister
-        # matches VFI to well under 1% on average; the pointwise max sits at the
+        # matches VFI to well under 1% on average; the pointwise max is at the
         # constraint kink and is held to a looser but still tight bound.
         self.assertLess(
             mean_rel_error,
@@ -1273,8 +1273,10 @@ class TestBilateralFischerBurmeister(unittest.TestCase):
             ),
             "lower-only combiner must equal FB(-f, s_l)",
         )
-        # No bound -> None (caller uses the relu fallback).
-        self.assertIsNone(loss._complementarity_residual(f, None, None))
+        # No bound -> the one-sided fallback relu(-f).
+        self.assertTrue(
+            torch.equal(loss._complementarity_residual(f, None, None), torch.relu(-f))
+        )
 
         # Two-sided KKT zeros (exact to the FB regularization eps).
         zero = torch.zeros(5)
@@ -1914,7 +1916,7 @@ class TestComputeSlack(unittest.TestCase):
         states_t = {"a": torch.tensor([2.0])}
         shocks_t = {}
         controls_t = {"c": torch.tensor([1.0])}  # c < m = R*a = 2.08
-        slack = self.loss_fn._compute_slack("c", controls_t, states_t, shocks_t)
+        _, slack = self.loss_fn._slacks("c", controls_t, states_t, shocks_t)
         self.assertIsNotNone(slack)
         self.assertTrue((slack > 0).all())
 
@@ -1924,7 +1926,7 @@ class TestComputeSlack(unittest.TestCase):
         shocks_t = {}
         ub = 1.04 * 2.0  # m = R*a
         controls_t = {"c": torch.tensor([ub])}
-        slack = self.loss_fn._compute_slack("c", controls_t, states_t, shocks_t)
+        _, slack = self.loss_fn._slacks("c", controls_t, states_t, shocks_t)
         self.assertIsNotNone(slack)
         self.assertAlmostEqual(slack.item(), 0.0, places=4)
 
@@ -1941,10 +1943,10 @@ class TestComputeSlack(unittest.TestCase):
         )
         bp_no_ub = bellman.BellmanPeriod(block_no_ub, "beta", {"beta": 0.95})
         loss_fn = loss.EulerEquationLoss(bp_no_ub)
-        slack = loss_fn._compute_slack(
+        slacks = loss_fn._slacks(
             "c", {"c": torch.tensor([1.0])}, {"a": torch.tensor([2.0])}, {}
         )
-        self.assertIsNone(slack)
+        self.assertEqual(slacks, (None, None))
 
 
 class TestMultiControlConstrainedLoss(unittest.TestCase):
