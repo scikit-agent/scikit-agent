@@ -8,6 +8,13 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- `maliar_training_loop` raises `RuntimeError` when the loss becomes non-finite,
+  naming the iteration. It used to carry on: on the next iteration the trainer
+  stopped at epoch 0 without changing the weights, and the loop reported the
+  zero parameter change as convergence (#371).
+
 ## [0.2.0] - 2026-09-30
 
 ### Breaking changes
