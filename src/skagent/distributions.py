@@ -213,6 +213,7 @@ class Lognormal(Distribution):
     def discretize(
         self, n_points: int = 7, N: int | None = None, **kwargs
     ) -> DiscreteDistribution:
+        """Discretize using Gauss-Hermite quadrature on the log"""
         # Handle alternative parameter naming
         if N is not None:
             n_points = N
@@ -223,12 +224,10 @@ class Lognormal(Distribution):
             weights = np.array([1.0])
             return DiscreteDistribution(points, weights, var_names=["x"])
 
-        # Discretize the underlying normal and transform
-        normal_points = np.linspace(
-            -3 * self.sigma + self.mu, 3 * self.sigma + self.mu, n_points
-        )
-        points = np.exp(normal_points)
-        weights = np.ones(n_points) / n_points
+        # Gauss-Hermite nodes on the underlying normal, then transform
+        nodes, weights = np.polynomial.hermite.hermgauss(n_points)
+        points = np.exp(nodes * np.sqrt(2) * self.sigma + self.mu)
+        weights = weights / np.sqrt(np.pi)
         return DiscreteDistribution(points, weights, var_names=["x"])
 
     @property

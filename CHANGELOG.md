@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
+  Gauss-Hermite quadrature on the log. It gave equal weights to evenly spaced
+  nodes, which overstated the mean and standard deviation.
+
 ## [0.2.0] - 2026-09-30
 
 ### Breaking changes
