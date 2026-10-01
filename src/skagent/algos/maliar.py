@@ -13,6 +13,7 @@ by the skagent Block system.
 from __future__ import annotations
 
 import logging
+import math
 from typing import TYPE_CHECKING, Callable, Optional
 
 import torch
@@ -332,6 +333,8 @@ def maliar_training_loop(
         If bellman_period or parameters is None, loss_function is not
         callable, a count argument is not an integer, or states_0_n is not a
         Grid.
+    RuntimeError
+        If training diverges: the loss becomes non-finite at some iteration.
     """
     _validate_training_inputs(
         bellman_period,
@@ -367,6 +370,15 @@ def maliar_training_loop(
             epochs=epochs_per_iteration,
             optimizer=optimizer,
         )
+
+        # train_block_nn stops at the first non-finite loss and keeps the last
+        # finite weights. Checking here, before the convergence test, keeps a
+        # trainer that took no steps from reading as a zero parameter change.
+        if not math.isfinite(current_loss):
+            raise RuntimeError(
+                f"Training diverged at iteration {iteration + 1}: the loss is "
+                f"{current_loss}. train_block_nn's warning names the epoch."
+            )
 
         curr_params = utils.extract_parameters(bpn)
         param_diff, loss_diff, param_converged, loss_converged = _check_convergence(
