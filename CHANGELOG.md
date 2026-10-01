@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
+  so the household problem can be solved as well as simulated.
+
 ## [0.2.0] - 2026-09-30
 
 ### Breaking changes
