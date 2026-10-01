@@ -12,6 +12,8 @@ and this project adheres to
 
 - `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
   so the household problem can be solved as well as simulated.
+- A gallery page for the Aiyagari economy under a fixed savings rule, checking
+  the simulated capital stock against its closed-form law of motion.
 
 ## [0.2.0] - 2026-09-30
 
