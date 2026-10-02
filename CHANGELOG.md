@@ -8,6 +8,13 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- `vfi.solve_step` and `vfi.solve_bellman` take `search="bounded"`: one bounded
+  scalar search per gridpoint in place of the multi-start optimizer, several
+  times faster. It applies to a single control with both bounds declared, and
+  raises otherwise.
+
 ### Changed
 
 - `vfi.value_array_to_function` interpolates a one-axis continuation with numpy
