@@ -25,6 +25,7 @@ import skagent.models.consumer as cons
 import skagent.models.fisher as fisher
 import numpy as np
 import xarray as xr
+import functools
 import torch
 import unittest
 import warnings
@@ -34,6 +35,31 @@ import warnings
 # next-period arrival states, shocks, and parameters.
 def bp_terminal(states, shocks, parameters):
     return 0.0
+
+
+def over_levers(*configs):
+    """Run a test with the solver's defaults, then under each of *configs*.
+
+    Each config is a dict of keyword arguments the test passes to the solver it
+    calls, so a benchmark that holds under the defaults is checked again under
+    every option that applies to it. Each run is a subtest named by its config.
+    """
+
+    def decorate(test):
+        @functools.wraps(test)
+        def run(self):
+            for levers in ({}, *configs):
+                with self.subTest(**levers):
+                    test(self, **levers)
+
+        return run
+
+    return decorate
+
+
+BOUNDED = {"search": "bounded"}
+EVALUATED = {"policy_evaluations": 20}
+BOUNDED_EVALUATED = {**BOUNDED, **EVALUATED}
 
 
 class test_vfi_solve_step(unittest.TestCase):
@@ -300,7 +326,8 @@ class test_vfi_solve_step(unittest.TestCase):
         # normal), the irreducible variance the agent cannot hedge.
         self.assertTrue(np.allclose(value_array.values, -1.0, atol=1e-2))
 
-    def test_u2_single_backup_analytic_continuation(self):
+    @over_levers(BOUNDED)
+    def test_u2_single_backup_analytic_continuation(self, **levers):
         # U-2 (log utility, normalized permanent-income shock psi, no borrowing
         # constraint): psi is a HIDDEN shock (c.iset = [m], m = R*a/psi + 1). At
         # the default sigma_psi = 0, psi discretizes to a single degenerate node
@@ -321,7 +348,7 @@ class test_vfi_solve_step(unittest.TestCase):
 
         bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
         grid = {"a": np.linspace(0.5, 5.0, 12)}
-        dr, _, _ = vfi.solve_step(bp, u2_continuation, grid, scope=cal)
+        dr, _, _ = vfi.solve_step(bp, u2_continuation, grid, scope=cal, **levers)
         for a in [1.0, 2.0, 3.0]:
             m = R * a + 1.0  # psi = 1 at sigma_psi = 0
             want = float(
@@ -329,7 +356,8 @@ class test_vfi_solve_step(unittest.TestCase):
             )
             self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
 
-    def test_u2_multinode_recovers_closed_form(self):
+    @over_levers(BOUNDED)
+    def test_u2_multinode_recovers_closed_form(self, **levers):
         # sigma_psi > 0 spreads psi over several discretization nodes. Because psi
         # reaches the objective only through m, which c conditions on, each node
         # gets its own pre-state and bounds and the backup solves the problem the
@@ -350,7 +378,12 @@ class test_vfi_solve_step(unittest.TestCase):
             cal = {**bm.u2_calibration, "sigma_psi": sigma_psi}
             bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
             dr, _, _ = vfi.solve_step(
-                bp, u2_continuation, grid, scope=cal, disc_params={"psi": {"N": 7}}
+                bp,
+                u2_continuation,
+                grid,
+                scope=cal,
+                disc_params={"psi": {"N": 7}},
+                **levers,
             )
             return np.array([dr["c"](m) for m in ms])
 
@@ -361,7 +394,8 @@ class test_vfi_solve_step(unittest.TestCase):
             self.assertTrue(np.all(np.diff(got) > 0))
             np.testing.assert_allclose(got, want, atol=1e-4)
 
-    def test_u2_rule_over_m_does_not_depend_on_shock_spread(self):
+    @over_levers(BOUNDED)
+    def test_u2_rule_over_m_does_not_depend_on_shock_spread(self, **levers):
         # The decision problem at a given m -- max_c u(c) + beta*W(m - c) -- does
         # not involve sigma_psi, so the rule as a function of m is invariant to it;
         # only the distribution of m changes. Fixing psi at its mean instead puts
@@ -381,7 +415,12 @@ class test_vfi_solve_step(unittest.TestCase):
             cal = {**bm.u2_calibration, "sigma_psi": sigma_psi}
             bp = BellmanPeriod(bm.u2_block, "DiscFac", cal)
             dr, _, _ = vfi.solve_step(
-                bp, u2_continuation, grid, scope=cal, disc_params={"psi": {"N": 7}}
+                bp,
+                u2_continuation,
+                grid,
+                scope=cal,
+                disc_params={"psi": {"N": 7}},
+                **levers,
             )
             return np.array([dr["c"](m) for m in ms])
 
@@ -419,7 +458,37 @@ class test_vfi_solve_step(unittest.TestCase):
             m = R * A + y_mean
             self.assertAlmostEqual(dr["c"](m), kappa * (m + H), delta=1e-4)
 
-    def test_u3_two_prestate_shocks_degenerate_limit(self):
+    def test_bounded_search_refuses_a_control_missing_a_bound(self):
+        # U-1's consumption declares an upper bound and no lower one, so the
+        # block declares no interval to search. Searching the stand-in for an
+        # open bound instead would find, in a block with no consumption floor,
+        # the spurious optimum below zero that the seeds never reach.
+        cal = bm.get_benchmark_calibration("U-1")
+        bp = BellmanPeriod(bm.u1_block, "DiscFac", cal)
+        with self.assertRaisesRegex(ValueError, "no lower bound"):
+            vfi.solve_step(
+                bp,
+                bp_terminal,
+                {"A": np.linspace(0.5, 6.0, 4)},
+                scope=cal,
+                disc_params={"eta": {"N": 3}},
+                search="bounded",
+            )
+
+    def test_bounded_search_refuses_a_joint_optimization(self):
+        # The bounded search is one-dimensional; two controls optimized jointly
+        # have no single interval.
+        with self.assertRaisesRegex(ValueError, "jointly"):
+            vfi.solve_step(
+                case_10["bp"],
+                bp_terminal,
+                {"a": np.linspace(-2, 2, 3)},
+                scope=case_10["calibration"],
+                search="bounded",
+            )
+
+    @over_levers(BOUNDED)
+    def test_u3_two_prestate_shocks_degenerate_limit(self, **levers):
         # U-3 has *two* shocks feeding the pre-state m = R*a/psi + theta, so both
         # become node axes and m varies along all three grid axes -- and m pins
         # down neither shock individually, which is where the gather-and-fit
@@ -447,12 +516,14 @@ class test_vfi_solve_step(unittest.TestCase):
             {"a": np.linspace(0.5, 8.0, 14)},
             scope=cal,
             disc_params={"psi": {"N": 5}, "theta": {"N": 5}},
+            **levers,
         )
         for A in [1.0, 2.0, 3.0, 5.0]:
             m = R * A + 1.0
             self.assertAlmostEqual(dr["c"](m), (1.0 - beta) * (m + h), delta=1e-4)
 
-    def test_u3_two_prestate_shocks_properties(self):
+    @over_levers(BOUNDED)
+    def test_u3_two_prestate_shocks_properties(self, **levers):
         # U-3 at its own calibration: CRRA = 2 and a genuinely spread theta, so
         # both shocks are non-degenerate node axes. No closed form exists, so this
         # asserts only what does not depend on the supplied continuation being the
@@ -474,6 +545,7 @@ class test_vfi_solve_step(unittest.TestCase):
             {"a": np.linspace(0.5, 8.0, 14)},
             scope=cal,
             disc_params={"psi": {"N": 5}, "theta": {"N": 5}},
+            **levers,
         )
         ms = np.array([2.0, 3.0, 4.0, 6.0, 8.0])
         c = np.array([dr["c"](m) for m in ms])
@@ -527,7 +599,8 @@ class test_vfi_solve_step(unittest.TestCase):
                 m = k * cal["R"] / cal["PermGroFac"] + theta
                 self.assertAlmostEqual(dr["c"](m), m, delta=self.ATOL)
 
-    def test_d2_single_backup_analytic_continuation(self):
+    @over_levers(BOUNDED)
+    def test_d2_single_backup_analytic_continuation(self, **levers):
         # D-2 (infinite-horizon CRRA, no shocks): a single backup under the
         # *exact* arrival value function recovers the analytic policy
         # c = kappa*(m + H). Exercises Mechanism B with m = a*R + y and a
@@ -552,13 +625,15 @@ class test_vfi_solve_step(unittest.TestCase):
         # ``[0, m + H]`` is ~17.7, far above the true optimum (~1.2) and outside
         # L-BFGS-B's basin, so on that seed alone the backup stalls at ~6.97; the
         # clamped ``x0`` candidate lands in the basin and wins on ``res.fun``.
-        dr, _, _ = vfi.solve_step(bp, d2_continuation, grid, scope=cal)
+        # The bounded search uses no seed, so it is the same box without one.
+        dr, _, _ = vfi.solve_step(bp, d2_continuation, grid, scope=cal, **levers)
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
             self.assertAlmostEqual(dr["c"](m), want, delta=self.ATOL)
 
-    def test_d3_single_backup_analytic_continuation(self):
+    @over_levers(BOUNDED)
+    def test_d3_single_backup_analytic_continuation(self, **levers):
         # D-3 (Blanchard mortality): the hidden Bernoulli survival shock ``live``
         # is a *hidden* shock (c.iset = [m]); its 2 discretization nodes (no
         # ``disc_params`` needed for a discrete shock) are integrated inside the
@@ -595,7 +670,7 @@ class test_vfi_solve_step(unittest.TestCase):
         # ungridded-arrival-state guard does not apply. No seeding hint: as in D-2,
         # multi-start covers the [0, m + H] box whose midpoint stalls.
         scope = {**cal, "liv": 1.0}
-        dr, _, _ = vfi.solve_step(bp, d3_continuation, grid, scope=scope)
+        dr, _, _ = vfi.solve_step(bp, d3_continuation, grid, scope=scope, **levers)
         for a in [1.0, 2.0, 3.0]:
             m = a * R + y
             want = float(np.asarray(bm.d3_analytical_policy({"a": a}, {}, cal)["c"]))
@@ -687,7 +762,8 @@ class test_vfi_solve_bellman(unittest.TestCase):
         with pytest.raises(NotImplementedError, match="no equilibrium concept"):
             vfi.solve_step(bp, lambda s, sh, p: 0.0, {"c": np.array([4.0])}, scope=cal)
 
-    def test_d4_constrained_loop_converges_to_a_sane_policy(self):
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
+    def test_d4_constrained_loop_converges_to_a_sane_policy(self, **levers):
         """The constrained convergence loop, without the oracle's dense grid.
 
         The oracle test below is deselected by default, and it is the only place
@@ -703,7 +779,12 @@ class test_vfi_solve_bellman(unittest.TestCase):
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
 
         dr, value_array, _ = vfi.solve_bellman(
-            bp, {"a": np.linspace(0.0, 7.5, 9)}, scope=cal, tol=1e-3, max_iter=200
+            bp,
+            {"a": np.linspace(0.0, 7.5, 9)},
+            scope=cal,
+            tol=1e-3,
+            max_iter=200,
+            **levers,
         )
 
         self.assertTrue(value_array.attrs["converged"])
@@ -718,7 +799,8 @@ class test_vfi_solve_bellman(unittest.TestCase):
             self.assertGreater(upper, lower, "consumption must rise with wealth")
 
     @pytest.mark.oracle
-    def test_d4_converges_to_reference_oracle(self):
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
+    def test_d4_converges_to_reference_oracle(self, **levers):
         # D-4 has no closed form; compare the converged policy to the dense-grid
         # VFI oracle. Two independent exact solvers should agree to ~1% (grid
         # interpolation error), which is well inside a 2% band.
@@ -727,7 +809,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
         grid = {"a": np.linspace(0.0, 7.5, 25)}
         dr, value_array, policy_array = vfi.solve_bellman(
-            bp, grid, scope=cal, tol=1e-6, max_iter=1000
+            bp, grid, scope=cal, tol=1e-6, max_iter=1000, **levers
         )
         # The loop reports convergence via value_array.attrs (O5).
         self.assertTrue(value_array.attrs["converged"])
@@ -743,7 +825,8 @@ class test_vfi_solve_bellman(unittest.TestCase):
         self.assertIsInstance(value_array, xr.DataArray)
         self.assertEqual(list(policy_array["c"].dims), ["a"])
 
-    def test_d2_iterated_converges_to_analytic(self):
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
+    def test_d2_iterated_converges_to_analytic(self, **levers):
         # D-2 (infinite-horizon CRRA, natural borrowing limit c <= m + H,
         # H = y/(R-1) = human wealth): iterate solve_bellman to a fixed point and
         # recover the unconstrained closed form c = kappa*(m + H),
@@ -777,6 +860,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             tol=1e-2,
             max_iter=2000,
             artificial_borrowing_constraint=True,
+            **levers,
         )
         self.assertTrue(value_array.attrs["converged"])
         for a in [1.0, 2.0, 3.0, 5.0]:
@@ -784,7 +868,8 @@ class test_vfi_solve_bellman(unittest.TestCase):
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
             self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
 
-    def test_d3_iterated_converges_to_analytic(self):
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
+    def test_d3_iterated_converges_to_analytic(self, **levers):
         # D-3 (Blanchard mortality) iterated to a fixed point, with the survival
         # state liv ON THE GRID. That is what makes the mortality channel visible
         # to the loop: the continuation rebuilt from the value grid is a function
@@ -817,6 +902,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             tol=1e-2,
             max_iter=2000,
             artificial_borrowing_constraint=True,
+            **levers,
         )
         self.assertTrue(value_array.attrs["converged"])
         # V(a, 0) = 0 exactly at every iterate (zero reward, zero continuation).
@@ -868,7 +954,38 @@ class test_vfi_solve_bellman(unittest.TestCase):
                 bp, grid, scope=cal, max_iter=1, raise_on_nonconvergence=True
             )
 
-    def test_u2_iterated_converges_to_analytic(self):
+    def test_policy_evaluations_reach_the_answer_in_fewer_backups(self):
+        # Evaluating each backup's policy before the next backup is what the
+        # option is for: on D-4, whose constraint binds, the loop reaches the same
+        # tolerance in a fraction of the backups, at the same policy. The
+        # policies agree to within what the tolerance allows either of them.
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.0, 7.5, 9)}
+        runs = [
+            vfi.solve_bellman(
+                bp, grid, scope=cal, tol=1e-4, max_iter=500, policy_evaluations=k
+            )
+            for k in (0, 20)
+        ]
+        (dr_plain, value_plain, _), (dr_eval, value_eval, _) = runs
+        self.assertTrue(value_plain.attrs["converged"])
+        self.assertTrue(value_eval.attrs["converged"])
+        self.assertLess(5 * value_eval.attrs["n_iter"], value_plain.attrs["n_iter"])
+        for a in [0.5, 1.0, 3.0, 6.0]:
+            m = a * cal["R"] + cal["y"]
+            self.assertAlmostEqual(dr_eval["c"](m), dr_plain["c"](m), delta=1e-2)
+
+    def test_policy_evaluations_must_be_a_count(self):
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        with self.assertRaisesRegex(ValueError, "policy_evaluations"):
+            vfi.solve_bellman(
+                bp, {"a": np.linspace(0.0, 7.5, 3)}, scope=cal, policy_evaluations=-1
+            )
+
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
+    def test_u2_iterated_converges_to_analytic(self, **levers):
         # U-2 (log utility, normalized, no borrowing constraint): a hidden
         # permanent-income shock psi that is degenerate at sigma_psi = 0 (single
         # node at psi = 1), so the hidden-shock expectation in each backup is
@@ -895,6 +1012,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             tol=1e-2,
             max_iter=2000,
             artificial_borrowing_constraint=True,
+            **levers,
         )
         self.assertTrue(value_array.attrs["converged"])
         for a in [1.0, 2.0, 3.0, 5.0]:
@@ -904,7 +1022,8 @@ class test_vfi_solve_bellman(unittest.TestCase):
             )
             self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
 
-    def test_d1_finite_horizon_converges_to_analytic(self):
+    @over_levers(BOUNDED)
+    def test_d1_finite_horizon_converges_to_analytic(self, **levers):
         # D-1 (finite-horizon log utility, T = 5): the time-varying rule
         # c_t = (1-beta)/(1-beta^(T-t)) * W, the only benchmark with a
         # non-stationary policy and an integer time axis.
@@ -933,12 +1052,16 @@ class test_vfi_solve_bellman(unittest.TestCase):
         # u'(c) = beta*R*V_W(W') carries that straight into the same relative error
         # in c. Geometric spacing equalizes log r across the grid; r ~ 1.06 here
         # holds the recovery inside ~1.2%.
+        #
+        # Not run under policy_evaluations: exact propagation reaches a residual
+        # of zero here, and a residual measured across a backup cannot fall
+        # below the backup's optimization error.
         cal = bm.d1_calibration
         T = cal["T"]
         bp = BellmanPeriod(bm.d1_block, "DiscFac", cal)
         grid = {"W": np.geomspace(0.02, 8.0, 100), "t": np.arange(0, T + 2)}
         dr, value_array, policy_array = vfi.solve_bellman(
-            bp, grid, scope=cal, tol=1e-9, max_iter=30
+            bp, grid, scope=cal, tol=1e-9, max_iter=30, **levers
         )
         self.assertTrue(value_array.attrs["converged"])
         # One pass per period plus one to detect no further change; emphatically
@@ -971,20 +1094,26 @@ class test_vfi_solve_bellman(unittest.TestCase):
 
     def test_value_array_to_function_interpolates_and_extrapolates(self):
         # The continuation reproduces the grid at the nodes, interpolates between
-        # them, and extrapolates linearly past the edges (so an off-grid
-        # next-period state during a backup never returns NaN).
+        # them, and extrapolates linearly past the edges along the outermost
+        # segments (so an off-grid next-period state during a backup never
+        # returns NaN). Uneven nodes and a kinked V, slopes 2, 1/2, 2, so a
+        # query read off the wrong segment gives a wrong value.
         cal = bm.d4_calibration
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
         value_array = xr.DataArray(
-            np.array([0.0, 1.0, 2.0, 3.0]),  # V = a, slope 1
+            np.array([0.0, 2.0, 3.0, 5.0]),
             dims=["a"],
-            coords={"a": [0.0, 1.0, 2.0, 3.0]},
+            coords={"a": [0.0, 1.0, 3.0, 4.0]},
         )
         wf = vfi.value_array_to_function(value_array, bp)
-        self.assertAlmostEqual(wf({"a": 1.0}, {}, cal), 1.0)  # node
-        self.assertAlmostEqual(wf({"a": 1.5}, {}, cal), 1.5)  # interpolated
-        self.assertAlmostEqual(wf({"a": 5.0}, {}, cal), 5.0)  # extrapolated above
-        self.assertAlmostEqual(wf({"a": -2.0}, {}, cal), -2.0)  # extrapolated below
+        self.assertAlmostEqual(wf({"a": 1.0}, {}, cal), 2.0)  # node
+        self.assertAlmostEqual(wf({"a": 2.0}, {}, cal), 2.5)  # interpolated
+        self.assertAlmostEqual(wf({"a": 5.0}, {}, cal), 7.0)  # extrapolated above
+        self.assertAlmostEqual(wf({"a": -1.0}, {}, cal), -2.0)  # extrapolated below
+        # A batch of states is answered point by point, as one array.
+        np.testing.assert_allclose(
+            wf({"a": np.array([-1.0, 2.0, 5.0])}, {}, cal), [-2.0, 2.5, 7.0]
+        )
 
     def test_value_array_to_function_integrates_observed_shock_axis(self):
         # An observed-shock axis is integrated out of the arrival value:
@@ -1162,13 +1291,15 @@ class test_vfi_horizon(unittest.TestCase):
         exact = fisher.analytical_policy({"a": avals}, {}, fisher.calibration)["c"]
         return bp, {"a": avals}, np.asarray(exact)
 
-    def test_finite_horizon_recovers_the_closed_form(self):
+    @over_levers(BOUNDED)
+    def test_finite_horizon_recovers_the_closed_form(self, **levers):
         # T backups of the one-period block IS the T-period problem, so
-        # max_iter=T is exact up to grid error.
+        # max_iter=T is exact up to grid error. Not run under
+        # policy_evaluations, which would lengthen a horizon set by max_iter.
         bp, grid, exact = self._fisher()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            _, _, policy = vfi.solve_bellman(bp, grid, max_iter=fisher.T)
+            _, _, policy = vfi.solve_bellman(bp, grid, max_iter=fisher.T, **levers)
 
         c = np.asarray(policy["c"]).ravel()
         self.assertLess(np.abs(c - exact).max(), 5e-2)
