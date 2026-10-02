@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- `vfi.value_array_to_function` interpolates a one-axis continuation with numpy
+  rather than `RegularGridInterpolator`: the same values, at a fraction of the
+  cost per call.
+
 ### Fixed
 
 - `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
