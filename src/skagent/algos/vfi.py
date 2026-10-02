@@ -42,7 +42,7 @@ def get_action_rule(action):
     return ar
 
 
-def ar_from_data(da):
+def ar_from_data(da, clip=None):
     """
     Build a decision rule from a fitted policy ``DataArray``.
 
@@ -52,6 +52,13 @@ def ar_from_data(da):
     matches how ``block.transition`` invokes a rule,
     ``dr(*[vals[v] for v in iset])``, so a VFI-fitted rule is a drop-in for the
     rest of the stack.
+
+    Between the grid's points the rule interpolates linearly. Past the range
+    the grid covers along a dimension it extends linearly from the outermost
+    segment, so it answers every query rather than returning NaN, and *clip* is
+    applied to those extended values. The rule's ``off_grid`` attribute counts
+    the queries it has answered that way, which is how a caller tells whether
+    the rule was used where it was not solved.
 
     Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
     the result with :func:`tensor_decision_rule`.
@@ -65,6 +72,12 @@ def ar_from_data(da):
         constant along that variable: one grid point fixes a level and says
         nothing about a slope, so the rule takes the value and ignores the
         argument.
+    clip : callable, optional
+        ``clip(values, *args)``, returning *values* held within the control's
+        bounds at the information-set values *args*, all arrays of one length.
+        Applied to queries off the grid only, where the rule is extended rather
+        than fitted. :func:`solve_step` supplies one from the control's
+        declared bounds.
 
     Returns
     -------
@@ -72,7 +85,8 @@ def ar_from_data(da):
         A rule ``ar(*args)`` taking one positional argument per dimension of
         *da*. Scalar arguments return a Python scalar; array-like arguments are
         interpolated *pointwise* (not as an outer product) and return a numpy
-        array.
+        array. Its ``off_grid`` attribute is the number of queries answered off
+        the grid.
 
     Raises
     ------
@@ -106,23 +120,63 @@ def ar_from_data(da):
                 return value
             return np.full(max(np.size(a) for a in args), value)
 
-        if batched:
-            # vectorized (pointwise) interpolation: share a single dimension
-            # across all coordinate indexers so xarray does not take the outer
-            # product of the inputs.
-            length = max(np.size(a) for a in args)
-            coords = {
-                dim: xr.DataArray(
-                    np.broadcast_to(np.asarray(arg).ravel(), (length,)), dims="_point"
-                )
-                for dim, arg in varying
-            }
-            return fitted.interp(**coords).values
+        # Pointwise interpolation, scalars as a batch of one: every coordinate
+        # indexer shares one dimension, so xarray does not take the outer
+        # product of the inputs.
+        length = max(np.size(a) for a in args)
+        points = [
+            np.broadcast_to(np.asarray(a, dtype=float).ravel(), (length,)) for a in args
+        ]
+        at = dict(zip(dims, points))
+        coords = {dim: xr.DataArray(at[dim], dims="_point") for dim, _ in varying}
+        # Linear extension past the grid: one varying dimension interpolates
+        # with scipy's interp1d, several with interpn, and each spells it its
+        # own way.
+        extend = {"fill_value": "extrapolate" if len(varying) == 1 else None}
+        values = np.array(fitted.interp(**coords, kwargs=extend).values, dtype=float)
 
-        coords = {dim: arg for dim, arg in varying}
-        return fitted.interp(**coords).values.tolist()
+        off = np.zeros(length, dtype=bool)
+        for dim, _ in varying:
+            axis = np.asarray(fitted[dim].values, dtype=float)
+            off |= (at[dim] < axis.min()) | (at[dim] > axis.max())
+        if off.any():
+            ar.off_grid += int(off.sum())
+            if clip is not None:
+                values[off] = clip(values[off], *[p[off] for p in points])
 
+        return values if batched else values[0].item()
+
+    ar.off_grid = 0
     return ar
+
+
+def _clip_to_bounds(lower, upper, iset, params):
+    """A *clip* for :func:`ar_from_data` from a control's declared bounds.
+
+    Each bound is evaluated at the rule's own information-set values, with
+    *params* supplying any other name it reads; a bound reading a name neither
+    supplies is not applied. ``None`` when the control declares no bound.
+    """
+    if lower is None and upper is None:
+        return None
+
+    def evaluate(bound, bag):
+        names = param_names(bound)
+        if bound is None or not all(name in bag for name in names):
+            return None
+        return np.asarray(bound(*[bag[name] for name in names]), dtype=float)
+
+    def clip(values, *args):
+        bag = {**params, **dict(zip(iset, args))}
+        low = evaluate(lower, bag) if lower is not None else None
+        high = evaluate(upper, bag) if upper is not None else None
+        if low is not None:
+            values = np.maximum(values, low)
+        if high is not None:
+            values = np.minimum(values, high)
+        return values
+
+    return clip
 
 
 def tensor_decision_rule(np_rule, dtype=None, device=None):
@@ -1000,7 +1054,10 @@ def solve_step(
                 iset_coord_buf[c],
                 c,
                 identified=identified_buf if check_identified else None,
-            )
+            ),
+            clip=_clip_to_bounds(
+                lower_by_control[c], upper_by_control[c], iset_by_control[c], params
+            ),
         )
         for c in controls
     }
