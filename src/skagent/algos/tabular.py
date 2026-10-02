@@ -216,7 +216,7 @@ class TabularBestResponseSolver:
                 "equation reducing over the entity axis would be reduced over "
                 "the samples instead, answering a different model. Use a "
                 "solver that names an equilibrium concept. Separating one "
-                "instance with skagent.solver.project does not yet help HERE: "
+                "instance with skagent.solver.project_nash does not yet help HERE: "
                 "the projection keeps the rivals as a class of their own, and "
                 "this solver and that projection do not agree on which axis "
                 "leads, so the refusal stands on the whole block."

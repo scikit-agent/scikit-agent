@@ -115,7 +115,7 @@ import numpy as np
 import skagent.models.lemons as lemons
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
-from skagent.solver import project
+from skagent.solver import project_nash
 from skagent.utils import plot_block_diagram
 
 # sphinx_gallery_thumbnail_number = 2
@@ -530,13 +530,13 @@ report(
 #
 # One symbol cannot refer to another instance of itself, so that reliance is
 # derived on a split of the class -- one node for the seller being solved, one
-# for the rest of it -- which is what :func:`~skagent.solver.project` builds.
+# for the rest of it -- which is what :func:`~skagent.solver.project_nash` builds.
 # Asked of the projection directly, the same reliance is a pair of edges between
 # the two sides:
 
 
 def projected_graph(block, calibration):
-    projected = project(GroundedBlock(block, calibration))
+    projected = project_nash(GroundedBlock(block, calibration))
     return projected.block.relevance_graph(projected.calibration)
 
 

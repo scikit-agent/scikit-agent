@@ -783,8 +783,10 @@ def solve_step(
             ". Its leading axis is the STATE GRID rather than a population, so "
             "the two would be conflated and the answer would be a plausible "
             "number for a different model. Separate one instance from the rest "
-            "with skagent.solver.project and solve the projection, or use a "
-            "solver that names an equilibrium concept."
+            "and solve the projection: skagent.solver.project_nash keeps the "
+            "instance's own share of the aggregate (Nash among N), and "
+            "skagent.solver.project_mean_field takes the aggregate as given "
+            "(price-taking). Or use a solver that names an equilibrium concept."
         )
     shock_syms = set(bp.get_shocks())
     arrival = bp.arrival_states

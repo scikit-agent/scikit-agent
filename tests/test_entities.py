@@ -9,7 +9,7 @@ from skagent.block import Aggregate, Control, DBlock, Entity, RBlock
 from skagent.distributions import Normal, Uniform
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
-from skagent.solver import project
+from skagent.solver import project_nash
 
 A, B = 10.0, 1.0
 
@@ -603,7 +603,9 @@ class TestOneInstanceReliesOnTheOthers:
         # side that is already one instance's; the two sides are distinct
         # symbols there, so the reliance the self-loop stands for is an
         # ordinary pair of edges the criterion reads off the block.
-        projected = project(GroundedBlock(cournot_block(), collusion_calibration()))
+        projected = project_nash(
+            GroundedBlock(cournot_block(), collusion_calibration())
+        )
         graph = projected.block.relevance_graph(projected.calibration)
 
         assert set(graph.nodes()) == {"q_actor", "q_other"}

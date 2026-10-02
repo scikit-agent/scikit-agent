@@ -707,7 +707,7 @@ class Block:
             return None
 
         from skagent.ground import GroundedBlock
-        from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project
+        from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project_nash
 
         entities = self.entities()
         if any(name + OTHER_SUFFIX in entities for name in entities):
@@ -743,7 +743,7 @@ class Block:
             for suffix in (ACTOR_SUFFIX, OTHER_SUFFIX)
         }
         return (
-            project(GroundedBlock(self, calibration)),
+            project_nash(GroundedBlock(self, calibration)),
             names,
             Plate(entity, size),
         )
