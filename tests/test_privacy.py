@@ -6,7 +6,7 @@ import pytest
 import skagent.models.privacy as privacy
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
-from skagent.solver import ExactBestResponse, project
+from skagent.solver import ExactBestResponse, project_nash
 
 SIZE = 200
 """Subjects per run. Small enough to simulate, large enough that the count's
@@ -223,7 +223,7 @@ class TestASolverFindsWhatThePaperDerives:
     """The subjects' half solved rather than supplied, against the closed form."""
 
     def method(self, sigma, size=20):
-        projected = project(
+        projected = project_nash(
             GroundedBlock(privacy.local_block, privacy.calibration(sigma, size=size))
         )
         grid = {

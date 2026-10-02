@@ -12,6 +12,14 @@ and this project adheres to
 
 - `GroundedBlock.with_calibration(values)` returns a copy with _values_ merged
   over the calibration; a `BellmanPeriod`'s copy recomputes its arrival states.
+- `skagent.solver.project_mean_field` gives one instance's problem under
+  price-taking: each equation reducing over the entity class is removed, so the
+  aggregate becomes a value the caller supplies.
+
+### Deprecated
+
+- `skagent.solver.project` is renamed `skagent.solver.project_nash`, beside
+  `project_mean_field`. The old name still works and warns, and will be removed.
 
 ### Fixed
 
