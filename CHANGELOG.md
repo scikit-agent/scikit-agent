@@ -13,6 +13,10 @@ and this project adheres to
 - `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
   Gauss-Hermite quadrature on the log. It gave equal weights to evenly spaced
   nodes, which overstated the mean and standard deviation.
+- `maliar_training_loop` raises `RuntimeError` when the loss becomes non-finite,
+  naming the iteration. It used to carry on: on the next iteration the trainer
+  stopped at epoch 0 without changing the weights, and the loop reported the
+  zero parameter change as convergence (#371).
 
 ## [0.2.0] - 2026-09-30
 
