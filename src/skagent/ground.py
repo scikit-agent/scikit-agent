@@ -14,6 +14,7 @@ from __future__ import annotations
 import copy
 import numbers
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -127,6 +128,33 @@ class GroundedBlock:
         """
         other = copy.copy(self)
         other.rng = rng
+        other._shocks = None
+        return other
+
+    def with_calibration(self, values: Mapping[str, Any]) -> GroundedBlock:
+        """A copy of this pair with *values* merged over its calibration.
+
+        Each value replaces the calibration's own for that symbol, and every
+        other entry is kept, so the copy is the same model with some of its
+        values given rather than a model calibrated afresh. It resolves its
+        shocks on first access, since a shock may be declared against a symbol
+        whose value changed, and so shares no distribution with the original.
+        The block, the generator and anything a subclass adds are carried over;
+        the copy draws from the same generator as this pair, and
+        :meth:`with_rng` gives it another.
+
+        Parameters
+        ----------
+        values : Mapping[str, Any]
+            The calibration entries to set.
+
+        Returns
+        -------
+        GroundedBlock
+            Of the same type as *self*.
+        """
+        other = copy.copy(self)
+        other.calibration = {**self.calibration, **values}
         other._shocks = None
         return other
 
