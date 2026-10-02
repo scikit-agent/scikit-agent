@@ -1063,7 +1063,7 @@ def value_array_to_function(
     distribution that produced the axis nodes; a grid built from other node
     values raises :class:`ValueError`. ``wf`` then interpolates linearly over the
     remaining arrival-state axes and **extrapolates linearly** past the grid
-    edges (via :class:`scipy.interpolate.RegularGridInterpolator`), so an
+    edges, as :class:`scipy.interpolate.RegularGridInterpolator` does, so an
     off-grid next-period state during the backup gets a finite, sloped
     continuation rather than ``NaN`` (which breaks the optimizer) or a flat
     boundary clamp (which zeroes the marginal value of saving and collapses the
@@ -1111,12 +1111,19 @@ def value_array_to_function(
     from scipy.interpolate import RegularGridInterpolator
 
     points = tuple(np.asarray(value_array[ax].values, dtype=float) for ax in axes)
-    rgi = RegularGridInterpolator(
-        points,
-        np.asarray(value_array.values, dtype=float),
-        bounds_error=False,
-        fill_value=None,  # None -> linear extrapolation past the grid edges
-    )
+    values = np.asarray(value_array.values, dtype=float)
+    if len(points) == 1 and len(points[0]) > 1 and np.all(np.diff(points[0]) > 0):
+        # One ascending axis: the same interpolant, without the general
+        # interpolator's per-call overhead, which dominates a backup that
+        # evaluates the continuation one point at a time.
+        interpolate = _linear_1d(points[0], values)
+    else:
+        interpolate = RegularGridInterpolator(
+            points,
+            values,
+            bounds_error=False,
+            fill_value=None,  # None -> linear extrapolation past the grid edges
+        )
 
     # Arrival states this grid cannot represent; being handed one is an error.
     ungridded = sorted(set(bp.arrival_states) - set(axes))
@@ -1133,10 +1140,28 @@ def value_array_to_function(
         scalar = all(c.ndim == 0 for c in cols)
         # Pointwise (not outer-product) query: one row per evaluation point.
         query = np.stack([np.atleast_1d(c).ravel() for c in cols], axis=-1)
-        out = rgi(query)
+        out = interpolate(query)
         return float(out[0]) if scalar else out
 
     return wf
+
+
+def _linear_1d(nodes, values):
+    """Linear interpolation over ascending *nodes*, extrapolating linearly.
+
+    Past either end the outermost segment is extended, which is what
+    :class:`scipy.interpolate.RegularGridInterpolator` does with
+    ``fill_value=None``. Takes and returns the same shapes it does: a query of
+    shape ``(n, 1)`` and ``n`` values.
+    """
+
+    def interpolate(query):
+        x = query[:, 0]
+        i = np.clip(np.searchsorted(nodes, x) - 1, 0, len(nodes) - 2)
+        slope = (values[i + 1] - values[i]) / (nodes[i + 1] - nodes[i])
+        return values[i] + (x - nodes[i]) * slope
+
+    return interpolate
 
 
 def solve_bellman(

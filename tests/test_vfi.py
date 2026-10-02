@@ -971,20 +971,26 @@ class test_vfi_solve_bellman(unittest.TestCase):
 
     def test_value_array_to_function_interpolates_and_extrapolates(self):
         # The continuation reproduces the grid at the nodes, interpolates between
-        # them, and extrapolates linearly past the edges (so an off-grid
-        # next-period state during a backup never returns NaN).
+        # them, and extrapolates linearly past the edges along the outermost
+        # segments (so an off-grid next-period state during a backup never
+        # returns NaN). Uneven nodes and a kinked V, slopes 2, 1/2, 2, so a
+        # query read off the wrong segment gives a wrong value.
         cal = bm.d4_calibration
         bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
         value_array = xr.DataArray(
-            np.array([0.0, 1.0, 2.0, 3.0]),  # V = a, slope 1
+            np.array([0.0, 2.0, 3.0, 5.0]),
             dims=["a"],
-            coords={"a": [0.0, 1.0, 2.0, 3.0]},
+            coords={"a": [0.0, 1.0, 3.0, 4.0]},
         )
         wf = vfi.value_array_to_function(value_array, bp)
-        self.assertAlmostEqual(wf({"a": 1.0}, {}, cal), 1.0)  # node
-        self.assertAlmostEqual(wf({"a": 1.5}, {}, cal), 1.5)  # interpolated
-        self.assertAlmostEqual(wf({"a": 5.0}, {}, cal), 5.0)  # extrapolated above
-        self.assertAlmostEqual(wf({"a": -2.0}, {}, cal), -2.0)  # extrapolated below
+        self.assertAlmostEqual(wf({"a": 1.0}, {}, cal), 2.0)  # node
+        self.assertAlmostEqual(wf({"a": 2.0}, {}, cal), 2.5)  # interpolated
+        self.assertAlmostEqual(wf({"a": 5.0}, {}, cal), 7.0)  # extrapolated above
+        self.assertAlmostEqual(wf({"a": -1.0}, {}, cal), -2.0)  # extrapolated below
+        # A batch of states is answered point by point, as one array.
+        np.testing.assert_allclose(
+            wf({"a": np.array([-1.0, 2.0, 5.0])}, {}, cal), [-2.0, 2.5, 7.0]
+        )
 
     def test_value_array_to_function_integrates_observed_shock_axis(self):
         # An observed-shock axis is integrated out of the arrival value:
