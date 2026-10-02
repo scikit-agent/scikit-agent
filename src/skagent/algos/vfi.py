@@ -1269,6 +1269,63 @@ def _linear_1d(nodes, values):
     return interpolate
 
 
+def _fixed_policy_operator(bp, value_array, policy_array, agent, scope, disc_params):
+    """The Bellman operator at a fixed policy, as a map on value grids.
+
+    Returns ``apply(v)``, the value over *value_array*'s grid of following
+    *policy_array* for one period and continuing with the value grid *v*. The
+    period's reward, discount and next arrival states under the policy are
+    computed once here, at every gridpoint and every node of the shocks the
+    backup integrates; each application then evaluates only the continuation,
+    in one call over all of them.
+    """
+    params = {**bp.calibration, **scope}
+    grid_axes = list(value_array.dims)
+    controls = list(policy_array)
+    roles = _resolve_shock_roles(bp, params, grid_axes, controls)
+    hidden = [s for s, role in roles.items() if role == HIDDEN]
+    if hidden:
+        joint, _ = _discretize_shocks(bp, hidden, params, disc_params)
+        weights = np.asarray(joint.weights, dtype=float)
+        points = np.asarray(joint.points, dtype=float).reshape(len(weights), -1)
+        nodes = [dict(zip(joint.var_names, row)) for row in points]
+    else:
+        weights, nodes = np.ones(1), [{}]
+
+    shocks = set(bp.get_shocks())
+    reward_syms = bp.get_reward_syms(agent)
+    shape = value_array.shape + (len(nodes),)
+    reward, discount = np.empty(shape), np.empty(shape)
+    successor = {s: np.empty(shape) for s in bp.arrival_states}
+    for idx in np.ndindex(*value_array.shape):
+        point = {k: value_array[k].values[i] for k, i in zip(grid_axes, idx)}
+        states = {k: v for k, v in point.items() if k in bp.arrival_states}
+        observed = {k: v for k, v in point.items() if k in shocks}
+        actions = {c: float(policy_array[c].values[idx]) for c in controls}
+        for j, node in enumerate(nodes):
+            post = bp.post_function(
+                states, actions, shocks={**observed, **node}, parameters=params
+            )
+            reward[idx + (j,)] = sum(post[s] for s in reward_syms)
+            discount[idx + (j,)] = bp.resolve_discount_factor(post)
+            for s, v in bp.select_arrival_states(post).items():
+                successor[s][idx + (j,)] = v
+
+    def apply(v):
+        continuation = value_array_to_function(v, bp, disc_params)
+        future = np.asarray(
+            continuation({s: a.ravel() for s, a in successor.items()}, {}, params),
+            dtype=float,
+        ).reshape(shape)
+        return xr.DataArray(
+            (reward + discount * future) @ weights,
+            dims=grid_axes,
+            coords=value_array.coords,
+        )
+
+    return apply
+
+
 def solve_bellman(
     bp: BellmanPeriod,
     state_grid: AxisSpec,
@@ -1283,6 +1340,7 @@ def solve_bellman(
     raise_on_nonconvergence: bool = False,
     artificial_borrowing_constraint: bool = False,
     search: str = "multistart",
+    policy_evaluations: int = 0,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
     Solve a recurring ``BellmanPeriod`` by value-function iteration.
@@ -1359,6 +1417,17 @@ def solve_bellman(
     search : {"multistart", "bounded"}, optional
         Forwarded to :func:`solve_step`: how each point's optimum is found. The
         warm start is one of the seeds either way.
+    policy_evaluations : int, optional
+        How many times to apply the Bellman operator at the maximizing policy
+        after each backup, before the next one (modified policy iteration).
+        Default 0, plain value iteration. Each application costs a fraction of a
+        backup and moves the value grid toward the policy's own value, so the
+        loop reaches *tol* in fewer backups. The residual is then the change
+        across a backup, which the backup's own optimization error bounds below,
+        so *tol* must not be tighter than that error. For an infinite horizon
+        only: under a horizon set through *max_iter* the applications lengthen
+        the horizon, and a horizon carried in the state already converges in a
+        backup per period.
 
     Returns
     -------
@@ -1373,12 +1442,15 @@ def solve_bellman(
     Raises
     ------
     ValueError
-        If *max_iter* is less than 1, or if the period has no arrival states.
+        If *max_iter* is less than 1, if *policy_evaluations* is negative, or if
+        the period has no arrival states.
     RuntimeError
         If *raise_on_nonconvergence* is ``True`` and the loop does not converge.
     """
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
+    if policy_evaluations < 0:
+        raise ValueError(f"policy_evaluations must be >= 0, got {policy_evaluations}.")
 
     if not bp.arrival_states:
         raise ValueError(
@@ -1416,7 +1488,15 @@ def solve_bellman(
                 break
         value_prev = value_array
         x0_policy = policy_array  # seed the next backup from this optimum
-        cont = value_array_to_function(value_array, bp, disc_params)  # W_n from V_n
+        if policy_evaluations and it + 1 < max_iter:
+            # The next backup is measured against the evaluated grid, so the
+            # residual stays the change a backup makes.
+            evaluate = _fixed_policy_operator(
+                bp, value_array, policy_array, agent, scope, disc_params
+            )
+            for _ in range(policy_evaluations):
+                value_prev = evaluate(value_prev)
+        cont = value_array_to_function(value_prev, bp, disc_params)  # W_n from V_n
 
     value_array.attrs.update(n_iter=it + 1, converged=converged, residual=residual)
     if not converged:

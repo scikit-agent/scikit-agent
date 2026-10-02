@@ -15,6 +15,10 @@ and this project adheres to
   times faster. It applies to a single control with both bounds declared, and
   raises otherwise.
 
+- `vfi.solve_bellman` takes `policy_evaluations=k`: after each backup, the
+  Bellman operator is applied k times at the backup's policy (modified policy
+  iteration), so the loop needs far fewer backups. For infinite horizons.
+
 ### Changed
 
 - `vfi.value_array_to_function` interpolates a one-axis continuation with numpy
