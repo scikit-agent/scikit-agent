@@ -249,6 +249,16 @@ class test_prisoners_dilemma(unittest.TestCase):
         self.assertAlmostEqual(u1, swapped_u2)
         self.assertAlmostEqual(u2, swapped_u1)
 
+    def test_discrete_variant_declares_binary_actions(self):
+        controls = macid.discrete_prisoners_dilemma_block.get_controls()
+        self.assertEqual(controls["D1"].action_space, frozenset({0.0, 1.0}))
+        self.assertEqual(controls["D2"].action_space, frozenset({0.0, 1.0}))
+
+        with self.assertRaisesRegex(ValueError, "outside its action_space"):
+            macid.discrete_prisoners_dilemma_block.transition(
+                {}, {"D1": lambda: 0.5, "D2": lambda: 0.0}
+            )
+
 
 class test_iterated_prisoners_dilemma(unittest.TestCase):
     def test_multi_agent_structure(self):

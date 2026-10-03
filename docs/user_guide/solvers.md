@@ -96,6 +96,10 @@ method = TabularBestResponseSolver(GroundedBlock(b, calibration))
 decision_rules = solve_in_relevance_order(method)
 ```
 
+When a control declares an `action_space`, the method searches exactly those
+actions. Its `actions` and `action_count` arguments provide the candidate grid
+only for controls without one.
+
 One pass per decision suffices for an acyclic component, because everything a
 decision relies on is already settled by the time its turn comes. If a component
 contains a cycle, the schedule repeatedly computes every decision's best
