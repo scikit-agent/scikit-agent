@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- `GroundedBlock.with_calibration(values)` returns a copy with _values_ merged
+  over the calibration; a `BellmanPeriod`'s copy recomputes its arrival states.
+
 ### Fixed
 
 - `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
