@@ -173,6 +173,24 @@ How the solvers enforce these bounds, and how to encode the optimality
 conditions that hold where a constraint binds, is the subject of the
 {doc}`constraints` guide.
 
+#### Randomized binary controls
+
+A control can interpret its policy output as a probability and realize a binary
+action during simulation:
+
+```python
+defect = ska.Control(["previous_action"], randomizes=True)
+```
+
+This adds an independent model shock `u_defect ~ Uniform(0, 1)`. The policy
+still receives only `previous_action` and returns a probability `p` in `[0, 1]`;
+simulation records `defect = 1` when `u_defect < p`, and zero otherwise.
+Randomizers use the simulator seed, are included in model diagrams and
+simulation history, and follow any entity shape carried by their controls.
+Values outside `[0, 1]` or non-finite values raise `ValueError`. This mechanism
+executes supplied mixed strategies; it does not solve for mixed-strategy
+equilibria.
+
 #### Calibration
 
 Shock parameters can be given as strings naming calibration parameters rather

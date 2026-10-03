@@ -7,12 +7,13 @@ from copy import copy, deepcopy
 from skagent.distributions import (
     Distribution,
     DiscreteDistributionLabeled,
+    Uniform,
     combine_indep_dstns,
     expected,
 )
 import numpy as np
 from skagent.model_analyzer import ModelAnalyzer
-from skagent.relevance import Plate, RelevanceGraph, shock_roles
+from skagent.relevance import HIDDEN, Plate, RelevanceGraph, shock_roles
 from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
@@ -122,13 +123,29 @@ class Control:
 
     agent : str
         A label identifying the agent role to which this control is attributed.
+
+    randomizes : bool, keyword-only
+        If true, the decision rule returns a probability in ``[0, 1]``. During
+        simulation the generated shock ``u_<control> ~ Uniform(0, 1)`` realizes
+        a binary action, equal to one exactly when the draw is below that
+        probability. Defaults to false.
     """
 
-    def __init__(self, iset, lower_bound=None, upper_bound=None, agent=None):
+    def __init__(
+        self, iset, lower_bound=None, upper_bound=None, agent=None, *, randomizes=False
+    ):
         self.iset = iset
         self.lower_bound = normalize_bound(lower_bound, "lower_bound")
         self.upper_bound = normalize_bound(upper_bound, "upper_bound")
         self.agent = agent
+        if not isinstance(randomizes, bool):
+            raise TypeError(f"randomizes must be a bool; got {randomizes!r}.")
+        self.randomizes = randomizes
+
+
+def _randomizer_name(control_name):
+    """The shock name reserved for a randomizing control."""
+    return f"u_{control_name}"
 
 
 def discretized_shock_dstn(shocks, disc_params):
@@ -278,6 +295,21 @@ def simulate_dynamics(
     """
     vals = pre.copy()
 
+    def realize_randomized_control(sym, control):
+        """Turn a policy probability into an action using its model shock."""
+        if not control.randomizes:
+            return
+        probability = np.asarray(vals[sym], dtype=float)
+        invalid = ~np.isfinite(probability) | (probability < 0.0) | (probability > 1.0)
+        if np.any(invalid):
+            raise ValueError(
+                f"randomizing control {sym!r} requires probabilities in [0, 1]; "
+                f"got {vals[sym]!r}"
+            )
+        randomizer = _randomizer_name(sym)
+        action = np.asarray(vals[randomizer]) < probability
+        vals[sym] = int(action) if action.ndim == 0 else action.astype(int)
+
     def broadcast(sym):
         """Widen a single returned value to *sym*'s declared shape."""
         if shapes is None:
@@ -320,6 +352,7 @@ def simulate_dynamics(
                     # decision rule takes no arguments
                     # easy to compute in any scope...
                     vals[sym] = dr[sym]()
+            realize_randomized_control(sym, update_fn)
         else:
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()
@@ -845,7 +878,14 @@ class Block:
             .analyze()
             .influence_graph(dynamic=True)
         )
-        return shock_roles(scim, self.get_shocks())
+        roles = shock_roles(scim, self.get_shocks())
+        for control, rule in self.get_controls().items():
+            if rule.randomizes:
+                # Conditioning on the realized action graphically intercepts
+                # this shock's only path to utility, but a solver choosing the
+                # action probability must integrate over the later draw.
+                roles[control][_randomizer_name(control)] = HIDDEN
+        return roles
 
     def visualize(self, calibration, title=None, discount=None):
         """
@@ -988,6 +1028,9 @@ class DBlock(Block):
     dynamics: dict = field(default_factory=dict)
     reward: dict = field(default_factory=dict)
     entity: "Entity | None" = None
+    _randomizer_shocks: dict = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
 
     def construct_shocks(self, calibration, rng=None):
         """
@@ -1017,7 +1060,7 @@ class DBlock(Block):
         -------
         dict[str, Distribution]
         """
-        return construct_shocks(self.shocks, calibration, rng=rng)
+        return construct_shocks(self.get_shocks(), calibration, rng=rng)
 
     def _resolved_shocks(self, calibration=None):
         """This block's shocks as distributions, refusing any left declared.
@@ -1026,16 +1069,21 @@ class DBlock(Block):
         must already be distributions -- which they are when the block declares
         them as instances rather than as ``(class, arguments)`` pairs.
         """
-        shocks = (
-            self.shocks if calibration is None else self.construct_shocks(calibration)
+        shocks = self.get_shocks()
+        generated = self._randomizer_names()
+        declared = sorted(
+            s for s, d in shocks.items() if isinstance(d, tuple) and s not in generated
         )
-        declared = sorted(s for s, d in shocks.items() if isinstance(d, tuple))
         if declared:
+            if calibration is not None:
+                return self.construct_shocks(calibration)
             raise ValueError(
                 f"shocks {declared} are declared as (class, arguments) and need "
                 "a calibration to resolve; pass calibration="
             )
-        return shocks
+        # Generated uniform recipes have no symbolic parameters, so they do
+        # not force callers of ``discretize`` to supply an empty calibration.
+        return construct_shocks(shocks, calibration or {})
 
     def discretize(self, disc_params, calibration=None):
         """
@@ -1055,8 +1103,17 @@ class DBlock(Block):
             else:
                 disc_shocks[shockn] = deepcopy(shocks[shockn])
 
-        # replace returns a modified copy
-        new_dblock = replace(self, shocks=disc_shocks)
+        # Keep generated randomizers separate from authored shocks.
+        generated = self._randomizer_names()
+        authored_shocks = {
+            sym: shock for sym, shock in disc_shocks.items() if sym not in generated
+        }
+        generated_shocks = {
+            sym: shock for sym, shock in disc_shocks.items() if sym in generated
+        }
+
+        new_dblock = replace(self, shocks=authored_shocks)
+        new_dblock._randomizer_shocks = generated_shocks
 
         return new_dblock
 
@@ -1064,6 +1121,24 @@ class DBlock(Block):
         for v in self.dynamics:
             if isinstance(self.dynamics[v], str):
                 self.dynamics[v] = Rule(self.dynamics[v])
+
+        declared = set(self.shocks) | set(self.dynamics) | set(self.reward)
+        for sym, rule in self.dynamics.items():
+            randomizer = _randomizer_name(sym)
+            if (
+                isinstance(rule, Control)
+                and rule.randomizes
+                and randomizer in rule.iset
+            ):
+                raise ValueError(
+                    f"randomizing control {sym!r} cannot include its generated "
+                    f"shock {randomizer!r} in its information set"
+                )
+            if isinstance(rule, Control) and rule.randomizes and randomizer in declared:
+                raise ValueError(
+                    f"randomizing control {sym!r} generates shock {randomizer!r}, "
+                    "but that name is already declared"
+                )
 
         # --- this now has agent assignments.
         # for r in self.reward:
@@ -1079,7 +1154,7 @@ class DBlock(Block):
         signature = inherited | ({self.entity.name} if self.entity else set())
         signature = frozenset(signature)
         sigs = {}
-        for sym, shock in self.shocks.items():
+        for sym, shock in self.get_shocks().items():
             # An Aggregate shock is axis-free wherever it is declared.
             sigs[sym] = frozenset() if isinstance(shock, Aggregate) else signature
         for sym in self.dynamics:
@@ -1087,6 +1162,25 @@ class DBlock(Block):
         return sigs
 
     def get_shocks(self):
+        shocks = dict(self.shocks)
+        for sym, rule in self.dynamics.items():
+            if isinstance(rule, Control) and rule.randomizes:
+                randomizer = _randomizer_name(sym)
+                shocks[randomizer] = self._randomizer_shocks.get(
+                    randomizer, (Uniform, {"low": 0.0, "high": 1.0})
+                )
+        return shocks
+
+    def _randomizer_names(self):
+        """Names generated by this block's randomizing controls."""
+        return {
+            _randomizer_name(sym)
+            for sym, rule in self.dynamics.items()
+            if isinstance(rule, Control) and rule.randomizes
+        }
+
+    def _get_declared_shocks(self):
+        """Return only shocks explicitly authored on this block."""
         return self.shocks
 
     def get_dynamics(self):
@@ -1100,7 +1194,7 @@ class DBlock(Block):
         """
         # TODO: find a way to also enumerate the variables that are only used
         # as arguments to the dynamics (currently excluded from this list).
-        return list(self.shocks.keys()) + list(self.dynamics.keys())
+        return list(self.get_shocks()) + list(self.dynamics)
 
     def get_state_rule_value_function_from_continuation(
         self, continuation, screen=False, agent=None
@@ -1241,6 +1335,7 @@ class DBlock(Block):
             dynamics=new_dynamics,
             reward=new_reward,
         )
+        replacement._randomizer_shocks = deepcopy(self._randomizer_shocks)
 
         return replacement
 
@@ -1325,7 +1420,7 @@ class RBlock(Block):
                 nb = b.discretize(disc_params, calibration=calibration)
                 cbs[i] = nb
             elif isinstance(b, RBlock):
-                b.discretize(disc_params, calibration=calibration)
+                cbs[i] = b.discretize(disc_params, calibration=calibration)
 
         # returns a copy of the RBlock with the blocks replaced
         return replace(self, blocks=cbs)
@@ -1361,6 +1456,10 @@ class RBlock(Block):
 
     def get_shocks(self):
         return self._merge_from_blocks(lambda b: b.get_shocks())
+
+    def _get_declared_shocks(self):
+        """Return authored shocks, excluding controls' derived randomizers."""
+        return self._merge_from_blocks(lambda b: b._get_declared_shocks())
 
     def get_dynamics(self):
         return self._merge_from_blocks(lambda b: b.get_dynamics())

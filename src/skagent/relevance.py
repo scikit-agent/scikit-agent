@@ -16,7 +16,8 @@ Economic Behavior 45(1), 2003), Defs. 7-8:
     D -> D' iff D relies on D' (equivalently, D' is s-reachable from D).
   - D' is s-reachable from D iff there is a utility node U owned by D's agent
     and descended from D such that, adding a fresh dummy parent to D', there is
-    an active path (d-connection) from the dummy to U given Pa(D) u {D}.
+    an active path (d-connection) from the dummy to U given the information of D
+    together with {D}.
 
 A decision node's own value is not what matters -- its decision rule is -- so the
 test is run from a synthetic parent standing in for that rule. The reliance
@@ -349,8 +350,8 @@ def shock_roles(scim, shocks, decisions=None):
     scim : skagent.influence.SCIM
         The influence-diagram view, after
         :meth:`~skagent.influence.SCIM.with_lagged_arrivals` and
-        :meth:`~skagent.influence.SCIM.with_continuation`, so that a decision's
-        parents are its information set.
+        :meth:`~skagent.influence.SCIM.with_continuation`, with each decision's
+        policy information represented explicitly.
     shocks : iterable
         Shock variable names.
     decisions : iterable, optional
@@ -391,7 +392,7 @@ def shock_roles(scim, shocks, decisions=None):
             scim, decision, "every shock would be reported as accounted-for"
         )
 
-        conditioned = scim.parents(decision)
+        conditioned = scim.information(decision)
         reachable = scim.d_connected(targets, scim.context(decision))
         informative = scim.ancestors(conditioned)
 
@@ -462,7 +463,7 @@ def is_requisite(scim, decision, node):
     d-connected to some objective given everything else the decision observes,
     plus the decision itself. A nonrequisite observation (Def. 7; Lauritzen &
     Nilsson 2001) is one for which ``X`` is independent of ``U_D`` given
-    ``Pa(D) u {D} \\ {X}``, so its information link carries nothing.
+    ``I(D) u {D} \\ {X}``, so its information link carries nothing.
 
     Parameters
     ----------
@@ -471,7 +472,7 @@ def is_requisite(scim, decision, node):
     decision : hashable
         That decision.
     node : hashable
-        An observation of ``decision`` -- one of its parents.
+        An observation in ``decision``'s policy information set.
 
     Returns
     -------
@@ -485,7 +486,7 @@ def is_requisite(scim, decision, node):
         downstream of the decision.
     """
     decision = _the_decision(scim, decision)
-    if node not in scim.parents(decision):
+    if node not in scim.information(decision):
         raise ValueError(
             f"{node!r} is not an observation of {decision!r}; requisiteness is a "
             "property of an information link"
@@ -498,9 +499,9 @@ def minimal_reduction(scim):
     """The diagram with every nonrequisite information link removed (Def. 11).
 
     Also known as the requisite graph, the d-reduction, or the trimmed graph.
-    What is left of the decision's parents is what an optimal decision rule can
-    depend on, which is why the response-incentive and value-of-control criteria
-    are posed over this graph rather than the declared one.
+    What is left of the decision's information set is what an optimal decision
+    rule can depend on, which is why the response-incentive and value-of-control
+    criteria are posed over this graph rather than the declared one.
 
     The links are found once and dropped together: with a single decision there
     is nothing for a second pass to find, since removing a link that carries no
@@ -519,7 +520,7 @@ def minimal_reduction(scim):
     decision = _the_decision(scim)
     return scim.without_edges(
         (observation, decision)
-        for observation in scim.parents(decision)
+        for observation in scim.information(decision)
         if not is_requisite(scim, decision, observation)
     )
 

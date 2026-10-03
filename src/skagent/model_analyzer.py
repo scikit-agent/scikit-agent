@@ -163,11 +163,17 @@ class ModelAnalyzer:
 
     def _collect_dependencies(self):
         """Extract dependencies using rule module."""
+        from skagent.block import Control, _randomizer_name
+
         for blk in self._blocks:
             all_rules = {**blk.get_shocks(), **blk.get_dynamics()}
 
             for var, rule in all_rules.items():
                 deps = extract_dependencies(rule)
+                # A randomizer determines the realized decision but remains
+                # outside the policy's declared information set.
+                if isinstance(rule, Control) and rule.randomizes:
+                    deps.append(_randomizer_name(var))
                 self._raw_deps[var] = deps
 
                 for dep in deps:
@@ -317,9 +323,9 @@ class ModelAnalyzer:
             :meth:`skagent.influence.SCIM.with_continuation`). Without this a
             single-period projection is blind to payoffs arriving through the
             next period's value, and conflates a variable's arrival value with
-            the value it is reassigned to. With it, a decision's parents are its
-            information set. Off by default, since it changes the node set
-            existing callers see.
+            the value it is reassigned to. With it, lagged observations are
+            represented explicitly in each decision's information set. Off by
+            default, since it changes the node set existing callers see.
 
         Returns
         -------
@@ -356,11 +362,26 @@ class ModelAnalyzer:
                 agent_utilities[scim.nodes[node]["agent"]].append(node)
         agent_utilities = dict(agent_utilities)
 
-        view = SCIM(scim, decisions, agent_utilities, decision_agent)
+        controls = self.model.get_controls()
+        decision_information = {
+            decision: [
+                parent
+                for parent in scim.predecessors(decision)
+                if parent in controls[decision].iset
+            ]
+            for decision in decisions
+        }
+        view = SCIM(
+            scim,
+            decisions,
+            agent_utilities,
+            decision_agent,
+            decision_information=decision_information,
+        )
 
         if dynamic:
             # Lag edges were dropped above; reintroduce them as arrival-value
-            # nodes so a decision's parents are its information set.
+            # nodes and update each decision's explicit information set.
             view = view.with_lagged_arrivals(self._time_deps).with_continuation(
                 self.model.get_arrival_states(self.calibration)
             )

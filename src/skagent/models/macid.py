@@ -24,12 +24,13 @@ Encoding conventions (a deliberate departure from the source presentations):
   noise a first-class graph node, matching scikit-agent's shock/dynamics
   vocabulary. Because the noise nodes are single-child exogenous roots, they
   cannot lie on any d-connecting path and so do not change the relevance graph.
-- Binary decisions are relaxed to continuous ``[0, 1]`` controls, pending
-  discrete-action support. For Prisoner's Dilemma, ``0`` means cooperate and
-  ``1`` means defect; intermediate values use the multilinear extension of the
-  standard payoff matrix and can be interpreted as defection probabilities.
-  The iterated model's utilities are per-round payoffs; accumulation or
-  discounting across rounds belongs to the simulator or solver using the block.
+- Binary decisions use ``[0, 1]`` controls. The one-shot Prisoner's Dilemma
+  remains continuous, so its multilinear payoffs are a direct analytical
+  expected-payoff reference. The iterated model opts into randomization: its
+  policies return defection probabilities and simulation records realized
+  binary actions. In both, ``0`` means cooperate and ``1`` means defect. The
+  iterated model's utilities are per-round payoffs; accumulation or discounting
+  across rounds belongs to the simulator or solver using the block.
 """
 
 from skagent.block import Control, DBlock
@@ -62,9 +63,10 @@ tree_killer_block = DBlock(
             "u_TDead": (Uniform, {"low": 0.0, "high": 1.0}),
         },
         # Decisions are binary in the original game (poison or not, call the
-        # doctor or not, build or not). scikit-agent has no discrete-action
-        # support yet, so each is modelled as a continuous [0, 1] relaxation
-        # (read as an intensity / probability of the action). The bound
+        # doctor or not, build or not). This model deliberately keeps them as
+        # continuous [0, 1] relaxations (read as action intensities); unlike the
+        # iterated Prisoner's Dilemma below, it does not opt into randomized
+        # binary execution. The bound
         # functions take the control's information set as positional arguments,
         # per the Control convention, though the bounds here are constant.
         # Bounds do not affect relevance analysis.
@@ -170,12 +172,14 @@ iterated_prisoners_dilemma_block = DBlock(
                 lower_bound=lambda previous_D1, previous_D2: 0.0,
                 upper_bound=lambda previous_D1, previous_D2: 1.0,
                 agent="player_1",
+                randomizes=True,
             ),
             "D2": Control(
                 ["previous_D1", "previous_D2"],
                 lower_bound=lambda previous_D1, previous_D2: 0.0,
                 upper_bound=lambda previous_D1, previous_D2: 1.0,
                 agent="player_2",
+                randomizes=True,
             ),
             "U1": _player_1_utility,
             "U2": _player_2_utility,
