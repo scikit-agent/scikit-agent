@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Models" href="models.html"><link rel="prev" title="Blocks" href="blocks.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Bellman Periods - scikit-agent 0.2.1.dev5+g2f98253b0</title>
+        <title>Bellman Periods - scikit-agent 0.2.1.dev7+gfb129361b</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev5+g2f98253b0</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev7+gfb129361b</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -818,6 +818,24 @@ static case: there is no future value stream to discount.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.bellman.BellmanPeriod.with_calibration">
+<span class="sig-name descname"><span class="pre">with_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.bellman.BellmanPeriod.with_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>A copy of this period with <em>values</em> merged over its calibration.</p>
+<p>As <a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock.with_calibration" title="skagent.ground.GroundedBlock.with_calibration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.ground.GroundedBlock.with_calibration()</span></code></a>, with the
+arrival states recomputed: a symbol the block reads and does not define
+is an arrival state until the calibration gives it a value, and a
+constant of the problem after.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>values</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#skagent.bellman.BellmanPeriod" title="skagent.bellman.BellmanPeriod"><code class="xref py py-class docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -1088,6 +1106,7 @@ residual computation and the constraint slack computation.</p></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.reward_function"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.reward_function()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.select_arrival_states"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.select_arrival_states()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.transition_function"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.transition_function()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.bellman.BellmanPeriod.with_calibration"><code class="docutils literal notranslate"><span class="pre">BellmanPeriod.with_calibration()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#skagent.bellman.estimate_bellman_foc_residual"><code class="docutils literal notranslate"><span class="pre">estimate_bellman_foc_residual()</span></code></a></li>
@@ -1105,7 +1124,7 @@ residual computation and the constraint slack computation.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=6ee475a2"></script>
+</div><script src="../_static/documentation_options.js?v=767998f4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
