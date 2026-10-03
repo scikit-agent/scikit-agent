@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.2.1.dev7+gfb129361b</title>
+        <title>Algorithms - scikit-agent 0.2.1.dev10+gdeed620b8</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev7+gfb129361b</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev10+gdeed620b8</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -321,7 +321,7 @@ is a batch of scattered points rather than a per-axis specification.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.vfi.ar_from_data">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.ar_from_data" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.ar_from_data" title="Link to this definition">¶</a></dt>
 <dd><p>Build a decision rule from a fitted policy <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p>
 <p>The returned rule follows the library’s decision-rule calling convention: it
 takes the control’s information-set values as <em>positional</em> arguments, in the
@@ -329,22 +329,36 @@ order of <code class="docutils literal notranslate"><span class="pre">da.dims</s
 matches how <code class="docutils literal notranslate"><span class="pre">block.transition</span></code> invokes a rule,
 <code class="docutils literal notranslate"><span class="pre">dr(*[vals[v]</span> <span class="pre">for</span> <span class="pre">v</span> <span class="pre">in</span> <span class="pre">iset])</span></code>, so a VFI-fitted rule is a drop-in for the
 rest of the stack.</p>
+<p>Between the grid’s points the rule interpolates linearly. Past the range
+the grid covers along a dimension it extends linearly from the outermost
+segment, so it answers every query rather than returning NaN, and <em>clip</em> is
+applied to those extended values. The rule’s <code class="docutils literal notranslate"><span class="pre">off_grid</span></code> attribute counts
+the queries it has answered that way, which is how a caller tells whether
+the rule was used where it was not solved.</p>
 <p>Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
 the result with <a class="reference internal" href="#skagent.algos.vfi.tensor_decision_rule" title="skagent.algos.vfi.tensor_decision_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
 <code class="docutils literal notranslate"><span class="pre">control.iset</span></code> order. A zero-dimensional array encodes a constant
 rule (empty information set). A dimension of length one encodes a rule
 constant along that variable: one grid point fixes a level and says
 nothing about a slope, so the rule takes the value and ignores the
-argument.</p>
+argument.</p></li>
+<li><p><strong>clip</strong> (<em>callable</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">clip(values,</span> <span class="pre">*args)</span></code>, returning <em>values</em> held within the control’s
+bounds at the information-set values <em>args</em>, all arrays of one length.
+Applied to queries off the grid only, where the rule is extended rather
+than fitted. <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a> supplies one from the control’s
+declared bounds.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule <code class="docutils literal notranslate"><span class="pre">ar(*args)</span></code> taking one positional argument per dimension of
 <em>da</em>. Scalar arguments return a Python scalar; array-like arguments are
 interpolated <em>pointwise</em> (not as an outer product) and return a numpy
-array.</p>
+array. Its <code class="docutils literal notranslate"><span class="pre">off_grid</span></code> attribute is the number of queries answered off
+the grid.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>callable</p>
@@ -909,7 +923,7 @@ candidate action as a decision rule during the per-point optimization.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">ar_from_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Build a decision rule from a fitted policy <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p>
 <p>The returned rule follows the library’s decision-rule calling convention: it
 takes the control’s information-set values as <em>positional</em> arguments, in the
@@ -917,22 +931,36 @@ order of <code class="docutils literal notranslate"><span class="pre">da.dims</s
 matches how <code class="docutils literal notranslate"><span class="pre">block.transition</span></code> invokes a rule,
 <code class="docutils literal notranslate"><span class="pre">dr(*[vals[v]</span> <span class="pre">for</span> <span class="pre">v</span> <span class="pre">in</span> <span class="pre">iset])</span></code>, so a VFI-fitted rule is a drop-in for the
 rest of the stack.</p>
+<p>Between the grid’s points the rule interpolates linearly. Past the range
+the grid covers along a dimension it extends linearly from the outermost
+segment, so it answers every query rather than returning NaN, and <em>clip</em> is
+applied to those extended values. The rule’s <code class="docutils literal notranslate"><span class="pre">off_grid</span></code> attribute counts
+the queries it has answered that way, which is how a caller tells whether
+the rule was used where it was not solved.</p>
 <p>Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
 the result with <a class="reference internal" href="#skagent.algos.vfi.tensor_decision_rule" title="skagent.algos.vfi.tensor_decision_rule"><code class="xref py py-func docutils literal notranslate"><span class="pre">tensor_decision_rule()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>da</strong> (<em>xarray.DataArray</em>) – The fitted policy, with one dimension per information-set variable in
 <code class="docutils literal notranslate"><span class="pre">control.iset</span></code> order. A zero-dimensional array encodes a constant
 rule (empty information set). A dimension of length one encodes a rule
 constant along that variable: one grid point fixes a level and says
 nothing about a slope, so the rule takes the value and ignores the
-argument.</p>
+argument.</p></li>
+<li><p><strong>clip</strong> (<em>callable</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">clip(values,</span> <span class="pre">*args)</span></code>, returning <em>values</em> held within the control’s
+bounds at the information-set values <em>args</em>, all arrays of one length.
+Applied to queries off the grid only, where the rule is extended rather
+than fitted. <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a> supplies one from the control’s
+declared bounds.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule <code class="docutils literal notranslate"><span class="pre">ar(*args)</span></code> taking one positional argument per dimension of
 <em>da</em>. Scalar arguments return a Python scalar; array-like arguments are
 interpolated <em>pointwise</em> (not as an outer product) and return a numpy
-array.</p>
+array. Its <code class="docutils literal notranslate"><span class="pre">off_grid</span></code> attribute is the number of queries answered off
+the grid.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>callable</p>
@@ -2633,7 +2661,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=767998f4"></script>
+</div><script src="../_static/documentation_options.js?v=239e2b58"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
