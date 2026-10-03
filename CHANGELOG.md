@@ -18,7 +18,8 @@ and this project adheres to
 - A VFI decision rule answers inputs past the range its grid covers instead of
   returning NaN: it extends linearly from the outermost segment, held within the
   control's declared bounds, and its `off_grid` attribute counts such queries. A
-  simulation that visits states outside the solved grid previously stopped on NaN.
+  simulation that visits states outside the solved grid previously stopped on
+  NaN.
 - `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
   Gauss-Hermite quadrature on the log. It gave equal weights to evenly spaced
   nodes, which overstated the mean and standard deviation.
