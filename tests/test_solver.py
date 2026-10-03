@@ -208,6 +208,20 @@ class TestTheProjectionIsDerivedFromTheModel:
         assert projected.reward == {"u_actor": "firm_actor", "u_other": "firm_other"}
         assert projected.deciding_agent("q_actor") == "firm_actor"
 
+    def test_it_preserves_a_controls_action_space(self):
+        population = block.DBlock(
+            dynamics={
+                "d": block.Control([], agent="player", action_space={0, 2}),
+                "u": lambda d: d,
+            },
+            reward={"u": "player"},
+            entity=block.Entity("player"),
+        )
+        projected = project(ground.GroundedBlock(population, {"player": 2})).block
+
+        assert projected.get_control("d_actor").action_space == frozenset({0.0, 2.0})
+        assert projected.get_control("d_other").action_space == frozenset({0.0, 2.0})
+
     def test_the_others_stay_a_population_and_the_solved_instance_does_not(self):
         # The rest of the class is still several, so it keeps a class of its
         # own, sized one short of the original. The solved instance is ONE

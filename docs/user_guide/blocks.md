@@ -154,6 +154,20 @@ A **Control** variable is under the control of some agent. Instead of providing
 a dynamic equation, the modeler specifies an information set -- what information
 (variables) are available to the agent when they decide this variable's value.
 
+#### Discrete actions
+
+A control may declare a finite set of allowed numeric values. Its decision rule
+must return one of them:
+
+```python
+offer = ska.Control(["price"], action_space={0, 1}, agent="seller")
+```
+
+The action space is unordered. Evaluating the block raises an error if the
+decision rule returns any other value. The tabular best-response solver searches
+the declared actions directly; controls without an action space continue to use
+its supplied or generated candidate grid.
+
 #### Constraints
 
 Control variables can be upper and lower bound to values that are themselves

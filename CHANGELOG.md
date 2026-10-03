@@ -12,6 +12,9 @@ and this project adheres to
 
 - `GroundedBlock.with_calibration(values)` returns a copy with _values_ merged
   over the calibration; a `BellmanPeriod`'s copy recomputes its arrival states.
+- Controls may declare an unordered finite `action_space`. Decision rules are
+  validated against it during execution, and `TabularBestResponseSolver` uses
+  its values as that control's candidate actions.
 
 ### Fixed
 

@@ -77,6 +77,20 @@ class test_Control(unittest.TestCase):
         self.assertIsNone(c.lower_bound)
         self.assertIsNone(c.upper_bound)
 
+    def test_action_space_is_optional_and_unordered(self):
+        self.assertIsNone(model.Control(["m"]).action_space)
+        self.assertEqual(
+            model.Control(["m"], action_space=[2, 0, 1]).action_space,
+            frozenset({0.0, 1.0, 2.0}),
+        )
+
+    def test_invalid_action_spaces_are_rejected(self):
+        invalid = ([], [0, 0], [0, np.inf], [0, "cooperate"], "01")
+        for action_space in invalid:
+            with self.subTest(action_space=action_space):
+                with self.assertRaises((TypeError, ValueError)):
+                    model.Control(["m"], action_space=action_space)
+
     def test_bool_bound_rejected(self):
         """``True`` must not be silently read as the numeric bound ``1.0``."""
         with self.assertRaises(TypeError):
@@ -117,6 +131,19 @@ class test_DBlock(unittest.TestCase):
         post = self.cblock.transition(self.dpre, self.dr)
 
         self.assertEqual(post["a"], 0)
+
+    def test_discrete_control_rejects_an_action_outside_its_space(self):
+        block = model.DBlock(dynamics={"d": model.Control([], action_space={0, 1})})
+        with self.assertRaisesRegex(ValueError, "outside its action_space"):
+            block.transition({}, {"d": lambda: 0.5})
+
+    def test_discrete_control_validates_array_actions_elementwise(self):
+        block = model.DBlock(dynamics={"d": model.Control([], action_space={0, 1})})
+        values = block.transition({}, {"d": lambda: np.array([0, 1, 0])})
+        np.testing.assert_array_equal(values["d"], [0, 1, 0])
+
+        with self.assertRaisesRegex(ValueError, r"\[0\.5\].*action_space"):
+            block.transition({}, {"d": lambda: np.array([0, 0.5, 1])})
 
     def test_transition_until(self):
         post = self.cblock.transition(self.dpre, self.dr, until="c")
