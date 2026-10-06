@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.2.1.dev13+g56819e309</title>
+        <title>Algorithms - scikit-agent 0.2.1.dev17+gbef7abdad</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev13+g56819e309</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev17+gbef7abdad</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -678,7 +678,7 @@ axes. Those shock axes are first integrated out into the arrival value
 distribution that produced the axis nodes; a grid built from other node
 values raises <a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a>. <code class="docutils literal notranslate"><span class="pre">wf</span></code> then interpolates linearly over the
 remaining arrival-state axes and <strong>extrapolates linearly</strong> past the grid
-edges (via <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RegularGridInterpolator.html#scipy.interpolate.RegularGridInterpolator" title="(in SciPy v1.18.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.RegularGridInterpolator</span></code></a>), so an
+edges, as <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RegularGridInterpolator.html#scipy.interpolate.RegularGridInterpolator" title="(in SciPy v1.18.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.RegularGridInterpolator</span></code></a> does, so an
 off-grid next-period state during the backup gets a finite, sloped
 continuation rather than <code class="docutils literal notranslate"><span class="pre">NaN</span></code> (which breaks the optimizer) or a flat
 boundary clamp (which zeroes the marginal value of saving and collapses the
@@ -2665,7 +2665,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=e2881c44"></script>
+</div><script src="../_static/documentation_options.js?v=d475694a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
