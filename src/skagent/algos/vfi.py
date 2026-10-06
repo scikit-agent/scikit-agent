@@ -299,6 +299,8 @@ def _bounded_search(objective, lb, ub):
         return _finite_or_worst(objective(np.array([x])))
 
     candidates = []
+    if lb > ub:
+        raise ValueError(f"bounded search requires lb <= ub, got [{lb}, {ub}].")
     if ub - lb > _BOUNDED_XATOL:
         found = minimize_scalar(
             f, bounds=(lb, ub), method="bounded", options={"xatol": _BOUNDED_XATOL}
