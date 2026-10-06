@@ -2,6 +2,7 @@ import inspect
 import logging
 import numbers
 import warnings
+from functools import wraps
 from itertools import groupby
 
 import numpy as np
@@ -53,6 +54,7 @@ def _copy_control(control, mapping, agent_suffix):
         lower_bound=_renamed(control.lower_bound, mapping),
         upper_bound=_renamed(control.upper_bound, mapping),
         agent=None if control.agent is None else control.agent + agent_suffix,
+        action_space=control.action_space,
     )
 
 
@@ -495,7 +497,7 @@ def _starting_policies(block):
     has not been trained -- so these are constants instead.
     """
     return {
-        sym: _constant_rule(_midpoint(control), control.iset)
+        sym: _constant_rule(_starting_action(control), control.iset)
         for sym, control in block.get_controls().items()
     }
 
@@ -676,6 +678,7 @@ def _swap_in(rule, iset):
     the swap is a rename: a rule is called positionally either way.
     """
 
+    @wraps(rule)
     def swapped(*observed):
         return rule(*observed)
 
@@ -759,7 +762,7 @@ def solve_symmetric_equilibrium(
 
     Parameters
     ----------
-    method : NeuralBestResponse or ExactBestResponse
+    method : NeuralBestResponse, ExactBestResponse, or TabularBestResponseSolver
         The per-decision solver, carrying its own configuration and the
         projected problem it solves. Any object with ``ground``,
         ``best_response(decision, policies)`` and
@@ -774,7 +777,8 @@ def solve_symmetric_equilibrium(
         reported as such.
     initial : Callable, optional
         The others' rule on the first round. Defaults to a constant at the
-        midpoint of the solved control's declared bounds.
+        midpoint of the solved control's declared bounds, or to one of its
+        declared actions for a discrete control.
 
     Returns
     -------
@@ -786,7 +790,8 @@ def solve_symmetric_equilibrium(
     Raises
     ------
     ValueError
-        If the method's block does not carry a projected pair of controls.
+        If the method's block does not carry a projected pair of controls, or
+        if damping is requested for an unordered discrete action space.
     """
     block = method.ground.block
     solved = [sym for sym in block.get_controls() if sym.endswith(ACTOR_SUFFIX)]
@@ -798,13 +803,19 @@ def solve_symmetric_equilibrium(
         )
     (decision,) = solved
     partner = decision[: -len(ACTOR_SUFFIX)] + OTHER_SUFFIX
-    solved_iset = block.get_control(decision).iset
+    control = block.get_control(decision)
+    solved_iset = control.iset
     partner_iset = block.get_control(partner).iset
+    if control.action_space is not None and damping != 1.0:
+        raise ValueError(
+            "damping a discrete control can produce values outside its "
+            "action_space; use damping=1"
+        )
 
     rule = (
         _swap_in(initial, partner_iset)
         if initial is not None
-        else _constant_rule(_midpoint(block.get_control(decision)), partner_iset)
+        else _constant_rule(_starting_action(control), partner_iset)
     )
 
     distances = []
@@ -825,12 +836,14 @@ def solve_symmetric_equilibrium(
     }
 
 
-def _midpoint(control):
-    """A starting action: halfway between the control's declared bounds.
+def _starting_action(control):
+    """A stable starting action from the control's declared domain.
 
     A constant rather than an untrained network, so that where the iteration
     starts is a property of the model and not of a seed.
     """
+    if control.action_space is not None:
+        return min(control.action_space)
     lower = 0.0 if control.lower_bound is None else float(control.lower_bound())
     upper = lower if control.upper_bound is None else float(control.upper_bound())
     return (lower + upper) / 2

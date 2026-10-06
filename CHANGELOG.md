@@ -10,11 +10,33 @@ and this project adheres to
 
 ### Added
 
+- `vfi.solve_step` and `vfi.solve_bellman` take `search="bounded"`: one bounded
+  scalar search per gridpoint in place of the multi-start optimizer, several
+  times faster. It applies to a single control with both bounds declared, and
+  raises otherwise.
+
+- `vfi.solve_bellman` takes `policy_evaluations=k`: after each backup, the
+  Bellman operator is applied k times at the backup's policy (modified policy
+  iteration), so the loop needs far fewer backups. For infinite horizons.
+
+### Changed
+
+- `vfi.value_array_to_function` interpolates a one-axis continuation with numpy
+  rather than `RegularGridInterpolator`: the same values, at a fraction of the
+  cost per call.
+
+### Added
+
 - `GroundedBlock.with_calibration(values)` returns a copy with _values_ merged
   over the calibration; a `BellmanPeriod`'s copy recomputes its arrival states.
+
 - `skagent.solver.project_mean_field` gives one instance's problem under
   price-taking: each equation reducing over the entity class is removed, so the
   aggregate becomes a value the caller supplies.
+  
+ - Controls may declare an unordered finite `action_space`. Decision rules are
+  validated against it during execution, and `TabularBestResponseSolver` uses
+  its values as that control's candidate actions.
 
 ### Deprecated
 
@@ -23,6 +45,11 @@ and this project adheres to
 
 ### Fixed
 
+- A VFI decision rule answers inputs past the range its grid covers instead of
+  returning NaN: it extends linearly from the outermost segment, held within the
+  control's declared bounds, and its `off_grid` attribute counts such queries. A
+  simulation that visits states outside the solved grid previously stopped on
+  NaN.
 - `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
   Gauss-Hermite quadrature on the log. It gave equal weights to evenly spaced
   nodes, which overstated the mean and standard deviation.

@@ -15,7 +15,7 @@ from skagent.utils import param_names
 import logging
 import warnings
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import OptimizeResult, minimize, minimize_scalar
 from typing import Callable, Mapping, Sequence
 import xarray as xr
 
@@ -42,7 +42,7 @@ def get_action_rule(action):
     return ar
 
 
-def ar_from_data(da):
+def ar_from_data(da, clip=None):
     """
     Build a decision rule from a fitted policy ``DataArray``.
 
@@ -52,6 +52,13 @@ def ar_from_data(da):
     matches how ``block.transition`` invokes a rule,
     ``dr(*[vals[v] for v in iset])``, so a VFI-fitted rule is a drop-in for the
     rest of the stack.
+
+    Between the grid's points the rule interpolates linearly. Past the range
+    the grid covers along a dimension it extends linearly from the outermost
+    segment, so it answers every query rather than returning NaN, and *clip* is
+    applied to those extended values. The rule's ``off_grid`` attribute counts
+    the queries it has answered that way, which is how a caller tells whether
+    the rule was used where it was not solved.
 
     Interpolation runs in numpy/xarray space. For a torch-tensor interface, wrap
     the result with :func:`tensor_decision_rule`.
@@ -65,6 +72,12 @@ def ar_from_data(da):
         constant along that variable: one grid point fixes a level and says
         nothing about a slope, so the rule takes the value and ignores the
         argument.
+    clip : callable, optional
+        ``clip(values, *args)``, returning *values* held within the control's
+        bounds at the information-set values *args*, all arrays of one length.
+        Applied to queries off the grid only, where the rule is extended rather
+        than fitted. :func:`solve_step` supplies one from the control's
+        declared bounds.
 
     Returns
     -------
@@ -72,7 +85,8 @@ def ar_from_data(da):
         A rule ``ar(*args)`` taking one positional argument per dimension of
         *da*. Scalar arguments return a Python scalar; array-like arguments are
         interpolated *pointwise* (not as an outer product) and return a numpy
-        array.
+        array. Its ``off_grid`` attribute is the number of queries answered off
+        the grid.
 
     Raises
     ------
@@ -106,23 +120,63 @@ def ar_from_data(da):
                 return value
             return np.full(max(np.size(a) for a in args), value)
 
-        if batched:
-            # vectorized (pointwise) interpolation: share a single dimension
-            # across all coordinate indexers so xarray does not take the outer
-            # product of the inputs.
-            length = max(np.size(a) for a in args)
-            coords = {
-                dim: xr.DataArray(
-                    np.broadcast_to(np.asarray(arg).ravel(), (length,)), dims="_point"
-                )
-                for dim, arg in varying
-            }
-            return fitted.interp(**coords).values
+        # Pointwise interpolation, scalars as a batch of one: every coordinate
+        # indexer shares one dimension, so xarray does not take the outer
+        # product of the inputs.
+        length = max(np.size(a) for a in args)
+        points = [
+            np.broadcast_to(np.asarray(a, dtype=float).ravel(), (length,)) for a in args
+        ]
+        at = dict(zip(dims, points))
+        coords = {dim: xr.DataArray(at[dim], dims="_point") for dim, _ in varying}
+        # Linear extension past the grid: one varying dimension interpolates
+        # with scipy's interp1d, several with interpn, and each spells it its
+        # own way.
+        extend = {"fill_value": "extrapolate" if len(varying) == 1 else None}
+        values = np.array(fitted.interp(**coords, kwargs=extend).values, dtype=float)
 
-        coords = {dim: arg for dim, arg in varying}
-        return fitted.interp(**coords).values.tolist()
+        off = np.zeros(length, dtype=bool)
+        for dim, _ in varying:
+            axis = np.asarray(fitted[dim].values, dtype=float)
+            off |= (at[dim] < axis.min()) | (at[dim] > axis.max())
+        if off.any():
+            ar.off_grid += int(off.sum())
+            if clip is not None:
+                values[off] = clip(values[off], *[p[off] for p in points])
 
+        return values if batched else values[0].item()
+
+    ar.off_grid = 0
     return ar
+
+
+def _clip_to_bounds(lower, upper, iset, params):
+    """A *clip* for :func:`ar_from_data` from a control's declared bounds.
+
+    Each bound is evaluated at the rule's own information-set values, with
+    *params* supplying any other name it reads; a bound reading a name neither
+    supplies is not applied. ``None`` when the control declares no bound.
+    """
+    if lower is None and upper is None:
+        return None
+
+    def evaluate(bound, bag):
+        names = param_names(bound)
+        if bound is None or not all(name in bag for name in names):
+            return None
+        return np.asarray(bound(*[bag[name] for name in names]), dtype=float)
+
+    def clip(values, *args):
+        bag = {**params, **dict(zip(iset, args))}
+        low = evaluate(lower, bag) if lower is not None else None
+        high = evaluate(upper, bag) if upper is not None else None
+        if low is not None:
+            values = np.maximum(values, low)
+        if high is not None:
+            values = np.minimum(values, high)
+        return values
+
+    return clip
 
 
 def tensor_decision_rule(np_rule, dtype=None, device=None):
@@ -272,6 +326,62 @@ _PROJ_TOL = 1e-3
 # differ by less than this, relative to the objective's own scale. A constant
 # objective, the case this exists for, returns each seed at exactly equal value.
 _TIE_TOL = 1e-10
+
+# Width to which the bounded search of ``search="bounded"`` narrows a control's
+# interval.
+_BOUNDED_XATOL = 1e-8
+
+_SEARCHES = ("multistart", "bounded")
+
+
+def _finite_or_worst(value):
+    """An objective value to minimize, with any non-finite value as the worst."""
+    value = float(value)
+    return value if np.isfinite(value) else np.inf
+
+
+def _bounded_search(objective, lb, ub):
+    """Minimize *objective* of one control over ``[lb, ub]``.
+
+    A bounded scalar search over the whole interval, which needs no seed and
+    finds the minimum of an objective with a single local minimum on it, then a
+    check of both endpoints, so that a corner optimum is returned exactly
+    rather than to within the search's tolerance. Ties keep the interior result.
+    """
+
+    def f(x):
+        return _finite_or_worst(objective(np.array([x])))
+
+    candidates = []
+    if lb > ub:
+        raise ValueError(f"bounded search requires lb <= ub, got [{lb}, {ub}].")
+    if ub - lb > _BOUNDED_XATOL:
+        found = minimize_scalar(
+            f, bounds=(lb, ub), method="bounded", options={"xatol": _BOUNDED_XATOL}
+        )
+        candidates.append((float(found.fun), float(found.x)))
+    # A closed bound is often where the objective is infinite (zero consumption),
+    # which counts as the worst value rather than as an error.
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+        candidates += [(f(lb), lb), (f(ub), ub)]
+    value, x = min(candidates, key=lambda candidate: candidate[0])
+    return OptimizeResult(
+        x=np.array([x]),
+        fun=value,
+        success=bool(np.isfinite(value)),
+        message="bounded search" if np.isfinite(value) else "no finite value",
+    )
+
+
+def _probe(objective, seed, lb, ub):
+    """The objective at *seed*, clamped into ``[lb, ub]``, as a result."""
+    x = float(np.clip(seed[0], lb, ub))
+    return OptimizeResult(
+        x=np.array([x]),
+        fun=_finite_or_worst(objective(np.array([x]))),
+        success=True,
+        message="evaluated at the seed",
+    )
 
 
 def _gather_and_fit(policy_da, grid_axes, iset_var, coord, identified):
@@ -646,6 +756,7 @@ def solve_step(
     x0: float = 1.0,
     x0_policy: Mapping[str, xr.DataArray] | None = None,
     artificial_borrowing_constraint: bool = False,
+    search: str = "multistart",
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
     One exact value backup over *state_grid*.
@@ -680,7 +791,8 @@ def solve_step(
        Current scope: one or more controls, jointly optimized by
        :func:`scipy.optimize.minimize` over the stacked control vector with
        per-control bounds — restarted from each seed candidate, keeping the best
-       optimum — each policy then reprojected onto its own information set
+       optimum, or by one bounded scalar search under ``search="bounded"`` —
+       each policy then reprojected onto its own information set
        (:func:`_project_to_iset`). A control's pre-state and bounds are evaluated
        with each integrated-out shock fixed at its (discretized) mean, since a
        single value is required there even though the objective integrates the
@@ -744,6 +856,16 @@ def solve_step(
         successor only (raises otherwise). The limit must be *slack* at the
         states of interest (it is just the grid floor), or it biases the policy
         where it binds.
+    search : {"multistart", "bounded"}, optional
+        How each point's optimum is found. ``"multistart"``, the default, runs
+        :func:`scipy.optimize.minimize` from every seed candidate and keeps the
+        best. ``"bounded"`` runs one bounded scalar search over the control's
+        whole interval (:func:`scipy.optimize.minimize_scalar`) and checks both
+        endpoints, then evaluates the objective at each seed candidate, which is
+        what the identification check compares against. It uses no seed, and is
+        exact only for an objective with a single peak on the interval. It
+        applies to a single control whose block declares both its lower and its
+        upper bound.
 
     Returns
     -------
@@ -755,6 +877,12 @@ def solve_step(
     policy_array : dict of xarray.DataArray
         The gridded optimal control(s) over the state grid, keyed by control
         symbol (a dict for forward-compatibility with multi-control, O1).
+
+    Raises
+    ------
+    ValueError
+        If *search* is not one of the two methods, or is ``"bounded"`` for more
+        than one control or for a control missing a declared bound.
     """
     controls = list(bp.get_controls()) if control is None else [control]
     if len(controls) == 0:
@@ -799,6 +927,29 @@ def solve_step(
     iset_by_control = {c: bp.block.dynamics[c].iset for c in controls}
     lower_by_control = {c: bp.block.dynamics[c].lower_bound for c in controls}
     upper_by_control = {c: bp.block.dynamics[c].upper_bound for c in controls}
+
+    if search not in _SEARCHES:
+        raise ValueError(f"search must be one of {_SEARCHES}, got {search!r}.")
+    if search == "bounded":
+        if len(controls) != 1:
+            raise ValueError(
+                f"search='bounded' searches one control's interval, and this "
+                f"backup optimizes {controls} jointly. Use search='multistart'."
+            )
+        unbounded = [
+            side
+            for side, bound in (
+                ("lower", lower_by_control[controls[0]]),
+                ("upper", upper_by_control[controls[0]]),
+            )
+            if bound is None
+        ]
+        if unbounded:
+            raise ValueError(
+                f"search='bounded' searches the interval the block declares for "
+                f"{controls[0]!r}, which declares no {' or '.join(unbounded)} "
+                f"bound. Use search='multistart'."
+            )
 
     params = {**bp.calibration, **scope}
 
@@ -957,10 +1108,20 @@ def solve_step(
             if not any(np.allclose(v, w, atol=_PROJ_TOL) for w in starts):
                 starts.append(v)
 
-        # Optimize from every start candidate and keep the best result. The per-point
-        # objective need not be unimodal for general blocks, so skipping a candidate
-        # based on its seed value can miss a better optimum.
-        results = [minimize(negated_value, v, bounds=bounds) for v in starts]
+        if search == "bounded":
+            # One search of the whole interval, then the objective at each seed.
+            # The seeds cannot beat the search on an objective with one peak,
+            # but one that ties it at a different control is what marks the
+            # point unidentified below.
+            lb, ub = bounds[0]
+            results = [_bounded_search(negated_value, lb, ub)]
+            results += [_probe(negated_value, v, lb, ub) for v in starts]
+        else:
+            # Optimize from every start candidate and keep the best result. The
+            # per-point objective need not be unimodal for general blocks, so
+            # skipping a candidate based on its seed value can miss a better
+            # optimum.
+            results = [minimize(negated_value, v, bounds=bounds) for v in starts]
         res = min(results, key=lambda r: r.fun)  # ties keep the earliest candidate
         if not res.success:
             logging.warning(
@@ -1002,7 +1163,10 @@ def solve_step(
                 iset_coord_buf[c],
                 c,
                 identified=identified_buf if check_identified else None,
-            )
+            ),
+            clip=_clip_to_bounds(
+                lower_by_control[c], upper_by_control[c], iset_by_control[c], params
+            ),
         )
         for c in controls
     }
@@ -1065,7 +1229,7 @@ def value_array_to_function(
     distribution that produced the axis nodes; a grid built from other node
     values raises :class:`ValueError`. ``wf`` then interpolates linearly over the
     remaining arrival-state axes and **extrapolates linearly** past the grid
-    edges (via :class:`scipy.interpolate.RegularGridInterpolator`), so an
+    edges, as :class:`scipy.interpolate.RegularGridInterpolator` does, so an
     off-grid next-period state during the backup gets a finite, sloped
     continuation rather than ``NaN`` (which breaks the optimizer) or a flat
     boundary clamp (which zeroes the marginal value of saving and collapses the
@@ -1113,12 +1277,19 @@ def value_array_to_function(
     from scipy.interpolate import RegularGridInterpolator
 
     points = tuple(np.asarray(value_array[ax].values, dtype=float) for ax in axes)
-    rgi = RegularGridInterpolator(
-        points,
-        np.asarray(value_array.values, dtype=float),
-        bounds_error=False,
-        fill_value=None,  # None -> linear extrapolation past the grid edges
-    )
+    values = np.asarray(value_array.values, dtype=float)
+    if len(points) == 1 and len(points[0]) > 1 and np.all(np.diff(points[0]) > 0):
+        # One ascending axis: the same interpolant, without the general
+        # interpolator's per-call overhead, which dominates a backup that
+        # evaluates the continuation one point at a time.
+        interpolate = _linear_1d(points[0], values)
+    else:
+        interpolate = RegularGridInterpolator(
+            points,
+            values,
+            bounds_error=False,
+            fill_value=None,  # None -> linear extrapolation past the grid edges
+        )
 
     # Arrival states this grid cannot represent; being handed one is an error.
     ungridded = sorted(set(bp.arrival_states) - set(axes))
@@ -1135,10 +1306,85 @@ def value_array_to_function(
         scalar = all(c.ndim == 0 for c in cols)
         # Pointwise (not outer-product) query: one row per evaluation point.
         query = np.stack([np.atleast_1d(c).ravel() for c in cols], axis=-1)
-        out = rgi(query)
+        out = interpolate(query)
         return float(out[0]) if scalar else out
 
     return wf
+
+
+def _linear_1d(nodes, values):
+    """Linear interpolation over ascending *nodes*, extrapolating linearly.
+
+    Past either end the outermost segment is extended, which is what
+    :class:`scipy.interpolate.RegularGridInterpolator` does with
+    ``fill_value=None``. Takes and returns the same shapes it does: a query of
+    shape ``(n, 1)`` and ``n`` values.
+    """
+
+    def interpolate(query):
+        x = query[:, 0]
+        i = np.clip(np.searchsorted(nodes, x) - 1, 0, len(nodes) - 2)
+        slope = (values[i + 1] - values[i]) / (nodes[i + 1] - nodes[i])
+        return values[i] + (x - nodes[i]) * slope
+
+    return interpolate
+
+
+def _fixed_policy_operator(bp, value_array, policy_array, agent, scope, disc_params):
+    """The Bellman operator at a fixed policy, as a map on value grids.
+
+    Returns ``apply(v)``, the value over *value_array*'s grid of following
+    *policy_array* for one period and continuing with the value grid *v*. The
+    period's reward, discount and next arrival states under the policy are
+    computed once here, at every gridpoint and every node of the shocks the
+    backup integrates; each application then evaluates only the continuation,
+    in one call over all of them.
+    """
+    params = {**bp.calibration, **scope}
+    grid_axes = list(value_array.dims)
+    controls = list(policy_array)
+    roles = _resolve_shock_roles(bp, params, grid_axes, controls)
+    hidden = [s for s, role in roles.items() if role == HIDDEN]
+    if hidden:
+        joint, _ = _discretize_shocks(bp, hidden, params, disc_params)
+        weights = np.asarray(joint.weights, dtype=float)
+        points = np.asarray(joint.points, dtype=float).reshape(len(weights), -1)
+        nodes = [dict(zip(joint.var_names, row)) for row in points]
+    else:
+        weights, nodes = np.ones(1), [{}]
+
+    shocks = set(bp.get_shocks())
+    reward_syms = bp.get_reward_syms(agent)
+    shape = value_array.shape + (len(nodes),)
+    reward, discount = np.empty(shape), np.empty(shape)
+    successor = {s: np.empty(shape) for s in bp.arrival_states}
+    for idx in np.ndindex(*value_array.shape):
+        point = {k: value_array[k].values[i] for k, i in zip(grid_axes, idx)}
+        states = {k: v for k, v in point.items() if k in bp.arrival_states}
+        observed = {k: v for k, v in point.items() if k in shocks}
+        actions = {c: float(policy_array[c].values[idx]) for c in controls}
+        for j, node in enumerate(nodes):
+            post = bp.post_function(
+                states, actions, shocks={**observed, **node}, parameters=params
+            )
+            reward[idx + (j,)] = sum(post[s] for s in reward_syms)
+            discount[idx + (j,)] = bp.resolve_discount_factor(post)
+            for s, v in bp.select_arrival_states(post).items():
+                successor[s][idx + (j,)] = v
+
+    def apply(v):
+        continuation = value_array_to_function(v, bp, disc_params)
+        future = np.asarray(
+            continuation({s: a.ravel() for s, a in successor.items()}, {}, params),
+            dtype=float,
+        ).reshape(shape)
+        return xr.DataArray(
+            (reward + discount * future) @ weights,
+            dims=grid_axes,
+            coords=value_array.coords,
+        )
+
+    return apply
 
 
 def solve_bellman(
@@ -1154,6 +1400,8 @@ def solve_bellman(
     x0: float = 1.0,
     raise_on_nonconvergence: bool = False,
     artificial_borrowing_constraint: bool = False,
+    search: str = "multistart",
+    policy_evaluations: int = 0,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
     Solve a recurring ``BellmanPeriod`` by value-function iteration.
@@ -1227,6 +1475,20 @@ def solve_bellman(
         Forwarded to :func:`solve_step`: confine next-period arrival states to
         the state grid (grid edge = slack artificial borrowing limit),
         so the rebuilt continuation is never extrapolated off-grid.
+    search : {"multistart", "bounded"}, optional
+        Forwarded to :func:`solve_step`: how each point's optimum is found. The
+        warm start is one of the seeds either way.
+    policy_evaluations : int, optional
+        How many times to apply the Bellman operator at the maximizing policy
+        after each backup, before the next one (modified policy iteration).
+        Default 0, plain value iteration. Each application costs a fraction of a
+        backup and moves the value grid toward the policy's own value, so the
+        loop reaches *tol* in fewer backups. The residual is then the change
+        across a backup, which the backup's own optimization error bounds below,
+        so *tol* must not be tighter than that error. For an infinite horizon
+        only: under a horizon set through *max_iter* the applications lengthen
+        the horizon, and a horizon carried in the state already converges in a
+        backup per period.
 
     Returns
     -------
@@ -1241,12 +1503,15 @@ def solve_bellman(
     Raises
     ------
     ValueError
-        If *max_iter* is less than 1, or if the period has no arrival states.
+        If *max_iter* is less than 1, if *policy_evaluations* is negative, or if
+        the period has no arrival states.
     RuntimeError
         If *raise_on_nonconvergence* is ``True`` and the loop does not converge.
     """
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
+    if policy_evaluations < 0:
+        raise ValueError(f"policy_evaluations must be >= 0, got {policy_evaluations}.")
 
     if not bp.arrival_states:
         raise ValueError(
@@ -1275,6 +1540,7 @@ def solve_bellman(
             x0=x0,
             x0_policy=x0_policy,
             artificial_borrowing_constraint=artificial_borrowing_constraint,
+            search=search,
         )
         if value_prev is not None:
             residual = float(np.abs(value_array - value_prev).max())
@@ -1283,7 +1549,15 @@ def solve_bellman(
                 break
         value_prev = value_array
         x0_policy = policy_array  # seed the next backup from this optimum
-        cont = value_array_to_function(value_array, bp, disc_params)  # W_n from V_n
+        if policy_evaluations and it + 1 < max_iter:
+            # The next backup is measured against the evaluated grid, so the
+            # residual stays the change a backup makes.
+            evaluate = _fixed_policy_operator(
+                bp, value_array, policy_array, agent, scope, disc_params
+            )
+            for _ in range(policy_evaluations):
+                value_prev = evaluate(value_prev)
+        cont = value_array_to_function(value_prev, bp, disc_params)  # W_n from V_n
 
     value_array.attrs.update(n_iter=it + 1, converged=converged, residual=residual)
     if not converged:
