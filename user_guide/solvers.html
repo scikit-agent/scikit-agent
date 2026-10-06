@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Solvers Guide - scikit-agent 0.2.1.dev11+g65d8c6688</title>
+        <title>Solvers Guide - scikit-agent 0.2.1.dev13+g56819e309</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev11+g65d8c6688</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev13+g56819e309</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -401,6 +401,9 @@ graph:</p>
 <span class="n">decision_rules</span> <span class="o">=</span> <span class="n">solve_in_relevance_order</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>When a control declares an <code class="docutils literal notranslate"><span class="pre">action_space</span></code>, the method searches exactly those
+actions. Its <code class="docutils literal notranslate"><span class="pre">actions</span></code> and <code class="docutils literal notranslate"><span class="pre">action_count</span></code> arguments provide the candidate grid
+only for controls without one.</p>
 <p>One pass per decision suffices for an acyclic component, because everything a
 decision relies on is already settled by the time its turn comes. If a component
 contains a cycle, the schedule repeatedly computes every decision’s best
@@ -572,7 +575,7 @@ with the others.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=a6227736"></script>
+</div><script src="../_static/documentation_options.js?v=e2881c44"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

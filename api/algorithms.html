@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.2.1.dev11+g65d8c6688</title>
+        <title>Algorithms - scikit-agent 0.2.1.dev13+g56819e309</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev11+g65d8c6688</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev13+g56819e309</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1081,8 +1081,10 @@ payoff each maximizes when the block’s utilities are owned by more than
 one agent. The calibration supplies both the arguments the block’s
 shocks are constructed from and the values any parameter the dynamics
 refer to.</p></li>
-<li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
-<code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
+<li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search for controls without a declared
+<code class="docutils literal notranslate"><span class="pre">action_space</span></code>, shared by those decisions. Defaults to
+<code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>. A control’s declared
+action space takes precedence.</p></li>
 <li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
 <li><p><strong>shock_samples</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. This is the axis the
 expectations are estimated over – the integral over the block’s
@@ -1169,8 +1171,7 @@ every cell populated.</p>
 <p>This is coverage, not randomization: the assignment is deterministic
 and the sample axis holds shock draws rather than repeated plays, so
 the share of samples playing an action is not a probability of playing
-it. A control that genuinely randomizes declares that on itself and
-draws from a shock.</p>
+it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>weights</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Relative shares of the samples per action, one per candidate action.
@@ -1230,8 +1231,10 @@ payoff each maximizes when the block’s utilities are owned by more than
 one agent. The calibration supplies both the arguments the block’s
 shocks are constructed from and the values any parameter the dynamics
 refer to.</p></li>
-<li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search, shared by every decision. Defaults to
-<code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
+<li><p><strong>actions</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Candidate actions to search for controls without a declared
+<code class="docutils literal notranslate"><span class="pre">action_space</span></code>, shared by those decisions. Defaults to
+<code class="docutils literal notranslate"><span class="pre">action_count</span></code> points spanning <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>. A control’s declared
+action space takes precedence.</p></li>
 <li><p><strong>action_count</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of candidate actions when <em>actions</em> is not given.</p></li>
 <li><p><strong>shock_samples</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of shock realizations drawn at construction. This is the axis the
 expectations are estimated over – the integral over the block’s
@@ -1318,8 +1321,7 @@ every cell populated.</p>
 <p>This is coverage, not randomization: the assignment is deterministic
 and the sample axis holds shock draws rather than repeated plays, so
 the share of samples playing an action is not a probability of playing
-it. A control that genuinely randomizes declares that on itself and
-draws from a shock.</p>
+it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>weights</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Relative shares of the samples per action, one per candidate action.
@@ -2220,7 +2222,7 @@ here is measured on the rule and never on the iteration count.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>method</strong> (<a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><em>NeuralBestResponse</em></a><em> or </em><a class="reference internal" href="#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><em>ExactBestResponse</em></a>) – The per-decision solver, carrying its own configuration and the
+<li><p><strong>method</strong> (<a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><em>NeuralBestResponse</em></a><em>, </em><a class="reference internal" href="#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><em>ExactBestResponse</em></a><em>, or </em><a class="reference internal" href="#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><em>TabularBestResponseSolver</em></a>) – The per-decision solver, carrying its own configuration and the
 projected problem it solves. Any object with <code class="docutils literal notranslate"><span class="pre">ground</span></code>,
 <code class="docutils literal notranslate"><span class="pre">best_response(decision,</span> <span class="pre">policies)</span></code> and
 <code class="docutils literal notranslate"><span class="pre">rule_distance(new,</span> <span class="pre">old,</span> <span class="pre">iset)</span></code> serves.</p></li>
@@ -2230,7 +2232,8 @@ Default 1.0, which is undamped.</p></li>
 <li><p><strong>max_iterations</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Rounds before giving up. Reaching this is not convergence and is
 reported as such.</p></li>
 <li><p><strong>initial</strong> (<em>Callable</em><em>, </em><em>optional</em>) – The others’ rule on the first round. Defaults to a constant at the
-midpoint of the solved control’s declared bounds.</p></li>
+midpoint of the solved control’s declared bounds, or to one of its
+declared actions for a discrete control.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -2241,7 +2244,8 @@ midpoint of the solved control’s declared bounds.</p></li>
 </p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the method’s block does not carry a projected pair of controls.</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the method’s block does not carry a projected pair of controls, or
+    if damping is requested for an unordered discrete action space.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2661,7 +2665,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=a6227736"></script>
+</div><script src="../_static/documentation_options.js?v=e2881c44"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

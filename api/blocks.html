@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Bellman Periods" href="bellman.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Blocks - scikit-agent 0.2.1.dev11+g65d8c6688</title>
+        <title>Blocks - scikit-agent 0.2.1.dev13+g56819e309</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev11+g65d8c6688</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev13+g56819e309</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -1271,7 +1271,7 @@ rests on. Reading it as a plain number is <code class="docutils literal notransl
 <h3>Control<a class="headerlink" href="#control" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.block.Control">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">Control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Control" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.block.</span></span><span class="sig-name descname"><span class="pre">Control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.block.Control" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Used to designate a variable that is a control variable.</p>
 <dl class="field-list simple">
@@ -1285,6 +1285,8 @@ below.</p></li>
 <li><p><strong>upper_bound</strong> (<em>number</em><em>, </em><em>callable</em><em>, or </em><em>None</em>) – The upper bound of the control variable, declared the same way as
 <code class="docutils literal notranslate"><span class="pre">lower_bound</span></code>. <code class="docutils literal notranslate"><span class="pre">None</span></code> leaves the control unbounded above.</p></li>
 <li><p><strong>agent</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – A label identifying the agent role to which this control is attributed.</p></li>
+<li><p><strong>action_space</strong> (<em>iterable</em><em> of </em><em>number</em><em>, </em><em>default=None</em>) – The finite set of values this control may take. <code class="docutils literal notranslate"><span class="pre">None</span></code> leaves the
+control continuous. The values are treated as an unordered set.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1651,7 +1653,7 @@ Keys of this dictionary should be shared with the shocks argument.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=a6227736"></script>
+</div><script src="../_static/documentation_options.js?v=e2881c44"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

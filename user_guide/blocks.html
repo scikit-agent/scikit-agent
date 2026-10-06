@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Reading Model Diagrams" href="visualization.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.2.1.dev11+g65d8c6688</title>
+        <title>Block Guide - scikit-agent 0.2.1.dev13+g56819e309</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev11+g65d8c6688</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev13+g56819e309</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -437,6 +437,18 @@ numerical problem rather than as the specification error it is.</p>
 <p>A <strong>Control</strong> variable is under the control of some agent. Instead of providing
 a dynamic equation, the modeler specifies an information set – what information
 (variables) are available to the agent when they decide this variable’s value.</p>
+<section id="discrete-actions">
+<h4>Discrete actions<a class="headerlink" href="#discrete-actions" title="Link to this heading">¶</a></h4>
+<p>A control may declare a finite set of allowed numeric values. Its decision rule
+must return one of them:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">offer</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([</span><span class="s2">"price"</span><span class="p">],</span> <span class="n">action_space</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">},</span> <span class="n">agent</span><span class="o">=</span><span class="s2">"seller"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The action space is unordered. Evaluating the block raises an error if the
+decision rule returns any other value. The tabular best-response solver searches
+the declared actions directly; controls without an action space continue to use
+its supplied or generated candidate grid.</p>
+</section>
 <section id="constraints">
 <h4>Constraints<a class="headerlink" href="#constraints" title="Link to this heading">¶</a></h4>
 <p>Control variables can be upper and lower bound to values that are themselves
@@ -865,6 +877,7 @@ instead.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#control-variables">Control Variables</a><ul>
+<li><a class="reference internal" href="#discrete-actions">Discrete actions</a></li>
 <li><a class="reference internal" href="#constraints">Constraints</a></li>
 <li><a class="reference internal" href="#calibration">Calibration</a></li>
 <li><a class="reference internal" href="#string-based-dynamics">String-Based Dynamics</a></li>
@@ -906,7 +919,7 @@ instead.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=a6227736"></script>
+</div><script src="../_static/documentation_options.js?v=e2881c44"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
