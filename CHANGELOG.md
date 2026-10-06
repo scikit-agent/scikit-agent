@@ -13,9 +13,24 @@ and this project adheres to
 - `vfi.value_array_to_function` interpolates a one-axis continuation with numpy
   rather than `RegularGridInterpolator`: the same values, at a fraction of the
   cost per call.
+### Added
+
+- `GroundedBlock.with_calibration(values)` returns a copy with _values_ merged
+  over the calibration; a `BellmanPeriod`'s copy recomputes its arrival states.
+- Controls may declare an unordered finite `action_space`. Decision rules are
+  validated against it during execution, and `TabularBestResponseSolver` uses
+  its values as that control's candidate actions.
 
 ### Fixed
 
+- A VFI decision rule answers inputs past the range its grid covers instead of
+  returning NaN: it extends linearly from the outermost segment, held within the
+  control's declared bounds, and its `off_grid` attribute counts such queries. A
+  simulation that visits states outside the solved grid previously stopped on
+  NaN.
+- `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
+  Gauss-Hermite quadrature on the log. It gave equal weights to evenly spaced
+  nodes, which overstated the mean and standard deviation.
 - `maliar_training_loop` raises `RuntimeError` when the loss becomes non-finite,
   naming the iteration. It used to carry on: on the next iteration the trainer
   stopped at epoch 0 without changing the weights, and the loop reported the

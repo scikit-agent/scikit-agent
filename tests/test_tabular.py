@@ -11,11 +11,12 @@ import numpy as np
 import pytest
 
 from skagent.algos.tabular import TabularBestResponseSolver, TabulatedRule
-from skagent.solver import solve_in_relevance_order
+from skagent.solver import solve_in_relevance_order, solve_symmetric_equilibrium
 from skagent.ground import GroundedBlock
 from skagent.algos.vfi import get_action_rule
 from skagent.block import Control, DBlock
 from skagent.distributions import Uniform
+from skagent.simulation.monte_carlo import Simulator
 import skagent.models.cournot as cournot
 import skagent.models.macid as macid
 
@@ -65,6 +66,19 @@ matching_pennies_block = DBlock(
         },
         "reward": {"u1": "p1", "u2": "p2"},
     }
+)
+
+
+symmetric_discrete_prisoners_dilemma = DBlock(
+    name="symmetric_discrete_prisoners_dilemma",
+    dynamics={
+        "D_actor": Control([], agent="player_actor", action_space={0, 1}),
+        "D_other": Control([], agent="player_other", action_space={0, 1}),
+        "U_actor": lambda D_actor, D_other: (
+            3.0 + 2.0 * D_actor - 3.0 * D_other - D_actor * D_other
+        ),
+    },
+    reward={"U_actor": "player_actor"},
 )
 
 
@@ -162,15 +176,61 @@ class TestSolve:
                 assert np.all(response.actions == 1.0)
 
     def test_one_shot_prisoners_dilemma_solves_to_mutual_defection(self):
-        game = solver(
-            macid.prisoners_dilemma_block,
-            actions=np.array([0.0, 1.0]),
-        )
+        game = solver(macid.discrete_prisoners_dilemma_block)
 
         policies = solve_in_relevance_order(game)
 
         assert policies["D1"].to_dict() == {(): 1.0}
         assert policies["D2"].to_dict() == {(): 1.0}
+
+    def test_declared_action_space_replaces_the_fallback_grid(self):
+        block = DBlock(
+            dynamics={
+                "a": Control([], agent="player", action_space={-2, 3, 8}),
+                "u": lambda a: -((a - 4) ** 2),
+            },
+            reward={"u": "player"},
+        )
+        game = solver(block, actions=np.array([4.0]))
+
+        response = game.best_response("a", game.initial_policies())
+
+        np.testing.assert_array_equal(
+            game.conditional_payoffs("a", {"a": response}).actions,
+            [-2.0, 3.0, 8.0],
+        )
+        assert response() == 3.0
+
+    def test_symmetric_discrete_prisoners_dilemma_solves_and_simulates(self):
+        game = solver(symmetric_discrete_prisoners_dilemma)
+
+        rule, info = solve_symmetric_equilibrium(game)
+
+        assert info["converged"]
+        assert rule() == 1.0
+        payoffs = game.conditional_payoffs(
+            "D_actor", {"D_actor": rule, "D_other": rule}
+        )
+        np.testing.assert_array_equal(payoffs.actions, [0.0, 1.0])
+
+        simulation = Simulator(
+            {},
+            symmetric_discrete_prisoners_dilemma,
+            {"D_actor": rule, "D_other": rule},
+            {},
+            sample_count=4,
+            T_sim=2,
+        )
+        simulation.initialize_sim()
+        history = simulation.simulate()
+        np.testing.assert_array_equal(history["D_actor"], np.ones((2, 4)))
+        np.testing.assert_array_equal(history["D_other"], np.ones((2, 4)))
+
+    def test_discrete_symmetric_equilibrium_refuses_damping(self):
+        game = solver(symmetric_discrete_prisoners_dilemma)
+
+        with pytest.raises(ValueError, match="use damping=1"):
+            solve_symmetric_equilibrium(game, damping=0.5)
 
     def test_iterated_prisoners_dilemma_raises_for_recurring_block(self):
         game = solver(

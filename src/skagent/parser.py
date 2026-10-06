@@ -31,7 +31,7 @@ def tuple_constructor_from_class(cls):
     return constructor
 
 
-CONTROL_FIELDS = ("iset", "lower_bound", "upper_bound", "agent")
+CONTROL_FIELDS = ("iset", "lower_bound", "upper_bound", "agent", "action_space")
 
 
 def bound_from_text(bound):
@@ -54,7 +54,7 @@ def control_constructor(loader, node):
     """
     from skagent.block import Control  # TODO: move to separate module
 
-    args = loader.construct_mapping(node)
+    args = loader.construct_mapping(node, deep=True)
 
     unknown = set(args) - set(CONTROL_FIELDS)
     if unknown:
@@ -76,6 +76,7 @@ def control_constructor(loader, node):
         lower_bound=bound_from_text(args.get("lower_bound")),
         upper_bound=bound_from_text(args.get("upper_bound")),
         agent=args.get("agent"),
+        action_space=args.get("action_space"),
     )
 
 

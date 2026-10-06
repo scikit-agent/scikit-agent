@@ -19,6 +19,8 @@ from skagent.bellman import BellmanPeriod
 from skagent.block import Control, DBlock
 from skagent.loss import BellmanEquationLoss
 from skagent.grid import device
+from skagent.simulation.monte_carlo import Simulator
+import skagent.models.aiyagari as aiyagari
 import skagent.models.benchmarks as bm
 import skagent.models.cournot as cournot
 import skagent.models.consumer as cons
@@ -1294,3 +1296,76 @@ class TestAPinnedInformationSetAxis:
         rule = self._rule(np.array([-1.0, 1.0]))
         assert rule(0.0, 0.5) == pytest.approx(0.5)
         assert np.allclose(rule(np.zeros(2), np.array([0.25, 0.75])), [0.25, 0.75])
+
+
+class TestARuleOffItsGrid:
+    """A fitted rule asked about inputs past the range its grid covers.
+
+    It extends linearly from the outermost segment, so it answers rather than
+    returning NaN, holds the extension within the control's bounds, and counts
+    the queries it answered that way.
+    """
+
+    def _kinked(self):
+        # Uneven nodes and slopes 2 then 1/2, so an extension read off the wrong
+        # segment gives a wrong value.
+        da = xr.DataArray(
+            np.array([0.0, 2.0, 3.0]), dims=["x"], coords={"x": [0.0, 1.0, 3.0]}
+        )
+        return da
+
+    def test_it_extends_along_the_outermost_segment_and_counts_it(self):
+        rule = vfi.ar_from_data(self._kinked())
+        np.testing.assert_allclose(rule(np.array([-1.0, 2.0, 4.0])), [-2.0, 2.5, 3.5])
+        assert rule.off_grid == 2  # the middle query is inside the grid
+        rule(2.0)
+        assert rule.off_grid == 2
+
+    def test_several_varying_dimensions_extend_too(self):
+        da = xr.DataArray(
+            np.add.outer(np.arange(3.0), 10 * np.arange(4.0)),
+            dims=["x", "y"],
+            coords={"x": [0.0, 1.0, 2.0], "y": [0.0, 1.0, 2.0, 3.0]},
+        )
+        rule = vfi.ar_from_data(da)
+        assert rule(3.0, 4.0) == pytest.approx(43.0)
+        assert rule.off_grid == 1
+
+    def test_the_clip_reaches_the_extension_and_not_the_fit(self):
+        rule = vfi.ar_from_data(self._kinked(), clip=lambda v, x: np.zeros_like(v))
+        np.testing.assert_allclose(rule(np.array([-1.0, 2.0, 4.0])), [0.0, 2.5, 0.0])
+
+    def test_a_solved_rule_keeps_its_bounds_and_the_economy_simulates(self):
+        # The Aiyagari household at fixed prices, solved on a coarse grid. Every
+        # household starts with assets past the grid's cap, so the full model
+        # asks the rule about cash on hand it was never solved at. Before the
+        # extension the rule answered NaN there, and the simulation stopped on
+        # the entity-class guard.
+        alpha, delta, K = aiyagari.CAPITAL_SHARE, aiyagari.DEPRECIATION, 5.5
+        economy = {**aiyagari.aiyagari_calibration(size=50, sigma=0.3), "DiscFac": 0.96}
+        prices = {"R": alpha * K ** (alpha - 1) - delta, "W": (1 - alpha) * K**alpha}
+        cal = {**economy, **prices}
+        bp = BellmanPeriod(aiyagari.household_block, "DiscFac", cal)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dr, _, _ = vfi.solve_bellman(
+                bp,
+                {"a": 20.0 * np.linspace(0.0, 1.0, 8) ** 2},
+                scope=cal,
+                disc_params={"theta": {"N": 3}},
+                tol=1e-3,
+                max_iter=300,
+                artificial_borrowing_constraint=True,
+            )
+        rule = dr["c"]
+
+        # Below the grid the extension is clipped to c <= z: consume everything.
+        assert rule(0.01) == pytest.approx(0.01)
+
+        sim = Simulator(
+            economy, aiyagari.aiyagari_block, {"c": rule}, {"a": 40.0}, T_sim=5
+        )
+        sim.initialize_sim()
+        history = sim.simulate()
+        assert np.all(np.isfinite(np.asarray(history["K"], dtype=float)))
+        assert rule.off_grid > 0

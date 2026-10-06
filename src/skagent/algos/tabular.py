@@ -132,8 +132,10 @@ class TabularBestResponseSolver:
         shocks are constructed from and the values any parameter the dynamics
         refer to.
     actions : array_like, optional
-        Candidate actions to search, shared by every decision. Defaults to
-        ``action_count`` points spanning ``[0, 1]``.
+        Candidate actions to search for controls without a declared
+        ``action_space``, shared by those decisions. Defaults to
+        ``action_count`` points spanning ``[0, 1]``. A control's declared
+        action space takes precedence.
     action_count : int, optional
         Number of candidate actions when *actions* is not given.
     shock_samples : int, optional
@@ -228,6 +230,27 @@ class TabularBestResponseSolver:
 
     # -- inputs read off the block ------------------------------------------
 
+    def _actions_for(self, decision):
+        """The declared actions for one decision, or the solver fallback."""
+        action_space = self.block.get_control(decision).action_space
+        if action_space is None:
+            return self.actions
+        return np.asarray(sorted(action_space), dtype=float)
+
+    @staticmethod
+    def _spread(actions, shock_samples, weights=None):
+        """A rule spreading *actions* across the sample axis."""
+        if weights is None:
+            weights = np.ones_like(actions)
+        weights = np.asarray(weights, dtype=float)
+        if weights.shape != actions.shape:
+            raise ValueError(
+                f"got {weights.size} weights for {actions.size} candidate actions"
+            )
+        counts = np.maximum(1, np.round(shock_samples * weights / weights.sum()))
+        drawn = np.repeat(actions, counts.astype(int))
+        return get_action_rule(np.resize(drawn, shock_samples))
+
     # -- policies ------------------------------------------------------------
 
     def spread_rule(self, weights=None):
@@ -244,8 +267,7 @@ class TabularBestResponseSolver:
         This is coverage, not randomization: the assignment is deterministic
         and the sample axis holds shock draws rather than repeated plays, so
         the share of samples playing an action is not a probability of playing
-        it. A control that genuinely randomizes declares that on itself and
-        draws from a shock.
+        it.
 
         Parameters
         ----------
@@ -258,20 +280,14 @@ class TabularBestResponseSolver:
         callable
             A decision rule returning one action per sample.
         """
-        if weights is None:
-            weights = np.ones_like(self.actions)
-        weights = np.asarray(weights, dtype=float)
-        if weights.shape != self.actions.shape:
-            raise ValueError(
-                f"got {weights.size} weights for {self.actions.size} candidate actions"
-            )
-        counts = np.maximum(1, np.round(self.shock_samples * weights / weights.sum()))
-        drawn = np.repeat(self.actions, counts.astype(int))
-        return get_action_rule(np.resize(drawn, self.shock_samples))
+        return self._spread(self.actions, self.shock_samples, weights)
 
     def initial_policies(self):
         """A spread rule for every decision in the block."""
-        return {sym: self.spread_rule() for sym in self.decisions}
+        return {
+            sym: self._spread(self._actions_for(sym), self.shock_samples)
+            for sym in self.decisions
+        }
 
     # -- payoffs and best responses -----------------------------------------
 
@@ -294,6 +310,7 @@ class TabularBestResponseSolver:
         ConditionalPayoffs
         """
         control = self.block.get_control(decision)
+        actions = self._actions_for(decision)
         agent = self.block.deciding_agent(decision)
         upstream = self.decisions[: self.decisions.index(decision)]
 
@@ -326,8 +343,8 @@ class TabularBestResponseSolver:
             )
         counts = np.bincount(inverse, minlength=len(cells))
 
-        payoff = np.empty((len(cells), len(self.actions)))
-        for k, action in enumerate(self.actions):
+        payoff = np.empty((len(cells), len(actions)))
+        for k, action in enumerate(actions):
             trial = dict(policies, **{decision: get_action_rule(action)})
             vals = self.block.transition(pre, trial, fix=upstream)
             sample_payoff = self._vector(self.block.payoff(vals, agent))
@@ -340,7 +357,7 @@ class TabularBestResponseSolver:
         return ConditionalPayoffs(
             cells=cells if control.iset else np.zeros((1, 0)),
             counts=counts,
-            actions=self.actions,
+            actions=actions,
             payoff=payoff,
         )
 
