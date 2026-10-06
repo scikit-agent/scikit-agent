@@ -481,7 +481,7 @@ def project_mean_field(ground):
         name=f"{block.name}_mean_field",
         shocks=dict(block.get_shocks()),
         dynamics={sym: eq for sym, eq in dynamics.items() if sym not in crossings},
-        reward=dict(block.reward),
+        reward={sym: owner for sym, owner in block.reward.items() if sym not in crossings},
     )
     return GroundedBlock(projected, dict(ground.calibration), rng=ground.rng)
 
