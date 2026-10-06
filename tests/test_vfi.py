@@ -60,6 +60,8 @@ def over_levers(*configs):
 
 
 BOUNDED = {"search": "bounded"}
+EVALUATED = {"policy_evaluations": 20}
+BOUNDED_EVALUATED = {**BOUNDED, **EVALUATED}
 
 
 class test_vfi_solve_step(unittest.TestCase):
@@ -762,7 +764,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         with pytest.raises(NotImplementedError, match="no equilibrium concept"):
             vfi.solve_step(bp, lambda s, sh, p: 0.0, {"c": np.array([4.0])}, scope=cal)
 
-    @over_levers(BOUNDED)
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
     def test_d4_constrained_loop_converges_to_a_sane_policy(self, **levers):
         """The constrained convergence loop, without the oracle's dense grid.
 
@@ -799,7 +801,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             self.assertGreater(upper, lower, "consumption must rise with wealth")
 
     @pytest.mark.oracle
-    @over_levers(BOUNDED)
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
     def test_d4_converges_to_reference_oracle(self, **levers):
         # D-4 has no closed form; compare the converged policy to the dense-grid
         # VFI oracle. Two independent exact solvers should agree to ~1% (grid
@@ -825,7 +827,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         self.assertIsInstance(value_array, xr.DataArray)
         self.assertEqual(list(policy_array["c"].dims), ["a"])
 
-    @over_levers(BOUNDED)
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
     def test_d2_iterated_converges_to_analytic(self, **levers):
         # D-2 (infinite-horizon CRRA, natural borrowing limit c <= m + H,
         # H = y/(R-1) = human wealth): iterate solve_bellman to a fixed point and
@@ -868,7 +870,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             want = bm.d2_analytical_policy({"a": a}, {}, cal)["c"]
             self.assertAlmostEqual(dr["c"](m), want, delta=5e-2)
 
-    @over_levers(BOUNDED)
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
     def test_d3_iterated_converges_to_analytic(self, **levers):
         # D-3 (Blanchard mortality) iterated to a fixed point, with the survival
         # state liv ON THE GRID. That is what makes the mortality channel visible
@@ -954,7 +956,37 @@ class test_vfi_solve_bellman(unittest.TestCase):
                 bp, grid, scope=cal, max_iter=1, raise_on_nonconvergence=True
             )
 
-    @over_levers(BOUNDED)
+    def test_policy_evaluations_reach_the_answer_in_fewer_backups(self):
+        # Evaluating each backup's policy before the next backup is what the
+        # option is for: on D-4, whose constraint binds, the loop reaches the same
+        # tolerance in a fraction of the backups, at the same policy. The
+        # policies agree to within what the tolerance allows either of them.
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        grid = {"a": np.linspace(0.0, 7.5, 9)}
+        runs = [
+            vfi.solve_bellman(
+                bp, grid, scope=cal, tol=1e-4, max_iter=500, policy_evaluations=k
+            )
+            for k in (0, 20)
+        ]
+        (dr_plain, value_plain, _), (dr_eval, value_eval, _) = runs
+        self.assertTrue(value_plain.attrs["converged"])
+        self.assertTrue(value_eval.attrs["converged"])
+        self.assertLess(5 * value_eval.attrs["n_iter"], value_plain.attrs["n_iter"])
+        for a in [0.5, 1.0, 3.0, 6.0]:
+            m = a * cal["R"] + cal["y"]
+            self.assertAlmostEqual(dr_eval["c"](m), dr_plain["c"](m), delta=1e-2)
+
+    def test_policy_evaluations_must_be_a_count(self):
+        cal = bm.d4_calibration
+        bp = BellmanPeriod(bm.d4_block, "DiscFac", cal)
+        with self.assertRaisesRegex(ValueError, "policy_evaluations"):
+            vfi.solve_bellman(
+                bp, {"a": np.linspace(0.0, 7.5, 3)}, scope=cal, policy_evaluations=-1
+            )
+
+    @over_levers(BOUNDED, EVALUATED, BOUNDED_EVALUATED)
     def test_u2_iterated_converges_to_analytic(self, **levers):
         # U-2 (log utility, normalized, no borrowing constraint): a hidden
         # permanent-income shock psi that is degenerate at sigma_psi = 0 (single
@@ -1022,6 +1054,10 @@ class test_vfi_solve_bellman(unittest.TestCase):
         # u'(c) = beta*R*V_W(W') carries that straight into the same relative error
         # in c. Geometric spacing equalizes log r across the grid; r ~ 1.06 here
         # holds the recovery inside ~1.2%.
+        #
+        # Not run under policy_evaluations: exact propagation reaches a residual
+        # of zero here, and a residual measured across a backup cannot fall
+        # below the backup's optimization error.
         cal = bm.d1_calibration
         T = cal["T"]
         bp = BellmanPeriod(bm.d1_block, "DiscFac", cal)
@@ -1260,7 +1296,8 @@ class test_vfi_horizon(unittest.TestCase):
     @over_levers(BOUNDED)
     def test_finite_horizon_recovers_the_closed_form(self, **levers):
         # T backups of the one-period block IS the T-period problem, so
-        # max_iter=T is exact up to grid error.
+        # max_iter=T is exact up to grid error. Not run under
+        # policy_evaluations, which would lengthen a horizon set by max_iter.
         bp, grid, exact = self._fisher()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
