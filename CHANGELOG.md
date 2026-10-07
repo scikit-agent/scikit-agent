@@ -10,6 +10,10 @@ and this project adheres to
 
 ### Added
 
+- `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
+  so the household problem can be solved as well as simulated.
+- A gallery page for the Aiyagari economy under a fixed savings rule, checking
+  the simulated capital stock against its closed-form law of motion.
 - `vfi.solve_step` and `vfi.solve_bellman` take `search="bounded"`: one bounded
   scalar search per gridpoint in place of the multi-start optimizer, several
   times faster. It applies to a single control with both bounds declared, and
