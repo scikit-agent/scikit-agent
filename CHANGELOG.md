@@ -33,8 +33,8 @@ and this project adheres to
 - `skagent.solver.project_mean_field` gives one instance's problem under
   price-taking: each equation reducing over the entity class is removed, so the
   aggregate becomes a value the caller supplies.
-  
- - Controls may declare an unordered finite `action_space`. Decision rules are
+
+- Controls may declare an unordered finite `action_space`. Decision rules are
   validated against it during execution, and `TabularBestResponseSolver` uses
   its values as that control's candidate actions.
 
