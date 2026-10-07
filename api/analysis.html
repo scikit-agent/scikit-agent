@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.2.1.dev22+g69f5d9907</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.2.1.dev28+gbb860e5aa</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev22+g69f5d9907</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev28+gbb860e5aa</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -620,8 +620,8 @@ that shock or integrate it inside the maximization.</p>
 instances of that class, and one symbol cannot refer to another instance of
 itself. <a class="reference internal" href="blocks.html#skagent.block.Block.relevance_graph" title="skagent.block.Block.relevance_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relevance_graph()</span></code></a> therefore runs the
 criterion on a split of the class – the instance deciding, and the rest of it,
-as <a class="reference internal" href="algorithms.html#skagent.solver.project" title="skagent.solver.project"><code class="xref py py-func docutils literal notranslate"><span class="pre">project()</span></code></a> builds it – and reports such a reliance on
-the class’s own symbol, as a self-loop.</p>
+as <a class="reference internal" href="algorithms.html#skagent.solver.project_nash" title="skagent.solver.project_nash"><code class="xref py py-func docutils literal notranslate"><span class="pre">project_nash()</span></code></a> builds it – and reports such a reliance
+on the class’s own symbol, as a self-loop.</p>
 <p>That shape is annotated rather than left to be inferred, because a self-loop on
 its own does not say whether a decision accounts for other instances of itself
 or for its own value. <a class="reference internal" href="#skagent.relevance.RelevanceGraph.plate" title="skagent.relevance.RelevanceGraph.plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate()</span></code></a> gives the
@@ -1257,7 +1257,7 @@ the graph per decision rather than per (shock, decision) pair.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1355d68f"></script>
+</div><script src="../_static/documentation_options.js?v=209c00de"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

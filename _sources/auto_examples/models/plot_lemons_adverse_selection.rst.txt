@@ -135,7 +135,7 @@ References
     import skagent.models.lemons as lemons
     from skagent.ground import GroundedBlock
     from skagent.simulation.monte_carlo import Simulator
-    from skagent.solver import project
+    from skagent.solver import project_nash
     from skagent.utils import plot_block_diagram
 
 
@@ -765,7 +765,7 @@ where the payoff block sits.
 
 One symbol cannot refer to another instance of itself, so that reliance is
 derived on a split of the class -- one node for the seller being solved, one
-for the rest of it -- which is what :func:`~skagent.solver.project` builds.
+for the rest of it -- which is what :func:`~skagent.solver.project_nash` builds.
 Asked of the projection directly, the same reliance is a pair of edges between
 the two sides:
 
@@ -776,7 +776,7 @@ the two sides:
 
 
     def projected_graph(block, calibration):
-        projected = project(GroundedBlock(block, calibration))
+        projected = project_nash(GroundedBlock(block, calibration))
         return projected.block.relevance_graph(projected.calibration)
 
 
@@ -824,7 +824,7 @@ sellers against a price, then the buyer against the sellers.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.452 seconds)
+   **Total running time of the script:** (0 minutes 0.396 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_lemons_adverse_selection.py:

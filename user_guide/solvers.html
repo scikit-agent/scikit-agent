@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Solvers Guide - scikit-agent 0.2.1.dev22+g69f5d9907</title>
+        <title>Solvers Guide - scikit-agent 0.2.1.dev28+gbb860e5aa</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev22+g69f5d9907</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev28+gbb860e5aa</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -429,10 +429,10 @@ everyone else’s rule, and repeats until the rule stops moving.</p>
 <p>This schedule first needs a <strong>projection</strong>, which the next section describes.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skagent.models.cournot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cournot</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExactBestResponse</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">solve_symmetric_equilibrium</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExactBestResponse</span><span class="p">,</span> <span class="n">project_nash</span><span class="p">,</span> <span class="n">solve_symmetric_equilibrium</span>
 
 <span class="n">market</span> <span class="o">=</span> <span class="n">GroundedBlock</span><span class="p">(</span><span class="n">cournot</span><span class="o">.</span><span class="n">cournot_block</span><span class="p">,</span> <span class="n">cournot</span><span class="o">.</span><span class="n">collusion_calibration</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
-<span class="n">projected</span> <span class="o">=</span> <span class="n">project</span><span class="p">(</span><span class="n">market</span><span class="p">)</span>
+<span class="n">projected</span> <span class="o">=</span> <span class="n">project_nash</span><span class="p">(</span><span class="n">market</span><span class="p">)</span>
 
 <span class="n">method</span> <span class="o">=</span> <span class="n">ExactBestResponse</span><span class="p">(</span>
     <span class="n">projected</span><span class="p">,</span>
@@ -469,7 +469,7 @@ instead of handing back its last iterate.</p>
 firms or many households. A method solves one decision, so something has to turn
 the question “what should all the firms do?” into the question “what should
 <em>this</em> firm do, given what the others do?”</p>
-<p><a class="reference internal" href="../api/algorithms.html#skagent.solver.project" title="skagent.solver.project"><code class="xref py py-func docutils literal notranslate"><span class="pre">project()</span></code></a> performs that translation. It splits the
+<p><a class="reference internal" href="../api/algorithms.html#skagent.solver.project_nash" title="skagent.solver.project_nash"><code class="xref py py-func docutils literal notranslate"><span class="pre">project_nash()</span></code></a> performs that translation. It splits the
 entity class into the instance being solved and the rest of the class, and it
 returns an ordinary block with two controls, <code class="docutils literal notranslate"><span class="pre">&lt;control&gt;_actor</span></code> and
 <code class="docutils literal notranslate"><span class="pre">&lt;control&gt;_other</span></code>.</p>
@@ -487,6 +487,14 @@ only equilibria are asymmetric cannot be expressed in this shape. A masked
 reduction, such as a mean taken over only the instances that meet some
 condition, does not currently work with the neural method, although it does work
 with the others.</p>
+<p>The firm’s own share is what makes this the Nash projection. In a model of many
+small agents, such as households whose savings make up an economy’s capital, the
+share is negligible, and the agent takes the aggregate as given.
+<a class="reference internal" href="../api/algorithms.html#skagent.solver.project_mean_field" title="skagent.solver.project_mean_field"><code class="xref py py-func docutils literal notranslate"><span class="pre">project_mean_field()</span></code></a> builds that problem instead. It
+removes each equation that reduces over the class and keeps the equations
+downstream of it, so the aggregate becomes a value you supply, for instance with
+<a class="reference internal" href="../api/blocks.html#skagent.ground.GroundedBlock.with_calibration" title="skagent.ground.GroundedBlock.with_calibration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_calibration()</span></code></a>, and the result is a
+single agent’s problem that any one-agent solver accepts.</p>
 <hr class="docutils" />
 <p><em>For runnable versions, see the
 <a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms examples gallery</span></a>.</em></p>
@@ -575,7 +583,7 @@ with the others.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1355d68f"></script>
+</div><script src="../_static/documentation_options.js?v=209c00de"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

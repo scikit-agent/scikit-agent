@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.2.1.dev22+g69f5d9907</title>
+        <title>Algorithms - scikit-agent 0.2.1.dev28+gbb860e5aa</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev22+g69f5d9907</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev28+gbb860e5aa</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -2202,8 +2202,8 @@ relevance component. Must be at least 1. Defaults to 25.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="skagent.solver.project">
-<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actor_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_actor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_other'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.project" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="skagent.solver.project_nash">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">project_nash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actor_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_actor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_other'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.project_nash" title="Link to this definition">¶</a></dt>
 <dd><p>One instance’s problem, with the rest of its class beside it.</p>
 <p>The entity class is split in two – the instance being solved, and the
 others – and every per-instance equation is copied once per side under a
@@ -2255,11 +2255,51 @@ and the others’ – and a calibration that sizes the rivals’ class.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="skagent.solver.project_mean_field">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">project_mean_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.project_mean_field" title="Link to this definition">¶</a></dt>
+<dd><p>One instance’s problem under price-taking: the aggregate is given.</p>
+<p>Every equation that reduces over the entity class is removed, so each
+aggregate it computed becomes a symbol the remaining equations read rather
+than one they compute. The equations downstream of an aggregate are kept as
+the author wrote them. The instance’s symbols carry no class, since they
+are one decision-maker’s, so the result is a problem a single-agent solver
+accepts.</p>
+<p>Under this concept the instance takes no account of its own effect on the
+aggregate, which is exact for a continuum of instances and the concept a
+competitive equilibrium is defined by. Contrast <a class="reference internal" href="#skagent.solver.project_nash" title="skagent.solver.project_nash"><code class="xref py py-func docutils literal notranslate"><span class="pre">project_nash()</span></code></a>, where
+the instance keeps its own share.</p>
+<p>The projection gives the aggregates no value. Supply one before solving,
+for instance with <a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock.with_calibration" title="skagent.ground.GroundedBlock.with_calibration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.ground.GroundedBlock.with_calibration()</span></code></a>:
+a symbol the block reads and neither defines nor calibrates is otherwise an
+arrival state.</p>
+<p>An aggregate is found as <a class="reference internal" href="blocks.html#skagent.block.Block.crossings" title="skagent.block.Block.crossings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">skagent.block.Block.crossings()</span></code></a> reports it,
+so a reduction written inside a per-instance equation is not one, and is
+left in place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ground</strong> (<a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><em>skagent.ground.GroundedBlock</em></a>) – The population model and its calibration. Its block must declare
+exactly one entity class and read something out of it.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The projected problem, with the calibration and generator of <em>ground</em>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock">skagent.ground.GroundedBlock</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the block does not declare exactly one entity class, reads nothing
+    out of it, or reduces over it in a decision, which is a choice rather
+    than an aggregate to take as given.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="skagent.solver.solve_symmetric_equilibrium">
 <span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_symmetric_equilibrium</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">damping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_symmetric_equilibrium" title="Link to this definition">¶</a></dt>
 <dd><p>A symmetric equilibrium, by iterated best response over a projection.</p>
 <p>Takes a projected problem – one instance’s decision beside the rest of its
-class, as <a class="reference internal" href="#skagent.solver.project" title="skagent.solver.project"><code class="xref py py-func docutils literal notranslate"><span class="pre">project()</span></code></a> builds – solves the instance’s decision against
+class, as <a class="reference internal" href="#skagent.solver.project_nash" title="skagent.solver.project_nash"><code class="xref py py-func docutils literal notranslate"><span class="pre">project_nash()</span></code></a> builds – solves the instance’s decision against
 the others’ current rule, swaps the solved rule in as the others’, and
 repeats until the rule stops moving. A rule that is its own best response is
 an equilibrium of the projected game, and because the others play whatever
@@ -2671,7 +2711,8 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 <li><a class="reference internal" href="#equilibrium-schedules-and-methods">Equilibrium Schedules and Methods</a><ul>
 <li><a class="reference internal" href="#skagent.solver.solve_in_order"><code class="docutils literal notranslate"><span class="pre">solve_in_order()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.solve_in_relevance_order"><code class="docutils literal notranslate"><span class="pre">solve_in_relevance_order()</span></code></a></li>
-<li><a class="reference internal" href="#skagent.solver.project"><code class="docutils literal notranslate"><span class="pre">project()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.project_nash"><code class="docutils literal notranslate"><span class="pre">project_nash()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.project_mean_field"><code class="docutils literal notranslate"><span class="pre">project_mean_field()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.solve_symmetric_equilibrium"><code class="docutils literal notranslate"><span class="pre">solve_symmetric_equilibrium()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.NeuralBestResponse"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.solver.NeuralBestResponse.best_response"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse.best_response()</span></code></a></li>
@@ -2719,7 +2760,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1355d68f"></script>
+</div><script src="../_static/documentation_options.js?v=209c00de"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
