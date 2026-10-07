@@ -1,0 +1,801 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Roadmap" href="roadmap.html"><link rel="prev" title="Community Guide" href="index.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Writing Documentation - scikit-agent 0.2.1.dev28+ge59bff6cb</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=83e65f8c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev28+ge59bff6cb</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/blocks.html">Block Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/visualization.html">Reading Model Diagrams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/simulation.html">Simulation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/algorithms.html">Algorithms Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/solvers.html">Solvers Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/maliar.html">Solving Models with the Maliar Method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/environments.html">Environments Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/constraints.html">Constraining an Optimization Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/benchmark_models.html">Benchmark Models</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/algorithms/index.html">Algorithms</a><input aria-label="Toggle navigation of Algorithms" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_direct_block_solve.html">Solving a Block Directly (Non-Recurring)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_train_against_known_solution.html">Training a Policy Network Against a Known Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_maliar_training_loop.html">The Maliar Training Loop on a Model With No Closed-Form Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/algorithms/plot_sb3_ppo.html">PPO via Stable-Baselines3 on the D-4 Benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../auto_examples/models/index.html">Models</a><input aria-label="Toggle navigation of Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_2_content_recommendation.html">Incentives in Content Recommendation: Wanting Control Versus Having It</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_cournot_equilibrium.html">Cournot: Solving for a Nash Equilibrium</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_resource_extraction.html">Resource Extraction Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_consumption_portfolio_model.html">Consumption-Saving-Portfolio Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_incentives_1_grade_prediction.html">Incentives in Grade Prediction: Observing Versus Responding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_tree_killer_relevance.html">Strategic Relevance: Solving the Tree Killer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_benchmark_models.html">Benchmark Consumption Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_privacy_dp_tuning.html">Differential Privacy: Tuning a Parameter With a Causal Game</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auto_examples/models/plot_lemons_adverse_selection.html">Lemons: Adverse Selection, and Three Markets That Look Alike</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/blocks.html">Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/bellman.html">Bellman Periods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/algorithms.html">Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/environments.html">Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/distributions.html">Distributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/parser.html">Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/analysis.html">Model Analysis and Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Community Guide</a><input aria-label="Toggle navigation of Community Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Writing Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../ecosystem/index.html">Ecosystem</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/blob/main/docs/community/documentation.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/scikit-agent/scikit-agent/edit/main/docs/community/documentation.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section class="tex2jax_ignore mathjax_ignore" id="writing-documentation">
+<h1>Writing Documentation<a class="headerlink" href="#writing-documentation" title="Link to this heading">¶</a></h1>
+<p>scikit-agent follows
+<a class="reference external" href="https://scikit-learn.org/stable/developers/contributing.html#contribute-documentation">scikit-learn’s guidelines for contributing documentation</a>,
+which means that if you have written documentation for a scientific Python
+project before, most of what you know already applies. This page records the
+parts that are specific to this project: the conventions our toolchain forces,
+the vocabulary the documentation shares, and the register each kind of page is
+written in. Where this page and the scikit-learn guidelines disagree, this page
+is the one to follow, and the last section says where the disagreements are and
+why each one exists.</p>
+<p>You do not need to read it through before contributing. It is reference
+material, and the sections stand on their own.</p>
+<section id="the-four-surfaces">
+<h2>The four surfaces<a class="headerlink" href="#the-four-surfaces" title="Link to this heading">¶</a></h2>
+<p>Documentation lives in four places, and which one you are editing decides most
+of the questions below.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Surface</p></th>
+<th class="head"><p>Where it lives</p></th>
+<th class="head"><p>What it is</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>API documentation</p></td>
+<td><p>docstrings in <code class="docutils literal notranslate"><span class="pre">src/skagent/</span></code></p></td>
+<td><p>the contract of a module, class, method or function</p></td>
+</tr>
+<tr class="row-odd"><td><p>User guide</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docs/user_guide/</span></code></p></td>
+<td><p>how part of the library is used, and why</p></td>
+</tr>
+<tr class="row-even"><td><p>Examples</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">examples/</span></code></p></td>
+<td><p>runnable programs, rendered into the gallery</p></td>
+</tr>
+<tr class="row-odd"><td><p>Other documents</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docs/community/</span></code>, <code class="docutils literal notranslate"><span class="pre">docs/ecosystem/</span></code>, <code class="docutils literal notranslate"><span class="pre">docs/api/</span></code></p></td>
+<td><p>project documents and the API index</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>There is a fifth directory that looks like a surface and is not.
+<code class="docutils literal notranslate"><span class="pre">docs/auto_examples/</span></code> is generated by Sphinx-Gallery from <code class="docutils literal notranslate"><span class="pre">examples/</span></code> on every
+build, it is not in the repository, and anything written there is thrown away by
+the next build. If you want to change what a gallery page says, change the
+example it is generated from.</p>
+</section>
+<section id="voice">
+<h2>Voice<a class="headerlink" href="#voice" title="Link to this heading">¶</a></h2>
+<p>Three of those surfaces have different readers, so they are written differently.
+The register follows the reader, which means the gallery and the user guide are
+not supposed to sound alike.</p>
+<p>The gallery teaches, and it reads like a well-written undergraduate textbook.
+Its reader is capable and new to the material: they have calculus and some
+probability, they have not used this library, and they have not read the papers
+behind it. So a gallery page motivates a thing before it formalizes it, defines
+a term where the term first appears, and carries its worked example far enough
+that the reader sees the numbers come out. It builds in order, using only what
+its earlier sections have established.</p>
+<p>Three neighbouring registers are worth naming, because writing in one of them by
+accident is easy. A gallery page is not a paper, so it does not position itself
+against a literature or argue for its own novelty. It is not a blog post, so it
+does not make jokes, asides, or appeals to how interesting the material is. It
+is not a reference manual, so it explains in prose instead of enumerating.</p>
+<p>The user guide is written for a developer rather than a student. Its reader
+knows Python and their own field, has a task in mind, and wants to know what the
+library calls a thing, what to call, what it does and what it refuses. A user
+guide page therefore gets to the code early and leaves the derivation out. When
+a reader wants the model itself rather than the API around it, the page says so
+and sends them to the gallery.</p>
+<p>The community pages, including this one, are written for someone deciding how to
+contribute and what the project will expect of their work. They state a
+convention and the reason for it, and they are read once rather than kept open.</p>
+<p>Some things hold across all three. Write plainly, in complete sentences, and
+make each claim once, in the order a reader needs it. Say what a thing does
+before you say why it matters. Use “we” for a step the page takes together with
+the reader, “you” for something the reader does in their own code, and avoid the
+passive where it would hide who is acting.</p>
+<p>Three habits work against all of that, and they are worth watching for in
+docstrings as much as in pages.</p>
+<p>The first is the slogan: a bolded, compressed assertion at the head of a
+paragraph that the reader has to unpack before they can read on. Bold is useful
+for naming a thing — a class, a mode, a parameter — and unhelpful for carrying a
+proposition. Open with an ordinary sentence saying what the paragraph is about.</p>
+<p>The second is the fragment. Body text is made of complete sentences; headings,
+table cells and short labels may be noun phrases. A line that drops its subject
+or its verb to sound terse is usually a sentence worth writing out.</p>
+<p>The third is emphasis doing the work an explanation should do. Capitals on a
+claim, and the “not X, but Y” reversal used for effect rather than for a real
+contrast, both assert where the reader wanted to be shown something.</p>
+</section>
+<section id="two-markup-languages">
+<h2>Two markup languages<a class="headerlink" href="#two-markup-languages" title="Link to this heading">¶</a></h2>
+<p>Pages under <code class="docutils literal notranslate"><span class="pre">docs/</span></code> are MyST Markdown. Docstrings are reStructuredText, read by
+<code class="docutils literal notranslate"><span class="pre">sphinx.ext.napoleon</span></code>. Most of the time the difference does not come up, but it
+decides how you spell a cross-reference and how you spell mathematics:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>In a page</p></th>
+<th class="head"><p>In a docstring</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Cross-reference</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{py:class}`~skagent.grid.Grid`</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">:class:`~skagent.grid.Grid`</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Mathematics</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">$...$</span></code> and <code class="docutils literal notranslate"><span class="pre">$$...$$</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">:math:</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="docstrings">
+<h2>Docstrings<a class="headerlink" href="#docstrings" title="Link to this heading">¶</a></h2>
+<p>A docstring is a contract. It says what a caller may rely on, which is a
+different job from explaining why the code changed or walking a reader through a
+particular model. Those belong in the pull request, the user guide or an
+example.</p>
+<p>The format is numpydoc, and the section order is numpydoc’s: Parameters,
+Returns, Raises, See Also, Notes, References, Examples. The pair most often
+written backwards is the last two of those middle ones — <code class="docutils literal notranslate"><span class="pre">See</span> <span class="pre">Also</span></code> comes before
+<code class="docutils literal notranslate"><span class="pre">References</span></code> — and some docstrings in the tree still have it the other way
+round.</p>
+<p>Parameters and attributes are written as <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">:</span> <span class="pre">type,</span> <span class="pre">default=value</span></code>, with the
+description indented underneath:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sample_count</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span>
+    <span class="n">The</span> <span class="n">number</span> <span class="n">of</span> <span class="n">independent</span> <span class="n">paths</span> <span class="n">the</span> <span class="n">simulator</span> <span class="n">draws</span><span class="o">.</span>
+
+<span class="n">method</span> <span class="p">:</span> <span class="p">{</span><span class="s2">"exact"</span><span class="p">,</span> <span class="s2">"neural"</span><span class="p">,</span> <span class="s2">"tabular"</span><span class="p">},</span> <span class="n">default</span><span class="o">=</span><span class="s2">"exact"</span>
+    <span class="n">Which</span> <span class="n">best</span><span class="o">-</span><span class="n">response</span> <span class="n">method</span> <span class="n">solves</span> <span class="n">each</span> <span class="n">decision</span><span class="o">.</span>
+
+<span class="n">state_grid</span> <span class="p">:</span> <span class="n">Grid</span> <span class="ow">or</span> <span class="n">AxisSpec</span>
+    <span class="n">The</span> <span class="n">states</span> <span class="n">the</span> <span class="n">backup</span> <span class="ow">is</span> <span class="n">taken</span> <span class="n">over</span><span class="o">.</span>
+
+<span class="n">values</span> <span class="p">:</span> <span class="n">ndarray</span> <span class="n">of</span> <span class="n">shape</span> <span class="p">(</span><span class="n">sample_count</span><span class="p">,)</span> <span class="o">+</span> <span class="n">entity_shape</span>
+    <span class="n">One</span> <span class="n">value</span> <span class="n">per</span> <span class="n">path</span> <span class="ow">and</span> <span class="n">per</span> <span class="n">entity</span> <span class="n">instance</span><span class="o">.</span>
+
+<span class="n">decision_rules</span> <span class="p">:</span> <span class="nb">dict</span> <span class="n">of</span> <span class="nb">str</span> <span class="n">to</span> <span class="nb">callable</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">A</span> <span class="n">rule</span> <span class="n">per</span> <span class="n">control</span> <span class="n">symbol</span><span class="o">.</span> <span class="kc">None</span> <span class="n">means</span> <span class="n">every</span> <span class="n">control</span> <span class="ow">is</span> <span class="n">solved</span> <span class="k">for</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The type is spelled by a short set of conventions, which exist so that two
+docstrings describing the same thing describe it the same way:</p>
+<ul class="simple">
+<li><p>Python’s own type names, so <code class="docutils literal notranslate"><span class="pre">bool</span></code> rather than <code class="docutils literal notranslate"><span class="pre">boolean</span></code> and <code class="docutils literal notranslate"><span class="pre">str</span></code> rather than
+<code class="docutils literal notranslate"><span class="pre">string</span></code>.</p></li>
+<li><p>Shapes in parentheses after the type, with the axes named the way the library
+names them: <code class="docutils literal notranslate"><span class="pre">sample_count</span></code> for the sample axis and <code class="docutils literal notranslate"><span class="pre">entity_shape</span></code> for the
+trailing per-instance axes, following
+<a class="reference internal" href="../api/simulation.html#skagent.simulation.monte_carlo.Simulator" title="skagent.simulation.monte_carlo.Simulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulator</span></code></a>.</p></li>
+<li><p>A fixed set of string options in braces, as <code class="docutils literal notranslate"><span class="pre">{&quot;exact&quot;,</span> <span class="pre">&quot;neural&quot;}</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">of</span></code> as the delimiter for containers, so <code class="docutils literal notranslate"><span class="pre">list</span> <span class="pre">of</span> <span class="pre">str</span></code> and
+<code class="docutils literal notranslate"><span class="pre">dict</span> <span class="pre">of</span> <span class="pre">str</span> <span class="pre">to</span> <span class="pre">callable</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="docutils literal notranslate"><span class="pre">Tensor</span></code> or <code class="docutils literal notranslate"><span class="pre">xarray.DataArray</span></code> where only one of them will do, and
+<code class="docutils literal notranslate"><span class="pre">array-like</span></code> where any of them is accepted.</p></li>
+<li><p>Library types under their class name, which also makes them cross-reference:
+<code class="docutils literal notranslate"><span class="pre">GroundedBlock</span></code>, <code class="docutils literal notranslate"><span class="pre">Grid</span></code>, <code class="docutils literal notranslate"><span class="pre">Control</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">default=None</span></code> last, with the description saying what <code class="docutils literal notranslate"><span class="pre">None</span></code> means. A default
+that is not <code class="docutils literal notranslate"><span class="pre">None</span></code> is written as it would be typed.</p></li>
+</ul>
+<p>A <code class="docutils literal notranslate"><span class="pre">See</span> <span class="pre">Also</span></code> section gives one reference per line, each with a colon and a short
+reason for the reader to follow it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">See</span> <span class="n">Also</span>
+<span class="o">--------</span>
+<span class="n">solve_in_order</span> <span class="p">:</span> <span class="n">Solve</span> <span class="n">named</span> <span class="n">decisions</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">given</span> <span class="n">order</span><span class="o">.</span>
+<span class="n">solve_symmetric_equilibrium</span> <span class="p">:</span> <span class="n">Solve</span> <span class="n">one</span> <span class="n">decision</span> <span class="n">against</span> <span class="n">copies</span> <span class="n">of</span> <span class="n">itself</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>An <code class="docutils literal notranslate"><span class="pre">Examples</span></code> section is optional, and when there is one it has to run as
+written, imports included, because it can be executed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>--doctest-modules<span class="w"> </span>src/skagent/rule.py
+</pre></div>
+</div>
+<p>If an example cannot run without a model built over several lines, that is a
+sign the explanation wants the user guide or the gallery, where the model can be
+built in the open. A fragment that would fail the command above is better
+deleted than left in place.</p>
+<p>Docstrings are code, so ruff wraps them at 88 columns rather than 80.</p>
+</section>
+<section id="user-guide-pages">
+<h2>User guide pages<a class="headerlink" href="#user-guide-pages" title="Link to this heading">¶</a></h2>
+<p>A user guide page opens with what the thing does and when a developer would
+reach for it. A shape that works, and that most of the existing pages follow:</p>
+<ol class="arabic simple">
+<li><p>A short explanation of what it does, in the library’s own vocabulary.</p></li>
+<li><p>What it is good for, and when to reach for the alternative instead.</p></li>
+<li><p>The code: how it is called, with one or two short examples that paste.</p></li>
+<li><p>What it refuses, and what it costs — a complexity, or a rule of thumb about
+problem size, where one is known.</p></li>
+<li><p>A figure, where one helps, drawn from a shipped model rather than invented
+for the page.</p></li>
+<li><p>A pointer to the gallery page that derives the model or the method. The
+derivation belongs there; a user guide page cites mathematics rather than
+developing it.</p></li>
+</ol>
+<p>Prettier wraps markdown prose at 80 columns with <code class="docutils literal notranslate"><span class="pre">--prose-wrap=always</span></code>, so write
+the paragraph and let the hook lay it out rather than hand-wrapping against it.
+Inline code takes single backticks.</p>
+<p>Introduce a term on the page that owns it, and use it as defined everywhere
+else. The solver vocabulary is the worked case: <em>method</em> and <em>schedule</em> are
+introduced in <a class="reference internal" href="../user_guide/solvers.html"><span class="doc">Solvers Guide</span></a>, and a page about something else uses
+them as defined there instead of redefining them in passing. For the objects in
+the terminology table below, use the definition in the table.</p>
+<p>Material that only some readers want can be folded into a dropdown:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>:::{dropdown} Where the bound comes from
+The derivation.
+:::
+</pre></div>
+</div>
+<p>Dropdowns suit references, derivations and use-case narrative. They come with
+two limits. A page’s examples stay visible and are never folded, since they are
+what most readers came for. And a cross-reference target inside a dropdown does
+not resolve, so anything that refers to it has to be folded along with it.</p>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>
+<p>An example is a runnable Python file in <code class="docutils literal notranslate"><span class="pre">examples/</span></code>, with its prose in the
+module docstring and in <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">%%</span></code> cell comments. A file named <code class="docutils literal notranslate"><span class="pre">plot_*.py</span></code> is
+executed when the documentation is built and its figures are captured; anything
+else is rendered without being run.</p>
+<p>That execution makes an example a test of the prose around it. A number quoted
+in the text is a number the reader will see printed, so a change that moves the
+number and not the sentence will be visible on the published page.</p>
+<p>A gallery page is read start to finish by someone meeting the model for the
+first time, which is why the textbook register belongs to this surface and not
+to the user guide. Such a page states the problem, says why it is hard, shows
+what the library does about it, and ends with what the numbers show. A reader
+should be able to follow it without opening the source of anything it calls.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<p>Where a work has an identifier, cite it with the Sphinx role, in pages and
+docstrings alike:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>:arxiv:`2106.03958`
+:doi:`10.1016/j.jmoneco.2021.07.004`
+</pre></div>
+</div>
+<p>A work the library as a whole builds on belongs in the bibliography in
+<a class="reference internal" href="../ecosystem/index.html"><span class="doc">Ecosystem</span></a>. A work behind one function belongs in that function’s
+<code class="docutils literal notranslate"><span class="pre">References</span></code> section.</p>
+</section>
+<section id="cross-references">
+<h2>Cross-references<a class="headerlink" href="#cross-references" title="Link to this heading">¶</a></h2>
+<p>Objects, pages and sections are each referred to differently:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
+<th class="head"><p>How to write it</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Object</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{py:class}`~skagent.solver.NeuralBestResponse`</span></code>, and likewise <code class="docutils literal notranslate"><span class="pre">py:func</span></code> and <code class="docutils literal notranslate"><span class="pre">py:meth</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Page</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{doc}`../user_guide/blocks`</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Section</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(my-section)=</span></code> above the heading, then <code class="docutils literal notranslate"><span class="pre">{ref}`my-section`</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The leading <code class="docutils literal notranslate"><span class="pre">~</span></code> on an object reference prints the last component only, which is
+usually what you want in a sentence. The explicit <code class="docutils literal notranslate"><span class="pre">py:</span></code> form is the majority
+spelling in the tree and cannot be confused with a MyST extension role, so
+prefer it to the bare <code class="docutils literal notranslate"><span class="pre">{class}</span></code>.</p>
+<p>One thing not to do: renaming an existing target or page. Other pages and
+external links point at them, and a rename breaks both without any warning.</p>
+</section>
+<section id="building-and-checking">
+<h2>Building and checking<a class="headerlink" href="#building-and-checking" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>docs
+uv<span class="w"> </span>run<span class="w"> </span>--no-sync<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>sphinx<span class="w"> </span>-b<span class="w"> </span>html<span class="w"> </span>-W<span class="w"> </span>--keep-going<span class="w"> </span>docs<span class="w"> </span>docs/_build
+uv<span class="w"> </span>run<span class="w"> </span>--no-sync<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>http.server<span class="w"> </span><span class="m">8000</span><span class="w"> </span>-d<span class="w"> </span>docs/_build
+</pre></div>
+</div>
+<p>That is the command CI runs, writing where CI writes, and <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> and
+<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">livehtml</span></code> in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> build into the same place. If you point Sphinx
+somewhere else, remember that the page you open has to come from the build you
+just ran; a stale <code class="docutils literal notranslate"><span class="pre">index.html</span></code> left in another directory looks exactly like a
+change that did not take.</p>
+<p><code class="docutils literal notranslate"><span class="pre">-W</span></code> turns warnings into errors, which is what CI does, so a broken <code class="docutils literal notranslate"><span class="pre">{doc}</span></code> or
+<code class="docutils literal notranslate"><span class="pre">{ref}</span></code> link fails the build instead of shipping. References to Python objects
+are the exception, and worth knowing about: one that does not resolve renders as
+plain code and says nothing, so check that a new one is a link in the built
+page.</p>
+<p>The first build executes every gallery example and takes minutes. Later builds
+reuse the cache and take seconds, and the cache is dropped automatically when
+the code that draws a model diagram changes.</p>
+<p>Before opening a pull request that touches documentation, check that the build
+passes with no new warnings, that you have looked at the rendered page rather
+than only the source, and that any docstring example you added or changed passes
+<code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">--doctest-modules</span></code> on its module. Prefix the pull request title with
+<code class="docutils literal notranslate"><span class="pre">DOC</span></code> when it changes documentation only.</p>
+</section>
+<section id="terminology">
+<h2>Terminology<a class="headerlink" href="#terminology" title="Link to this heading">¶</a></h2>
+<p>These are the words the documentation uses for the library’s objects, with one
+definition each. Where a page needs one of them, this is the meaning to use.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>block</p></td>
+<td><p>A set of variables and the equations relating them. <code class="docutils literal notranslate"><span class="pre">DBlock</span></code> and <code class="docutils literal notranslate"><span class="pre">RBlock</span></code> are the two kinds.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DBlock</span></code></p></td>
+<td><p>One period of model behavior: its shocks, dynamics, controls and rewards.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RBlock</span></code></p></td>
+<td><p>Several blocks chained in order, so that one’s outputs are the next one’s inputs.</p></td>
+</tr>
+<tr class="row-odd"><td><p>shock</p></td>
+<td><p>A variable drawn from a distribution rather than computed.</p></td>
+</tr>
+<tr class="row-even"><td><p>dynamics</p></td>
+<td><p>The equations of a block, read in declaration order.</p></td>
+</tr>
+<tr class="row-odd"><td><p>control</p></td>
+<td><p>A variable an agent chooses, declared with an information set instead of an equation.</p></td>
+</tr>
+<tr class="row-even"><td><p>information set</p></td>
+<td><p>The variables an agent may read when choosing a control.</p></td>
+</tr>
+<tr class="row-odd"><td><p>reward</p></td>
+<td><p>A variable an agent is paid in. An agent’s payoff is the sum of the rewards it owns.</p></td>
+</tr>
+<tr class="row-even"><td><p>agent</p></td>
+<td><p>A role that owns controls and rewards. A role is not a population.</p></td>
+</tr>
+<tr class="row-odd"><td><p>arrival state</p></td>
+<td><p>A variable read before it is assigned, carrying a value in from the previous block or period.</p></td>
+</tr>
+<tr class="row-even"><td><p>calibration</p></td>
+<td><p>The parameter values a block is read against.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GroundedBlock</span></code></p></td>
+<td><p>A block together with the calibration and shock generator it is read against.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code></p></td>
+<td><p>A grounded block plus a discount variable: one period of a dynamic program.</p></td>
+</tr>
+<tr class="row-odd"><td><p>decision rule</p></td>
+<td><p>A function from an information set to a control’s value.</p></td>
+</tr>
+<tr class="row-even"><td><p>policy profile</p></td>
+<td><p>One decision rule per control in the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Grid</span></code></p></td>
+<td><p>A labeled, discretized set of points a model is solved or evaluated over.</p></td>
+</tr>
+<tr class="row-even"><td><p>method</p></td>
+<td><p>An object that solves one decision, given rules for the others.</p></td>
+</tr>
+<tr class="row-odd"><td><p>schedule</p></td>
+<td><p>A function that decides which decision is solved next, and when to stop.</p></td>
+</tr>
+<tr class="row-even"><td><p>entity class</p></td>
+<td><p>A declared population; a variable in a block carrying one is an attribute of each instance.</p></td>
+</tr>
+<tr class="row-odd"><td><p>crossing</p></td>
+<td><p>An equation reading out of an entity class into a variable that has no such axis.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="where-this-differs-from-scikit-learn">
+<h2>Where this differs from scikit-learn<a class="headerlink" href="#where-this-differs-from-scikit-learn" title="Link to this heading">¶</a></h2>
+<p>Each of the differences below is forced by this project’s toolchain or its size,
+rather than chosen as a preference.</p>
+<p>Our pages are MyST Markdown and our docstrings are reStructuredText, so
+scikit-learn’s page mechanics — <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">dropdown::</span></code>, <code class="docutils literal notranslate"><span class="pre">:ref:</span></code>, <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">currentmodule::</span></code> —
+appear here in their MyST spellings.</p>
+<p>They ask for 88 columns throughout. Here prettier owns markdown and wraps it at
+80, while ruff owns code and wraps it at 88, so the number depends on which file
+you are in and neither is a judgment call.</p>
+<p>numpydoc itself is not installed. Napoleon reads the same sections, so the
+format is the same one, but nothing validates a docstring against it. The
+section order and the parameter format are conventions here, upheld by review.</p>
+<p>There is no glossary yet. The terminology table above is the definition list,
+and <code class="docutils literal notranslate"><span class="pre">{term}</span></code> does not resolve. Promoting the table to a glossary page is worth
+doing once the vocabulary settles.</p>
+<p>Changes here are not approved by two core developers. How pull requests are
+reviewed is in the <a class="reference internal" href="index.html"><span class="doc">Community Guide</span></a> contributor guidelines.</p>
+<p>The teaching lives somewhere else. scikit-learn’s user guide teaches the
+algorithm, which is why their content order puts the mathematics into it. Here
+the gallery does the teaching and the user guide is developer-facing, so the two
+have different content orders and only the gallery carries a derivation.</p>
+<p>Finally, this standard binds docstrings written or edited from now on. Bringing
+the existing ones into line with it is separate work.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="roadmap.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Roadmap</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Community Guide</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, scikit-agent Team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link " href="https://github.com/scikit-agent/scikit-agent" aria-label="GitHub">
+                <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+                </svg>
+            </a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Writing Documentation</a><ul>
+<li><a class="reference internal" href="#the-four-surfaces">The four surfaces</a></li>
+<li><a class="reference internal" href="#voice">Voice</a></li>
+<li><a class="reference internal" href="#two-markup-languages">Two markup languages</a></li>
+<li><a class="reference internal" href="#docstrings">Docstrings</a></li>
+<li><a class="reference internal" href="#user-guide-pages">User guide pages</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#cross-references">Cross-references</a></li>
+<li><a class="reference internal" href="#building-and-checking">Building and checking</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a></li>
+<li><a class="reference internal" href="#where-this-differs-from-scikit-learn">Where this differs from scikit-learn</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=74b99af4"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    </body>
+</html>
