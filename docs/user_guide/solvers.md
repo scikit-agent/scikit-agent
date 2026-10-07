@@ -96,6 +96,10 @@ method = TabularBestResponseSolver(GroundedBlock(b, calibration))
 decision_rules = solve_in_relevance_order(method)
 ```
 
+When a control declares an `action_space`, the method searches exactly those
+actions. Its `actions` and `action_count` arguments provide the candidate grid
+only for controls without one.
+
 One pass per decision suffices for an acyclic component, because everything a
 decision relies on is already settled by the time its turn comes. If a component
 contains a cycle, the schedule repeatedly computes every decision's best
@@ -125,10 +129,10 @@ This schedule first needs a **projection**, which the next section describes.
 ```python
 import numpy as np
 import skagent.models.cournot as cournot
-from skagent.solver import ExactBestResponse, project, solve_symmetric_equilibrium
+from skagent.solver import ExactBestResponse, project_nash, solve_symmetric_equilibrium
 
 market = GroundedBlock(cournot.cournot_block, cournot.collusion_calibration(size=3))
-projected = project(market)
+projected = project_nash(market)
 
 method = ExactBestResponse(
     projected,
@@ -168,7 +172,7 @@ firms or many households. A method solves one decision, so something has to turn
 the question "what should all the firms do?" into the question "what should
 _this_ firm do, given what the others do?"
 
-{py:func}`~skagent.solver.project` performs that translation. It splits the
+{py:func}`~skagent.solver.project_nash` performs that translation. It splits the
 entity class into the instance being solved and the rest of the class, and it
 returns an ordinary block with two controls, `<control>_actor` and
 `<control>_other`.
@@ -188,6 +192,15 @@ only equilibria are asymmetric cannot be expressed in this shape. A masked
 reduction, such as a mean taken over only the instances that meet some
 condition, does not currently work with the neural method, although it does work
 with the others.
+
+The firm's own share is what makes this the Nash projection. In a model of many
+small agents, such as households whose savings make up an economy's capital, the
+share is negligible, and the agent takes the aggregate as given.
+{py:func}`~skagent.solver.project_mean_field` builds that problem instead. It
+removes each equation that reduces over the class and keeps the equations
+downstream of it, so the aggregate becomes a value you supply, for instance with
+{py:meth}`~skagent.ground.GroundedBlock.with_calibration`, and the result is a
+single agent's problem that any one-agent solver accepts.
 
 ---
 

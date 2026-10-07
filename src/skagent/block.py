@@ -4,6 +4,7 @@ Tools for crafting models.
 
 from dataclasses import dataclass, field, replace
 from copy import copy, deepcopy
+import numbers
 from skagent.distributions import (
     Distribution,
     DiscreteDistributionLabeled,
@@ -122,13 +123,70 @@ class Control:
 
     agent : str
         A label identifying the agent role to which this control is attributed.
+
+    action_space : iterable of number, default=None
+        The finite set of values this control may take. ``None`` leaves the
+        control continuous. The values are treated as an unordered set.
     """
 
-    def __init__(self, iset, lower_bound=None, upper_bound=None, agent=None):
+    def __init__(
+        self,
+        iset,
+        lower_bound=None,
+        upper_bound=None,
+        agent=None,
+        *,
+        action_space=None,
+    ):
         self.iset = iset
         self.lower_bound = normalize_bound(lower_bound, "lower_bound")
         self.upper_bound = normalize_bound(upper_bound, "upper_bound")
         self.agent = agent
+        self.action_space = self._normalize_action_space(action_space)
+
+    @staticmethod
+    def _normalize_action_space(action_space):
+        """Return a validated, unordered finite action space."""
+        if action_space is None:
+            return None
+        if isinstance(action_space, (str, bytes)):
+            raise TypeError("action_space must be an iterable of numbers, not text")
+        try:
+            actions = list(action_space)
+        except TypeError as error:
+            raise TypeError("action_space must be an iterable of numbers") from error
+        if not actions:
+            raise ValueError("action_space must contain at least one action")
+        if any(
+            isinstance(action, bool) or not isinstance(action, numbers.Real)
+            for action in actions
+        ):
+            raise TypeError(
+                f"action_space must contain only numbers; got {action_space!r}"
+            )
+        actions = [float(action) for action in actions]
+        if not np.all(np.isfinite(actions)):
+            raise ValueError(
+                f"action_space must contain only finite values; got {actions}"
+            )
+        if len(set(actions)) != len(actions):
+            raise ValueError(f"action_space contains duplicate actions; got {actions}")
+        return frozenset(actions)
+
+    def _validate_action(self, value, name=None):
+        """Refuse values outside this control's discrete action space."""
+        if self.action_space is None:
+            return
+        values = np.asarray(value)
+        valid = np.isin(values, tuple(self.action_space))
+        if np.all(valid):
+            return
+        invalid = values.reshape(-1)[~np.asarray(valid).reshape(-1)].tolist()
+        label = "control" if name is None else f"control {name!r}"
+        raise ValueError(
+            f"{label} produced action(s) {invalid!r} outside its action_space "
+            f"{sorted(self.action_space)!r}"
+        )
 
 
 def discretized_shock_dstn(shocks, disc_params):
@@ -320,6 +378,7 @@ def simulate_dynamics(
                     # decision rule takes no arguments
                     # easy to compute in any scope...
                     vals[sym] = dr[sym]()
+            update_fn._validate_action(vals[sym], sym)
         else:
             if isinstance(update_fn, Rule):
                 update_fn = update_fn.update_func()
@@ -707,7 +766,7 @@ class Block:
             return None
 
         from skagent.ground import GroundedBlock
-        from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project
+        from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project_nash
 
         entities = self.entities()
         if any(name + OTHER_SUFFIX in entities for name in entities):
@@ -743,7 +802,7 @@ class Block:
             for suffix in (ACTOR_SUFFIX, OTHER_SUFFIX)
         }
         return (
-            project(GroundedBlock(self, calibration)),
+            project_nash(GroundedBlock(self, calibration)),
             names,
             Plate(entity, size),
         )

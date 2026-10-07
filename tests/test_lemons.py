@@ -7,7 +7,7 @@ import torch
 import skagent.models.lemons as lemons
 from skagent.algos.tabular import TabularBestResponseSolver
 from skagent.ground import GroundedBlock
-from skagent.solver import project
+from skagent.solver import project_nash
 from skagent.simulation.monte_carlo import Simulator
 
 SIZE = 50000
@@ -314,7 +314,7 @@ class TestTheProjectionKeepsTheSellersAPopulation:
     def projected_market(self, size):
         price = lemons.clearing_fixed_points(**self.MARKET)[1]
         calibration = lemons.lemons_calibration(size=size, **self.MARKET)
-        projected = project(GroundedBlock(lemons.lemons_block, calibration))
+        projected = project_nash(GroundedBlock(lemons.lemons_block, calibration))
         return projected, price, lemons.supply_rule(price)
 
     def test_the_rivals_are_a_class_one_short_of_the_whole(self):
