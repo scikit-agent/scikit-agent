@@ -258,6 +258,23 @@ computed.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="An economy&#x27;s capital is what its households have saved. How much they save depends on the interest rate and the wage, and those depend on how much capital there is. Each household is too small to move the prices, but between them the households set those prices, so any account of their saving has to close that loop. Aiyagari (1994) [1]_ closed it for an economy of many households, each facing income risk it cannot insure, and asked how much such an economy saves.">
+
+.. only:: html
+
+  .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_aiyagari_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/models/plot_aiyagari`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Aiyagari: Households That Price Their Own Capital</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="A guided tour of scikit-agent&#x27;s benchmark consumption models: closed-form policies that retrace the theory in roughly the order the field discovered it, each teaching a fact the previous ones could not.">
 
 .. only:: html
