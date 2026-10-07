@@ -6,12 +6,14 @@ from functools import wraps
 from itertools import groupby
 
 import numpy as np
+from scipy.optimize import brentq
 
 import skagent.ann as ann
 import skagent.algos.vfi as vfi
 import skagent.bellman as bellman_module
 import skagent.loss as loss_module
 from skagent.block import Control, DBlock, Entity, RBlock
+from skagent.simulation.monte_carlo import Simulator
 from skagent.utils import param_names
 
 logger = logging.getLogger(__name__)
@@ -659,6 +661,149 @@ class ExactBestResponse:
         )
 
 
+class StationaryBestResponse:
+    """A method whose responses solve the infinite-horizon problem.
+
+    A contract with no code. A subclass's ``best_response(decision, policies)``
+    solves the recurring problem on its ground to a fixed point, where
+    :class:`ExactBestResponse` and :class:`NeuralBestResponse` solve one period.
+    A schedule that needs the stationary solution, as :func:`solve_mean_field`
+    does, checks for this class, so that a one-period method is refused rather
+    than its answer reported as the stationary one.
+
+    Beside ``best_response``, ``rule_distance`` and ``initial_policies``, a
+    subclass provides ``with_ground(ground)``: the same method on another
+    ground, starting from its own last solve when it has made one.
+    """
+
+
+class ExactStationaryBestResponse(StationaryBestResponse):
+    """Stationary best responses by value-function iteration over a state grid.
+
+    The stationary counterpart of :class:`ExactBestResponse`: a response runs
+    :func:`skagent.algos.vfi.solve_bellman` to its fixed point rather than one
+    backup. Its rules are gridded as that method's are, and compared the same
+    way.
+
+    The block must have no decision other than the one solved, since
+    :func:`skagent.algos.vfi.solve_bellman` optimizes every control jointly and
+    cannot hold one at a given rule.
+
+    Parameters
+    ----------
+    ground : skagent.ground.GroundedBlock
+        The recurring problem being solved, already projected if it is a
+        population. Its calibration is also the solve's *scope*.
+    state_grid : Mapping
+        The grid over the value function's domain; every arrival state must be
+        an axis of it.
+    discount_variable : str or None
+        The symbol holding the discount factor.
+    disc_params : Mapping, optional
+        Per-shock discretization arguments.
+    tol : float, optional
+        Convergence tolerance on the sup-norm change in the value grid.
+    max_iter : int, optional
+        Backups before the solve is reported as unconverged, which raises.
+    search : {"bounded", "multistart"}, optional
+        How each grid point's optimum is found.
+    policy_evaluations : int, optional
+        Applications of the Bellman operator at the maximizing policy after
+        each backup.
+    artificial_borrowing_constraint : bool, optional
+        Confine next-period arrival states to the state grid.
+    continuation : Callable, optional
+        The continuation the iteration starts from. Defaults to a terminal
+        (zero) one.
+
+    Attributes
+    ----------
+    value : xarray.DataArray or None
+        The value grid of the last response, whose ``attrs`` carry
+        ``n_iter``, ``converged`` and ``residual``; ``None`` before the first.
+    """
+
+    def __init__(
+        self,
+        ground,
+        state_grid,
+        discount_variable,
+        *,
+        disc_params=None,
+        tol=1e-6,
+        max_iter=500,
+        search="bounded",
+        policy_evaluations=20,
+        artificial_borrowing_constraint=False,
+        continuation=None,
+    ):
+        self.ground = ground
+        self.state_grid = state_grid
+        self.discount_variable = discount_variable
+        self.disc_params = {} if disc_params is None else disc_params
+        self.tol = tol
+        self.max_iter = max_iter
+        self.search = search
+        self.policy_evaluations = policy_evaluations
+        self.artificial_borrowing_constraint = artificial_borrowing_constraint
+        self.continuation = continuation
+        self.scope = ground.calibration
+        self.period = bellman_module.BellmanPeriod(
+            ground.block, discount_variable, ground.calibration
+        )
+        self.decisions = list(ground.block.get_controls())
+        self.value = None
+
+    def best_response(self, decision, policies):
+        """Solve *decision* to its stationary fixed point."""
+        others = sorted(set(self.decisions) - {decision})
+        if others:
+            raise NotImplementedError(
+                f"a stationary solve optimizes every control jointly, so it "
+                f"cannot hold {others} at a given rule while solving "
+                f"{decision!r}"
+            )
+        rules, self.value, _policy = vfi.solve_bellman(
+            self.period,
+            self.state_grid,
+            continuation_vf=self.continuation,
+            agent=self.ground.block.deciding_agent(decision),
+            scope=self.scope,
+            disc_params=self.disc_params,
+            tol=self.tol,
+            max_iter=self.max_iter,
+            raise_on_nonconvergence=True,
+            artificial_borrowing_constraint=self.artificial_borrowing_constraint,
+            search=self.search,
+            policy_evaluations=self.policy_evaluations,
+        )
+        return rules[decision]
+
+    def with_ground(self, ground):
+        """This method on *ground*, continuing from its last solved value."""
+        continuation = (
+            self.continuation
+            if self.value is None
+            else vfi.value_array_to_function(self.value, self.period, self.disc_params)
+        )
+        return ExactStationaryBestResponse(
+            ground,
+            self.state_grid,
+            self.discount_variable,
+            disc_params=self.disc_params,
+            tol=self.tol,
+            max_iter=self.max_iter,
+            search=self.search,
+            policy_evaluations=self.policy_evaluations,
+            artificial_borrowing_constraint=self.artificial_borrowing_constraint,
+            continuation=continuation,
+        )
+
+    initial_policies = ExactBestResponse.initial_policies
+    rule_distance = ExactBestResponse.rule_distance
+    _observations = ExactBestResponse._observations
+
+
 def _sup_norm(first, second, observed):
     """The largest gap between two rules over a common set of observations."""
     import torch
@@ -835,6 +980,151 @@ def solve_symmetric_equilibrium(
         "converged": distances[-1] < tolerance,
         "iterations": len(distances),
         "distances": distances,
+    }
+
+
+def solve_mean_field(
+    method,
+    population,
+    *,
+    bracket,
+    tol=1e-3,
+    periods=500,
+    tail=200,
+    seed=0,
+    warm_start=True,
+):
+    """A stationary mean-field equilibrium, by root-finding on the aggregate.
+
+    *method* carries one instance's problem under price-taking, as
+    :func:`project_mean_field` builds it from *population*, with the aggregate
+    left without a value. For a candidate value of the aggregate, the schedule
+    gives it to the instance's problem, solves that to its stationary rule, and
+    simulates the full model, *population*, under the rule. There the aggregate
+    is computed from the instances every period, as the model says, rather
+    than held at the candidate. The residual is the aggregate the simulation
+    settles at, averaged over its last *tail* periods, less the candidate, and
+    Brent's method finds its root within *bracket*.
+
+    Every round simulates from the same *seed*, and from the variables the
+    aggregate reduces each starting at the candidate value, so the residual is
+    a deterministic function of the candidate. Its precision is still that of
+    a finite class: the class size in the calibration sets the simulated
+    aggregate's noise, and so how sharply the root is pinned.
+
+    Every instance plays the one rule, so the equilibrium is symmetric by
+    construction.
+
+    Parameters
+    ----------
+    method : StationaryBestResponse
+        The instance's solver, carrying the projected problem.
+    population : skagent.ground.GroundedBlock
+        The model the projection was taken from, with its calibration. Its
+        block must reduce over its entity class in exactly one equation.
+    bracket : tuple of float
+        Two values of the aggregate at which the residual has opposite signs.
+    tol : float, optional
+        Tolerance on the aggregate.
+    periods : int, optional
+        Periods simulated per round.
+    tail : int, optional
+        Final periods averaged over to read the aggregate the simulation
+        settles at.
+    seed : int, optional
+        Seed of every round's simulation.
+    warm_start : bool, optional
+        Start each round's solve from the previous round's, through the
+        method's ``with_ground``. Otherwise each round starts from *method*.
+
+    Returns
+    -------
+    rule : Callable
+        The instance's decision rule at the equilibrium aggregate.
+    info : dict
+        ``aggregate``, the equilibrium value; ``converged`` and
+        ``iterations``, as Brent's method reports them; and ``rounds``, one
+        entry per candidate with its ``candidate``, its ``simulated`` aggregate
+        and the rule's ``off_grid`` count where the rule keeps one.
+
+    Raises
+    ------
+    TypeError
+        If *method* is not a :class:`StationaryBestResponse`.
+    ValueError
+        If *population* does not reduce over its class in exactly one equation,
+        if the projected problem does not have exactly one decision, or if the
+        residual does not change sign across *bracket*.
+    """
+    if not isinstance(method, StationaryBestResponse):
+        raise TypeError(
+            f"{type(method).__name__} solves one period, and a mean-field "
+            f"equilibrium is a stationary one: an instance solving one period "
+            f"takes no account of the future. Use a StationaryBestResponse, "
+            f"such as ExactStationaryBestResponse."
+        )
+    crossings = population.block.crossings()
+    if len(crossings) != 1:
+        raise ValueError(
+            f"the price loop finds one aggregate, and this block reduces over "
+            f"its class in {sorted(crossings) if crossings else 'no equation'}"
+        )
+    ((aggregate, reduced),) = crossings.items()
+    decisions = list(method.ground.block.get_controls())
+    if len(decisions) != 1:
+        raise ValueError(
+            f"the price loop solves one decision, and the projected problem "
+            f"has {sorted(decisions)}"
+        )
+    (decision,) = decisions
+
+    rounds, rules, residuals = [], {}, {}
+    latest = method
+
+    def excess(candidate):
+        nonlocal latest
+        # Brent's method asks again for the bracket's ends, already checked.
+        if candidate in residuals:
+            return residuals[candidate]
+        solver = (latest if warm_start else method).with_ground(
+            method.ground.with_calibration({aggregate: candidate})
+        )
+        # The one decision is the whole profile, so there is no other to hold.
+        rule = rules[candidate] = solver.best_response(decision, {})
+        latest = solver
+        sim = Simulator(
+            population.calibration,
+            population.block,
+            {decision: rule},
+            {arg: candidate for arg, _axes, _broadcast in reduced},
+            seed=seed,
+            T_sim=periods,
+        )
+        sim.initialize_sim()
+        path = np.asarray(sim.simulate()[aggregate], dtype=float)
+        simulated = float(path.reshape(periods, -1)[-tail:, 0].mean())
+        entry = {"candidate": candidate, "simulated": simulated}
+        if hasattr(rule, "off_grid"):
+            entry["off_grid"] = rule.off_grid
+        rounds.append(entry)
+        logger.info("%s = %g settles at %g", aggregate, candidate, simulated)
+        residuals[candidate] = simulated - candidate
+        return residuals[candidate]
+
+    low, high = (float(end) for end in bracket)
+    if np.sign(excess(low)) == np.sign(excess(high)):
+        raise ValueError(
+            f"the residual does not change sign across the bracket "
+            f"{(low, high)}: {aggregate} = {low} settles at "
+            f"{rounds[0]['simulated']}, and {high} at {rounds[1]['simulated']}"
+        )
+    root, result = brentq(excess, low, high, xtol=tol, full_output=True)
+    excess(root)
+    return rules[root], {
+        "aggregate": root,
+        "converged": result.converged,
+        "iterations": result.iterations,
+        "rounds": rounds,
     }
 
 

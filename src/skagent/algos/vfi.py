@@ -1507,6 +1507,11 @@ def solve_bellman(
         the period has no arrival states.
     RuntimeError
         If *raise_on_nonconvergence* is ``True`` and the loop does not converge.
+
+    Warns
+    -----
+    UserWarning
+        If the period names no discount variable, which solves it undiscounted.
     """
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
@@ -1522,6 +1527,13 @@ def solve_bellman(
             "(skagent.algos.tabular) for a tabular policy over finitely "
             "many observations, or NeuralBestResponse (skagent.solver) for "
             "a differentiable one, driven by solve_in_order."
+        )
+    if bp.discount_variable is None:
+        warnings.warn(
+            "this period names no discount variable, so it is solved "
+            "undiscounted, and an undiscounted infinite-horizon problem may "
+            "have no fixed point. Name the discount factor's symbol in the "
+            "BellmanPeriod."
         )
 
     cont = continuation_vf if continuation_vf is not None else (lambda s, sh, p: 0.0)

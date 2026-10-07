@@ -19,7 +19,15 @@ and this project adheres to
   Bellman operator is applied k times at the backup's policy (modified policy
   iteration), so the loop needs far fewer backups. For infinite horizons.
 
+- `skagent.solver.solve_mean_field` finds a stationary mean-field equilibrium by
+  root-finding the aggregate against a simulation of the full model.
+  `ExactStationaryBestResponse` solves the projected problem by value-function
+  iteration, under the new contract class `StationaryBestResponse`.
+
 ### Changed
+
+- `vfi.solve_bellman` warns when the period names no discount variable, since it
+  then solves undiscounted.
 
 - `vfi.value_array_to_function` interpolates a one-axis continuation with numpy
   rather than `RegularGridInterpolator`: the same values, at a fraction of the
