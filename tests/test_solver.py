@@ -220,7 +220,7 @@ class TestTheProjectionIsDerivedFromTheModel:
             reward={"u": "player"},
             entity=block.Entity("player"),
         )
-        projected = project(ground.GroundedBlock(population, {"player": 2})).block
+        projected = project_nash(ground.GroundedBlock(population, {"player": 2})).block
 
         assert projected.get_control("d_actor").action_space == frozenset({0.0, 2.0})
         assert projected.get_control("d_other").action_space == frozenset({0.0, 2.0})
