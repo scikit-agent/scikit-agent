@@ -1,6 +1,7 @@
 import inspect
 import logging
 import numbers
+import warnings
 from functools import wraps
 from itertools import groupby
 
@@ -15,7 +16,7 @@ from skagent.utils import param_names
 
 logger = logging.getLogger(__name__)
 
-#: How :func:`project` names the solved instance's symbols, and the others'.
+#: How :func:`project_nash` names the solved instance's symbols, and the others'.
 ACTOR_SUFFIX = "_actor"
 OTHER_SUFFIX = "_other"
 
@@ -216,7 +217,7 @@ def _blocks_by_class(name, layout, shocks, rewards):
     return blocks
 
 
-def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
+def project_nash(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     """One instance's problem, with the rest of its class beside it.
 
     The entity class is split in two -- the instance being solved, and the
@@ -392,6 +393,101 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     return GroundedBlock(
         projected, dict(calibration) | {rivals: size - 1}, rng=ground.rng
     )
+
+
+def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
+    """Deprecated alias of :func:`project_nash`, to be removed in a later release.
+
+    Warns
+    -----
+    DeprecationWarning
+        On every call, which then proceeds as :func:`project_nash`.
+    """
+    warnings.warn(
+        "skagent.solver.project is renamed project_nash, beside "
+        "project_mean_field; the old name will be removed in a later release",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return project_nash(ground, actor_suffix=actor_suffix, other_suffix=other_suffix)
+
+
+def project_mean_field(ground):
+    """One instance's problem under price-taking: the aggregate is given.
+
+    Every equation that reduces over the entity class is removed, so each
+    aggregate it computed becomes a symbol the remaining equations read rather
+    than one they compute. The equations downstream of an aggregate are kept as
+    the author wrote them. The instance's symbols carry no class, since they
+    are one decision-maker's, so the result is a problem a single-agent solver
+    accepts.
+
+    Under this concept the instance takes no account of its own effect on the
+    aggregate, which is exact for a continuum of instances and the concept a
+    competitive equilibrium is defined by. Contrast :func:`project_nash`, where
+    the instance keeps its own share.
+
+    The projection gives the aggregates no value. Supply one before solving,
+    for instance with :meth:`skagent.ground.GroundedBlock.with_calibration`:
+    a symbol the block reads and neither defines nor calibrates is otherwise an
+    arrival state.
+
+    An aggregate is found as :meth:`skagent.block.Block.crossings` reports it,
+    so a reduction written inside a per-instance equation is not one, and is
+    left in place.
+
+    Parameters
+    ----------
+    ground : skagent.ground.GroundedBlock
+        The population model and its calibration. Its block must declare
+        exactly one entity class and read something out of it.
+
+    Returns
+    -------
+    skagent.ground.GroundedBlock
+        The projected problem, with the calibration and generator of *ground*.
+
+    Raises
+    ------
+    ValueError
+        If the block does not declare exactly one entity class, reads nothing
+        out of it, or reduces over it in a decision, which is a choice rather
+        than an aggregate to take as given.
+    """
+    from skagent.ground import GroundedBlock
+
+    block = ground.block
+    entities = block.entities()
+    if len(entities) != 1:
+        raise ValueError(
+            f"projection needs exactly one entity class, and this block "
+            f"declares {sorted(entities) if entities else 'none'}; a population "
+            f"is what an instance is projected out of"
+        )
+    crossings = block.crossings()
+    if not crossings:
+        raise ValueError(
+            f"this block reads nothing out of entity class "
+            f"{next(iter(entities))!r}, so there is no aggregate for an instance "
+            f"to take as given"
+        )
+    dynamics = block.get_dynamics()
+    decisions = sorted(sym for sym in crossings if isinstance(dynamics[sym], Control))
+    if decisions:
+        raise ValueError(
+            f"{decisions} reduce over the class in a decision, which is a choice "
+            f"rather than an aggregate an instance takes as given"
+        )
+
+    projected = DBlock(
+        name=f"{block.name}_mean_field",
+        shocks=dict(block.get_shocks()),
+        dynamics={sym: eq for sym, eq in dynamics.items() if sym not in crossings},
+        reward={
+            sym: owner for sym, owner in block.reward.items() if sym not in crossings
+        },
+    )
+    return GroundedBlock(projected, dict(ground.calibration), rng=ground.rng)
 
 
 def _starting_policies(block):
@@ -649,7 +745,7 @@ def solve_symmetric_equilibrium(
     """A symmetric equilibrium, by iterated best response over a projection.
 
     Takes a projected problem -- one instance's decision beside the rest of its
-    class, as :func:`project` builds -- solves the instance's decision against
+    class, as :func:`project_nash` builds -- solves the instance's decision against
     the others' current rule, swaps the solved rule in as the others', and
     repeats until the rule stops moving. A rule that is its own best response is
     an equilibrium of the projected game, and because the others play whatever
@@ -705,7 +801,7 @@ def solve_symmetric_equilibrium(
         raise ValueError(
             f"expected one control named for the solved instance (ending "
             f"{ACTOR_SUFFIX!r}) and found {sorted(solved)}; the method's block "
-            "should be one that project() built"
+            "should be one that project_nash() built"
         )
     (decision,) = solved
     partner = decision[: -len(ACTOR_SUFFIX)] + OTHER_SUFFIX
@@ -876,7 +972,7 @@ def solve_in_relevance_order(
                     f"class {plate.entity!r}, and it relies on the other "
                     f"{plate.size - 1}, so there is no order that solves it: "
                     f"every instance responds to what the others do. Separate "
-                    f"one instance from the rest with skagent.solver.project "
+                    f"one instance from the rest with skagent.solver.project_nash "
                     f"and solve the projection with solve_symmetric_equilibrium."
                 )
             policies[decision] = method.best_response(decision, policies)

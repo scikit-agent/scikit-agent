@@ -71,7 +71,7 @@ import numpy as np
 import skagent.models.privacy as privacy
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
-from skagent.solver import ExactBestResponse, project
+from skagent.solver import ExactBestResponse, project_nash
 from skagent.utils import plot_block_diagram
 
 # sphinx_gallery_thumbnail_number = 5
@@ -156,7 +156,7 @@ plot_block_diagram(
 # reports nor the estimate enter it, so the same rule solves the central game.
 
 SIGMA = 1.0
-projected = project(
+projected = project_nash(
     GroundedBlock(privacy.local_block, privacy.calibration(SIGMA, size=20))
 )
 concerns = np.linspace(-2.0, 2.0, 9)

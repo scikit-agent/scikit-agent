@@ -182,7 +182,11 @@ case.
 ```
 
 ```{eval-rst}
-.. autofunction:: skagent.solver.project
+.. autofunction:: skagent.solver.project_nash
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.project_mean_field
 ```
 
 ```{eval-rst}
