@@ -51,6 +51,10 @@ and this project adheres to
 - `skagent.solver.project` is renamed `skagent.solver.project_nash`, beside
   `project_mean_field`. The old name still works and warns, and will be removed.
 
+- The `artificial_borrowing_constraint` argument of `vfi.solve_step` and
+  `vfi.solve_bellman` is renamed `confine_to_grid`, since it keeps every arrival
+  state on the grid, not only assets. The old name still works and warns.
+
 ### Fixed
 
 - A VFI decision rule answers inputs past the range its grid covers instead of

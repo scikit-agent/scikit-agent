@@ -710,7 +710,7 @@ class ExactStationaryBestResponse(StationaryBestResponse):
     policy_evaluations : int, optional
         Applications of the Bellman operator at the maximizing policy after
         each backup.
-    artificial_borrowing_constraint : bool, optional
+    confine_to_grid : bool, optional
         Confine next-period arrival states to the state grid.
     continuation : Callable, optional
         The continuation the iteration starts from. Defaults to a terminal
@@ -734,7 +734,7 @@ class ExactStationaryBestResponse(StationaryBestResponse):
         max_iter=500,
         search="bounded",
         policy_evaluations=20,
-        artificial_borrowing_constraint=False,
+        confine_to_grid=False,
         continuation=None,
     ):
         self.ground = ground
@@ -745,7 +745,7 @@ class ExactStationaryBestResponse(StationaryBestResponse):
         self.max_iter = max_iter
         self.search = search
         self.policy_evaluations = policy_evaluations
-        self.artificial_borrowing_constraint = artificial_borrowing_constraint
+        self.confine_to_grid = confine_to_grid
         self.continuation = continuation
         self.scope = ground.calibration
         self.period = bellman_module.BellmanPeriod(
@@ -773,7 +773,7 @@ class ExactStationaryBestResponse(StationaryBestResponse):
             tol=self.tol,
             max_iter=self.max_iter,
             raise_on_nonconvergence=True,
-            artificial_borrowing_constraint=self.artificial_borrowing_constraint,
+            confine_to_grid=self.confine_to_grid,
             search=self.search,
             policy_evaluations=self.policy_evaluations,
         )
@@ -795,7 +795,7 @@ class ExactStationaryBestResponse(StationaryBestResponse):
             max_iter=self.max_iter,
             search=self.search,
             policy_evaluations=self.policy_evaluations,
-            artificial_borrowing_constraint=self.artificial_borrowing_constraint,
+            confine_to_grid=self.confine_to_grid,
             continuation=continuation,
         )
 

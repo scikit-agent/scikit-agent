@@ -701,11 +701,11 @@ _ABC_PROBES = (1.0, 2.0, 3.0)
 def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
     """Tighten ``(lb, ub)`` so the successor arrival state stays in *grid_box*.
 
-    Implements the optional artificial borrowing constraint:
-    confining each next-period arrival state to the value grid guarantees the
-    continuation is only ever *interpolated*, never linearly *extrapolated* past
-    a grid edge into a region it cannot represent. The grid's lower edge thereby
-    acts as a slack artificial state (borrowing) constraint.
+    Implements *confine_to_grid*: confining each next-period arrival state to
+    the value grid guarantees the continuation is only ever *interpolated*,
+    never linearly *extrapolated* past a grid edge into a region it cannot
+    represent. The grid's edges thereby act as slack artificial state
+    constraints.
 
     For a single control whose successor ``a'(c)`` is **affine** in ``c`` (e.g.
     ``a' = m − c``), the state-box constraint ``grid_min ≤ a' ≤ grid_max``
@@ -729,7 +729,7 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
             a2 - (intercept + slope * _ABC_PROBES[2])
         ) > 1e-8 * (1.0 + abs(a2)):
             raise NotImplementedError(
-                f"artificial_borrowing_constraint: successor arrival state '{k}' "
+                f"confine_to_grid: successor arrival state '{k}' "
                 f"is not affine in control '{control}', so the state-grid box does "
                 "not invert to a control interval; root-solving a general monotone "
                 "successor is not implemented."
@@ -741,6 +741,19 @@ def _tighten_bounds_to_grid(bp, control, states, obs, params, grid_box, lb, ub):
         c_min, c_max = sorted((c_at_lo, c_at_hi))
         lb, ub = max(lb, c_min), min(ub, c_max)
     return lb, ub
+
+
+def _resolve_confine_to_grid(confine_to_grid, artificial_borrowing_constraint):
+    """*confine_to_grid*, or its deprecated old name when that is given."""
+    if artificial_borrowing_constraint is None:
+        return confine_to_grid
+    warnings.warn(
+        "artificial_borrowing_constraint is renamed confine_to_grid; the old "
+        "name will be removed in a later release",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    return artificial_borrowing_constraint
 
 
 def solve_step(
@@ -755,8 +768,9 @@ def solve_step(
     decision_rules: Mapping[str, Callable] | None = None,
     x0: float = 1.0,
     x0_policy: Mapping[str, xr.DataArray] | None = None,
-    artificial_borrowing_constraint: bool = False,
+    confine_to_grid: bool = False,
     search: str = "multistart",
+    artificial_borrowing_constraint: bool | None = None,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
     One exact value backup over *state_grid*.
@@ -846,16 +860,16 @@ def solve_step(
         Warm-start seeds keyed by control symbol (e.g. a previous iterate's
         ``policy_array``); supplies the first multi-start candidate at each grid
         point, and wins ties. Supplied by :func:`solve_bellman`.
-    artificial_borrowing_constraint : bool, optional
-        When ``True``, tighten each control's bounds so the next-period arrival
-        state stays inside the state grid (:func:`_tighten_bounds_to_grid`), an
-        artificial state (borrowing) limit at the grid's lower edge.
-        This keeps the continuation interpolated rather than extrapolated past
-        the grid edges, so value iteration cannot ride a control bound by
-        over-crediting off-grid successors. Single control with an affine
-        successor only (raises otherwise). The limit must be *slack* at the
-        states of interest (it is just the grid floor), or it biases the policy
-        where it binds.
+    confine_to_grid : bool, optional
+        When ``True``, restrict each control to the values that keep every
+        next-period arrival state within the state grid's range. This keeps the
+        continuation interpolated rather than extrapolated past the grid edges,
+        so value iteration cannot ride a control bound by over-crediting
+        off-grid successors. It adds a constraint to the problem solved, which
+        must be *slack* at the states of interest, or it biases the policy where
+        it binds; in a savings model the grid's lower edge acts as an artificial
+        borrowing limit. Single control with an affine successor only (raises
+        otherwise).
     search : {"multistart", "bounded"}, optional
         How each point's optimum is found. ``"multistart"``, the default, runs
         :func:`scipy.optimize.minimize` from every seed candidate and keeps the
@@ -866,6 +880,8 @@ def solve_step(
         exact only for an objective with a single peak on the interval. It
         applies to a single control whose block declares both its lower and its
         upper bound.
+    artificial_borrowing_constraint : bool, optional
+        Deprecated alias of *confine_to_grid*.
 
     Returns
     -------
@@ -883,7 +899,15 @@ def solve_step(
     ValueError
         If *search* is not one of the two methods, or is ``"bounded"`` for more
         than one control or for a control missing a declared bound.
+
+    Warns
+    -----
+    DeprecationWarning
+        If *artificial_borrowing_constraint* is given.
     """
+    confine_to_grid = _resolve_confine_to_grid(
+        confine_to_grid, artificial_borrowing_constraint
+    )
     controls = list(bp.get_controls()) if control is None else [control]
     if len(controls) == 0:
         raise NotImplementedError(
@@ -985,16 +1009,16 @@ def solve_step(
 
     reward_syms = bp.get_reward_syms(agent)
 
-    # Artificial borrowing constraint: the box of arrival-state grid axes
+    # confine_to_grid: the box of arrival-state grid axes
     # that successors must stay within. Single-control only for now — with >1
     # control the successor couples them into a joint constraint that no longer
     # reduces to per-control box bounds (that would need optimizer-level
     # inequality constraints, e.g. SLSQP, rather than a bound tweak).
     grid_box = None
-    if artificial_borrowing_constraint:
+    if confine_to_grid:
         if len(controls) != 1:
             raise NotImplementedError(
-                "artificial_borrowing_constraint supports a single control for "
+                "confine_to_grid supports a single control for "
                 "now; a multi-control successor is a coupled (joint) constraint, "
                 "not per-control box bounds; that is not supported."
             )
@@ -1399,9 +1423,10 @@ def solve_bellman(
     max_iter: int = 100,
     x0: float = 1.0,
     raise_on_nonconvergence: bool = False,
-    artificial_borrowing_constraint: bool = False,
+    confine_to_grid: bool = False,
     search: str = "multistart",
     policy_evaluations: int = 0,
+    artificial_borrowing_constraint: bool | None = None,
 ) -> tuple[dict[str, Callable], xr.DataArray, dict[str, xr.DataArray]]:
     """
     Solve a recurring ``BellmanPeriod`` by value-function iteration.
@@ -1471,10 +1496,10 @@ def solve_bellman(
         :class:`warnings.warn` and return the last iterate (the scipy
         ``OptimizeResult.success`` convention, O5). At a finite horizon set
         through *max_iter* this condition is expected, so leave it ``False``.
-    artificial_borrowing_constraint : bool, optional
+    confine_to_grid : bool, optional
         Forwarded to :func:`solve_step`: confine next-period arrival states to
-        the state grid (grid edge = slack artificial borrowing limit),
-        so the rebuilt continuation is never extrapolated off-grid.
+        the state grid's range, so the rebuilt continuation is never
+        extrapolated off-grid.
     search : {"multistart", "bounded"}, optional
         Forwarded to :func:`solve_step`: how each point's optimum is found. The
         warm start is one of the seeds either way.
@@ -1489,6 +1514,8 @@ def solve_bellman(
         only: under a horizon set through *max_iter* the applications lengthen
         the horizon, and a horizon carried in the state already converges in a
         backup per period.
+    artificial_borrowing_constraint : bool, optional
+        Deprecated alias of *confine_to_grid*.
 
     Returns
     -------
@@ -1512,7 +1539,12 @@ def solve_bellman(
     -----
     UserWarning
         If the period names no discount variable, which solves it undiscounted.
+    DeprecationWarning
+        If *artificial_borrowing_constraint* is given.
     """
+    confine_to_grid = _resolve_confine_to_grid(
+        confine_to_grid, artificial_borrowing_constraint
+    )
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}.")
     if policy_evaluations < 0:
@@ -1551,7 +1583,7 @@ def solve_bellman(
             disc_params=disc_params,
             x0=x0,
             x0_policy=x0_policy,
-            artificial_borrowing_constraint=artificial_borrowing_constraint,
+            confine_to_grid=confine_to_grid,
             search=search,
         )
         if value_prev is not None:

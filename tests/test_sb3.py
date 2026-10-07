@@ -366,7 +366,7 @@ def _u2_optimal_c(obs_row):
         # the action-space edge (a_norm ~= -0.93) while PPO inits at the midpoint
         # and the per-step CRRA gradient pushes the wrong way, so PPO barely
         # moves (MAE ~= 18 vs tol 1.2). The fix is an artificial action-scale
-        # override -- the RL analog of VFI's artificial_borrowing_constraint --
+        # override -- the RL analog of VFI's confine_to_grid --
         # which is deferred; D-4 covers the timely convergence demo meanwhile.
         pytest.param(
             d2_block,

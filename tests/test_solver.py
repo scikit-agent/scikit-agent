@@ -511,7 +511,7 @@ def aiyagari_equilibrium(sigma, warm_start=True):
         {"a": 60 * np.linspace(0, 1, 30) ** 2},
         "DiscFac",
         disc_params={"theta": {"N": 5}},
-        artificial_borrowing_constraint=True,
+        confine_to_grid=True,
     )
     return solve_mean_field(
         method,
