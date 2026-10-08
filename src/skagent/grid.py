@@ -34,7 +34,7 @@ class Grid:
         return cls(list(config.keys()), make_grid(config), torched=torched)
 
     @classmethod
-    def from_dict(cls, kv={}, torched=False):
+    def from_dict(cls, kv={}, torched=True):
         vals = [utils.reconcile(list(kv.values())[0], val) for val in list(kv.values())]
 
         if isinstance(vals[0], np.ndarray):

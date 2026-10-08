@@ -70,6 +70,14 @@ class test_grid_alt_constructors(unittest.TestCase):
         self.assertEqual(g.len(), 1)
         self.assertEqual(g.n(), 3)
 
+    def test_from_dict_moves_values_to_the_training_device(self):
+        # So that a grid built from a dict trains as a from_config grid does,
+        # rather than failing inside the model's own equations on a GPU.
+        g = grid.Grid.from_dict(self.dict_b_np)
+
+        self.assertIsInstance(g.values, torch.Tensor)
+        self.assertEqual(g.values.device.type, grid.device.type)
+
     def test_from_dict_mixed_np_first(self):
         kv = {**self.dict_a_np, **self.dict_b_torch}
 
