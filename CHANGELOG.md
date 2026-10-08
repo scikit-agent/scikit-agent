@@ -61,6 +61,8 @@ and this project adheres to
 
 ### Fixed
 
+- Diagrams rank nodes across plates (`newrank`), so an edge into a plate no
+  longer points backwards.
 - A VFI decision rule answers inputs past the range its grid covers instead of
   returning NaN: it extends linearly from the outermost segment, held within the
   control's declared bounds, and its `off_grid` attribute counts such queries. A
