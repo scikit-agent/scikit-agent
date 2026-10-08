@@ -30,6 +30,10 @@ and this project adheres to
 
 ### Changed
 
+- `Grid.from_dict` moves its values to the training device by default, as
+  `Grid.from_config` does. Before, a grid built from a dict failed inside the
+  model's own equations on a GPU. Pass `torched=False` for the old behaviour.
+- `ModelAnalyzer`'s `calibration` is optional.
 - `vfi.solve_bellman` warns when the period names no discount variable, since it
   then solves undiscounted.
 
@@ -68,6 +72,8 @@ and this project adheres to
   `ModelAnalyzer.node_meta`.
 - `project_nash` names the author's symbol when it collides with a suffixed
   name, instead of two synthesized blocks.
+- Diagrams rank nodes across plates (`newrank`), so an edge into a plate no
+  longer points backwards.
 - A VFI decision rule answers inputs past the range its grid covers instead of
   returning NaN: it extends linearly from the outermost segment, held within the
   control's declared bounds, and its `off_grid` attribute counts such queries. A
