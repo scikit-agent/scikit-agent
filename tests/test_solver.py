@@ -15,6 +15,7 @@ import skagent.models.cournot as cournot
 import skagent.models.macid as macid
 import skagent.models.privacy as privacy
 import skagent.solver as skagent_solver
+from skagent.model_analyzer import ModelAnalyzer
 from skagent.solver import (
     _blocks_by_class,
     _joining_equation,
@@ -345,6 +346,59 @@ class TestTheProjectionRefusesWhatItCannotSplit:
         # A monopolist has no others to be projected away from.
         with pytest.raises(ValueError, match="there are no others"):
             project_nash(cournot_ground(size=1))
+
+    def test_a_symbol_outside_the_class_cannot_take_a_suffixed_name(self):
+        # The author's class-level ``q_actor`` would be the name the projection
+        # gives the solved instance's ``q``, and the error names it.
+        market = block.DBlock(
+            name="market",
+            dynamics={
+                "Q": lambda q: q.mean(),
+                "q_actor": lambda Q: Q,
+                "P": lambda A, b, Q: A - b * Q,
+            },
+        )
+        population = block.RBlock(
+            name="cournot",
+            blocks=[
+                block.RBlock(
+                    name="firms",
+                    entity=block.Entity("firm"),
+                    blocks=[cournot.offer_block],
+                ),
+                market,
+                block.RBlock(
+                    name="payoffs",
+                    entity=block.Entity("firm"),
+                    blocks=[cournot.payoff_block],
+                ),
+            ],
+        )
+
+        with pytest.raises(ValueError, match=r"declares \['q_actor'\]"):
+            project_nash(
+                ground.GroundedBlock(population, cournot.collusion_calibration())
+            )
+
+
+class TestTheProjectionMarksWhatItWrote:
+    def test_only_the_rejoining_equation_is_synthesized(self):
+        # The author's equations are copied and renamed, and a copy is still
+        # the author's.
+        projected = project_nash(cournot_ground()).block
+
+        assert [
+            sym
+            for sym, eq in projected.get_dynamics().items()
+            if block.is_synthesized(eq)
+        ] == ["q"]
+
+    def test_the_analyzer_reports_it_only_where_it_is_true(self):
+        projected = project_nash(cournot_ground())
+        meta = ModelAnalyzer(projected.block, projected.calibration).analyze().node_meta
+
+        assert meta["q"]["synthesized"] is True
+        assert [sym for sym, m in meta.items() if "synthesized" in m] == ["q"]
 
 
 def test_the_old_name_warns_and_projects_as_the_new_one():
