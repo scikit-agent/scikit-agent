@@ -29,6 +29,7 @@ have to carry it:
 | ------------------------------------------------------------ | ------------------------- | --------------------------------- |
 | {py:class}`~skagent.solver.NeuralBestResponse`               | a policy network          | a training panel, epochs          |
 | {py:class}`~skagent.solver.ExactBestResponse`                | an exact backup on a grid | a state grid, a continuation      |
+| {py:class}`~skagent.solver.ExactStationaryBestResponse`      | value-function iteration  | a state grid, a discount variable |
 | {py:class}`~skagent.algos.tabular.TabularBestResponseSolver` | a tabulated payoff table  | candidate actions, a sample count |
 
 Every method offers the same three operations. The first,
@@ -201,6 +202,39 @@ removes each equation that reduces over the class and keeps the equations
 downstream of it, so the aggregate becomes a value you supply, for instance with
 {py:meth}`~skagent.ground.GroundedBlock.with_calibration`, and the result is a
 single agent's problem that any one-agent solver accepts.
+
+{py:func}`~skagent.solver.solve_mean_field` finds the value of the aggregate at
+which the economy reproduces it. For each candidate value it solves the
+projected problem to its stationary rule, simulates the full model under that
+rule, and compares the aggregate the simulation settles at with the candidate.
+The method must be a {py:class}`~skagent.solver.StationaryBestResponse`, such as
+{py:class}`~skagent.solver.ExactStationaryBestResponse`, because a one-period
+best response is not the stationary equilibrium's rule.
+
+```python
+import numpy as np
+from skagent.ground import GroundedBlock
+from skagent.models.aiyagari import aiyagari_block, aiyagari_calibration
+from skagent.solver import (
+    ExactStationaryBestResponse,
+    project_mean_field,
+    solve_mean_field,
+)
+
+population = GroundedBlock(
+    aiyagari_block, {**aiyagari_calibration(sigma=0.3), "DiscFac": 0.96}
+)
+method = ExactStationaryBestResponse(
+    project_mean_field(population),
+    {"a": 60 * np.linspace(0, 1, 30) ** 2},
+    "DiscFac",
+    disc_params={"theta": {"N": 5}},
+    confine_to_grid=True,
+)
+rule, info = solve_mean_field(method, population, bracket=(5.45, 6.0))
+
+info["aggregate"]  # about 5.55, above the 5.45 the economy reaches without risk
+```
 
 ---
 

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments" href="environments.html"><link rel="prev" title="Models" href="models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Algorithms - scikit-agent 0.2.1.dev32+g73de05be7</title>
+        <title>Algorithms - scikit-agent 0.2.1.dev35+g1d177c04b</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev32+g73de05be7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev35+g1d177c04b</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -447,7 +447,7 @@ tensors) and returning a numpy array.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.vfi.solve_bellman">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_bellman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_nonconvergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy_evaluations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve_bellman" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_bellman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_nonconvergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confine_to_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy_evaluations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve_bellman" title="Link to this definition">¶</a></dt>
 <dd><p>Solve a recurring <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> by value-function iteration.</p>
 <p>Iterates <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a> to a fixed point: each backup uses the previous
 iterate’s value grid as its continuation (rebuilt via
@@ -500,9 +500,9 @@ with the sup-norm change still above <em>tol</em>; otherwise emit a
 <code class="xref py py-class docutils literal notranslate"><span class="pre">warnings.warn</span></code> and return the last iterate (the scipy
 <code class="docutils literal notranslate"><span class="pre">OptimizeResult.success</span></code> convention, O5). At a finite horizon set
 through <em>max_iter</em> this condition is expected, so leave it <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a>: confine next-period arrival states to
-the state grid (grid edge = slack artificial borrowing limit),
-so the rebuilt continuation is never extrapolated off-grid.</p></li>
+<li><p><strong>confine_to_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a>: confine next-period arrival states to
+the state grid’s range, so the rebuilt continuation is never
+extrapolated off-grid.</p></li>
 <li><p><strong>search</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a>: how each point’s optimum is found. The
 warm start is one of the seeds either way.</p></li>
 <li><p><strong>policy_evaluations</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – How many times to apply the Bellman operator at the maximizing policy
@@ -515,6 +515,7 @@ so <em>tol</em> must not be tighter than that error. For an infinite horizon
 only: under a horizon set through <em>max_iter</em> the applications lengthen
 the horizon, and a horizon carried in the state already converges in a
 backup per period.</p></li>
+<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Deprecated alias of <em>confine_to_grid</em>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -536,12 +537,18 @@ backup per period.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If <em>raise_on_nonconvergence</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and the loop does not converge.</p></li>
 </ul>
 </dd>
+<dt class="field-odd">Warns<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>UserWarning</strong> – If the period names no discount variable, which solves it undiscounted.</p></li>
+<li><p><strong>DeprecationWarning</strong> – If <em>artificial_borrowing_constraint</em> is given.</p></li>
+</ul>
+</dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="skagent.algos.vfi.solve_step">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve_step" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confine_to_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.algos.vfi.solve_step" title="Link to this definition">¶</a></dt>
 <dd><p>One exact value backup over <em>state_grid</em>.</p>
 <p>At each grid point the optimal control is found with
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a>, maximizing the period reward plus the
@@ -617,15 +624,15 @@ borrowing limit’s <code class="docutils literal notranslate"><span class="pre"
 <li><p><strong>x0_policy</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code>]]</span>) – Warm-start seeds keyed by control symbol (e.g. a previous iterate’s
 <code class="docutils literal notranslate"><span class="pre">policy_array</span></code>); supplies the first multi-start candidate at each grid
 point, and wins ties. Supplied by <a class="reference internal" href="#skagent.algos.vfi.solve_bellman" title="skagent.algos.vfi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a>.</p></li>
-<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code>, tighten each control’s bounds so the next-period arrival
-state stays inside the state grid (<code class="xref py py-func docutils literal notranslate"><span class="pre">_tighten_bounds_to_grid()</span></code>), an
-artificial state (borrowing) limit at the grid’s lower edge.
-This keeps the continuation interpolated rather than extrapolated past
-the grid edges, so value iteration cannot ride a control bound by
-over-crediting off-grid successors. Single control with an affine
-successor only (raises otherwise). The limit must be <em>slack</em> at the
-states of interest (it is just the grid floor), or it biases the policy
-where it binds.</p></li>
+<li><p><strong>confine_to_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code>, restrict each control to the values that keep every
+next-period arrival state within the state grid’s range. This keeps the
+continuation interpolated rather than extrapolated past the grid edges,
+so value iteration cannot ride a control bound by over-crediting
+off-grid successors. It adds a constraint to the problem solved, which
+must be <em>slack</em> at the states of interest, or it biases the policy where
+it binds; in a savings model the grid’s lower edge acts as an artificial
+borrowing limit. Single control with an affine successor only (raises
+otherwise).</p></li>
 <li><p><strong>search</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – How each point’s optimum is found. <code class="docutils literal notranslate"><span class="pre">&quot;multistart&quot;</span></code>, the default, runs
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> from every seed candidate and keeps the
 best. <code class="docutils literal notranslate"><span class="pre">&quot;bounded&quot;</span></code> runs one bounded scalar search over the control’s
@@ -635,6 +642,7 @@ what the identification check compares against. It uses no seed, and is
 exact only for an objective with a single peak on the interval. It
 applies to a single control whose block declares both its lower and its
 upper bound.</p></li>
+<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Deprecated alias of <em>confine_to_grid</em>.</p></li>
 <li><p><strong>control</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>)</p></li>
 </ul>
 </dd>
@@ -654,6 +662,9 @@ symbol (a dict for forward-compatibility with multi-control, O1).</p></li>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>search</em> is not one of the two methods, or is <code class="docutils literal notranslate"><span class="pre">&quot;bounded&quot;</span></code> for more
     than one control or for a control missing a declared bound.</p>
+</dd>
+<dt class="field-odd">Warns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>DeprecationWarning</strong> – If <em>artificial_borrowing_constraint</em> is given.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -747,7 +758,7 @@ value at <code class="docutils literal notranslate"><span class="pre">states</sp
 <h3>Core VFI Functions<a class="headerlink" href="#core-vfi-functions" title="Link to this heading">¶</a></h3>
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decision_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0_policy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confine_to_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>One exact value backup over <em>state_grid</em>.</p>
 <p>At each grid point the optimal control is found with
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a>, maximizing the period reward plus the
@@ -823,15 +834,15 @@ borrowing limit’s <code class="docutils literal notranslate"><span class="pre"
 <li><p><strong>x0_policy</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code>]]</span>) – Warm-start seeds keyed by control symbol (e.g. a previous iterate’s
 <code class="docutils literal notranslate"><span class="pre">policy_array</span></code>); supplies the first multi-start candidate at each grid
 point, and wins ties. Supplied by <a class="reference internal" href="#skagent.algos.vfi.solve_bellman" title="skagent.algos.vfi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_bellman()</span></code></a>.</p></li>
-<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code>, tighten each control’s bounds so the next-period arrival
-state stays inside the state grid (<code class="xref py py-func docutils literal notranslate"><span class="pre">_tighten_bounds_to_grid()</span></code>), an
-artificial state (borrowing) limit at the grid’s lower edge.
-This keeps the continuation interpolated rather than extrapolated past
-the grid edges, so value iteration cannot ride a control bound by
-over-crediting off-grid successors. Single control with an affine
-successor only (raises otherwise). The limit must be <em>slack</em> at the
-states of interest (it is just the grid floor), or it biases the policy
-where it binds.</p></li>
+<li><p><strong>confine_to_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code>, restrict each control to the values that keep every
+next-period arrival state within the state grid’s range. This keeps the
+continuation interpolated rather than extrapolated past the grid edges,
+so value iteration cannot ride a control bound by over-crediting
+off-grid successors. It adds a constraint to the problem solved, which
+must be <em>slack</em> at the states of interest, or it biases the policy where
+it binds; in a savings model the grid’s lower edge acts as an artificial
+borrowing limit. Single control with an affine successor only (raises
+otherwise).</p></li>
 <li><p><strong>search</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – How each point’s optimum is found. <code class="docutils literal notranslate"><span class="pre">&quot;multistart&quot;</span></code>, the default, runs
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.18.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.minimize()</span></code></a> from every seed candidate and keeps the
 best. <code class="docutils literal notranslate"><span class="pre">&quot;bounded&quot;</span></code> runs one bounded scalar search over the control’s
@@ -841,6 +852,7 @@ what the identification check compares against. It uses no seed, and is
 exact only for an objective with a single peak on the interval. It
 applies to a single control whose block declares both its lower and its
 upper bound.</p></li>
+<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Deprecated alias of <em>confine_to_grid</em>.</p></li>
 <li><p><strong>control</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>)</p></li>
 </ul>
 </dd>
@@ -861,12 +873,15 @@ symbol (a dict for forward-compatibility with multi-control, O1).</p></li>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>search</em> is not one of the two methods, or is <code class="docutils literal notranslate"><span class="pre">&quot;bounded&quot;</span></code> for more
     than one control or for a control missing a declared bound.</p>
 </dd>
+<dt class="field-odd">Warns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>DeprecationWarning</strong> – If <em>artificial_borrowing_constraint</em> is given.</p>
+</dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_bellman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_nonconvergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy_evaluations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">skagent.algos.vfi.</span></span><span class="sig-name descname"><span class="pre">solve_bellman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation_vf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_nonconvergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confine_to_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'multistart'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy_evaluations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artificial_borrowing_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Solve a recurring <code class="docutils literal notranslate"><span class="pre">BellmanPeriod</span></code> by value-function iteration.</p>
 <p>Iterates <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a> to a fixed point: each backup uses the previous
 iterate’s value grid as its continuation (rebuilt via
@@ -919,9 +934,9 @@ with the sup-norm change still above <em>tol</em>; otherwise emit a
 <code class="xref py py-class docutils literal notranslate"><span class="pre">warnings.warn</span></code> and return the last iterate (the scipy
 <code class="docutils literal notranslate"><span class="pre">OptimizeResult.success</span></code> convention, O5). At a finite horizon set
 through <em>max_iter</em> this condition is expected, so leave it <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a>: confine next-period arrival states to
-the state grid (grid edge = slack artificial borrowing limit),
-so the rebuilt continuation is never extrapolated off-grid.</p></li>
+<li><p><strong>confine_to_grid</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a>: confine next-period arrival states to
+the state grid’s range, so the rebuilt continuation is never
+extrapolated off-grid.</p></li>
 <li><p><strong>search</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Forwarded to <a class="reference internal" href="#skagent.algos.vfi.solve_step" title="skagent.algos.vfi.solve_step"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_step()</span></code></a>: how each point’s optimum is found. The
 warm start is one of the seeds either way.</p></li>
 <li><p><strong>policy_evaluations</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – How many times to apply the Bellman operator at the maximizing policy
@@ -934,6 +949,7 @@ so <em>tol</em> must not be tighter than that error. For an infinite horizon
 only: under a horizon set through <em>max_iter</em> the applications lengthen
 the horizon, and a horizon carried in the state already converges in a
 backup per period.</p></li>
+<li><p><strong>artificial_borrowing_constraint</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Deprecated alias of <em>confine_to_grid</em>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -953,6 +969,12 @@ backup per period.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>max_iter</em> is less than 1, if <em>policy_evaluations</em> is negative, or if
     the period has no arrival states.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If <em>raise_on_nonconvergence</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and the loop does not converge.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Warns<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>UserWarning</strong> – If the period names no discount variable, which solves it undiscounted.</p></li>
+<li><p><strong>DeprecationWarning</strong> – If <em>artificial_borrowing_constraint</em> is given.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2345,6 +2367,63 @@ declared actions for a discrete control.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.solver.solve_mean_field">
+<span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">solve_mean_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">population</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">bracket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tail</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warm_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.solve_mean_field" title="Link to this definition">¶</a></dt>
+<dd><p>A stationary mean-field equilibrium, by root-finding on the aggregate.</p>
+<p><em>method</em> carries one instance’s problem under price-taking, as
+<a class="reference internal" href="#skagent.solver.project_mean_field" title="skagent.solver.project_mean_field"><code class="xref py py-func docutils literal notranslate"><span class="pre">project_mean_field()</span></code></a> builds it from <em>population</em>, with the aggregate
+left without a value. For a candidate value of the aggregate, the schedule
+gives it to the instance’s problem, solves that to its stationary rule, and
+simulates the full model, <em>population</em>, under the rule. There the aggregate
+is computed from the instances every period, as the model says, rather
+than held at the candidate. The residual is the aggregate the simulation
+settles at, averaged over its last <em>tail</em> periods, less the candidate, and
+Brent’s method finds its root within <em>bracket</em>.</p>
+<p>Every round simulates from the same <em>seed</em>, and from the variables the
+aggregate reduces each starting at the candidate value, so the residual is
+a deterministic function of the candidate. Its precision is still that of
+a finite class: the class size in the calibration sets the simulated
+aggregate’s noise, and so how sharply the root is pinned.</p>
+<p>Every instance plays the one rule, so the equilibrium is symmetric by
+construction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<a class="reference internal" href="#skagent.solver.StationaryBestResponse" title="skagent.solver.StationaryBestResponse"><em>StationaryBestResponse</em></a>) – The instance’s solver, carrying the projected problem.</p></li>
+<li><p><strong>population</strong> (<a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><em>skagent.ground.GroundedBlock</em></a>) – The model the projection was taken from, with its calibration. Its
+block must reduce over its entity class in exactly one equation.</p></li>
+<li><p><strong>bracket</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Two values of the aggregate at which the residual has opposite signs.</p></li>
+<li><p><strong>tol</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Tolerance on the aggregate.</p></li>
+<li><p><strong>periods</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Periods simulated per round.</p></li>
+<li><p><strong>tail</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Final periods averaged over to read the aggregate the simulation
+settles at.</p></li>
+<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Seed of every round’s simulation.</p></li>
+<li><p><strong>warm_start</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Start each round’s solve from the previous round’s, through the
+method’s <code class="docutils literal notranslate"><span class="pre">with_ground</span></code>. Otherwise each round starts from <em>method</em>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>rule</strong> (<em>Callable</em>) – The instance’s decision rule at the equilibrium aggregate.</p></li>
+<li><p><strong>info</strong> (<em>dict</em>) – <code class="docutils literal notranslate"><span class="pre">aggregate</span></code>, the equilibrium value; <code class="docutils literal notranslate"><span class="pre">converged</span></code> and
+<code class="docutils literal notranslate"><span class="pre">iterations</span></code>, as Brent’s method reports them; and <code class="docutils literal notranslate"><span class="pre">rounds</span></code>, one
+entry per candidate with its <code class="docutils literal notranslate"><span class="pre">candidate</span></code>, its <code class="docutils literal notranslate"><span class="pre">simulated</span></code> aggregate
+and the rule’s <code class="docutils literal notranslate"><span class="pre">off_grid</span></code> count where the rule keeps one.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.14)"><strong>TypeError</strong></a> – If <em>method</em> is not a <a class="reference internal" href="#skagent.solver.StationaryBestResponse" title="skagent.solver.StationaryBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationaryBestResponse</span></code></a>.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <em>population</em> does not reduce over its class in exactly one equation,
+    if the projected problem does not have exactly one decision, or if the
+    residual does not change sign across <em>bracket</em>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.solver.NeuralBestResponse">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">NeuralBestResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">panel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.NeuralBestResponse" title="Link to this definition">¶</a></dt>
@@ -2429,6 +2508,90 @@ maximization.</p></li>
 <dt class="sig sig-object py" id="skagent.solver.ExactBestResponse.rule_distance">
 <span class="sig-name descname"><span class="pre">rule_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iset</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactBestResponse.rule_distance" title="Link to this definition">¶</a></dt>
 <dd><p>Supremum norm between two rules over the grid they were solved on.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.solver.StationaryBestResponse">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">StationaryBestResponse</span></span><a class="headerlink" href="#skagent.solver.StationaryBestResponse" title="Link to this definition">¶</a></dt>
+<dd><p>A method whose responses solve the infinite-horizon problem.</p>
+<p>A contract with no code. A subclass’s <code class="docutils literal notranslate"><span class="pre">best_response(decision,</span> <span class="pre">policies)</span></code>
+solves the recurring problem on its ground to a fixed point, where
+<a class="reference internal" href="#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExactBestResponse</span></code></a> and <a class="reference internal" href="#skagent.solver.NeuralBestResponse" title="skagent.solver.NeuralBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a> solve one period.
+A schedule that needs the stationary solution, as <a class="reference internal" href="#skagent.solver.solve_mean_field" title="skagent.solver.solve_mean_field"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_mean_field()</span></code></a>
+does, checks for this class, so that a one-period method is refused rather
+than its answer reported as the stationary one.</p>
+<p>Beside <code class="docutils literal notranslate"><span class="pre">best_response</span></code>, <code class="docutils literal notranslate"><span class="pre">rule_distance</span></code> and <code class="docutils literal notranslate"><span class="pre">initial_policies</span></code>, a
+subclass provides <code class="docutils literal notranslate"><span class="pre">with_ground(ground)</span></code>: the same method on another
+ground, starting from its own last solve when it has made one.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skagent.solver.ExactStationaryBestResponse">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.solver.</span></span><span class="sig-name descname"><span class="pre">ExactStationaryBestResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount_variable</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bounded'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy_evaluations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confine_to_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactStationaryBestResponse" title="Link to this definition">¶</a></dt>
+<dd><p>Stationary best responses by value-function iteration over a state grid.</p>
+<p>The stationary counterpart of <a class="reference internal" href="#skagent.solver.ExactBestResponse" title="skagent.solver.ExactBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExactBestResponse</span></code></a>: a response runs
+<a class="reference internal" href="#skagent.algos.vfi.solve_bellman" title="skagent.algos.vfi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.algos.vfi.solve_bellman()</span></code></a> to its fixed point rather than one
+backup. Its rules are gridded as that method’s are, and compared the same
+way.</p>
+<p>The block must have no decision other than the one solved, since
+<a class="reference internal" href="#skagent.algos.vfi.solve_bellman" title="skagent.algos.vfi.solve_bellman"><code class="xref py py-func docutils literal notranslate"><span class="pre">skagent.algos.vfi.solve_bellman()</span></code></a> optimizes every control jointly and
+cannot hold one at a given rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ground</strong> (<a class="reference internal" href="blocks.html#skagent.ground.GroundedBlock" title="skagent.ground.GroundedBlock"><em>skagent.ground.GroundedBlock</em></a>) – The recurring problem being solved, already projected if it is a
+population. Its calibration is also the solve’s <em>scope</em>.</p></li>
+<li><p><strong>state_grid</strong> (<em>Mapping</em>) – The grid over the value function’s domain; every arrival state must be
+an axis of it.</p></li>
+<li><p><strong>discount_variable</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – The symbol holding the discount factor.</p></li>
+<li><p><strong>disc_params</strong> (<em>Mapping</em><em>, </em><em>optional</em>) – Per-shock discretization arguments.</p></li>
+<li><p><strong>tol</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Convergence tolerance on the sup-norm change in the value grid.</p></li>
+<li><p><strong>max_iter</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Backups before the solve is reported as unconverged, which raises.</p></li>
+<li><p><strong>search</strong> (<em>{&quot;bounded&quot;</em><em>, </em><em>&quot;multistart&quot;}</em><em>, </em><em>optional</em>) – How each grid point’s optimum is found.</p></li>
+<li><p><strong>policy_evaluations</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Applications of the Bellman operator at the maximizing policy after
+each backup.</p></li>
+<li><p><strong>confine_to_grid</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Confine next-period arrival states to the state grid.</p></li>
+<li><p><strong>continuation</strong> (<em>Callable</em><em>, </em><em>optional</em>) – The continuation the iteration starts from. Defaults to a terminal
+(zero) one.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skagent.solver.ExactStationaryBestResponse.value">
+<span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#skagent.solver.ExactStationaryBestResponse.value" title="Link to this definition">¶</a></dt>
+<dd><p>The value grid of the last response, whose <code class="docutils literal notranslate"><span class="pre">attrs</span></code> carry
+<code class="docutils literal notranslate"><span class="pre">n_iter</span></code>, <code class="docutils literal notranslate"><span class="pre">converged</span></code> and <code class="docutils literal notranslate"><span class="pre">residual</span></code>; <code class="docutils literal notranslate"><span class="pre">None</span></code> before the first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xarray.DataArray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.ExactStationaryBestResponse.best_response">
+<span class="sig-name descname"><span class="pre">best_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactStationaryBestResponse.best_response" title="Link to this definition">¶</a></dt>
+<dd><p>Solve <em>decision</em> to its stationary fixed point.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.ExactStationaryBestResponse.initial_policies">
+<span class="sig-name descname"><span class="pre">initial_policies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactStationaryBestResponse.initial_policies" title="Link to this definition">¶</a></dt>
+<dd><p>A starting profile: every decision at a constant, none of them solved.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.ExactStationaryBestResponse.rule_distance">
+<span class="sig-name descname"><span class="pre">rule_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_rule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iset</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactStationaryBestResponse.rule_distance" title="Link to this definition">¶</a></dt>
+<dd><p>Supremum norm between two rules over the grid they were solved on.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="skagent.solver.ExactStationaryBestResponse.with_ground">
+<span class="sig-name descname"><span class="pre">with_ground</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ground</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.solver.ExactStationaryBestResponse.with_ground" title="Link to this definition">¶</a></dt>
+<dd><p>This method on <em>ground</em>, continuing from its last solved value.</p>
 </dd></dl>
 
 </dd></dl>
@@ -2715,6 +2878,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 <li><a class="reference internal" href="#skagent.solver.project_nash"><code class="docutils literal notranslate"><span class="pre">project_nash()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.project_mean_field"><code class="docutils literal notranslate"><span class="pre">project_mean_field()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.solve_symmetric_equilibrium"><code class="docutils literal notranslate"><span class="pre">solve_symmetric_equilibrium()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.solve_mean_field"><code class="docutils literal notranslate"><span class="pre">solve_mean_field()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.NeuralBestResponse"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse</span></code></a><ul>
 <li><a class="reference internal" href="#skagent.solver.NeuralBestResponse.best_response"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse.best_response()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.NeuralBestResponse.initial_policies"><code class="docutils literal notranslate"><span class="pre">NeuralBestResponse.initial_policies()</span></code></a></li>
@@ -2725,6 +2889,15 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
 <li><a class="reference internal" href="#skagent.solver.ExactBestResponse.best_response"><code class="docutils literal notranslate"><span class="pre">ExactBestResponse.best_response()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.ExactBestResponse.initial_policies"><code class="docutils literal notranslate"><span class="pre">ExactBestResponse.initial_policies()</span></code></a></li>
 <li><a class="reference internal" href="#skagent.solver.ExactBestResponse.rule_distance"><code class="docutils literal notranslate"><span class="pre">ExactBestResponse.rule_distance()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#skagent.solver.StationaryBestResponse"><code class="docutils literal notranslate"><span class="pre">StationaryBestResponse</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.ExactStationaryBestResponse"><code class="docutils literal notranslate"><span class="pre">ExactStationaryBestResponse</span></code></a><ul>
+<li><a class="reference internal" href="#skagent.solver.ExactStationaryBestResponse.value"><code class="docutils literal notranslate"><span class="pre">ExactStationaryBestResponse.value</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.ExactStationaryBestResponse.best_response"><code class="docutils literal notranslate"><span class="pre">ExactStationaryBestResponse.best_response()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.ExactStationaryBestResponse.initial_policies"><code class="docutils literal notranslate"><span class="pre">ExactStationaryBestResponse.initial_policies()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.ExactStationaryBestResponse.rule_distance"><code class="docutils literal notranslate"><span class="pre">ExactStationaryBestResponse.rule_distance()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.solver.ExactStationaryBestResponse.with_ground"><code class="docutils literal notranslate"><span class="pre">ExactStationaryBestResponse.with_ground()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -2761,7 +2934,7 @@ and <cite>num_variables</cite> is the number of keys in the <cite>config</cite>.
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=fb5a459c"></script>
+</div><script src="../_static/documentation_options.js?v=e3021dea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Solving Models with the Maliar Method" href="maliar.html"><link rel="prev" title="Algorithms Guide" href="algorithms.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Solvers Guide - scikit-agent 0.2.1.dev32+g73de05be7</title>
+        <title>Solvers Guide - scikit-agent 0.2.1.dev35+g1d177c04b</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev32+g73de05be7</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev35+g1d177c04b</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -335,7 +335,11 @@ have to carry it:</p>
 <td><p>an exact backup on a grid</p></td>
 <td><p>a state grid, a continuation</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">TabularBestResponseSolver</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/algorithms.html#skagent.solver.ExactStationaryBestResponse" title="skagent.solver.ExactStationaryBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExactStationaryBestResponse</span></code></a></p></td>
+<td><p>value-function iteration</p></td>
+<td><p>a state grid, a discount variable</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/algorithms.html#skagent.algos.tabular.TabularBestResponseSolver" title="skagent.algos.tabular.TabularBestResponseSolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">TabularBestResponseSolver</span></code></a></p></td>
 <td><p>a tabulated payoff table</p></td>
 <td><p>candidate actions, a sample count</p></td>
 </tr>
@@ -496,6 +500,37 @@ removes each equation that reduces over the class and keeps the equations
 downstream of it, so the aggregate becomes a value you supply, for instance with
 <a class="reference internal" href="../api/blocks.html#skagent.ground.GroundedBlock.with_calibration" title="skagent.ground.GroundedBlock.with_calibration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_calibration()</span></code></a>, and the result is a
 single agent’s problem that any one-agent solver accepts.</p>
+<p><a class="reference internal" href="../api/algorithms.html#skagent.solver.solve_mean_field" title="skagent.solver.solve_mean_field"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_mean_field()</span></code></a> finds the value of the aggregate at
+which the economy reproduces it. For each candidate value it solves the
+projected problem to its stationary rule, simulates the full model under that
+rule, and compares the aggregate the simulation settles at with the candidate.
+The method must be a <a class="reference internal" href="../api/algorithms.html#skagent.solver.StationaryBestResponse" title="skagent.solver.StationaryBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationaryBestResponse</span></code></a>, such as
+<a class="reference internal" href="../api/algorithms.html#skagent.solver.ExactStationaryBestResponse" title="skagent.solver.ExactStationaryBestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExactStationaryBestResponse</span></code></a>, because a one-period
+best response is not the stationary equilibrium’s rule.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.ground</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroundedBlock</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.models.aiyagari</span><span class="w"> </span><span class="kn">import</span> <span class="n">aiyagari_block</span><span class="p">,</span> <span class="n">aiyagari_calibration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skagent.solver</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ExactStationaryBestResponse</span><span class="p">,</span>
+    <span class="n">project_mean_field</span><span class="p">,</span>
+    <span class="n">solve_mean_field</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">population</span> <span class="o">=</span> <span class="n">GroundedBlock</span><span class="p">(</span>
+    <span class="n">aiyagari_block</span><span class="p">,</span> <span class="p">{</span><span class="o">**</span><span class="n">aiyagari_calibration</span><span class="p">(</span><span class="n">sigma</span><span class="o">=</span><span class="mf">0.3</span><span class="p">),</span> <span class="s2">"DiscFac"</span><span class="p">:</span> <span class="mf">0.96</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">method</span> <span class="o">=</span> <span class="n">ExactStationaryBestResponse</span><span class="p">(</span>
+    <span class="n">project_mean_field</span><span class="p">(</span><span class="n">population</span><span class="p">),</span>
+    <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">},</span>
+    <span class="s2">"DiscFac"</span><span class="p">,</span>
+    <span class="n">disc_params</span><span class="o">=</span><span class="p">{</span><span class="s2">"theta"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"N"</span><span class="p">:</span> <span class="mi">5</span><span class="p">}},</span>
+    <span class="n">confine_to_grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">rule</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">solve_mean_field</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">population</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="p">(</span><span class="mf">5.45</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">))</span>
+
+<span class="n">info</span><span class="p">[</span><span class="s2">"aggregate"</span><span class="p">]</span>  <span class="c1"># about 5.55, above the 5.45 the economy reaches without risk</span>
+</pre></div>
+</div>
 <hr class="docutils" />
 <p><em>For runnable versions, see the
 <a class="reference internal" href="../auto_examples/algorithms/index.html"><span class="doc">Algorithms examples gallery</span></a>.</em></p>
@@ -584,7 +619,7 @@ single agent’s problem that any one-agent solver accepts.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=fb5a459c"></script>
+</div><script src="../_static/documentation_options.js?v=e3021dea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
