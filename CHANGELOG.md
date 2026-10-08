@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- `maliar_training_loop` takes `policy_net`, a network to train in place of the
+  one it builds, so a rule solved earlier can be the starting point.
 - `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
   so the household problem can be solved as well as simulated.
 - A gallery page for the Aiyagari economy under a fixed savings rule, checking

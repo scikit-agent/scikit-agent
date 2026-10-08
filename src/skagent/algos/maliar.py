@@ -136,6 +136,7 @@ def _validate_training_inputs(
     epochs_per_iteration,
     states_0_n,
     lr,
+    policy_net=None,
 ):
     """Validate all inputs for :func:`maliar_training_loop`."""
     if bellman_period is None:
@@ -167,6 +168,10 @@ def _validate_training_inputs(
         )
     if states_0_n.n() < 1:
         raise ValueError("states_0_n must contain at least one state")
+    if policy_net is not None and not isinstance(policy_net, ann.BlockPolicyNet):
+        raise TypeError(
+            f"policy_net must be a BlockPolicyNet, got {type(policy_net).__name__}"
+        )
 
 
 def _check_convergence(prev_params, curr_params, tolerance, prev_loss, current_loss):
@@ -250,14 +255,15 @@ def maliar_training_loop(
     network_width: int = 16,
     epochs_per_iteration: int = 250,
     lr: float = 0.001,
+    policy_net: Optional[ann.BlockPolicyNet] = None,
 ) -> tuple:
     r"""
     Run the Maliar, Maliar, and Winant (JME '21) training loop.
 
     Trains a single neural network policy to minimize empirical risk (loss)
     on a panel of states drawn forward through the model dynamics. This
-    helper constructs and trains a :class:`~skagent.ann.BlockPolicyNet`
-    internally and does not currently accept a pre-built shared-backbone
+    helper trains a :class:`~skagent.ann.BlockPolicyNet`, built internally
+    unless *policy_net* supplies one, and does not currently accept a shared-backbone
     :class:`~skagent.ann.BlockPolicyValueNet`. If value-aware training is
     needed (e.g. for a Bellman residual loss with a value head), call
     :func:`~skagent.ann.train_block_nn` directly on a
@@ -312,6 +318,11 @@ def maliar_training_loop(
         Learning rate for the internal Adam optimizer. The optimizer is
         created once and reused across iterations to preserve momentum.
         Must be > 0. Default is 0.001.
+    policy_net : BlockPolicyNet, optional
+        The network to train, which is trained in place and returned, so a
+        decision rule solved earlier can be the starting point. Its weights are
+        the loop's initial parameters, and *network_width* is not used. By
+        default a network is built with *network_width* and initialized afresh.
 
     Returns
     -------
@@ -332,7 +343,8 @@ def maliar_training_loop(
     TypeError
         If bellman_period or parameters is None, loss_function is not
         callable, a count argument is not an integer, or states_0_n is not a
-        Grid.
+        Grid, or
+        policy_net is not a BlockPolicyNet.
     RuntimeError
         If training diverges: the loss becomes non-finite at some iteration.
     """
@@ -348,12 +360,16 @@ def maliar_training_loop(
         epochs_per_iteration,
         states_0_n,
         lr,
+        policy_net,
     )
 
     if random_seed is not None:
         torch.manual_seed(random_seed)
 
-    bpn = ann.BlockPolicyNet(bellman_period, width=network_width)
+    if policy_net is None:
+        bpn = ann.BlockPolicyNet(bellman_period, width=network_width)
+    else:
+        bpn = policy_net
     optimizer = torch.optim.Adam(bpn.parameters(), lr=lr)
     states = states_0_n
     prev_loss = None
