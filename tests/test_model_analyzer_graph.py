@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+from skagent.block import DBlock
 from skagent.model_analyzer import ModelAnalyzer
 from skagent.relevance import RelevanceGraph
 from skagent.models.consumer import (
@@ -120,3 +121,9 @@ def test_from_scim_integration():
     rg = RelevanceGraph.from_scim(scim)
     assert set(rg.nodes()) == set(scim.decisions)
     assert rg.is_acyclic() is True
+
+
+def test_calibration_defaults_to_none_supplied():
+    # A model with no parameters needs no calibration to be analyzed.
+    block = DBlock(name="b", dynamics={"x": lambda y: y + 1})
+    assert ModelAnalyzer(block).analyze().calibration == {}

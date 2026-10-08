@@ -30,6 +30,10 @@ and this project adheres to
 
 ### Changed
 
+- `Grid.from_dict` moves its values to the training device by default, as
+  `Grid.from_config` does. Before, a grid built from a dict failed inside the
+  model's own equations on a GPU. Pass `torched=False` for the old behaviour.
+- `ModelAnalyzer`'s `calibration` is optional.
 - `vfi.solve_bellman` warns when the period names no discount variable, since it
   then solves undiscounted.
 
