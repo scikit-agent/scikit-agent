@@ -65,6 +65,13 @@ and this project adheres to
 
 ### Fixed
 
+- Relevance analysis no longer skips a block that declares classes `E` and
+  `E_other` of its own: it refuses it as a block of several classes, where it
+  had reported no reliance between instances. A projection is recognized by the
+  equation it writes, which is marked `synthesized` and reported so in
+  `ModelAnalyzer.node_meta`.
+- `project_nash` names the author's symbol when it collides with a suffixed
+  name, instead of two synthesized blocks.
 - Diagrams rank nodes across plates (`newrank`), so an edge into a plate no
   longer points backwards.
 - A VFI decision rule answers inputs past the range its grid covers instead of

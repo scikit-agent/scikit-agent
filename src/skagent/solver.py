@@ -125,6 +125,8 @@ def _joining_equation(actor_sym, other_sym, others_count):
         o = np.broadcast_to(o, a.shape[:-1] + (others_count,))
         return np.concatenate([a, o], axis=-1)
 
+    # The one equation in a projection that its author did not write.
+    join.synthesized = True
     join.__signature__ = inspect.Signature(
         [
             inspect.Parameter(actor_sym, inspect.Parameter.POSITIONAL_OR_KEYWORD),
@@ -303,6 +305,19 @@ def project_nash(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     other = {sym: sym + other_suffix for sym in per_instance}
 
     rivals = entity + other_suffix
+
+    # A symbol the author declared outside the class keeps its name, so it
+    # cannot also be the name a per-instance symbol is given.
+    declared = set(block.get_dynamics()) | set(block.get_shocks())
+    taken = sorted(
+        (declared - per_instance) & (set(actor.values()) | set(other.values()))
+    )
+    if taken:
+        raise ValueError(
+            f"the block declares {taken}, which the projection also gives to a "
+            f"per-instance symbol by adding {actor_suffix!r} or {other_suffix!r}; "
+            f"rename the block's own symbol"
+        )
     declarations = block.get_shocks()
 
     # Every reward the projection has, keyed by the symbol that carries it. The

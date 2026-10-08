@@ -82,7 +82,10 @@ class ModelAnalyzer:
 
     def _collect_nodes(self):
         """Classify every variable and record its metadata."""
-        from skagent.block import Control  # TODO: move to separate module
+        from skagent.block import (
+            Control,
+            is_synthesized,
+        )  # TODO: move to separate module
 
         signatures = self.model.signatures()
 
@@ -138,6 +141,8 @@ class ModelAnalyzer:
                     "plate": plate_of(var),
                     "observed": observed,
                 }
+                if is_synthesized(rule):
+                    self.node_meta[var]["synthesized"] = True
 
             # Rewards - use the agent assignment from reward dictionary
             for var, agent_name in blk.reward.items():
