@@ -6,9 +6,11 @@ import torch
 
 import skagent.bellman as bellman
 import skagent.block as block
+import skagent.algos.vfi as vfi
 import skagent.grid as grid
 import skagent.ground as ground
 import skagent.models.aiyagari as aiyagari
+import skagent.models.benchmarks as benchmarks
 import skagent.models.cournot as cournot
 import skagent.models.macid as macid
 import skagent.models.privacy as privacy
@@ -17,11 +19,14 @@ from skagent.solver import (
     _blocks_by_class,
     _joining_equation,
     ExactBestResponse,
+    ExactStationaryBestResponse,
     NeuralBestResponse,
+    StationaryBestResponse,
     project_mean_field,
     project_nash,
     solve_in_order,
     solve_in_relevance_order,
+    solve_mean_field,
     solve_symmetric_equilibrium,
 )
 
@@ -410,6 +415,186 @@ class TestTheMeanFieldProjection:
                     privacy.local_block, privacy.calibration(1.0, size=10)
                 )
             )
+
+
+class SavingAtAFixedRate(StationaryBestResponse):
+    """A stationary method that answers every problem with one savings rule.
+
+    The rule ignores prices, so the economy settles at the capital the rule's
+    own dynamics reach whatever the candidate, and the price loop's root is
+    :func:`skagent.models.aiyagari.stationary_capital` with no solve to wait on.
+    """
+
+    def __init__(self, ground, rate):
+        self.ground = ground
+        self.rate = rate
+
+    def best_response(self, decision, policies):
+        return aiyagari.savings_rule(self.rate)
+
+    def with_ground(self, ground):
+        return SavingAtAFixedRate(ground, self.rate)
+
+
+class TestThePriceLoop:
+    """The schedule root-finds the aggregate against the full model's simulation."""
+
+    RATE = aiyagari.savings_rate_for(0.04)
+
+    def population(self, sigma=0.3):
+        return ground.GroundedBlock(
+            aiyagari.aiyagari_block,
+            {**aiyagari.aiyagari_calibration(sigma=sigma), "DiscFac": 0.96},
+        )
+
+    def solve(self, population, method=None):
+        target = aiyagari.stationary_capital(self.RATE)
+        method = method or SavingAtAFixedRate(project_mean_field(population), self.RATE)
+        return solve_mean_field(
+            method, population, bracket=(0.5 * target, 2 * target), tol=1e-4
+        )
+
+    def test_it_finds_the_capital_the_rule_settles_at(self):
+        # A finite class adds noise to the simulated aggregate, which is all
+        # that separates the root from the closed form.
+        _rule, info = self.solve(self.population())
+        assert info["converged"]
+        assert info["aggregate"] == pytest.approx(
+            aiyagari.stationary_capital(self.RATE), rel=1e-2
+        )
+
+    def test_a_round_is_a_deterministic_function_of_the_candidate(self):
+        # Every round simulates from the same seed, so two runs ask Brent's
+        # method the same questions and get the same answers.
+        _, first = self.solve(self.population())
+        _, second = self.solve(self.population())
+        assert first["rounds"] == second["rounds"]
+
+    def test_a_one_period_method_is_refused(self):
+        # A one-period best response consumes everything, and reporting the
+        # economy it leads to as the stationary equilibrium would be wrong.
+        population = self.population()
+        method = ExactBestResponse(
+            project_mean_field(population), {"a": np.linspace(0, 10, 5)}
+        )
+        with pytest.raises(TypeError, match="solves one period"):
+            self.solve(population, method)
+
+    def test_a_bracket_without_a_sign_change_is_refused(self):
+        population = self.population()
+        target = aiyagari.stationary_capital(self.RATE)
+        with pytest.raises(ValueError, match="does not change sign"):
+            solve_mean_field(
+                SavingAtAFixedRate(project_mean_field(population), self.RATE),
+                population,
+                bracket=(1.5 * target, 2 * target),
+            )
+
+
+AIYAGARI_BETA = 0.96
+AIYAGARI_K_RA = (
+    aiyagari.CAPITAL_SHARE / (1 / AIYAGARI_BETA - 1 + aiyagari.DEPRECIATION)
+) ** (1 / (1 - aiyagari.CAPITAL_SHARE))
+
+
+def aiyagari_equilibrium(sigma, warm_start=True):
+    """Aiyagari's price-taking equilibrium, solved by VFI on a coarse grid."""
+    population = ground.GroundedBlock(
+        aiyagari.aiyagari_block,
+        {
+            **aiyagari.aiyagari_calibration(size=1000, sigma=sigma),
+            "DiscFac": AIYAGARI_BETA,
+        },
+    )
+    method = ExactStationaryBestResponse(
+        project_mean_field(population),
+        {"a": 60 * np.linspace(0, 1, 30) ** 2},
+        "DiscFac",
+        disc_params={"theta": {"N": 5}},
+        confine_to_grid=True,
+    )
+    return solve_mean_field(
+        method,
+        population,
+        bracket=(AIYAGARI_K_RA, 1.1 * AIYAGARI_K_RA),
+        tol=1e-3,
+        warm_start=warm_start,
+    )
+
+
+@pytest.fixture(scope="module")
+def aiyagari_with_risk():
+    return aiyagari_equilibrium(0.3)
+
+
+@pytest.mark.oracle
+class TestAiyagarisEquilibrium:
+    """The anchors of the representative agent's capital, ``K_RA``, at which
+    the interest rate equals the discount rate."""
+
+    def test_with_little_income_risk_it_is_the_representative_agents(self):
+        _rule, info = aiyagari_equilibrium(0.1)
+        assert info["converged"]
+        assert info["aggregate"] == pytest.approx(AIYAGARI_K_RA, rel=2e-3)
+
+    def test_income_risk_raises_it_above_the_representative_agents(
+        self, aiyagari_with_risk
+    ):
+        # Precautionary saving: about 2% at sigma = 0.3, ten times the band of
+        # the test above.
+        _rule, info = aiyagari_with_risk
+        assert info["converged"]
+        assert info["aggregate"] > 1.01 * AIYAGARI_K_RA
+
+    def test_a_warm_start_reaches_the_cold_starts_capital(self, aiyagari_with_risk):
+        # Each round starting from the last round's value is an approximation
+        # of where to start, so it may change the rounds but not the answer
+        # beyond the loop's tolerance.
+        _rule, warm = aiyagari_with_risk
+        _rule, cold = aiyagari_equilibrium(0.3, warm_start=False)
+        assert warm["aggregate"] == pytest.approx(cold["aggregate"], abs=1e-3)
+
+
+class TestTheStationaryBestResponse:
+    def test_under_solve_in_order_it_is_solve_bellman(self):
+        # The method is solve_bellman behind the schedules' protocol, so a
+        # schedule driving it on a recurring benchmark gets the same rule.
+        cal = benchmarks.d4_calibration
+        grid = {"a": np.linspace(0.0, 7.5, 9)}
+        method = ExactStationaryBestResponse(
+            ground.GroundedBlock(benchmarks.d4_block, cal), grid, "DiscFac", tol=1e-3
+        )
+        direct, _, _ = vfi.solve_bellman(
+            bellman.BellmanPeriod(benchmarks.d4_block, "DiscFac", cal),
+            grid,
+            scope=cal,
+            tol=1e-3,
+            max_iter=500,
+            search="bounded",
+            policy_evaluations=20,
+        )
+
+        # D-4's bound reads the state, which a starting constant cannot, and
+        # the one decision is the whole profile, so the profile starts empty.
+        rules = solve_in_order(method, ["c"], policies={})
+
+        cash = np.array([a * cal["R"] + cal["y"] for a in (0.25, 1.0, 3.0, 6.0)])
+        assert rules["c"](cash) == pytest.approx(direct["c"](cash))
+        assert method.value.attrs["converged"]
+
+    def test_an_undiscounted_dynamic_problem_warns(self):
+        # Without a discount factor the problem may have no fixed point for
+        # the iteration to reach, so solving it silently would hide that.
+        cal = benchmarks.d4_calibration
+        method = ExactStationaryBestResponse(
+            ground.GroundedBlock(benchmarks.d4_block, cal),
+            {"a": np.linspace(0.0, 7.5, 3)},
+            None,
+            max_iter=2,
+        )
+        with pytest.warns(UserWarning, match="undiscounted"):
+            with pytest.raises(RuntimeError):
+                method.best_response("c", {})
 
 
 def neural_method(projected, epochs=300):
