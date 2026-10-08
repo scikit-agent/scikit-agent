@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Utils" href="utils.html"><link rel="prev" title="Parsing" href="parser.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Model Analysis and Visualization - scikit-agent 0.2.1.dev39+g91d525cbc</title>
+        <title>Model Analysis and Visualization - scikit-agent 0.2.1.dev41+g7ff7c15a4</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev39+g91d525cbc</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev41+g7ff7c15a4</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -318,7 +318,7 @@ truth and exposes it in two forms:</p>
 - shock edge: dependency from an exogenous shock</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="skagent.model_analyzer.ModelAnalyzer">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.model_analyzer.</span></span><span class="sig-name descname"><span class="pre">ModelAnalyzer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">skagent.model_analyzer.</span></span><span class="sig-name descname"><span class="pre">ModelAnalyzer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discount</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.model_analyzer.ModelAnalyzer" title="Link to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Analyze a scikit-agent DBlock or RBlock and extract:</dt><dd><ul class="simple">
 <li><p>node_meta: kind, agent, plate, observed for each variable</p></li>
@@ -344,8 +344,7 @@ nodes with the causal (instant + shock) edges between them. Parameter
 nodes are dropped – they are deterministic constants, not random
 variables, and leaving them in would open spurious d-connection paths
 (an un-conditioned fork <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">&lt;-</span> <span class="pre">p</span> <span class="pre">-&gt;</span> <span class="pre">B</span></code>) that corrupt s-reachability.
-Lag edges are excluded here (single-period scope); cross-period reliance
-is handled by the unrolling machinery separately.</p>
+Lag edges are excluded here, so the graph is of a single period.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>dynamic</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Make the diagram faithful to one period of a recurring problem, by
@@ -1258,7 +1257,7 @@ the graph per decision rather than per (shock, decision) pair.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=40a0eb27"></script>
+</div><script src="../_static/documentation_options.js?v=5d0e5474"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
