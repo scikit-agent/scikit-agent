@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:15.195** total execution time for 10 files **from auto_examples/models**:
+**00:08.303** total execution time for 10 files **from auto_examples/models**:
 
 .. container::
 
@@ -33,32 +33,32 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_models_plot_tree_killer_relevance.py` (``plot_tree_killer_relevance.py``)
-     - 00:06.179
+     - 00:03.577
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_privacy_dp_tuning.py` (``plot_privacy_dp_tuning.py``)
-     - 00:02.422
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``plot_benchmark_models.py``)
-     - 00:01.130
+     - 00:01.216
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_consumption_portfolio_model.py` (``plot_consumption_portfolio_model.py``)
-     - 00:01.018
+     - 00:00.560
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_aiyagari.py` (``plot_aiyagari.py``)
-     - 00:00.969
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_models_plot_lemons_adverse_selection.py` (``plot_lemons_adverse_selection.py``)
-     - 00:00.864
+   * - :ref:`sphx_glr_auto_examples_models_plot_benchmark_models.py` (``plot_benchmark_models.py``)
+     - 00:00.546
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_2_content_recommendation.py` (``plot_incentives_2_content_recommendation.py``)
-     - 00:00.813
+     - 00:00.491
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_aiyagari.py` (``plot_aiyagari.py``)
+     - 00:00.489
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_models_plot_lemons_adverse_selection.py` (``plot_lemons_adverse_selection.py``)
+     - 00:00.451
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_incentives_1_grade_prediction.py` (``plot_incentives_1_grade_prediction.py``)
-     - 00:00.717
+     - 00:00.369
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_cournot_equilibrium.py` (``plot_cournot_equilibrium.py``)
-     - 00:00.564
+     - 00:00.319
      - 0.0
    * - :ref:`sphx_glr_auto_examples_models_plot_resource_extraction.py` (``plot_resource_extraction.py``)
-     - 00:00.520
+     - 00:00.286
      - 0.0

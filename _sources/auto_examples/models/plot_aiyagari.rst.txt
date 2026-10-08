@@ -498,7 +498,7 @@ the finite class's sampling error.
  .. code-block:: none
 
     start    1: largest gap from the map 3.3e-16 with the realized endowment, 0.3% with an endowment of one
-    start   15: largest gap from the map 3.3e-16 with the realized endowment, 0.3% with an endowment of one
+    start   15: largest gap from the map 4.4e-16 with the realized endowment, 0.3% with an endowment of one
 
 
 
@@ -619,7 +619,7 @@ to be solved for.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.969 seconds)
+   **Total running time of the script:** (0 minutes 0.489 seconds)
 
 
 .. _sphx_glr_download_auto_examples_models_plot_aiyagari.py:
