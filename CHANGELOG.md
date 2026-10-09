@@ -65,6 +65,13 @@ and this project adheres to
 
 ### Fixed
 
+- On a block whose aggregate reads its population's own decisions, the Euler and
+  Bellman residuals summed every instance's effect on the aggregate, which is no
+  solution concept. `BellmanPeriod` now takes `aggregate=`: `"detach"`
+  (price-taking), `"own_share"` (Nash among the instances) or `"through"` (the
+  planner's choice, on the lifetime-reward loss). Such a block's derivatives and
+  losses raise until one is given.
+
 - Relevance analysis no longer skips a block that declares classes `E` and
   `E_other` of its own: it refuses it as a block of several classes, where it
   had reported no reliance between instances. A projection is recognized by the
