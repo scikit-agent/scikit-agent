@@ -529,7 +529,7 @@ class Block:
             populations[role] = entity
         return populations
 
-    def transition(self, pre, dr, screen=False, until=None, fix=None):
+    def transition(self, pre, dr, screen=False, until=None, fix=None, substitute=None):
         if fix is None:
             fix = []
         """
@@ -552,8 +552,14 @@ class Block:
         fix: list of string
             A list of symbols to make static, rather than dynamic.
             The symbol must appear in both dynamics and pre.
+
+        substitute: Mapping[str, Callable], optional
+            Equations to evaluate in place of the block's own, keyed by symbol.
+            Each must take the same arguments as the equation it replaces.
         """
         dyn = self.get_dynamics().copy()
+        if substitute:
+            dyn.update(substitute)
 
         if screen:
             # don't simulate any states that are logically prior
