@@ -6,9 +6,10 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.2.1.dev44+g87ce41bff</title>
+        <title>Models - scikit-agent 0.2.1.dev46+g63535ebd9</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=c83e6b79" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
@@ -168,7 +169,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev44+g87ce41bff</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev46+g63535ebd9</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -348,7 +349,7 @@ TVC                 : lim_{T→∞} E_0[β^T u’(c_T) A_T] = 0 (transversality 
 require numerical solution due to borrowing constraints + income uncertainty.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -365,7 +366,7 @@ caller, so constructing or recalibrating one block never leaks into another
 caller (or another test) holding “the same” model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a></span></p>
@@ -379,10 +380,10 @@ caller (or another test) holding “the same” model.</p>
 <dd><p>Get benchmark calibration by model ID</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -395,10 +396,10 @@ caller (or another test) holding “the same” model.</p>
 (e.g., U-3 buffer stock model requires numerical solution).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -412,19 +413,19 @@ analytical decision function; a few (for example <code class="docutils literal n
 model) are registered without one because a borrowing constraint combined
 with income uncertainty leaves them with no closed form. This predicate lets
 callers branch on that distinction without catching the
-<a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> that <a class="reference internal" href="#skagent.models.benchmarks.get_analytical_policy" title="skagent.models.benchmarks.get_analytical_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_analytical_policy()</span></code></a> raises.</p>
+<a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> that <a class="reference internal" href="#skagent.models.benchmarks.get_analytical_policy" title="skagent.models.benchmarks.get_analytical_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_analytical_policy()</span></code></a> raises.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Registry key, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;D-1&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;U-3&quot;</span></code>.</p>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Registry key, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;D-1&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;U-3&quot;</span></code>.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if a closed-form policy is available, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">model_id</span></code> is not a registered benchmark model.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">model_id</span></code> is not a registered benchmark model.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -439,10 +440,10 @@ value-function iteration) suitable for validating trained policies.</p>
 <p>Raises ValueError if the model has no reference policy registered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -454,12 +455,12 @@ value-function iteration) suitable for validating trained policies.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
-<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -470,10 +471,10 @@ value-function iteration) suitable for validating trained policies.</p>
 <dd><p>Get custom validation function for model (if it has one)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
+<dd class="field-odd"><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -488,13 +489,13 @@ value-function iteration) suitable for validating trained policies.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
-<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
-<li><p><strong>tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>test_points</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+<li><p><strong>tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -506,7 +507,7 @@ value-function iteration) suitable for validating trained policies.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Model identifier (D-1, D-2, D-3, etc.)</p></li>
+<li><p><strong>model_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Model identifier (D-1, D-2, D-3, etc.)</p></li>
 <li><p><strong>*args</strong> – Arguments to pass to the specific analytical function</p></li>
 <li><p><strong>**kwargs</strong> – Arguments to pass to the specific analytical function</p></li>
 </ul>
@@ -515,7 +516,7 @@ value-function iteration) suitable for validating trained policies.</p>
 <dd class="field-even"><p>Analytical lifetime reward value</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -555,20 +556,20 @@ case of D-2.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Arrival states. Must contain <code class="docutils literal notranslate"><span class="pre">&quot;W&quot;</span></code> (wealth) and <code class="docutils literal notranslate"><span class="pre">&quot;t&quot;</span></code> (time
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Arrival states. Must contain <code class="docutils literal notranslate"><span class="pre">&quot;W&quot;</span></code> (wealth) and <code class="docutils literal notranslate"><span class="pre">&quot;t&quot;</span></code> (time
 index, defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code>).</p></li>
-<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Unused; the model is deterministic.</p></li>
-<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> (<span class="math notranslate nohighlight">\(\beta\)</span>) and <code class="docutils literal notranslate"><span class="pre">&quot;T&quot;</span></code> (horizon).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Unused; the model is deterministic.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> (<span class="math notranslate nohighlight">\(\beta\)</span>) and <code class="docutils literal notranslate"><span class="pre">&quot;T&quot;</span></code> (horizon).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code> whose dtype matches the input wealth.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <span class="math notranslate nohighlight">\(\beta \geq 1\)</span>, since the closed form is undefined.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <span class="math notranslate nohighlight">\(\beta \geq 1\)</span>, since the closed form is undefined.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -607,9 +608,9 @@ state.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (arrival assets).</p></li>
-<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Unused.</p></li>
-<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> (<span class="math notranslate nohighlight">\(\beta\)</span>), <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (arrival assets).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Unused.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> (<span class="math notranslate nohighlight">\(\beta\)</span>), <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>
 (<span class="math notranslate nohighlight">\(\sigma\)</span>), and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>.</p></li>
 </ul>
 </dd>
@@ -617,10 +618,10 @@ state.</p>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If return-impatience is violated, or if <span class="math notranslate nohighlight">\(R \leq 1\)</span>.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If return-impatience is violated, or if <span class="math notranslate nohighlight">\(R \leq 1\)</span>.</p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -658,12 +659,12 @@ larger share of wealth each period.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (arrival assets). The <code class="docutils literal notranslate"><span class="pre">&quot;liv&quot;</span></code> alive
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (arrival assets). The <code class="docutils literal notranslate"><span class="pre">&quot;liv&quot;</span></code> alive
 indicator is part of the DBlock simulator dynamics but is not read
 by the analytical policy.</p></li>
-<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;live&quot;</span></code> (Bernoulli survival shock); unused for the
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;live&quot;</span></code> (Bernoulli survival shock); unused for the
 analytical policy itself.</p></li>
-<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>, and
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">&quot;SurvivalProb&quot;</span></code> (<span class="math notranslate nohighlight">\(s\)</span>).</p></li>
 </ul>
 </dd>
@@ -671,10 +672,10 @@ analytical policy itself.</p></li>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If mortality-adjusted return-impatience is violated, or if
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If mortality-adjusted return-impatience is violated, or if
     <span class="math notranslate nohighlight">\(R \leq 1\)</span>.</p>
 </dd>
 </dl>
@@ -718,18 +719,18 @@ is a <em>consequence</em> of this PIH policy, not the policy itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;A&quot;</span></code> (arrival assets) and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code> (current income
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;A&quot;</span></code> (arrival assets) and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code> (current income
 realization).</p></li>
-<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;eta&quot;</span></code> (mean-zero income innovation); unused once
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;eta&quot;</span></code> (mean-zero income innovation); unused once
 <span class="math notranslate nohighlight">\(y_t\)</span> is known.</p></li>
-<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;y_mean&quot;</span></code>.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;y_mean&quot;</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -774,16 +775,16 @@ is the limiting MPC for any unconstrained CRRA agent; log utility (the
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (normalized arrival assets).</p></li>
-<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;psi&quot;</span></code> (permanent income shock, defaults to ones).</p></li>
-<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>.</p></li>
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (normalized arrival assets).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – May contain <code class="docutils literal notranslate"><span class="pre">&quot;psi&quot;</span></code> (permanent income shock, defaults to ones).</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;R&quot;</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_optimal}</span></code> (normalized consumption).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -858,19 +859,19 @@ horizon; the terminal rule is <span class="math notranslate nohighlight">\(c_1 =
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Arrival states. Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (assets carried into period 0).</p></li>
-<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Unused; the model is deterministic.</p></li>
-<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Rfree&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>.</p></li>
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Arrival states. Must contain <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> (assets carried into period 0).</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Unused; the model is deterministic.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Must contain <code class="docutils literal notranslate"><span class="pre">&quot;DiscFac&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;CRRA&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Rfree&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;c&quot;:</span> <span class="pre">c_0}</span></code> whose dtype follows the input assets.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">CRRA</span> <span class="pre">&lt;=</span> <span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">Rfree</span> <span class="pre">&lt;=</span> <span class="pre">0</span></code>, for which the closed form is
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">CRRA</span> <span class="pre">&lt;=</span> <span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">Rfree</span> <span class="pre">&lt;=</span> <span class="pre">0</span></code>, for which the closed form is
     undefined.</p>
 </dd>
 </dl>
@@ -1024,16 +1025,16 @@ and Management, 6(4), 350-363.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Contains <code class="docutils literal notranslate"><span class="pre">'x'</span></code> (current stock)</p></li>
-<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Random shocks (not used in optimal policy)</p></li>
-<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Model parameters (not used after S* is computed)</p></li>
+<li><p><strong>states</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Contains <code class="docutils literal notranslate"><span class="pre">'x'</span></code> (current stock)</p></li>
+<li><p><strong>shocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Random shocks (not used in optimal policy)</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Model parameters (not used after S* is computed)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>u</strong> – Optimal harvest</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1044,13 +1045,13 @@ and Management, 6(4), 350-363.</p>
 <dd><p>Optimal harvest under constant escapement policy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>array_like</em>) – Current stock level(s)</p>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>array_like</em>) – Current stock level(s)</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>u</strong> – Optimal harvest <span class="math notranslate nohighlight">\(u = \max(0, x - S^*)\)</span></p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a> or ndarray</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a> or ndarray</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1070,7 +1071,7 @@ This can be computed analytically from the first-order condition without
 solving the full dynamic programming problem.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – <p>Model parameters including:</p>
+<dd class="field-odd"><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – <p>Model parameters including:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">r</span></code> : float, growth rate</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">p</span></code> : float, price per unit</p></li>
@@ -1153,7 +1154,7 @@ profit), the cartel is unstable because deviating pays the deviator (12 against
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">Q</span></code>, <code class="docutils literal notranslate"><span class="pre">P</span></code> and <code class="docutils literal notranslate"><span class="pre">E[u]</span></code>.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1165,13 +1166,13 @@ profit), the cartel is unstable because deviating pays the deviator (12 against
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many firms. Part of the model in this calibration: it enters the
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many firms. Part of the model in this calibration: it enters the
 effective slope on total quantity.</p></li>
-<li><p><strong>cost</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The common marginal cost.</p></li>
+<li><p><strong>cost</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The common marginal cost.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1189,13 +1190,13 @@ effective slope on total quantity.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many firms. A numerical knob in this calibration.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Support of the cost distribution.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Support of the cost distribution.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many firms. A numerical knob in this calibration.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Support of the cost distribution.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Support of the cost distribution.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1222,7 +1223,7 @@ effective slope on total quantity.</p></li>
 each rule is a constant function, and none reads a firm’s position.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>quantities</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – One quantity per firm, in instance order.</p>
+<dd class="field-odd"><p><strong>quantities</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – One quantity per firm, in instance order.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Callables, one per firm, suitable as a <code class="docutils literal notranslate"><span class="pre">Simulator</span></code> decision rule.</p>
@@ -1447,7 +1448,7 @@ threshold does not depend on the quality range.</p>
 <dd><p>A buyer that always names <em>price</em>, as a decision rule for <code class="docutils literal notranslate"><span class="pre">p</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>price</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p>
+<dd class="field-odd"><p><strong>price</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>)</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule taking no arguments, since the buyer’s information set is empty.</p>
@@ -1465,14 +1466,14 @@ threshold does not depend on the quality range.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the buyer names.</p></li>
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The price the buyer names.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1488,9 +1489,9 @@ either where the unravelling stops at the quality floor, or, above
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1499,7 +1500,7 @@ the identity below <em>high</em> and the two values returned are the ends of a
 continuum of fixed points rather than two isolated ones.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1511,14 +1512,14 @@ continuum of fixed points rather than two isolated ones.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers act on.</p></li>
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The price the sellers act on.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1530,8 +1531,8 @@ continuum of fixed points rather than two isolated ones.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>p0</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The starting price.</p></li>
-<li><p><strong>periods</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – How many rounds.</p></li>
+<li><p><strong>p0</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The starting price.</p></li>
+<li><p><strong>periods</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – How many rounds.</p></li>
 <li><p><strong>mapping</strong> (<em>callable</em><em>, </em><em>optional</em>) – The clearing map. Defaults to <a class="reference internal" href="#skagent.models.lemons.clearing_map" title="skagent.models.lemons.clearing_map"><code class="xref py py-func docutils literal notranslate"><span class="pre">clearing_map()</span></code></a>.</p></li>
 <li><p><strong>**market</strong> – Passed to <em>mapping</em>.</p></li>
 </ul>
@@ -1540,7 +1541,7 @@ continuum of fixed points rather than two isolated ones.</p>
 <dd class="field-even"><p>Length <em>periods</em>, the price after each round.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1561,14 +1562,14 @@ trades, which is the mixed extension rather than an approximation of it.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>theta</strong> (<em>array</em>) – Quality, one per seller.</p></li>
 <li><p><strong>S</strong> (<em>array</em>) – The sell decision, one per seller, as a weight in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – How much more a buyer values an item than the seller holding it.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – How much more a buyer values an item than the seller holding it.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><em>premium</em> times the average quality offered, and 0 when nothing is.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1581,15 +1582,15 @@ trades, which is the mixed extension rather than an approximation of it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many sellers. The clearing price is an average over those who sold,
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many sellers. The clearing price is an average over those who sold,
 so this is the accuracy of the fixed point rather than part of the model.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The ends of the quality range. <code class="docutils literal notranslate"><span class="pre">low</span></code> is the quality floor.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The ends of the quality range. <code class="docutils literal notranslate"><span class="pre">low</span></code> is the quality floor.</p></li>
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – How much more a buyer values an item than the seller holding it.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The ends of the quality range. <code class="docutils literal notranslate"><span class="pre">low</span></code> is the quality floor.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The ends of the quality range. <code class="docutils literal notranslate"><span class="pre">low</span></code> is the quality floor.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – How much more a buyer values an item than the seller holding it.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1601,9 +1602,9 @@ so this is the accuracy of the fixed point rather than part of the model.</p></l
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.lemons_calibration" title="skagent.models.lemons.lemons_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">lemons_calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1612,7 +1613,7 @@ at <em>high</em>. Below it the buyer bids the floor up by a factor of
 <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">(2</span> <span class="pre">-</span> <span class="pre">premium)</span></code>, which with no floor is no trade at all.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1626,16 +1627,16 @@ peach out, whatever the market does.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A share, which may exceed 1 where no share of peaches is enough.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1647,15 +1648,15 @@ peach out, whatever the market does.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many sellers.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The quality of a lemon and of a peach.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The quality of a lemon and of a peach.</p></li>
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – How much more a buyer values an item than the seller holding it.</p></li>
-<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of cars that are peaches.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many sellers.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The quality of a lemon and of a peach.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The quality of a lemon and of a peach.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – How much more a buyer values an item than the seller holding it.</p></li>
+<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of cars that are peaches.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1670,15 +1671,15 @@ at or above a peach’s worth everything is.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers act on.</p></li>
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The price the sellers act on.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1692,17 +1693,17 @@ price at which trade survives and every peach is withheld.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
-<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>premium</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>low</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>high</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
+<li><p><strong>share</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – As in <a class="reference internal" href="#skagent.models.lemons.peaches_calibration" title="skagent.models.lemons.peaches_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">peaches_calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>In increasing order.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1715,7 +1716,7 @@ price at which trade survives and every peach is withheld.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>theta</strong> (<em>array</em>) – Quality, one per seller.</p></li>
-<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers can see.</p></li>
+<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The price the sellers can see.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1735,7 +1736,7 @@ price at which trade survives and every peach is withheld.</p>
 of that market’s clearing map.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>price</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The price the sellers anticipate.</p>
+<dd class="field-odd"><p><strong>price</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The price the sellers anticipate.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule of quality alone.</p>
@@ -1937,19 +1938,19 @@ an economy’s.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many households. The capital stock is an average over them, so this
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many households. The capital stock is an average over them, so this
 is the accuracy of the aggregate rather than part of the model.</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
-<li><p><strong>crra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Relative risk aversion in the household’s utility, with 1 meaning log
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>crra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Relative risk aversion in the household’s utility, with 1 meaning log
 utility. It does not enter the aggregate under a fixed savings rate.</p></li>
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Dispersion of the labour endowment, which has mean one whatever this is.</p></li>
-<li><p><strong>beta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The household’s discount factor. It does not enter the aggregate under a
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Dispersion of the labour endowment, which has mean one whatever this is.</p></li>
+<li><p><strong>beta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The household’s discount factor. It does not enter the aggregate under a
 fixed savings rate.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1963,17 +1964,17 @@ fixed savings rate.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>capital</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Capital per head this period.</p></li>
-<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The savings rate the households follow.</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
-<li><p><strong>endowment</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The households’ average labour endowment this period. It is one in
+<li><p><strong>capital</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Capital per head this period.</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The savings rate the households follow.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>endowment</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The households’ average labour endowment this period. It is one in
 expectation, the default; a finite class draws an average only close
 to one, and passing the realized average makes the map exact.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1990,13 +1991,13 @@ monotonically, even from capital low enough that the slope there exceeds 1.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The savings rate the households follow.</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The savings rate the households follow.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2012,13 +2013,13 @@ implies than by eye.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>interest</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The net interest rate the economy should settle at.</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>interest</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The net interest rate the economy should settle at.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2029,7 +2030,7 @@ implies than by eye.</p>
 <dd><p>Consume all but <em>rate</em> of what is on hand, as a decision rule for <code class="docutils literal notranslate"><span class="pre">c</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The fraction saved, in <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1)</span></code>.</p>
+<dd class="field-odd"><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The fraction saved, in <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1)</span></code>.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule of cash on hand alone.</p>
@@ -2047,13 +2048,13 @@ implies than by eye.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The savings rate the households follow.</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The savings rate the households follow.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2065,16 +2066,16 @@ implies than by eye.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The savings rate the households follow.</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The savings rate the households follow.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">R</span></code> and <code class="docutils literal notranslate"><span class="pre">W</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2227,7 +2228,7 @@ statistic being estimated, which is what the mechanism’s noise is calibrated t
 <dd><p><a class="reference internal" href="#skagent.models.privacy.estimate" title="skagent.models.privacy.estimate"><code class="xref py py-func docutils literal notranslate"><span class="pre">estimate()</span></code></a> against a fixed prior mean, as a decision rule for <code class="docutils literal notranslate"><span class="pre">f</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mean of the analyst’s prior over the population mean.</p>
+<dd class="field-odd"><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The mean of the analyst’s prior over the population mean.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule of <code class="docutils literal notranslate"><span class="pre">(c,</span> <span class="pre">d)</span></code>, the class’s decisions and reports.</p>
@@ -2251,12 +2252,12 @@ statistic being estimated, which is what the mechanism’s noise is calibrated t
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2269,7 +2270,7 @@ statistic being estimated, which is what the mechanism’s noise is calibrated t
 <a class="reference internal" href="#skagent.models.privacy.designer_objective" title="skagent.models.privacy.designer_objective"><code class="xref py py-func docutils literal notranslate"><span class="pre">designer_objective()</span></code></a> is written against.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale.</p>
+<dd class="field-odd"><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The mechanism’s noise scale.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A rule of <code class="docutils literal notranslate"><span class="pre">(b,</span> <span class="pre">p)</span></code>, returning 1.0 where the subject shares.</p>
@@ -2290,12 +2291,12 @@ makes the designer’s objective have an interior maximum.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2307,23 +2308,23 @@ makes the designer’s objective have an interior maximum.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale, and the designer’s decision. Must be
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The mechanism’s noise scale, and the designer’s decision. Must be
 positive: the base utility divides by it.</p></li>
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – How many data subjects.</p></li>
-<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – What a subject gains by sharing.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The spread of privacy concern.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The width of individual variation, which bounds the sensitivity of the
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many data subjects.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – What a subject gains by sharing.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The spread of privacy concern.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The width of individual variation, which bounds the sensitivity of the
 statistic and so what the mechanism’s noise is calibrated to.</p></li>
-<li><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The analyst’s prior over the population mean. <code class="docutils literal notranslate"><span class="pre">a_sd</span></code> is what an
+<li><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The analyst’s prior over the population mean. <code class="docutils literal notranslate"><span class="pre">a_sd</span></code> is what an
 estimate falls back on when nobody shares, so it is part of the accuracy
 the designer weighs and not only a simulation detail.</p></li>
-<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The analyst’s prior over the population mean. <code class="docutils literal notranslate"><span class="pre">a_sd</span></code> is what an
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The analyst’s prior over the population mean. <code class="docutils literal notranslate"><span class="pre">a_sd</span></code> is what an
 estimate falls back on when nobody shares, so it is part of the accuracy
 the designer weighs and not only a simulation detail.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2350,19 +2351,19 @@ different designs optimal at the same privacy guarantee.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">E[-g]</span></code>, so smaller is better.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2381,15 +2382,15 @@ designed is a trade between the parties, so the trade has to be stated.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -2421,11 +2422,11 @@ a branch.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>c</strong> (<em>array</em>) – The sharing decision, one per subject, as a weight in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p></li>
 <li><p><strong>d</strong> (<em>array</em>) – The report, one per subject, already weighted by the decision.</p></li>
-<li><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mean of the analyst’s prior over the population mean.</p></li>
+<li><p><strong>a_mean</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The mean of the analyst’s prior over the population mean.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2440,13 +2441,13 @@ are those who most dislike privacy loss, and the utility credits them
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2473,19 +2474,19 @@ in, which is the trade the designer is making.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>a_sd</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">E[-g]</span></code>, so smaller is better.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2501,16 +2502,16 @@ sensitivity of a mean whose entries vary by at most <em>delta</em> is <em>delta<
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale.</p></li>
-<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The width of individual variation, which is the sensitivity.</p></li>
-<li><p><strong>dp_delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The mechanism’s failure probability.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The mechanism’s noise scale.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The width of individual variation, which is the sensitivity.</p></li>
+<li><p><strong>dp_delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The mechanism’s failure probability.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Smaller is a stronger guarantee.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2523,13 +2524,13 @@ sensitivity of a mean whose entries vary by at most <em>delta</em> is <em>delta<
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
-<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
+<li><p><strong>sigma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – As in <a class="reference internal" href="#skagent.models.privacy.calibration" title="skagent.models.privacy.calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibration()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)">float</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2543,8 +2544,8 @@ the optimum is at a vertex: share when the bracket is positive.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The mechanism’s noise scale.</p></li>
-<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – What a subject gains by sharing.</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The mechanism’s noise scale.</p></li>
+<li><p><strong>q</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – What a subject gains by sharing.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -2685,7 +2686,7 @@ user’s original opinions rather than from the opinions the posts produced.</p>
 <dd class="field-odd"><p>A mapping from shock symbol to its draws.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2721,8 +2722,8 @@ anything downstream of it.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>block</strong> (<a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><em>DBlock</em></a>) – One of this module’s diagrams.</p></li>
-<li><p><strong>decision</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The control the criteria are read against.</p></li>
-<li><p><strong>criteria</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Which criteria to print, as labels drawn from <code class="docutils literal notranslate"><span class="pre">&quot;VoI&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;RI&quot;</span></code>,
+<li><p><strong>decision</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The control the criteria are read against.</p></li>
+<li><p><strong>criteria</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Which criteria to print, as labels drawn from <code class="docutils literal notranslate"><span class="pre">&quot;VoI&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;RI&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;VoC&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;ICI&quot;</span></code>. Defaults to all four. Narrowing it keeps a
 table to the criteria under discussion, since the four are independent
 and a reader met with all of them has three to ignore.</p></li>
@@ -2736,7 +2737,7 @@ on to query it.</p>
 <dd class="field-odd"><p><a class="reference internal" href="analysis.html#skagent.influence.SCIM" title="skagent.influence.SCIM">SCIM</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If <em>criteria</em> names something that is not one of the four.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If <em>criteria</em> names something that is not one of the four.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2957,7 +2958,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=e0ae935f"></script>
+</div><script src="../_static/documentation_options.js?v=bcc5494c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
