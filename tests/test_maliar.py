@@ -1751,6 +1751,51 @@ class TestMaliarHyperparameters(_Case4LoopTestCase):
         )
 
 
+class TestMaliarStartingNetwork(_Case4LoopTestCase):
+    """A supplied network is the one trained, not replaced."""
+
+    def _loop(self, epochs_per_iteration=5, **kwargs):
+        return maliar.maliar_training_loop(
+            self.bp,
+            self.loss_fn,
+            self.states,
+            self.calibration,
+            max_iterations=1,
+            epochs_per_iteration=epochs_per_iteration,
+            random_seed=TEST_SEED,
+            **kwargs,
+        )
+
+    def test_the_supplied_network_is_trained_and_returned(self):
+        start = BlockPolicyNet(self.bp, width=8)
+        before = [p.detach().clone() for p in start.parameters()]
+
+        trained, _ = self._loop(policy_net=start)
+
+        self.assertIs(trained, start)
+        self.assertTrue(
+            any(
+                not torch.equal(b, p.detach())
+                for b, p in zip(before, start.parameters())
+            )
+        )
+
+    def test_training_starts_from_the_supplied_weights(self):
+        # One epoch moves the weights by about the learning rate, so a run
+        # that began from a fresh network would end far from the supplied one.
+        start = BlockPolicyNet(self.bp, width=8)
+        before = [p.detach().clone() for p in start.parameters()]
+
+        trained, _ = self._loop(policy_net=start, epochs_per_iteration=1)
+
+        for b, p in zip(before, trained.parameters()):
+            self.assertLess((b - p.detach()).abs().max().item(), 0.01)
+
+    def test_a_network_that_is_not_a_policy_net_raises(self):
+        with self.assertRaisesRegex(TypeError, "BlockPolicyNet"):
+            self._loop(policy_net=torch.nn.Linear(2, 1))
+
+
 class TestMaliarDivergence(_Case4LoopTestCase):
     """A non-finite loss must end the loop as a failure, never as convergence."""
 
