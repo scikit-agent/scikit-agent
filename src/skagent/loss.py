@@ -119,6 +119,7 @@ class CustomLoss:
     """
 
     def __init__(self, loss_function, bellman_period, *, agent=None, other_dr=None):
+        bellman_period.require_aggregate()
         self.bellman_period = bellman_period
         self.parameters = bellman_period.calibration
         self.arrival_variables = bellman_period.arrival_states
@@ -196,6 +197,7 @@ class EstimatedDiscountedLifetimeRewardLoss:
     """
 
     def __init__(self, bellman_period, *, big_t, agent=None):
+        bellman_period.require_aggregate()
         self.bellman_period = bellman_period
         self.parameters = bellman_period.calibration
         self.arrival_variables = self.bellman_period.arrival_states
@@ -246,6 +248,22 @@ class _EquationLossBase(ABC):
             raise TypeError(
                 f"bellman_period must be a BellmanPeriod, "
                 f"got {type(bellman_period).__name__}"
+            )
+        bellman_period.require_aggregate()
+        if (
+            bellman_period.aggregated_decisions
+            and bellman_period.aggregate == "through"
+        ):
+            # Summing every instance's effect on the aggregate, unweighted, is
+            # not the first-order condition of any concept; the planner's
+            # weights each effect by that instance's marginal value.
+            raise ValueError(
+                f"{type(self).__name__} cannot use aggregate='through': a "
+                f"residual through the aggregate "
+                f"{sorted(bellman_period.aggregated_decisions)} is no equilibrium "
+                f"condition. Use 'detach' for price-taking or 'own_share' for "
+                f"Nash among the instances; the planner's choice is reached by "
+                f"EstimatedDiscountedLifetimeRewardLoss."
             )
         self.bellman_period = bellman_period
         self.parameters = bellman_period.calibration
