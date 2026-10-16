@@ -32,14 +32,14 @@ class ModelAnalyzer:
       - plates: the entity classes the block tree declares
     """
 
-    def __init__(self, model, calibration, block_agent=None, discount=None):
+    def __init__(self, model, calibration=None, block_agent=None, discount=None):
         """
         Parameters
         ----------
         model : DBlock or RBlock
             The model to analyze
-        calibration : dict
-            Calibration parameters
+        calibration : dict, optional
+            Calibration parameters. Defaults to none.
         block_agent : str, optional
             Agent/plate assignment at the block level
         discount : str, optional
@@ -50,7 +50,7 @@ class ModelAnalyzer:
             choice lives on the period built over it.
         """
         self.model = model
-        self.calibration = calibration
+        self.calibration = {} if calibration is None else calibration
         self.block_agent = block_agent
         self.discount = discount
 
@@ -82,7 +82,10 @@ class ModelAnalyzer:
 
     def _collect_nodes(self):
         """Classify every variable and record its metadata."""
-        from skagent.block import Control  # TODO: move to separate module
+        from skagent.block import (
+            Control,
+            is_synthesized,
+        )  # TODO: move to separate module
 
         signatures = self.model.signatures()
 
@@ -138,6 +141,8 @@ class ModelAnalyzer:
                     "plate": plate_of(var),
                     "observed": observed,
                 }
+                if is_synthesized(rule):
+                    self.node_meta[var]["synthesized"] = True
 
             # Rewards - use the agent assignment from reward dictionary
             for var, agent_name in blk.reward.items():
@@ -303,8 +308,7 @@ class ModelAnalyzer:
         nodes are dropped -- they are deterministic constants, not random
         variables, and leaving them in would open spurious d-connection paths
         (an un-conditioned fork ``A <- p -> B``) that corrupt s-reachability.
-        Lag edges are excluded here (single-period scope); cross-period reliance
-        is handled by the unrolling machinery separately.
+        Lag edges are excluded here, so the graph is of a single period.
 
         Parameters
         ----------

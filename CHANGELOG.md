@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- `maliar_training_loop` takes `policy_net`, a network to train in place of the
+  one it builds, so a rule solved earlier can be the starting point.
 - `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
   so the household problem can be solved as well as simulated.
 - A gallery page for the Aiyagari economy under a fixed savings rule, checking
@@ -33,6 +35,10 @@ and this project adheres to
 
 ### Changed
 
+- `Grid.from_dict` moves its values to the training device by default, as
+  `Grid.from_config` does. Before, a grid built from a dict failed inside the
+  model's own equations on a GPU. Pass `torched=False` for the old behaviour.
+- `ModelAnalyzer`'s `calibration` is optional.
 - `vfi.solve_bellman` warns when the period names no discount variable, since it
   then solves undiscounted.
 
@@ -64,6 +70,13 @@ and this project adheres to
 
 ### Fixed
 
+- Relevance analysis no longer skips a block that declares classes `E` and
+  `E_other` of its own: it refuses it as a block of several classes, where it
+  had reported no reliance between instances. A projection is recognized by the
+  equation it writes, which is marked `synthesized` and reported so in
+  `ModelAnalyzer.node_meta`.
+- `project_nash` names the author's symbol when it collides with a suffixed
+  name, instead of two synthesized blocks.
 - Diagrams rank nodes across plates (`newrank`), so an edge into a plate no
   longer points backwards.
 - A VFI decision rule answers inputs past the range its grid covers instead of

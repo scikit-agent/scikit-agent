@@ -489,6 +489,19 @@ class test_vfi_solve_step(unittest.TestCase):
                 search="bounded",
             )
 
+    def test_the_old_name_of_confine_to_grid_warns_and_still_confines(self):
+        # Confinement refuses case_10's two controls, so reaching that refusal
+        # shows the old name set the flag.
+        with self.assertWarnsRegex(DeprecationWarning, "confine_to_grid"):
+            with self.assertRaisesRegex(NotImplementedError, "single control"):
+                vfi.solve_step(
+                    case_10["bp"],
+                    bp_terminal,
+                    {"a": np.linspace(-2, 2, 3)},
+                    scope=case_10["calibration"],
+                    artificial_borrowing_constraint=True,
+                )
+
     @over_levers(BOUNDED)
     def test_u3_two_prestate_shocks_degenerate_limit(self, **levers):
         # U-3 has *two* shocks feeding the pre-state m = R*a/psi + theta, so both
@@ -834,8 +847,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         # recover the unconstrained closed form c = kappa*(m + H),
         # kappa = (R - (beta*R)^(1/sigma))/R, at interior states.
         #
-        # The artificial_borrowing_constraint flag is required. Without it, from
-        # V0 = 0 the first backup has no saving motive and rides the upper bound
+        # The confine_to_grid flag is required. Without it, from V0 = 0 the first backup has no saving motive and rides the upper bound
         # to c = m + H (a' = -H, the singular "consume all human wealth" point);
         # the self-built continuation is then extrapolated into the V -> -inf
         # wall below the grid and the loop settles on that flat, wrong fixed
@@ -861,7 +873,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             scope=cal,
             tol=1e-2,
             max_iter=2000,
-            artificial_borrowing_constraint=True,
+            confine_to_grid=True,
             **levers,
         )
         self.assertTrue(value_array.attrs["converged"])
@@ -903,7 +915,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             scope=cal,
             tol=1e-2,
             max_iter=2000,
-            artificial_borrowing_constraint=True,
+            confine_to_grid=True,
             **levers,
         )
         self.assertTrue(value_array.attrs["converged"])
@@ -995,8 +1007,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
         # closed form c = (1 - beta)(m + 1/r) at interior states.
         #
         # Like D-2, U-2 borrows against human wealth h = 1/r, so the iteration
-        # rides the control bound without the artificial_borrowing_constraint
-        # flag; with it, next-period assets stay on the grid and the continuation
+        # rides the control bound without the confine_to_grid flag; with it, next-period assets stay on the grid and the continuation
         # is only interpolated. The grid floor is a slack fraction of
         # human wealth: -h/2 sits between the liquidity-depression bias of too
         # high a floor and the deep-borrowing instability of too low one. tol is
@@ -1013,7 +1024,7 @@ class test_vfi_solve_bellman(unittest.TestCase):
             scope=cal,
             tol=1e-2,
             max_iter=2000,
-            artificial_borrowing_constraint=True,
+            confine_to_grid=True,
             **levers,
         )
         self.assertTrue(value_array.attrs["converged"])
@@ -1480,7 +1491,7 @@ class TestARuleOffItsGrid:
                 disc_params={"theta": {"N": 3}},
                 tol=1e-3,
                 max_iter=300,
-                artificial_borrowing_constraint=True,
+                confine_to_grid=True,
             )
         rule = dr["c"]
 

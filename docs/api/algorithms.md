@@ -194,12 +194,25 @@ case.
 ```
 
 ```{eval-rst}
+.. autofunction:: skagent.solver.solve_mean_field
+```
+
+```{eval-rst}
 .. autoclass:: skagent.solver.NeuralBestResponse
    :members:
 ```
 
 ```{eval-rst}
 .. autoclass:: skagent.solver.ExactBestResponse
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.StationaryBestResponse
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.ExactStationaryBestResponse
    :members:
 ```
 

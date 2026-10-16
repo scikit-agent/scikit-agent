@@ -58,6 +58,26 @@ class Aggregate:
         self.dist = dist
 
 
+def is_synthesized(equation):
+    """Whether the library wrote *equation*, rather than the model's author.
+
+    A projection adds an equation of its own where it rejoins an entity class,
+    and marks it with a ``synthesized`` attribute on the callable. Equations the
+    author wrote, including those a projection copies and renames, are not
+    marked. Control declarations and shock declarations have no such attribute.
+
+    Parameters
+    ----------
+    equation : Callable or Control
+        An entry of a block's dynamics.
+
+    Returns
+    -------
+    bool
+    """
+    return bool(getattr(equation, "synthesized", False))
+
+
 def normalize_bound(bound, bound_name="bound"):
     """Normalize a control bound to a callable or ``None``.
 
@@ -748,8 +768,9 @@ class Block:
             The expanded pair, the name each of its symbols reads back as, and
             the class those names contract onto, or ``None`` where the class
             does not have to be expanded: a block whose equations never read out
-            of an entity class has no cross-instance reliance to find, and a
-            class of one instance has no other instance to rely on.
+            of an entity class has no cross-instance reliance to find, a
+            class of one instance has no other instance to rely on, and a block
+            that is already a projection is read as it stands.
 
         Raises
         ------
@@ -768,8 +789,7 @@ class Block:
         from skagent.ground import GroundedBlock
         from skagent.solver import ACTOR_SUFFIX, OTHER_SUFFIX, project_nash
 
-        entities = self.entities()
-        if any(name + OTHER_SUFFIX in entities for name in entities):
+        if any(is_synthesized(eq) for eq in self.get_dynamics().values()):
             # An expansion is already this block: a class beside the rest of
             # itself. The two sides are distinct symbols there, so a reliance
             # between them is an ordinary edge that the criterion reads off the
@@ -777,6 +797,7 @@ class Block:
             # instance's would have nothing to separate.
             return None
 
+        entities = self.entities()
         if len(entities) != 1:
             raise ValueError(
                 f"this block reads out of an entity class, so strategic "

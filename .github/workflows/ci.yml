@@ -75,7 +75,13 @@ jobs:
 
       - name: Graphviz install (Windows)
         if: runner.os == 'Windows'
-        run: choco install graphviz
+        shell: pwsh
+        run: |
+          choco install graphviz -y --no-progress
+          # choco's PATH change does not reach later steps, so add dot's directory.
+          $bin = (Get-ChildItem "C:\Program Files\Graphviz*\bin\dot.exe" | Select-Object -First 1).DirectoryName
+          if (-not $bin) { throw "dot.exe not found after installing graphviz" }
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Cairo install (macOS)
         if: runner.os == 'macOS'

@@ -612,6 +612,23 @@ class TestOneInstanceReliesOnTheOthers:
         assert set(graph.edges()) == {("q_actor", "q_other"), ("q_other", "q_actor")}
         assert not graph.is_acyclic()
 
+    def test_classes_that_only_look_like_an_expansion_are_not_read_as_one(self):
+        # Two classes named ``firm`` and ``firm_other`` by their author are two
+        # classes, and that is a refusal, not an expansion already made.
+        offer = DBlock(name="offer", dynamics={"q": Control(["A"], agent="firm")})
+        others = DBlock(name="rest", dynamics={"r": lambda A: A})
+        authored = RBlock(
+            name="authored",
+            blocks=[
+                RBlock(name="firms", entity=Entity("firm"), blocks=[offer]),
+                RBlock(name="rest", entity=Entity("firm_other"), blocks=[others]),
+                DBlock(name="market", dynamics={"Q": lambda q: q.mean()}),
+            ],
+        )
+
+        with pytest.raises(ValueError, match="expansion takes one class"):
+            authored.relevance_graph({"A": A, "firm": 3, "firm_other": 3})
+
     def test_a_model_with_several_classes_cannot_be_expanded_yet(self):
         two_sided = RBlock(
             name="two_sided",

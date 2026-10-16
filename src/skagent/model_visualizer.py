@@ -167,6 +167,9 @@ class ModelVisualizer:
             graph.set_labelloc("t")
         # layout
         graph.set("rankdir", self.gl["rankdir"])
+        # Rank across clusters, so a plate fed from outside is placed in causal
+        # order rather than ranked on its own.
+        graph.set("newrank", "true")
         graph.set("nodesep", str(self.gl["node_padding"]))
 
         # 2) pre-create nodes (incl. ALL prev-period nodes for lag edges)
