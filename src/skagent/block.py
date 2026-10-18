@@ -1378,9 +1378,66 @@ class DBlock(Block):
         new_name = self.name if name is None else name
         new_description = self.description if description is None else description
 
-        new_shocks = self.shocks | (shocks or {})
-        new_dynamics = self.dynamics | (dynamics or {})
-        new_reward = self.reward | (reward or {})
+        shocks = shocks or {}
+        dynamics = dict(dynamics or {})
+        reward = reward or {}
+        controls = self.get_controls()
+        generated = {
+            control._randomizer
+            for control in controls.values()
+            if control._randomizer is not None
+        }
+        collisions = generated & (set(shocks) | set(dynamics) | set(reward))
+        if collisions:
+            raise ValueError(
+                f"cannot replace generated randomizer shocks {sorted(collisions)}"
+            )
+
+        removed_randomizers = set()
+        for sym, control in controls.items():
+            if sym not in dynamics or control._randomizer is None:
+                continue
+            replacement_control = dynamics[sym]
+            if (
+                isinstance(replacement_control, Control)
+                and replacement_control.randomize
+            ):
+                if replacement_control._randomizer is None:
+                    dynamics[sym] = replacement_control._with_randomizer(
+                        control._randomizer
+                    )
+                elif replacement_control._randomizer != control._randomizer:
+                    raise ValueError(
+                        f"replacement control {sym!r} refers to randomizer "
+                        f"{replacement_control._randomizer!r}, expected "
+                        f"{control._randomizer!r}"
+                    )
+                continue
+            if control._randomizer not in self.shocks:
+                raise ValueError(
+                    f"cannot remove randomizer {control._randomizer!r} while "
+                    "replacing its control because another block declares the shock"
+                )
+            removed_randomizers.add(control._randomizer)
+
+        new_dynamics = self.dynamics | dynamics
+        for randomizer in removed_randomizers:
+            readers = sorted(
+                sym
+                for sym, rule in new_dynamics.items()
+                if randomizer in extract_dependencies(rule)
+            )
+            if readers:
+                raise ValueError(
+                    f"cannot remove randomizer {randomizer!r}; still read by {readers}"
+                )
+
+        new_shocks = {
+            sym: shock
+            for sym, shock in self.shocks.items()
+            if sym not in removed_randomizers
+        } | shocks
+        new_reward = self.reward | reward
 
         replacement = replace(
             self,

@@ -147,6 +147,52 @@ class TestDeclaration:
         with pytest.raises(ValueError, match="both declare 'D_noise'"):
             RBlock(blocks=[randomized, authored])
 
+    @pytest.mark.parametrize("where", ["shock", "dynamic", "reward"])
+    def test_deep_replace_cannot_override_generated_noise(self, where):
+        block = randomized_control_block()
+        updates = {
+            "shock": {"shocks": {"D_noise": Uniform()}},
+            "dynamic": {"dynamics": {"D_noise": lambda: 0}},
+            "reward": {"reward": {"D_noise": "player"}},
+        }
+
+        with pytest.raises(ValueError, match="generated randomizer shocks.*D_noise"):
+            block.deep_replace(**updates[where])
+
+    def test_deep_replace_rebuilds_noise_when_replacing_a_control(self):
+        block = randomized_control_block()
+
+        randomized = block.deep_replace(
+            dynamics={
+                "state": lambda: 0,
+                "D": Control(["state"], action_space={0, 1}, randomize=True),
+            }
+        )
+        deterministic = block.deep_replace(
+            dynamics={"D": Control([], action_space={0, 1})}
+        )
+
+        assert set(randomized.get_shocks()) == {"D_noise"}
+        assert randomized.get_control("D").iset == ["state", "D_noise"]
+        assert "D_noise" not in deterministic.get_shocks()
+
+    def test_deep_replace_rejects_removing_noise_that_another_rule_reads(self):
+        block = randomized_control_block().deep_replace(
+            dynamics={"observed_noise": lambda D_noise: D_noise}
+        )
+
+        with pytest.raises(ValueError, match="D_noise.*still read by.*observed_noise"):
+            block.deep_replace(dynamics={"D": Control([], action_space={0, 1})})
+
+        replaced = block.deep_replace(
+            dynamics={
+                "D": Control([], action_space={0, 1}),
+                "observed_noise": lambda: 0,
+            }
+        )
+        assert "D_noise" not in replaced.get_shocks()
+        assert replaced.transition({}, {"D": lambda: 1})["observed_noise"] == 0
+
 
 class TestSuppliedPolicies:
     def test_binary_frequency_matches_the_policy_threshold(self):
@@ -338,6 +384,45 @@ class TestProjectionAndReconstruction:
             "D_noise_actor",
             "D_noise_other",
         }
+
+    def test_projected_control_replacement_preserves_cross_leaf_noise(self):
+        population = randomized_control_block(entity=Entity("person"))
+        projected = project_nash(GroundedBlock(population, {"person": 3})).block
+        actor_leaf = next(
+            leaf for leaf in projected.iter_dblocks() if "D_actor" in leaf.dynamics
+        )
+
+        replaced_leaf = actor_leaf.deep_replace(
+            dynamics={
+                "D_actor": Control(
+                    [],
+                    agent="player_actor",
+                    action_space={0, 1},
+                    randomize=True,
+                )
+            }
+        )
+        rebuilt = RBlock(
+            name=projected.name,
+            blocks=[
+                replaced_leaf if leaf is actor_leaf else leaf
+                for leaf in projected.blocks
+            ],
+        )
+
+        assert set(rebuilt.get_shocks()) == {
+            "D_noise_actor",
+            "D_noise_other",
+        }
+        assert rebuilt.get_control("D_actor").iset == ["D_noise_actor"]
+        assert "D_actor_noise" not in rebuilt.get_shocks()
+
+        with pytest.raises(ValueError, match="another block declares the shock"):
+            actor_leaf.deep_replace(
+                dynamics={
+                    "D_actor": Control([], agent="player_actor", action_space={0, 1})
+                }
+            )
 
 
 class TestSolverRefusals:
