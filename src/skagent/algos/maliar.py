@@ -362,6 +362,7 @@ def maliar_training_loop(
         lr,
         policy_net,
     )
+    bellman_period.block._require_no_randomized_controls("maliar_training_loop")
 
     if random_seed is not None:
         torch.manual_seed(random_seed)

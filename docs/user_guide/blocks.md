@@ -168,6 +168,25 @@ decision rule returns any other value. The tabular best-response solver searches
 the declared actions directly; controls without an action space continue to use
 its supplied or generated candidate grid.
 
+A discrete control may request private random information:
+
+```python
+offer = ska.Control([], action_space={0, 1}, agent="seller", randomize=True)
+```
+
+The block adds an `offer_noise` shock drawn uniformly from $[0, 1]$ to the
+control's information set. A supplied decision rule observes that draw and
+returns an allowed action directly. For example, this rule returns `1` with
+probability 0.6:
+
+```python
+offer_rule = lambda offer_noise: (offer_noise < 0.6).astype(float)
+```
+
+The shock is seeded and recorded like any other model shock. Solvers do not yet
+support randomized controls and raise `NotImplementedError`; this interface is
+currently for simulation with supplied rules.
+
 #### Constraints
 
 Control variables can be upper and lower bound to values that are themselves

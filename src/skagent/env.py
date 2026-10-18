@@ -249,6 +249,8 @@ class GymEnv(gym.Env):
                 )
             control_sym = controls[0]
 
+        bp.block._require_no_randomized_controls("GymEnv")
+
         self.bp = bp
         self.initial = initial
         self.max_episode_steps = max_episode_steps

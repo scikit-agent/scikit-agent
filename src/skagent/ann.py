@@ -447,6 +447,7 @@ class BlockPolicyNet(BellmanPeriodMixin, Net):
         width=32,
         **kwargs,
     ):
+        bellman_period.block._require_no_randomized_controls("BlockPolicyNet")
         self._init_bellman_period(bellman_period, control_sym)
         self.apply_open_bounds = apply_open_bounds
 

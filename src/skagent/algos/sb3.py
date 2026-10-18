@@ -177,6 +177,7 @@ class PPOAgent:
         device: str = "cpu",
         verbose: int = 0,
     ) -> None:
+        bp.block._require_no_randomized_controls("PPOAgent")
         self.bp = bp
         self.initial = initial
         self.seed = seed
