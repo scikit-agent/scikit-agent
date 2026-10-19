@@ -6,9 +6,10 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Parsing" href="parser.html"><link rel="prev" title="Distributions" href="distributions.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Simulation - scikit-agent 0.2.1.dev46+g41e7858fc</title>
+        <title>Simulation - scikit-agent 0.2.1.dev48+g8ba9d5e4f</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=c83e6b79" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
@@ -168,7 +169,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev46+g41e7858fc</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev48+g8ba9d5e4f</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -326,7 +327,7 @@ blocks (see the mortality example below).</p>
 this must also give how many instances each has, under a key equal to
 the entity’s name – so a block declaring <code class="docutils literal notranslate"><span class="pre">Entity(&quot;firm&quot;)</span></code> needs a
 <code class="docutils literal notranslate"><span class="pre">&quot;firm&quot;</span></code> key here.</p></li>
-<li><p><strong>block</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a>, <a class="reference internal" href="blocks.html#skagent.block.RBlock" title="skagent.block.RBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">RBlock</span></code></a>]</span>) – Has shocks, dynamics, and rewards</p></li>
+<li><p><strong>block</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference internal" href="blocks.html#skagent.block.DBlock" title="skagent.block.DBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">DBlock</span></code></a>, <a class="reference internal" href="blocks.html#skagent.block.RBlock" title="skagent.block.RBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">RBlock</span></code></a>]</span>) – Has shocks, dynamics, and rewards</p></li>
 <li><p><strong>dr</strong> (<em>Mapping</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>Callable</em><em>]</em>) – Decision rules for control variables</p></li>
 <li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Initial state distributions</p></li>
 <li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – A seed for this instance’s random number generator</p></li>
@@ -430,14 +431,14 @@ compatibility. The examples below use the alias because it is what
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>Mapping</strong><strong>[</strong><strong>str</strong> (<a class="reference internal" href="blocks.html#skagent.block.DBlock.shocks" title="skagent.block.DBlock.shocks"><em>shocks</em></a>) – A dictionary-like mapping from shock names to distributions from which to draw</p></li>
 <li><p><strong>Distribution</strong><strong>]</strong> – A dictionary-like mapping from shock names to distributions from which to draw</p></li>
+<li><p><strong>shocks</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="distributions.html#skagent.distributions.Distribution" title="skagent.distributions.Distribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">Distribution</span></code></a>]</span>)</p></li>
 <li><p><strong>conditions</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – An array of conditions, one for each agent.
 Typically these will be agent ages.</p></li>
 <li><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> (</em><em>optional</em><em>)</em>) – Number of draws to do. An alternative to a conditions sequence.</p></li>
-<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Random number generator to draw from. Each shock is pointed at it
+<li><p><strong>rng</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a> | <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span>) – Random number generator to draw from. Each shock is pointed at it
 before the draw, as is every distribution the shock draws through, so
 the draw is reproducible from the generator’s seed. Omitted, each shock
 draws from the generator it already holds.</p></li>
-<li><p><strong>shocks</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="distributions.html#skagent.distributions.Distribution" title="skagent.distributions.Distribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">Distribution</span></code></a>]</span>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -609,7 +610,7 @@ state to a newborn draw whenever the <code class="docutils literal notranslate">
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=170aff0b"></script>
+</div><script src="../_static/documentation_options.js?v=c5b900bc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
