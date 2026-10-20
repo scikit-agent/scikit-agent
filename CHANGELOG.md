@@ -30,6 +30,9 @@ and this project adheres to
   `ExactStationaryBestResponse` solves the projected problem by value-function
   iteration, under the new contract class `StationaryBestResponse`.
 
+- A gallery page under Algorithms that solves the Aiyagari economy's mean-field
+  equilibrium with `solve_mean_field` and shows income risk raising capital.
+
 ### Changed
 
 - `Grid.from_dict` moves its values to the training device by default, as
