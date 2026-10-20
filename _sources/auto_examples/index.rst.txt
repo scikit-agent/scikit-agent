@@ -106,6 +106,23 @@ algorithms, and numerical techniques.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="When an economy is made of many small agents, each one takes the economy&#x27;s aggregates as given. A household in the Aiyagari economy [1]_ does not reckon that its own saving moves the interest rate, since its saving is one part in thousands of the capital stock. Each household solves a problem in which the capital stock, and the prices that follow from it, are numbers handed to it. The economy is in a mean-field equilibrium when the capital those households&#x27; saving adds up to is the capital they were handed.">
+
+.. only:: html
+
+  .. image:: /auto_examples/algorithms/images/thumb/sphx_glr_plot_mean_field_equilibrium_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/algorithms/plot_mean_field_equilibrium`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Mean-Field Equilibrium: Solving for an Economy's Capital</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="D-4 is a deterministic, impatient CRRA consumption-savings problem with a binding borrowing constraint c_t \leq m_t (no borrowing). Unlike the perfect-foresight D-2 model, D-4 has no closed-form solution, because the binding constraint kinks the consumption function, so we validate the learned policy against a numerical value-function-iteration (VFI) reference instead. No model-specific structure is available here for a solver to exploit, which is why this benchmark is a fair test of a general-purpose method.">
 
 .. only:: html
