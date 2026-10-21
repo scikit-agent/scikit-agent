@@ -173,6 +173,7 @@ class TabularBestResponseSolver:
         rng=None,
         max_cells=1024,
     ):
+        ground.block._require_no_randomized_controls("TabularBestResponseSolver")
         if rng is not None:
             ground = ground.with_rng(rng)
         elif ground.rng is None:

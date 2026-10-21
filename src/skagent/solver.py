@@ -51,13 +51,19 @@ def _renamed(fn, mapping):
 
 def _copy_control(control, mapping, agent_suffix):
     """One side's copy of a control: renamed information set, renamed agent."""
-    return Control(
-        [mapping.get(sym, sym) for sym in control.iset],
+    copied = Control(
+        [mapping.get(sym, sym) for sym in control._authored_iset],
         lower_bound=_renamed(control.lower_bound, mapping),
         upper_bound=_renamed(control.upper_bound, mapping),
         agent=None if control.agent is None else control.agent + agent_suffix,
         action_space=control.action_space,
+        randomize=control.randomize,
     )
+    if control._randomizer is not None:
+        copied = copied._with_randomizer(
+            mapping.get(control._randomizer, control._randomizer)
+        )
+    return copied
 
 
 def _joining_equation(actor_sym, other_sym, others_count):
@@ -545,6 +551,7 @@ class NeuralBestResponse:
     """
 
     def __init__(self, ground, panel, epochs=200, width=32):
+        ground.block._require_no_randomized_controls("NeuralBestResponse")
         self.ground = ground
         self.panel = panel
         self.epochs = epochs
@@ -615,6 +622,7 @@ class ExactBestResponse:
     def __init__(
         self, ground, state_grid, scope=None, continuation=None, disc_params=None
     ):
+        ground.block._require_no_randomized_controls("ExactBestResponse")
         self.ground = ground
         self.state_grid = state_grid
         self.scope = ground.calibration if scope is None else scope
@@ -752,6 +760,7 @@ class ExactStationaryBestResponse(StationaryBestResponse):
         confine_to_grid=False,
         continuation=None,
     ):
+        ground.block._require_no_randomized_controls("ExactStationaryBestResponse")
         self.ground = ground
         self.state_grid = state_grid
         self.discount_variable = discount_variable
@@ -956,6 +965,7 @@ def solve_symmetric_equilibrium(
         if damping is requested for an unordered discrete action space.
     """
     block = method.ground.block
+    block._require_no_randomized_controls("solve_symmetric_equilibrium")
     solved = [sym for sym in block.get_controls() if sym.endswith(ACTOR_SUFFIX)]
     if len(solved) != 1:
         raise ValueError(
@@ -1078,6 +1088,8 @@ def solve_mean_field(
             f"takes no account of the future. Use a StationaryBestResponse, "
             f"such as ExactStationaryBestResponse."
         )
+    method.ground.block._require_no_randomized_controls("solve_mean_field")
+    population.block._require_no_randomized_controls("solve_mean_field")
     crossings = population.block.crossings()
     if len(crossings) != 1:
         raise ValueError(
@@ -1194,6 +1206,7 @@ def solve_in_order(method, order, policies=None):
     dict
         A decision rule per control of the block.
     """
+    method.ground.block._require_no_randomized_controls("solve_in_order")
     policies = method.initial_policies() if policies is None else dict(policies)
     for decision in order:
         policies[decision] = method.best_response(decision, policies)
@@ -1258,6 +1271,7 @@ def solve_in_relevance_order(
     if tolerance <= 0:
         raise ValueError(f"tolerance must be > 0, got {tolerance}")
 
+    method.ground.block._require_no_randomized_controls("solve_in_relevance_order")
     ground = method.ground
     policies = method.initial_policies() if policies is None else dict(policies)
     arrival_states = ground.block.get_arrival_states(ground.calibration)

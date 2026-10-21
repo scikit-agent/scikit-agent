@@ -905,6 +905,7 @@ def solve_step(
     DeprecationWarning
         If *artificial_borrowing_constraint* is given.
     """
+    bp.block._require_no_randomized_controls("solve_step")
     confine_to_grid = _resolve_confine_to_grid(
         confine_to_grid, artificial_borrowing_constraint
     )
@@ -1542,6 +1543,7 @@ def solve_bellman(
     DeprecationWarning
         If *artificial_borrowing_constraint* is given.
     """
+    bp.block._require_no_randomized_controls("solve_bellman")
     confine_to_grid = _resolve_confine_to_grid(
         confine_to_grid, artificial_borrowing_constraint
     )
