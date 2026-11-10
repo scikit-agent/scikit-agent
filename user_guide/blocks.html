@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Reading Model Diagrams" href="visualization.html"><link rel="prev" title="Quickstart Guide" href="quickstart.html">
 
     <!-- Generated with Sphinx 9.1.1 and Furo 2025.12.19 -->
-        <title>Block Guide - scikit-agent 0.2.1.dev56+g3b9467f72</title>
+        <title>Block Guide - scikit-agent 0.2.1.dev58+gb14cc4af0</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
@@ -15,7 +15,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=83e65f8c" />
     
@@ -169,7 +169,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev56+g3b9467f72</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev58+gb14cc4af0</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -451,6 +451,31 @@ must return one of them:</p>
 decision rule returns any other value. The tabular best-response solver searches
 the declared actions directly; controls without an action space continue to use
 its supplied or generated candidate grid.</p>
+</section>
+<section id="randomized-controls">
+<h4>Randomized controls<a class="headerlink" href="#randomized-controls" title="Link to this heading">¶</a></h4>
+<p>A control may request private random information:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">block</span> <span class="o">=</span> <span class="n">ska</span><span class="o">.</span><span class="n">DBlock</span><span class="p">(</span>
+    <span class="n">dynamics</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"offer"</span><span class="p">:</span> <span class="n">ska</span><span class="o">.</span><span class="n">Control</span><span class="p">([],</span> <span class="n">action_space</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">},</span> <span class="n">agent</span><span class="o">=</span><span class="s2">"seller"</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The action space is optional. Without one, the control remains continuous. The
+block uses the <code class="docutils literal notranslate"><span class="pre">&quot;offer&quot;</span></code> key to name an <code class="docutils literal notranslate"><span class="pre">offer_noise</span></code> shock drawn uniformly from
+<span class="math notranslate nohighlight">\([0, 1]\)</span> and adds it to the control’s information set. A supplied decision rule
+observes that draw and returns the control’s value directly. For example, this
+discrete rule returns <code class="docutils literal notranslate"><span class="pre">1</span></code> with probability 0.6:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">offer_rule</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">offer_noise</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">offer_noise</span> <span class="o">&lt;</span> <span class="mf">0.6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The shock is seeded and recorded like any other model shock. Solvers do not yet
+receive special handling for randomized controls: they see the generated shock
+as part of the control’s ordinary information set. Individual solvers may still
+have limitations on the resulting model, and randomization does not add action
+space support to a solver that lacks it. For example, the tabular solver cannot
+group undiscretized continuous noise into repeating information cells.</p>
 </section>
 <section id="constraints">
 <h4>Constraints<a class="headerlink" href="#constraints" title="Link to this heading">¶</a></h4>
@@ -881,6 +906,7 @@ instead.</p>
 </li>
 <li><a class="reference internal" href="#control-variables">Control Variables</a><ul>
 <li><a class="reference internal" href="#discrete-actions">Discrete actions</a></li>
+<li><a class="reference internal" href="#randomized-controls">Randomized controls</a></li>
 <li><a class="reference internal" href="#constraints">Constraints</a></li>
 <li><a class="reference internal" href="#calibration">Calibration</a></li>
 <li><a class="reference internal" href="#string-based-dynamics">String-Based Dynamics</a></li>
@@ -922,14 +948,14 @@ instead.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=34dad8ac"></script>
+</div><script src="../_static/documentation_options.js?v=64aaac07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script>window.MathJax = {"tex": {"packages": {"[+]": ["amsmath", "amssymb"]}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
