@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- Controls may declare `randomize=True`. They receive a private, seeded uniform
+  shock that decision rules can use when choosing actions.
 - `maliar_training_loop` takes `policy_net`, a network to train in place of the
   one it builds, so a rule solved earlier can be the starting point.
 - `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,

@@ -51,13 +51,21 @@ def _renamed(fn, mapping):
 
 def _copy_control(control, mapping, agent_suffix):
     """One side's copy of a control: renamed information set, renamed agent."""
-    return Control(
-        [mapping.get(sym, sym) for sym in control.iset],
+    copied = Control(
+        [mapping.get(sym, sym) for sym in control._authored_iset],
         lower_bound=_renamed(control.lower_bound, mapping),
         upper_bound=_renamed(control.upper_bound, mapping),
         agent=None if control.agent is None else control.agent + agent_suffix,
         action_space=control.action_space,
+        randomize=control.randomize,
     )
+    if control.randomize and control._randomizer is not None:
+        copied = copied._with_randomizer(
+            mapping.get(control._randomizer, control._randomizer)
+        )
+    elif control._randomizer is not None:
+        copied._randomizer = mapping.get(control._randomizer, control._randomizer)
+    return copied
 
 
 def _joining_equation(actor_sym, other_sym, others_count):

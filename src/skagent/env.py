@@ -28,6 +28,7 @@ from gymnasium import spaces
 from skagent.bellman import BellmanPeriod
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import draw_shocks
+from skagent.utils import param_names
 
 
 def _to_tensor_dict(d: dict[str, Any]) -> dict[str, torch.Tensor]:
@@ -254,6 +255,10 @@ class GymEnv(gym.Env):
         self.max_episode_steps = max_episode_steps
         self.control_sym = control_sym
         self.control = bp.block.get_control(control_sym)
+        if self.control.action_space is not None:
+            raise NotImplementedError(
+                "GymEnv does not support controls with a discrete action_space"
+            )
         self.iset: list[str] = list(self.control.iset)
         self.reward_syms = bp.get_reward_syms()
         self.default_lower = float(default_lower)
@@ -427,17 +432,13 @@ class GymEnv(gym.Env):
         return self._bounds_at({sym: iset_values[i] for i, sym in enumerate(self.iset)})
 
     def _bounds_at(self, pre: dict) -> tuple[float, float]:
-        iset_vals = [pre[s] for s in self.iset]
-        lo = (
-            _to_scalar(self.control.lower_bound(*iset_vals))
-            if self.control.lower_bound is not None
-            else self.default_lower
-        )
-        hi = (
-            _to_scalar(self.control.upper_bound(*iset_vals))
-            if self.control.upper_bound is not None
-            else self.default_upper
-        )
+        def evaluate(bound, default):
+            if bound is None:
+                return default
+            return _to_scalar(bound(*[pre[sym] for sym in param_names(bound)]))
+
+        lo = evaluate(self.control.lower_bound, self.default_lower)
+        hi = evaluate(self.control.upper_bound, self.default_upper)
         # lo == hi is a valid single-point feasible set (the natural borrowing
         # limit collapses the choice to one action); only a truly inverted
         # bound (hi < lo) is an error.
