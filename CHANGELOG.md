@@ -10,6 +10,11 @@ and this project adheres to
 
 ### Added
 
+- `skagent.smm` estimates calibration parameters by the simulated method of
+  moments: `fit_smm` matches moments of simulated data to those of observed
+  data, with fixed draws across parameter values, identity, diagonal or two-step
+  weighting, and standard errors. It warns when the moments cannot tell
+  parameters apart.
 - `maliar_training_loop` takes `policy_net`, a network to train in place of the
   one it builds, so a rule solved earlier can be the starting point.
 - `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
