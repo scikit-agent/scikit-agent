@@ -327,7 +327,7 @@ plt.show()
 # remaining customers change. But observing these decisions alone doesn't
 # tell us whether the bartender intends to preserve its budget.
 #
-# To address this and similar problems, 
+# To address this and similar problems,
 # Ward et al. [1]_ propose a behavioral definition of intention that infers
 # intent from responses to interventions without knowing an agent's
 # subjective causal model.
@@ -344,7 +344,7 @@ plt.show()
 #    :math:`\mathbf e\in\bigcap_{O\in\mathbf O}\mathbf w_O`, satisfying
 #    :math:`\Gamma(\mathcal M)\ne\Gamma(\mathcal M_{\mathbf Y_\pi\mid\mathbf W})`.
 #
-# Ward et al. continue on to [1]_ connect this behavioral definition to 
+# Ward et al. continue on to [1]_ connect this behavioral definition to
 # subjective intention:
 #
 #    **Theorem 14 (Equivalence of subjective and behavioural intent).** Given a
@@ -357,9 +357,9 @@ plt.show()
 #    subjectively intends to cause :math:`\mathbf O(\pi,\mathbf e)` (definition 6)
 #    with :math:`\pi=\Gamma(\mathcal M)`.
 #
-# 
-# However, the authors argue that "it is reasonable to 
-# ascribe intent to GPT-4 using our behavioural definition." 
+#
+# However, the authors argue that "it is reasonable to
+# ascribe intent to GPT-4 using our behavioural definition."
 # We'll investigate this difficulty
 # using our PPO bartender in place of an LLM. Both learn policies through
 # training, but the bartender operates in a causal model we can inspect.
@@ -367,10 +367,10 @@ plt.show()
 # What can an observer see?
 # -------------------------
 #
-# The above guarantee depends on the outcome produced by the original policy. 
-# However, an outside observer may not know that outcome. 
+# The above guarantee depends on the outcome produced by the original policy.
+# However, an outside observer may not know that outcome.
 # In the case of an LLM, the observer sees its inputs and outputs without knowing
-# the causal process behind its responses. Accordingly, we give two observers 
+# the causal process behind its responses. Accordingly, we give two observers
 # different levels of access to the bartender's decisions.
 #
 # - **Partial observer:** Sees the current reading and the previous customer's
