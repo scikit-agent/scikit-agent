@@ -18,7 +18,7 @@ from skagent.relevance import Plate, RelevanceGraph, shock_roles
 from skagent.model_visualizer import ModelVisualizer
 from skagent.parser import math_text_to_lambda
 from skagent.rule import extract_dependencies
-from typing import Any, Callable, Mapping, List, Union
+from typing import Any, Callable, Iterable, Mapping, List, Union
 from skagent.rule import Rule, format_rule
 from skagent.utils import param_names, takes_arguments
 
@@ -639,7 +639,13 @@ class Block:
 
         return simulate_dynamics(dyn, pre, dr)
 
-    def calc_reward(self, vals, agent=None):
+    def calc_reward(
+        self,
+        vals: Mapping[str, Any],
+        agent: str | None = None,
+        *,  # Make bypassing reward formulas an explicit choice at the call site.
+        fixed: str | Iterable[str] = (),
+    ) -> dict[str, Any]:
         """
         Computes the reward for a given set of variable values
 
@@ -653,15 +659,27 @@ class Block:
             agent. Their sum is that agent's payoff. Defaults to all reward
             variables in the block.
 
+        fixed : str or iterable of str, optional
+            Reward variables whose values in ``vals`` must be kept.
+            :func:`skagent.intention.contextual_payoff` relies on this to keep
+            guaranteed rewards without recalculating them.
+
         Returns
         -------
         dict
             Mapping from reward variable to value.
         """
         rvals = {}
+        fixed = {fixed} if isinstance(fixed, str) else set(fixed)
 
         for sym in self.reward:
             if agent is not None and self.reward[sym] != agent:
+                continue
+
+            # Intention guarantees put the original reward in vals. Recomputing it
+            # under the alternative action would undo the guarantee or raise.
+            if sym in fixed:
+                rvals[sym] = vals[sym]
                 continue
 
             update_fn = self.get_dynamics()[sym]

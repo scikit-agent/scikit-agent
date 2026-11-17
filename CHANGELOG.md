@@ -10,8 +10,13 @@ and this project adheres to
 
 ### Added
 
+- `skagent.intention` finds minimal settings or outcome sets that close a policy
+  payoff gap under contextual guarantees.
 - Controls may declare `randomize=True`. They receive a private, seeded uniform
   shock that decision rules can use when choosing actions.
+- Three gallery examples of Ward et al.'s intention test including an
+  introduction, a worked policy intervention for content recommendation, and a
+  PPO follow-up that stress-tests application of the framework.
 - `maliar_training_loop` takes `policy_net`, a network to train in place of the
   one it builds, so a rule solved earlier can be the starting point.
 - `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
