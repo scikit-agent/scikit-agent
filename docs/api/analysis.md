@@ -86,3 +86,15 @@ means some parameterization has it, not that yours does.
 .. automodule:: skagent.relevance
    :members:
 ```
+
+## Contextual Intention
+
+Compare policies by guaranteeing outcomes in selected settings. Search settings
+for fixed outcomes or outcome combinations for supplied settings. The gallery's
+{doc}`content recommendation case study <../auto_examples/models/plot_agentic_intention_2>`
+shows a recommender example.
+
+```{eval-rst}
+.. automodule:: skagent.intention
+   :members:
+```

@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- `skagent.intention` finds minimal settings or outcome sets that close a policy
+  payoff gap under contextual guarantees.
 - Controls may declare `randomize=True`. They receive a private, seeded uniform
   shock that decision rules can use when choosing actions.
 - Three gallery examples of Ward et al.'s intention test including an
