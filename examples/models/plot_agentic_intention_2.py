@@ -48,12 +48,13 @@ References
 # structural functions. The ``shocks`` distributions give equal probability to each
 # preference and assign sleep a probability of :math:`0.25` .
 
-from itertools import combinations, product
+from itertools import product
 
 import matplotlib.pyplot as plt
 from skagent.block import Control, DBlock
 from skagent.distributions import Bernoulli
-from skagent.ground import Discretized, GroundedBlock
+from skagent.ground import GroundedBlock
+from skagent.intention import compare_references, contextual_payoff
 from skagent.utils import plot_block_diagram
 
 # sphinx_gallery_thumbnail_number = 1
@@ -112,19 +113,13 @@ plot_block_diagram(recommender, "Content recommender", figsize=(8, 3))
 # in those settings, while leaving its recommendations unchanged. Outside those
 # settings, the usual watching rule applies.
 #
-# Without a guarantee, :meth:`~skagent.ground.GroundedBlock.expected_payoff`
-# computes the policy’s expected reward. To apply a contextual guarantee,
-# the helper below uses :meth:`~skagent.block.Block.transition` with
-# ``fix=["Watching"]`` in the selected settings. It then averages payoffs
-# across settings using :meth:`~skagent.ground.Discretized.reduce`.
+# :func:`~skagent.intention.contextual_payoff` applies the original policy's
+# watching outcome only in selected settings and averages the alternative
+# policy's reward. :func:`~skagent.intention.compare_references` searches for
+# the minimal sets of settings that close the payoff gap.
 
 policy_codes = list(product(range(3), repeat=2))
 settings = tuple(product(range(2), repeat=2))  # (preference, asleep)
-
-# Four settings give 16 possible sets of contextual guarantees
-subsets = [
-    frozenset(choice) for size in range(5) for choice in combinations(settings, size)
-]
 
 original_codes = (2, 2)
 asleep_settings = frozenset((preference, 1) for preference in range(2))
@@ -135,36 +130,15 @@ def policy(codes):
     return lambda Preference: codes[int(Preference)]
 
 
-def expected_reward(ground, codes, guaranteed=frozenset()):
-    """Average payoff, fixing Watching in the selected settings"""
-    decision = policy(codes)
-    if not guaranteed:
-        return float(
-            ground.expected_payoff(
-                {"Recommendation": decision}, Discretized(), agent="recommender"
-            )
-        )
+def setting_of(shocks):
+    """Identify a setting by the user's preference and sleep state"""
+    return int(shocks["Preference"]), int(shocks["Sleep"])
 
-    def at_setting(shocks):
-        """Apply the watching guarantee in one preference-and-sleep setting"""
-        setting = (int(shocks["Preference"]), int(shocks["Sleep"]))
-        fixed = setting in guaranteed
-        pre = dict(shocks)
-        if fixed:
-            # The original policy's watching outcome is what the alternative is
-            # guaranteed
-            pre["Watching"] = ground.block.transition(
-                shocks, {"Recommendation": policy(original_codes)}
-            )["Watching"]
 
-        # Fix Watching only in selected settings; elsewhere use the alternative's usual
-        # mechanism
-        outcome = ground.block.transition(
-            pre, {"Recommendation": decision}, fix=["Watching"] if fixed else []
-        )
-        return ground.block.payoff(outcome, agent="recommender")
-
-    return float(Discretized().reduce(ground, at_setting))
+reference_policies = {
+    codes: {"Recommendation": policy(codes)} for codes in policy_codes
+}
+original_policy = reference_policies[original_codes]
 
 
 # %%
@@ -225,56 +199,31 @@ def expected_reward(ground, codes, guaranteed=frozenset()):
 # its parameter values; this model requires no additional parameters.
 
 
-def compare_references(ground, sleep_probability):
-    """Find each policy's payoff and minimal guarantees that tie the original"""
-    baseline = expected_reward(ground, original_codes)
-    assert abs(baseline - 1) < 1e-10
-    comparison = {}
-    for codes in policy_codes:
-        payoffs = {subset: expected_reward(ground, codes, subset) for subset in subsets}
-        sufficient = [
-            subset for subset in subsets if payoffs[subset] >= baseline - 1e-10
-        ]
-
-        # Minimality removes settings that did not help close the payoff gap
-        minimal = [
-            subset
-            for subset in sufficient
-            if not any(other < subset for other in sufficient)
-        ]
-
-        # An awake miss neither matches the preference nor shows addictive content
-        missed_awake = frozenset(
-            (preference, 0)
-            for preference in range(2)
-            if codes[preference] not in (preference, 2)
-        )
-        assert minimal == [frozenset() if sleep_probability == 1 else missed_awake]
-
-        # Watching already continues during sleep, so asleep guarantees add nothing
-        assert all(
-            abs(value - payoffs[subset - asleep_settings]) < 1e-10
-            for subset, value in payoffs.items()
-        )
-        comparison[codes] = (payoffs[frozenset()], minimal[0])
-    return comparison
-
-
 names = ("comedy", "drama", "addictive")
 ground = GroundedBlock(recommender, {})
-nominal = compare_references(ground, 0.25)
+nominal = compare_references(
+    ground,
+    original_policy,
+    reference_policies,
+    "Watching",
+    settings,
+    setting_of,
+    agent="recommender",
+)
+assert abs(float(nominal[original_codes][0]) - 1) < 1e-10
 references = [codes for codes in policy_codes if codes != original_codes]
 
 print("Original policy (addictive / addictive): expected reward 1.000")
 print("Policy (if comedy / if drama)           Reward   Gap   Minimal guarantee")
 for codes in references:
-    reward, needed = nominal[codes]
+    reward, minimal = nominal[codes]
+    needed = minimal[0]
     label = f"{names[codes[0]]} / {names[codes[1]]}"
     guarantee = (
         ", ".join(f"{names[preference]} awake" for preference, _ in sorted(needed))
         or "No guarantee needed—already ties"
     )
-    print(f"{label:<39} {reward:>5.3f}  {1 - reward:>5.3f}  {guarantee}")
+    print(f"{label:<39} {float(reward):>5.3f}  {1 - float(reward):>5.3f}  {guarantee}")
 
 # %%
 # Policies that produce no watching in one awake setting require a guarantee there; the
@@ -299,9 +248,34 @@ for sleep_probability in sleep_probabilities:
     model = recommender.deep_replace(
         shocks={"Sleep": (Bernoulli, {"p": sleep_probability})}
     )
+    sweep_ground = GroundedBlock(model, {})
     results[sleep_probability] = compare_references(
-        GroundedBlock(model, {}), sleep_probability
+        sweep_ground,
+        original_policy,
+        reference_policies,
+        "Watching",
+        settings,
+        setting_of,
+        agent="recommender",
     )
+    for codes, (reward, minimal) in results[sleep_probability].items():
+        # Awake misses need guarantees; watching during sleep is unaffected.
+        missed_awake = frozenset(
+            (preference, 0)
+            for preference in range(2)
+            if codes[preference] not in (preference, 2)
+        )
+        assert minimal == (frozenset() if sleep_probability == 1 else missed_awake,)
+        asleep_reward = contextual_payoff(
+            sweep_ground,
+            original_policy,
+            reference_policies[codes],
+            "Watching",
+            asleep_settings,
+            setting_of,
+            agent="recommender",
+        )
+        assert abs(float(asleep_reward) - float(reward)) < 1e-10
 
 fig, ax = plt.subplots(figsize=(8, 4))
 
@@ -309,7 +283,7 @@ fig, ax = plt.subplots(figsize=(8, 4))
 for misses, codes in ((0, (0, 1)), (1, (0, 0)), (2, (1, 0))):
     ax.plot(
         sleep_probabilities,
-        [1 - results[p][codes][0] for p in sleep_probabilities],
+        [1 - float(results[p][codes][0]) for p in sleep_probabilities],
         marker="o",
         markersize=3,
         label=f"{misses} awake misses",
