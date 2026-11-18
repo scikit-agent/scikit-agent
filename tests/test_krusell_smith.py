@@ -16,7 +16,7 @@ RATE = savings_rate_for(0.04)
 def history():
     """Four economies of 300 households over 60 periods."""
     sim = Simulator(
-        ks.krusell_smith_calibration(size=300),
+        ks.paper_calibration(size=300),
         ks.krusell_smith_block,
         {"c": ks.savings_rule(RATE)},
         {"a": 5.0, "y": 0.0, "Z": 0.0},
@@ -72,7 +72,7 @@ class TestTheShocks:
 
 class TestTheStructure:
     def test_the_arrival_states_and_the_crossings(self):
-        calibration = ks.krusell_smith_calibration()
+        calibration = ks.paper_calibration()
         assert set(ks.krusell_smith_block.get_arrival_states(calibration)) == {
             "a",
             "y",

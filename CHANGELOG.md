@@ -10,9 +10,10 @@ and this project adheres to
 
 ### Added
 
-- `skagent.models.krusell_smith`, the Krusell-Smith economy in Maliar, Maliar
-  and Winant's formulation, as productivity, income, market and household
-  blocks, with the closed-form capital map under a fixed savings rate.
+- `skagent.models.krusell_smith`, the first-moment variant of the Krusell-Smith
+  economy in Maliar, Maliar and Winant's formulation, as productivity, income,
+  market and household blocks, with calibrations from their paper and their
+  notebook and the closed-form capital map under a fixed savings rate.
 
 ## [0.2.0] - 2026-09-30
 

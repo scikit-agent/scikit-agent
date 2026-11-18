@@ -78,7 +78,13 @@ households arrived with, and then each household decides. So :math:`a`,
 :math:`y` and :math:`Z` are the arrival states, and every random draw that
 bears on this period's decision is made in this period. The household decides
 on its own cash on hand and productivity, on aggregate productivity, and on
-capital per head, the mean of the distribution standing in for the whole of it.
+capital per head.
+
+Capital per head is the first moment of the distribution of wealth, and the
+household reads no other summary of it. This is Krusell and Smith's approximate
+aggregation and [MMW2021]_'s reduced state space (their section 5.8). It is not
+their baseline (section 5.2), in which the decision reads every household's
+productivity and cash on hand.
 
 The model is built from four blocks. :data:`productivity_block` and
 :data:`income_block` draw the period's innovations, :data:`market_block`
@@ -114,6 +120,9 @@ References
 .. [MMW2021] Maliar, L., Maliar, S. and Winant, P. (2021). "Deep learning for
        solving dynamic economic models." *Journal of Monetary Economics*, 122,
        76-101. https://doi.org/10.1016/j.jmoneco.2021.07.004
+.. [MMWCode] Maliar, L., Maliar, S. and Winant, P. Reference notebook for the
+       Krusell-Smith model in [MMW2021]_.
+       https://github.com/marcmaliar/deep-learning-euler-method-krusell-smith
 """
 
 import numpy as np
@@ -190,7 +199,7 @@ krusell_smith_block = RBlock(
 """The whole economy: the four blocks in the period's order."""
 
 
-def krusell_smith_calibration(
+def paper_calibration(
     size=1000,
     alpha=CAPITAL_SHARE,
     delta=DEPRECIATION,
@@ -199,13 +208,13 @@ def krusell_smith_calibration(
     rho_z=0.95,
     sigma_z=0.01,
     rho_y=0.9,
-    sigma_y=0.2 * np.sqrt(1 - 0.9**2),
+    sigma_y=None,
 ):
-    """An economy of *size* households.
+    """An economy of *size* households, calibrated as in [MMW2021]_'s text.
 
-    The defaults are the values stated in [MMW2021]_'s text where it states
-    them, and those of their reference code for ``alpha`` and ``delta``, which
-    the text does not state.
+    The defaults are the values stated in their section 5.1. The text does not
+    state ``alpha`` or ``delta``, so those are their reference notebook's
+    [MMWCode]_.
 
     Parameters
     ----------
@@ -227,13 +236,16 @@ def krusell_smith_calibration(
     rho_y : float, optional
         The persistence of log labour productivity.
     sigma_y : float, optional
-        The standard deviation of its innovation. The endowment averages one
-        over the households whatever this is.
+        The standard deviation of its innovation. The default is
+        ``0.2 * sqrt(1 - rho_y**2)``, which holds the ergodic standard
+        deviation of log labour productivity at 0.2 whatever ``rho_y`` is.
 
     Returns
     -------
     dict
     """
+    if sigma_y is None:
+        sigma_y = 0.2 * np.sqrt(1 - rho_y**2)
     return {
         "household": size,
         "alpha": alpha,
@@ -245,6 +257,59 @@ def krusell_smith_calibration(
         "rho_y": rho_y,
         "sigma_y": sigma_y,
     }
+
+
+def notebook_calibration(
+    size=1000,
+    alpha=CAPITAL_SHARE,
+    delta=DEPRECIATION,
+    crra=1.0,
+    beta=0.96,
+    rho_z=0.9,
+    sigma_z=0.01,
+    rho_y=0.95,
+    sigma_y=0.2,
+):
+    """An economy of *size* households, calibrated as in [MMW2021]_'s notebook.
+
+    The defaults are the values in their reference notebook [MMWCode]_. They
+    differ from :func:`paper_calibration`'s in the two persistences and in
+    ``sigma_y``, which puts the ergodic standard deviation of log labour
+    productivity near 0.64 where the text's puts it at 0.2.
+
+    Only the values are the notebook's. The notebook also clips both
+    productivities at two ergodic standard deviations, and this model's
+    processes are not clipped.
+
+    Parameters
+    ----------
+    size : int, optional
+        How many households. Capital per head is an average over them.
+    alpha : float, optional
+        Capital's share of output.
+    delta : float, optional
+        The fraction of the capital stock that wears out each period.
+    crra : float, optional
+        Relative risk aversion in the household's utility, with 1 meaning log
+        utility.
+    beta : float, optional
+        The household's discount factor.
+    rho_z : float, optional
+        The persistence of log aggregate productivity.
+    sigma_z : float, optional
+        The standard deviation of its innovation.
+    rho_y : float, optional
+        The persistence of log labour productivity.
+    sigma_y : float, optional
+        The standard deviation of its innovation.
+
+    Returns
+    -------
+    dict
+    """
+    return paper_calibration(
+        size, alpha, delta, crra, beta, rho_z, sigma_z, rho_y, sigma_y
+    )
 
 
 def savings_rule(rate):
