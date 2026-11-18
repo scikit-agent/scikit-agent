@@ -24,12 +24,12 @@ Encoding conventions (a deliberate departure from the source presentations):
   noise a first-class graph node, matching scikit-agent's shock/dynamics
   vocabulary. Because the noise nodes are single-child exogenous roots, they
   cannot lie on any d-connecting path and so do not change the relevance graph.
-- Binary decisions are relaxed to continuous ``[0, 1]`` controls, pending
-  discrete-action support. For Prisoner's Dilemma, ``0`` means cooperate and
-  ``1`` means defect; intermediate values use the multilinear extension of the
-  standard payoff matrix and can be interpreted as defection probabilities.
-  The iterated model's utilities are per-round payoffs; accumulation or
-  discounting across rounds belongs to the simulator or solver using the block.
+- The relaxed Prisoner's Dilemma uses continuous ``[0, 1]`` controls. ``0``
+  means cooperate and ``1`` means defect; intermediate values use the
+  multilinear extension of the standard payoff matrix. Its discrete variant
+  limits both controls to ``{0, 1}``. The iterated model's utilities are
+  per-round payoffs; accumulation or discounting across rounds belongs to the
+  simulator or solver using the block.
 """
 
 from skagent.block import Control, DBlock
@@ -148,6 +148,23 @@ prisoners_dilemma_block = DBlock(
                 upper_bound=lambda: 1.0,
                 agent="player_2",
             ),
+            "U1": _player_1_utility,
+            "U2": _player_2_utility,
+        },
+        "reward": {
+            "U1": "player_1",
+            "U2": "player_2",
+        },
+    }
+)
+
+
+discrete_prisoners_dilemma_block = DBlock(
+    **{
+        "name": "discrete_prisoners_dilemma",
+        "dynamics": {
+            "D1": Control([], agent="player_1", action_space={0, 1}),
+            "D2": Control([], agent="player_2", action_space={0, 1}),
             "U1": _player_1_utility,
             "U2": _player_2_utility,
         },

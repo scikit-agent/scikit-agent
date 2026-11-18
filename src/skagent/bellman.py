@@ -34,7 +34,7 @@ control symbol; ``vf`` by agent name).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
 
 import numpy as np
 import torch
@@ -104,6 +104,18 @@ class BellmanPeriod(GroundedBlock):
         super().__init__(block, calibration, rng=rng)
         self.discount_variable = discount_variable
         self.arrival_states = self.block.get_arrival_states(calibration)
+
+    def with_calibration(self, values: Mapping[str, Any]) -> BellmanPeriod:
+        """A copy of this period with *values* merged over its calibration.
+
+        As :meth:`skagent.ground.GroundedBlock.with_calibration`, with the
+        arrival states recomputed: a symbol the block reads and does not define
+        is an arrival state until the calibration gives it a value, and a
+        constant of the problem after.
+        """
+        other = super().with_calibration(values)
+        other.arrival_states = other.block.get_arrival_states(other.calibration)
+        return other
 
     def _resolve_inputs(
         self,

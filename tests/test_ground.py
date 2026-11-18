@@ -259,6 +259,55 @@ class TestRepointingTheGenerator:
         assert copied.arrival_states == period.arrival_states
 
 
+class TestRecalibrating:
+    """``with_calibration`` gives the same model with some of its values given.
+
+    The copy merges the new values over the calibration rather than replacing
+    it, resolves its shocks against the result, and keeps whatever depends on
+    the calibration consistent with it.
+    """
+
+    def test_the_given_values_replace_and_the_rest_are_kept(self):
+        ground = GroundedBlock(recipe_block(), dict(RECIPE_CALIBRATION))
+
+        copied = ground.with_calibration({"sigma_theta": 0.4})
+
+        assert copied.calibration == {**RECIPE_CALIBRATION, "sigma_theta": 0.4}
+        assert ground.calibration == RECIPE_CALIBRATION
+
+    def test_the_copy_draws_under_its_own_calibration(self):
+        ground = GroundedBlock(recipe_block(), dict(RECIPE_CALIBRATION), rng=rng(0))
+        # Resolved before the copy is taken, so the copy cannot be reading a
+        # resolution the original has not made yet.
+        ground.shock_distributions()
+
+        copied = ground.with_calibration({"sigma_theta": 0.4})
+
+        assert drawn_sigma(copied.shock_distributions()) == pytest.approx(0.4, abs=0.01)
+        assert drawn_sigma(ground.shock_distributions()) == pytest.approx(0.1, abs=0.01)
+
+    def test_a_period_recomputes_its_arrival_states(self):
+        # A symbol the block reads and does not define is an arrival state until
+        # the calibration gives it a value, and a constant of the problem after.
+        block = DBlock(
+            name="rate",
+            dynamics={
+                "m": lambda a, r: a * r,
+                "c": Control(["m"], agent="consumer"),
+                "u": lambda c: c,
+                "a": lambda m, c: m - c,
+            },
+            reward={"u": "consumer"},
+        )
+        period = BellmanPeriod(block, "beta", {"beta": 0.9})
+
+        copied = period.with_calibration({"r": 1.03})
+
+        assert period.arrival_states == {"a", "r"}
+        assert isinstance(copied, BellmanPeriod)
+        assert copied.arrival_states == {"a"}
+
+
 def linear_block():
     """A payoff linear in one normal shock, so its expectation is closed-form.
 

@@ -225,6 +225,15 @@ class TestDistributions(unittest.TestCase):
         assert len(samples) == 1000
         assert all(s > 0 for s in samples)
 
+    def test_lognormal_discretize_moments(self):
+        """Test that Lognormal discretization reproduces the mean and std"""
+        for dist in [MeanOneLogNormal(0.3), MeanOneLogNormal(1.0), Lognormal(2, 0.5)]:
+            disc = dist.discretize(N=7)
+            mean = disc.weights @ disc.points
+            std = np.sqrt(disc.weights @ (disc.points - mean) ** 2)
+            assert np.isclose(mean, dist.mean, rtol=1e-3)
+            assert np.isclose(std, dist.std, rtol=1e-3)
+
     def test_discretization(self):
         """Test distribution discretization with alternative parameter style"""
         n = Normal(0, 1, backend="scipy")

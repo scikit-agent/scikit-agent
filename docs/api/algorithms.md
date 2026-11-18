@@ -182,11 +182,19 @@ case.
 ```
 
 ```{eval-rst}
-.. autofunction:: skagent.solver.project
+.. autofunction:: skagent.solver.project_nash
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.project_mean_field
 ```
 
 ```{eval-rst}
 .. autofunction:: skagent.solver.solve_symmetric_equilibrium
+```
+
+```{eval-rst}
+.. autofunction:: skagent.solver.solve_mean_field
 ```
 
 ```{eval-rst}
@@ -196,6 +204,15 @@ case.
 
 ```{eval-rst}
 .. autoclass:: skagent.solver.ExactBestResponse
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.StationaryBestResponse
+```
+
+```{eval-rst}
+.. autoclass:: skagent.solver.ExactStationaryBestResponse
    :members:
 ```
 

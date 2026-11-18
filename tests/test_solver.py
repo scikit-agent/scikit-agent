@@ -6,19 +6,28 @@ import torch
 
 import skagent.bellman as bellman
 import skagent.block as block
+import skagent.algos.vfi as vfi
 import skagent.grid as grid
 import skagent.ground as ground
+import skagent.models.aiyagari as aiyagari
+import skagent.models.benchmarks as benchmarks
 import skagent.models.cournot as cournot
 import skagent.models.macid as macid
 import skagent.models.privacy as privacy
+import skagent.solver as skagent_solver
+from skagent.model_analyzer import ModelAnalyzer
 from skagent.solver import (
     _blocks_by_class,
     _joining_equation,
     ExactBestResponse,
+    ExactStationaryBestResponse,
     NeuralBestResponse,
-    project,
+    StationaryBestResponse,
+    project_mean_field,
+    project_nash,
     solve_in_order,
     solve_in_relevance_order,
+    solve_mean_field,
     solve_symmetric_equilibrium,
 )
 
@@ -189,7 +198,7 @@ class TestTheProjectionIsDerivedFromTheModel:
     """Nothing about Cournot is written into the transform."""
 
     def test_it_splits_the_class_and_joins_it_back(self):
-        projected = project(cournot_ground()).block
+        projected = project_nash(cournot_ground()).block
         # Each per-instance equation copied per side, one synthesized join, and
         # the aggregating equations left as the author wrote them. Both sides
         # run before what rejoins them, and the payoffs after it.
@@ -208,13 +217,27 @@ class TestTheProjectionIsDerivedFromTheModel:
         assert projected.reward == {"u_actor": "firm_actor", "u_other": "firm_other"}
         assert projected.deciding_agent("q_actor") == "firm_actor"
 
+    def test_it_preserves_a_controls_action_space(self):
+        population = block.DBlock(
+            dynamics={
+                "d": block.Control([], agent="player", action_space={0, 2}),
+                "u": lambda d: d,
+            },
+            reward={"u": "player"},
+            entity=block.Entity("player"),
+        )
+        projected = project_nash(ground.GroundedBlock(population, {"player": 2})).block
+
+        assert projected.get_control("d_actor").action_space == frozenset({0.0, 2.0})
+        assert projected.get_control("d_other").action_space == frozenset({0.0, 2.0})
+
     def test_the_others_stay_a_population_and_the_solved_instance_does_not(self):
         # The rest of the class is still several, so it keeps a class of its
         # own, sized one short of the original. The solved instance is ONE
         # instance rather than a population of one, so its symbols carry no
         # class, and that asymmetry is what the two sides are for. A rejoined
         # symbol is the whole class again, at the size the author gave it.
-        projected = project(cournot_ground(size=3))
+        projected = project_nash(cournot_ground(size=3))
 
         assert sorted(projected.block.entities()) == ["firm", "firm_other"]
         assert projected.calibration["firm_other"] == 2
@@ -232,7 +255,7 @@ class TestTheProjectionIsDerivedFromTheModel:
         # same class, or the model it hands a solver is one with no aggregation
         # in it at all.
         population = cournot_ground(size=3)
-        projected = project(population)
+        projected = project_nash(population)
 
         assert population.block.crossings()["Q"][0][:2] == ("q", frozenset({"firm"}))
         assert projected.block.crossings()["Q"][0][:2] == ("q", frozenset({"firm"}))
@@ -251,7 +274,7 @@ class TestTheProjectionIsDerivedFromTheModel:
     def test_the_projected_payoffs_are_the_published_ones(self, own, rivals, payoff):
         # cournot.PROFILES is hand-derived and supplied, so it is an oracle for
         # the projection rather than a restatement of it.
-        projected = project(cournot_ground()).block
+        projected = project_nash(cournot_ground()).block
         values = projected.transition(
             {**cournot.collusion_calibration(), "c_actor": COST, "c_other": COST},
             {"q_actor": lambda c_actor: own, "q_other": lambda c_other: rivals},
@@ -272,7 +295,7 @@ class TestTheAggregateIsPerSampleNotPerPanel:
         # sample axis as well, and reducing it too would return one aggregate
         # for the whole panel -- right whenever every sample happens to agree,
         # and wrong otherwise. So the panel here is deliberately not degenerate.
-        projected = project(cournot_ground(size=3)).block
+        projected = project_nash(cournot_ground(size=3)).block
         quantities = torch.tensor([5.0, 1.0, 9.0])
         rivals = torch.tensor([3.0, 3.0, 3.0])
         values = projected.transition(
@@ -292,7 +315,7 @@ class TestADecisionOverTheWholeClassSurvivesTheProjection:
     """A projection splits the class; a decision that reads all of it does not."""
 
     def test_it_is_copied_against_the_rejoined_symbols(self):
-        projected = project(
+        projected = project_nash(
             ground.GroundedBlock(privacy.local_block, privacy.calibration(1.0, size=5))
         ).block
         controls = projected.get_controls()
@@ -311,16 +334,321 @@ class TestADecisionOverTheWholeClassSurvivesTheProjection:
 class TestTheProjectionRefusesWhatItCannotSplit:
     def test_a_block_with_no_entity_raises(self):
         with pytest.raises(ValueError, match="exactly one entity class"):
-            project(ground.GroundedBlock(macid.prisoners_dilemma_block, {}))
+            project_nash(ground.GroundedBlock(macid.prisoners_dilemma_block, {}))
 
     def test_a_calibration_that_does_not_size_the_class_raises(self):
         with pytest.raises(ValueError, match="no size for entity class"):
-            project(ground.GroundedBlock(cournot.cournot_block, {"A": 10.0, "b": 1.0}))
+            project_nash(
+                ground.GroundedBlock(cournot.cournot_block, {"A": 10.0, "b": 1.0})
+            )
 
     def test_a_population_of_one_raises(self):
         # A monopolist has no others to be projected away from.
         with pytest.raises(ValueError, match="there are no others"):
-            project(cournot_ground(size=1))
+            project_nash(cournot_ground(size=1))
+
+    def test_a_symbol_outside_the_class_cannot_take_a_suffixed_name(self):
+        # The author's class-level ``q_actor`` would be the name the projection
+        # gives the solved instance's ``q``, and the error names it.
+        market = block.DBlock(
+            name="market",
+            dynamics={
+                "Q": lambda q: q.mean(),
+                "q_actor": lambda Q: Q,
+                "P": lambda A, b, Q: A - b * Q,
+            },
+        )
+        population = block.RBlock(
+            name="cournot",
+            blocks=[
+                block.RBlock(
+                    name="firms",
+                    entity=block.Entity("firm"),
+                    blocks=[cournot.offer_block],
+                ),
+                market,
+                block.RBlock(
+                    name="payoffs",
+                    entity=block.Entity("firm"),
+                    blocks=[cournot.payoff_block],
+                ),
+            ],
+        )
+
+        with pytest.raises(ValueError, match=r"declares \['q_actor'\]"):
+            project_nash(
+                ground.GroundedBlock(population, cournot.collusion_calibration())
+            )
+
+
+class TestTheProjectionMarksWhatItWrote:
+    def test_only_the_rejoining_equation_is_synthesized(self):
+        # The author's equations are copied and renamed, and a copy is still
+        # the author's.
+        projected = project_nash(cournot_ground()).block
+
+        assert [
+            sym
+            for sym, eq in projected.get_dynamics().items()
+            if block.is_synthesized(eq)
+        ] == ["q"]
+
+    def test_the_analyzer_reports_it_only_where_it_is_true(self):
+        projected = project_nash(cournot_ground())
+        meta = ModelAnalyzer(projected.block, projected.calibration).analyze().node_meta
+
+        assert meta["q"]["synthesized"] is True
+        assert [sym for sym, m in meta.items() if "synthesized" in m] == ["q"]
+
+
+def test_the_old_name_warns_and_projects_as_the_new_one():
+    with pytest.warns(DeprecationWarning, match="project_nash"):
+        old = skagent_solver.project(cournot_ground())
+    new = project_nash(cournot_ground())
+    assert list(old.block.get_dynamics()) == list(new.block.get_dynamics())
+    assert old.calibration == new.calibration
+
+
+class TestTheMeanFieldProjection:
+    """The price-taker's problem: the aggregate is read, not computed."""
+
+    CAPITAL = 5.5
+
+    def economy(self):
+        return {**aiyagari.aiyagari_calibration(sigma=0.3), "DiscFac": 0.96}
+
+    def test_it_is_the_household_problem_at_the_aggregates_prices(self):
+        # Dropping the crossing and giving K a value is the hand construction:
+        # the household block alone, with the prices K sets written into its
+        # calibration. The two periods must compute the same things.
+        alpha, delta = aiyagari.CAPITAL_SHARE, aiyagari.DEPRECIATION
+        prices = {
+            "R": alpha * self.CAPITAL ** (alpha - 1) - delta,
+            "W": (1 - alpha) * self.CAPITAL**alpha,
+        }
+        projected = project_mean_field(
+            ground.GroundedBlock(aiyagari.aiyagari_block, self.economy())
+        )
+        derived = bellman.BellmanPeriod(
+            projected.block, "DiscFac", {**projected.calibration, "K": self.CAPITAL}
+        )
+        by_hand = bellman.BellmanPeriod(
+            aiyagari.household_block, "DiscFac", {**self.economy(), **prices}
+        )
+
+        assert derived.arrival_states == by_hand.arrival_states == {"a"}
+        for a, theta, c in [(0.0, 0.5, 0.3), (2.0, 1.0, 1.1), (9.0, 1.7, 2.4)]:
+            got = derived.post_function({"a": a}, {"c": c}, shocks={"theta": theta})
+            want = by_hand.post_function({"a": a}, {"c": c}, shocks={"theta": theta})
+            for sym in ("z", "u", "a"):
+                assert got[sym] == pytest.approx(want[sym])
+
+    def test_a_block_with_no_entity_raises(self):
+        with pytest.raises(ValueError, match="exactly one entity class"):
+            project_mean_field(
+                ground.GroundedBlock(aiyagari.household_block, self.economy())
+            )
+
+    def test_a_class_nothing_reads_out_of_raises(self):
+        # The households alone, without the market: a population, but no
+        # aggregate for an instance to take as given.
+        households = block.RBlock(
+            name="households",
+            entity=block.Entity("household"),
+            blocks=[aiyagari.household_block],
+        )
+        with pytest.raises(ValueError, match="reads nothing out of"):
+            project_mean_field(ground.GroundedBlock(households, self.economy()))
+
+    def test_a_reduction_that_is_a_decision_raises(self):
+        # The privacy game's analyst decides over the whole class of reports,
+        # which is a choice and not an aggregate a subject takes as given.
+        with pytest.raises(ValueError, match="in a decision"):
+            project_mean_field(
+                ground.GroundedBlock(
+                    privacy.local_block, privacy.calibration(1.0, size=10)
+                )
+            )
+
+
+class SavingAtAFixedRate(StationaryBestResponse):
+    """A stationary method that answers every problem with one savings rule.
+
+    The rule ignores prices, so the economy settles at the capital the rule's
+    own dynamics reach whatever the candidate, and the price loop's root is
+    :func:`skagent.models.aiyagari.stationary_capital` with no solve to wait on.
+    """
+
+    def __init__(self, ground, rate):
+        self.ground = ground
+        self.rate = rate
+
+    def best_response(self, decision, policies):
+        return aiyagari.savings_rule(self.rate)
+
+    def with_ground(self, ground):
+        return SavingAtAFixedRate(ground, self.rate)
+
+
+class TestThePriceLoop:
+    """The schedule root-finds the aggregate against the full model's simulation."""
+
+    RATE = aiyagari.savings_rate_for(0.04)
+
+    def population(self, sigma=0.3):
+        return ground.GroundedBlock(
+            aiyagari.aiyagari_block,
+            {**aiyagari.aiyagari_calibration(sigma=sigma), "DiscFac": 0.96},
+        )
+
+    def solve(self, population, method=None):
+        target = aiyagari.stationary_capital(self.RATE)
+        method = method or SavingAtAFixedRate(project_mean_field(population), self.RATE)
+        return solve_mean_field(
+            method, population, bracket=(0.5 * target, 2 * target), tol=1e-4
+        )
+
+    def test_it_finds_the_capital_the_rule_settles_at(self):
+        # A finite class adds noise to the simulated aggregate, which is all
+        # that separates the root from the closed form.
+        _rule, info = self.solve(self.population())
+        assert info["converged"]
+        assert info["aggregate"] == pytest.approx(
+            aiyagari.stationary_capital(self.RATE), rel=1e-2
+        )
+
+    def test_a_round_is_a_deterministic_function_of_the_candidate(self):
+        # Every round simulates from the same seed, so two runs ask Brent's
+        # method the same questions and get the same answers.
+        _, first = self.solve(self.population())
+        _, second = self.solve(self.population())
+        assert first["rounds"] == second["rounds"]
+
+    def test_a_one_period_method_is_refused(self):
+        # A one-period best response consumes everything, and reporting the
+        # economy it leads to as the stationary equilibrium would be wrong.
+        population = self.population()
+        method = ExactBestResponse(
+            project_mean_field(population), {"a": np.linspace(0, 10, 5)}
+        )
+        with pytest.raises(TypeError, match="solves one period"):
+            self.solve(population, method)
+
+    def test_a_bracket_without_a_sign_change_is_refused(self):
+        population = self.population()
+        target = aiyagari.stationary_capital(self.RATE)
+        with pytest.raises(ValueError, match="does not change sign"):
+            solve_mean_field(
+                SavingAtAFixedRate(project_mean_field(population), self.RATE),
+                population,
+                bracket=(1.5 * target, 2 * target),
+            )
+
+
+AIYAGARI_BETA = 0.96
+AIYAGARI_K_RA = (
+    aiyagari.CAPITAL_SHARE / (1 / AIYAGARI_BETA - 1 + aiyagari.DEPRECIATION)
+) ** (1 / (1 - aiyagari.CAPITAL_SHARE))
+
+
+def aiyagari_equilibrium(sigma, warm_start=True):
+    """Aiyagari's price-taking equilibrium, solved by VFI on a coarse grid."""
+    population = ground.GroundedBlock(
+        aiyagari.aiyagari_block,
+        {
+            **aiyagari.aiyagari_calibration(size=1000, sigma=sigma),
+            "DiscFac": AIYAGARI_BETA,
+        },
+    )
+    method = ExactStationaryBestResponse(
+        project_mean_field(population),
+        {"a": 60 * np.linspace(0, 1, 30) ** 2},
+        "DiscFac",
+        disc_params={"theta": {"N": 5}},
+        confine_to_grid=True,
+    )
+    return solve_mean_field(
+        method,
+        population,
+        bracket=(AIYAGARI_K_RA, 1.1 * AIYAGARI_K_RA),
+        tol=1e-3,
+        warm_start=warm_start,
+    )
+
+
+@pytest.fixture(scope="module")
+def aiyagari_with_risk():
+    return aiyagari_equilibrium(0.3)
+
+
+@pytest.mark.oracle
+class TestAiyagarisEquilibrium:
+    """The anchors of the representative agent's capital, ``K_RA``, at which
+    the interest rate equals the discount rate."""
+
+    def test_with_little_income_risk_it_is_the_representative_agents(self):
+        _rule, info = aiyagari_equilibrium(0.1)
+        assert info["converged"]
+        assert info["aggregate"] == pytest.approx(AIYAGARI_K_RA, rel=2e-3)
+
+    def test_income_risk_raises_it_above_the_representative_agents(
+        self, aiyagari_with_risk
+    ):
+        # Precautionary saving: about 2% at sigma = 0.3, ten times the band of
+        # the test above.
+        _rule, info = aiyagari_with_risk
+        assert info["converged"]
+        assert info["aggregate"] > 1.01 * AIYAGARI_K_RA
+
+    def test_a_warm_start_reaches_the_cold_starts_capital(self, aiyagari_with_risk):
+        # Each round starting from the last round's value is an approximation
+        # of where to start, so it may change the rounds but not the answer
+        # beyond the loop's tolerance.
+        _rule, warm = aiyagari_with_risk
+        _rule, cold = aiyagari_equilibrium(0.3, warm_start=False)
+        assert warm["aggregate"] == pytest.approx(cold["aggregate"], abs=1e-3)
+
+
+class TestTheStationaryBestResponse:
+    def test_under_solve_in_order_it_is_solve_bellman(self):
+        # The method is solve_bellman behind the schedules' protocol, so a
+        # schedule driving it on a recurring benchmark gets the same rule.
+        cal = benchmarks.d4_calibration
+        grid = {"a": np.linspace(0.0, 7.5, 9)}
+        method = ExactStationaryBestResponse(
+            ground.GroundedBlock(benchmarks.d4_block, cal), grid, "DiscFac", tol=1e-3
+        )
+        direct, _, _ = vfi.solve_bellman(
+            bellman.BellmanPeriod(benchmarks.d4_block, "DiscFac", cal),
+            grid,
+            scope=cal,
+            tol=1e-3,
+            max_iter=500,
+            search="bounded",
+            policy_evaluations=20,
+        )
+
+        # D-4's bound reads the state, which a starting constant cannot, and
+        # the one decision is the whole profile, so the profile starts empty.
+        rules = solve_in_order(method, ["c"], policies={})
+
+        cash = np.array([a * cal["R"] + cal["y"] for a in (0.25, 1.0, 3.0, 6.0)])
+        assert rules["c"](cash) == pytest.approx(direct["c"](cash))
+        assert method.value.attrs["converged"]
+
+    def test_an_undiscounted_dynamic_problem_warns(self):
+        # Without a discount factor the problem may have no fixed point for
+        # the iteration to reach, so solving it silently would hide that.
+        cal = benchmarks.d4_calibration
+        method = ExactStationaryBestResponse(
+            ground.GroundedBlock(benchmarks.d4_block, cal),
+            {"a": np.linspace(0.0, 7.5, 3)},
+            None,
+            max_iter=2,
+        )
+        with pytest.warns(UserWarning, match="undiscounted"):
+            with pytest.raises(RuntimeError):
+                method.best_response("c", {})
 
 
 def neural_method(projected, epochs=300):
@@ -358,7 +686,7 @@ class TestEitherMethodReachesCournotNash:
     )
     @pytest.mark.parametrize("size", [2, 3, 4])
     def test_it_converges_to_the_analytic_nash_quantity(self, build, size):
-        projected = project(cournot_ground(size))
+        projected = project_nash(cournot_ground(size))
         rule, info = solve_symmetric_equilibrium(
             build(projected), damping=2.0 / (size + 1), max_iterations=12
         )
@@ -375,7 +703,7 @@ class TestEitherMethodReachesCournotNash:
         # iteration diverges. The residual is on the RULE, so this comes back as
         # a refusal to claim convergence rather than as whatever the last
         # iterate happened to be.
-        projected = project(cournot_ground(4))
+        projected = project_nash(cournot_ground(4))
         _, info = solve_symmetric_equilibrium(
             build(projected), damping=1.0, max_iterations=8
         )
@@ -432,7 +760,7 @@ class TestARivalsPrivateDrawIsIntegratedRatherThanPinned:
         # also in the partner rule's information set, so the schedule's residual
         # is measured over it -- which is what makes leaving it out possible.
         low, high, size = 2.0, 6.0, 3
-        projected = project(
+        projected = project_nash(
             ground.GroundedBlock(
                 cournot.cournot_block,
                 cournot.heterogeneous_calibration(size=size, low=low, high=high),
@@ -455,7 +783,7 @@ class TestARivalsPrivateDrawIsIntegratedRatherThanPinned:
             assert found == pytest.approx(analytic(cost), abs=1e-3)
 
     def test_a_symbol_that_is_nowhere_says_where_it_could_be(self):
-        projected = project(cournot_ground())
+        projected = project_nash(cournot_ground())
         method = ExactBestResponse(projected, {"c_actor": np.array([COST])})
 
         with pytest.raises(ValueError, match="Grid it, pin it, or declare it"):

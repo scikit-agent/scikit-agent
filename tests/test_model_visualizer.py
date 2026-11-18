@@ -139,6 +139,11 @@ class TestModelVisualizerCore(unittest.TestCase):
             "Model",
         )
 
+    def test_the_graph_ranks_across_clusters(self):
+        """So that a plate fed from outside is not drawn out of causal order."""
+        graph = ModelVisualizer(self.analysis_dict).create_graph()
+        self.assertEqual(graph.get("newrank"), "true")
+
     def test_lag_variable_styling(self):
         """
         Lag variables (ending with *) should apply previous_period style.

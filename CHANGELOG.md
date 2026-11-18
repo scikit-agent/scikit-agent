@@ -14,6 +14,89 @@ and this project adheres to
   economy in Maliar, Maliar and Winant's formulation, as productivity, income,
   market and household blocks, with calibrations from their paper and their
   notebook and the closed-form capital map under a fixed savings rate.
+- Controls may declare `randomize=True`. They receive a private, seeded uniform
+  shock that decision rules can use when choosing actions.
+- `maliar_training_loop` takes `policy_net`, a network to train in place of the
+  one it builds, so a rule solved earlier can be the starting point.
+- `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
+  so the household problem can be solved as well as simulated.
+- A gallery page for the Aiyagari economy under a fixed savings rule, checking
+  the simulated capital stock against its closed-form law of motion.
+- `vfi.solve_step` and `vfi.solve_bellman` take `search="bounded"`: one bounded
+  scalar search per gridpoint in place of the multi-start optimizer, several
+  times faster. It applies to a single control with both bounds declared, and
+  raises otherwise.
+
+- `vfi.solve_bellman` takes `policy_evaluations=k`: after each backup, the
+  Bellman operator is applied k times at the backup's policy (modified policy
+  iteration), so the loop needs far fewer backups. For infinite horizons.
+
+- `skagent.solver.solve_mean_field` finds a stationary mean-field equilibrium by
+  root-finding the aggregate against a simulation of the full model.
+  `ExactStationaryBestResponse` solves the projected problem by value-function
+  iteration, under the new contract class `StationaryBestResponse`.
+
+- A gallery page under Algorithms that solves the Aiyagari economy's mean-field
+  equilibrium with `solve_mean_field` and shows income risk raising capital.
+
+### Changed
+
+- `Grid.from_dict` moves its values to the training device by default, as
+  `Grid.from_config` does. Before, a grid built from a dict failed inside the
+  model's own equations on a GPU. Pass `torched=False` for the old behaviour.
+- `ModelAnalyzer`'s `calibration` is optional.
+- `vfi.solve_bellman` warns when the period names no discount variable, since it
+  then solves undiscounted.
+
+- `vfi.value_array_to_function` interpolates a one-axis continuation with numpy
+  rather than `RegularGridInterpolator`: the same values, at a fraction of the
+  cost per call.
+
+### Added
+
+- `GroundedBlock.with_calibration(values)` returns a copy with _values_ merged
+  over the calibration; a `BellmanPeriod`'s copy recomputes its arrival states.
+
+- `skagent.solver.project_mean_field` gives one instance's problem under
+  price-taking: each equation reducing over the entity class is removed, so the
+  aggregate becomes a value the caller supplies.
+
+- Controls may declare an unordered finite `action_space`. Decision rules are
+  validated against it during execution, and `TabularBestResponseSolver` uses
+  its values as that control's candidate actions.
+
+### Deprecated
+
+- `skagent.solver.project` is renamed `skagent.solver.project_nash`, beside
+  `project_mean_field`. The old name still works and warns, and will be removed.
+
+- The `artificial_borrowing_constraint` argument of `vfi.solve_step` and
+  `vfi.solve_bellman` is renamed `confine_to_grid`, since it keeps every arrival
+  state on the grid, not only assets. The old name still works and warns.
+
+### Fixed
+
+- Relevance analysis no longer skips a block that declares classes `E` and
+  `E_other` of its own: it refuses it as a block of several classes, where it
+  had reported no reliance between instances. A projection is recognized by the
+  equation it writes, which is marked `synthesized` and reported so in
+  `ModelAnalyzer.node_meta`.
+- `project_nash` names the author's symbol when it collides with a suffixed
+  name, instead of two synthesized blocks.
+- Diagrams rank nodes across plates (`newrank`), so an edge into a plate no
+  longer points backwards.
+- A VFI decision rule answers inputs past the range its grid covers instead of
+  returning NaN: it extends linearly from the outermost segment, held within the
+  control's declared bounds, and its `off_grid` attribute counts such queries. A
+  simulation that visits states outside the solved grid previously stopped on
+  NaN.
+- `Lognormal.discretize`, and so `MeanOneLogNormal.discretize`, uses
+  Gauss-Hermite quadrature on the log. It gave equal weights to evenly spaced
+  nodes, which overstated the mean and standard deviation.
+- `maliar_training_loop` raises `RuntimeError` when the loss becomes non-finite,
+  naming the iteration. It used to carry on: on the next iteration the trainer
+  stopped at epoch 0 without changing the weights, and the loop reported the
+  zero parameter change as convergence (#371).
 
 ## [0.2.0] - 2026-09-30
 

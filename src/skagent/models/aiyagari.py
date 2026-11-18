@@ -34,6 +34,7 @@ Calibration parameters:
 alpha        capital's share of output
 delta        the fraction of capital that wears out each period
 CRRA         relative risk aversion in the household's utility
+DiscFac      the household's discount factor
 sigma_theta  how dispersed the labour endowment is
 household    how many households there are
 ===========  ==============================================================
@@ -191,7 +192,7 @@ aiyagari_block = RBlock(
 
 
 def aiyagari_calibration(
-    size=1000, alpha=CAPITAL_SHARE, delta=DEPRECIATION, crra=2.0, sigma=1.0
+    size=1000, alpha=CAPITAL_SHARE, delta=DEPRECIATION, crra=2.0, sigma=1.0, beta=0.96
 ):
     """An economy of *size* households.
 
@@ -209,6 +210,9 @@ def aiyagari_calibration(
         utility. It does not enter the aggregate under a fixed savings rate.
     sigma : float, optional
         Dispersion of the labour endowment, which has mean one whatever this is.
+    beta : float, optional
+        The household's discount factor. It does not enter the aggregate under a
+        fixed savings rate.
 
     Returns
     -------
@@ -219,6 +223,7 @@ def aiyagari_calibration(
         "alpha": alpha,
         "delta": delta,
         "CRRA": crra,
+        "DiscFac": beta,
         "sigma_theta": sigma,
     }
 

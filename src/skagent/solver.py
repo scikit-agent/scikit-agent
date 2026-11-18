@@ -1,20 +1,24 @@
 import inspect
 import logging
 import numbers
+import warnings
+from functools import wraps
 from itertools import groupby
 
 import numpy as np
+from scipy.optimize import brentq
 
 import skagent.ann as ann
 import skagent.algos.vfi as vfi
 import skagent.bellman as bellman_module
 import skagent.loss as loss_module
 from skagent.block import Control, DBlock, Entity, RBlock
+from skagent.simulation.monte_carlo import Simulator
 from skagent.utils import param_names
 
 logger = logging.getLogger(__name__)
 
-#: How :func:`project` names the solved instance's symbols, and the others'.
+#: How :func:`project_nash` names the solved instance's symbols, and the others'.
 ACTOR_SUFFIX = "_actor"
 OTHER_SUFFIX = "_other"
 
@@ -47,12 +51,21 @@ def _renamed(fn, mapping):
 
 def _copy_control(control, mapping, agent_suffix):
     """One side's copy of a control: renamed information set, renamed agent."""
-    return Control(
-        [mapping.get(sym, sym) for sym in control.iset],
+    copied = Control(
+        [mapping.get(sym, sym) for sym in control._authored_iset],
         lower_bound=_renamed(control.lower_bound, mapping),
         upper_bound=_renamed(control.upper_bound, mapping),
         agent=None if control.agent is None else control.agent + agent_suffix,
+        action_space=control.action_space,
+        randomize=control.randomize,
     )
+    if control.randomize and control._randomizer is not None:
+        copied = copied._with_randomizer(
+            mapping.get(control._randomizer, control._randomizer)
+        )
+    elif control._randomizer is not None:
+        copied._randomizer = mapping.get(control._randomizer, control._randomizer)
+    return copied
 
 
 def _joining_equation(actor_sym, other_sym, others_count):
@@ -120,6 +133,8 @@ def _joining_equation(actor_sym, other_sym, others_count):
         o = np.broadcast_to(o, a.shape[:-1] + (others_count,))
         return np.concatenate([a, o], axis=-1)
 
+    # The one equation in a projection that its author did not write.
+    join.synthesized = True
     join.__signature__ = inspect.Signature(
         [
             inspect.Parameter(actor_sym, inspect.Parameter.POSITIONAL_OR_KEYWORD),
@@ -214,7 +229,7 @@ def _blocks_by_class(name, layout, shocks, rewards):
     return blocks
 
 
-def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
+def project_nash(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     """One instance's problem, with the rest of its class beside it.
 
     The entity class is split in two -- the instance being solved, and the
@@ -298,6 +313,19 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     other = {sym: sym + other_suffix for sym in per_instance}
 
     rivals = entity + other_suffix
+
+    # A symbol the author declared outside the class keeps its name, so it
+    # cannot also be the name a per-instance symbol is given.
+    declared = set(block.get_dynamics()) | set(block.get_shocks())
+    taken = sorted(
+        (declared - per_instance) & (set(actor.values()) | set(other.values()))
+    )
+    if taken:
+        raise ValueError(
+            f"the block declares {taken}, which the projection also gives to a "
+            f"per-instance symbol by adding {actor_suffix!r} or {other_suffix!r}; "
+            f"rename the block's own symbol"
+        )
     declarations = block.get_shocks()
 
     # Every reward the projection has, keyed by the symbol that carries it. The
@@ -392,6 +420,101 @@ def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
     )
 
 
+def project(ground, actor_suffix=ACTOR_SUFFIX, other_suffix=OTHER_SUFFIX):
+    """Deprecated alias of :func:`project_nash`, to be removed in a later release.
+
+    Warns
+    -----
+    DeprecationWarning
+        On every call, which then proceeds as :func:`project_nash`.
+    """
+    warnings.warn(
+        "skagent.solver.project is renamed project_nash, beside "
+        "project_mean_field; the old name will be removed in a later release",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return project_nash(ground, actor_suffix=actor_suffix, other_suffix=other_suffix)
+
+
+def project_mean_field(ground):
+    """One instance's problem under price-taking: the aggregate is given.
+
+    Every equation that reduces over the entity class is removed, so each
+    aggregate it computed becomes a symbol the remaining equations read rather
+    than one they compute. The equations downstream of an aggregate are kept as
+    the author wrote them. The instance's symbols carry no class, since they
+    are one decision-maker's, so the result is a problem a single-agent solver
+    accepts.
+
+    Under this concept the instance takes no account of its own effect on the
+    aggregate, which is exact for a continuum of instances and the concept a
+    competitive equilibrium is defined by. Contrast :func:`project_nash`, where
+    the instance keeps its own share.
+
+    The projection gives the aggregates no value. Supply one before solving,
+    for instance with :meth:`skagent.ground.GroundedBlock.with_calibration`:
+    a symbol the block reads and neither defines nor calibrates is otherwise an
+    arrival state.
+
+    An aggregate is found as :meth:`skagent.block.Block.crossings` reports it,
+    so a reduction written inside a per-instance equation is not one, and is
+    left in place.
+
+    Parameters
+    ----------
+    ground : skagent.ground.GroundedBlock
+        The population model and its calibration. Its block must declare
+        exactly one entity class and read something out of it.
+
+    Returns
+    -------
+    skagent.ground.GroundedBlock
+        The projected problem, with the calibration and generator of *ground*.
+
+    Raises
+    ------
+    ValueError
+        If the block does not declare exactly one entity class, reads nothing
+        out of it, or reduces over it in a decision, which is a choice rather
+        than an aggregate to take as given.
+    """
+    from skagent.ground import GroundedBlock
+
+    block = ground.block
+    entities = block.entities()
+    if len(entities) != 1:
+        raise ValueError(
+            f"projection needs exactly one entity class, and this block "
+            f"declares {sorted(entities) if entities else 'none'}; a population "
+            f"is what an instance is projected out of"
+        )
+    crossings = block.crossings()
+    if not crossings:
+        raise ValueError(
+            f"this block reads nothing out of entity class "
+            f"{next(iter(entities))!r}, so there is no aggregate for an instance "
+            f"to take as given"
+        )
+    dynamics = block.get_dynamics()
+    decisions = sorted(sym for sym in crossings if isinstance(dynamics[sym], Control))
+    if decisions:
+        raise ValueError(
+            f"{decisions} reduce over the class in a decision, which is a choice "
+            f"rather than an aggregate an instance takes as given"
+        )
+
+    projected = DBlock(
+        name=f"{block.name}_mean_field",
+        shocks=dict(block.get_shocks()),
+        dynamics={sym: eq for sym, eq in dynamics.items() if sym not in crossings},
+        reward={
+            sym: owner for sym, owner in block.reward.items() if sym not in crossings
+        },
+    )
+    return GroundedBlock(projected, dict(ground.calibration), rng=ground.rng)
+
+
 def _starting_policies(block):
     """A visibly provisional rule for every decision: a constant at mid-bounds.
 
@@ -401,7 +524,7 @@ def _starting_policies(block):
     has not been trained -- so these are constants instead.
     """
     return {
-        sym: _constant_rule(_midpoint(control), control.iset)
+        sym: _constant_rule(_starting_action(control), control.iset)
         for sym, control in block.get_controls().items()
     }
 
@@ -561,6 +684,149 @@ class ExactBestResponse:
         )
 
 
+class StationaryBestResponse:
+    """A method whose responses solve the infinite-horizon problem.
+
+    A contract with no code. A subclass's ``best_response(decision, policies)``
+    solves the recurring problem on its ground to a fixed point, where
+    :class:`ExactBestResponse` and :class:`NeuralBestResponse` solve one period.
+    A schedule that needs the stationary solution, as :func:`solve_mean_field`
+    does, checks for this class, so that a one-period method is refused rather
+    than its answer reported as the stationary one.
+
+    Beside ``best_response``, ``rule_distance`` and ``initial_policies``, a
+    subclass provides ``with_ground(ground)``: the same method on another
+    ground, starting from its own last solve when it has made one.
+    """
+
+
+class ExactStationaryBestResponse(StationaryBestResponse):
+    """Stationary best responses by value-function iteration over a state grid.
+
+    The stationary counterpart of :class:`ExactBestResponse`: a response runs
+    :func:`skagent.algos.vfi.solve_bellman` to its fixed point rather than one
+    backup. Its rules are gridded as that method's are, and compared the same
+    way.
+
+    The block must have no decision other than the one solved, since
+    :func:`skagent.algos.vfi.solve_bellman` optimizes every control jointly and
+    cannot hold one at a given rule.
+
+    Parameters
+    ----------
+    ground : skagent.ground.GroundedBlock
+        The recurring problem being solved, already projected if it is a
+        population. Its calibration is also the solve's *scope*.
+    state_grid : Mapping
+        The grid over the value function's domain; every arrival state must be
+        an axis of it.
+    discount_variable : str or None
+        The symbol holding the discount factor.
+    disc_params : Mapping, optional
+        Per-shock discretization arguments.
+    tol : float, optional
+        Convergence tolerance on the sup-norm change in the value grid.
+    max_iter : int, optional
+        Backups before the solve is reported as unconverged, which raises.
+    search : {"bounded", "multistart"}, optional
+        How each grid point's optimum is found.
+    policy_evaluations : int, optional
+        Applications of the Bellman operator at the maximizing policy after
+        each backup.
+    confine_to_grid : bool, optional
+        Confine next-period arrival states to the state grid.
+    continuation : Callable, optional
+        The continuation the iteration starts from. Defaults to a terminal
+        (zero) one.
+
+    Attributes
+    ----------
+    value : xarray.DataArray or None
+        The value grid of the last response, whose ``attrs`` carry
+        ``n_iter``, ``converged`` and ``residual``; ``None`` before the first.
+    """
+
+    def __init__(
+        self,
+        ground,
+        state_grid,
+        discount_variable,
+        *,
+        disc_params=None,
+        tol=1e-6,
+        max_iter=500,
+        search="bounded",
+        policy_evaluations=20,
+        confine_to_grid=False,
+        continuation=None,
+    ):
+        self.ground = ground
+        self.state_grid = state_grid
+        self.discount_variable = discount_variable
+        self.disc_params = {} if disc_params is None else disc_params
+        self.tol = tol
+        self.max_iter = max_iter
+        self.search = search
+        self.policy_evaluations = policy_evaluations
+        self.confine_to_grid = confine_to_grid
+        self.continuation = continuation
+        self.scope = ground.calibration
+        self.period = bellman_module.BellmanPeriod(
+            ground.block, discount_variable, ground.calibration
+        )
+        self.decisions = list(ground.block.get_controls())
+        self.value = None
+
+    def best_response(self, decision, policies):
+        """Solve *decision* to its stationary fixed point."""
+        others = sorted(set(self.decisions) - {decision})
+        if others:
+            raise NotImplementedError(
+                f"a stationary solve optimizes every control jointly, so it "
+                f"cannot hold {others} at a given rule while solving "
+                f"{decision!r}"
+            )
+        rules, self.value, _policy = vfi.solve_bellman(
+            self.period,
+            self.state_grid,
+            continuation_vf=self.continuation,
+            agent=self.ground.block.deciding_agent(decision),
+            scope=self.scope,
+            disc_params=self.disc_params,
+            tol=self.tol,
+            max_iter=self.max_iter,
+            raise_on_nonconvergence=True,
+            confine_to_grid=self.confine_to_grid,
+            search=self.search,
+            policy_evaluations=self.policy_evaluations,
+        )
+        return rules[decision]
+
+    def with_ground(self, ground):
+        """This method on *ground*, continuing from its last solved value."""
+        continuation = (
+            self.continuation
+            if self.value is None
+            else vfi.value_array_to_function(self.value, self.period, self.disc_params)
+        )
+        return ExactStationaryBestResponse(
+            ground,
+            self.state_grid,
+            self.discount_variable,
+            disc_params=self.disc_params,
+            tol=self.tol,
+            max_iter=self.max_iter,
+            search=self.search,
+            policy_evaluations=self.policy_evaluations,
+            confine_to_grid=self.confine_to_grid,
+            continuation=continuation,
+        )
+
+    initial_policies = ExactBestResponse.initial_policies
+    rule_distance = ExactBestResponse.rule_distance
+    _observations = ExactBestResponse._observations
+
+
 def _sup_norm(first, second, observed):
     """The largest gap between two rules over a common set of observations."""
     import torch
@@ -582,6 +848,7 @@ def _swap_in(rule, iset):
     the swap is a rename: a rule is called positionally either way.
     """
 
+    @wraps(rule)
     def swapped(*observed):
         return rule(*observed)
 
@@ -646,7 +913,7 @@ def solve_symmetric_equilibrium(
     """A symmetric equilibrium, by iterated best response over a projection.
 
     Takes a projected problem -- one instance's decision beside the rest of its
-    class, as :func:`project` builds -- solves the instance's decision against
+    class, as :func:`project_nash` builds -- solves the instance's decision against
     the others' current rule, swaps the solved rule in as the others', and
     repeats until the rule stops moving. A rule that is its own best response is
     an equilibrium of the projected game, and because the others play whatever
@@ -665,7 +932,7 @@ def solve_symmetric_equilibrium(
 
     Parameters
     ----------
-    method : NeuralBestResponse or ExactBestResponse
+    method : NeuralBestResponse, ExactBestResponse, or TabularBestResponseSolver
         The per-decision solver, carrying its own configuration and the
         projected problem it solves. Any object with ``ground``,
         ``best_response(decision, policies)`` and
@@ -680,7 +947,8 @@ def solve_symmetric_equilibrium(
         reported as such.
     initial : Callable, optional
         The others' rule on the first round. Defaults to a constant at the
-        midpoint of the solved control's declared bounds.
+        midpoint of the solved control's declared bounds, or to one of its
+        declared actions for a discrete control.
 
     Returns
     -------
@@ -692,7 +960,8 @@ def solve_symmetric_equilibrium(
     Raises
     ------
     ValueError
-        If the method's block does not carry a projected pair of controls.
+        If the method's block does not carry a projected pair of controls, or
+        if damping is requested for an unordered discrete action space.
     """
     block = method.ground.block
     solved = [sym for sym in block.get_controls() if sym.endswith(ACTOR_SUFFIX)]
@@ -700,17 +969,23 @@ def solve_symmetric_equilibrium(
         raise ValueError(
             f"expected one control named for the solved instance (ending "
             f"{ACTOR_SUFFIX!r}) and found {sorted(solved)}; the method's block "
-            "should be one that project() built"
+            "should be one that project_nash() built"
         )
     (decision,) = solved
     partner = decision[: -len(ACTOR_SUFFIX)] + OTHER_SUFFIX
-    solved_iset = block.get_control(decision).iset
+    control = block.get_control(decision)
+    solved_iset = control.iset
     partner_iset = block.get_control(partner).iset
+    if control.action_space is not None and damping != 1.0:
+        raise ValueError(
+            "damping a discrete control can produce values outside its "
+            "action_space; use damping=1"
+        )
 
     rule = (
         _swap_in(initial, partner_iset)
         if initial is not None
-        else _constant_rule(_midpoint(block.get_control(decision)), partner_iset)
+        else _constant_rule(_starting_action(control), partner_iset)
     )
 
     distances = []
@@ -731,12 +1006,159 @@ def solve_symmetric_equilibrium(
     }
 
 
-def _midpoint(control):
-    """A starting action: halfway between the control's declared bounds.
+def solve_mean_field(
+    method,
+    population,
+    *,
+    bracket,
+    tol=1e-3,
+    periods=500,
+    tail=200,
+    seed=0,
+    warm_start=True,
+):
+    """A stationary mean-field equilibrium, by root-finding on the aggregate.
+
+    *method* carries one instance's problem under price-taking, as
+    :func:`project_mean_field` builds it from *population*, with the aggregate
+    left without a value. For a candidate value of the aggregate, the schedule
+    gives it to the instance's problem, solves that to its stationary rule, and
+    simulates the full model, *population*, under the rule. There the aggregate
+    is computed from the instances every period, as the model says, rather
+    than held at the candidate. The residual is the aggregate the simulation
+    settles at, averaged over its last *tail* periods, less the candidate, and
+    Brent's method finds its root within *bracket*.
+
+    Every round simulates from the same *seed*, and from the variables the
+    aggregate reduces each starting at the candidate value, so the residual is
+    a deterministic function of the candidate. Its precision is still that of
+    a finite class: the class size in the calibration sets the simulated
+    aggregate's noise, and so how sharply the root is pinned.
+
+    Every instance plays the one rule, so the equilibrium is symmetric by
+    construction.
+
+    Parameters
+    ----------
+    method : StationaryBestResponse
+        The instance's solver, carrying the projected problem.
+    population : skagent.ground.GroundedBlock
+        The model the projection was taken from, with its calibration. Its
+        block must reduce over its entity class in exactly one equation.
+    bracket : tuple of float
+        Two values of the aggregate at which the residual has opposite signs.
+    tol : float, optional
+        Tolerance on the aggregate.
+    periods : int, optional
+        Periods simulated per round.
+    tail : int, optional
+        Final periods averaged over to read the aggregate the simulation
+        settles at.
+    seed : int, optional
+        Seed of every round's simulation.
+    warm_start : bool, optional
+        Start each round's solve from the previous round's, through the
+        method's ``with_ground``. Otherwise each round starts from *method*.
+
+    Returns
+    -------
+    rule : Callable
+        The instance's decision rule at the equilibrium aggregate.
+    info : dict
+        ``aggregate``, the equilibrium value; ``converged`` and
+        ``iterations``, as Brent's method reports them; and ``rounds``, one
+        entry per candidate with its ``candidate``, its ``simulated`` aggregate
+        and the rule's ``off_grid`` count where the rule keeps one.
+
+    Raises
+    ------
+    TypeError
+        If *method* is not a :class:`StationaryBestResponse`.
+    ValueError
+        If *population* does not reduce over its class in exactly one equation,
+        if the projected problem does not have exactly one decision, or if the
+        residual does not change sign across *bracket*.
+    """
+    if not isinstance(method, StationaryBestResponse):
+        raise TypeError(
+            f"{type(method).__name__} solves one period, and a mean-field "
+            f"equilibrium is a stationary one: an instance solving one period "
+            f"takes no account of the future. Use a StationaryBestResponse, "
+            f"such as ExactStationaryBestResponse."
+        )
+    crossings = population.block.crossings()
+    if len(crossings) != 1:
+        raise ValueError(
+            f"the price loop finds one aggregate, and this block reduces over "
+            f"its class in {sorted(crossings) if crossings else 'no equation'}"
+        )
+    ((aggregate, reduced),) = crossings.items()
+    decisions = list(method.ground.block.get_controls())
+    if len(decisions) != 1:
+        raise ValueError(
+            f"the price loop solves one decision, and the projected problem "
+            f"has {sorted(decisions)}"
+        )
+    (decision,) = decisions
+
+    rounds, rules, residuals = [], {}, {}
+    latest = method
+
+    def excess(candidate):
+        nonlocal latest
+        # Brent's method asks again for the bracket's ends, already checked.
+        if candidate in residuals:
+            return residuals[candidate]
+        solver = (latest if warm_start else method).with_ground(
+            method.ground.with_calibration({aggregate: candidate})
+        )
+        # The one decision is the whole profile, so there is no other to hold.
+        rule = rules[candidate] = solver.best_response(decision, {})
+        latest = solver
+        sim = Simulator(
+            population.calibration,
+            population.block,
+            {decision: rule},
+            {arg: candidate for arg, _axes, _broadcast in reduced},
+            seed=seed,
+            T_sim=periods,
+        )
+        sim.initialize_sim()
+        path = np.asarray(sim.simulate()[aggregate], dtype=float)
+        simulated = float(path.reshape(periods, -1)[-tail:, 0].mean())
+        entry = {"candidate": candidate, "simulated": simulated}
+        if hasattr(rule, "off_grid"):
+            entry["off_grid"] = rule.off_grid
+        rounds.append(entry)
+        logger.info("%s = %g settles at %g", aggregate, candidate, simulated)
+        residuals[candidate] = simulated - candidate
+        return residuals[candidate]
+
+    low, high = (float(end) for end in bracket)
+    if np.sign(excess(low)) == np.sign(excess(high)):
+        raise ValueError(
+            f"the residual does not change sign across the bracket "
+            f"{(low, high)}: {aggregate} = {low} settles at "
+            f"{rounds[0]['simulated']}, and {high} at {rounds[1]['simulated']}"
+        )
+    root, result = brentq(excess, low, high, xtol=tol, full_output=True)
+    excess(root)
+    return rules[root], {
+        "aggregate": root,
+        "converged": result.converged,
+        "iterations": result.iterations,
+        "rounds": rounds,
+    }
+
+
+def _starting_action(control):
+    """A stable starting action from the control's declared domain.
 
     A constant rather than an untrained network, so that where the iteration
     starts is a property of the model and not of a seed.
     """
+    if control.action_space is not None:
+        return min(control.action_space)
     lower = 0.0 if control.lower_bound is None else float(control.lower_bound())
     upper = lower if control.upper_bound is None else float(control.upper_bound())
     return (lower + upper) / 2
@@ -863,7 +1285,7 @@ def solve_in_relevance_order(
                     f"class {plate.entity!r}, and it relies on the other "
                     f"{plate.size - 1}, so there is no order that solves it: "
                     f"every instance responds to what the others do. Separate "
-                    f"one instance from the rest with skagent.solver.project "
+                    f"one instance from the rest with skagent.solver.project_nash "
                     f"and solve the projection with solve_symmetric_equilibrium."
                 )
             policies[decision] = method.best_response(decision, policies)

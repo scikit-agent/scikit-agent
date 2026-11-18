@@ -1535,8 +1535,8 @@ class TestSimulateForwardHappyPath(unittest.TestCase):
         self.assertEqual(result["g"].shape, self.states["g"].shape)
 
 
-class TestMaliarTrainingLoopValidation(unittest.TestCase):
-    """Test input validation in maliar_training_loop."""
+class _Case4LoopTestCase(unittest.TestCase):
+    """Shared case_4 period, starting grid and loss for training-loop tests."""
 
     def setUp(self):
         torch.manual_seed(TEST_SEED)
@@ -1556,6 +1556,10 @@ class TestMaliarTrainingLoopValidation(unittest.TestCase):
         )
         self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(self.bp, big_t=2)
         self.calibration = case_4["calibration"]
+
+
+class TestMaliarTrainingLoopValidation(_Case4LoopTestCase):
+    """Test input validation in maliar_training_loop."""
 
     def test_max_iterations_zero_raises(self):
         with self.assertRaises(ValueError):
@@ -1710,29 +1714,13 @@ class TestMaliarTrainingLoopValidation(unittest.TestCase):
             )
 
 
-class TestMaliarHyperparameters(unittest.TestCase):
+class TestMaliarHyperparameters(_Case4LoopTestCase):
     """Test that network_width and epochs_per_iteration affect training."""
 
     def setUp(self):
-        torch.manual_seed(TEST_SEED)
-        np.random.seed(TEST_SEED)
         torch.use_deterministic_algorithms(True, warn_only=True)
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-
-        self.bp = bellman.BellmanPeriod(
-            case_4["block"],
-            "beta",
-            case_4["calibration"],
-            rng=np.random.default_rng(TEST_SEED),
-        )
-        self.states = grid.Grid.from_config(
-            {
-                "m": {"min": 0, "max": 5, "count": 3},
-                "g": {"min": 0, "max": 5, "count": 3},
-            }
-        )
-        self.loss_fn = loss.EstimatedDiscountedLifetimeRewardLoss(self.bp, big_t=2)
-        self.calibration = case_4["calibration"]
+        super().setUp()
 
     def test_network_width_affects_parameter_count(self):
         net_narrow, _ = maliar.maliar_training_loop(
@@ -1761,6 +1749,110 @@ class TestMaliarHyperparameters(unittest.TestCase):
             params_narrow,
             "Wider network should have more parameters",
         )
+
+
+class TestMaliarStartingNetwork(_Case4LoopTestCase):
+    """A supplied network is the one trained, not replaced."""
+
+    def _loop(self, epochs_per_iteration=5, **kwargs):
+        return maliar.maliar_training_loop(
+            self.bp,
+            self.loss_fn,
+            self.states,
+            self.calibration,
+            max_iterations=1,
+            epochs_per_iteration=epochs_per_iteration,
+            random_seed=TEST_SEED,
+            **kwargs,
+        )
+
+    def test_the_supplied_network_is_trained_and_returned(self):
+        start = BlockPolicyNet(self.bp, width=8)
+        before = [p.detach().clone() for p in start.parameters()]
+
+        trained, _ = self._loop(policy_net=start)
+
+        self.assertIs(trained, start)
+        self.assertTrue(
+            any(
+                not torch.equal(b, p.detach())
+                for b, p in zip(before, start.parameters())
+            )
+        )
+
+    def test_training_starts_from_the_supplied_weights(self):
+        # One epoch moves the weights by about the learning rate, so a run
+        # that began from a fresh network would end far from the supplied one.
+        start = BlockPolicyNet(self.bp, width=8)
+        before = [p.detach().clone() for p in start.parameters()]
+
+        trained, _ = self._loop(policy_net=start, epochs_per_iteration=1)
+
+        for b, p in zip(before, trained.parameters()):
+            self.assertLess((b - p.detach()).abs().max().item(), 0.01)
+
+    def test_a_network_that_is_not_a_policy_net_raises(self):
+        with self.assertRaisesRegex(TypeError, "BlockPolicyNet"):
+            self._loop(policy_net=torch.nn.Linear(2, 1))
+
+
+class TestMaliarDivergence(_Case4LoopTestCase):
+    """A non-finite loss must end the loop as a failure, never as convergence."""
+
+    epochs = 5
+
+    def _loss_going_nan_at(self, first_nan_call):
+        """Return a loss that turns NaN from its ``first_nan_call``-th call on.
+
+        The trainer evaluates the loss once per epoch, so call ``k`` (0-based)
+        falls in iteration ``k // epochs + 1`` at epoch ``k % epochs``.
+        """
+        calls = []
+
+        def loss_fn(df, givens):
+            value = self.loss_fn(df, givens)
+            calls.append(None)
+            if len(calls) > first_nan_call:
+                return value * float("nan")
+            return value
+
+        return loss_fn
+
+    def _run(self, loss_fn):
+        return maliar.maliar_training_loop(
+            self.bp,
+            loss_fn,
+            self.states,
+            self.calibration,
+            max_iterations=5,
+            tolerance=1e-12,
+            epochs_per_iteration=self.epochs,
+            random_seed=TEST_SEED,
+        )
+
+    def test_nan_mid_iteration_raises(self):
+        """NaN partway through iteration 2 stops the loop at iteration 2.
+
+        Before the fix the loop carried on, the trainer stopped at epoch 0 of
+        iteration 3, and the zero parameter change was reported as convergence.
+        """
+        loss_fn = self._loss_going_nan_at(self.epochs + 3)
+        with self.assertRaisesRegex(RuntimeError, r"iteration 2\b.*nan"):
+            self._run(loss_fn)
+
+    def test_nan_at_first_epoch_raises(self):
+        """NaN at epoch 0 (no optimizer step taken) is not zero-change convergence."""
+        loss_fn = self._loss_going_nan_at(self.epochs)
+        with self.assertRaisesRegex(RuntimeError, r"iteration 2\b.*nan"):
+            self._run(loss_fn)
+
+    def test_nan_logs_no_convergence(self):
+        """The divergence never reaches the 'Converged after' log line."""
+        loss_fn = self._loss_going_nan_at(self.epochs + 3)
+        with self.assertLogs(level=logging.INFO) as logs:
+            with self.assertRaises(RuntimeError):
+                self._run(loss_fn)
+        self.assertFalse(any("Converged" in line for line in logs.output))
 
 
 class TestCheckConvergence(unittest.TestCase):

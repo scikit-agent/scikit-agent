@@ -45,8 +45,8 @@ A decision taken by every instance of an entity class may rely on the other
 instances of that class, and one symbol cannot refer to another instance of
 itself. {meth}`~skagent.block.Block.relevance_graph` therefore runs the
 criterion on a split of the class -- the instance deciding, and the rest of it,
-as {func}`~skagent.solver.project` builds it -- and reports such a reliance on
-the class's own symbol, as a self-loop.
+as {func}`~skagent.solver.project_nash` builds it -- and reports such a reliance
+on the class's own symbol, as a self-loop.
 
 That shape is annotated rather than left to be inferred, because a self-loop on
 its own does not say whether a decision accounts for other instances of itself

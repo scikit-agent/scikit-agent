@@ -87,6 +87,13 @@ class test_consumption_parsing(unittest.TestCase):
                 "c: !Control {iset: m, infoset: m}", Loader=parser.skagent_loader()
             )
 
+    def test_control_tag_accepts_an_action_space(self):
+        parsed = yaml.load(
+            "d: !Control {iset: [], action_space: [0, 1]}",
+            Loader=parser.skagent_loader(),
+        )
+        self.assertEqual(parsed["d"].action_space, frozenset({0.0, 1.0}))
+
 
 class test_block_validation(unittest.TestCase):
     """``validate_block`` refuses a block whose keys are not a block's keys."""

@@ -138,7 +138,7 @@ import numpy as np
 import skagent.models.cournot as cournot
 from skagent.ground import GroundedBlock
 from skagent.simulation.monte_carlo import Simulator
-from skagent.solver import ExactBestResponse, project, solve_symmetric_equilibrium
+from skagent.solver import ExactBestResponse, project_nash, solve_symmetric_equilibrium
 from skagent.utils import plot_block_diagram
 
 # sphinx_gallery_thumbnail_number = 1
@@ -266,9 +266,9 @@ print("                           expense of the other two, which fall to 6.0")
 # A solver solves *one* decision. This model describes three firms at once, so
 # something has to turn the question "what should the firms do?" into the
 # question "what should *this* firm do, given what the others do?" That is the
-# job of :func:`~skagent.solver.project`.
+# job of :func:`~skagent.solver.project_nash`.
 
-projected = project(market)
+projected = project_nash(market)
 
 plot_block_diagram(
     projected.block,
@@ -320,7 +320,7 @@ def cournot_method(size):
     ground = GroundedBlock(
         cournot.cournot_block, cournot.collusion_calibration(size=size)
     )
-    projected = project(ground)
+    projected = project_nash(ground)
     return ExactBestResponse(
         projected,
         {"c_actor": np.array([COST])},
