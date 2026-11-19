@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Benchmark Models" href="benchmark_models.html"><link rel="prev" title="Environments Guide" href="environments.html">
 
     <!-- Generated with Sphinx 9.1.1 and Furo 2025.12.19 -->
-        <title>Constraining an Optimization Problem - scikit-agent 0.2.1.dev58+gb14cc4af0</title>
+        <title>Constraining an Optimization Problem - scikit-agent 0.2.1.dev62+g698502927</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
@@ -169,7 +169,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev58+gb14cc4af0</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev62+g698502927</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -385,9 +385,7 @@ residual <span class="math notranslate nohighlight">\(f\)</span> and an upper-bo
 complementarity condition</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[
-f \geq 0, \qquad s \geq 0, \qquad f \cdot s = 0,
-\]</div>
+\[f \geq 0, \qquad s \geq 0, \qquad f \cdot s = 0,\]</div>
 </div>
 <p>so the residual need not vanish at the bound; the slack must. The equivalent
 equation <span class="math notranslate nohighlight">\(\min(f, s) = 0\)</span> is not differentiable, which is the wrong shape for a
@@ -395,9 +393,7 @@ training loss. Following equation (25) of Maliar, Maliar, and Winant (2021),
 <a class="reference internal" href="../api/utils.html#skagent.utils.fischer_burmeister" title="skagent.utils.fischer_burmeister"><code class="xref py py-func docutils literal notranslate"><span class="pre">fischer_burmeister()</span></code></a> replaces it with</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[
-\operatorname{FB}(f, s) = f + s - \sqrt{f^2 + s^2 + \varepsilon},
-\]</div>
+\[\operatorname{FB}(f, s) = f + s - \sqrt{f^2 + s^2 + \varepsilon},\]</div>
 </div>
 <p>which is zero (up to <span class="math notranslate nohighlight">\(\sqrt{\varepsilon}\)</span>) exactly where the complementarity
 conditions hold. The small <span class="math notranslate nohighlight">\(\varepsilon\)</span> under the root is a numerical
@@ -573,7 +569,7 @@ through the policy.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=64aaac07"></script>
+</div><script src="../_static/documentation_options.js?v=1f493c7e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

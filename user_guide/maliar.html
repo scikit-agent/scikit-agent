@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Environments Guide" href="environments.html"><link rel="prev" title="Solvers Guide" href="solvers.html">
 
     <!-- Generated with Sphinx 9.1.1 and Furo 2025.12.19 -->
-        <title>Solving Models with the Maliar Method - scikit-agent 0.2.1.dev58+gb14cc4af0</title>
+        <title>Solving Models with the Maliar Method - scikit-agent 0.2.1.dev62+g698502927</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
@@ -169,7 +169,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev58+gb14cc4af0</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev62+g698502927</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -339,9 +339,7 @@ estimates <span class="math notranslate nohighlight">\(\mathbb{E}[f^2]\)</span>,
 whenever the residual genuinely varies across draws:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[
-\mathbb{E}[f^2] = (\mathbb{E}[f])^2 + \mathrm{Var}(f).
-\]</div>
+\[\mathbb{E}[f^2] = (\mathbb{E}[f])^2 + \mathrm{Var}(f).\]</div>
 </div>
 <p>An optimizer handed <span class="math notranslate nohighlight">\(\mathbb{E}[f^2]\)</span> can lower it two ways: by satisfying the
 condition on average, which is the intent, or by making the residual vary less
@@ -355,9 +353,7 @@ Call them <span class="math notranslate nohighlight">\(f_a\)</span> and <span cl
 their product splits into the product of their expectations:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[
-\mathbb{E}[f_a\, f_b] = \mathbb{E}[f_a]\,\mathbb{E}[f_b] = (\mathbb{E}[f])^2,
-\]</div>
+\[\mathbb{E}[f_a\, f_b] = \mathbb{E}[f_a]\,\mathbb{E}[f_b] = (\mathbb{E}[f])^2,\]</div>
 </div>
 <p>which is the target on the nose, with no variance term riding along.
 scikit-agent calls this the “all-in-one” operator. In a deterministic model the
@@ -386,11 +382,9 @@ states, <span class="math notranslate nohighlight">\(m'\)</span> the pre-decisio
 the model’s discount variable). The residual is</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[
-f = u'(x_t) + \beta\, u'(x_{t+1}) \sum_s
+\[f = u'(x_t) + \beta\, u'(x_{t+1}) \sum_s
     \frac{\partial s_{t+1}}{\partial x_t}\,
-    \frac{\partial m'}{\partial s_{t+1}},
-\]</div>
+    \frac{\partial m'}{\partial s_{t+1}},\]</div>
 </div>
 <p>and the policy is optimal where <span class="math notranslate nohighlight">\(\mathbb{E}_t[f] = 0\)</span>. The sum runs over every
 channel by which today’s control moves tomorrow’s states, and each derivative in
@@ -403,9 +397,7 @@ today leaves one less unit of assets, so the derivative product in the sum is
 just <span class="math notranslate nohighlight">\(-R\)</span>, and the general residual collapses to the textbook Euler equation</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[
-f = u'(c_t) - \beta\, R\, u'(c_{t+1}),
-\]</div>
+\[f = u'(c_t) - \beta\, R\, u'(c_{t+1}),\]</div>
 </div>
 <p>marginal utility today set against discounted marginal utility tomorrow.</p>
 <p>A first-order condition constrains the <em>slope</em> of the policy, how the control
@@ -421,9 +413,7 @@ Bellman equation itself. Let <span class="math notranslate nohighlight">\(V\)</s
 and <span class="math notranslate nohighlight">\(s'\)</span> next period’s state. The residual is</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[
-f = V(s) - \left[\,u(s, c) + \beta\, V(s')\,\right],
-\]</div>
+\[f = V(s) - \left[\,u(s, c) + \beta\, V(s')\,\right],\]</div>
 </div>
 <p>the gap between the value a state is assigned and the reward-plus-continuation
 it actually delivers. Because it references <span class="math notranslate nohighlight">\(V\)</span> directly, this loss anchors the
@@ -648,7 +638,7 @@ percent.</p></li>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=64aaac07"></script>
+</div><script src="../_static/documentation_options.js?v=1f493c7e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
