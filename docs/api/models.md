@@ -122,6 +122,18 @@ shape.
    :members:
 ```
 
+## Krusell-Smith
+
+The Aiyagari economy with aggregate productivity shocks and persistent labour
+productivity, in the formulation of Maliar, Maliar and Winant (2021). Under a
+fixed savings rate capital still follows a closed-form map, given each period's
+productivity.
+
+```{eval-rst}
+.. automodule:: skagent.models.krusell_smith
+   :members:
+```
+
 ## Differential Privacy
 
 Benthall and Cummings' two causal games for tuning a differential-privacy
