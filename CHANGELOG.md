@@ -14,6 +14,8 @@ and this project adheres to
   economy in Maliar, Maliar and Winant's formulation, as productivity, income,
   market and household blocks, with calibrations from their paper and their
   notebook and the closed-form capital map under a fixed savings rate.
+- A gallery page solves the one-shot Prisoner's Dilemma and simulates supplied
+  randomized policies.
 - Controls may declare `randomize=True`. They receive a private, seeded uniform
   shock that decision rules can use when choosing actions.
 - `maliar_training_loop` takes `policy_net`, a network to train in place of the
