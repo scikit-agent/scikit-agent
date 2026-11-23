@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Algorithms" href="algorithms.html"><link rel="prev" title="Bellman Periods" href="bellman.html">
 
     <!-- Generated with Sphinx 9.1.1 and Furo 2025.12.19 -->
-        <title>Models - scikit-agent 0.2.1.dev60+g52e4dd533</title>
+        <title>Models - scikit-agent 0.2.1.dev64+g5f9895a7b</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
@@ -169,7 +169,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev60+g52e4dd533</div></a>
+      <a href="../index.html"><div class="brand">scikit-agent 0.2.1.dev64+g5f9895a7b</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -2082,6 +2082,339 @@ implies than by eye.</p>
 </dd></dl>
 
 </section>
+<section id="krusell-smith">
+<h2>Krusell-Smith<a class="headerlink" href="#krusell-smith" title="Link to this heading">¶</a></h2>
+<p>The Aiyagari economy with aggregate productivity shocks and persistent labour
+productivity, in the formulation of Maliar, Maliar and Winant (2021). Under a
+fixed savings rate capital still follows a closed-form map, given each period’s
+productivity.</p>
+<p id="module-skagent.models.krusell_smith">Krusell and Smith (1998) <a class="reference internal" href="#krusellsmith1998" id="id1"><span>[KrusellSmith1998]</span></a>, in the formulation of Maliar,
+Maliar and Winant (2021) <a class="reference internal" href="#mmw2021" id="id2"><span>[MMW2021]</span></a>: an Aiyagari economy whose productivity
+moves.</p>
+<p>Many households each save out of labour income, and the average of what they
+save is the economy’s capital. Capital and aggregate productivity together set
+the interest rate and the wage. Productivity follows its own random path, so the
+prices move even when the households’ distribution does not, and a household
+deciding how much to save has to forecast both.</p>
+<section id="symbols-and-parameters">
+<h3>Symbols and parameters<a class="headerlink" href="#symbols-and-parameters" title="Link to this heading">¶</a></h3>
+<p>One value per household:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>y</p></td>
+<td><p>log labour productivity</p></td>
+</tr>
+<tr class="row-even"><td><p>eps_y</p></td>
+<td><p>this period’s innovation to it</p></td>
+</tr>
+<tr class="row-odd"><td><p>theta</p></td>
+<td><p>the labour endowment, <code class="docutils literal notranslate"><span class="pre">exp(y)</span></code> scaled so the households average one</p></td>
+</tr>
+<tr class="row-even"><td><p>a</p></td>
+<td><p>assets carried in from last period</p></td>
+</tr>
+<tr class="row-odd"><td><p>w</p></td>
+<td><p>cash on hand: labour income plus assets and the interest on them</p></td>
+</tr>
+<tr class="row-even"><td><p>c</p></td>
+<td><p>consumption, the household’s one decision</p></td>
+</tr>
+<tr class="row-odd"><td><p>u</p></td>
+<td><p>the household’s payoff from consuming that much</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>One value for the whole economy, and capitalised for it:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>Z</p></td>
+<td><p>log aggregate productivity</p></td>
+</tr>
+<tr class="row-even"><td><p>eps_Z</p></td>
+<td><p>this period’s innovation to it</p></td>
+</tr>
+<tr class="row-odd"><td><p>K</p></td>
+<td><p>capital per head, the average of <code class="docutils literal notranslate"><span class="pre">a</span></code> over the households</p></td>
+</tr>
+<tr class="row-even"><td><p>Theta</p></td>
+<td><p>the average of <code class="docutils literal notranslate"><span class="pre">exp(y)</span></code> over the households, which scales it</p></td>
+</tr>
+<tr class="row-odd"><td><p>R</p></td>
+<td><p>the net interest rate, so a household earns <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">+</span> <span class="pre">R)</span></code> on assets</p></td>
+</tr>
+<tr class="row-even"><td><p>W</p></td>
+<td><p>the wage paid per unit of labour endowment</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Calibration parameters:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>alpha</p></td>
+<td><p>capital’s share of output</p></td>
+</tr>
+<tr class="row-even"><td><p>delta</p></td>
+<td><p>the fraction of capital that wears out each period</p></td>
+</tr>
+<tr class="row-odd"><td><p>CRRA</p></td>
+<td><p>relative risk aversion in the household’s utility</p></td>
+</tr>
+<tr class="row-even"><td><p>DiscFac</p></td>
+<td><p>the household’s discount factor</p></td>
+</tr>
+<tr class="row-odd"><td><p>rho_Z</p></td>
+<td><p>the persistence of log aggregate productivity</p></td>
+</tr>
+<tr class="row-even"><td><p>sigma_Z</p></td>
+<td><p>the standard deviation of its innovation</p></td>
+</tr>
+<tr class="row-odd"><td><p>rho_y</p></td>
+<td><p>the persistence of log labour productivity</p></td>
+</tr>
+<tr class="row-even"><td><p>sigma_y</p></td>
+<td><p>the standard deviation of its innovation</p></td>
+</tr>
+<tr class="row-odd"><td><p>household</p></td>
+<td><p>how many households there are</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="the-period-s-equations">
+<h3>The period’s equations<a class="headerlink" href="#the-period-s-equations" title="Link to this heading">¶</a></h3>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[Z = \rho_Z Z_{-1} + \epsilon_Z, \qquad
+y_i = \rho_y y_{i,-1} + \epsilon_{y,i}\]</div>
+</div>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[K = \frac{1}{N}\sum_j a_j, \qquad \Theta = \frac{1}{N}\sum_j e^{y_j},
+\qquad R = e^{Z} \alpha K^{\alpha - 1} - \delta,
+\qquad W = e^{Z} (1 - \alpha) K^{\alpha}\]</div>
+</div>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\theta_i = e^{y_i} / \Theta, \qquad
+w_i = \theta_i W + (1 + R) a_i, \qquad
+u_i = \frac{c_i^{1-\gamma}}{1-\gamma} \ (\log c_i \text{ at } \gamma = 1),
+\qquad a_i' = w_i - c_i\]</div>
+</div>
+<p>The prices are the marginal products of the production function
+<span class="math notranslate nohighlight">\(Y = e^{Z} K^{\alpha} L^{1-\alpha}\)</span>. Each period every household’s
+endowment is divided by the class’s average, so labour supply per head is
+exactly one unit and <span class="math notranslate nohighlight">\(L\)</span> drops out of both prices.</p>
+<p>Each period opens with the innovations: aggregate productivity and every
+household’s productivity move first, then the market prices the capital the
+households arrived with, and then each household decides. So <span class="math notranslate nohighlight">\(a\)</span>,
+<span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span> are the arrival states, and every random draw that
+bears on this period’s decision is made in this period. The household decides
+on its own cash on hand and productivity, on aggregate productivity, and on
+capital per head.</p>
+<p>Capital per head is the first moment of the distribution of wealth, and the
+household reads no other summary of it. This is Krusell and Smith’s approximate
+aggregation and <a class="reference internal" href="#mmw2021" id="id3"><span>[MMW2021]</span></a>’s reduced state space (their section 5.8). It is not
+their baseline (section 5.2), in which the decision reads every household’s
+productivity and cash on hand.</p>
+<p>The model is built from four blocks. <a class="reference internal" href="#skagent.models.krusell_smith.productivity_block" title="skagent.models.krusell_smith.productivity_block"><code class="xref py py-data docutils literal notranslate"><span class="pre">productivity_block</span></code></a> and
+<a class="reference internal" href="#skagent.models.krusell_smith.income_block" title="skagent.models.krusell_smith.income_block"><code class="xref py py-data docutils literal notranslate"><span class="pre">income_block</span></code></a> draw the period’s innovations, <a class="reference internal" href="#skagent.models.krusell_smith.market_block" title="skagent.models.krusell_smith.market_block"><code class="xref py py-data docutils literal notranslate"><span class="pre">market_block</span></code></a>
+computes the crossings and the prices, and <a class="reference internal" href="#skagent.models.krusell_smith.household_block" title="skagent.models.krusell_smith.household_block"><code class="xref py py-data docutils literal notranslate"><span class="pre">household_block</span></code></a> holds the
+budget, the decision and the payoff. The income and household blocks are each
+inside the household class, and the market sits between them, so the class
+appears twice in <a class="reference internal" href="#skagent.models.krusell_smith.krusell_smith_block" title="skagent.models.krusell_smith.krusell_smith_block"><code class="xref py py-data docutils literal notranslate"><span class="pre">krusell_smith_block</span></code></a>.</p>
+<p>The symbols follow <a class="reference internal" href="#mmw2021" id="id4"><span>[MMW2021]</span></a> where the library’s conventions allow. Their
+aggregate productivity <span class="math notranslate nohighlight">\(z\)</span> is <code class="docutils literal notranslate"><span class="pre">Z</span></code> here, since the library capitalises a
+variable that stands for the whole economy. Their gross return <span class="math notranslate nohighlight">\(R\)</span> is
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">+</span> <span class="pre">R</span></code> here, matching <a class="reference internal" href="#module-skagent.models.aiyagari" title="skagent.models.aiyagari"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skagent.models.aiyagari</span></code></a>.</p>
+</section>
+<section id="under-a-fixed-savings-rate">
+<h3>Under a fixed savings rate<a class="headerlink" href="#under-a-fixed-savings-rate" title="Link to this heading">¶</a></h3>
+<p>Under a fixed savings rate the aggregate has a closed form, as it has in the
+Aiyagari economy, and that makes the model a test before anything is solved. If
+every household consumes <span class="math notranslate nohighlight">\((1-s)w\)</span>, then averaging <span class="math notranslate nohighlight">\(a' = s w\)</span> over a
+class whose endowments average exactly one gives</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[K' = s\,(e^{Z} K^{\alpha} + (1 - \delta) K)\]</div>
+</div>
+<p>in every period of a simulated economy, whatever the draws. <a class="reference internal" href="#skagent.models.krusell_smith.capital_map" title="skagent.models.krusell_smith.capital_map"><code class="xref py py-func docutils literal notranslate"><span class="pre">capital_map()</span></code></a>
+is that map, given the period’s productivity.</p>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="krusellsmith1998" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>KrusellSmith1998<span class="fn-bracket">]</span></span>
+<p>Krusell, P. and Smith, A.A. (1998). “Income and Wealth
+Heterogeneity in the Macroeconomy.” <em>Journal of Political Economy</em>,
+106(5), 867-896. <a class="reference external" href="https://doi.org/10.1086/250034">https://doi.org/10.1086/250034</a></p>
+</div>
+<div class="citation" id="mmw2021" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>MMW2021<span class="fn-bracket">]</span></span>
+<p>Maliar, L., Maliar, S. and Winant, P. (2021). “Deep learning for
+solving dynamic economic models.” <em>Journal of Monetary Economics</em>, 122,
+76-101. <a class="reference external" href="https://doi.org/10.1016/j.jmoneco.2021.07.004">https://doi.org/10.1016/j.jmoneco.2021.07.004</a></p>
+</div>
+<div class="citation" id="mmwcode" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>MMWCode<span class="fn-bracket">]</span></span>
+<p>Maliar, L., Maliar, S. and Winant, P. Reference notebook for the
+Krusell-Smith model in <a class="reference internal" href="#mmw2021" id="id5"><span>[MMW2021]</span></a>.
+<a class="reference external" href="https://github.com/marcmaliar/deep-learning-euler-method-krusell-smith">https://github.com/marcmaliar/deep-learning-euler-method-krusell-smith</a></p>
+</div>
+</div>
+</section>
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.CAPITAL_SHARE">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">CAPITAL_SHARE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.36</span></span><a class="headerlink" href="#skagent.models.krusell_smith.CAPITAL_SHARE" title="Link to this definition">¶</a></dt>
+<dd><p>Capital’s share of output, the exponent on capital in the production function.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.DEPRECIATION">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">DEPRECIATION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.08</span></span><a class="headerlink" href="#skagent.models.krusell_smith.DEPRECIATION" title="Link to this definition">¶</a></dt>
+<dd><p>The fraction of the capital stock that wears out each period.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.capital_map">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">capital_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capital</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">productivity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.36</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.08</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.krusell_smith.capital_map" title="Link to this definition">¶</a></dt>
+<dd><p>The capital an economy leaves for next period under a fixed savings rate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>capital</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Capital per head this period.</p></li>
+<li><p><strong>productivity</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log aggregate productivity this period, <code class="docutils literal notranslate"><span class="pre">Z</span></code>.</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The savings rate the households follow.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.household_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">household_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='household',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'theta':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'w':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'c':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'u':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'a':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'u':</span> <span class="pre">'household'},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.krusell_smith.household_block" title="Link to this definition">¶</a></dt>
+<dd><p>The household’s budget, decision and payoff.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.income_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">income_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='income',</span> <span class="pre">description='',</span> <span class="pre">shocks={'eps_y':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'sigma':</span> <span class="pre">'sigma_y'})},</span> <span class="pre">dynamics={'y':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.krusell_smith.income_block" title="Link to this definition">¶</a></dt>
+<dd><p>Log labour productivity’s AR(1) step, drawn once for each household.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.krusell_smith_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">krusell_smith_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">RBlock(name='krusell_smith',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='productivity',</span> <span class="pre">description='',</span> <span class="pre">shocks={'eps_Z':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'sigma':</span> <span class="pre">'sigma_Z'})},</span> <span class="pre">dynamics={'Z':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">RBlock(name='incomes',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='income',</span> <span class="pre">description='',</span> <span class="pre">shocks={'eps_y':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'sigma':</span> <span class="pre">'sigma_y'})},</span> <span class="pre">dynamics={'y':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=Entity(name='household')),</span> <span class="pre">DBlock(name='market',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'K':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'Theta':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'R':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'W':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None),</span> <span class="pre">RBlock(name='households',</span> <span class="pre">description='',</span> <span class="pre">blocks=[DBlock(name='household',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'theta':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'w':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'c':</span> <span class="pre">&lt;skagent.block.Control</span> <span class="pre">object&gt;,</span> <span class="pre">'u':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'a':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={'u':</span> <span class="pre">'household'},</span> <span class="pre">entity=None)],</span> <span class="pre">entity=Entity(name='household'))],</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.krusell_smith.krusell_smith_block" title="Link to this definition">¶</a></dt>
+<dd><p>the four blocks in the period’s order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The whole economy</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.market_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">market_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='market',</span> <span class="pre">description='',</span> <span class="pre">shocks={},</span> <span class="pre">dynamics={'K':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'Theta':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'R':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">'W':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.krusell_smith.market_block" title="Link to this definition">¶</a></dt>
+<dd><p>Capital and the endowment’s scale as averages over the households, and the prices.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.notebook_calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">notebook_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.36</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.96</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.krusell_smith.notebook_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>An economy of <em>size</em> households, calibrated as in <a class="reference internal" href="#mmw2021" id="id6"><span>[MMW2021]</span></a>’s notebook.</p>
+<p>The defaults are the values in their reference notebook <a class="reference internal" href="#mmwcode" id="id7"><span>[MMWCode]</span></a>. They
+differ from <a class="reference internal" href="#skagent.models.krusell_smith.paper_calibration" title="skagent.models.krusell_smith.paper_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">paper_calibration()</span></code></a>’s in the two persistences and in
+<code class="docutils literal notranslate"><span class="pre">sigma_y</span></code>, which puts the ergodic standard deviation of log labour
+productivity near 0.64 where the text’s puts it at 0.2.</p>
+<p>Only the values are the notebook’s. The notebook also clips both
+productivities at two ergodic standard deviations, and this model’s
+processes are not clipped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many households. Capital per head is an average over them.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>crra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Relative risk aversion in the household’s utility, with 1 meaning log
+utility.</p></li>
+<li><p><strong>beta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The household’s discount factor.</p></li>
+<li><p><strong>rho_z</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The persistence of log aggregate productivity.</p></li>
+<li><p><strong>sigma_z</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The standard deviation of its innovation.</p></li>
+<li><p><strong>rho_y</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The persistence of log labour productivity.</p></li>
+<li><p><strong>sigma_y</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The standard deviation of its innovation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.paper_calibration">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">paper_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.36</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.96</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.krusell_smith.paper_calibration" title="Link to this definition">¶</a></dt>
+<dd><p>An economy of <em>size</em> households, calibrated as in <a class="reference internal" href="#mmw2021" id="id8"><span>[MMW2021]</span></a>’s text.</p>
+<p>The defaults are the values stated in their section 5.1. The text does not
+state <code class="docutils literal notranslate"><span class="pre">alpha</span></code> or <code class="docutils literal notranslate"><span class="pre">delta</span></code>, so those are their reference notebook’s
+<a class="reference internal" href="#mmwcode" id="id9"><span>[MMWCode]</span></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – How many households. Capital per head is an average over them.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Capital’s share of output.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The fraction of the capital stock that wears out each period.</p></li>
+<li><p><strong>crra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Relative risk aversion in the household’s utility, with 1 meaning log
+utility.</p></li>
+<li><p><strong>beta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The household’s discount factor.</p></li>
+<li><p><strong>rho_z</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The persistence of log aggregate productivity.</p></li>
+<li><p><strong>sigma_z</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The standard deviation of its innovation.</p></li>
+<li><p><strong>rho_y</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The persistence of log labour productivity.</p></li>
+<li><p><strong>sigma_y</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – The standard deviation of its innovation. The default is
+<code class="docutils literal notranslate"><span class="pre">0.2</span> <span class="pre">*</span> <span class="pre">sqrt(1</span> <span class="pre">-</span> <span class="pre">rho_y**2)</span></code>, which holds the ergodic standard
+deviation of log labour productivity at 0.2 whatever <code class="docutils literal notranslate"><span class="pre">rho_y</span></code> is.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.productivity_block">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">productivity_block</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DBlock(name='productivity',</span> <span class="pre">description='',</span> <span class="pre">shocks={'eps_Z':</span> <span class="pre">(&lt;class</span> <span class="pre">'skagent.distributions.Normal'&gt;,</span> <span class="pre">{'sigma':</span> <span class="pre">'sigma_Z'})},</span> <span class="pre">dynamics={'Z':</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;},</span> <span class="pre">reward={},</span> <span class="pre">entity=None)</span></span><a class="headerlink" href="#skagent.models.krusell_smith.productivity_block" title="Link to this definition">¶</a></dt>
+<dd><p>Log aggregate productivity’s AR(1) step, drawn once for the economy.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="skagent.models.krusell_smith.savings_rule">
+<span class="sig-prename descclassname"><span class="pre">skagent.models.krusell_smith.</span></span><span class="sig-name descname"><span class="pre">savings_rule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rate</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skagent.models.krusell_smith.savings_rule" title="Link to this definition">¶</a></dt>
+<dd><p>Consume all but <em>rate</em> of cash on hand, as a decision rule for <code class="docutils literal notranslate"><span class="pre">c</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The fraction saved, in <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1)</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A rule over the decision’s information set that reads cash on hand
+alone.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 <section id="differential-privacy">
 <h2>Differential Privacy<a class="headerlink" href="#differential-privacy" title="Link to this heading">¶</a></h2>
 <p>Benthall and Cummings’ two causal games for tuning a differential-privacy
@@ -2910,6 +3243,23 @@ on to query it.</p>
 <li><a class="reference internal" href="#skagent.models.aiyagari.stationary_prices"><code class="docutils literal notranslate"><span class="pre">stationary_prices()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#krusell-smith">Krusell-Smith</a><ul>
+<li><a class="reference internal" href="#symbols-and-parameters">Symbols and parameters</a></li>
+<li><a class="reference internal" href="#the-period-s-equations">The period’s equations</a></li>
+<li><a class="reference internal" href="#under-a-fixed-savings-rate">Under a fixed savings rate</a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.CAPITAL_SHARE"><code class="docutils literal notranslate"><span class="pre">CAPITAL_SHARE</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.DEPRECIATION"><code class="docutils literal notranslate"><span class="pre">DEPRECIATION</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.capital_map"><code class="docutils literal notranslate"><span class="pre">capital_map()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.household_block"><code class="docutils literal notranslate"><span class="pre">household_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.income_block"><code class="docutils literal notranslate"><span class="pre">income_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.krusell_smith_block"><code class="docutils literal notranslate"><span class="pre">krusell_smith_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.market_block"><code class="docutils literal notranslate"><span class="pre">market_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.notebook_calibration"><code class="docutils literal notranslate"><span class="pre">notebook_calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.paper_calibration"><code class="docutils literal notranslate"><span class="pre">paper_calibration()</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.productivity_block"><code class="docutils literal notranslate"><span class="pre">productivity_block</span></code></a></li>
+<li><a class="reference internal" href="#skagent.models.krusell_smith.savings_rule"><code class="docutils literal notranslate"><span class="pre">savings_rule()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#differential-privacy">Differential Privacy</a><ul>
 <li><a class="reference internal" href="#two-games-and-they-differ-in-one-place">Two games, and they differ in one place</a></li>
 <li><a class="reference internal" href="#what-each-agent-decides-and-what-is-supplied">What each agent decides, and what is supplied</a></li>
@@ -2959,7 +3309,7 @@ on to query it.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=47f3adef"></script>
+</div><script src="../_static/documentation_options.js?v=9fe6ab95"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
