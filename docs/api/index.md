@@ -13,9 +13,9 @@ environments
 loss
 distributions
 simulation
-estimation
 parser
 analysis
+estimation
 utils
 ```
 
@@ -32,10 +32,10 @@ The scikit-agent API is organized into several main modules:
 - {doc}`loss` - Loss functions for neural network training
 - {doc}`distributions` - Distributions for shocks and initial conditions
 - {doc}`simulation` - Simulation tools and analysis functions
-- {doc}`estimation` - Estimating calibration parameters from data
 - {doc}`parser` - Parsing strings into mathematical expressions
 - {doc}`analysis` - Model analysis, strategic-relevance graphs, and
   visualization
+- {doc}`estimation` - Estimating parameters from data
 - {doc}`utils` - Utility functions and helpers
 
 ## Quick Reference

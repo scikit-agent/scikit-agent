@@ -5,21 +5,16 @@ parameters from data.
 
 ## Simulated Method of Moments
 
-The estimator chooses the calibration values under which the model, simulated
+The estimator chooses the parameter values under which the model, simulated
 forward, reproduces chosen statistics of the observed data. It needs no
-likelihood, so it applies to models whose chance nodes are structural equations
-and whose agents' decisions come from solving a game.
+likelihood. See {mod}`skagent.smm` for the criterion, the standard errors and
+the limits.
 
 ```{eval-rst}
-.. automodule:: skagent.smm
-   :no-members:
-
 .. autofunction:: skagent.smm.fit_smm
 
 .. autoclass:: skagent.smm.SMMFit
    :members:
-
-.. autofunction:: skagent.smm.block_simulator
 
 .. autofunction:: skagent.smm.simulated_moments
 
@@ -29,28 +24,34 @@ and whose agents' decisions come from solving a game.
 ## Example Usage
 
 Estimating the demand intercept and slope of the Cournot market from observed
-prices and quantities. The decision rule follows from the first-order condition
-and reads the demand parameters, so it is built from the proposed calibration.
+prices and quantities. Each firm's best response depends on the demand
+parameters, so `simulate` rebuilds the decision rule for every proposed value.
 
 ```python
 import numpy as np
 
 from skagent.models import cournot
-from skagent.smm import block_simulator, fit_smm
+from skagent.simulation.monte_carlo import Simulator
+from skagent.smm import fit_smm
+
+calibration = cournot.heterogeneous_calibration(size=50)
 
 
-def rule(calibration):
-    A, b = calibration["A"], calibration["b"]
-    return {"q": lambda c: (A - c) / (2 * b)}
-
-
-simulate = block_simulator(
-    cournot.cournot_block,
-    cournot.heterogeneous_calibration(size=50),
-    rule,
-    sample_count=300,  # as many markets as were observed
-    variables=["P", "Q"],
-)
+def simulate(theta, seed):
+    A, b = theta["A"], theta["b"]
+    rule = {"q": lambda c: (A - c) / (2 * b)}
+    simulator = Simulator(
+        {**calibration, **theta},
+        cournot.cournot_block,
+        rule,
+        {},
+        sample_count=300,  # as many markets as were observed
+        T_sim=1,
+        seed=seed,
+    )
+    simulator.initialize_sim()
+    history = simulator.simulate()
+    return {"P": np.asarray(history["P"]), "Q": np.asarray(history["Q"])}
 
 
 def moments(data):
@@ -58,8 +59,8 @@ def moments(data):
     return np.array([P.mean(), Q.mean(), P.var(), Q.var()])
 
 
-# `observed` has the form `simulate` returns: here, simulated under the truth.
-observed = simulate({"A": 10.0, "b": 1.0}, 10_000)
+# Here the "observed" data are simulated under A = 10, b = 1.
+observed = simulate({"A": 10.0, "b": 1.0}, seed=10_000)
 
 fit = fit_smm(
     simulate,
