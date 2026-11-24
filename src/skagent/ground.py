@@ -68,6 +68,7 @@ class GroundedBlock:
         calibration: dict[str, Any],
         rng: np.random.Generator | None = None,
     ) -> None:
+        block._validate_randomizers()
         self.block = block
         self.calibration = calibration
         self.rng = rng

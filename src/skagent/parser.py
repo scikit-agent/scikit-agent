@@ -31,7 +31,14 @@ def tuple_constructor_from_class(cls):
     return constructor
 
 
-CONTROL_FIELDS = ("iset", "lower_bound", "upper_bound", "agent", "action_space")
+CONTROL_FIELDS = (
+    "iset",
+    "lower_bound",
+    "upper_bound",
+    "agent",
+    "action_space",
+    "randomize",
+)
 
 
 def bound_from_text(bound):
@@ -77,6 +84,7 @@ def control_constructor(loader, node):
         upper_bound=bound_from_text(args.get("upper_bound")),
         agent=args.get("agent"),
         action_space=args.get("action_space"),
+        randomize=args.get("randomize", False),
     )
 
 

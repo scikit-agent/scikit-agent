@@ -10,11 +10,14 @@ and this project adheres to
 
 ### Added
 
-- `skagent.smm` estimates calibration parameters by the simulated method of
-  moments: `fit_smm` matches moments of simulated data to those of observed
-  data, with fixed draws across parameter values, identity, diagonal or two-step
-  weighting, and standard errors. It warns when the moments cannot tell
-  parameters apart.
+- `skagent.smm` estimates calibration parameters from data by the simulated
+  method of moments.
+- `skagent.models.krusell_smith`, the first-moment variant of the Krusell-Smith
+  economy in Maliar, Maliar and Winant's formulation, as productivity, income,
+  market and household blocks, with calibrations from their paper and their
+  notebook and the closed-form capital map under a fixed savings rate.
+- Controls may declare `randomize=True`. They receive a private, seeded uniform
+  shock that decision rules can use when choosing actions.
 - `maliar_training_loop` takes `policy_net`, a network to train in place of the
   one it builds, so a rule solved earlier can be the starting point.
 - `aiyagari_calibration` takes a discount factor, `beta`, returned as `DiscFac`,
