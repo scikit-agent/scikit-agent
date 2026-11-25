@@ -231,6 +231,35 @@ Fischer-Burmeister residual. The {doc}`constraints` page covers the mechanics,
 and how the loss-side condition composes with feasibility built into the
 network's output layer.
 
+## Populations and Their Aggregates
+
+A batch of states is usually a set of independent samples. On a block with an
+entity class whose equations reduce over the class, as
+{py:data}`~skagent.models.aiyagari.aiyagari_block` computes capital as the mean
+of the households' assets, the batch is instead one population, and each
+household's decision moves the aggregate that every household's prices are read
+from. How a derivative passes through that aggregate decides which equilibrium
+the method computes, so the period has to be told:
+
+```python
+bp = BellmanPeriod(aiyagari_block, "DiscFac", calibration, aggregate="detach")
+```
+
+| `aggregate`   | A household's decision moves the aggregate | Concept                             |
+| ------------- | ------------------------------------------ | ----------------------------------- |
+| `"detach"`    | not at all                                 | price-taking (mean field)           |
+| `"own_share"` | by its own share only                      | Nash among the households           |
+| `"through"`   | for every household                        | the planner's choice, on the reward |
+
+The values the block computes are the same under every mode; only the
+derivatives differ. `"through"` is accepted by
+{py:class}`~skagent.loss.EstimatedDiscountedLifetimeRewardLoss`, where it
+maximizes the population's total reward, and refused by the residual losses,
+where summing every household's price effect is not the first-order condition of
+any concept. Without the argument, the losses and the period's derivatives raise
+on such a block. A block without one, or one that
+{py:func}`~skagent.solver.project_nash` built, needs no mode.
+
 ## Worked Examples
 
 Two runnable examples in the gallery carry these pieces end to end:

@@ -34,16 +34,110 @@ control symbol; ``vf`` by agent name).
 
 from __future__ import annotations
 
+import functools
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
 
 import numpy as np
 import torch
 
 from skagent.ground import GroundedBlock
-from skagent.utils import any_nan, compute_gradients_for_tensors, tracked
+from skagent.utils import any_nan, compute_gradients_for_tensors, param_names, tracked
 
 if TYPE_CHECKING:
     from skagent.block import Block
+
+#: How a population's own decisions may reach an aggregate under differentiation.
+AGGREGATE_MODES = ("detach", "own_share", "through")
+
+
+def _detached(value: Any) -> Any:
+    return value.detach() if isinstance(value, torch.Tensor) else value
+
+
+def _crossing_substitute(update_fn: Callable, crossed: set[str], mode: str) -> Callable:
+    """The equation *update_fn* with its *crossed* arguments differentiated by *mode*.
+
+    The value is unchanged. Under ``detach`` no derivative passes through the
+    crossed arguments. Under ``own_share`` each instance's derivative passes
+    through its own entry and no other's, so the result has one entry per
+    instance, all equal in value. The aggregate must then be one value, or one
+    value per entry of the leading axes with the entity axis last.
+    """
+    names = param_names(update_fn)
+
+    @functools.wraps(update_fn)
+    def substitute(*args):
+        held = [_detached(v) if n in crossed else v for n, v in zip(names, args)]
+        value = update_fn(*held)
+        if mode == "detach":
+            return value
+
+        own = [
+            i
+            for i, (n, arg) in enumerate(zip(names, args))
+            if n in crossed and isinstance(arg, torch.Tensor) and arg.requires_grad
+        ]
+        if not own:
+            return value
+        for i in own:
+            if not (
+                isinstance(value, torch.Tensor)
+                and (value.numel() == 1 or value.shape == args[i].shape[:-1] + (1,))
+            ):
+                raise ValueError(
+                    f"aggregate='own_share' needs one aggregate per economy, "
+                    f"reduced over the entity axis last, and "
+                    f"{update_fn.__name__!r} returns shape "
+                    f"{tuple(np.shape(value))} from {names[i]!r} of shape "
+                    f"{tuple(args[i].shape)}"
+                )
+        # Each instance's own partial derivative of the aggregate, at the
+        # current values, as a constant weight on its own deviation.
+        # torch.func.grad composes with torch.func.vmap over economies.
+        probe = [_detached(v) for v in args]
+        for i in own:
+
+            def aggregate_of(x, i=i):
+                return update_fn(*probe[:i], x, *probe[i + 1 :]).sum()
+
+            weight = torch.func.grad(aggregate_of)(probe[i])
+            value = value + weight * (args[i] - args[i].detach())
+        return value
+
+    return substitute
+
+
+def _equation(update_fn: Any) -> Callable:
+    """The callable an entry of a block's dynamics evaluates."""
+    from skagent.rule import Rule
+
+    return update_fn.update_func() if isinstance(update_fn, Rule) else update_fn
+
+
+def _aggregated_decisions(block: Block) -> dict[str, list[str]]:
+    """The crossings whose reduced class holds one of the block's own decisions.
+
+    Maps each such crossing to the arguments it reduces. A block a projection
+    built is reported as having none, since the projection has already settled
+    how the aggregate answers to a decision.
+    """
+    from skagent.block import Control, is_synthesized
+
+    dynamics = block.get_dynamics()
+    if any(is_synthesized(eq) for eq in dynamics.values()):
+        return {}
+    signatures = block.signatures()
+    decided = set()
+    for sym in block.get_controls():
+        decided |= signatures.get(sym, frozenset())
+    found = {}
+    for sym, entries in block.crossings().items():
+        if isinstance(dynamics[sym], Control):
+            continue
+        crossed = [arg for arg, reduced, _ in entries if reduced & decided]
+        if crossed:
+            found[sym] = crossed
+    return found
 
 
 class BellmanPeriod(GroundedBlock):
@@ -70,6 +164,24 @@ class BellmanPeriod(GroundedBlock):
         Generator for this period's shock draws. Since the shocks are resolved
         against this period's calibration, it is the period rather than the
         block that owns their sample path.
+    aggregate : {"detach", "own_share", "through"}, optional
+        How a derivative passes through an aggregate of a population's own
+        decisions: an equation reading out of an entity class that holds one of
+        the block's controls. It decides the solution concept a derivative-based
+        method computes on such a block, and leaves every value unchanged.
+
+        - ``"detach"``: no instance's decision moves the aggregate. Price-taking,
+          the mean-field concept.
+        - ``"own_share"``: each instance's decision moves the aggregate by its
+          own share and no other's. Nash among the class's instances.
+        - ``"through"``: every instance's decision moves the aggregate for every
+          instance. With a loss that maximizes the population's total reward,
+          the planner's choice.
+
+        Required on a block with such an aggregate before anything is
+        differentiated through it (:meth:`require_aggregate`), and ignored on
+        any other block. A block built by :func:`~skagent.solver.project_nash`
+        has already settled the question and needs none.
 
     Attributes
     ----------
@@ -84,6 +196,16 @@ class BellmanPeriod(GroundedBlock):
         The set of arrival state variable names.
     rng : numpy.random.Generator | None
         The generator this period's shock draws come from.
+    aggregate : str or None
+        The mode given, or ``None``.
+    aggregated_decisions : dict[str, list[str]]
+        Each aggregate of the population's own decisions, with the arguments it
+        reduces. Empty on a block without one.
+
+    Raises
+    ------
+    ValueError
+        If *aggregate* is not one of the modes.
 
     Notes
     -----
@@ -100,10 +222,29 @@ class BellmanPeriod(GroundedBlock):
         discount_variable: str | None,
         calibration: dict[str, Any],
         rng: np.random.Generator | None = None,
+        aggregate: str | None = None,
     ) -> None:
         super().__init__(block, calibration, rng=rng)
         self.discount_variable = discount_variable
         self.arrival_states = self.block.get_arrival_states(calibration)
+
+        if aggregate is not None and aggregate not in AGGREGATE_MODES:
+            raise ValueError(
+                f"aggregate must be one of {AGGREGATE_MODES}, got {aggregate!r}"
+            )
+        self.aggregate = aggregate
+        self.aggregated_decisions = _aggregated_decisions(self.block)
+        dynamics = self.block.get_dynamics()
+        self._substitute = (
+            {}
+            if aggregate in (None, "through")
+            else {
+                sym: _crossing_substitute(
+                    _equation(dynamics[sym]), set(crossed), aggregate
+                )
+                for sym, crossed in self.aggregated_decisions.items()
+            }
+        )
 
     def with_calibration(self, values: Mapping[str, Any]) -> BellmanPeriod:
         """A copy of this period with *values* merged over its calibration.
@@ -116,6 +257,25 @@ class BellmanPeriod(GroundedBlock):
         other = super().with_calibration(values)
         other.arrival_states = other.block.get_arrival_states(other.calibration)
         return other
+
+    def require_aggregate(self) -> None:
+        """Refuse a derivative this period cannot take without a concept.
+
+        Raises
+        ------
+        ValueError
+            If the block aggregates its population's own decisions and no
+            *aggregate* mode was given.
+        """
+        if self.aggregated_decisions and self.aggregate is None:
+            raise ValueError(
+                f"this block aggregates its population's own decisions in "
+                f"{sorted(self.aggregated_decisions)}, so a derivative through "
+                f"the aggregate decides the solution concept. Construct the "
+                f"BellmanPeriod with aggregate='detach' for price-taking (mean "
+                f"field), 'own_share' for Nash among the instances, or "
+                f"'through' for the planner's choice."
+            )
 
     def _resolve_inputs(
         self,
@@ -204,7 +364,9 @@ class BellmanPeriod(GroundedBlock):
             return {isym: vals[isym] for isym in iset}
 
         drs = {cs: (lambda: 1) for cs in self.get_controls()}
-        out = self.block.transition(vals, drs, until=control_sym)
+        out = self.block.transition(
+            vals, drs, until=control_sym, substitute=self._substitute
+        )
         return {isym: out[isym] for isym in iset}
 
     def compute_controls(
@@ -365,7 +527,7 @@ class BellmanPeriod(GroundedBlock):
         )
 
         vals = parameters | states | shocks
-        post = self.block.transition(vals, decision_rules)
+        post = self.block.transition(vals, decision_rules, substitute=self._substitute)
         return {sym: post[sym] for sym in decision_rules}
 
     def reward_function(
@@ -449,7 +611,12 @@ class BellmanPeriod(GroundedBlock):
         )
 
         vals = parameters | states | shocks | controls
-        post = self.block.transition(vals, decision_rules, fix=list(controls.keys()))
+        post = self.block.transition(
+            vals,
+            decision_rules,
+            fix=list(controls.keys()),
+            substitute=self._substitute,
+        )
         return post
 
     def grad_post_function(
@@ -499,6 +666,7 @@ class BellmanPeriod(GroundedBlock):
             {symbol: {var_name: gradient}}. The gradient is a zero tensor
             when the symbol does not depend on the variable.
         """
+        self.require_aggregate()
         post = self.post_function(
             states,
             controls,
@@ -694,6 +862,7 @@ class BellmanPeriod(GroundedBlock):
                 "variables the control depends on."
             )
 
+        self.require_aggregate()
         pre_state_values = self.compute_pre_state(
             control_sym, states, shocks=shocks, parameters=parameters
         )
@@ -1328,6 +1497,7 @@ def estimate_bellman_foc_residual(
     dict[str, torch.Tensor]
         Mapping from each control symbol to its FOC residual tensor.
     """
+    bellman_period.require_aggregate()
     shocks_t, shocks_t_plus_1 = _extract_period_shocks(bellman_period, shocks)
     reward_syms = bellman_period.get_reward_syms(agent)
 

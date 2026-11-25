@@ -664,30 +664,6 @@ class TestOneInstanceReliesOnTheOthers:
             two_sided.relevance_graph({"A": A, "firm": 3, "buyer": 3})
 
 
-class TestWhatDoesNotWorkYet:
-    """The parts of the entity feature that are declared but not honoured.
-
-    Each of these is a wrong answer rather than a missing feature: the query
-    succeeds and returns something a reader would act on. Marked strict, so that
-    implementing any of them fails here and the marker comes off.
-    """
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="the solvers do not yet refuse a block with a crossing",
-    )
-    def test_a_bellman_period_refuses_a_block_with_a_crossing(self):
-        from skagent.bellman import BellmanPeriod
-
-        calibration = dict(collusion_calibration(), beta=0.9)
-
-        # A solver optimises at each grid point independently, which is not what
-        # an aggregate is. Accepting the block means answering a question the
-        # model does not pose.
-        with pytest.raises(ValueError):
-            BellmanPeriod(cournot_block(), "beta", calibration)
-
-
 class TestTheShippedModel:
     """``skagent.models.cournot`` agrees with the claims in its own docstring."""
 
