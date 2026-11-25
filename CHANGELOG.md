@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- `skagent.smm` estimates calibration parameters from data by the simulated
+  method of moments.
 - `skagent.models.krusell_smith`, the first-moment variant of the Krusell-Smith
   economy in Maliar, Maliar and Winant's formulation, as productivity, income,
   market and household blocks, with calibrations from their paper and their

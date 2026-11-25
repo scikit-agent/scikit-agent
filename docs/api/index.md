@@ -15,6 +15,7 @@ distributions
 simulation
 parser
 analysis
+estimation
 utils
 ```
 
@@ -34,6 +35,7 @@ The scikit-agent API is organized into several main modules:
 - {doc}`parser` - Parsing strings into mathematical expressions
 - {doc}`analysis` - Model analysis, strategic-relevance graphs, and
   visualization
+- {doc}`estimation` - Estimating parameters from data
 - {doc}`utils` - Utility functions and helpers
 
 ## Quick Reference
