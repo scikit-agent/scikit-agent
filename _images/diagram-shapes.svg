@@ -156,20 +156,8 @@
 <ellipse fill="#d0e0f0" stroke="black" cx="49.74" cy="-254" rx="27" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="49.74" y="-248.57" font-family="Arial" font-size="14.00" fill="#000000">k</text>
 </g>
-<!-- k* -->
-<g id="node15" class="node">
-<title>k*</title>
-<ellipse fill="#d0e0f0" stroke="black" stroke-dasharray="5,2" cx="182.86" cy="-200" rx="27" ry="18"/>
-<text xml:space="preserve" text-anchor="middle" x="182.86" y="-194.57" font-family="Arial" font-size="14.00" fill="#000000">k*</text>
-</g>
-<!-- k*&#45;&gt;b -->
-<g id="edge12" class="edge">
-<title>k*&#45;&gt;b</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M210.1,-200C223.44,-200 239.91,-200 254.58,-200"/>
-<polygon fill="black" stroke="black" points="254.36,-203.5 264.36,-200 254.36,-196.5 254.36,-203.5"/>
-</g>
 <!-- p* -->
-<g id="node16" class="node">
+<g id="node15" class="node">
 <title>p*</title>
 <ellipse fill="#d0e0f0" stroke="black" stroke-dasharray="5,2" cx="182.86" cy="-76" rx="27" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="182.86" y="-70.58" font-family="Arial" font-size="14.00" fill="#000000">p*</text>
@@ -185,6 +173,18 @@
 <title>p*&#45;&gt;p</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M208.46,-69.42C222.73,-65.6 240.95,-60.72 256.76,-56.5"/>
 <polygon fill="black" stroke="black" points="257.53,-59.91 266.28,-53.95 255.72,-53.15 257.53,-59.91"/>
+</g>
+<!-- k* -->
+<g id="node16" class="node">
+<title>k*</title>
+<ellipse fill="#d0e0f0" stroke="black" stroke-dasharray="5,2" cx="182.86" cy="-200" rx="27" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="182.86" y="-194.57" font-family="Arial" font-size="14.00" fill="#000000">k*</text>
+</g>
+<!-- k*&#45;&gt;b -->
+<g id="edge12" class="edge">
+<title>k*&#45;&gt;b</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M210.1,-200C223.44,-200 239.91,-200 254.58,-200"/>
+<polygon fill="black" stroke="black" points="254.36,-203.5 264.36,-200 254.36,-196.5 254.36,-203.5"/>
 </g>
 </g>
 </svg>
